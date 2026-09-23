@@ -23,7 +23,6 @@ from lib.loop_claim import (
     _claim_unit,
     _resolve_batch_base,
     cmd_next_batch,
-    cmd_release,
 )
 
 _FAKE_SHA = "deadbeef" * 5
@@ -132,6 +131,29 @@ class TestCmdNextBatch:
     def test_rejects_non_sub_iterate_kind(self, tmp_path):
         state_path = _write_state(tmp_path, kind="section")
         assert cmd_next_batch(_batch_args(state_path)) == 1
+
+    def test_recheck_kind_after_lock_prevents_a_section_state_race(self, tmp_path, capsys):
+        """External Tier-3 PR review (GPT, round 10): the outside-lock peek
+        validates `kind` before `loop.lock` is acquired; a concurrent
+        `cmd_init` can replace the state file with a `kind == "section"`
+        one in that window. `cmd_next_batch` must re-check `kind` on the
+        locked reload too, before any unit is inspected or mutated, so its
+        documented guarantee (module docstring: NEVER touches
+        `kind == "section"` state) holds under the race, not just on the
+        initial read."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "pending", "attempt": 0},
+        ])
+        sub_iterate_state = json.loads(state_path.read_text(encoding="utf-8"))
+        section_state = json.loads(json.dumps(sub_iterate_state))
+        section_state["kind"] = "section"
+
+        with patch.object(loop_claim, "_load_state", side_effect=[sub_iterate_state, section_state]):
+            rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
+        assert rc == 1
+        assert "sub_iterate" in capsys.readouterr().err
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        assert state["units"][0]["status"] == "pending"
 
     def test_rejects_stacked_strategy_before_claiming_instead_of_null_base(self, tmp_path, capsys):
         """External Tier-3 PR review (GPT, round 6): `"stacked"` (and any
@@ -243,53 +265,9 @@ class TestCmdNextBatch:
         with patch.object(loop_claim, "file_lock", side_effect=loop_claim.LockTimeout("busy")):
             assert cmd_next_batch(_batch_args(state_path)) == 6
 
-
-def _release_args(state_path: Path, unit: str, attempt_id: str, *, max_attempts=3,
-                   campaign_slug=None, campaign_worktree=None) -> argparse.Namespace:
-    return argparse.Namespace(state=str(state_path), unit=unit, attempt_id=attempt_id,
-                               max_attempts=max_attempts, campaign_slug=campaign_slug,
-                               campaign_worktree=campaign_worktree)
-
-
-class TestCmdRelease:
-    def test_release_returns_to_pending_without_bumping_attempt(self, tmp_path):
-        state_path = _write_state(tmp_path, units=[
-            {"id": "A", "status": "claimed", "attempt": 0, "attempt_id": "test-loop-A-a0"},
-        ])
-        rc = cmd_release(_release_args(state_path, "A", "test-loop-A-a0"))
-        assert rc == 0
-        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
-        assert unit["status"] == "pending"
-        assert unit["attempt"] == 0  # release itself never bumps
-
-    def test_release_fails_to_failed_once_max_attempts_exhausted(self, tmp_path):
-        state_path = _write_state(tmp_path, units=[
-            {"id": "A", "status": "claimed", "attempt": 2, "attempt_id": "test-loop-A-a2"},
-        ])
-        rc = cmd_release(_release_args(state_path, "A", "test-loop-A-a2", max_attempts=3))
-        assert rc == 0
-        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
-        assert unit["status"] == "failed"
-
-    def test_release_rejects_stale_attempt_token(self, tmp_path):
-        state_path = _write_state(tmp_path, units=[
-            {"id": "A", "status": "claimed", "attempt": 1, "attempt_id": "test-loop-A-a1"},
-        ])
-        assert cmd_release(_release_args(state_path, "A", "test-loop-A-a0")) == 5
-
-    def test_release_rejects_non_claimed_unit(self, tmp_path):
-        state_path = _write_state(tmp_path, units=[
-            {"id": "A", "status": "running", "attempt": 0, "attempt_id": "test-loop-A-a0"},
-        ])
-        assert cmd_release(_release_args(state_path, "A", "test-loop-A-a0")) == 1
-
-    def test_release_unknown_unit_returns_1(self, tmp_path):
-        state_path = _write_state(tmp_path)
-        assert cmd_release(_release_args(state_path, "missing", "x")) == 1
-
-    # `cmd_release`'s physical-cleanup behavior (`--campaign-slug`/
-    # `--campaign-worktree`, `_cleanup_unit_worktree`) and the ADR-045
-    # single-module-identity regression for `mark`/`mark-running`/
-    # `mark-merged` dispatch are covered in the sibling
-    # `test_loop_claim_release_cleanup.py`, split out purely to keep this
-    # file under the 300-line guideline.
+    # `cmd_release`'s basic status transitions, its physical-cleanup
+    # behavior (`--campaign-slug`/`--campaign-worktree`,
+    # `_cleanup_unit_worktree`), and the ADR-045 single-module-identity
+    # regression for `mark`/`mark-running`/`mark-merged` dispatch are all
+    # covered in the sibling `test_loop_claim_release_cleanup.py`, split
+    # out purely to keep this file under the 300-line guideline.

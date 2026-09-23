@@ -195,6 +195,18 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
             state = _load_state(state_path)
+            # External Tier-3 PR review (GPT, round 10): the unlocked peek
+            # above checked `kind` before this lock was acquired — a
+            # concurrent `cmd_init` can replace the state file with a
+            # `kind == "section"` one in that window. Re-check on the
+            # locked reload, before any unit is inspected or mutated, so
+            # this command's documented guarantee (module docstring: NEVER
+            # touches `kind == "section"` state) holds under the race too,
+            # not just on the initial read.
+            if state.get("kind") != "sub_iterate":
+                print("ERROR: next-batch is only valid for kind == 'sub_iterate' "
+                      "(state changed kind while lock was being acquired)", file=sys.stderr)
+                return 1
             units = state["units"]
             loop_id = state["loop_id"]
             fresh_snapshot = _snapshot_merged_commits(units)

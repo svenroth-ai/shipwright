@@ -151,16 +151,42 @@ to the base-resolution boundary this module already owned; one new
 regression test proving a stacked-strategy state errors out rather than
 producing a null-base claim.
 
+### Round 10 growth (392 -> 404)
+
+External Tier-3 review (GPT, high, PR #790) found `cmd_next_batch` validated
+`state.get("kind") == "sub_iterate"` only on its outside-lock peek
+(`_load_state` before `loop.lock` is acquired), then reloaded state
+inside the lock and proceeded straight to computing the ready set and
+claiming units without rechecking `kind` on that fresh read. A concurrent
+`cmd_init` replacing the state file with a `kind == "section"` one in the
+window between the peek and the lock acquisition would let this command
+write 9-state fields (`status`, `attempt`, `attempt_id`, `lease_expires_at`)
+into a legacy section campaign's units — exactly the guarantee this
+module's own docstring already promised never happens, just missed on the
+locked-reload path (Round 5 closed the same gap for `cmd_release`). Fixed
+by re-checking `kind` immediately after the locked `_load_state` call,
+before any unit is inspected or mutated, returning the same "next-batch is
+only valid for kind == 'sub_iterate'" error (exit 1) used by the
+outside-lock check. Not a new responsibility — closing the same guarantee
+against the same race window `cmd_release` was already closed against;
+one new regression test (`test_recheck_kind_after_lock_prevents_a_section_
+state_race`) forces the peek and the locked reload to disagree on `kind`
+and asserts the unit is left untouched.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 392-line ceiling (see
-  Round 6 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 404-line ceiling (see
+  Round 10 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
-  regression live in a new sibling file, `shared/tests/
+  regression live in a sibling file, `shared/tests/
   test_loop_claim_release_cleanup.py` (split from `test_loop_claim.py`
   purely to keep both under the 300-line guideline; no baseline
-  implication — neither file's own limit changed).
+  implication — neither file's own limit changed). Round 10's
+  kind-recheck regression test pushed `test_loop_claim.py` back over 300
+  lines a second time; `TestCmdRelease`'s basic status-transition tests
+  moved into that same sibling file (which already owned the rest of
+  `cmd_release`'s coverage) to bring both files back under the guideline.
 
 ## Rejected alternatives
 

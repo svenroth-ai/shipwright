@@ -1,10 +1,11 @@
-"""Unit tests for ``lib.loop_claim``'s ``cmd_release`` physical-cleanup half
-(campaign-dag-scheduler R4, 2026-09-23 Stage-1 spec-reviewer re-check fix)
-and the ADR-045 single-module-identity regression for ``mark``/
-``mark-running``/``mark-merged`` dispatch. Split from ``test_loop_claim.py``
-purely to keep each file under the 300-line guideline (same rationale as
-the sibling ``test_loop_state_transitions.py``/``test_loop_state_fencing.py``
-split) — no baseline implication, this file never existed before.
+"""Unit tests for ``lib.loop_claim``'s ``cmd_release`` (both its basic
+status transitions and its physical-cleanup half, campaign-dag-scheduler
+R4, 2026-09-23 Stage-1 spec-reviewer re-check fix) and the ADR-045
+single-module-identity regression for ``mark``/``mark-running``/
+``mark-merged`` dispatch. Split from ``test_loop_claim.py`` purely to keep
+each file under the 300-line guideline (same rationale as the sibling
+``test_loop_state_transitions.py``/``test_loop_state_fencing.py`` split) —
+no baseline implication, this file never existed before.
 """
 
 from __future__ import annotations
@@ -40,6 +41,49 @@ def _release_args(state_path: Path, unit: str, attempt_id: str, *, max_attempts=
     return argparse.Namespace(state=str(state_path), unit=unit, attempt_id=attempt_id,
                                max_attempts=max_attempts, campaign_slug=campaign_slug,
                                campaign_worktree=campaign_worktree)
+
+
+class TestCmdRelease:
+    """Basic ``cmd_release`` status transitions — moved from
+    ``test_loop_claim.py`` (round 10) purely to keep that file under the
+    300-line guideline after its `cmd_next_batch` kind-recheck regression
+    test; this file already owns the `cmd_release` cleanup-half tests
+    below, so it's the natural home for the rest of `cmd_release` too."""
+
+    def test_release_returns_to_pending_without_bumping_attempt(self, tmp_path):
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "claimed", "attempt": 0, "attempt_id": "test-loop-A-a0"},
+        ])
+        rc = cmd_release(_release_args(state_path, "A", "test-loop-A-a0"))
+        assert rc == 0
+        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
+        assert unit["status"] == "pending"
+        assert unit["attempt"] == 0  # release itself never bumps
+
+    def test_release_fails_to_failed_once_max_attempts_exhausted(self, tmp_path):
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "claimed", "attempt": 2, "attempt_id": "test-loop-A-a2"},
+        ])
+        rc = cmd_release(_release_args(state_path, "A", "test-loop-A-a2", max_attempts=3))
+        assert rc == 0
+        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
+        assert unit["status"] == "failed"
+
+    def test_release_rejects_stale_attempt_token(self, tmp_path):
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "claimed", "attempt": 1, "attempt_id": "test-loop-A-a1"},
+        ])
+        assert cmd_release(_release_args(state_path, "A", "test-loop-A-a0")) == 5
+
+    def test_release_rejects_non_claimed_unit(self, tmp_path):
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "running", "attempt": 0, "attempt_id": "test-loop-A-a0"},
+        ])
+        assert cmd_release(_release_args(state_path, "A", "test-loop-A-a0")) == 1
+
+    def test_release_unknown_unit_returns_1(self, tmp_path):
+        state_path = _write_state(tmp_path)
+        assert cmd_release(_release_args(state_path, "missing", "x")) == 1
 
 
 class TestCmdReleasePhysicalCleanup:
