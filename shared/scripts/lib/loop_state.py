@@ -705,9 +705,10 @@ def cmd_init_sub_iterate_payload(state_path, existing: dict) -> tuple[dict, bool
     Returns ``(payload, mutated)``. `mutated` tells the caller whether
     `existing` was changed in place (via :func:`reconcile_in_progress`) and
     therefore needs saving before returning 0. An EMPTY `payload` (``{}``,
-    always paired with ``mutated=False``) means "genuinely no units at all —
-    fall through to a real reinit", exactly like `kind == "section"` always
-    has.
+    always paired with ``mutated=False``) means "fall through to a real
+    reinit", exactly like `kind == "section"` always has — either there are
+    genuinely no units at all, or every remaining row carries a legacy
+    status this function doesn't recognize as verified TERMINAL.
     """
     units = existing.get("units", [])
     active = [u for u in units if u["status"] in ACTIVE]
@@ -734,12 +735,20 @@ def cmd_init_sub_iterate_payload(state_path, existing: dict) -> tuple[dict, bool
     if resumable:
         return {"action": "resumed", "pending": len(resumable)}, False
 
-    if units:
-        # Every unit already TERMINAL (merged/failed/held): resume in place
-        # with nothing left to claim, rather than reinitializing a finished
-        # campaign — reinit only fires for a GENUINELY EMPTY unit list.
+    if units and all(u["status"] in TERMINAL for u in units):
+        # Every unit already TERMINAL (merged/failed/held) under the NEW
+        # 9-state vocabulary: resume in place with nothing left to claim,
+        # rather than reinitializing a finished campaign.
         return {"action": "resumed", "pending": 0}, False
 
+    # Either genuinely empty, or every row already excluded above still
+    # carries a legacy status this function doesn't recognize (pre-R4
+    # `"complete"`, `"failed"`, `"escalated"`, ...). Those are NOT verified
+    # TERMINAL under the new vocabulary — `"escalated"` in particular means
+    # unresolved human action, not "done" — so falsely reporting them as
+    # `resumed, pending: 0` would hide that from the caller. Fall through to
+    # a real reinit, exactly like `kind == "section"` always has for a
+    # fully-done state (external Tier-3 PR review, GPT, round 5).
     return {}, False
 
 

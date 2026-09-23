@@ -225,11 +225,29 @@ helper this module already owned; one existing test's assertion updated to
 match the new (earlier, more specific) rejection reason, plus one new test
 for the redirect shape the loop-root check alone missed.
 
+### Round 7 growth (877 -> 886)
+
+External Tier-3 review (GPT, high, PR #790) found `cmd_init_sub_iterate_payload`'s
+final `if units:` fallback reported `{"action": "resumed", "pending": 0}` for
+ANY non-empty unit list not already caught by the active/legacy-active/resumable
+branches above it — including pre-R4 legacy terminal statuses (`"complete"`,
+`"failed"`, `"escalated"`) that were never verified TERMINAL under the new
+9-state vocabulary. `"escalated"` specifically means unresolved human action,
+not done, so silently reporting it as resumed/nothing-pending would hide that
+from the caller. Fixed by requiring `all(u["status"] in TERMINAL for u in
+units)` before returning the resumed payload; anything else (empty list or a
+mix containing an unrecognized legacy status) now falls through to `{}`, the
+same real-reinit signal `kind == "section"` has always used for a fully-done
+state. Not a new responsibility — a correctness fix to the compatibility
+branch Round 4 already counted, plus one new regression test proving a
+pre-R4 campaign with legacy terminal/escalated rows reinitializes rather than
+reporting a false `resumed, pending: 0`.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 877-line ceiling
-  (see Round 6 growth above), not 278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 886-line ceiling
+  (see Round 7 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`
