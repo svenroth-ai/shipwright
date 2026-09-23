@@ -48,7 +48,7 @@ def test_main_never_passes_shell_true(tmp_path: Path) -> None:
         patch("subprocess.run", return_value=_FakeCompletedProcess(0)) as mock_run,
     ):
         rc = codex_activation_helper.main(
-            ["--skill-id", "shipwright-iterate", "--project-root", str(tmp_path)]
+            ["--skill-id", "shipwright-iterate:iterate", "--project-root", str(tmp_path)]
         )
     assert rc == 0
     mock_run.assert_called_once()
@@ -65,7 +65,7 @@ def test_main_does_not_capture_output_interactive_launch(tmp_path: Path) -> None
         patch("subprocess.run", return_value=_FakeCompletedProcess(0)) as mock_run,
     ):
         codex_activation_helper.main(
-            ["--skill-id", "shipwright-iterate", "--project-root", str(tmp_path)]
+            ["--skill-id", "shipwright-iterate:iterate", "--project-root", str(tmp_path)]
         )
     _, kwargs = mock_run.call_args
     assert "capture_output" not in kwargs
@@ -79,7 +79,7 @@ def test_main_launches_with_project_root_as_cwd(tmp_path: Path) -> None:
         patch("subprocess.run", return_value=_FakeCompletedProcess(0)) as mock_run,
     ):
         codex_activation_helper.main(
-            ["--skill-id", "shipwright-iterate", "--project-root", str(tmp_path)]
+            ["--skill-id", "shipwright-iterate:iterate", "--project-root", str(tmp_path)]
         )
     _, kwargs = mock_run.call_args
     assert kwargs.get("cwd") == str(tmp_path.resolve())
@@ -94,7 +94,7 @@ def test_main_composes_envelope_into_argv(tmp_path: Path) -> None:
         codex_activation_helper.main(
             [
                 "--skill-id",
-                "shipwright-iterate",
+                "shipwright-iterate:iterate",
                 "--args-json",
                 '{"type": "feature"}',
                 "--project-root",
@@ -102,7 +102,7 @@ def test_main_composes_envelope_into_argv(tmp_path: Path) -> None:
             ]
         )
     launch_argv = mock_run.call_args[0][0]
-    expected_envelope = codex_envelope_grammar.compose("shipwright-iterate", {"type": "feature"})
+    expected_envelope = codex_envelope_grammar.compose("shipwright-iterate:iterate", {"type": "feature"})
     assert launch_argv == ["codex", expected_envelope]
 
 
@@ -121,7 +121,7 @@ def test_invalid_args_json_rejected_before_launch(tmp_path: Path, capsys) -> Non
         rc = codex_activation_helper.main(
             [
                 "--skill-id",
-                "shipwright-iterate",
+                "shipwright-iterate:iterate",
                 "--args-json",
                 "{not json",
                 "--project-root",
@@ -138,7 +138,7 @@ def test_non_object_args_json_rejected(tmp_path: Path) -> None:
         rc = codex_activation_helper.main(
             [
                 "--skill-id",
-                "shipwright-iterate",
+                "shipwright-iterate:iterate",
                 "--args-json",
                 "[1, 2, 3]",
                 "--project-root",
@@ -156,7 +156,7 @@ def test_codex_not_found_on_path(tmp_path: Path) -> None:
         patch("subprocess.run") as mock_run,
     ):
         rc = codex_activation_helper.main(
-            ["--skill-id", "shipwright-iterate", "--project-root", str(tmp_path)]
+            ["--skill-id", "shipwright-iterate:iterate", "--project-root", str(tmp_path)]
         )
     assert rc == 1
     mock_run.assert_not_called()
@@ -169,7 +169,7 @@ def test_launch_failure_reports_error_not_crash(tmp_path: Path, capsys) -> None:
         patch("subprocess.run", side_effect=OSError("boom")),
     ):
         rc = codex_activation_helper.main(
-            ["--skill-id", "shipwright-iterate", "--project-root", str(tmp_path)]
+            ["--skill-id", "shipwright-iterate:iterate", "--project-root", str(tmp_path)]
         )
     assert rc == 1
     assert "failed to launch" in capsys.readouterr().err

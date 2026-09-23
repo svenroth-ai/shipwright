@@ -88,3 +88,31 @@ regardless of `shell=False`, corrupting the envelope grammar's own `|`
 characters) that GLM's own independent review explicitly listed as
 "checked and cleared." Adjudicated as correct-as-designed, not a defect;
 no code change, documented here as the rebuttal.
+
+## Local PR-review preflight (F11, this run)
+
+The F11 local preflight (`pr_review.py`, openai/gpt-5.6-luna) BLOCKed twice
+before push. Round 1 — real defect, fixed: `codex_pretooluse_matcher.py`'s
+basename extraction used `pathlib.Path(...).name`, which only splits on
+`\` on Windows; the module's own Windows-path regression test passed on
+this Windows dev box but would have failed on Linux CI. Switched to a
+`PureWindowsPath`-backed `_basename()` helper (splits on both separators
+regardless of host) plus a direct unit test. Round 2 — adjudicated,
+documented, not fixed: `consume()`'s exclusive-consume-once primitive
+correctly decides WHO the first call is, but does not evaluate a *losing*
+call's own payload before allowing it through, because under this gate's
+one-shot design every call after the first is unevaluated by construction
+(see Goal above). If Codex ever dispatches two `PreToolUse` calls for the
+same turn concurrently, the race's loser is that already-accepted "second
+call" arriving early rather than late — the same accepted gap, not a new
+bypass class, consistent with this gate's cooperative-enforcement threat
+model (guiding a cooperative session, not defending against one actively
+evading it). Full rationale in `codex_pretooluse_gate.py`'s
+`handle_payload` docstring. Whether Codex's tool dispatch is ever actually
+concurrent within one turn is unconfirmed; the deferred payload-capture
+probe is where that would be observed, inherited by R2b. A low-severity
+comment (an activation-helper test's example `--skill-id` used the bare
+`shipwright-iterate` instead of the mint hook's actual accepted
+`shipwright-iterate:iterate`) was also fixed, for clarity only — the tests
+it appeared in exercise envelope/CLI composition, not the mint hook's
+accepted-skill_id gating, so nothing was functionally broken.

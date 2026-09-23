@@ -128,7 +128,31 @@ def handle_payload(payload: dict) -> dict | None:
     expired/cwd-mismatched, already-settled) resolves to silent ``None``
     (allow), the same as the R0 Contract's explicit default -- only the
     genuinely-first call of an unarmed session gets the visible warning,
-    exactly once per session (``consume()``'s own exclusivity)."""
+    exactly once per session (``consume()``'s own exclusivity).
+
+    **Accepted residual risk — same-turn concurrent dispatch (local
+    PR-review preflight, block; adjudicated, not fixed).** ``consume()``'s
+    exclusive-create decides WHO the "first call" is atomically and
+    correctly; what it does not do is evaluate a LOSING call's own
+    ``tool_input`` before allowing it, because under this gate's documented
+    one-shot design (see the R2 ADR's Goal section) every call after the
+    first is unevaluated by construction -- "a denied first call followed
+    by a different second call sails through unevaluated" was the explicit,
+    externally-reviewed and architecture-reviewed tradeoff, not an
+    oversight. If Codex ever dispatches two `PreToolUse` calls for the SAME
+    turn concurrently, the race's loser is that "second call" a few
+    microseconds early rather than a few seconds late -- the same accepted
+    gap wearing a different clock, not a new bypass class. This gate's
+    threat model is cooperative enforcement (nudging a cooperative session
+    toward the required setup step), not defending against a session
+    actively trying to smuggle a second call past it -- consistent with the
+    matcher's own accepted basename-only-match residual risk. Serializing
+    evaluation across concurrently dispatched calls would need an
+    interprocess lock this fail-open-by-design mechanism does not otherwise
+    need; not undertaken here on that basis. Whether Codex's own tool-call
+    dispatch is ever actually concurrent within one turn is unconfirmed --
+    the deferred payload-capture probe (iterate-spec.md's own "Live proof —
+    payload capture" AC) is where that would be observed; R2b inherits it."""
     if not is_codex_runtime():
         return None
 
