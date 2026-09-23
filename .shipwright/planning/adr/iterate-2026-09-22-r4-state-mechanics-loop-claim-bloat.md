@@ -244,11 +244,33 @@ import) — NOT touched here, since no test currently demonstrates them
 failing; left as a documented, not-yet-observed risk rather than
 speculative preemptive work.
 
+### Round 14 growth (481 -> 498)
+
+Not an external-review finding either — round 13's own fix commit
+(`043d2d3aa`) still failed `Shared tests (Windows)` in real CI with the
+IDENTICAL `PermissionError` signature in
+`test_n_concurrent_claimers_never_double_claim`, discovered while
+investigating an unrelated CI-dispatch delay on the same PR. This is
+significant: round 13's 8-consecutive-clean LOCAL stress-test verification
+did not transfer to the loaded, shared CI runner, where 20 real
+subprocesses under actual resource contention produce longer
+`PermissionError` windows than an idle local machine ever does — a
+probabilistic race's local pass streak is not proof it is fixed under
+heavier contention elsewhere. Round 13's retry budget (5 attempts, ≤50ms
+total backoff) was simply too short a window for that contention to
+clear. Fixed by widening `_TRANSIENT_PERMISSION_RETRY_ATTEMPTS` to 30 and
+capping the linear backoff at 0.1s/attempt (worst case ~2.5s total,
+still short enough that a persistent, non-transient permission problem
+surfaces in seconds, never silently hangs). No test-shape change was
+needed — `shared/tests/test_loop_claim_load_state_retry.py`'s assertions
+read the constant rather than hardcoding `5`, so they cover the new
+budget without edits.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 481-line ceiling (see
-  Round 13 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 498-line ceiling (see
+  Round 14 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree`, the ADR-045 dispatch-identity
   regression, and the transient-`PermissionError` retry live in sibling
   files, `shared/tests/test_loop_claim_release_cleanup.py` (`cmd_release`'s

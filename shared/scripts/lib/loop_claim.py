@@ -62,33 +62,50 @@ from lib.loop_state import (  # noqa: E402
 MAX_PARALLEL_HARD_CAP = 8
 
 
-#: Retry budget for `_retry_on_transient_permission_error` below — short
-#: enough to never mask a REAL permission problem (missing ACL, wrong user)
-#: as a hang, long enough to ride out a concurrent process's in-flight
-#: read or atomic replace on Windows.
-_TRANSIENT_PERMISSION_RETRY_ATTEMPTS = 5
+#: Retry budget for `_retry_on_transient_permission_error` below — still
+#: short enough to never mask a REAL permission problem (missing ACL, wrong
+#: user) as a hang (worst case ~2.5s total, see backoff below), long enough
+#: to ride out a concurrent process's in-flight read or atomic replace on a
+#: loaded Windows CI runner under real contention.
+_TRANSIENT_PERMISSION_RETRY_ATTEMPTS = 30
+
+#: Per-attempt backoff cap (seconds) — linear ramp up to this ceiling rather
+#: than unbounded linear growth, so a large attempt budget still totals a
+#: few seconds, not tens of seconds.
+_TRANSIENT_PERMISSION_RETRY_BACKOFF_CAP = 0.1
 
 
 def _retry_on_transient_permission_error(fn):
     """Runs the zero-arg callable `fn`, retrying only `PermissionError`
-    with a short linear backoff, up to `_TRANSIENT_PERMISSION_RETRY_ATTEMPTS`
-    times. On Windows, `state_path`'s unlocked reader (`_load_state`) and
-    its locked writer's atomic tmp+replace (`_save_state`) can transiently
-    deny EACH OTHER with `PermissionError` while one has the destination
-    file momentarily open and the other tries to read or replace it —
-    `os.replace` needs to briefly hold the destination exclusively, and
-    Python's default `open()` does not request `FILE_SHARE_DELETE`; POSIX
-    rename has no equivalent window. Real CI failure (round 12/13, PR
-    #790): `Shared tests (Windows)`, `test_n_concurrent_claimers_never_
-    double_claim` — 20 real subprocesses racing the unlocked peek
-    (`cmd_next_batch`'s outside-`loop.lock` read) against each other's
-    locked writes surfaced BOTH directions (a denied reader, and — round
-    13's local stress-test rerun — a denied `tmp.replace` when a
-    concurrent reader held the destination open), reproduced independently
-    of any specific diff: an architectural gap in the "atomic tmp+replace
-    means no lock is needed just to read" assumption, true on POSIX, false
-    on Windows. Retried briefly rather than failing an operation that would
-    otherwise succeed a few milliseconds later.
+    with a linear-then-capped backoff, up to
+    `_TRANSIENT_PERMISSION_RETRY_ATTEMPTS` times. On Windows, `state_path`'s
+    unlocked reader (`_load_state`) and its locked writer's atomic
+    tmp+replace (`_save_state`) can transiently deny EACH OTHER with
+    `PermissionError` while one has the destination file momentarily open
+    and the other tries to read or replace it — `os.replace` needs to
+    briefly hold the destination exclusively, and Python's default `open()`
+    does not request `FILE_SHARE_DELETE`; POSIX rename has no equivalent
+    window. Real CI failure (round 12/13, PR #790): `Shared tests
+    (Windows)`, `test_n_concurrent_claimers_never_double_claim` — 20 real
+    subprocesses racing the unlocked peek (`cmd_next_batch`'s outside-
+    `loop.lock` read) against each other's locked writes surfaced BOTH
+    directions (a denied reader, and — round 13's local stress-test rerun —
+    a denied `tmp.replace` when a concurrent reader held the destination
+    open), reproduced independently of any specific diff: an architectural
+    gap in the "atomic tmp+replace means no lock is needed just to read"
+    assumption, true on POSIX, false on Windows.
+
+    Round 13 shipped this same retry shape with a 5-attempt, ≤50ms-total
+    budget. That budget proved too short: round 13's own commit
+    (043d2d3aa) still failed `Shared tests (Windows)` in real CI with the
+    identical `PermissionError` signature, even though 8 consecutive LOCAL
+    stress-test reruns had passed cleanly beforehand — the loaded, shared
+    CI runner produces longer contention windows under 20-process load than
+    an idle local machine does, so the local clean streak did not transfer.
+    Round 14 widens the budget to 30 attempts with a 0.1s-capped linear
+    backoff (worst case ~2.5s total) rather than raising it a little and
+    hoping — a persistent, non-transient permission problem still surfaces
+    within a few seconds, never silently hung or masked.
     """
     last_exc: PermissionError | None = None
     for attempt in range(_TRANSIENT_PERMISSION_RETRY_ATTEMPTS):
@@ -96,7 +113,7 @@ def _retry_on_transient_permission_error(fn):
             return fn()
         except PermissionError as exc:
             last_exc = exc
-            time.sleep(0.01 * (attempt + 1))
+            time.sleep(min(0.01 * (attempt + 1), _TRANSIENT_PERMISSION_RETRY_BACKOFF_CAP))
     raise last_exc
 
 
