@@ -148,10 +148,16 @@ def _refuse_if_shell_shim(codex_bin: str, envelope: str) -> str | None:
     here costs nothing real and avoids launching through an unverified
     path. The composed envelope is echoed back so the operator can invoke
     ``codex`` with it manually instead of being stuck."""
-    if Path(codex_bin).suffix.lower() not in _SHELL_SHIM_EXTENSIONS:
+    suffix = Path(codex_bin).suffix.lower()
+    if suffix not in _SHELL_SHIM_EXTENSIONS:
         return None
+    # codex_bin (the resolved path) is deliberately NOT echoed here: CodeQL's
+    # py/clear-text-logging-sensitive-data source model flags
+    # resolve_trusted_executable()'s return, and a genuinely useless path
+    # in a debug message isn't worth arguing a false positive over -- the
+    # operator can find it themselves with `which`/`where codex`.
     return (
-        f"error: codex resolved to a shell shim ({codex_bin!r}) -- launching through a "
+        f"error: codex resolved to a shell shim (a {suffix!r} file) -- launching through a "
         f".bat/.cmd target is not verified safe for this tool's argv content (see module "
         f"docstring). Invoke codex manually instead, passing this envelope as its first "
         f"prompt:\n\n{envelope}\n"
@@ -219,11 +225,7 @@ def main(argv: list[str] | None = None) -> int:
 
     shim_refusal = _refuse_if_shell_shim(codex_bin, envelope)
     if shim_refusal is not None:
-        # CodeQL's source model flags resolve_trusted_executable()'s return as
-        # "secret" purely on the word "trusted" in its name; it is
-        # shutil.which()'s resolved filesystem path to the codex binary, not
-        # credential material (verified: PR #792).
-        print(shim_refusal, file=sys.stderr)  # lgtm[py/clear-text-logging-sensitive-data]
+        print(shim_refusal, file=sys.stderr)
         return 1
 
     launch_argv = _build_launch_argv(codex_bin, envelope)

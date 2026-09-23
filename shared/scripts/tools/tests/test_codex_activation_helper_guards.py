@@ -176,9 +176,11 @@ def test_resolve_codex_binary_delegates_to_shared_cmd_resolver(monkeypatch) -> N
 
 
 def test_refuse_if_shell_shim_rejects_cmd_extension() -> None:
+    # The resolved path is deliberately not echoed in the message (CodeQL
+    # false-positive avoidance, PR #792) -- only the extension and envelope.
     message = codex_activation_helper._refuse_if_shell_shim("C:\\bin\\codex.cmd", "[ENVELOPE]")
     assert message is not None
-    assert "codex.cmd" in message
+    assert ".cmd" in message
     assert "[ENVELOPE]" in message
 
 
@@ -214,7 +216,7 @@ def test_main_refuses_to_launch_through_a_cmd_shim(tmp_path: Path, capsys) -> No
     assert rc == 1
     mock_run.assert_not_called()
     err = capsys.readouterr().err
-    assert "codex.cmd" in err
+    assert ".cmd" in err
     # The operator must still be able to launch manually -- the envelope text
     # is echoed back, not swallowed.
     expected_envelope = codex_envelope_grammar.compose("shipwright-iterate", {})
