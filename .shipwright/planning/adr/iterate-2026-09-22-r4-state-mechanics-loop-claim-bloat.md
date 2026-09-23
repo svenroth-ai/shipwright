@@ -308,17 +308,52 @@ inside the lock and passing that to `_cleanup_unit_worktree` instead of
 `args.unit`. Regression test:
 `test_loop_claim_release_cleanup.py::test_release_cleanup_uses_canonical_unit_id_not_caller_casing`.
 
+### Round 20 growth (511 -> 527)
+
+External Tier-3 review (GPT, PR #790 round 20) found `cmd_next_batch`'s
+outside-lock preflight resolved `base_branch` from `branch_strategy` on
+the UNLOCKED peek, then re-checked only `kind` on the locked reload (round
+10) — never `branch_strategy` itself. A same-`loop_id` state replacement
+between the peek and the lock (a concurrent `cmd_init` re-running with a
+different `branch_strategy`) would still claim units and tag them with the
+now-stale `base_branch`, since nothing re-verified the value the whole
+outside-lock pass (`base_branch`, `ancestry_confirmed`, `pre_snapshot`,
+`pre_depends_on`) was built from. Fixed by re-checking `branch_strategy`
+against the locked reload immediately after the existing `kind` re-check,
+failing closed with the same "state changed while lock was being acquired"
+shape round 10 already established — a completeness fix to a race-closing
+pattern already counted above, not a new responsibility. Regression test:
+`test_loop_claim_next_batch.py::
+test_recheck_branch_strategy_after_lock_prevents_a_stale_base_branch_race`.
+
+The same review round also raised a second finding against
+`shared/scripts/checks/check_unit_attempt.py` (this sub-iterate's other
+fencing CLI, not this module): that its pre-flight check is not atomic
+with the runner's own subsequent push. Verified real but out of THIS
+module's scope — resolved via a docstring clarification on that CLI (not a
+behavior change here) plus a demonstrative test
+(`test_check_unit_attempt.py::
+test_a_reclaim_after_this_check_passes_is_still_caught_at_record_time`)
+proving `lib.loop_state.enforce_record_fencing` (called by `cmd_record`
+under `loop.lock`) is the actual load-bearing atomic gate; that CLI is not
+yet wired into any production runner (confirmed via grep), so building
+full check-and-push atomicity for a caller that doesn't exist yet would be
+speculative engineering this sub-iterate's own YAGNI discipline (see
+`## YAGNI Check` above) already rejects elsewhere.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 511-line ceiling (see
-  Round 17 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 527-line ceiling (see
+  Round 20 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree`, the ADR-045 dispatch-identity
   regression, and the transient-`PermissionError` retry live in sibling
   files, `shared/tests/test_loop_claim_release_cleanup.py` (`cmd_release`'s
   own coverage), `shared/tests/test_loop_claim_mark_dispatch.py` (the
-  ADR-045 dispatch regression, moved out round 12), and `shared/tests/
-  test_loop_claim_load_state_retry.py` (round 13) — all split from
+  ADR-045 dispatch regression, moved out round 12), `shared/tests/
+  test_loop_claim_load_state_retry.py` (round 13), and `shared/tests/
+  test_loop_claim_next_batch.py` (`cmd_next_batch`'s own race-handling and
+  ready-set coverage, moved out round 20) — all split from
   `test_loop_claim.py` purely to keep every file under the 300-line
   guideline; no baseline implication, none of these files' own limits
   changed. Round 10's kind-recheck regression test pushed
@@ -331,7 +366,12 @@ inside the lock and passing that to `_cleanup_unit_worktree` instead of
   tests pushed `test_loop_claim_release_cleanup.py` to 307; rather than
   further crowd `test_loop_claim.py` (already at the guideline) or that
   file, the ADR-045 dispatch-identity class — never actually about
-  `cmd_release` — moved to its own new sibling.
+  `cmd_release` — moved to its own new sibling. Round 20's branch-strategy-
+  race regression test pushed `test_loop_claim.py` to 324; `TestCmdNextBatch`
+  (already ~200 of those lines, the file's largest class) moved out to its
+  own new sibling, `test_loop_claim_next_batch.py`, both files verified
+  together after the split (150 tests total across every touched file in
+  this round, all passing).
 
 ## Rejected alternatives
 

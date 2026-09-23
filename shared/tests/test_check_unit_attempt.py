@@ -10,6 +10,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+from lib.loop_state import enforce_record_fencing
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CLI = _REPO_ROOT / "shared" / "scripts" / "checks" / "check_unit_attempt.py"
 
@@ -90,6 +92,40 @@ def test_released_unit_with_still_matching_token_blocks(tmp_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["decision"] == "block"
     assert payload["reason_code"] == "unit_not_active"
+
+
+def test_a_reclaim_after_this_check_passes_is_still_caught_at_record_time(tmp_path, capsys):
+    """External Tier-3 PR review (GPT, PR #790 round 20): this CLI and the
+    runner's later `git push` are separate process invocations with no lock
+    held across them, so a reclaim landing in that window is NOT something
+    this check alone can prevent — see the round-20 addition to this
+    module's own docstring. What this test demonstrates is the claim that
+    docstring makes: the LOAD-BEARING atomic gate is
+    `lib.loop_state.enforce_record_fencing`, called by `cmd_record` from
+    inside the same `loop.lock` acquisition that performs the write. A unit
+    reclaimed (a fresh `attempt_id` minted) AFTER this CLI allowed the push
+    but BEFORE the runner's own `cmd_record` call still gets rejected there,
+    under lock — the stale runner's completion report is parked, never
+    silently recorded, regardless of what this earlier check said."""
+    state = tmp_path / "loop_state.json"
+    _write_state(state, [{"id": "R4", "status": "running", "attempt_id": "loop-R4-a0"}])
+
+    rc = check_unit_attempt.main([
+        "--state", str(state), "--unit", "R4", "--attempt-id", "loop-R4-a0", "--json",
+    ])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["decision"] == "allow"
+
+    # A reclaim happens in the window between this CLI's check and the
+    # runner's own record call — same unit, fresh attempt_id.
+    reclaimed_state = json.loads(state.read_text(encoding="utf-8"))
+    reclaimed_state["units"][0]["attempt_id"] = "loop-R4-a1"
+    state.write_text(json.dumps(reclaimed_state), encoding="utf-8")
+
+    code = enforce_record_fencing(state, reclaimed_state, "R4", "loop-R4-a0",
+                                   json.dumps({"status": "complete"}))
+    assert code == 5  # stale_attempt — the OLD runner's report is rejected
 
 
 def test_never_claimed_unit_with_no_attempt_id_field_blocks(tmp_path, capsys):

@@ -1,12 +1,28 @@
 #!/usr/bin/env python3
 """Fencing-token pre-flight check CLI (campaign-dag-scheduler R4).
 
-The sub-iterate-runner's own last line of defense, immediately before its F6
+The sub-iterate-runner's own early-exit check, immediately before its F6
 commit / Step 5 push: confirms this runner's `(unit_id, attempt_id)` is
 STILL the current claim on `loop_state.json` before it pushes anything. A
 reclaim (lease expiry at a wave boundary/`cmd_init`) between this runner's
 own claim and now means someone else may already be building the same unit
-— the push must abort, never silently proceed.
+— the push should abort rather than silently proceed.
+
+**Not itself an atomic guarantee (external Tier-3 PR review, GPT, PR #790
+round 20).** This check and the runner's later `git push` are separate
+process invocations with no lock held across them — a release/reclaim can
+still land in the window between this CLI exiting 0 and the push actually
+completing, the same way any check-then-act split across a process boundary
+can race. That residual window is why this is a "last line of defense" in
+the sense of "catches most staleness early, cheaply, before wasting a push,"
+not "makes a stale push impossible": the LOAD-BEARING, actually-atomic
+re-check is `lib.loop_state.enforce_record_fencing`, which `cmd_record`
+calls a second time from *inside* the same `loop.lock` acquisition that
+performs the write (see that function's own docstring, "Call it twice,
+trust only the second") — a unit reclaimed after this CLI's check but before
+`cmd_record` runs is rejected there, under lock, regardless of what this
+check said minutes earlier. This CLI exists to fail fast and cheaply before
+a wasted push, not to replace that later, genuinely atomic gate.
 
 See `lib.loop_state.validate_attempt_token` for the actual comparison this
 wraps; this CLI just makes it callable from a runner's own Bash step without

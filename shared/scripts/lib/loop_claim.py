@@ -286,6 +286,22 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
                 print("ERROR: next-batch is only valid for kind == 'sub_iterate' "
                       "(state changed kind while lock was being acquired)", file=sys.stderr)
                 return 1
+            # External Tier-3 PR review (GPT, round 20): `base_branch` (and
+            # `ancestry_confirmed`/`pre_snapshot`/`pre_depends_on`, both
+            # derived from it) were resolved from the UNLOCKED peek's
+            # `strategy` above — but unlike the per-unit dependency data
+            # (re-verified against the locked reload below, round 11), this
+            # value itself was never re-checked. A same-kind state
+            # replacement between the peek and this lock (a concurrent
+            # `cmd_init` re-running the same `loop_id` with a different
+            # `branch_strategy`, for instance) would still tag every unit
+            # claimed this call with the STALE `base_branch` — the same
+            # "re-check what the lock was acquired for" gap round 10 already
+            # closed for `kind`, just left open for `branch_strategy`.
+            if state.get("branch_strategy", "single-branch") != strategy:
+                print("ERROR: branch_strategy changed while lock was being acquired "
+                      "(state changed under next-batch's outside-lock preflight)", file=sys.stderr)
+                return 1
             units = state["units"]
             loop_id = state["loop_id"]
             fresh_snapshot = _snapshot_merged_commits(units)
