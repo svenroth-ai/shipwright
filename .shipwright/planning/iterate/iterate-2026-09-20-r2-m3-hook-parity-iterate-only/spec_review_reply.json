@@ -1,0 +1,15 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Round-2 re-review, scoped to the two round-1 REJECT findings. Both are resolved: (a) the 'Unarmed-launch visibility' AC (iterate-spec.md L115-130) is now implemented via _unarmed_visibility_warning() in codex_pretooluse_gate.py and tested (TestUnarmedVisibilityWarning + TestAC1aThreeFixtures::test_unarmed_never_denies); the codex_pretooluse_matcher.py split is inert; (b) the shared-surface touch is now recorded as an attributed extra in both Spec Impact and the mini-plan Edit list, and the recording matches what the diff actually does. Stage 2 (code-reviewer) may run.",
+  "round_1_verdict": "REJECT",
+  "round_1_findings_fixed": [
+    "Unarmed-launch visibility AC had no implementation and no recorded deferral",
+    "Unrecorded shared-surface touch (cmd_resolver.py + external_review_default_legs.py + 2 test files) outside the mini-plan's declared Edit list"
+  ],
+  "non_blocking_observations": [
+    "iterate-spec.md Verification runner command list is one file short (test_codex_pretooluse_matcher.py, created by the round-2 split) -- no AC goes unverified since the same behavior is exercised via handle_payload in the listed tokenization test file",
+    "The unarmed-visibility warning covers only the armed:false marker path, not absent/expired/cwd-mismatched records -- judged faithful to the AC's own scope and the documented fail-open indistinguishability, not a gap"
+  ]
+}

@@ -1402,6 +1402,17 @@ _Where the work detail lives_ at the end of this document.
   covers hook *execution* parity, distinct because Codex does not execute a
   plugin-bundled `hooks` key at all (`openai/codex#16430`, `#39895`); the
   config-layer sync is the confirmed-working path.
+- (E) [AC06] Given a Codex-driven session whose first prompt armed an iterate
+  (matched the activation envelope), when its first eligible local-tool call
+  is anything other than the mandatory worktree-setup command, then that
+  call is denied with the resolved setup command in the reason
+  (`<slug>`/`<run-id>` remain placeholders the hook cannot know, for the
+  session to fill in — not a copy-pasteable literal), to be proven against a
+  real, trusted Codex hook (not a bypass flag) once the deferred live probe
+  runs — a cooperating-but-forgetful Codex session cannot silently skip the
+  bundle's mandatory lifecycle step the way AC05 alone would still allow. A
+  session whose first prompt did not arm it is never denied, regardless of
+  what it calls first.
 
 ## Provenance
 

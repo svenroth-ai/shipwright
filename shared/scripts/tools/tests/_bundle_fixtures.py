@@ -20,6 +20,7 @@ def write_plugin(
     name: str,
     *,
     hooks: dict | None = None,
+    codex_only_hooks: dict | None = None,
     skill_name: str | None = None,
     own_script: str | None = None,
 ) -> None:
@@ -37,6 +38,14 @@ def write_plugin(
         hooks_dir = plugin_dir / "hooks"
         hooks_dir.mkdir(parents=True)
         (hooks_dir / "hooks.json").write_text(json.dumps({"hooks": hooks}), encoding="utf-8")
+    if codex_only_hooks is not None:
+        # Runtime-scoped registration (R2): never read by Claude Code's own
+        # hook loader, only by codex_hook_inventory.build_hook_inventory.
+        codex_hooks_dir = plugin_dir / "hooks-codex"
+        codex_hooks_dir.mkdir(parents=True)
+        (codex_hooks_dir / "hooks.json").write_text(
+            json.dumps({"hooks": codex_only_hooks}), encoding="utf-8"
+        )
     if own_script:
         script_path = plugin_dir / "scripts" / "hooks" / own_script
         script_path.parent.mkdir(parents=True, exist_ok=True)

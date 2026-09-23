@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import math
 import os
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -19,6 +18,7 @@ try:  # bare: this directory is on sys.path
     from external_review_degraded import MAX_OUTPUT_TOKENS, classify_reply, openai_finish_reason
     from external_review_config import gpt_leg_provider
     from external_review_routing import ReviewModelPolicyError, openrouter_extra_body, resolve_reviewer_model
+    from cmd_resolver import resolve_trusted_executable
 except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
     if exc.name != "external_review_degraded":
         raise
@@ -33,6 +33,7 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
         openrouter_extra_body,
         resolve_reviewer_model,
     )
+    from lib.cmd_resolver import resolve_trusted_executable  # type: ignore[no-redef]
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 CODEX_DEFAULT_TIMEOUT_SECONDS = 600
@@ -110,22 +111,14 @@ def review_openai(
 
 
 def _resolve_codex_binary() -> str | None:
-    """``shutil.which("codex")``, but reject a hit that only resolved because Windows implicitly
-    searches the current working directory before PATH (the BatBadBut class) — a reviewed repo could
-    otherwise plant its own ``codex.exe``/``codex.cmd``/``codex.bat`` at its root and have it run
-    instead of the real CLI, since this process's cwd is typically the project under review."""
-    found = shutil.which("codex")
-    if found is None:
-        return None
-    try:
-        # RuntimeError alongside OSError: Path.resolve() raises RuntimeError on a symlink loop,
-        # not OSError — this function's "never raises" contract (is_codex_available's docstring)
-        # covers both, since a raise here would otherwise propagate uncaught through the review gate.
-        if Path(found).resolve().parent == Path.cwd().resolve():
-            return None
-    except (OSError, RuntimeError):
-        return None
-    return found
+    """Thin wrapper over ``cmd_resolver.resolve_trusted_executable`` (single source of
+    truth for the BatBadBut cwd-hijack guard, R2 code review 2026-09-22) — kept as its
+    own private name/shape so existing test monkeypatches (``legs._resolve_codex_binary``,
+    ``transport._resolve_codex_binary``) keep working unchanged. Never raises (covers both
+    ``OSError`` and the symlink-loop ``RuntimeError`` internally) — ``is_codex_available``'s
+    docstring depends on that, since a raise here would otherwise propagate uncaught through
+    the review gate."""
+    return resolve_trusted_executable("codex")
 
 
 def is_codex_available(*, env: dict[str, str] | None = None) -> tuple[bool, str]:

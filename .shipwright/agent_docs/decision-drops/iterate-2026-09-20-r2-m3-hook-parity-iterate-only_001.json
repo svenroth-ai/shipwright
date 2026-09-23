@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-20-r2-m3-hook-parity-iterate-only",
+  "date": "2026-09-23",
+  "section": "Iterate — feature: Codex first-eligible-call gate (M3, R2)",
+  "title": "Codex first-eligible-call gate",
+  "context": "R0 selected prompt-borne envelope + mint/consume design. Architecture Review cut the planned Stop-gate third hook to R2b as disproportionate.",
+  "decision": "Ship two Codex-only hooks (mint, gate) via a new hooks-codex/hooks.json sibling manifest, invisible to Claude Code's loader. One-shot deny budget on the first eligible call.",
+  "consequences": "Codex sessions get the nudge at zero Claude-visible cost. Per-turn git-subprocess cost not fully eliminated under Codex (R2b follow-up). Stop-gate half explicitly not closed by R2.",
+  "rationale": "Tokenized/segment-aware Bash matching (not substring) prevents smuggling other commands past the gate. External code review (glm+openai, both revise) findings fixed in-run; see spec-ref.",
+  "rejected": "Persistent Stop-gated enforcement (disproportionate, deferred R2b); registering in the shared Claude-visible hooks.json (would gate Claude too); substring matching (smuggling risk).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-20-r2-m3-hook-parity-iterate-only-codex-first-call-gate.md"
+}

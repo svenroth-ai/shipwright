@@ -89,11 +89,27 @@ __all__ = ["BundleCollisionError", "build_hook_inventory"]
 
 
 def _load_hooks(plugin_dir: Path) -> dict:
+    """Merge a plugin's Claude-visible ``hooks/hooks.json`` with its
+    Codex-only ``hooks-codex/hooks.json`` (R2, runtime-scoped registration)
+    into one raw hook map. The Codex-only file is never read by Claude Code
+    itself (a fixed convention outside Shipwright's control: Claude only
+    ever loads ``hooks/hooks.json``), so an entry declared there costs
+    Claude sessions nothing -- it exists purely as build input for this
+    Codex bundle. Codex-only groups are appended after the shared ones for
+    a given event, so the existing bucket_order/dedup logic below sees them
+    exactly like any other origin's late-arriving entry."""
+    merged: dict = {}
     hooks_file = plugin_dir / "hooks" / "hooks.json"
-    if not hooks_file.is_file():
-        return {}
-    data = json.loads(hooks_file.read_text(encoding="utf-8"))
-    return data.get("hooks", {})
+    if hooks_file.is_file():
+        data = json.loads(hooks_file.read_text(encoding="utf-8"))
+        merged = dict(data.get("hooks", {}))
+    codex_only_file = plugin_dir / "hooks-codex" / "hooks.json"
+    if codex_only_file.is_file():
+        codex_only = json.loads(codex_only_file.read_text(encoding="utf-8")).get("hooks", {})
+        for event, groups in codex_only.items():
+            merged.setdefault(event, [])
+            merged[event] = merged[event] + list(groups)
+    return merged
 
 
 def build_hook_inventory(plugin_dirs: list[Path]) -> dict:

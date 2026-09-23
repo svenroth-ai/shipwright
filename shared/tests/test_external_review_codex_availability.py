@@ -15,6 +15,7 @@ _LIB_DIR = Path(__file__).resolve().parents[1] / "scripts" / "lib"
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
+import cmd_resolver  # noqa: E402
 import external_review_default_legs as legs  # noqa: E402
 
 
@@ -25,13 +26,16 @@ class _FakeCompleted:
 
 
 # --- _resolve_codex_binary cwd-hijack guard (BatBadBut: a reviewed repo could plant its own
-# codex.exe/.cmd/.bat at its root and have shutil.which prefer it over the real PATH install) ---
+# codex.exe/.cmd/.bat at its root and have shutil.which prefer it over the real PATH install).
+# `_resolve_codex_binary` now delegates to `cmd_resolver.resolve_trusted_executable` (R2 code
+# review, 2026-09-22 dedup) -- patch `shutil.which` there, not on `legs` (which no longer
+# imports `shutil` at all). ---
 
 @pytest.mark.parametrize("in_cwd,expected", [(True, None), (False, "/usr/bin/codex")])
 def test_resolve_codex_binary_cwd_hijack_guard(monkeypatch, tmp_path, in_cwd, expected):
     monkeypatch.chdir(tmp_path)
     hit = str(tmp_path / "codex.exe") if in_cwd else "/usr/bin/codex"
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: hit)
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: hit)
     assert legs._resolve_codex_binary() == expected
 
 
@@ -39,22 +43,22 @@ def test_resolve_codex_binary_never_raises_on_a_symlink_loop(monkeypatch, tmp_pa
     """Path.resolve() raises RuntimeError (not OSError) on a symlink loop — is_codex_available()'s
     "never raises" contract must survive that too."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
-    monkeypatch.setattr(legs.Path, "resolve", lambda self: (_ for _ in ()).throw(RuntimeError("symlink loop")))
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.Path, "resolve", lambda self: (_ for _ in ()).throw(RuntimeError("symlink loop")))
     assert legs._resolve_codex_binary() is None
 
 
 # --- is_codex_available -----------------------------------------------------
 
 def test_unavailable_when_binary_not_on_path(monkeypatch):
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: None)
     available, reason = legs.is_codex_available()
     assert available is False
     assert "not found on PATH" in reason
 
 
 def test_unavailable_when_not_authenticated(monkeypatch):
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.subprocess, "run", lambda *a, **k: _FakeCompleted(returncode=1))
     available, reason = legs.is_codex_available()
     assert available is False
@@ -62,7 +66,7 @@ def test_unavailable_when_not_authenticated(monkeypatch):
 
 
 def test_unavailable_on_login_status_timeout(monkeypatch):
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
 
     def _raise(*_a, **_k):
         raise subprocess.TimeoutExpired(cmd="codex", timeout=15)
@@ -74,7 +78,7 @@ def test_unavailable_on_login_status_timeout(monkeypatch):
 
 
 def test_unavailable_on_oserror_never_raises(monkeypatch):
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(OSError("boom")))
     available, reason = legs.is_codex_available()
     assert available is False
@@ -82,7 +86,7 @@ def test_unavailable_on_oserror_never_raises(monkeypatch):
 
 
 def test_available_when_installed_and_authenticated(monkeypatch):
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.subprocess, "run", lambda *a, **k: _FakeCompleted(returncode=0))
     available, reason = legs.is_codex_available()
     assert available is True
@@ -95,7 +99,7 @@ def test_login_status_probe_does_not_pass_exec_only_flags(monkeypatch):
     argument"), which the probe's blanket `returncode != 0` check then misreports as
     "not authenticated" regardless of the operator's real login state. Pins the argv
     the probe actually sends `codex login status`."""
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     captured_argv = {}
 
     def _record(argv, **_k):

@@ -123,6 +123,13 @@
 # re-included wholesale above, and F6 stages that folder with a directory-level
 # `git add`, so a temp left behind by a hard-killed run would be COMMITTED.
 /.shipwright/planning/adr/*.tmp
+# Defensive: an in-run `scratch/` dir under a planning/iterate run directory is
+# a place to dump ad-hoc working files (e.g. a full diff for feeding a
+# reviewer) that must never be committed -- a broad `git add -A` swept one
+# such file into a real commit once (R2 code review, LOW). The real fix is
+# generating those files in the session's own scratchpad directory instead;
+# this is belt-and-suspenders for whenever one still lands here.
+/.shipwright/planning/iterate/**/scratch/
 # Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
 # marker written by a hook whose cwd != repo-root) must never leak. The
 # root-anchored `/.shipwright/*` above misses nested copies. The real fix is the

@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "All shipped files map to an AC in iterate-spec.md (envelope grammar, activation-record mint/read/consume, mint + gate hooks, hooks.json wiring, docs delta, hook-inventory audit, FR-01.21/AC06); Step 3 was correctly dropped per the earlier design decision (reuse is_codex_runtime, no new discriminator file) and no extra surface was added beyond what the ACs call for."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "codex_activation_record.read()/consume() are unconditionally fail-open on absent/corrupt/expired/cwd-mismatched/invalid-UTF8 records (widened from a narrower OSError-only catch found in review); both new hooks default-deny unrecognized PreToolUse tool classes while armed-and-unsettled rather than silently allowing."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No SQL/HTML surfaces (n/a). Command-injection class addressed directly: session_id path-traversal sanitized (tested), Bash tokenization uses shlex + basename matching (not substring), compound-command smuggling via && / ; / | / || closed with a regression test per exploit shape, and codex_activation_helper.py refuses to launch through a .bat/.cmd shell-shim rather than risk Windows' implicit cmd.exe re-parse."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Tests assert on outcomes (deny/allow decisions, mint/read/consume results, envelope round-trips), each behavior has a happy-path and at least one fail/edge case, and a prior self-review-caught bug (a wrong _RECORD_SUBDIR path that was self-consistent but never exercised the real storage location) was fixed with a dedicated cross-check regression test rather than left as a silent gap."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "N+1/pagination don't apply (no DB/list endpoints). Caveat: both hooks import lib.codex_activation_record / lib.codex_envelope_grammar at module level, before the is_codex_runtime() early-return inside handle_payload() -- not the literal 'O(1) short-circuit before any heavy import' the mini-plan's Step 6 note and Internal Plan Review finding #12 describe. In practice this is negligible (small pure-Python stdlib-based modules, no heavy third-party deps, dwarfed by uv run's own per-invocation process-startup cost that every hook already pays) and matches how other hooks in this repo are already structured, so left as-is rather than risk a late import-restructure against already-reviewed, monkeypatch-tested code for a cost that isn't measurable in practice. Flagged here for the code-reviewer to weigh in independently."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "File locations follow the plugin/shared scripts+tests convention (scripts/hooks, scripts/lib, scripts/tools, mirrored tests dirs). No file exceeds 300 lines -- the bloat gate blocked three test files mid-build and each was split into a cohesive sibling file, verified by full re-test + lint after each split."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Both changed serialized-format boundaries are listed in iterate-spec.md's Affected Boundaries table with producer+consumer pairs (terminal helper -> grammar module -> mint hook; mint hook -> gate hook via the activation record) and both have real round-trip tests (envelope compose/parse; activation record mint->read/consume across equivalent-cwd spellings). touches_io_boundary fires (hooks.json, activation-record JSON) and is satisfied."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: no findings (exit 0) against the full working-tree diff."
+    }
+  ]
+}

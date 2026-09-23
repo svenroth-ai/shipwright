@@ -1,0 +1,114 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-20-r2-m3-hook-parity-iterate-only",
+    "date": "2026-09-23",
+    "unit": {
+      "status": "passed",
+      "passed": 20098,
+      "total": 20175
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "one unit (shared/tests) was red only under 8-way parallel xdist fan-out (Windows deep-temp-path FileNotFoundError contention) and green on F0's own mandatory serial retry; auto-classified and auto-filed as trg-f64d1c27, does not affect this run's GREEN status"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 68,
+      "exit_code": 0,
+      "justification": "F0.5 ran the scripted CLI/skill/pytest fixture surface for this iterate's own new hooks and activation-record library (plugins/shipwright-iterate + shared/tests + shared/scripts/tools/tests scoped runs); exit 0, no failures."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC0 \u2014 both new Codex-only hooks (mint, gate) are a documented no-op under a Claude-shaped invocation (PLUGIN_ROOT absent or not a real Codex bundle), regardless of activation-record state",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_denial.py::TestAC0NoOpUnderClaude::test_no_op_when_plugin_root_not_set PASSED; ::test_no_op_with_wrong_value_plugin_root PASSED; test_codex_hooks_noop_under_claude.py::TestAC0NoOpUnderClaude PASSED; test_codex_hooks_ac0_combined.py PASSED"
+        },
+        {
+          "behavior": "AC1a \u2014 an armed Codex session whose first gated tool call is not setup_iterate_worktree.py (tokenized match, not substring) is denied with a reason",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_denial.py::TestAC1aThreeFixtures::test_armed_wrong_first_call_denies PASSED"
+        },
+        {
+          "behavior": "AC1a \u2014 an armed Codex session whose first gated call IS setup_iterate_worktree.py is allowed; the mint -> store -> consume chain composes end-to-end across the UserPromptSubmit and PreToolUse hooks and the on-disk activation record",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_denial.py::TestAC1aThreeFixtures::test_armed_correct_first_call_allows PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC1a \u2014 an unarmed session (no matching armed record) is never denied, regardless of its first tool call, matching R0's fail-open contract",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_denial.py::TestAC1aThreeFixtures::test_unarmed_never_denies PASSED"
+        },
+        {
+          "behavior": "matcher \u2014 tokenized (shlex) matching denies outright on redirection/grouping operators and rejects substring false-allows (e.g. echo setup_iterate_worktree.py); uv run's own value-taking flags before the target still match",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_matcher.py::test_redirection_to_arbitrary_file_denies, test_input_redirection_denies, test_subshell_grouping_denies, test_uv_run_value_flag_before_target_still_matches, test_uv_run_multiple_value_flags_before_target_still_matches \u2014 all PASSED"
+        },
+        {
+          "behavior": "unarmed-launch visibility \u2014 the first ungated call of an unarmed session surfaces a non-blocking visible allow warning exactly once; a second call is silent",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_denial.py::TestUnarmedVisibilityWarning::test_first_unarmed_call_returns_visible_allow_warning PASSED; ::test_second_unarmed_call_is_silent PASSED"
+        },
+        {
+          "behavior": "mint hook only arms the session when the envelope names an accepted skill_id; an unaccepted skill_id mints an unarmed record instead",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_codex_hooks_noop_under_claude.py::TestArmedBranches::test_unarmed_when_envelope_names_an_unaccepted_skill_id PASSED"
+        },
+        {
+          "behavior": "activation-record read() rejects a deserialized record with wrong field types (non-bool armed, non-numeric/infinite expiry) rather than trusting it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_activation_record_validation.py::test_read_returns_none_when_expiry_field_has_wrong_type, test_read_returns_none_when_armed_field_is_not_bool, test_read_returns_none_when_minted_at_is_infinite \u2014 all PASSED"
+        },
+        {
+          "behavior": "_exclusive_create's mkdir failure stays inside the fail-open OSError guard and never raises",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_activation_record_validation.py::test_exclusive_create_mkdir_failure_is_fail_open PASSED"
+        },
+        {
+          "behavior": "AC5 (regression) \u2014 every existing check_c1_phase_event_recorded-class Claude caller (project_checks.py, plan_checks.py, design_checks.py, changelog_checks.py, deploy_checks.py) keeps passing unmodified, run from its own plugin's test root",
+          "disposition": "tested",
+          "evidence": "F0 aggregate suite run (this run) \u2014 plugins/shipwright-{project,plan,design,changelog,deploy}/tests all PASSED; see .shipwright/compliance/evidence/junit-*.xml and .shipwright/runs/f0-evidence/published/f0-0083a9160241-2d875d4d/manifest.json (all 18 units outcome=pass)"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-20-r2-m3-hook-parity-iterate-only",
+    "commit": "cf28f55b443ba639ae2fcd0a462a40ec8e9ff7c6",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

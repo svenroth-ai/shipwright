@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **The question, answered in one sentence.** Yes\u2014but only the first-step gate should exist now; the Stop gate is a disproportionate new standing control for a repairable failure already covered by repair and visibility mechanisms.\n\n2. **The smallest thing that would do** \u2014 a Codex-only, explicitly armed `PreToolUse` gate that permits the required worktree-setup command as the first local action; retain the existing best-effort finalization hook and dashboard nudge.\n\n3. **What it costs to keep** \u2014 the activation-record/envelope contract, tool matcher inventory, and one hook\u2019s runtime compatibility must remain correct across Codex and workflow changes; omitting the Stop gate avoids maintaining a blocking lifecycle, loop-breaker, capability flag, and ordering assumptions.\n\n4. **What it forecloses** \u2014 none identified.\n\n5. **Findings**\n\nCategory: proportionality  \nSeverity: medium  \nFinding: The Stop gate adds a permanent blocking end-of-turn protocol to prevent a failure that the existing repair hook can recover and the dashboard can surface; its default-off flag confirms that its runtime behavior is not yet dependable enough to justify carrying it.  \nSuggestion: Choose option B: ship only the armed first-step `PreToolUse` gate, keep finalization repair non-blocking, and reconsider a Stop gate only if observed unrecoverable finalization failures justify it.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Half of it should exist: the \"refuse the wrong first step\" gate is a small, well-scoped standing mechanism worth having; the Stop gate should not be built now \u2014 it duplicates machinery that already exists and adds the project's first turn-blocking hook on top of behavior the spec itself admits has never been observed in Codex.\n\n2. **The smallest thing that would do.** Option B: the `UserPromptSubmit` mint hook plus the `PreToolUse` first-step deny hook (and the shared grammar module they need), plus the hook-inventory audit. Drop the Stop gate entirely \u2014 the existing repair-pass hook already performs the wrap-up when Codex ends early, and the web dashboard already notices a stalled session from the outside. If the repair pass and the nudge turn out to be insufficient *in practice*, R2b's evidence-gathering sub-iterate (which this run feeds with the inventory) is the right place to revisit, now with real payload captures in hand.\n\n3. **What it costs to keep.** The surviving half still adds: a versioned activation-record format with armed/unarmed semantics, expiry, and generation; a one-time-consume marker protocol; a per-tool-class matcher matrix that must be updated whenever Codex's tool surface changes; the `PLUGIN_ROOT`-based Claude/Codex discriminator, which every future hook change must reason about; and three new scripts that run on every tool call in an armed Codex session.\n\n4. **What it forecloses.** The Stop gate, if armed, makes R2b's all-phase generalization harder to walk back (a working precedent for blocking turn-end becomes expected behavior). The activation-record schema becomes a cross-hook contract that R2b will either extend or be constrained by.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: high\n- Finding: The Stop gate's actual increment over what exists is only the *blocking* behavior \u2014 the repair itself is explicitly a re-call of the function the existing `iterate_stop_finalize.py` already calls, and the dashboard already detects the failure the gate guards against. The mechanism's full permanent cost (loop-breaker counter with its own identity/atomicity/reset semantics, capability flag defaulted off, first-ever blocking hook in the repo, chain-ordering constraint ahead of the existing finalize hook) buys only \"the turn ends slightly later or not at all\" on top of a repair that happens anyway.\n- Suggestion: Drop the Stop gate from this run. Keep the payload-capture probe (it is cheap and its evidence is exactly what R2b needs), keep the inventory audit, ship the PreToolUse gate. Record \"Stop-block unproven \u2014 deferred pending R2b evidence\" honestly, which is the same honesty rule the spec already applies to probes (c)/(d).\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: The spec's own \"must not ship armed if (c) or (d) fails\" rule, plus the off-by-default capability flag, concedes the Stop gate may ship inert. A standing mechanism whose designed outcome is \"installed but disabled, flipped on later by recorded evidence\" is R2b's work being built early and parked.\n- Suggestion: Option B. If the live probes do succeed, fold the Stop gate into R2b where it belongs as a generalization decision, not a per-plugin exception.\n\n- Category: existence\n- Severity: low\n- Finding: The PreToolUse gate's supporting state (activation record, exclusive-consume marker, grammar module) is real new standing machinery, but it is the minimum that makes a fail-open, session-scoped deny hook possible, and the ACs pin the boundaries (unarmed, Claude-shaped, expired all fail open) rather than leaving them emergent.\n- Suggestion: Keep as proposed; this is the proportionate half.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
