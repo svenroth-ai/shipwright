@@ -853,7 +853,7 @@
     {
       "path": "shared/scripts/lib/loop_claim.py",
       "limit": 300,
-      "current": 377,
+      "current": 392,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md"
     },

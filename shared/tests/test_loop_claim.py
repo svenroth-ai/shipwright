@@ -133,6 +133,20 @@ class TestCmdNextBatch:
         state_path = _write_state(tmp_path, kind="section")
         assert cmd_next_batch(_batch_args(state_path)) == 1
 
+    def test_rejects_stacked_strategy_before_claiming_instead_of_null_base(self, tmp_path, capsys):
+        """External Tier-3 PR review (GPT, round 6): `"stacked"` (and any
+        other strategy `_resolve_batch_base` can't resolve) must never reach
+        the ready-set computation — a dependency-free unit would otherwise be
+        silently claimed with `"base_branch": null` while a dependency-bearing
+        unit stalls forever with no error explaining why."""
+        state_path = _write_state(tmp_path, branch_strategy="stacked", units=[
+            {"id": "A", "status": "pending", "attempt": 0},
+        ])
+        assert cmd_next_batch(_batch_args(state_path)) == 1
+        assert "stacked" in capsys.readouterr().err
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        assert state["units"][0]["status"] == "pending"
+
     def test_claims_ready_units_up_to_max_parallel(self, tmp_path, capsys):
         state_path = _write_state(tmp_path, units=[
             {"id": "A", "status": "pending", "attempt": 0},

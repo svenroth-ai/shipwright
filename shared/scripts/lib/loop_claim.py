@@ -166,8 +166,23 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
 
     # Base ref + ancestry pre-check both run OUTSIDE loop.lock — each can
     # fetch (60s timeout), a starvation hazard inside a 30s-timeout lock.
-    base_branch = _resolve_batch_base(state_peek.get("branch_strategy", "single-branch"),
-                                       cwd=args.campaign_worktree)
+    strategy = state_peek.get("branch_strategy", "single-branch")
+    base_branch = _resolve_batch_base(strategy, cwd=args.campaign_worktree)
+    if base_branch is None:
+        # External Tier-3 PR review (GPT, round 6): a `None` base must never
+        # reach the ready-set computation below — `_ancestry_ok` returns True
+        # unconditionally for a dependency-free unit regardless of
+        # `base_branch`, so this would silently claim those units with
+        # `"base_branch": null` while dependency-bearing units stall forever
+        # with no error at all (`_ancestry_ok` fails closed for THEM, but
+        # nothing ever reports why). `next-batch` only supports the
+        # strategies that resolve a real base ('serial'/'independent');
+        # reject everything else — including 'stacked' (deprecated at
+        # write time, campaign_init.py) and any unrecognized value — up
+        # front, before any ancestry/claim processing.
+        print(f"ERROR: branch_strategy {strategy!r} has no batch base for next-batch "
+              "(only 'serial'/'independent' are supported)", file=sys.stderr)
+        return 1
 
     pre_units = state_peek["units"]
     pre_snapshot = _snapshot_merged_commits(pre_units)

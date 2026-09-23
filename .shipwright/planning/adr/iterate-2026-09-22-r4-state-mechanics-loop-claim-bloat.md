@@ -133,11 +133,29 @@ section row's `status` field. Fixed with the same `state.get("kind") !=
 proving a section-kind unit is left untouched. Not a new responsibility — a
 completeness fix to a guard this module already owned in part.
 
+### Round 6 growth (377 -> 392)
+
+External Tier-3 review (GPT, high, PR #790) found `cmd_next_batch` accepted
+any `branch_strategy` — including the deprecated `"stacked"` (still only a
+soft warning at write time, `campaign_init.py`) and the `"single-branch"`
+default — without checking whether `_resolve_batch_base` actually resolved a
+usable base. `_ancestry_ok` returns `True` unconditionally for a
+dependency-free unit regardless of `base_branch`, so a `None` base silently
+claimed those units with `"base_branch": null` in the payload, while
+dependency-bearing units stalled forever with no error explaining why (their
+own `_ancestry_ok` call fails closed on the missing base, but nothing ever
+surfaces that as the actual cause). Fixed by rejecting a `None` base up
+front — before any ancestry/claim processing — with a clear "no batch base
+for next-batch" error, exit 1. Not a new responsibility — a completeness fix
+to the base-resolution boundary this module already owned; one new
+regression test proving a stacked-strategy state errors out rather than
+producing a null-base claim.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 377-line ceiling (see
-  Round 5 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 392-line ceiling (see
+  Round 6 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
   regression live in a new sibling file, `shared/tests/
   test_loop_claim_release_cleanup.py` (split from `test_loop_claim.py`
