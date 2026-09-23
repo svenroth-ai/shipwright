@@ -148,16 +148,18 @@ def _refuse_if_shell_shim(codex_bin: str, envelope: str) -> str | None:
     here costs nothing real and avoids launching through an unverified
     path. The composed envelope is echoed back so the operator can invoke
     ``codex`` with it manually instead of being stuck."""
-    suffix = Path(codex_bin).suffix.lower()
-    if suffix not in _SHELL_SHIM_EXTENSIONS:
+    if Path(codex_bin).suffix.lower() not in _SHELL_SHIM_EXTENSIONS:
         return None
-    # codex_bin (the resolved path) is deliberately NOT echoed here: CodeQL's
-    # py/clear-text-logging-sensitive-data source model flags
-    # resolve_trusted_executable()'s return, and a genuinely useless path
-    # in a debug message isn't worth arguing a false positive over -- the
-    # operator can find it themselves with `which`/`where codex`.
+    # Nothing derived from codex_bin (the resolved path) is in the message
+    # below -- CodeQL's py/clear-text-logging-sensitive-data source model
+    # flags resolve_trusted_executable()'s return and follows taint through
+    # ANY value derived from it (an earlier fix here that dropped the path
+    # but kept its .suffix still tripped the same alert). The known
+    # extensions are named from the static constant instead, which carries
+    # no taint. The operator can find the actual path with `which`/`where`.
+    known = sorted(_SHELL_SHIM_EXTENSIONS)
     return (
-        f"error: codex resolved to a shell shim (a {suffix!r} file) -- launching through a "
+        f"error: codex resolved to a shell shim (one of {known}) -- launching through a "
         f".bat/.cmd target is not verified safe for this tool's argv content (see module "
         f"docstring). Invoke codex manually instead, passing this envelope as its first "
         f"prompt:\n\n{envelope}\n"
