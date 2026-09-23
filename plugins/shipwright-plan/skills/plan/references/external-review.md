@@ -26,16 +26,22 @@ carries the gate. Silent-skip is not an option.
 ## Script
 
 ```bash
+DRIVER=claude
+[ -n "${CODEXTENDER_ACTIVE:-}" ] && DRIVER=codex
 uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py \
   --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}" \
-  --driver claude
+  --driver "$DRIVER"
 ```
 
 (`--driver` is **required, no default** — `/shipwright-plan` is a Claude Code
-plugin, so always `claude` here.)
+plugin, so the driving binary is always `claude`. That alone still means
+`--driver claude` *except* under Codextender mode (`CODEXTENDER_ACTIVE` set in
+the environment — see `docs/hooks-and-pipeline.md`): the binary is still
+`claude`, but the diff was actually authored by a Codex-backed model, so the
+roster must swap to `codex` (`{glm, opus}`) for cross-vendor independence.)
 
 `{shared_root}` is the monorepo's `shared/` directory (typically
 `{plugin_root}/../../shared`). The CLI moved into `shared/` in v0.5.x to

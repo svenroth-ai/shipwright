@@ -263,6 +263,67 @@ def test_review_claude_cli_unparseable_json_output_is_an_error(monkeypatch):
     assert "could not parse" in result["reason"]
 
 
+def test_review_claude_cli_scrubs_anthropic_routing_env_vars_under_codextender(monkeypatch):
+    """A Codextender-routed parent process (ANTHROPIC_BASE_URL pointed at the
+    local Codex-backed proxy) must not leak into this leg's subprocess — it
+    must always reach real Anthropic regardless of the caller's own routing.
+    A bare `subprocess.run(argv, ...)` with no `env=` would inherit these
+    verbatim. Only scrubbed when CODEXTENDER_ACTIVE proves these vars are a
+    proxy override (see test below for the non-Codextender case)."""
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    monkeypatch.setenv("CODEXTENDER_ACTIVE", "1")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://127.0.0.1:4000")
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "codextender-token")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "sol")
+    monkeypatch.setenv("SOME_UNRELATED_VAR", "keep-me")
+    captured = {}
+
+    def _fake_run(cmd, input, **kwargs):  # noqa: A002
+        captured["env"] = kwargs.get("env")
+        return _FakeCompleted(returncode=0, stdout=_json_ok("SHIPWRIGHT_VERDICT: approve"))
+
+    monkeypatch.setattr(legs.subprocess, "run", _fake_run)
+    result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
+    assert result["status"] == "success"
+    env = captured["env"]
+    assert env is not None, "review_claude_cli must pass an explicit env= to subprocess.run under Codextender"
+    assert "ANTHROPIC_BASE_URL" not in env
+    assert "ANTHROPIC_AUTH_TOKEN" not in env
+    assert "ANTHROPIC_MODEL" not in env
+    assert env.get("SOME_UNRELATED_VAR") == "keep-me"
+
+
+def test_review_claude_cli_preserves_anthropic_auth_token_outside_codextender(monkeypatch):
+    """ANTHROPIC_AUTH_TOKEN is also a legitimate way to authenticate directly
+    with real Anthropic outside any proxy setup (e.g. an enterprise
+    bearer-token credential with no separate ANTHROPIC_API_KEY) — a CI
+    PR-review pass found the original unconditional scrub would have
+    silently broken that installation's auth entirely
+    (iterate-2026-09-23-codextender-monorepo-part-c). Outside Codextender
+    (CODEXTENDER_ACTIVE unset), the caller's own env must reach the
+    subprocess untouched."""
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    monkeypatch.delenv("CODEXTENDER_ACTIVE", raising=False)
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "my-real-anthropic-bearer-token")
+    captured = {}
+
+    def _fake_run(cmd, input, **kwargs):  # noqa: A002
+        captured["env"] = kwargs.get("env")
+        return _FakeCompleted(returncode=0, stdout=_json_ok("SHIPWRIGHT_VERDICT: approve"))
+
+    monkeypatch.setattr(legs.subprocess, "run", _fake_run)
+    result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
+    assert result["status"] == "success"
+    env = captured["env"]
+    assert env is None, (
+        "outside Codextender, review_claude_cli must pass env=None (inherit "
+        "unchanged) so a legitimate ANTHROPIC_AUTH_TOKEN-only installation "
+        "keeps its own real Anthropic authentication"
+    )
+
+
 # --- resolve_opus_route -------------------------------------------------------
 
 def test_resolve_opus_route_uses_claude_cli_when_available(monkeypatch):

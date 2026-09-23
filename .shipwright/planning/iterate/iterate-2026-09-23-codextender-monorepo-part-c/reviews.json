@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-23-codextender-monorepo-part-c",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T06:48:51.804201+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T06:48:57.093060+00:00",
+      "disposition": "external plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/external_review_opus_leg.py",
+          "line": 50,
+          "finding": "Scrub list covers only the 3 keys the spec names; other routing vars (CLAUDE_CODE_USE_BEDROCK/VERTEX, ANTHROPIC_CUSTOM_HEADERS, ANTHROPIC_DEFAULT_OPUS_MODEL) still pass through. Not set by Codextender; an inherited ANTHROPIC_API_KEY fails closed. Optional follow-up, not blocking.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_external_review_opus_leg.py",
+          "line": 292,
+          "finding": "Test does not additionally assert the parent os.environ still holds the scrubbed keys after the call (guards against a future in-place pop). Optional.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md",
+          "line": 117,
+          "finding": "Two driver-selection patterns used across files (DRIVER var vs inline $(...)), justified by files at their line-budget ceiling. No change required.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-23T06:52:54.590284+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "review_claude_cli always reaches real Anthropic with a usable credential under Codextender",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "All 11 driver-selection sites resolve to codex under CODEXTENDER_ACTIVE",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "CODEXTENDER_ACTIVE=0/false is unambiguously read as inactive by every site",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-23T06:57:35.497002+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T06:57:39.473478+00:00",
+      "disposition": "external code review is medium+ only, this run is small; internal spec/code/doubt cascade ran instead (triggered by diff >100 lines)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T06:50:49.104854+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T06:48:57.197915+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

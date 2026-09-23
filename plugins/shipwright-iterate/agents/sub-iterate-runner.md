@@ -111,15 +111,15 @@ uv run "{shared_root}/scripts/checks/check-external-review-keys.py"
 
 Parse the JSON. Then:
 
-- **Branch A — `available`:** `--driver "claude"` (hardcoded, not `{driver}` — this agent is only ever spawned as a Claude Code subagent via the Agent tool, which has no Codex-CLI equivalent yet, so `claude` is the only value that can reach this file today; a real Codex-driven campaign needs its own wiring, tracked separately as trg-a27ab4d9)
+- **Branch A — `available`:** driver is hardcoded, not `{driver}` — this agent is only ever spawned as a Claude Code subagent via the Agent tool, which has no Codex-CLI equivalent yet, so `claude` is the only *harness* value that can reach this file today; a real Codex-driven campaign needs its own wiring, tracked separately as trg-a27ab4d9. Still conditional on `CODEXTENDER_ACTIVE` (this subagent runs in-process, inheriting the spawning session's environment): `codex` when set, else `claude`.
 
   ```bash
   uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" --mode iterate \
     --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
-    --plugin-root "{plugin_root}" --driver "claude" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
+    --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
   ```
 
-  Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse `reviews.glm.feedback` + `reviews.openai.feedback`. Merge
+  Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse `reviews.glm.feedback` + `reviews.openai.feedback` (or `reviews.opus.feedback` under `--driver codex`; required, no default, never hardcoded). Merge
   high/medium findings into the iterate ADR's
   `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
   `rejected-with-reason`, before Finalization.
@@ -206,7 +206,7 @@ review for those.
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code --diff-file "$DIFF_FILE" \
-     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" --driver "claude" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
+     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
    ```
 
    Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse feedback. Apply high/medium findings before commit, OR mark
