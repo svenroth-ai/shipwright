@@ -150,3 +150,31 @@ shape, silently drifting out of sync the moment `_safe_token()`'s output
 changed. Both replaced with a delegating import of the real library
 function, so a future shape change can't silently re-break them the same
 way.
+
+Round 4 — one real defect, fixed: `_has_valid_field_types()` checked every
+`ActivationRecord` field's type except `schema_version`. Since `bool` is an
+`int` subclass and `True == 1`, a corrupt record with `"schema_version":
+true` silently passed the caller's `!= _SCHEMA_VERSION` check despite
+failing the documented schema-mismatch fail-open contract. Added
+`type(record.schema_version) is int` to the check, plus a regression test.
+
+Round 5 — adjudicated, not fixed, escalated to the maintainer: the
+remaining BLOCK is not a new code defect. It reiterates the gap round 2
+already surfaced and explicitly deferred: `codex_hooks_launcher.py`'s
+`SHIPWRIGHT_PLUGIN_ROOT` injection, and the hooks it activates, have unit
+and fixture coverage but no live end-to-end proof against a real Codex CLI
+process — the same "deferred payload-capture probe... inherited by R2b"
+from round 2's entry above. Building that probe requires an actual Codex
+CLI environment this automated session does not have, and the review's own
+wording — "a maintainer must manually confirm this sensitive hook and
+launcher change before merge" — names a decision only the human maintainer
+can make. Round 5 is where this iterate stops iterating on the preflight
+and surfaces the question to the maintainer directly, as the existing R2b
+deferral already anticipated rather than as a newly-discovered gap.
+
+**Maintainer sign-off (2026-09-23):** Sven Roth confirmed merging on the
+existing test coverage (1043/1176/11545 passing across the three affected
+roots) plus this run's four rounds of automated review and fixes, with the
+live Codex CLI verification proceeding as already-planned R2b follow-up
+rather than as a condition of this PR. This is the human confirmation the
+round 5 finding asked for; it does not change R2b's scope.
