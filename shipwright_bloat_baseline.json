@@ -461,7 +461,7 @@
     {
       "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
       "limit": 400,
-      "current": 1011,
+      "current": 1042,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-campaign-mode-bloat-exception.md"
     },
@@ -1757,7 +1757,7 @@
     {
       "path": "shared/scripts/lib/phase_quality/_run_id.py",
       "limit": 300,
-      "current": 305,
+      "current": 335,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-run-id-bloat-exception.md"
     }

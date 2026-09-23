@@ -135,10 +135,14 @@ def test_truly_concurrent_restores_across_all_ten_restorable_paths_never_cross_c
 
     barrier = threading.Barrier(2)
     results: dict[str, list[str]] = {}
+    errors: dict[str, BaseException] = {}
 
     def _run(name: str, root: Path) -> None:
-        barrier.wait(timeout=10)  # both threads' git subprocesses overlap
-        results[name] = restore_derived_to_head(root)
+        try:
+            barrier.wait(timeout=10)  # both threads' git subprocesses overlap
+            results[name] = restore_derived_to_head(root)
+        except BaseException as exc:  # noqa: BLE001 — re-raised in the main thread below
+            errors[name] = exc
 
     t_a = threading.Thread(target=_run, args=("a", unit_a))
     t_b = threading.Thread(target=_run, args=("b", unit_b))
@@ -147,6 +151,11 @@ def test_truly_concurrent_restores_across_all_ten_restorable_paths_never_cross_c
     t_a.join(timeout=30)
     t_b.join(timeout=30)
     assert not t_a.is_alive() and not t_b.is_alive(), "concurrent restore hung"
+    if errors:
+        # A thread's own exception would otherwise vanish silently (a bare
+        # KeyError on `results[name]` below, with no trace of the real
+        # cause) — code review round 3, LOW.
+        raise next(iter(errors.values()))
 
     assert sorted(results["a"]) == paths
     assert sorted(results["b"]) == paths

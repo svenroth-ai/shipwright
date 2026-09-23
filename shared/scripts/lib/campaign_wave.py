@@ -20,7 +20,18 @@ so the two never drift apart on its literal spelling.
 
 from __future__ import annotations
 
+import re
+from collections.abc import Callable
 from pathlib import Path
+
+from lib.campaign_graph import id_charset_ok
+
+#: `campaign-{slug}--{unit_id}` or `campaign-{slug}--{unit_id}-a{attempt}` —
+#: the exact shape `lib.campaign_unit_worktree.composite_worktree_name`
+#: builds. Non-greedy on `slug` since neither component may itself contain
+#: `--` once `id_charset_ok`-validated below, so the FIRST `--` is always
+#: the real separator.
+_COMPOSITE_WORKTREE_RE = re.compile(r"^campaign-(?P<slug>.+?)--(?P<unit>.+?)(?:-a\d+)?$")
 
 #: The fixed, non-identity-bearing value the orchestrator exports for the
 #: WHOLE wave, once, before spawning (`references/campaign-mode.md` step 1).
@@ -29,19 +40,28 @@ from pathlib import Path
 WAVE_UNIT_ID_SENTINEL = "__campaign_wave__"
 
 
-def resolve_wave_safe_unit_value(value: str) -> str:
-    """`value` unchanged, unless it IS the wave sentinel — then `""`.
+def resolve_wave_safe_unit_value(value: str | None) -> str:
+    """`value`, stripped, unless it IS the wave sentinel — then `""`.
 
     The one-line shape both fixed call sites share (`_run_id.py` tier-3,
     `generate_handoff_on_stop.py`'s handoff namespacing): treat the sentinel
     as though the variable were never set, rather than as a real identity.
+    Stripping HERE (code review round 3) rather than trusting each call
+    site to do it first closed a real collision: `generate_handoff_on_stop.
+    py` passed the raw, unstripped `os.environ.get(...)` value straight
+    through, so any surrounding whitespace (a plausible `CLAUDE_ENV_FILE`
+    round-trip artifact) made `is_wave_sentinel` miss, the value was
+    treated as a genuine per-unit id, and every unit in the wave collided
+    on that one padded string — the exact hazard this module exists to
+    prevent.
     """
-    return "" if is_wave_sentinel(value) else value
+    stripped = (value or "").strip()
+    return "" if is_wave_sentinel(stripped) else stripped
 
 
 def is_wave_sentinel(value: str | None) -> bool:
-    """``True`` iff `value` is the wave-scoped sentinel, not a genuine
-    per-unit id. A genuine campaign sub-iterate id never equals this
+    """``True`` iff `value`, stripped, is the wave-scoped sentinel, not a
+    genuine per-unit id. A genuine campaign sub-iterate id never equals this
     sentinel: ``lib.campaign_graph.id_charset_ok``'s charset DOES allow an
     underscore mid-string, but rejects a value whose FIRST or LAST character
     is a separator (``._-``) — and the sentinel is bracketed by underscores
@@ -51,7 +71,7 @@ def is_wave_sentinel(value: str | None) -> bool:
     loop is untouched by R5a and still exports a real per-unit value into
     this same env var) is drawn from a different, but similarly
     non-colliding, id space."""
-    return value == WAVE_UNIT_ID_SENTINEL
+    return (value or "").strip() == WAVE_UNIT_ID_SENTINEL
 
 
 def per_unit_worktree_identity(project_root: Path) -> str | None:
@@ -72,16 +92,28 @@ def per_unit_worktree_identity(project_root: Path) -> str | None:
     semantics elsewhere — used as the FIRST resort, ahead of the
     session-keyed pointer, whenever `project_root` looks like a per-unit
     worktree.
+
+    Validates BOTH parsed components (`slug`, `unit_id`) via the same
+    `lib.campaign_graph.id_charset_ok` `composite_worktree_name` enforces at
+    write time, not just the directory name's superficial `campaign-`/`--`
+    shape — a directory that merely LOOKS composite (e.g. a hand-created
+    `campaign-notes--draft` scratch dir, or one with an empty component,
+    `campaign---x`) must not be treated as a genuine per-unit worktree
+    identity (code review round 3, LOW).
     """
     name = Path(project_root).name
-    if name.startswith("campaign-") and "--" in name:
-        return name
-    return None
+    match = _COMPOSITE_WORKTREE_RE.match(name)
+    if not match:
+        return None
+    if not id_charset_ok(match.group("slug")) or not id_charset_ok(match.group("unit")):
+        return None
+    return name
 
 
 def write_wave_aware_handoff(project_root: Path, session_id: str, content: str,
                               loop_id: str | None, loop_unit: str | None,
-                              runtime_dir: Path, handoff_path: Path) -> Path:
+                              runtime_dir: Path, handoff_path: Path,
+                              resolve_fallback: Callable[[], str] | None = None) -> Path:
     """`generate_handoff_on_stop.py`'s own namespaced-vs-runtime write,
     extracted so the R5a sentinel fix lives in ONE place rather than growing
     that hook past its already-filed bloat exception.
@@ -93,16 +125,28 @@ def write_wave_aware_handoff(project_root: Path, session_id: str, content: str,
     per-unit id (a campaign sub-iterate, or a still-unaffected
     shipwright-build `--autonomous` section) passes through unchanged; the
     sentinel resolves through `per_unit_worktree_identity` first (safe under
-    concurrency — see its own docstring), falling back to
-    `lib.phase_quality.resolve_run_id` only when `project_root` is not a
-    per-unit worktree shape (a genuinely standalone run, never concurrent).
+    concurrency — see its own docstring), falling back to the caller-supplied
+    `resolve_fallback()` only when `project_root` is not a per-unit worktree
+    shape (a genuinely standalone run, never concurrent).
+
+    `resolve_fallback` is a CALLABLE, not a plain value, so the caller's own
+    resolution (typically `lib.phase_quality.resolve_run_id`, which touches
+    the filesystem) only runs when actually needed. It is caller-supplied,
+    not imported here, on purpose (code review round 3): `_run_id.py`
+    already imports THIS module at load time (for the pointer-tier fix
+    above), so importing `lib.phase_quality` back from here would be
+    circular — the earlier code broke that cycle with a function-local
+    import instead, which runs AFTER `generate_handoff_on_stop.py`'s
+    once-per-Stop claim is taken (`claim_once_for_event`); an ImportError
+    there would burn the claim and silently drop the handoff for every
+    sibling fan-out invocation, exactly the hazard `_run_id.py`'s own
+    "Eager MODULE imports" note exists to prevent.
     """
     unit = resolve_wave_safe_unit_value(loop_unit) if loop_unit else loop_unit
     if loop_unit and not unit:
         unit = per_unit_worktree_identity(Path(project_root))
-    if loop_unit and not unit:
-        from lib import phase_quality as pq
-        unit = pq.resolve_run_id(Path(project_root), session_id)
+    if loop_unit and not unit and resolve_fallback is not None:
+        unit = resolve_fallback()
     if loop_id and unit:
         namespaced_dir = Path(project_root) / ".shipwright" / "planning" / "handoffs" / loop_id
         namespaced_dir.mkdir(parents=True, exist_ok=True)

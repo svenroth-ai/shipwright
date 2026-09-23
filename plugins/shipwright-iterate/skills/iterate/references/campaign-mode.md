@@ -336,9 +336,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        - `_run_id.py`'s tier-3 run-id derivation and
          `generate_handoff_on_stop.py`'s handoff namespacing both need the
          actual per-unit identity, which a shared sentinel cannot provide.
-         MIGRATED: both ignore the sentinel and fall back to the
-         per-unit-worktree-keyed `resolve_run_id` pointer instead
-         (`lib.campaign_wave`).
+         MIGRATED: both ignore the sentinel and resolve identity via
+         `lib.campaign_wave.per_unit_worktree_identity` — the calling unit's
+         OWN worktree directory basename, not `resolve_run_id`'s
+         session-keyed pointer (that pointer is written by every unit under
+         the SAME shared `SHIPWRIGHT_SESSION_ID`, so it is last-writer-wins
+         across a wave and cannot serve as per-unit identity; `_run_id.py`'s
+         own pointer tiers additionally guard against reading a sibling's
+         pointer this way — see its `_pointer_targets_a_different_wave_unit`
+         helper).
        - `diff_risk_recheck.py` only tests the same truthiness the authorship
          guard does. UNAFFECTED by the sentinel value.
        - `capture_session_id.py`'s propagation via `CLAUDE_ENV_FILE` is WHY A
@@ -353,7 +359,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `Task` has returned; there is nothing further to wait for. The
        pre-R5a terminal-marker file (`.shipwright/runs/{loop_id}/{id}/DONE`)
        is retired for `kind == "sub_iterate"` — `write_terminal_marker.py`
-       stays untouched and used only by `kind == "section"`.
+       now no-ops under the wave sentinel (`is_wave_sentinel(unit_id)`) so
+       concurrent sub-iterate-runners never race each other writing the SAME
+       shared-sentinel path; it is unchanged and still fires for
+       `kind == "section"`, which exports a genuine per-section id.
 
    3e. **Reconcile, in fixed order (the SAME order `claimed` returned at
        3a).** For each unit, read its row's CURRENT status from
@@ -363,7 +372,14 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        flip is live):
        `$(dirname .shipwright/loop_state.json)/runs/{loop_id}/{id}/a{attempt}/result.json`.
        - **Still `claimed`** — the Task never even reached its own Step 1.0.5:
-         a LAUNCH FAILURE, not a build failure. Release it back to the pool:
+         a LAUNCH FAILURE, not a build failure. Check whether `result.json`
+         nonetheless exists at the path above (Step 1.0's isolation-check
+         failure branch writes one, `reason_code: "not_isolated"`, precisely
+         because it fails BEFORE 1.0.5) — if so, include that `reason_code`
+         in this wave's diagnostic report so the operator sees WHY, not just
+         THAT, the launch failed; a genuinely absent `result.json` (any other
+         pre-1.0.5 failure) reports with no more detail than today. Either
+         way, release it back to the pool:
            uv run "{shared_root}/scripts/lib/loop_claim.py" release \
              --state .shipwright/loop_state.json --unit "{id}" \
              --attempt-id "{attempt_id from 3a}" --campaign-slug "{slug}" \
@@ -384,8 +400,19 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          **This call's own exit code follows 3f's rule below, not a rule of
          its own** — `record` exits `3` for any non-`complete` status, this
          synthetic `failed` included, so seeing exit `3` HERE means STRICT-STOP
-         the whole wave exactly as a real result's exit `3` does at 3f; do NOT
-         keep reconciling the rest of `claimed` past it.
+         the whole wave exactly as a real result's exit `3` does at 3f. Before
+         doing so, first walk any REMAINING units in `claimed` (fixed order,
+         past this one) that are still sitting in `claimed` status — a launch
+         failure this reconcile pass has not reached yet — and release each
+         one exactly as this bullet's own case does above: the same reasoning
+         as 3c's release-before-STRICT-STOP (external review, openai, medium)
+         applies here too, since a claim must never be left stranded just
+         because an EARLIER unit in the fixed order failed reconciliation
+         first. A unit already `running` with its own real `result.json` is
+         left as-is (its result is simply not recorded this wave) — releasing
+         it would discard genuinely completed work for no reason, since the
+         next wave's `next-batch` call re-derives readiness from
+         `loop_state.json`, not from anything this STRICT-STOP skips writing.
        - **`result.json` present** — parse it defensively (this unit's REAL
          result) and carry it into 3f below.
 
@@ -399,7 +426,11 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          already-MERGED sub-iterates from prior waves are durable; the
          partial campaign is left for manual follow-up — exactly the pre-R5a
          single-unit STRICT-STOP semantics, extended to "any unit in this
-         wave", not narrowed to "only the failing one".
+         wave", not narrowed to "only the failing one". No stranded `claimed`
+         row can reach this point: 3e's own pass (including its release-
+         before-STRICT-STOP branch above) already runs to completion over
+         every unit before 3f's record loop begins, so every unit still
+         `claimed` at reconcile time was released there, never here.
 
    **3f-bis through 3h drain the wave, ONE UNIT AT A TIME, in the SAME fixed
    order `claimed` returned at 3a** — for each unit that reached `built` at

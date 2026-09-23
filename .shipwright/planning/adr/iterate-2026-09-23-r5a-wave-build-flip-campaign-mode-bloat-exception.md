@@ -1,4 +1,4 @@
-# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 1011-LOC
+# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 1042-LOC
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -92,7 +92,7 @@ merely wrapped in a new per-unit drain loop.
 
 Raise `current` for
 `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md`
-from **810 to 1011** (983 at initial write; +6 from external code review
+from **810 to 1042** (983 at initial write; +6 from external code review
 round 1's two fixes — the attempt-scoped 3e read path and the explicit
 exit-3 STRICT-STOP note on the synthetic no-result record; +10 from round 2
 — the 3c launch-failure release-every-claimed-unit fix and 3i's no-progress
@@ -102,7 +102,15 @@ previously only declared in this file's own prose, so `--max-parallel
 "$WAVE_MAX_PARALLEL"` at 3a expanded empty and would have exited 2 — read as
 "done" — without ever claiming a unit), plus correcting two now-stale
 references to the pre-flip terminal DONE-marker wait this file's own new 3d
-text already retires), `state: "exception"`,
+text already retires; +31 from internal code review round 3 — correcting
+the security note's stale claim that `_run_id.py`/handoff namespacing fall
+back to the (rejected) session-keyed `resolve_run_id` pointer rather than
+`per_unit_worktree_identity`; documenting `write_terminal_marker.py`'s new
+no-op gate under the wave sentinel at 3d; and, at 3e, releasing any
+remaining still-`claimed` units before a mid-reconcile STRICT-STOP, plus
+surfacing an isolation-check failure's `reason_code` when its own
+`result.json` exists — mirroring 3c's own release-before-STRICT-STOP fix
+one reconcile step later), `state: "exception"`,
 `adr: "ADR-pending:
 .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-campaign-mode-bloat-exception.md"`,
 in the same commit as the flip. `plugins/shipwright-iterate/tests/test_skill_references_link.py`'s
@@ -119,7 +127,7 @@ further.
 ## Consequences
 
 - The loop reference may grow further before the anti-ratchet blocks again
-  (1011-line current). Not a licence to keep growing — R5b's own crossing,
+  (1042-line current). Not a licence to keep growing — R5b's own crossing,
   if any, needs its own ADR, following this same pattern.
 - `shared/tests/test_r2_worktree_capability_prose.py`'s `_step_3c()` helper
   now anchors on the NEW 3c/3d labels this flip introduced

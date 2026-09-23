@@ -70,6 +70,22 @@ class TestPerUnitWorktreeIdentity:
         wt.mkdir()
         assert per_unit_worktree_identity(wt) is None
 
+    def test_attempt_suffix_is_recognised(self, tmp_path):
+        wt = tmp_path / "campaign-mydag--R5a-a1"
+        wt.mkdir()
+        assert per_unit_worktree_identity(wt) == "campaign-mydag--R5a-a1"
+
+    def test_a_directory_that_merely_looks_composite_is_rejected(self, tmp_path):
+        """Code review round 3, LOW: only the superficial `campaign-`/`--`
+        shape used to be checked — an empty parsed component, or one
+        containing a character `id_charset_ok` rejects, must not be trusted
+        as a genuine per-unit identity."""
+        for bad_name in ("campaign---x", "campaign-x--", "campaign----",
+                          "campaign-my dag--R5a"):
+            wt = tmp_path / bad_name
+            wt.mkdir()
+            assert per_unit_worktree_identity(wt) is None, bad_name
+
 
 class TestAuthorshipGuardStillRefusesUnderTheSentinel:
     """The guard checks TRUTHINESS only — unaffected by the sentinel's value,
@@ -96,30 +112,27 @@ class TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel:
         assert result.read_text(encoding="utf-8") == "content"
 
     def test_sentinel_falls_back_to_the_resolved_run_id_not_the_literal_sentinel(
-        self, tmp_path, monkeypatch,
+        self, tmp_path,
     ):
         """Two sibling units in the same wave share the identical sentinel
         value — if the namespaced filename ever used it literally, both
         units' handoffs would collide on the SAME file."""
-        from lib import phase_quality as pq
-
-        monkeypatch.setattr(pq, "resolve_run_id", lambda project_root, session_id: "iterate-2026-09-23-r5a-x")
-        # campaign_wave imports `lib.phase_quality` lazily inside the
-        # function under test — patch the module object (ADR-045), which
-        # the lazy `from lib import phase_quality as pq` import still sees.
         runtime_dir = tmp_path / "runtime"
         handoff_path = runtime_dir / "session_handoff.md"
+        # `resolve_fallback` is caller-supplied (code review round 3: no
+        # internal import of `lib.phase_quality`, to avoid a circular
+        # import with `_run_id.py`) — the real caller passes
+        # `lambda: resolve_run_id(project_root, session_id)`; this test
+        # supplies the same shape directly rather than mocking a module.
         result = write_wave_aware_handoff(
             tmp_path, "sess-1", "content", "loop-1", WAVE_UNIT_ID_SENTINEL, runtime_dir, handoff_path,
+            resolve_fallback=lambda: "iterate-2026-09-23-r5a-x",
         )
         assert WAVE_UNIT_ID_SENTINEL not in result.name
         assert result.name == "iterate-2026-09-23-r5a-x.md"
 
     def test_two_units_sharing_the_sentinel_resolve_to_distinct_files(self, tmp_path, monkeypatch):
-        from lib import phase_quality as pq
-
         resolved = {"unit-a-root": "iterate-a", "unit-b-root": "iterate-b"}
-        monkeypatch.setattr(pq, "resolve_run_id", lambda project_root, session_id: resolved[os.path.basename(str(project_root))])
         wt_a = tmp_path / "unit-a-root"
         wt_b = tmp_path / "unit-b-root"
         wt_a.mkdir()
@@ -128,25 +141,28 @@ class TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel:
         handoff_path = runtime_dir / "session_handoff.md"
         result_a = write_wave_aware_handoff(
             wt_a, "sess-1", "content-a", "loop-1", WAVE_UNIT_ID_SENTINEL, runtime_dir, handoff_path,
+            resolve_fallback=lambda: resolved[os.path.basename(str(wt_a))],
         )
         result_b = write_wave_aware_handoff(
             wt_b, "sess-1", "content-b", "loop-1", WAVE_UNIT_ID_SENTINEL, runtime_dir, handoff_path,
+            resolve_fallback=lambda: resolved[os.path.basename(str(wt_b))],
         )
         assert result_a != result_b
         assert result_a.read_text(encoding="utf-8") == "content-a"
         assert result_b.read_text(encoding="utf-8") == "content-b"
 
     def test_worktree_basename_wins_over_a_colliding_shared_session_pointer(
-        self, tmp_path, monkeypatch,
+        self, tmp_path,
     ):
-        """Reproduces the round-2 finding directly: `resolve_run_id` mocked
-        to return the SAME value for both units (the real shared-session-
+        """Reproduces the round-2 finding directly: `resolve_fallback` set to
+        RAISE if ever called (standing in for `resolve_run_id` mocked to
+        return the SAME value for both units — the real shared-session-
         pointer collision) — the per-unit worktree basename must still keep
         the two handoffs on distinct files, because it is checked FIRST and
-        `resolve_run_id` is never even reached."""
-        from lib import phase_quality as pq
+        the fallback is never even reached."""
+        def _must_not_be_called():
+            raise AssertionError("resolve_fallback must not be reached when the worktree basename resolves")
 
-        monkeypatch.setattr(pq, "resolve_run_id", lambda project_root, session_id: "COLLIDES")
         campaign_root = tmp_path / "worktrees"
         wt_a = campaign_root / "campaign-mydag--R5a"
         wt_b = campaign_root / "campaign-mydag--R5b"
@@ -156,9 +172,11 @@ class TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel:
         handoff_path = runtime_dir / "session_handoff.md"
         result_a = write_wave_aware_handoff(
             wt_a, "same-session", "content-a", "loop-1", WAVE_UNIT_ID_SENTINEL, runtime_dir, handoff_path,
+            resolve_fallback=_must_not_be_called,
         )
         result_b = write_wave_aware_handoff(
             wt_b, "same-session", "content-b", "loop-1", WAVE_UNIT_ID_SENTINEL, runtime_dir, handoff_path,
+            resolve_fallback=_must_not_be_called,
         )
         assert result_a != result_b
         assert "COLLIDES" not in result_a.name

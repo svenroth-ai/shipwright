@@ -37,6 +37,32 @@ from ._worktree_identity import (  # noqa: E402
 )
 
 
+def _pointer_targets_a_different_wave_unit(pointer_worktree: str, caller_root: Path) -> bool:
+    """``True`` iff `caller_root` is itself a per-unit wave worktree and
+    `pointer_worktree` names a DIFFERENT directory — i.e. the shared,
+    session-keyed pointer was last written by a sibling unit.
+
+    Code review (round 3, R5a): every unit in a wave shares one
+    ``session_id``, so ``write_run_pointer`` (called once per unit by
+    ``setup_unit_worktree.py``) overwrites the SAME file — last writer wins.
+    Neither :func:`pointer_run_id` nor :func:`pointer_worktree_root`
+    compared the pointer's own ``worktree_path`` against the CALLER's
+    ``project_root``/``cwd``, so a unit querying its own identity got
+    whichever unit happened to write last — reopening, at tier 0, the exact
+    collision round 2's ``per_unit_worktree_identity`` (tier 3) already
+    closed. Gated on :func:`per_unit_worktree_identity` rather than running
+    unconditionally: a standalone iterate's own worktree is never named
+    ``campaign-*--*``, so this never changes behavior outside a campaign
+    wave.
+    """
+    if per_unit_worktree_identity(caller_root) is None:
+        return False
+    try:
+        return Path(pointer_worktree).resolve() != Path(caller_root).resolve()
+    except (OSError, ValueError):
+        return True
+
+
 def pointer_run_id(project_root: Path, session_id: str) -> str | None:
     """The canonical iterate run_id for ``session_id``, or ``None``.
 
@@ -114,6 +140,8 @@ def pointer_run_id(project_root: Path, session_id: str) -> str | None:
         return None
     if not _worktree_is_live(pointer.get("worktree_path")):
         return None
+    if _pointer_targets_a_different_wave_unit(pointer["worktree_path"], project_root):
+        return None
 
     run_id = pointer.get("run_id")
     # is_sentinel_run strips and lower-cases internally, so " unknown " and
@@ -175,6 +203,8 @@ def pointer_worktree_root(cwd: Path, session_id: str) -> Path | None:
         # no coverage and silently rejected a worktree git legitimately
         # placed outside main_root's own tree; dropped rather than logged.
         if not is_worktree_of(worktree, main_root):
+            return None
+        if _pointer_targets_a_different_wave_unit(str(worktree), cwd):
             return None
         return worktree
     except Exception:  # noqa: BLE001 — best-effort, caller falls back

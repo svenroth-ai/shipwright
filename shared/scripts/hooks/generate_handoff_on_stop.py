@@ -36,6 +36,7 @@ from lib.handoff_phase_status import (  # noqa: E402
     phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
     phase_tasks_progress as _phase_tasks_progress,
 )
+from lib.phase_quality import resolve_run_id  # noqa: E402
 from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
 
 _RUN_CONFIG_NAME = "shipwright_run_config.json"
@@ -334,6 +335,7 @@ def main() -> int:
             project_root, session_id, content,
             os.environ.get("SHIPWRIGHT_LOOP_ID"), os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID"),
             runtime_dir, handoff_path,
+            resolve_fallback=lambda: resolve_run_id(project_root, session_id),
         )
 
         # Update build dashboard with "paused" status — also writes to

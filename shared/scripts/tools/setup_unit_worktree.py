@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Per-unit campaign worktree checkout (CAPABILITY — campaign-dag-scheduler R2).
+"""Per-unit campaign worktree checkout (campaign-dag-scheduler R2; wired into
+the live wave-based campaign loop by R5a, "the flip").
 
-Not yet wired into the live campaign loop — R5a performs that flip once R4's
-claim mechanics (``attempt``, ``attempt_id``, fencing) exist. This script's
-own job is narrow: compute the composite ``campaign-{slug}--{unit_id}
+This script's own job is narrow: compute the composite ``campaign-{slug}--{unit_id}
 [-a{attempt}]`` worktree identity from validated inputs
 (``lib.campaign_unit_worktree``, never a caller-trusted path string), fail
 loudly on a total path length that would exceed Windows' ``MAX_PATH`` BEFORE
@@ -50,7 +49,7 @@ from tools.setup_iterate_worktree import setup as setup_iterate_worktree  # noqa
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Per-unit campaign worktree checkout (capability, not yet wired live).",
+        description="Per-unit campaign worktree checkout.",
     )
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--campaign-slug", required=True,

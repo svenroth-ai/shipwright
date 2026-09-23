@@ -1,4 +1,4 @@
-# Bloat exception — `shared/scripts/lib/phase_quality/_run_id.py` raised to 305-LOC
+# Bloat exception — `shared/scripts/lib/phase_quality/_run_id.py` raised to 335-LOC
 
 <!-- Named by run_id per `_template-bloat-exception.md`; `shipwright_bloat_baseline.json`
      gains a NEW entry for this file (none existed before this sub-iterate),
@@ -53,14 +53,39 @@ those fences were touched.
 ## Decision
 
 Add a NEW baseline entry for
-`shared/scripts/lib/phase_quality/_run_id.py`: `limit: 300`, `current: 305`,
+`shared/scripts/lib/phase_quality/_run_id.py`: `limit: 300`, `current: 335`,
 `state: "exception"`, `adr` pointing to this file.
 
 ## Consequences
 
-- `_run_id.py` may grow up to 305 lines before the anti-ratchet blocks again.
+- `_run_id.py` may grow up to 335 lines before the anti-ratchet blocks again.
 - No test currently pins this file's line count; none is added — the
   anti-ratchet hook itself reads the baseline directly.
+
+## Round 3 growth (305 -> 335)
+
+Code review round 3 (opus, internal) found a second, more severe instance of
+the same class of bug: `resolve_run_id` tries `pointer_run_id` at **tier 0**,
+*before* it ever reaches tier 3's wave-safe `per_unit_worktree_identity`
+fallback (the round-2 fix above). `pointer_run_id` and `pointer_worktree_root`
+both read the same session-keyed pointer file, so the identical
+last-writer-wins collision that motivated the round-2 fix was still reachable
+one tier earlier — every unit in a wave could silently resolve to whichever
+sibling's pointer was written last, for the entire run.
+
+Fixed by adding one helper, `_pointer_targets_a_different_wave_unit(pointer_worktree,
+caller_root)`, called from both `pointer_run_id` and `pointer_worktree_root`
+right after their existing liveness/worktree-membership checks. It is gated on
+`per_unit_worktree_identity(caller_root) is not None`, so it is inert for a
+standalone iterate or a main-root call (`audit_phase_quality_on_stop.py`) and
+only activates when the caller is itself a per-unit wave worktree
+(`mark_implementation_span.py`'s real call shape, `cwd = Path.cwd()`).
+
+Splitting this helper into a separate file was rejected for the same
+Ousterhout reason as the round-2 growth: it is one more rung on the same
+composite-fallback ladder both pointer functions already implement in this
+file, and putting it elsewhere would separate two checks that must be read
+together to see why either exists.
 
 ## Rejected alternatives
 
