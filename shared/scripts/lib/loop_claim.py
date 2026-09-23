@@ -186,6 +186,25 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
 
     pre_units = state_peek["units"]
     pre_snapshot = _snapshot_merged_commits(pre_units)
+    # External Tier-3 PR review (GPT, round 11): `ancestry_confirmed` proves a
+    # unit's dependency SHAs (as of the peek) actually verify as ancestors —
+    # but that proof is only as good as the `depends_on` edge set it was
+    # computed against. A concurrent writer that ADDS a new edge to an
+    # already-`pending` unit between the peek and the lock is invisible to
+    # the SHA-staleness check below whenever the new dependency's own
+    # `merged_commit` happens not to change in that same window (it was
+    # already merged before the peek and stays that way) — the snapshot
+    # comparison passes vacuously for an edge it never even looked at, so a
+    # unit could be claimed with a brand-new dependency whose ancestry
+    # `_ancestry_ok` never actually checked. Snapshotting the exact edge SET
+    # each pending unit carried at peek time, and requiring the locked
+    # reload's set to match exactly, closes that gap the same way the SHA
+    # snapshot closes the "did an already-known dependency's commit move"
+    # case.
+    pre_depends_on = {
+        u["id"]: frozenset(str(d).lower() for d in (u.get("depends_on") or []))
+        for u in pre_units
+    }
     ancestry_confirmed = {
         u["id"] for u in pre_units
         if u["status"] == "pending" and is_unit_ready(u, pre_units)
@@ -216,6 +235,14 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
                 if u["status"] == "pending"
                 and is_unit_ready(u, units)
                 and u["id"] in ancestry_confirmed
+                # The dependency EDGE SET itself is unchanged since the
+                # outside-lock ancestry pass ran against it (round 11) —
+                # a unit whose `depends_on` gained or lost an edge in that
+                # window is excluded this round rather than trusted on a
+                # verification that covered a different edge set; it is
+                # reconsidered on the next `next-batch` call, whose own
+                # outside-lock pass will check its current edges for real.
+                and frozenset(str(d).lower() for d in (u.get("depends_on") or [])) == pre_depends_on.get(u["id"])
                 # Deps' SHAs unchanged since the outside-lock pass verified
                 # them — case-folded lookup, see `_snapshot_merged_commits`.
                 and all(fresh_snapshot.get(str(dep_id).lower()) == pre_snapshot.get(str(dep_id).lower())

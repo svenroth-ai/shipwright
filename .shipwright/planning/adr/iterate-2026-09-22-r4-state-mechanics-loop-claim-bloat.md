@@ -173,11 +173,37 @@ one new regression test (`test_recheck_kind_after_lock_prevents_a_section_
 state_race`) forces the peek and the locked reload to disagree on `kind`
 and asserts the unit is left untouched.
 
+### Round 11 growth (404 -> 431)
+
+External Tier-3 review (GPT, high, PR #790) found `cmd_next_batch`'s
+`ancestry_confirmed` set is only as good as the `depends_on` edge set it
+was computed against at the outside-lock peek. A concurrent writer that
+ADDS a brand-new edge to an already-`pending` unit between the peek and
+the locked reload is invisible to the existing SHA-staleness check
+whenever the new dependency was already `merged` before the peek and its
+`merged_commit` never changes in that window: `_snapshot_merged_commits`
+records every merged unit regardless of whether it was a dependency yet,
+so the pre/post comparison for the newly-added edge passes vacuously —
+the unit could be claimed with a dependency `_ancestry_ok` never actually
+verified. Fixed by additionally snapshotting each pending unit's exact
+`depends_on` edge SET at peek time and requiring the locked reload's set
+to match exactly (case-folded, matching every other dependency lookup in
+this module); a unit whose edge set changed at all is excluded this
+round rather than trusted on a verification that covered a different
+set, and picked up again on the next `next-batch` call's own fresh
+outside-lock pass. One new regression test adds a fresh edge to an
+already-merged, SHA-unchanging dependency between the peek and the lock
+and asserts the unit is excluded. Not a new responsibility — extending
+the same "peek-time verification must still describe the locked state"
+principle the SHA-snapshot check and Round 10's `kind` recheck already
+established, to the one input surface (the edge set itself) neither
+covered.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 404-line ceiling (see
-  Round 10 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 431-line ceiling (see
+  Round 11 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
   regression live in a sibling file, `shared/tests/
   test_loop_claim_release_cleanup.py` (split from `test_loop_claim.py`
@@ -187,6 +213,8 @@ and asserts the unit is left untouched.
   lines a second time; `TestCmdRelease`'s basic status-transition tests
   moved into that same sibling file (which already owned the rest of
   `cmd_release`'s coverage) to bring both files back under the guideline.
+  Round 11's dependency-race regression test brought `test_loop_claim.py`
+  to exactly 300 lines — at, not over, the guideline; no further split.
 
 ## Rejected alternatives
 

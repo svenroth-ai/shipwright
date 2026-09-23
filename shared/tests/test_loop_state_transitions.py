@@ -203,3 +203,27 @@ class TestPathHelpersRejectAMalformedLoopId:
         state_path = tmp_path / ".shipwright" / "loop_state.json"
         with pytest.raises(ValueError, match="not a safe identifier"):
             handoff_dir_for(state_path, "../../etc")
+
+    def test_runs_dir_for_rejects_a_malformed_persisted_unit_id(self, tmp_path):
+        """External Tier-3 PR review (GPT, round 11): `runs_dir_for` charset-
+        checked `loop_id` but appended `unit_id` unvalidated — a hand-edited
+        or corrupted state row's `id` could redirect a write meant for one
+        unit into another's directory, or outside the loop root entirely.
+        `A/../B` in particular never trips a naive containment check alone
+        (it resolves to the sibling `runs/{loop_id}/B/`, which IS inside the
+        loop root) — the charset check is what refuses it, the same
+        realization `rejected_payload_path`'s own docstring already recorded
+        for this exact string shape."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        with pytest.raises(ValueError, match="not a safe identifier"):
+            runs_dir_for(state_path, "test-loop", "A/../B")
+
+    def test_runs_dir_for_unit_id_containment_is_defense_in_depth(self, tmp_path):
+        """A `unit_id` that clears the charset (no literal `/` or `..`) but
+        somehow still resolved outside the loop root would be caught by the
+        post-append containment re-check — belt-and-suspenders alongside the
+        charset gate, matching the `loop_id` check's own shape above."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        # A charset-safe unit_id resolves inside the loop root normally.
+        result = runs_dir_for(state_path, "test-loop", "A")
+        assert result == runs_dir_for(state_path, "test-loop") / "A"

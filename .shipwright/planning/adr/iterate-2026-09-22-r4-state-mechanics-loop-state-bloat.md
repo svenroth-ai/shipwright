@@ -267,11 +267,31 @@ Fixed by keeping `.shipwright` and `"planning"` chained in one expression for
 the returned path, computing the separate containment-check variable from a
 DIFFERENT, non-"planning"-bearing sub-expression instead (913 -> 919).
 
+### Round 9 growth (919 -> 939)
+
+External Tier-3 review (GPT, high, PR #790) found `runs_dir_for` charset-
+checked `loop_id` (Round 8) but appended its optional `unit_id` argument
+completely unvalidated — a persisted unit row's `id` is the same
+untrusted-input threat model as `loop_id`, and two callers in
+`autonomous_loop.py` (`cmd_record`'s fallback-path lookup and its
+result-path write) pass a raw `args.unit`/`unit["id"]` straight through.
+`A/../B` in particular defeats a naive containment check alone — it
+resolves to the sibling `runs/{loop_id}/B/`, which IS inside the loop
+root — so the charset check (not containment) is load-bearing here, the
+same realization `rejected_payload_path` already recorded for this exact
+shape (Round 6). Fixed by charset-checking `unit_id` the same way
+`loop_id` already is, plus a resolved-path containment re-check run AFTER
+`unit_id` is appended (the existing `loop_id`-only containment check runs
+before that append and cannot see a traversal introduced by `unit_id`
+itself). Not a new responsibility — completing the same guarantee Round 8
+already gave `loop_id`, for the sibling argument this function always
+accepted but never checked.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 919-line ceiling
-  (see Round 8 growth above), not 278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 939-line ceiling
+  (see Round 9 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`

@@ -424,16 +424,36 @@ def runs_dir_for(state_path, loop_id: str, unit_id: str | None = None) -> Path:
     `campaign_graph.id_charset_ok` charset :func:`rejected_payload_path`
     already enforces for `unit_id`, with the same resolved-path containment
     check kept as defense-in-depth.
+
+    `unit_id`, when given, is a persisted unit row's ``id`` — the same
+    untrusted-row threat model, and `rejected_payload_path` already
+    charset-checks it before ever reaching this function. External Tier-3 PR
+    review (GPT, round 11): this function itself did not, and two OTHER
+    callers (`autonomous_loop.cmd_record`'s fallback-path and result-path
+    writes) pass a raw `args.unit`/`unit["id"]` straight through without
+    their own check — so the guarantee has to live here, not be re-derived
+    by every caller. Checked the same way `loop_id` is, with the same
+    containment check re-run AFTER `unit_id` is appended (the `loop_id`-only
+    containment check above runs before that append and would not catch a
+    traversing `unit_id` on its own).
     """
     if not id_charset_ok(loop_id):
         raise ValueError(f"runs-dir path refused: loop_id {loop_id!r} is not a safe identifier")
+    if unit_id is not None and not id_charset_ok(unit_id):
+        raise ValueError(f"runs-dir path refused: unit_id {unit_id!r} is not a safe identifier")
     state_root = Path(state_path).resolve().parent
     base = state_root / "runs" / loop_id
     resolved_base = base.resolve()
     if not resolved_base.is_relative_to(state_root):
         raise ValueError(
             f"runs-dir path {resolved_base} escaped the state root {state_root} — refusing")
-    return (base / unit_id) if unit_id else base
+    result = (base / unit_id) if unit_id else base
+    if unit_id:
+        resolved_result = result.resolve()
+        if not resolved_result.is_relative_to(resolved_base):
+            raise ValueError(
+                f"runs-dir path {resolved_result} escaped {resolved_base} — refusing")
+    return result
 
 
 #: Safe filename-segment charset for an UNTRUSTED `attempt_id` (external code

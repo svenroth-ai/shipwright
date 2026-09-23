@@ -260,6 +260,33 @@ class TestCmdNextBatch:
         out = json.loads(capsys.readouterr().out)
         assert out["blocked_pending_ids"] == ["A"]
 
+    def test_new_dependency_added_between_peek_and_lock_is_not_trusted(self, tmp_path, capsys):
+        """External Tier-3 PR review (GPT, round 11): `ancestry_confirmed` is
+        computed from the peek-time `depends_on` edge set; a concurrent
+        writer that ADDS a brand-new edge to an already-`pending` unit
+        between the peek and the locked reload is invisible to the SHA-
+        staleness check alone whenever the new dependency was ALREADY merged
+        before the peek and its `merged_commit` never changes in that same
+        window — the snapshot comparison passes vacuously for an edge it
+        never even looked at. Here `A` has no deps at peek time (trivially
+        `ancestry_confirmed`), then gains `depends_on: ["B"]` before the lock
+        is acquired, where `B` was already merged beforehand and stays that
+        way — the edge-set check must still exclude `A` this round, since
+        `_ancestry_ok` never verified `B`'s ancestry for `A` at all."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "pending", "attempt": 0},
+            {"id": "B", "status": "merged", "attempt": 0, "merged_commit": _FAKE_SHA},
+        ])
+        peeked_state = json.loads(state_path.read_text(encoding="utf-8"))
+        locked_state = json.loads(json.dumps(peeked_state))
+        locked_state["units"][0]["depends_on"] = ["B"]  # added after the peek
+
+        with patch.object(loop_claim, "_load_state", side_effect=[peeked_state, locked_state]):
+            rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
+        out = json.loads(capsys.readouterr().out)
+        assert out["claimed"] == []
+        assert rc == 4
+
     def test_lock_timeout_returns_6(self, tmp_path):
         state_path = _write_state(tmp_path)
         with patch.object(loop_claim, "file_lock", side_effect=loop_claim.LockTimeout("busy")):
