@@ -1,11 +1,13 @@
-"""Unit tests for ``lib.loop_claim``'s ``cmd_release`` (both its basic
-status transitions and its physical-cleanup half, campaign-dag-scheduler
-R4, 2026-09-23 Stage-1 spec-reviewer re-check fix) and the ADR-045
-single-module-identity regression for ``mark``/``mark-running``/
-``mark-merged`` dispatch. Split from ``test_loop_claim.py`` purely to keep
-each file under the 300-line guideline (same rationale as the sibling
-``test_loop_state_transitions.py``/``test_loop_state_fencing.py`` split) —
-no baseline implication, this file never existed before.
+"""Unit tests for ``lib.loop_claim``'s ``cmd_release``: its ``--max-attempts``
+argument validation, its basic status transitions, and its physical-cleanup
+half (campaign-dag-scheduler R4, 2026-09-23 Stage-1 spec-reviewer re-check
+fix). The ADR-045 single-module-identity regression for ``mark``/
+``mark-running``/``mark-merged`` dispatch moved out to the sibling
+``test_loop_claim_mark_dispatch.py`` (round 12). Split from
+``test_loop_claim.py`` purely to keep each file under the 300-line
+guideline (same rationale as the sibling ``test_loop_state_transitions.py``/
+``test_loop_state_fencing.py`` split) — no baseline implication, this file
+never existed before.
 """
 
 from __future__ import annotations
@@ -13,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -49,6 +50,31 @@ class TestCmdRelease:
     300-line guideline after its `cmd_next_batch` kind-recheck regression
     test; this file already owns the `cmd_release` cleanup-half tests
     below, so it's the natural home for the rest of `cmd_release` too."""
+
+    def test_rejects_zero_max_attempts_instead_of_failing_every_release(self, tmp_path):
+        """External Tier-3 PR review (GPT, round 12): `unit.get("attempt",
+        0) + 1 >= args.max_attempts` is trivially true for `max_attempts <=
+        0` (attempt is always >= 0), so an unvalidated zero/negative value
+        would silently mark a unit `failed` on its very first release, with
+        no valid attempt budget ever having existed. Must be rejected up
+        front, before the lock is even acquired, and the unit left
+        untouched."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "claimed", "attempt": 0, "attempt_id": "test-loop-A-a0"},
+        ])
+        rc = cmd_release(_release_args(state_path, "A", "test-loop-A-a0", max_attempts=0))
+        assert rc == 1
+        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
+        assert unit["status"] == "claimed"  # untouched
+
+    def test_rejects_negative_max_attempts(self, tmp_path):
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "claimed", "attempt": 0, "attempt_id": "test-loop-A-a0"},
+        ])
+        rc = cmd_release(_release_args(state_path, "A", "test-loop-A-a0", max_attempts=-1))
+        assert rc == 1
+        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
+        assert unit["status"] == "claimed"  # untouched
 
     def test_release_returns_to_pending_without_bumping_attempt(self, tmp_path):
         state_path = _write_state(tmp_path, units=[
@@ -241,42 +267,8 @@ class TestCmdReleasePhysicalCleanup:
         branches = run("branch", "--list", "unit-branch").stdout
         assert "unit-branch" not in branches
 
-
-class TestMarkDispatchIsSingleModuleIdentity:
-    """ADR-045 regression (Stage-1 spec-reviewer re-check, 2026-09-23):
-    `loop_claim.py`'s `cmd_map` must dispatch into the SAME `lib.loop_mark`
-    module object `test_loop_mark.py` patches — not a second, bare-imported
-    copy with its own independent globals. A prior version of this file
-    imported `from loop_mark import ...` (bare-sibling), a second, distinct
-    module identity for the same file; a patch on `lib.loop_mark` would
-    have silently had zero effect on that copy's functions."""
-
-    def test_dispatch_names_are_the_lib_loop_mark_module_object(self):
-        import lib.loop_mark as canonical
-
-        assert loop_claim.cmd_mark_running is canonical.cmd_mark_running
-        assert loop_claim.cmd_mark_merged is canonical.cmd_mark_merged
-        assert loop_claim.cmd_mark is canonical.cmd_mark
-        # Only ONE `loop_mark` identity ever loads — no bare-sibling
-        # `loop_mark` entry alongside `lib.loop_mark` in `sys.modules`.
-        assert "loop_mark" not in sys.modules or sys.modules["loop_mark"] is canonical
-
-    def test_patching_lib_loop_mark_is_honored_through_main_dispatch(self, tmp_path, monkeypatch):
-        """End-to-end proof, not just an identity assert: patch a function
-        `cmd_mark_running` actually calls, invoke it through
-        `loop_claim.main()`'s own `cmd_map`, and observe the patch take
-        effect — exactly the path silently broken before the ADR-045 fix."""
-        import lib.loop_mark as canonical
-
-        state_path = _write_state(tmp_path, units=[
-            {"id": "A", "status": "claimed", "attempt": 0, "attempt_id": "test-loop-A-a0"},
-        ])
-        monkeypatch.setattr(canonical, "now_iso", lambda: "PATCHED-TIMESTAMP")
-        monkeypatch.setattr(sys, "argv", [
-            "loop_claim.py", "mark-running", "--state", str(state_path),
-            "--unit", "A", "--attempt-id", "test-loop-A-a0",
-        ])
-        rc = loop_claim.main()
-        assert rc == 0
-        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
-        assert unit["running_at"] == "PATCHED-TIMESTAMP"
+    # The ADR-045 single-module-identity regression for `mark`/
+    # `mark-running`/`mark-merged` dispatch lives in the sibling
+    # `test_loop_claim_mark_dispatch.py` (moved out round 12, purely to
+    # keep this file under the 300-line guideline — it was never about
+    # `cmd_release` in the first place).

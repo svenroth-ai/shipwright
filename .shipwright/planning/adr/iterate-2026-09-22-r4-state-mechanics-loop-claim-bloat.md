@@ -199,22 +199,44 @@ principle the SHA-snapshot check and Round 10's `kind` recheck already
 established, to the one input surface (the edge set itself) neither
 covered.
 
+### Round 12 growth (431 -> 442)
+
+External Tier-3 review (GPT, high, PR #790) found `cmd_release` accepted
+any `--max-attempts` argparse gives it `type=int` on, including zero and
+negative values, with no range check. `unit.get("attempt", 0) + 1 >=
+args.max_attempts` is then trivially true for any such value — `attempt`
+is always `>= 0`, so a zero/negative budget marks every released unit
+`failed` on its very first retry, silently, with no valid attempt budget
+ever having existed. Fixed by validating `--max-attempts` as a positive
+integer up front, before the lock is even acquired, mirroring
+`cmd_next_batch`'s own pre-existing `--max-parallel` validation (Round 6
+context) — same shape, same "reject before any state is touched"
+placement. Not a new responsibility — completing the same CLI-argument
+validation coverage this module already gives its other numeric flag.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 431-line ceiling (see
-  Round 11 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 442-line ceiling (see
+  Round 12 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
-  regression live in a sibling file, `shared/tests/
-  test_loop_claim_release_cleanup.py` (split from `test_loop_claim.py`
-  purely to keep both under the 300-line guideline; no baseline
-  implication — neither file's own limit changed). Round 10's
-  kind-recheck regression test pushed `test_loop_claim.py` back over 300
-  lines a second time; `TestCmdRelease`'s basic status-transition tests
-  moved into that same sibling file (which already owned the rest of
-  `cmd_release`'s coverage) to bring both files back under the guideline.
-  Round 11's dependency-race regression test brought `test_loop_claim.py`
-  to exactly 300 lines — at, not over, the guideline; no further split.
+  regression live in sibling files, `shared/tests/
+  test_loop_claim_release_cleanup.py` (`cmd_release`'s own coverage) and
+  `shared/tests/test_loop_claim_mark_dispatch.py` (the ADR-045 dispatch
+  regression, moved out of the former round 12) — all split from
+  `test_loop_claim.py` purely to keep every file under the 300-line
+  guideline; no baseline implication, none of these files' own limits
+  changed. Round 10's kind-recheck regression test pushed
+  `test_loop_claim.py` back over 300 lines a second time; `TestCmdRelease`'s
+  basic status-transition tests moved into `test_loop_claim_release_
+  cleanup.py` (which already owned the rest of `cmd_release`'s coverage)
+  to bring both files back under the guideline. Round 11's dependency-race
+  regression test brought `test_loop_claim.py` to exactly 300 lines — at,
+  not over, the guideline. Round 12's two `--max-attempts` validation
+  tests pushed `test_loop_claim_release_cleanup.py` to 307; rather than
+  further crowd `test_loop_claim.py` (already at the guideline) or that
+  file, the ADR-045 dispatch-identity class — never actually about
+  `cmd_release` — moved to its own new sibling.
 
 ## Rejected alternatives
 

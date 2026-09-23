@@ -329,6 +329,17 @@ def cmd_release(args: argparse.Namespace) -> int:
     branch cleanup (best-effort, never blocking) runs AFTER the logical
     release is durably saved — see `_cleanup_unit_worktree`."""
     state_path = Path(args.state)
+    # External Tier-3 PR review (GPT, round 12): argparse's `type=int` alone
+    # accepts zero and negative values, and `unit.get("attempt", 0) + 1 >=
+    # args.max_attempts` is then trivially true for any such value (attempt
+    # is always >= 0) — every release would silently mark the unit `failed`
+    # on its very first retry, with no valid attempt budget ever having
+    # existed. Mirrors `cmd_next_batch`'s own `--max-parallel` validation.
+    if isinstance(args.max_attempts, bool) or not isinstance(args.max_attempts, int) \
+            or args.max_attempts <= 0:
+        print(f"ERROR: --max-attempts must be a positive integer, got {args.max_attempts!r}",
+              file=sys.stderr)
+        return 1
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
             state = _load_state(state_path)
