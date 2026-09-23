@@ -222,7 +222,9 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
 def _cleanup_unit_worktree(campaign_worktree: str, campaign_slug: str, unit_id: str, attempt: int) -> None:
     """Best-effort ``git worktree remove`` + ``git branch -D`` (never blocks
     the logical release — swallow every failure, e.g. a Windows file-lock;
-    swept by ``git worktree prune`` at the next claim). Path always
+    the spec names ``git worktree prune`` at the next claim as the intended
+    fallback for that case, but no such call exists in this codebase yet —
+    see the review-findings ADR's finding #5 correction). Path always
     RECOMPUTED from validated ``(slug, unit_id, attempt)`` via
     ``lib.campaign_unit_worktree`` — never a stored path. Branch name is not
     owned here (its ``{desc}`` suffix is R5a's job); read back from git's

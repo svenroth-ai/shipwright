@@ -80,6 +80,15 @@ git rather than recomputing the full spec formula, since R4 itself has no
 extracting a small `loop_release.py` at that point, once R5a's real call
 shape is known rather than guessed now.
 
+### Round 2 growth (345 -> 347)
+
+Orchestrator-level spec re-review (non-blocking note) found
+`_cleanup_unit_worktree`'s docstring stated the `git worktree prune`
+fallback as though it already existed in this codebase, giving a reader
+the same false impression the review-findings ADR's finding #5 correction
+had just removed from the disposition record. Qualified the docstring to
+say the fallback is spec-named but not yet implemented.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
