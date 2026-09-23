@@ -71,14 +71,37 @@ def _launcher_slug(event: str, matcher: str | None, group_idx: int, handler_idx:
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
 
 
-def _write_launcher(launcher_dir: Path, slug: str, command_line: str) -> Path:
+def _write_launcher(launcher_dir: Path, slug: str, command_line: str, bundle_root: str) -> Path:
+    """*bundle_root* is injected as ``SHIPWRIGHT_PLUGIN_ROOT`` into the
+    launcher body itself — config-layer hooks get no env vars from Codex at
+    all (``"env": {}``, confirmed by R1b's live capture), so
+    ``resolve_plugin_root()``/``is_codex_runtime()`` are permanently false
+    under real Codex unless the launcher supplies this itself (mini-plan
+    §0.2; this is literally what ``plugin_root.py``'s own docstring already
+    prescribes for "a thin launcher"). Already validated safe by
+    :func:`_validate_bundle_root_for_launcher` before this is called."""
     if sys.platform == "win32":
         launcher_path = launcher_dir / f"{slug}.cmd"
-        body = f"@echo off\r\n{command_line}\r\nexit /b %ERRORLEVEL%\r\n"
+        body = (
+            "@echo off\r\n"
+            f'set "SHIPWRIGHT_PLUGIN_ROOT={bundle_root}"\r\n'
+            f"{command_line}\r\n"
+            "exit /b %ERRORLEVEL%\r\n"
+        )
         durable_atomic_write(launcher_path, body)
     else:
         launcher_path = launcher_dir / f"{slug}.sh"
-        body = f"#!/bin/sh\nexec {command_line}\n"
+        # Three separate lines, not inline `VAR=val exec cmd` — assignment
+        # export semantics ahead of a special builtin are murky across
+        # shells (mini-plan §0.2). shlex.quote() is belt-and-braces: the
+        # bundle-root allowlist already forbids shell metacharacters, but a
+        # bare space (legal in that allowlist) still needs quoting here.
+        body = (
+            "#!/bin/sh\n"
+            f"SHIPWRIGHT_PLUGIN_ROOT={shlex.quote(bundle_root)}\n"
+            "export SHIPWRIGHT_PLUGIN_ROOT\n"
+            f"exec {command_line}\n"
+        )
         durable_atomic_write(launcher_path, body)
         # Owner-only execute: these launchers embed real, unquoted filesystem
         # paths, so group/other on a shared machine gain nothing by being able
@@ -152,7 +175,7 @@ def _materialize(
                     )
                 command_line = raw_command.replace(_PLACEHOLDER, str(bundle_root))
                 slug = _launcher_slug(event, matcher, group_idx, handler_idx)
-                launcher_path = _write_launcher(launcher_dir, slug, command_line)
+                launcher_path = _write_launcher(launcher_dir, slug, command_line, str(bundle_root))
                 hooks_json_command = _hooks_json_command(launcher_path)
                 new_handlers.append({**handler, "command": hooks_json_command})
                 manifest_entries.append(

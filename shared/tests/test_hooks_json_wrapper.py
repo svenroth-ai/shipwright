@@ -16,6 +16,10 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGINS_GLOB = "plugins/*/hooks/hooks.json"
+# Codex-only registration (R2, runtime-scoped hooks): same wrapper/matcher
+# invariants apply, since codex_hook_inventory.py merges this file through
+# the identical parse path as the Claude-visible one.
+CODEX_ONLY_GLOB = "plugins/*/hooks-codex/hooks.json"
 
 # The set of Claude Code event names that currently appear in Shipwright
 # plugin hooks. New events Claude Code introduces would just need adding
@@ -34,7 +38,7 @@ KNOWN_EVENT_NAMES = frozenset(
 
 
 def _hook_files() -> list[Path]:
-    files = sorted(REPO_ROOT.glob(PLUGINS_GLOB))
+    files = sorted(REPO_ROOT.glob(PLUGINS_GLOB)) + sorted(REPO_ROOT.glob(CODEX_ONLY_GLOB))
     assert files, (
         f"no hooks.json files found under {PLUGINS_GLOB}; test fixture "
         f"is wrong or repo layout changed"

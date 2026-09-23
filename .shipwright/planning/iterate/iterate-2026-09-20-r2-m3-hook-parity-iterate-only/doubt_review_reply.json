@@ -1,0 +1,40 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "async/concurrency + cross-plugin boundary",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "the PreToolUse gate reliably evaluates the session's actual first tool call, so a disallowed command cannot slip through unevaluated",
+      "disproof_attempt": "consume()'s fail-open race means whichever invocation loses the .consumed exclusive-create is unconditionally treated as already-settled, with zero inspection of its own tool_input. Addressed as an accepted residual risk of the same cooperative-enforcement threat model already accepted for the matcher's basename-only bypass, extended to a dispatch-concurrency assumption. Codex's actual PreToolUse dispatch concurrency (batched/parallel calls, retries) is unconfirmed; documented in hook-inventory.md as a second required question for R2b's deferred live probe rather than guessed at now.",
+      "file": "plugins/shipwright-iterate/scripts/hooks/codex_pretooluse_gate.py",
+      "resolution": "documented-residual-risk-deferred-to-R2b"
+    },
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the hooks-codex/hooks.json split makes the two Tier-3 hooks cost zero process-spawns under Claude Code",
+      "disproof_attempt": "This was asserted, not verified, in the diff -- no probe confirmed Claude Code's real loader ignores hooks-codex/hooks.json, and the repo has been burned before by wrong assumptions in this exact area.",
+      "file": ".shipwright/planning/iterate/iterate-2026-09-20-r2-m3-hook-parity-iterate-only/hook-inventory.md, docs/hooks-and-pipeline.md",
+      "resolution": "verified-against-official-docs: Claude Code's plugin loader reads hooks only from <plugin-root>/hooks/hooks.json or a hooks field embedded in .claude-plugin/plugin.json -- no directory scanning or globbing for other hooks.json-shaped files. hooks-codex/hooks.json is structurally invisible to it. Recorded in hook-inventory.md's new Doubt-review resolution section."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "the activation-record mechanism is a self-contained, low-footprint addition with no ongoing cost beyond the session it protects",
+      "disproof_attempt": "codex_activation_record.py had no purge/GC path at all -- every session's record + .consumed sidecar persisted forever, invisible to the bloat gate since it's gitignored, unlike the sibling event_once.py primitive which already has _purge_expired_claims.",
+      "file": "shared/scripts/lib/codex_activation_record.py",
+      "resolution": "fixed: added _purge_expired_records, mirroring event_once._purge_expired_claims, called opportunistically from mint()'s exclusive-create path (once per new session)."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "moving the two Tier-3 hooks Codex-only keeps their per-invocation cost minimal on the runtime that actually needs them",
+      "disproof_attempt": "Both mint() and consume() unconditionally re-normalized cwd (a git subprocess) and rebuilt/re-derived state on every single call for the whole session, even long after settlement -- the mechanism zeroed cost under Claude but did not minimize it under Codex.",
+      "file": "plugins/shipwright-iterate/scripts/hooks/codex_pretooluse_gate.py, plugins/shipwright-iterate/scripts/hooks/codex_activation_mint.py, shared/scripts/lib/codex_activation_record.py",
+      "resolution": "fixed: mint()/consume() now short-circuit via a fail-open _exists_fail_open() check before any real work, collapsing steady-state cost from every call to once per session."
+    }
+  ],
+  "summary": "All 4 doubts addressed: the two HIGH findings via one verified-safe claim (Claude Code's loader, confirmed against official docs) and one documented, scoped residual-risk deferral (Codex dispatch-concurrency, inherited as a required R2b live-proof question); the two MEDIUM findings via code fixes (purge/GC added, redundant per-call subprocess cost eliminated), each independently code-reviewed and test-covered."
+}

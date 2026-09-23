@@ -70,13 +70,63 @@ def test_write_launcher_posix_branch_writes_sh_with_shebang_and_exec_bit(tmp_pat
 
     monkeypatch.setattr(Path, "chmod", spy_chmod)
 
-    launcher_path = _write_launcher(launcher_dir, "abc123", "uv run /real/script.py")
+    launcher_path = _write_launcher(
+        launcher_dir, "abc123", "uv run /real/script.py", "/real/bundle"
+    )
 
     assert launcher_path.suffix == ".sh"
     body = launcher_path.read_text(encoding="utf-8")
-    assert body == "#!/bin/sh\nexec uv run /real/script.py\n"
+    assert body == (
+        "#!/bin/sh\n"
+        "SHIPWRIGHT_PLUGIN_ROOT=/real/bundle\n"
+        "export SHIPWRIGHT_PLUGIN_ROOT\n"
+        "exec uv run /real/script.py\n"
+    )
     assert len(requested_modes) == 1
     assert requested_modes[0] & stat_module.S_IXUSR
+
+
+def test_write_launcher_posix_branch_quotes_bundle_root_with_space(tmp_path, monkeypatch):
+    """Belt-and-braces (mini-plan §0.2): shlex.quote() the injected value
+    even though _validate_bundle_root_for_launcher already rejects the
+    characters that would make this unsafe — a space alone is allowed by
+    that allowlist and must still round-trip as one shell token."""
+    monkeypatch.setattr(launcher_module.sys, "platform", "linux")
+    launcher_dir = tmp_path / "launchers"
+    launcher_dir.mkdir()
+    monkeypatch.setattr(Path, "chmod", lambda self, *a, **kw: None)
+
+    launcher_path = _write_launcher(
+        launcher_dir, "abc123", "uv run /real/script.py", "/home/svenroth/Shipwright Bundle"
+    )
+
+    body = launcher_path.read_text(encoding="utf-8")
+    assert "SHIPWRIGHT_PLUGIN_ROOT='/home/svenroth/Shipwright Bundle'\n" in body
+    assert "export SHIPWRIGHT_PLUGIN_ROOT\n" in body
+
+
+def test_write_launcher_windows_branch_injects_env_var(tmp_path, monkeypatch):
+    monkeypatch.setattr(launcher_module.sys, "platform", "win32")
+    launcher_dir = tmp_path / "launchers"
+    launcher_dir.mkdir()
+
+    launcher_path = _write_launcher(
+        launcher_dir, "abc123", 'uv run "C:\\bundle\\script.py"', "C:\\bundle"
+    )
+
+    assert launcher_path.suffix == ".cmd"
+    # read_text() applies universal-newline translation (\r\n -> \n on read);
+    # the file on disk is still genuinely \r\n-terminated, matching the
+    # pre-existing body format for the other two lines.
+    body = launcher_path.read_text(encoding="utf-8")
+    assert body == (
+        "@echo off\n"
+        'set "SHIPWRIGHT_PLUGIN_ROOT=C:\\bundle"\n'
+        'uv run "C:\\bundle\\script.py"\n'
+        "exit /b %ERRORLEVEL%\n"
+    )
+    raw_bytes = launcher_path.read_bytes()
+    assert raw_bytes.count(b"\r\n") == 4
 
 
 def test_hooks_json_command_quotes_on_posix(monkeypatch):
@@ -175,4 +225,8 @@ def test_materialize_accepts_windows_style_path_with_parentheses_and_spaces(tmp_
 
     assert len(manifest_entries) == 1
     launcher_path = _command_to_launcher_path(manifest_entries[0]["command"])
-    assert launcher_path.read_text(encoding="utf-8").count(str(bundle_root)) == 1
+    body = launcher_path.read_text(encoding="utf-8")
+    # Twice by design: once in the injected SHIPWRIGHT_PLUGIN_ROOT env line
+    # (mini-plan §0.2), once in the substituted command line.
+    assert body.count(str(bundle_root)) == 2
+    assert f'set "SHIPWRIGHT_PLUGIN_ROOT={bundle_root}"' in body

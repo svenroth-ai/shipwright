@@ -17,6 +17,7 @@ for _d in (_LIB_DIR, _TOOLS_DIR):
     if str(_d) not in sys.path:
         sys.path.insert(0, str(_d))
 
+import cmd_resolver  # noqa: E402
 import external_review_default_legs as legs  # noqa: E402
 
 _CONFIG = {"models": {"codex": "gpt-5.6-terra"}, "codex": {"max_retries": 1}}
@@ -53,7 +54,7 @@ def test_review_codex_sends_the_rendered_prompt_with_no_residual_placeholder(mon
     own {CONTENT}/{CONTEXT} substitution never matched the CLI's {SPEC}/{DIFF}
     template, and Codex reviewed literal placeholder text as a passing review."""
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
     captured = {}
 
@@ -79,7 +80,7 @@ def test_review_codex_sends_the_rendered_prompt_with_no_residual_placeholder(mon
 
 def test_review_codex_retries_once_on_a_degraded_empty_reply(monkeypatch, tmp_path):
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
     attempts = {"n": 0}
 
@@ -97,7 +98,7 @@ def test_review_codex_retries_once_on_a_degraded_empty_reply(monkeypatch, tmp_pa
 
 def test_review_codex_reports_a_nonzero_exit_as_error_without_retrying(monkeypatch, tmp_path):
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
     config_with_retries = {"models": {"codex": "gpt-5.6-terra"}, "codex": {"max_retries": 2}}
     attempts = {"n": 0}
@@ -115,7 +116,7 @@ def test_review_codex_reports_a_nonzero_exit_as_error_without_retrying(monkeypat
 
 def test_review_codex_timeout_is_error_and_not_retried(monkeypatch, tmp_path):
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
     config_with_retries = {"models": {"codex": "gpt-5.6-terra"}, "codex": {"max_retries": 2, "timeout_seconds": 1}}
     attempts = {"n": 0}
@@ -232,7 +233,7 @@ def test_cli_codex_route_actually_sends_the_spec_and_plan_not_the_raw_template(m
     )
 
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
-    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     captured = {}
 
     def _fake_run(cmd, input, **_kwargs):  # noqa: A002
