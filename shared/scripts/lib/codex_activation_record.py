@@ -13,14 +13,13 @@ never an exception, never a denial by default. The only thing enforced
 strictly is exclusivity: ``mint()`` never overwrites an existing record,
 ``consume()`` never lets a second caller claim one already consumed.
 
-**Storage:** ``<project_root>/.shipwright/runtime/codex-activation/
-<session>.json`` plus a same-named ``.consumed`` sidecar — both gitignored.
-One file per ``session_id``; only ``cwd``/``schema_version``/expiry are
-re-validated today, ``turn_id``/``generation`` are write-only (R2b).
-
-**Exclusive-create** mirrors ``lib.event_once._create``'s
-``os.O_CREAT | os.O_EXCL`` rather than ``durable_atomic_write``'s
-tmp+replace, which would silently violate the never-overwrite contract.
+**Storage:** ``<project_root>/.shipwright/runtime/codex-activation/<session>.json``
+plus a same-named ``.consumed`` sidecar — both gitignored. One file per
+``session_id``; only ``cwd``/``schema_version``/expiry are re-validated
+today, ``turn_id``/``generation`` are write-only (R2b). **Exclusive-create**
+mirrors ``lib.event_once._create``'s ``os.O_CREAT | os.O_EXCL`` rather than
+``durable_atomic_write``'s tmp+replace, which would silently violate the
+never-overwrite contract.
 """
 
 from __future__ import annotations
@@ -110,8 +109,8 @@ def _consumed_path(project_root: str | os.PathLike[str], session_id: str) -> Pat
 def _has_valid_field_types(record: ActivationRecord) -> bool:
     """A syntactically valid JSON object can carry wrong field types
     (``"expiry": null``) and still construct via ``ActivationRecord(**payload)`` —
-    the ``TypeError`` fires later, at ``ts >= record.expiry`` (external review,
-    openai medium). ``bool`` is an ``int`` subclass, so numeric fields reject it."""
+    the ``TypeError`` fires later, at ``ts >= record.expiry``. ``bool`` is an
+    ``int`` subclass, so numeric fields AND ``schema_version`` reject it too."""
     str_fields = (record.session_id, record.turn_id, record.cwd, record.generation)
     numbers = (record.minted_at, record.expiry)
     return (
@@ -119,6 +118,7 @@ def _has_valid_field_types(record: ActivationRecord) -> bool:
         and isinstance(record.armed, bool)
         and (record.skill_id is None or isinstance(record.skill_id, str))
         and (record.args is None or isinstance(record.args, dict))
+        and type(record.schema_version) is int
         and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in numbers)
         and all(math.isfinite(v) for v in numbers)
     )

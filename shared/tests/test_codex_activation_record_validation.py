@@ -41,6 +41,23 @@ def test_read_returns_none_when_armed_field_is_not_bool(tmp_path):
     assert read(tmp_path, "s1", cwd="/proj") is None
 
 
+def test_read_returns_none_when_schema_version_is_boolean_true(tmp_path):
+    # external review, round 4: bool is an int subclass and True == 1, so a
+    # boolean schema_version silently passed the caller's `!= _SCHEMA_VERSION`
+    # check despite failing the documented schema-mismatch fail-open contract.
+    from lib.codex_activation_record import _record_path, read
+
+    path = _record_path(tmp_path, "s1")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "schema_version": True, "session_id": "s1", "turn_id": "t1", "cwd": "/proj",
+        "generation": "abc", "armed": True, "skill_id": "x", "args": {},
+        "minted_at": 0.0, "expiry": 9e9,
+    }), encoding="utf-8")
+
+    assert read(tmp_path, "s1", cwd="/proj") is None
+
+
 def test_read_returns_none_when_minted_at_is_infinite(tmp_path):
     from lib.codex_activation_record import _record_path, read
 
