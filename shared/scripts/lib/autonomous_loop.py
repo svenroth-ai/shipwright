@@ -263,8 +263,17 @@ def cmd_record(args: argparse.Namespace) -> int:
     except json.JSONDecodeError:
         state_peek = _load_state(state_path)
         loop_id = state_peek.get("loop_id", "")
-        fallback_path = runs_dir_for(state_path, loop_id, args.unit) / "result.json"
-        if fallback_path.exists():
+        # External Tier-3 PR review (GPT, PR #790 round 21): `args.unit` is
+        # raw, unvalidated CLI input reaching `runs_dir_for`'s charset gate
+        # (round 9) here — unlike every other call site in this function,
+        # which passes an already state-matched unit's canonical `id`. A
+        # malformed `--unit` must fall through to the existing "no fallback
+        # available" structured-failure path below, not crash uncaught.
+        try:
+            fallback_path = runs_dir_for(state_path, loop_id, args.unit) / "result.json"
+        except ValueError:
+            fallback_path = None
+        if fallback_path is not None and fallback_path.exists():
             try:
                 result = json.loads(fallback_path.read_text(encoding="utf-8"))
                 print(f"WARN: Task returned non-JSON, using fallback {fallback_path}", file=sys.stderr)
@@ -346,7 +355,21 @@ def cmd_record(args: argparse.Namespace) -> int:
                 unit["branch"] = result.get("branch", unit.get("branch"))
                 unit["failure_reason"] = result.get("error") or (result.get("reason") if result.get("status") != "complete" else None)  # escalated carries `reason`, not `error`; scoped so a complete unit never gains one
 
-                runs_dir = runs_dir_for(state_path, state["loop_id"], unit["id"])
+                # External Tier-3 PR review (GPT, PR #790 round 21): `unit["id"]`
+                # here is the CANONICAL id of an already-matched row, not raw
+                # CLI input — but a hand-edited or corrupted `loop_state.json`
+                # could still carry one outside `runs_dir_for`'s charset gate
+                # (round 9's threat model, the same one round 19 already fixed
+                # for `_reconcile_legacy`). Fail closed with this function's
+                # own structured-failure shape instead of an uncaught
+                # traceback, and — per the reviewer's own fix suggestion —
+                # WITHOUT persisting any of this block's in-memory mutations:
+                # `_save_state` below is never reached on this path.
+                try:
+                    runs_dir = runs_dir_for(state_path, state["loop_id"], unit["id"])
+                except ValueError as exc:
+                    print(json.dumps({"recorded": False, "error": str(exc)}), file=sys.stderr)
+                    return 3
                 runs_dir.mkdir(parents=True, exist_ok=True)
                 (runs_dir / "result.json").write_text(
                     json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8"

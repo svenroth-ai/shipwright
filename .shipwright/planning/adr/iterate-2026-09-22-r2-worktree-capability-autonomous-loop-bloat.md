@@ -148,11 +148,40 @@ responsibilities:
   Fixed with the identical `find_unit_row`-when-`sub_iterate` pattern
   Round 2 already established, at both remaining sites.
 
+### Round 4 growth (491 -> 514)
+
+External Tier-3 review (GPT, PR #790 round 21) found `cmd_record`'s two
+`runs_dir_for` call sites both unguarded for the `ValueError` that helper
+raises on a charset-rejected id (round 9 of the sibling
+`iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md`): the
+non-JSON-result fallback lookup passes raw, unvalidated `args.unit`
+straight through, and the success-path `result.json` write passes an
+already state-matched row's `unit["id"]` — canonical, but still reachable
+from a hand-edited/corrupted `loop_state.json`, the exact threat model
+round 19 of that same sibling ADR already fixed for
+`lib.loop_state._reconcile_legacy`. Either site previously crashed the
+whole CLI with an uncaught traceback on a malformed id instead of this
+function's own structured-failure shape. Fixed by wrapping both calls:
+the fallback lookup treats a `ValueError` the same as "no fallback
+available" (falls through to the existing non-JSON structured-failure
+path, exit 3); the success-path write returns a controlled `{"recorded":
+false, ...}` response and exit 3 without ever calling `_save_state` — the
+in-memory mutations already applied to that block are discarded, never
+persisted. Not a new responsibility — closing the same gap round 9/19
+already closed elsewhere, for the two call sites in this module that had
+been missed. Two new regression tests, in a new file (not the sibling
+`test_autonomous_loop.py`, already `"state": "grandfathered"` at 442
+lines — growing a grandfathered file needs converting it to a filed
+`exception` first, not a bare bump):
+`test_autonomous_loop_record_runs_dir_safety.py`.
+
 ## Consequences
 
 - `_reconcile_in_progress` may grow further before the anti-ratchet blocks
-  again (491-line current, per Round 3 growth above). Not a licence to keep
+  again (514-line current, per Round 4 growth above). Not a licence to keep
   growing — the next crossing needs its own ADR.
+- `test_autonomous_loop_record_runs_dir_safety.py` is a brand-new file — no
+  baseline implication, it never existed before this round.
 - A unit that has EVER been lease-touched is now reset to `pending` (attempt
   bumped) by `cmd_init` whenever no `result.json` exists for it, live lease
   or not — this is a deliberate trade: it can restart a build that was, in
