@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-23-r5a-wave-build-flip",
+  "date": "2026-09-23",
+  "section": "Iterate — feat: campaign-dag-scheduler R5a wave-based concurrent build flip",
+  "title": "Flip the campaign loop to wave-based concurrent sub-iterate build",
+  "context": "campaign-mode.md's loop built one sub-iterate at a time. R1-R4 already built the primitives a concurrent model needs: the dependency graph, per-unit worktree wrapper, and the atomic batch-claim/fencing state machine. R5a wires them together into the live loop.",
+  "decision": "Flip steps 3a-3f: compute+claim a bounded per-wave ready set (loop_claim.cmd_next_batch), give each claimed unit its own worktree, spawn every unit's sub-iterate-runner as a parallel Task call in one message, reconcile wave-return in fixed order, then drain 3f-bis..3h one unit at a time before the next wave's ready set is even computed.",
+  "consequences": "Units within a wave now build concurrently; the merge lane still drains serially, one unit at a time, per wave -- cross-wave pipelining is an explicit non-goal. A new wave-scoped SHIPWRIGHT_LOOP_UNIT_ID sentinel (truthiness-only) replaces the old per-runner identity export; _run_id.py/handoff namespacing resolve identity from the per-unit worktree instead.",
+  "rationale": "R1-R4 already built the underlying state-machine and worktree primitives; the wave model is the minimal orchestration change that captures their concurrency without breaking the merge-lane serialization the interleaved-serial design depends on.",
+  "rejected": "Cross-wave pipelining (needs unconfirmed mid-turn Task-completion processing by this harness). Per-runner self-export of unit identity (races on the shared CLAUDE_ENV_FILE across concurrent runners -- see campaign-mode.md's own security note).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip.md"
+}

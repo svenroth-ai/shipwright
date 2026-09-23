@@ -32,9 +32,10 @@ CAMPAIGN_STEP_3_4 = (
 
 #: The bloat baseline pins the runner contract here (state: exception,
 #: ADR-119 raised 400->497; campaign-dag-scheduler R2's own bloat-exception
-#: ADR raised 497->512 — see
-#: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-bloat-exception.md).
-RUNNER_DOC_LINE_CEILING = 512
+#: ADR raised 497->512; R5a's own external-code-review fix ADR raised
+#: 512->528 (two review rounds) — see
+#: .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-sub-iterate-runner-bloat-exception.md).
+RUNNER_DOC_LINE_CEILING = 528
 
 
 def _runner() -> str:

@@ -18,13 +18,13 @@ You receive these parameters in the prompt:
 - `sub_iterate_spec`: Absolute path to the sub-iterate spec file
 - `campaign_path`: Absolute path to the campaign directory
 - `campaign_slug`: bare slug (orchestrator's `{slug}`, passed explicitly — not re-derived from `campaign_path`'s basename, so the two guards can't disagree)
-- `project_root`: Absolute path to the project root
+- `project_root`: Absolute path to the project root. **Since campaign-dag-scheduler R5a, for a `sub_iterate` unit this is the unit's OWN per-unit worktree** (`.worktrees/campaign-{campaign_slug}--{unit_id}[-a{attempt}]`, `references/campaign-worktree.md` → "Per-unit worktree path") — the same value `loop_state.json`'s row calls `worktree`, and distinct from `campaign_worktree` below (the shared orchestrator worktree) once the flip is live.
 - `plugin_root` / `plan_plugin_root`: absolute paths to the shipwright-iterate plugin / shipwright-plan (external_review.py's `uv run --project` target); `shared_root`: absolute path to the shared directory
 - `base_branch`: Ref to branch off. **serial (campaign default): the FRESH `origin/<default>` remote ref** — every sub-iterate (incl. the first) branches off it, so it starts from a `main` that already contains every prior merged sub-iterate. (stacked: the previous sub-iterate's branch; null for the first stacked sub-iterate.)
 - `session_id`: Shipwright session ID
-- `branch_name`: Target branch name (e.g., `iterate/campaign-14.2-multi-question`)
-- `campaign_worktree` (campaign-dag-scheduler R2): campaign worktree path; absent on a standalone iterate.
-- `state_path` (campaign-dag-scheduler R2): path to this campaign's `loop_state.json`; absent on a standalone iterate.
+- `branch_name`: Target branch name (e.g., `iterate/campaign-14.2-multi-question`) — the same value `loop_state.json`'s row calls `branch`.
+- `campaign_worktree` / `state_path` (campaign-dag-scheduler R2): the SHARED campaign worktree path, and `loop_state.json`'s path under it (never per-unit); both absent on a standalone iterate.
+- `unit_id` / `attempt` / `attempt_id` (campaign-dag-scheduler R5a): `unit_id` == `sub_iterate_id` (the `--unit`/`.id` name `loop_claim.py`'s claim mechanics use); `attempt` (0-indexed retry count) builds the per-unit worktree's composite slug for Step 1.0's guard below (`references/campaign-worktree.md` → "Per-unit worktree path"); `attempt_id` is this claim's fencing token, checked at Step 1.0.5 and every later claim-mechanics mutation.
 
 ## Step-boundary liveness touches (campaign-dag-scheduler R2)
 
@@ -43,7 +43,8 @@ uv run "{shared_root}/scripts/checks/check_unit_lease.py" touch \
 
 ### Step 1: Setup
 
-0. **Isolation check — STOP if this fails** (`references/campaign-worktree.md`): `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}" --campaign-slug "{campaign_slug}"`. Non-zero = STOP, no git command; return `status:"failed"`, `reason_code: "not_isolated"` — orchestrator repairs the worktree. Else `cd "{project_root}"` first: F0–F6 prose assumes cwd IS the worktree.
+0. **Isolation check — STOP if this fails** (`references/campaign-worktree.md`). **When `unit_id` is absent** (standalone-shaped dispatch — same condition as Step 1.0.5 below): the pre-R5a single-worktree guard, `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}" --campaign-slug "{campaign_slug}"`. **Else** (R5a per-unit worktree is live): `{project_root}` is this unit's own per-unit worktree — checked in **per-unit guard-mode**, composite slug `{campaign_slug}--{unit_id}` at `attempt == 0`, else `{campaign_slug}--{unit_id}-a{attempt}` (never `campaign-`-prefixed — the guard adds that itself): `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}" --campaign-slug "{campaign_slug}--{unit_id}[-a{attempt}]"`. Either branch: non-zero = STOP, no git command; return `status:"failed"`, `reason_code: "not_isolated"` — orchestrator repairs the worktree. Else `cd "{project_root}"` first: F0–F6 prose assumes cwd IS the worktree.
+0.5. **Claim promotion (campaign-dag-scheduler R5a), right after the isolation check, before `checkout -b`. Skip entirely when `unit_id` is absent** (a standalone-shaped dispatch — same canonical check as item 0 above and Step 6; go straight to step 1). Else promote this unit's row `claimed -> running` under its OWN fencing token, so the orchestrator can tell "launched and building" apart from "never actually started" at wave-return: `uv run "{shared_root}/scripts/lib/loop_claim.py" mark-running --state "{state_path}" --unit "{unit_id}" --attempt-id "{attempt_id}"`. Non-zero (stale-attempt exit `5`, or structural `1`) means a second attempt already superseded this claim, or it was reconciled away while this Task was starting. STOP; return `status:"failed"`, `reason_code: "stale_claim"` — do NOT check out a branch.
 1. Branch off `base_branch`, fetching first ONLY for a remote (serial) base so a
    stacked / `origin`-less run still works: serial (`origin/…`) → `git -C "{project_root}" fetch origin && git -C "{project_root}" checkout -b {branch_name} {base_branch}`; stacked (local base) → `git -C "{project_root}" checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git -C "{project_root}" checkout -b {branch_name}`.
 2. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs + architecture docs, the
@@ -326,8 +327,23 @@ git -C "{project_root}" push -u origin {branch_name}
 
 ### Step 6: Persist Result
 
-Write result JSON to `.shipwright/runs/{loop_id}/{sub_iterate_id}/result.json`
-where `loop_id` comes from `SHIPWRIGHT_LOOP_ID` env var.
+**One canonical presence check for this whole file: `unit_id`** — Step 1.0,
+1.0.5, and this step all branch on the SAME field, never a different subset,
+so a partial/malformed brief can't split the two branches apart.
+
+When `unit_id` is present: write result JSON to the
+**canonical state root, attempt-scoped** —
+`$(dirname "{state_path}")/runs/{loop_id}/{unit_id}/a{attempt}/result.json` —
+never `{project_root}`'s own `.shipwright/` (since R5a's flip that is THIS
+unit's own per-unit worktree, a different filesystem location than the shared
+tree the orchestrator reads back from once the whole wave returns). `loop_id`
+is the `SHIPWRIGHT_LOOP_ID` env var (the whole-campaign constant, shared by
+every unit in a wave, never the wave-scoped `SHIPWRIGHT_LOOP_UNIT_ID` sentinel
+this step never reads); `{unit_id}` is this unit's own brief-provided identity
+(== `sub_iterate_id`); the `a{attempt}` component keeps a superseded prior
+attempt's result from being overwritten or misread as the current attempt's.
+**Absent** (`unit_id`, standalone-shaped dispatch): fall back to the pre-R5a path
+`{project_root}/.shipwright/runs/{loop_id}/{sub_iterate_id}/result.json`.
 
 ## Output
 

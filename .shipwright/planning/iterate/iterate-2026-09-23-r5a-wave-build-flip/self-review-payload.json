@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Wave flip (3a-3f), per-unit worktree wiring, brief params, wave-scoped sentinel, restore_derived_to_head concurrency test, launch-failure/no-result reconciliation all delivered per R5a-wave-build-flip.md."},
+{"name":"Error Handling","verdict":"pass","note":"campaign_wave.py handles a missing/empty loop_unit by falling back to resolve_run_id; no new unhandled boundary introduced."},
+{"name":"Security Basics","verdict":"pass","note":"Sentinel used only for truthiness (authorship guard); never treated as an identity value anywhere in the migrated consumers; no secrets, no raw input handling changed."},
+{"name":"Test Quality","verdict":"pass","note":"New tests assert outcomes (state transitions, sentinel-safe fallback, cross-worktree isolation), including failure-path coverage (launch failure, running-no-result, max-attempts exhausted)."},
+{"name":"Performance Basics","verdict":"n/a","note":"Orchestration prose + small pure-Python helpers; no query/loop/async surface touched."},
+{"name":"Naming & Structure","verdict":"pass","note":"campaign_wave.py (91 LOC) new, well under 300; _run_id.py held at exactly 300; sub-iterate-runner.md held at its existing 512 exception ceiling; campaign-mode.md's 810->983 growth filed as its own bloat-exception ADR."},
+{"name":"Affected Boundaries","verdict":"pass","note":"loop_state.json / result.json (producer: loop_claim/autonomous_loop + sub-iterate-runner Step 6; consumer: campaign-mode.md 3e/3f) and derived-snapshot files under concurrent worktrees are the two changed boundaries; both have real round-trip/integration probes (test_wave_launch_failure_and_reconcile.py, test_derived_snapshots_wave_concurrency.py) using actual git worktrees and on-disk state files, not mocks."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

@@ -1,9 +1,14 @@
 # Campaign Mode (Autonomous Multi-Iterate)
 
-When invoked with `--campaign <slug>` and `--autonomous`, run multiple
-sub-iterates **interleaved-serially**: build ONE sub-iterate → open its PR →
-wait for CI green → merge → build the NEXT from fresh `origin/main`. This
-formalizes the ad-hoc orchestration pattern.
+When invoked with `--campaign <slug>` and `--autonomous`, run the campaign's
+sub-iterates **interleaved-serially at the WAVE level** (campaign-dag-scheduler
+R5a — "the flip"): compute the bounded set of sub-iterates ready to build right
+now (a "wave" — every `depends_on` edge already merged), build the WHOLE wave
+CONCURRENTLY, drain it through PR → CI green → merge, one unit at a time, then
+compute the next wave from a fresh `origin/main` that already contains
+everything the drained wave just merged. Independent sub-iterates build
+together within a wave; a genuine dependency chain still serializes, same as
+before R5a. This formalizes the ad-hoc orchestration pattern.
 
 **Flags:** `/shipwright-iterate --campaign <slug> [--autonomous] [--sub-iterate-id <id>]` (the last for a single hand-run sub-iterate — stamps the event per SKILL.md §5b)
 
@@ -44,11 +49,24 @@ regenerates the same *derived* artifacts (`shipwright_events.jsonl`,
 `triage.jsonl`, compliance MDs, the dashboard). If you build all the PRs first
 and merge at the end, siblings never see each other → every merge has to 3-way +
 regenerate those snapshots against an advancing `origin/main` = recurring merge
-theater. Interleaved-serial keeps **only ONE open PR at a time**: the next
-sub-iterate branches off a `main` that already contains the prior merge, so
-shared-file and snapshot edits compose naturally. There is **no end-stage drain**
-and **no regenerate-at-merge**. (Contrast: shipwright-build sections ship as ONE
-PR via `single-branch`, so their sequential model has nothing to drain.)
+theater. Interleaved-serial keeps only ONE open PR **being merged** at a time —
+merges never race — so the NEXT wave's units branch off a `main` that already
+contains every merge the drained wave just performed, and cross-wave
+shared-file/snapshot edits compose naturally. There is **no end-stage drain**
+and **no regenerate-at-merge** ACROSS waves. (Contrast: shipwright-build
+sections ship as ONE PR via `single-branch`, so their sequential model has
+nothing to drain.)
+
+**Known gap, WITHIN one wave, closed by R5b.** R5a's own drain (3f-bis..3h)
+is today's UNCHANGED, single-unit pipeline, just invoked once per unit in the
+wave — it does not yet rebase or re-check staleness between two sibling units
+of the SAME wave that both branched from the SAME pre-wave `origin/main`. A
+later sibling's merge, landing after an earlier one in the same wave already
+changed a shared derived file, can still hit the identical 3-way/merge-theater
+problem this section otherwise argues against — narrowed to WITHIN a wave
+rather than eliminated. This is deliberate, not an oversight: R5b ("serial
+merge lane: review pinning, staleness cascade") is the sub-iterate that closes
+it, by name.
 
 | `branch_strategy` | base for each unit | merge timing | used by |
 |---|---|---|---|
@@ -142,6 +160,17 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    # that merged itself when the host could not arm would break exactly the
    # one-PR-at-a-time invariant this defer exists to hold.
    export SHIPWRIGHT_ITERATE_AUTOMERGE=0
+   # campaign-dag-scheduler R5a (the flip): a wave now spawns MULTIPLE
+   # sub-iterate-runners in one message instead of one at a time, so no
+   # single runner's own `SHIPWRIGHT_LOOP_UNIT_ID` export can carry a
+   # genuine per-unit identity any more (see step 3c's security note for the
+   # full reasoning on why a per-runner self-export cannot substitute for
+   # this). Export ONE fixed, non-identity-bearing sentinel for the WHOLE
+   # wave, once, here — it still makes `ci_supplychain_authorship_guard.py`
+   # refuse exactly as before (that guard only ever checks TRUTHINESS, never
+   # the value). `lib.campaign_wave.WAVE_UNIT_ID_SENTINEL` is the same
+   # literal, importable for any Python-side comparison.
+   export SHIPWRIGHT_LOOP_UNIT_ID="__campaign_wave__"
    ```
 
 2. **Initialize loop from the piped units list** — both sides are same-shell
@@ -157,10 +186,11 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
      --branch-strategy serial \
      --root-session-id "$SHIPWRIGHT_ROOT_SESSION_ID"
    ```
-   `--branch-strategy serial`: `cmd_next` hands each sub-iterate the
-   **freshly-fetched `origin/<default>`** as its base (enforced in code, not
-   by prose). Extract `loop_id` from stdout, then `export
-   SHIPWRIGHT_LOOP_ID="{loop_id}"`.
+   `--branch-strategy serial`: `cmd_next`/`cmd_next_batch` (campaign-dag-scheduler
+   R5a's own live loop calls the latter — see step 3a below) both hand every
+   sub-iterate the **freshly-fetched `origin/<default>`** as its base
+   (enforced in code, not by prose). Extract `loop_id` from stdout, then
+   `export SHIPWRIGHT_LOOP_ID="{loop_id}"`.
 
    **Resolve model tiers once for the whole campaign** (not per sub-iterate —
    the operator's choice applies uniformly across every unit this loop
@@ -189,37 +219,187 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
      --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}"
    ```
 
-3. **Loop (repeat until exit code 2) — build, then MERGE before the next builds:**
+3. **Loop (repeat until exit code 2) — build a WHOLE WAVE concurrently, then
+   drain it through the merge lane before the next wave's ready set is even
+   computed (campaign-dag-scheduler R5a — "the flip"):**
+
+   **Waves serialize on the merge lane.** Wave N+1's ready set (3a) is
+   computed, and wave N+1 is spawned (3c), only once every unit in wave N has
+   been recorded/reviewed/merged (or held) through 3f-bis..3h below. This is
+   the honest cost of the wave model: the speedup is CONCURRENT BUILDING of
+   independent units within one wave — replacing yesterday's fully serial,
+   one-unit-at-a-time loop — never overlap between a wave's own merge lane
+   and the next wave's build. Cross-wave pipelining is an explicit non-goal
+   (it would require processing individual `Task` completions mid-turn,
+   which is unconfirmed for the runtime this loop actually runs under).
+
+   `WAVE_MAX_PARALLEL = 4` — a fixed, documented loop constant (well under
+   `loop_claim.py`'s own `MAX_PARALLEL_HARD_CAP = 8`), not a per-campaign
+   config knob; a future increment may expose one.
 
    ```
-   3a. Renew the session lock first (`uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"`, references/campaign-worktree.md; non-zero = **LOCK-LOST — distinct from STRICT-STOP: do NOT proceed to step 4**, because Finalize writes `loop_state.json` and a lock-loss means a second session may already be driving it; stop immediately, write nothing, and report to the operator that this session lost the campaign lock (see references/campaign-worktree.md)), then uv run ... next --state .shipwright/loop_state.json
-       → exit 2 → check `blocked_pending_ids` FIRST — non-empty means STALLED,
-         not done: STOP, report `blockers`, do not finalize (campaign-dependency-graphs.md
-         § "Exit 2 is not always done"); empty/absent → step 4 (Finalize)
-       → Parse JSON: id, spec_path, base_branch (= fresh origin/<default>), attempt
+   3a. Renew the session lock first (`uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"`, references/campaign-worktree.md; non-zero = **LOCK-LOST — distinct from STRICT-STOP: do NOT proceed to step 4**, because Finalize writes `loop_state.json` and a lock-loss means a second session may already be driving it; stop immediately, write nothing, and report to the operator that this session lost the campaign lock (see references/campaign-worktree.md)), then compute + claim the BOUNDED READY SET for the whole wave in one atomic call:
+         uv run "{shared_root}/scripts/lib/loop_claim.py" next-batch \
+           --state .shipwright/loop_state.json --campaign-worktree "{project_root}" \
+           --max-parallel "$WAVE_MAX_PARALLEL"
+       → exit 2 → done (every unit TERMINAL) → step 4 (Finalize)
+       → exit 4 → **stalled, not done** — `blocked_pending_ids` is non-empty and
+         nothing was ready to claim this round: STOP, report `blockers`, do not
+         finalize (mirrors the pre-R5a exit-2-but-blocked case,
+         campaign-dependency-graphs.md § "Exit 2 is not always done" — R5a's own
+         batch sibling reports the identical shape under its own exit code)
+       → exit 6 → `loop.lock` timeout → STRICT-STOP: go to step 4
+       → exit 1 → structural failure (bad `--max-parallel`, wrong `kind`) → STRICT-STOP
+       → exit 0 → parse `claimed`: a JSON array, one object per unit this wave
+         just claimed — `{id, spec_path, attempt, attempt_id, base_branch,
+         depends_on}` — in campaign.md row order (`cmd_next_batch` preserves
+         `loop_state.json`'s own unit order, never re-sorts). This array's
+         order is THE fixed order every later step in this loop iteration
+         uses — mint, spawn, reconcile, record, and the 3f-bis..3h drain all
+         walk it in this same sequence.
 
-   3b. export SHIPWRIGHT_LOOP_UNIT_ID="{id}"
-       Mint run_id HERE: `iterate-{today}-{id, LOWERCASED}-{desc}` (RUN_ID_STRICT, SKILL.md §C) — `id` may display uppercase (`R0`); LOWERCASE it in run_id, uppercase stays only in branch_name/PR title/`sub_iterate_id` (Step 3.4 now rejects a wrong one immediately, not F5c hours later).
+   3b. For EACH unit in `claimed` (fixed order): mint its run_id —
+       `iterate-{today}-{id, LOWERCASED}-{desc}` (RUN_ID_STRICT, SKILL.md §C) —
+       `id` may display uppercase (`R0`); LOWERCASE it in run_id, uppercase
+       stays only in branch_name/PR title/`sub_iterate_id` (Step 3.4 now
+       rejects a wrong one immediately, not F5c hours later). No per-unit
+       `SHIPWRIGHT_LOOP_UNIT_ID` export here any more — the wave-scoped
+       sentinel was already exported once, for the whole wave, at loop step 1
+       (security note below).
 
-   3c. **Worktree guard, then spawn.** Run the spawn-guard command from `references/campaign-worktree.md` first (non-zero = STRICT-STOP, go to step 4, do NOT spawn). Then, Spawn sub-iterate-runner subagent:
-       result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
-                     model=<finalization tier resolved at loop step 2, omit if "inherit">,
-                     prompt=<brief with sub_iterate_id, run_id (3b), spec, base_branch, campaign_slug (this loop's `{slug}`), plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), campaign_worktree (= `{project_root}`, this loop's own campaign worktree — R2), state_path (= `{project_root}/.shipwright/loop_state.json` — R2), etc.>)
-       The runner branches off base_branch (fresh origin/<default>), builds,
-       finalizes, pushes, and leaves the PR OPEN (auto-merge deferred). The brief
-       carries campaign_path + campaign_slug + sub_iterate_id; the runner
-       contract Step 4 STAMPS campaign_slug + sub_iterate_id into the
+   3c. **Per-unit worktree, then multi-spawn — the flip.** For EACH unit in
+       `claimed` (fixed order), create its OWN per-unit worktree (R2's
+       wrapper, wired live):
+         uv run "{shared_root}/scripts/tools/setup_unit_worktree.py" \
+           --project-root "{project_root}" --campaign-slug "{slug}" \
+           --unit-id "{id}" --attempt "{attempt}" --run-id "{run_id from 3b}" \
+           --session-id "$SHIPWRIGHT_SESSION_ID"
+       Its JSON output's `project_root` is THIS unit's own worktree — a
+       DIFFERENT filesystem location per unit, `.worktrees/campaign-{slug}--{id}[-a{attempt}]`
+       (`references/campaign-worktree.md` → "Per-unit worktree path"), never
+       the shared `{project_root}` the orchestrator itself runs in (that value
+       is passed to the brief below as `campaign_worktree`, unchanged). Then
+       run the per-unit spawn-guard from `references/campaign-worktree.md`
+       against THAT unit's own worktree. Non-zero (setup OR guard, either
+       one) = release EVERY other unit already claimed by 3a this wave
+       (`loop_claim.py release --attempt-id "{its own attempt_id from 3a}"`
+       for each — external review, openai, medium: a claim must never be
+       left stranded `claimed` just because a LATER unit in the same fixed
+       order failed setup), THEN STRICT-STOP the whole wave, go to step 4, do
+       NOT spawn anything from it. Once every unit in `claimed` has its own
+       worktree and has passed its own guard, spawn ALL
+       of them as **parallel `Task` calls in ONE message**, for EVERY unit
+       `i` in `claimed`. Spawn sub-iterate-runner subagent:
+         result_i = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
+                       model=<finalization tier resolved at loop step 2, omit if "inherit">,
+                       prompt=<brief with sub_iterate_id (= unit_id), run_id (3b),
+                       unit_id, attempt, attempt_id, spec, base_branch,
+                       campaign_slug (this loop's `{slug}`), plan_plugin_root,
+                       project_root (= THIS unit's own per-unit worktree, from
+                       above — never `{project_root}`), branch_name,
+                       campaign_worktree (= `{project_root}`, the SHARED
+                       campaign worktree — R2, unchanged), state_path (=
+                       `{project_root}/.shipwright/loop_state.json` — R2,
+                       unchanged), session_id ($SHIPWRIGHT_SESSION_ID), etc.>)
+       for every `i` in `claimed`, in the SAME message. **Regain control only
+       once every `Task` in that message has returned** (the conservative
+       assumption; nothing confirms the runtime this orchestrator session
+       actually runs under can process individual completions mid-turn). Each
+       runner branches off its own `base_branch` (fresh `origin/<default>`),
+       builds, finalizes, pushes, and leaves its PR OPEN (auto-merge
+       deferred) — its own Step 1.0.5 promotes its row `claimed -> running`
+       under its own fencing token before it ever checks out a branch. The
+       brief carries campaign_path + campaign_slug + sub_iterate_id; the
+       runner contract Step 4 STAMPS campaign_slug + sub_iterate_id into the
        work_completed event extras ("campaign" / "sub_iterate_id" — S1) so
-       per-sub status is projectable from events.jsonl alone. `campaign_worktree`/`state_path` feed the runner's own step-boundary liveness touches (references/campaign-worktree.md, R2).
+       per-sub status is projectable from events.jsonl alone.
 
-   3d. Wait for terminal marker (.shipwright/runs/{loop_id}/{id}/DONE, timeout 30s)
+       **Security: `SHIPWRIGHT_LOOP_UNIT_ID`'s consumers, enumerated and
+       dispositioned.**
+       - `ci_supplychain_authorship_guard.py::refuse_if_campaign_runner_context()`
+         refuses purely on this variable's TRUTHINESS, with no override flag.
+         PRESERVED: loop step 1 exports it for the whole wave, set to the
+         fixed, non-identity-bearing sentinel `"__campaign_wave__"`, so the
+         guard still refuses exactly as it does today.
+       - `_run_id.py`'s tier-3 run-id derivation and
+         `generate_handoff_on_stop.py`'s handoff namespacing both need the
+         actual per-unit identity, which a shared sentinel cannot provide.
+         MIGRATED: both ignore the sentinel and fall back to the
+         per-unit-worktree-keyed `resolve_run_id` pointer instead
+         (`lib.campaign_wave`).
+       - `diff_risk_recheck.py` only tests the same truthiness the authorship
+         guard does. UNAFFECTED by the sentinel value.
+       - `capture_session_id.py`'s propagation via `CLAUDE_ENV_FILE` is WHY A
+         PER-RUNNER SELF-EXPORT DOESN'T WORK as a workaround — that file is
+         rewritten per SessionStart and shared across concurrent runners, so N
+         units each exporting their own value would race each other the same
+         way N raw env-var values would. The single wave-scoped sentinel,
+         exported once at loop step 1, is what avoids this.
 
-   3e. Parse result JSON defensively (fallback to runs/{loop_id}/{id}/result.json)
+   3d. **Wave-return (implicit) — no DONE marker, no polling, no timeout.**
+       The multi-`Task` call at 3c above already blocks until every unit's
+       `Task` has returned; there is nothing further to wait for. The
+       pre-R5a terminal-marker file (`.shipwright/runs/{loop_id}/{id}/DONE`)
+       is retired for `kind == "sub_iterate"` — `write_terminal_marker.py`
+       stays untouched and used only by `kind == "section"`.
 
-   3f. uv run ... record --state .shipwright/loop_state.json --unit {id} --result '{json}'
-       → exit 3 = failure/escalation → STRICT-STOP: go to step 4 (Finalize). Do
-         NOT merge, do NOT build the next. The already-MERGED sub-iterates are
-         durable; the partial campaign is left for manual follow-up.
+   3e. **Reconcile, in fixed order (the SAME order `claimed` returned at
+       3a).** For each unit, read its row's CURRENT status from
+       `loop_state.json` and its `result.json` from the canonical state root,
+       ATTEMPT-scoped (`{state_path}`'s own parent — never a per-unit
+       `{project_root}`, which is a different filesystem location once R5a's
+       flip is live):
+       `$(dirname .shipwright/loop_state.json)/runs/{loop_id}/{id}/a{attempt}/result.json`.
+       - **Still `claimed`** — the Task never even reached its own Step 1.0.5:
+         a LAUNCH FAILURE, not a build failure. Release it back to the pool:
+           uv run "{shared_root}/scripts/lib/loop_claim.py" release \
+             --state .shipwright/loop_state.json --unit "{id}" \
+             --attempt-id "{attempt_id from 3a}" --campaign-slug "{slug}" \
+             --campaign-worktree "{project_root}"
+         `pending` (reclaimable next wave, attempt NOT re-bumped by release
+         itself — only the unit's next actual claim bumps it) unless
+         `--max-attempts` (default 3) is exhausted, in which case `failed`
+         (terminal, never reclaimed).
+       - **`running`, no `result.json`** — the Task errored out or exhausted
+         its own turn/step budget rather than launch-failing outright. Treated
+         the SAME as a genuine build failure — demoted to `failed` with
+         whatever diagnostic is available, via the SAME fenced path a real
+         result uses (never silently re-claimed):
+           uv run "{shared_root}/scripts/lib/autonomous_loop.py" record \
+             --state .shipwright/loop_state.json --unit "{id}" \
+             --attempt-id "{attempt_id from 3a}" \
+             --result '{"status":"failed","error":"wave-return: running with no result.json"}'
+         **This call's own exit code follows 3f's rule below, not a rule of
+         its own** — `record` exits `3` for any non-`complete` status, this
+         synthetic `failed` included, so seeing exit `3` HERE means STRICT-STOP
+         the whole wave exactly as a real result's exit `3` does at 3f; do NOT
+         keep reconciling the rest of `claimed` past it.
+       - **`result.json` present** — parse it defensively (this unit's REAL
+         result) and carry it into 3f below.
+
+   3f. For each unit with a real result (fixed order): record it —
+         uv run "{shared_root}/scripts/lib/autonomous_loop.py" record \
+           --state .shipwright/loop_state.json --unit "{id}" \
+           --attempt-id "{attempt_id from 3a}" --result '{json}'
+       → exit 3 = failure/escalation on ANY unit in this wave → STRICT-STOP the
+         WHOLE wave (and the whole loop): go to step 4 (Finalize). Do NOT merge
+         ANY unit from this wave, do NOT compute the next wave. The
+         already-MERGED sub-iterates from prior waves are durable; the
+         partial campaign is left for manual follow-up — exactly the pre-R5a
+         single-unit STRICT-STOP semantics, extended to "any unit in this
+         wave", not narrowed to "only the failing one".
+
+   **3f-bis through 3h drain the wave, ONE UNIT AT A TIME, in the SAME fixed
+   order `claimed` returned at 3a** — for each unit that reached `built` at
+   3f, run steps 3f-bis, 3g, and 3h below to completion for that unit BEFORE
+   starting the next unit's own 3f-bis. Their own bodies are unchanged by
+   R5a — every `{id}`/`{branch}` reference below is THIS unit's own, and
+   every STRICT-STOP inside them stops the WHOLE wave (and loop) exactly as
+   3f's does, leaving prior units in this same wave that already reached 3h
+   durably merged. R5b is the sub-iterate that revises what 3f-bis..3h
+   actually DO to the wave/merge-lane state machine (review pinning,
+   staleness cascade, its own STRICT-STOP shape); R5a's job stops at handing
+   each unit to this drain in the right order, one at a time.
 
    3f-bis. REVIEW before merging — the delegated cascade (ADR-029). The
        orchestrator HAS the `Agent` tool the runner lacks, and this is the last
@@ -768,9 +948,18 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" \
          --sub-iterate-id {id} --status complete --commit {commit} --branch {branch}
 
-   3i. Continue loop. The next `next` (3a) re-fetches and resolves a FRESH
-       origin/<default> that now contains this just-merged sub-iterate, so the next
-       build composes on it — no drain, no regenerate-at-merge.
+   3i. If units remain in THIS wave's `claimed` array (fixed order), continue
+       the drain: go back to 3f-bis for the next one. Once every unit in the
+       wave has cleared through 3h (or been held), continue the OUTER loop —
+       the next `next-batch` (3a) re-fetches and resolves a FRESH
+       `origin/<default>` that now contains every sub-iterate this wave just
+       merged, so the next wave's ready set (and every unit it builds)
+       composes on top of all of them — no drain, no regenerate-at-merge.
+       **No-progress guard** (external review, glm, medium): if THIS wave
+       recorded zero results at 3f (every unit was a 3e launch-failure
+       release, none reached `running`+result), the next `next-batch` would
+       claim the SAME ready set again — STOP and report rather than looping
+       identically forever; a state-machine circuit breaker is a follow-up.
    ```
 
 4. **Finalize:**

@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-23-r5a-wave-build-flip",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T16:16:22.355143+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The brief contents are enumerated exhaustively (`unit_id`, `attempt_id`, `worktree`, `branch`, `campaign_worktree`, `state_path`, `session_id`) but the fencing token the runner needs for Step 1.0.5's `cmd_mark_running` is not among them. If R4's fencing tokens are claim-issued (the runner must present the same token the orchestrator claimed with), it's a missing brief parameter; if they're deterministically derived from `session_id`/`attempt_id`, that derivation needs to be stated so the implementer doesn't improvise.",
+          "suggestion": "Pin down token provenance in the spec — either add the token to the brief parameter list or explicitly state the derivation rule and confirm it matches R4's claim-time token exactly.  2. Category: security — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Migrating `_run_id.py` and `generate_handoff_on_stop.py` off `SHIPWRIGHT_LOOP_UNIT_ID` creates a silent-corruption hazard: if either script (or any undiscovered consumer) retains an env-var fallback when the new `unit_id` argument is absent, the sentinel `\"__campaign_wave__\"` becomes the identity — all units collide in one run-id/handoff namespace with no error. The enumeration of consumers is claimed complete, but the migration should be fail-loud, not fallback-based, in case the enumeration missed a path.",
+          "suggestion": "Require both scripts to hard-fail when unit identity is needed but not provided, and add a grep/assertion in the test strategy that no consumer reads `SHIPWRIGHT_LOOP_UNIT_ID` other than the two truthiness-only guards.  3. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "A wave in which every unit launch-fails (bad spawn brief, worktree-creation error, etc.) produces zero merged/failed units, so wave N+1's ready set is identical to wave N's — an unbounded no-progress loop with no backoff or halt condition mentioned. Failed units are correctly excluded from re-claim, but released launch-failures re-enter unchanged.",
+          "suggestion": "Add a no-progress circuit breaker: if a wave completes with zero recorded results, halt and surface a diagnostic rather than spawning the identical next wave.  4. Category: approach — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "At build time R5b doesn't exist, so the wave's results must be fed through today's one-unit-at-a-time 3f-bis–3i steps — meaning those steps need an inner per-unit loop in campaign.md row order. The acceptance criterion asserts serialization \"against today's pipeline,\" but neither the Files-to-modify list nor the work breakdown explicitly says today's merge/review steps become a per-unit inner loop over the wave's results. An implementer could reasonably hand the whole wave to steps written to expect a single unit in context.",
+          "suggestion": "Make the inner-loop restructuring of steps 3f-bis–3i explicit in the Files-to-modify entry and work breakdown item 4.  5. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Units demoted to `failed` at wave-return (and the waves' per-unit worktrees generally) leave dangling worktrees and checked-out branches with no named cleanup owner. Over a long campaign this accumulates.",
+          "suggestion": "State whether failed-unit worktrees are removed at demotion, reused on any future retry, or explicitly deferred — deferral is fine, but it should be a decision, not an omission.  6. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Before this change, an orchestrator crash strands at most one `running` unit; after the flip, a mid-wave crash strands N. The spec relies on R4's state mechanics for stale-claim recovery but never confirms they handle multiple concurrently-`running` units (e.g., a liveness/lease sweep that isn't single-runner-shaped).",
+          "suggestion": "Confirm R4's stale-claim recovery is N-runner-safe, and note it in this spec's test strategy with at least a unit-level test.  7. Category: dependency — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The orchestrator's wave-return actions name `cmd_release` and the demote-to-`failed` behavior, but only `cmd_mark_running` and `cmd_release` appear as named commands. If R4 doesn't already expose a mark-failed command, it's an unstated dependency on new `loop_state`/`loop_claim` surface — which also interacts with the zero-headroom line pin on `autonomous_loop.py` (new logic must land in a new module, not there).",
+          "suggestion": "Name the demote-to-failed command explicitly and confirm where its code lives given the 436-line pin.  8. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The \"dedicated test proving wave N+1 is not spawned until wave N clears\" targets a property that lives in orchestrator prose (campaign.md), which code tests can't read. The test is only meaningful if the ordering is enforced by a Python precondition (e.g., ready-set computation refusing to run while units remain unrecorded in the state file).",
+          "suggestion": "State which Python helper encodes the precondition the test asserts against, so the test exercises real code rather than an approximation of the markdown flow.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The stated dependencies omit R2, despite R5a requiring R2’s worktree wrapper plus its `campaign_worktree` and `state_path` contracts. R5a cannot safely merge against only R3/R4 if R2 is absent or its interface differs.",
+          "suggestion": "Make R2 an explicit merge prerequisite and add a compatibility test covering the exact wrapper output and spawn-brief fields consumed by R5a.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Result processing has no defined integrity/reconciliation contract. A present but partial, malformed, stale, or mismatched `result.json` could be treated as a valid completion; likewise, state and result can disagree. Attempt-directory paths help, but do not replace validation.",
+          "suggestion": "Require atomic result publication (write temp file, rename), schema validation, and validation that `unit_id`, `attempt_id`, branch/worktree identity, and outcome match the current fenced state. Define conflicts as failure/hold, never merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan says to release units still `claimed` and demote `running` units without results, but does not explicitly require those mutations to be fenced to the expected attempt/claim owner. A delayed runner or stale orchestrator could otherwise alter a later attempt’s state.",
+          "suggestion": "Specify that every release/fail transition includes the original `attempt_id` (and any R4 fencing/session token), is conditional on the expected current state, and treats a failed compare-and-swap as a reconciliation error rather than retrying blindly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The sentinel’s lifecycle is unspecified. Because it is exported through shared session environment propagation, leaving it set after a wave or campaign can leak campaign-runner context into later unrelated actions; clearing it too early could weaken the CI authorship guard for still-active runners.",
+          "suggestion": "Define ownership and cleanup precisely: set before the batch, retain through all task completion and merge-lane work that needs the guard, then conditionally restore the prior value only when no campaign task remains. Test both preservation during a wave and restoration afterward.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The test strategy validates concurrent Git worktrees but mocks the Agent/Task mechanism that underpins the key “one message blocks until all Tasks return” assumption. It therefore cannot detect an implementation that accidentally processes partial completion or launches the next wave before all batched tasks are settled.",
+          "suggestion": "Keep the mocked integration test, but add a deterministic orchestration-level test harness that models staggered Task completion and asserts no state/result/next-wave action occurs before the batch barrier and the serial lane complete.  Overall, the wave model is a sound conservative fit for the stated runtime limitation, but it needs explicit R2 dependency handling and stronger fenced result/state reconciliation before it is safe to merge. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-23T16:08:06.289762+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: dependency — Severity: medium**\n**Finding:** The brief contents are enumerated exhaustively (`unit_id`, `attempt_id`, `worktree`, `branch`, `campaign_worktree`, `state_path`, `session_id`) but the fencing token the runner needs for Step 1.0.5's `cmd_mark_running` is not among them. If R4's fencing tokens are claim-issued (the runner must present the *same* token the orchestrator claimed with), it's a missing brief parameter; if they're deterministically derived from `session_id`/`attempt_id`, that derivation needs to be stated so the implementer doesn't improvise.\n**Suggestion:** Pin down token provenance in the spec — either add the token to the brief parameter list or explicitly state the derivation rule and confirm it matches R4's claim-time token exactly.\n\n**2. Category: security — Severity: medium**\n**Finding:** Migrating `_run_id.py` and `generate_handoff_on_stop.py` off `SHIPWRIGHT_LOOP_UNIT_ID` creates a silent-corruption hazard: if either script (or any undiscovered consumer) retains an env-var fallback when the new `unit_id` argument is absent, the sentinel `\"__campaign_wave__\"` becomes the identity — all units collide in one run-id/handoff namespace with no error. The enumeration of consumers is claimed complete, but the migration should be fail-loud, not fallback-based, in case the enumeration missed a path.\n**Suggestion:** Require both scripts to hard-fail when unit identity is needed but not provided, and add a grep/assertion in the test strategy that no consumer reads `SHIPWRIGHT_LOOP_UNIT_ID` other than the two truthiness-only guards.\n\n**3. Category: edge-case — Severity: medium**\n**Finding:** A wave in which every unit launch-fails (bad spawn brief, worktree-creation error, etc.) produces zero merged/failed units, so wave N+1's ready set is identical to wave N's — an unbounded no-progress loop with no backoff or halt condition mentioned. Failed units are correctly excluded from re-claim, but *released* launch […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The stated dependencies omit R2, despite R5a requiring R2’s worktree wrapper plus its `campaign_worktree` and `state_path` contracts. R5a cannot safely merge against only R3/R4 if R2 is absent or its interface differs.  \n   **Suggestion:** Make R2 an explicit merge prerequisite and add a compatibility test covering the exact wrapper output and spawn-brief fields consumed by R5a.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Result processing has no defined integrity/reconciliation contract. A present but partial, malformed, stale, or mismatched `result.json` could be treated as a valid completion; likewise, state and result can disagree. Attempt-directory paths help, but do not replace validation.  \n   **Suggestion:** Require atomic result publication (write temp file, rename), schema validation, and validation that `unit_id`, `attempt_id`, branch/worktree identity, and outcome match the current fenced state. Define conflicts as failure/hold, never merge.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan says to release units still `claimed` and demote `running` units without results, but does not explicitly require those mutations to be fenced to the expected attempt/claim owner. A delayed runner or stale orchestrator could otherwise alter a later attempt’s state.  \n   **Suggestion:** Specify that every release/fail transition includes the original `attempt_id` (and any R4 fencing/session token), is conditional on the expected current state, and treats a failed compare-and-swap as a reconciliation error rather than retrying blindly.\n\n4. **Category:** security  \n   **Severity:** medium  \n   **Finding:** The sentinel’s lifecycle is unspecified. Because it is exported through shared session environment propagation, leaving it set after a wave or campaign can leak campaign-runner context into later unrelated actions; clearing it too early […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T16:16:31.639267+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T16:16:31.752317+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/campaign_wave.py` (`write_wave_aware_handoff`) and `shared/scripts/lib/phase_quality/_run_id.py` (tier-3 change)",
+          "line": null,
+          "finding": "Under the wave flip, the sentinel path resolves per-unit identity via `resolve_run_id(project_root, session_id)`, keyed by the per-unit worktree. But a per-unit worktree is freshly checked out from `origin/<default>` — the run pointer / runtime files `resolve_run_id`'s higher tiers read are typically gitignored runtime state, so a new worktree plausibly has none. In that case tier 3 fires and every sibling unit in the wave resolves to the SAME value (`loop_id` alone), colliding all N units' handoff namespacing (and run-id tier-3) onto one shared identity — exactly the collision the sentinel migration was supposed to eliminate, just one tier lower. The ADR dispositioned this as \"same degradation as pre-campaign standalone\", but pre-campaign there was only ever ONE runner per loop; under R5a there are N concurrent ones, so the degradation is newly a collision. The unit tests (`test_two_units_sharing_the_sentinel_resolve_to_distinct_files`) mask this by monkeypatching `resolve_run_id` to return distinct values — they never exercise the pointer-missing case, which is the realistic fresh-worktree case.",
+          "suggestion": "Either thread the brief-provided `unit_id` (e.g. via a per-unit env var the runner writes into its worktree's `CLAUDE_ENV_FILE`-independent location, or a pointer file created by `setup_unit_worktree.py`) into these consumers, or add a test that a fresh per-unit worktree with no runtime pointer still yields distinct per-unit ids — and fail loud/hard if it can't.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/phase_quality/_run_id.py:290`, `shared/scripts/lib/campaign_wave.py:79-83",
+          "line": null,
+          "finding": "The acceptance criterion says the migrated consumers \"read the brief-provided `unit_id` directly instead\" of `SHIPWRIGHT_LOOP_UNIT_ID`. The implementation never threads `unit_id` into either consumer; it degrades the sentinel to `\"\"` and falls back to `resolve_run_id` (pointer-derived) or `loop_id` alone. This is a partial/indirect implementation of the AC, dispositioned as rejected in the ADR rather than reconciled with the spec text. The AC checkbox is not literally satisfied.",
+          "suggestion": "Amend the AC/spec to name the pointer-based resolution as the sanctioned mechanism, or actually thread `unit_id` through — as it stands, spec and code disagree on what \"MIGRATED\" means.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_campaign_wave_serialization_prose.py` (whole file)",
+          "line": null,
+          "finding": "The AC demands \"a dedicated test proving wave N+1 is NOT spawned until wave N's merge lane has fully cleared.\" The delivered test is a markdown-content guard: it string-matches prose in `campaign-mode.md` and would pass unchanged if the driving agent ignored the prose entirely, or if `cmd_next_batch` happily returned units while a prior wave's units were still `built`/mid-drain. No Python-level invariant (e.g. `cmd_next_batch` refusing to claim while prior-batch units are non-terminal) is asserted. The ADR logs this as a limitation, but the AC is effectively unenforced in executable terms.",
+          "suggestion": "Add an in-process test over `loop_claim.cmd_next_batch` asserting it does not claim new units while earlier-claimed units of the campaign are in non-terminal-but-launched states (if that invariant holds in the state machine), or explicitly amend the AC to accept the prose guard as the achievable bound.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (3e) — also `shipwright_bloat_baseline` / ADR findings table",
+          "line": null,
+          "finding": "No no-progress circuit breaker: a wave in which every unit launch-fails yields the identical next wave (released units return to `pending` unchanged), an unbounded loop with no backoff. The ADR accepted and deferred this (#8 plan-review), but nothing in the shipped prose even warns the driving session to detect \"wave completed with zero recorded results\" — so the deferral leaves a live, reachable infinite loop in the shipped orchestrator behavior, not just a missing feature.",
+          "suggestion": "At minimum add one prose sentence in 3i: if a wave returns with zero recorded results and zero units reaching 3f, STOP and report rather than loop. That's cheap and closes the operational hazard; the state-machine breaker can still be the follow-up.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_derived_snapshots_wave_concurrency.py:107` (test name)",
+          "line": null,
+          "finding": "The spec says \"each per-unit worktree has its own copy of the twelve derived paths … PROVEN rather than assumed\"; the named concurrency test covers `RESTORABLE_SNAPSHOTS` (10, per the test's own docstring) — the other two derived paths are never exercised concurrently. Arguably out of `restore_derived_to_head`'s actual surface, but the AC's \"twelve\" is not literally proven.",
+          "suggestion": "Either cover all twelve derived paths or note in the test docstring which two are non-restorable and why they're excluded, so the AC-vs-test delta is a decision, not an oversight.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md` Step 1.0 vs Step 6 skip conditions",
+          "line": null,
+          "finding": "Step 1.0.5's skip guard is \"`state_path`/`unit_id`/`attempt_id` absent\"; Step 6's is \"`state_path`/`unit_id`/`attempt` absent\" (`attempt`, not `attempt_id`). A malformed brief carrying `attempt_id` but not `attempt` (or vice versa) would run mark-running then write the standalone fallback result path — an inconsistent half-campaign state the prose doesn't tell the runner how to handle.",
+          "suggestion": "Use one canonical presence predicate (all four fields) for both guards so the two branches can't diverge on a partial brief.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 45,
+          "finding": "The new isolation check unconditionally builds its guard slug from `unit_id` and `attempt`, although the input contract says both are absent for standalone-shaped dispatches. Those existing runners will fail isolation before reaching the conditional claim-promotion step.",
+          "suggestion": "Make the per-unit guard conditional on the R5a fields being present; retain the former `campaign_slug` guard invocation for standalone dispatches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/campaign_wave.py",
+          "line": 78,
+          "finding": "The required migration to the brief-provided `unit_id` was not implemented. Under the wave sentinel this derives identity from `resolve_run_id(project_root, session_id)`, and `_run_id.py` can fall back to the shared loop ID alone. This can collide across sibling units when the worktree run pointer is unavailable; the added test explicitly locks in that fallback.",
+          "suggestion": "Thread the runner brief’s `unit_id` to both run-id and handoff consumers, and treat a missing required identity as a failure/hold rather than falling back to `loop_id`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 280,
+          "finding": "If per-unit worktree setup or a later per-unit spawn guard fails, 3c STRICT-STOPs before any Task batch is spawned or wave-return reconciliation runs. All units already atomically claimed by 3a remain `claimed`, including successfully prepared earlier units, with no release path.",
+          "suggestion": "On any setup/guard failure after `next-batch`, release every still-claimed unit using its recorded attempt token (and perform normal cleanup) before stopping.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_campaign_wave_serialization_prose.py",
+          "line": 33,
+          "finding": "The dedicated serialization test only checks markdown phrases and ordering. It would pass if the actual orchestrator spawned wave N+1 before all Task returns or before the merge drain completed, so it does not prove the required behavioral invariant.",
+          "suggestion": "Add an executable orchestration-level harness that models staggered Task completion and asserts no next-batch/spawn action occurs until the full batch and serial drain finish.  Overall assessment: ship-with-fixes. The core wave mechanics are substantially present, but standalone execution regresses and the sentinel identity migration does not meet the stated safety contract.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-23T16:36:39.448065+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  Severity: high\n  File: `shared/scripts/lib/campaign_wave.py` (`write_wave_aware_handoff`) and `shared/scripts/lib/phase_quality/_run_id.py` (tier-3 change)\n  Finding: Under the wave flip, the sentinel path resolves per-unit identity via `resolve_run_id(project_root, session_id)`, keyed by the per-unit worktree. But a per-unit worktree is freshly checked out from `origin/<default>` — the run pointer / runtime files `resolve_run_id`'s higher tiers read are typically gitignored runtime state, so a new worktree plausibly has none. In that case tier 3 fires and every sibling unit in the wave resolves to the SAME value (`loop_id` alone), colliding all N units' handoff namespacing (and run-id tier-3) onto one shared identity — exactly the collision the sentinel migration was supposed to eliminate, just one tier lower. The ADR dispositioned this as \"same degradation as pre-campaign standalone\", but pre-campaign there was only ever ONE runner per loop; under R5a there are N concurrent ones, so the degradation is newly a collision. The unit tests (`test_two_units_sharing_the_sentinel_resolve_to_distinct_files`) mask this by monkeypatching `resolve_run_id` to return distinct values — they never exercise the pointer-missing case, which is the realistic fresh-worktree case.\n  Suggestion: Either thread the brief-provided `unit_id` (e.g. via a per-unit env var the runner writes into its worktree's `CLAUDE_ENV_FILE`-independent location, or a pointer file created by `setup_unit_worktree.py`) into these consumers, or add a test that a *fresh* per-unit worktree with no runtime pointer still yields distinct per-unit ids — and fail loud/hard if it can't.\n\n- Category: spec\n  Severity: medium\n  File: `shared/scripts/lib/phase_quality/_run_id.py:290`, `shared/scripts/lib/campaign_wave.py:79-83`\n  Finding: The acceptance criterion says the migrated consumers \"read the brief-provided `unit_id` directly instead\" of `SHIPWRIGHT_LOOP_UNIT_ID`.  […truncated]\n\n[openai] - Category: regression  \n  Severity: high  \n  File: `plugins/shipwright-iterate/agents/sub-iterate-runner.md:45`  \n  Finding: The new isolation check unconditionally builds its guard slug from `unit_id` and `attempt`, although the input contract says both are absent for standalone-shaped dispatches. Those existing runners will fail isolation before reaching the conditional claim-promotion step.  \n  Suggestion: Make the per-unit guard conditional on the R5a fields being present; retain the former `campaign_slug` guard invocation for standalone dispatches.\n\n- Category: spec  \n  Severity: high  \n  File: `shared/scripts/lib/campaign_wave.py:78`  \n  Finding: The required migration to the brief-provided `unit_id` was not implemented. Under the wave sentinel this derives identity from `resolve_run_id(project_root, session_id)`, and `_run_id.py` can fall back to the shared loop ID alone. This can collide across sibling units when the worktree run pointer is unavailable; the added test explicitly locks in that fallback.  \n  Suggestion: Thread the runner brief’s `unit_id` to both run-id and handoff consumers, and treat a missing required identity as a failure/hold rather than falling back to `loop_id`.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:280`  \n  Finding: If per-unit worktree setup or a later per-unit spawn guard fails, 3c STRICT-STOPs before any Task batch is spawned or wave-return reconciliation runs. All units already atomically claimed by 3a remain `claimed`, including successfully prepared earlier units, with no release path.  \n  Suggestion: On any setup/guard failure after `next-batch`, release every still-claimed unit using its recorded attempt token (and perform normal cleanup) before stopping.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_campaign_wave_serialization_prose.py:33`  \n  Finding: The dedicated serialization test only checks markdown  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T16:16:31.529416+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T16:08:06.416642+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet -- a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

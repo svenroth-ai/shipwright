@@ -19,15 +19,16 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records  # noqa: E402
-# Imported as MODULES, and eagerly. Eagerly because a function-local import
-# would execute after the Stop hook's once-per-Stop claim is taken, turning a
-# packaging fault into a burned claim + a silently unaudited Stop; the measured
-# cost of doing it here instead is 2.7 ms on a 61 ms package import. As modules
-# because attribute lookup happens at call time, which keeps
-# ``monkeypatch.setattr(worktree_isolation, "read_run_pointer", ...)`` working
-# from either namespace (ADR-045: patch the module object, never a rebound name).
+# Eager MODULE imports: a function-local import would run after the Stop
+# hook's once-per-Stop claim is taken (packaging fault -> unaudited Stop;
+# measured cost here is 2.7ms/61ms). Modules, not names, so
+# ``monkeypatch.setattr(worktree_isolation, "read_run_pointer", ...)`` still
+# works from either namespace (ADR-045: patch the module object).
 from lib import repo_root, worktree_isolation  # noqa: E402
-
+from lib.campaign_wave import (  # noqa: E402
+    per_unit_worktree_identity,
+    resolve_wave_safe_unit_value,
+)
 from ._constants import is_sentinel_run  # noqa: E402
 from ._worktree_identity import (  # noqa: E402
     fast_main_root,
@@ -287,7 +288,12 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
             pass
 
     loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID", "").strip()
-    loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID", "").strip()
+    # R5a: sentinel -> unset, then the per-unit worktree basename (concurrency-safe;
+    # see `per_unit_worktree_identity`), before giving up to `loop_id` alone.
+    raw_loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID", "").strip()
+    loop_unit = resolve_wave_safe_unit_value(raw_loop_unit)
+    if raw_loop_unit and not loop_unit:
+        loop_unit = per_unit_worktree_identity(project_root) or ""
     if loop_id and loop_unit:
         return f"{loop_id}-{loop_unit}"
     if loop_id:

@@ -1,0 +1,103 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-23-r5a-wave-build-flip",
+    "date": "2026-09-23",
+    "unit": {
+      "status": "passed",
+      "passed": 11735,
+      "total": 11735
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 3,
+      "total": 3
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_campaign_wave.py shared/tests/test_campaign_wave_serialization_prose.py shared/tests/test_derived_snapshots_wave_concurrency.py shared/tests/test_wave_launch_failure_and_reconcile.py shared/tests/test_r2_worktree_capability_prose.py -v",
+      "exit_code": 0,
+      "tests_run": 28,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-23-r5a-wave-build-flip/surface_verification.log",
+      "timestamp": "2026-09-23T16:14:02.640Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "wave-level ready-set computation calls the BATCH claim primitive and campaign-mode.md's own prose states the merge-lane serialization rule explicitly",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_wave_serialization_prose.py::test_waves_serialize_on_the_merge_lane_is_stated_explicitly PASSED"
+        },
+        {
+          "behavior": "a unit still `claimed` at wave-return (launch failure) is released back to `pending` and reclaimed on the next wave WITHOUT a double attempt bump",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_wave_launch_failure_and_reconcile.py::TestLaunchFailureReleaseAndReclaim::test_a_never_started_unit_is_released_then_reclaimed_without_double_bump PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a `running`-with-no-result.json unit is demoted to `failed` through the SAME fenced record path a real result uses, never silently re-claimed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_wave_launch_failure_and_reconcile.py::TestRunningWithNoResultDemotedToFailed::test_promoted_unit_with_no_result_is_demoted_and_never_reclaimed PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "restore_derived_to_head operating in one unit's per-unit worktree never touches a sibling unit's dirty derived-snapshot copy, even under REAL concurrent execution",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_derived_snapshots_wave_concurrency.py::test_truly_concurrent_restores_across_all_ten_restorable_paths_never_cross_contaminate PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "the authorship guard still refuses under the wave-scoped sentinel (truthiness-only, value-independent)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_wave.py::TestAuthorshipGuardStillRefusesUnderTheSentinel::test_guard_refuses_when_the_sentinel_is_set PASSED"
+        },
+        {
+          "behavior": "no real campaign unit id can ever collide with the wave sentinel literal",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_wave.py::TestSentinelPredicates::test_no_real_id_can_collide_with_the_sentinel PASSED"
+        },
+        {
+          "behavior": "sibling units in the same wave never collide on the same handoff/run-id identity, even when the session-keyed pointer would itself collide",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_wave.py::TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel::test_worktree_basename_wins_over_a_colliding_shared_session_pointer PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-wire-promote-required-layers",
+    "commit": "0178ba04db2bb353ad4cae2f845850e2c2fdd50d",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
