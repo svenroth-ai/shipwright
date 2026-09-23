@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-22-r4-state-mechanics",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T00:47:17.725801+00:00",
+      "disposition": "self-review checklist completed inline in the runner transcript; 7/7 pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Verify whether the script exists in `shared/scripts/`; if not, add it to R4's file list with an owner and tests (fencing-token match/mismatch against `loop_state.json`).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "State one rule: no fencing at R2 (pre-R4 window only, when nothing else writes those fields), fencing required from R4 onward. Put that in both sections, with R4's invariant named as the superseding one.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Specify that the guard clause's ancestry checks (like the fetch retry) run before lock acquisition, or document that the R1 interim path tolerates the lock-held-git cost and is removed/superseded when R4 lands.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Specify a bounded retry/backoff or a distinct \"no claim made, retryable\" return the orchestrator treats differently from exit 2/4.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Name the summary fields for all three terminal states explicitly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "One sentence in R4/R5b stating what `cmd_mark_merged` does and does not attest, so a future caller doesn't reuse it as an identity proof.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Specify Step 1.0.5 failure → runner exits immediately with `status: \"failed\", reason_code: \"stale_attempt\"`, mirroring the existing abort pattern.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "held` units can become permanently unschedulable. `cmd_init` resumes an existing sub-iterate state containing `held` units, while `cmd_next_batch` only claims `pending` units. The plan says sweep-held units map back to `pending` in `status.json` and “can resume … cleanly,” but does not define a state transition that changes their `loop_state.json` row back to `pending` on resume.",
+          "suggestion": "Define one explicit resume mechanism: either `cmd_init --resume` converts only resumable hold reasons (`swept_never_started`, `swept_after_build`) to `pending`, or require and document an operator bulk-resume command. Test stop → finalize → new session → successful re-claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The R1 interim guard can make `cmd_next` falsely report completion. If all remaining units are `pending` but blocked by a failed or unmerged dependency, the new guard skips them all. The plan insists exit `2` means genuinely finished, but does not specify what the existing command returns in this no-ready-but-not-finished state before R4 introduces exit `4`.",
+          "suggestion": "Preserve the existing interface but explicitly add a distinct non-completion outcome using an already-supported return contract, or make R1 and R4 inseparable for rollout. Add an integration test where a dependency fails before its dependent is selected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Atomic claiming is underspecified around work performed outside `loop.lock`. Base resolution and likely live campaign projection occur outside the lock, but ready-set selection must be based on the state current when the claim commits. Two processes can otherwise select from stale snapshots, or claim a unit after its dependencies/configuration changed.",
+          "suggestion": "Treat outside-lock work as an optimistic prefetch only. Under the lock, reload state, refresh/revalidate the eligible rows, recompute the ready set against the resolved base SHA, and claim from that fresh snapshot. If the base changed materially, retry once outside the lock.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“Base derived from dependencies’ verified `merged_commit`s” is ambiguous for multiple dependencies. A set of commits is not itself a checkout base; choosing one dependency’s commit can omit another even if both are merged.",
+          "suggestion": "Define the base as one freshly fetched, immutable `origin/<default>` SHA for the batch, and require every dependency merge commit to be an ancestor of that exact SHA. Retain ordinary `branch_strategy` only for no-dependency units.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Legacy invalid IDs are only warnings on the scheduler read path, yet those values are subsequently used to derive worktree paths, branch names, run directories, CLI arguments, and runner briefs. This conflicts with the claim that destructive operations use validated tuple values. The unvalidated description component used in branch names is also not addressed.",
+          "suggestion": "Separate compatibility from execution safety: legacy rows may remain visible/readable, but refuse concurrent/worktree scheduling for unsafe identifiers or encode them into a safe canonical path/branch component. Validate Git ref components and ensure every shell-facing value is passed as an argument, never interpolated into shell fragments.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "R2 intentionally permits unfenced lease-touch upserts before R4, but R4’s invariant says lease touches must validate fencing tokens. The plan does not explicitly require R4 to replace or change the R2 touch call contract, so the unfenced compatibility behavior may survive after claims are live.",
+          "suggestion": "Make R4 include a concrete migration of the lease-touch API to require `unit_id` and `attempt_id`, reject stale touches under `loop.lock`, and add a cross-version/unit test proving an old attempt cannot extend a reclaimed unit’s lease.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "cmd_mark_merged` is described as accepting a “verified” merge commit, but its stated validation only checks SHA syntax and fencing. A valid but unrelated SHA could mark the unit merged; later ancestry checks may merely leave dependents pending while campaign status incorrectly shows success.",
+          "suggestion": "Require `cmd_mark_merged` itself to verify, after a fresh fetch, that the SHA is reachable from the default branch. Keep the PR-node/merge-commit identity check in R5b, but make reachability a mandatory command-level invariant.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The attempt budget is ambiguous. First claim is attempt `0`, retries increment on the next claim, and release says fail “once `max_attempts` … exhausted,” but no precise comparison is defined. This risks allowing either two or four claims for a configured limit of three.",
+          "suggestion": "Define `max_attempts` as either total claims or retries, document the exact predicate, and test first claim, final permitted claim, lease reclaim, launch failure, and rebase-driven re-entry.  Overall, the wave model and fencing direction are sound, but the held-unit resume path, R1/R4 rollout gap, and claim-time freshness need resolution before implementation. The plan is otherwise unusually deliberate about compatibility and state-root safety. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-23T00:46:40.679318+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: dependency · Severity: medium**\n`check_unit_attempt.py` is load-bearing in R4's fencing design (the runner calls it before its F6 commit/push, and R4's canonical-state-root list names it), but no sub-iterate's file list or work breakdown creates it, and it isn't confirmed to exist today. If it doesn't exist, R4 (or R5a, where the runner brief first references it) has an unowned deliverable.\n*Suggestion:* Verify whether the script exists in `shared/scripts/`; if not, add it to R4's file list with an owner and tests (fencing-token match/mismatch against `loop_state.json`).\n\n**Category: approach · Severity: medium**\nThe fencing invariant is stated contradictorily across sub-iterates. R4 says every mutation of a claimed-or-later unit — explicitly including \"lease touch/reclaim\" — validates `(unit_id, attempt_id)`. R2 says the lease touch applies *no* fencing-token validation and calls it \"the explicit exception until R4 adds fencing.\" A builder reading either section alone will implement the other one wrong, and a stale lease-toucher writing `lease_touched_at` onto a reclaimed-and-reclaimed row is exactly the race fencing exists to close.\n*Suggestion:* State one rule: no fencing at R2 (pre-R4 window only, when nothing else writes those fields), fencing required from R4 onward. Put that in both sections, with R4's invariant named as the superseding one.\n\n**Category: risk · Severity: medium**\nR1's `cmd_next` guard clause runs `is_unit_ready` — which performs a `git merge-base --is-ancestor` per dependency, plus a fetch-retry if stale — inside `cmd_next`'s existing lock scope. R4 explicitly fixes this hazard for `cmd_next_batch` (base-ref resolution moved outside `loop.lock`), but the interim R1 guard clause reintroduces it for the R1→R4 window and it's never revisited after R4 (the guard clause stays in `cmd_next` permanently for `kind == \"section\"`... actually gated sub_iterate, but still live code).\n*Suggestion:* Specify that the gu […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `held` units can become permanently unschedulable. `cmd_init` resumes an existing sub-iterate state containing `held` units, while `cmd_next_batch` only claims `pending` units. The plan says sweep-held units map back to `pending` in `status.json` and “can resume … cleanly,” but does not define a state transition that changes their `loop_state.json` row back to `pending` on resume.  \n   **Suggestion:** Define one explicit resume mechanism: either `cmd_init --resume` converts only resumable hold reasons (`swept_never_started`, `swept_after_build`) to `pending`, or require and document an operator bulk-resume command. Test stop → finalize → new session → successful re-claim.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The R1 interim guard can make `cmd_next` falsely report completion. If all remaining units are `pending` but blocked by a failed or unmerged dependency, the new guard skips them all. The plan insists exit `2` means genuinely finished, but does not specify what the existing command returns in this no-ready-but-not-finished state before R4 introduces exit `4`.  \n   **Suggestion:** Preserve the existing interface but explicitly add a distinct non-completion outcome using an already-supported return contract, or make R1 and R4 inseparable for rollout. Add an integration test where a dependency fails before its dependent is selected.\n\n3. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Atomic claiming is underspecified around work performed outside `loop.lock`. Base resolution and likely live campaign projection occur outside the lock, but ready-set selection must be based on the state current when the claim commits. Two processes can otherwise select from stale snapshots, or claim a unit after its dependencies/configuration changed.  \n   **Suggestion:** Treat outside-lock work as an optimistic prefetch only. Under the lock, reload state, refr […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T00:46:54.238611+00:00",
+      "disposition": "delegated_to_orchestrator: runner has no Agent tool, code-reviewer runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T00:46:54.346289+00:00",
+      "disposition": "delegated_to_orchestrator: runner has no Agent tool, doubt-reviewer runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "in the main record body, after `_load_state` under the lock, re-run `enforce_record_fencing` (or at minimum `validate_attempt_token`) before mutating; the pre-check can stay as a fast-fail.  2. Category: bug — Severity: high `shared/scripts/lib/loop_state.py` — `cmd_init_sub_iterate_payload` A unit in legacy status `in_progress` (which `autonomous_loop.cmd_next` still writes for `kind == \"sub_iterate\"` — that path is unchanged and is today's production flow, as the module's own `enforce_record_fencing` docstring admits) is in neither `ACTIVE = {claimed, running, merging}` nor `RESUMABLE` nor `TERMINAL`. The function falls through to the `if units:` branch and returns `{\"action\": \"resumed\", \"pending\": 0}` — silently declaring a mid-flight campaign resumed-with-nothing-outstanding. The unit is never reconciled, `cmd_finalize` will forever refuse (it's non-TERMINAL), and `cmd_next_batch` returns exit 4 forever. This is precisely the \"v1-stopped-campaign\" case the spec calls out as needing a path.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "make the final branch condition `if all(u[\"status\"] in TERMINAL for u in units)` (resume-with-nothing) and treat any other leftover status (e.g. `in_progress`) as needing reconcile or an explicit error, never a silent `pending: 0`.  3. Category: spec — Severity: medium `shared/scripts/lib/loop_claim.py` — `cmd_next_batch` output The spec requires the claim to derive and carry the attempt-scoped paths — worktree `.worktrees/campaign-{slug}--{unit_id}[-a{n}]`, branch `iterate/campaign-{slug}-{unit_id}[-a{n}]-{desc}`, run dir `runs/{loop_id}/{unit_id}/a{attempt}/result.json` — because \"the runner receives `unit_id`/`attempt_id`/`worktree`/`branch` explicitly in its brief.\" The claimed payload emits only `id`, `spec_path`, `attempt`, `attempt_id`, `base_branch`, `depends_on`; no worktree, branch, or run-dir. R5a would have to re-derive the path rules in a second place, violating the single-source intent.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "include `worktree`, `branch`, and `run_dir` in each claimed entry, computed in `_claim_unit` where `attempt` is minted.  4. Category: bug / spec — Severity: medium `shared/scripts/lib/loop_mark.py` — `cmd_mark` merged path; `loop_claim.py` `--campaign-worktree` default `None` The spec's v6 bullet is explicit: base-ref resolution \"must be stated, not left to whatever the process cwd happens to be.\" `cmd_mark`'s `--campaign-worktree` defaults to `None`, and the fetch / `fresh_remote_default_ref` / `_is_ancestor` calls then run against the process cwd — for the one command most likely invoked by a human from an arbitrary directory (it's the operator override). A `git fetch` from the wrong repo silently fails or fetches a different remote, and the ancestry verdict is then meaningless (falsely accept or reject, the exact failure the spec's \"stale local ref must never falsely reject or falsely accept\" rule targets).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "make `--campaign-worktree` required for `--status merged` (or resolve it from the state file's project root) rather than defaulting to process cwd.  5. Category: edge-case — Severity: medium `shared/scripts/lib/loop_state.py` — `_reconcile_leases`, `never_leased` branch `cmd_next_batch` claims a unit but writes no lease fields; the lease only appears when the runner's first heartbeat (`touch_unit_lease`) lands. Any `cmd_init` (or wave-boundary reconcile) in that window treats the unit as \"lease never touched\" and reclaims it to `pending` — while a runner is genuinely about to start. The fencing token check will (correctly) abort the runner's push, but the spurious reclaim burns an attempt (next claim mints `-a1`), consuming the `max_attempts` budget on a healthy unit, and under repeated init calls can drive a healthy unit to `failed` without it ever running.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "have `cmd_next_batch` write an initial `lease_expires_at` (claim-time lease start) in `_claim_unit`, so a just-claimed unit is never \"never leased.\"  6. Category: test — Severity: low `shared/tests/test_loop_claim.py` — `TestCmdNextBatch` No test covers claiming a unit whose `depends_on` names a dependency that is `merged` with valid `merged_commit` and ancestry passes via the real (non-mocked) `_is_ancestor` path within `cmd_next_batch` — the ancestry tests exercise `_ancestry_ok` in isolation, and `test_claims_ready_units_up_to_max_parallel` uses dependency-free units. A wiring bug where `cmd_next_batch` passes the wrong `cwd` or skips `_ancestry_ok` entirely would still pass every unit test here (only the integration test with the `git_origin_repo` fixture would catch it, and that fixture is undefined in this diff — if it doesn't exist elsewhere, that integration test fails at collection).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "add a `cmd_next_batch`-level test with a dependency whose ancestry must succeed, and confirm `git_origin_repo` is a real shared fixture.  7. Category: regression — Severity: low `shared/scripts/lib/loop_state.py` — `handoff_dir_for` / `runs_dir_for` now used by the `kind == \"section\"` `cmd_record`/`cmd_finalize`/`_reconcile_legacy` paths Pre-R4 these were cwd-relative (`Path(\".shipwright/runs\")`); they are now anchored to `state_path.parent`'s parent. The docstring asserts every real caller runs with cwd == project root, and the full-cycle regression test passes because it uses consistent tmp paths — but the test never exercises a cwd different from the state root for a section campaign, so the \"cannot change observed behavior\" claim is untested. If any section caller (e.g. shipwright-build invoked from a worktree) ever ran with a different cwd, handoff/result paths silently move.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "add one section-path test with `monkeypatch.chdir` to an unrelated directory proving paths land under the state root (the fencing tests do this for `runs_dir_for` but not for the section `cmd_record` flow).  8. Category: spec — Severity: low `.shipwright/planning/adr/INDEX.md` vs the ADR file vs `shipwright_bloat_baseline.json` The INDEX entry says \"raised to 668-LOC\", the ADR title/body say 683, and the baseline records 683. Trivial numeric inconsistency in a compliance artifact; pick one number.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "[loop_state.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/loop_state.py:675)",
+          "line": null,
+          "finding": "A stale `--attempt-id` is incorporated directly into `rejected/{attempt_id}.json`. An attacker-controlled value containing path separators or an absolute Windows path can escape the rejected-payload directory and write arbitrary JSON-content files accessible to the process.",
+          "suggestion": "Require `attempt_id` to match the canonical token format before constructing a path, or derive the rejected filename from a safe digest/escaped token and verify its resolved path remains under the intended directory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "[autonomous_loop.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/autonomous_loop.py:250)",
+          "line": null,
+          "finding": "cmd_record` validates the fencing token under one lock, releases that lock while parsing input, then reacquires a lock and writes state without validating again. A lease reclaim and re-claim can occur between those sections, letting a stale runner overwrite the current attempt’s state.",
+          "suggestion": "Parse before locking if needed, then perform token validation and the entire state/result write in one lock acquisition; re-check the token immediately before every write.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[autonomous_loop.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/autonomous_loop.py:295)",
+          "line": null,
+          "finding": "A matching token is sufficient for `cmd_record` to write `built` or `failed`, regardless of the row’s current status. For example, a claimed unit can submit `complete` and skip the required `claimed → running → built` transition, defeating the state machine.",
+          "suggestion": "Under the write lock, require the expected source state (`running` for a runner result) and enforce `is_legal_transition` before changing status.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[loop_claim.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/loop_claim.py:177)",
+          "line": null,
+          "finding": "Dependency ancestry validation calls `_ancestry_ok` while holding `loop.lock`; its retry path performs `git fetch origin` with a 60-second timeout. This violates the required lock timing: base/dependency I/O must not run under the lock, which is intended to contain only state mutation.",
+          "suggestion": "Resolve and verify candidate dependencies before acquiring `loop.lock`, then lock, reload state, re-evaluate eligibility, and mutate only still-valid rows.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[loop_claim.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/loop_claim.py:225)",
+          "line": null,
+          "finding": "Neither launch-failure release nor lease reclaim performs the required best-effort physical cleanup (`git worktree remove`, branch deletion, and next-claim prune) from recomputed validated identity components. The current code only changes JSON state, leaving abandoned worktrees/branches that can block retries and accumulate indefinitely.",
+          "suggestion": "Add best-effort cleanup after logical release/reclaim, deriving paths and branch names from validated slug/unit/attempt rather than state-stored paths; failures must not roll back the logical release.  Overall assessment: ship-with-fixes. The implementation covers much of the requested state model, but the fencing race and rejected-payload path traversal are release-blocking. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-23T01:22:20.015622+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: bug — Severity: high**\n`shared/scripts/lib/autonomous_loop.py` (cmd_record, the fencing pre-check block, ~line \"with file_lock(lock_path, ...): state_peek = ...\")\nThe fencing check runs in a *separate, earlier* lock acquisition, and the main record body (which acquires `loop.lock` again, reloads state, and writes) never re-validates `attempt_id`. Between the two acquisitions a lease reclaim / re-claim can occur, and a stale `cmd_record` then writes `status`/`commit`/`branch`/`result.json` straight onto the now-current-attempt-owned row — exactly the clobber the spec's fencing invariant (\"validates `(unit_id, attempt_id)` … **before writing, under `loop.lock`**\") exists to prevent. The comment even acknowledges `file_lock` is not reentrant, but the fix is to re-check the token inside the write-path lock, not to skip it.\nSuggestion: in the main record body, after `_load_state` under the lock, re-run `enforce_record_fencing` (or at minimum `validate_attempt_token`) before mutating; the pre-check can stay as a fast-fail.\n\n**2. Category: bug — Severity: high**\n`shared/scripts/lib/loop_state.py` — `cmd_init_sub_iterate_payload`\nA unit in legacy status `in_progress` (which `autonomous_loop.cmd_next` still writes for `kind == \"sub_iterate\"` — that path is unchanged and is today's production flow, as the module's own `enforce_record_fencing` docstring admits) is in neither `ACTIVE = {claimed, running, merging}` nor `RESUMABLE` nor `TERMINAL`. The function falls through to the `if units:` branch and returns `{\"action\": \"resumed\", \"pending\": 0}` — silently declaring a mid-flight campaign resumed-with-nothing-outstanding. The unit is never reconciled, `cmd_finalize` will forever refuse (it's non-TERMINAL), and `cmd_next_batch` returns exit 4 forever. This is precisely the \"v1-stopped-campaign\" case the spec calls out as needing a path.\nSuggestion: make the final branch condition `if all(u[\"status\"] in TERMINAL for u in units)` (resume-wi […truncated]\n\n[openai] - Category: security\n- Severity: high\n- File: [loop_state.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/loop_state.py:675)\n- Finding: A stale `--attempt-id` is incorporated directly into `rejected/{attempt_id}.json`. An attacker-controlled value containing path separators or an absolute Windows path can escape the rejected-payload directory and write arbitrary JSON-content files accessible to the process.\n- Suggestion: Require `attempt_id` to match the canonical token format before constructing a path, or derive the rejected filename from a safe digest/escaped token and verify its resolved path remains under the intended directory.\n\n- Category: bug\n- Severity: high\n- File: [autonomous_loop.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/autonomous_loop.py:250)\n- Finding: `cmd_record` validates the fencing token under one lock, releases that lock while parsing input, then reacquires a lock and writes state without validating again. A lease reclaim and re-claim can occur between those sections, letting a stale runner overwrite the current attempt’s state.\n- Suggestion: Parse before locking if needed, then perform token validation and the entire state/result write in one lock acquisition; re-check the token immediately before every write.\n\n- Category: bug\n- Severity: medium\n- File: [autonomous_loop.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-hc43kaue/shared/scripts/lib/autonomous_loop.py:295)\n- Finding: A matching token is sufficient for `cmd_record` to write `built` or `failed`, regardless of the row’s current status. For example, a claimed unit can submit `complete` and skip the required `claimed → running → built` transition, defeating the state machine.\n- Suggestion: Under the write lock, require the expected source state (`running` for a runner result) and enforce `is_legal_transition` before changing status.\n\n- Category: spec\n- Severity: m […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T00:46:54.137426+00:00",
+      "disposition": "delegated_to_orchestrator: runner has no Agent tool, spec-reviewer HARD-GATE runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T00:46:54.452246+00:00",
+      "disposition": "documented gap: no internal arm exists for plan review (project_plan_review_has_no_internal_arm), permanent, never promoted",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

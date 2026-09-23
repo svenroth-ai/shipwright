@@ -39,6 +39,10 @@ _CROSS_COMPONENT_PATTERNS = (
     r"(^|/)(integrate_main|ensure_current|resolve_churn_conflicts)\.py$",
     r"(^|/)(churn_merge|gitattributes_union|gitattributes_selfheal)\.py$",
     r"(^|/)(autonomous_loop|events_log)\.py$",
+    # campaign-dag-scheduler R4: loop-mechanics logic moved out of
+    # `autonomous_loop.py` into these sibling modules (bloat-budget driven)
+    # — kept in sync with the SSoT copy above, see that copy's own comment.
+    r"(^|/)(loop_state|loop_claim|loop_mark)\.py$",
     r"(^|/)campaign_[^/]*\.py$",
     r"(^|/)campaign-mode\.md$",
     r"(^|/)hooks\.json$",

@@ -203,6 +203,16 @@ CROSS_COMPONENT_FILE_PATTERNS = (
     r"(^|/)(integrate_main|ensure_current|resolve_churn_conflicts)\.py$",
     r"(^|/)(churn_merge|gitattributes_union|gitattributes_selfheal)\.py$",
     r"(^|/)(autonomous_loop|events_log)\.py$",
+    # campaign-dag-scheduler R4: the loop-mechanics logic that used to live
+    # entirely in `autonomous_loop.py` (state machine, fencing, atomic
+    # claim, lease-based reconcile) moved into these three sibling modules
+    # (bloat-budget driven — see that sub-iterate's own bloat-exception
+    # ADR); without adding them here, a diff touching ONLY `loop_state.py`/
+    # `loop_claim.py`/`loop_mark.py` would silently stop being classified
+    # cross_component the moment `autonomous_loop.py` itself wasn't also
+    # touched — a real regression this pattern list must track, not a new
+    # risk surface being invented.
+    r"(^|/)(loop_state|loop_claim|loop_mark)\.py$",
     r"(^|/)campaign_[^/]*\.py$",
     r"(^|/)campaign-mode\.md$",
     r"(^|/)hooks\.json$",
