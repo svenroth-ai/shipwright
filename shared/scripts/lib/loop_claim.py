@@ -107,14 +107,13 @@ def _retry_on_transient_permission_error(fn):
     hoping — a persistent, non-transient permission problem still surfaces
     within a few seconds, never silently hung or masked.
     """
-    last_exc: PermissionError | None = None
     for attempt in range(_TRANSIENT_PERMISSION_RETRY_ATTEMPTS):
         try:
             return fn()
-        except PermissionError as exc:
-            last_exc = exc
+        except PermissionError:
+            if attempt == _TRANSIENT_PERMISSION_RETRY_ATTEMPTS - 1:
+                raise
             time.sleep(min(0.01 * (attempt + 1), _TRANSIENT_PERMISSION_RETRY_BACKOFF_CAP))
-    raise last_exc
 
 
 def _load_state(state_path: Path) -> dict:
