@@ -184,9 +184,11 @@ class TestCmdNextBatch:
             assert cmd_next_batch(_batch_args(state_path)) == 6
 
 
-def _release_args(state_path: Path, unit: str, attempt_id: str, *, max_attempts=3) -> argparse.Namespace:
+def _release_args(state_path: Path, unit: str, attempt_id: str, *, max_attempts=3,
+                   campaign_slug=None, campaign_worktree=None) -> argparse.Namespace:
     return argparse.Namespace(state=str(state_path), unit=unit, attempt_id=attempt_id,
-                               max_attempts=max_attempts)
+                               max_attempts=max_attempts, campaign_slug=campaign_slug,
+                               campaign_worktree=campaign_worktree)
 
 
 class TestCmdRelease:
@@ -224,3 +226,10 @@ class TestCmdRelease:
     def test_release_unknown_unit_returns_1(self, tmp_path):
         state_path = _write_state(tmp_path)
         assert cmd_release(_release_args(state_path, "missing", "x")) == 1
+
+    # `cmd_release`'s physical-cleanup behavior (`--campaign-slug`/
+    # `--campaign-worktree`, `_cleanup_unit_worktree`) and the ADR-045
+    # single-module-identity regression for `mark`/`mark-running`/
+    # `mark-merged` dispatch are covered in the sibling
+    # `test_loop_claim_release_cleanup.py`, split out purely to keep this
+    # file under the 300-line guideline.

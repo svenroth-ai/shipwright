@@ -39,10 +39,14 @@ try:  # bare-sibling — see module docstring's import-convention note
 except ImportError:  # pragma: no cover
     fresh_remote_default_ref = None  # type: ignore[assignment]
 from file_lock import LockTimeout, file_lock
-from loop_mark import cmd_mark, cmd_mark_merged, cmd_mark_running  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.campaign_session_lock import DEFAULT_STALE_AFTER_SECONDS  # noqa: E402
+from lib.campaign_unit_worktree import (  # noqa: E402
+    CampaignUnitWorktreeError,
+    resolved_worktree_path,
+)
+from lib.loop_mark import cmd_mark, cmd_mark_merged, cmd_mark_running  # noqa: E402
 from lib.loop_state import (  # noqa: E402
     TERMINAL,
     describe_blocker,
@@ -215,10 +219,38 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
         return 6
 
 
+def _cleanup_unit_worktree(campaign_worktree: str, campaign_slug: str, unit_id: str, attempt: int) -> None:
+    """Best-effort ``git worktree remove`` + ``git branch -D`` (never blocks
+    the logical release — swallow every failure, e.g. a Windows file-lock;
+    swept by ``git worktree prune`` at the next claim). Path always
+    RECOMPUTED from validated ``(slug, unit_id, attempt)`` via
+    ``lib.campaign_unit_worktree`` — never a stored path. Branch name is not
+    owned here (its ``{desc}`` suffix is R5a's job); read back from git's
+    own checked-out ref instead — authoritative, not trusted metadata."""
+    try:
+        wt_path = resolved_worktree_path(campaign_worktree, campaign_slug, unit_id, attempt=attempt)
+    except CampaignUnitWorktreeError:
+        return
+    if not wt_path.exists():
+        return
+    try:
+        branch = subprocess.run(["git", "-C", str(wt_path), "rev-parse", "--abbrev-ref", "HEAD"],
+                                 capture_output=True, text=True, timeout=15).stdout.strip()
+        subprocess.run(["git", "-C", campaign_worktree, "worktree", "remove", "--force", str(wt_path)],
+                        capture_output=True, text=True, timeout=30)
+        if branch and branch != "HEAD":
+            subprocess.run(["git", "-C", campaign_worktree, "branch", "-D", branch],
+                            capture_output=True, text=True, timeout=15)
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        pass  # best-effort — never blocks the logical release above
+
+
 def cmd_release(args: argparse.Namespace) -> int:
     """`claimed -> pending` (no attempt re-bump), or `-> failed` once
     `--max-attempts` (default 3) is exhausted. `attempt` is 0-indexed, so
-    `--max-attempts K` permits exactly `K` total claims."""
+    `--max-attempts K` permits exactly `K` total claims. Physical worktree/
+    branch cleanup (best-effort, never blocking) runs AFTER the logical
+    release is durably saved — see `_cleanup_unit_worktree`."""
     state_path = Path(args.state)
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
@@ -238,12 +270,21 @@ def cmd_release(args: argparse.Namespace) -> int:
             exhausted = unit.get("attempt", 0) + 1 >= args.max_attempts
             unit["status"] = "failed" if exhausted else "pending"
             unit["released_at"] = now_iso()
+            attempt = unit.get("attempt", 0)
             _save_state(state_path, state)
             print(json.dumps({"released": True, "unit": args.unit, "status": unit["status"]}))
-            return 0
     except LockTimeout as exc:
         print(json.dumps({"error": "lock_timeout", "detail": str(exc)}), file=sys.stderr)
         return 6
+
+    campaign_slug = getattr(args, "campaign_slug", None)
+    campaign_worktree = getattr(args, "campaign_worktree", None)
+    if campaign_slug and campaign_worktree:
+        try:  # belt-and-suspenders — the release above already landed.
+            _cleanup_unit_worktree(campaign_worktree, campaign_slug, args.unit, attempt)
+        except Exception:
+            pass
+    return 0
 
 
 def main() -> int:
@@ -261,6 +302,10 @@ def main() -> int:
     p_release.add_argument("--unit", required=True)
     p_release.add_argument("--attempt-id", required=True)
     p_release.add_argument("--max-attempts", type=int, default=3)
+    p_release.add_argument("--campaign-slug", required=True,
+                            help="recomputes the released unit's worktree path for best-effort cleanup")
+    p_release.add_argument("--campaign-worktree", required=True,
+                            help="cwd for the cleanup's git calls (worktree remove / branch -D)")
 
     p_running = sub.add_parser("mark-running", help="claimed -> running")
     p_running.add_argument("--state", required=True)

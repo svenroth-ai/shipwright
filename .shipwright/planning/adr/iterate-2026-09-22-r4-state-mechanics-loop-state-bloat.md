@@ -147,13 +147,32 @@ the boundary around rather than guessing one now.
 
 - **Split into `loop_state.py` (load/verify/readiness) +
   `loop_transitions.py` (state machine/fencing) + `loop_reconcile.py`
-  (reconcile).** Rejected: contradicts the plan's own explicit, named
-  module assignment for this sub-iterate ("mechanics go into two new
-  modules — `loop_state.py` ... and `loop_claim.py`" — not three), and
-  the Ousterhout argument above shows the split buys no real encapsulation
-  — `ACTIVE`/`RESUMABLE`/`STATES` would need to be imported right back into
-  whichever module got `reconcile_in_progress`, so the "split" is really
-  just moving the file boundary, not removing a dependency.
+  (reconcile).** Rejected — but not on a bare module-count argument:
+  correction (spec-reviewer re-check, 2026-09-23) — an earlier draft of
+  this bullet argued this split "contradicts the plan's own explicit,
+  named module assignment for this sub-iterate ... — not three", citing
+  the Scope section's "two new modules" prose as if it capped the sub-
+  iterate's internal module count. That framing does not survive contact
+  with the sub-iterate spec's own Acceptance Criteria (the more specific,
+  actually-binding gate; see
+  `.shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R4-state-mechanics.md`
+  § Acceptance Criteria), which explicitly PERMITS splitting a module
+  further "if the exception would otherwise be needed purely from feature
+  count, not genuine cohesion" — and this same sub-iterate exercises
+  exactly that permission elsewhere, splitting `loop_claim.py` into
+  `loop_claim.py` + `loop_mark.py` (see that module's own docstring). The
+  Scope section's "two new modules" language describes the extraction
+  target relative to `autonomous_loop.py`, not an exhaustive cap on every
+  module this sub-iterate may create. The REAL reason this particular
+  candidate split is rejected is the Ousterhout argument above: it buys no
+  real encapsulation — `ACTIVE`/`RESUMABLE`/`STATES` would need to be
+  imported right back into whichever module got `reconcile_in_progress`,
+  so the "split" is really just moving the file boundary, not removing a
+  dependency or separating two independently-varying concerns. That is the
+  same cohesion test the AC's permission invokes; this candidate fails it,
+  while the `loop_claim.py`/`loop_mark.py` split (scheduling decisions vs.
+  identity-checked mutations — a real behavioral seam) passes it. Module
+  count alone was never the test.
 - **Leave `_reconcile_in_progress`'s `kind == "section"` branch in
   `autonomous_loop.py` and only add the new `kind == "sub_iterate"` branch
   to `loop_state.py`.** Rejected: this is exactly the two-copies-of-one-
