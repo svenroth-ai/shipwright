@@ -28,10 +28,15 @@ value back, and if the caller supplies a real token, validates it against
 that value: a mismatch — including a token supplied for a row that has none
 yet — raises :class:`UnitLeaseError` before any lease field is mutated
 (round 7 added the mismatch check; round 8 closed the token-less-row minting
-gap it still allowed). No caller today (`check_unit_lease.py`'s CLI,
-`sub-iterate-runner.md`'s brief) passes a real `attempt_id`, so this is fully
-inert until R5a wires one through — a touch with no token is completely
-unaffected and behaves exactly as before.
+gap it still allowed; round 22 closed the complementary gap those two left
+open — a `kind == "sub_iterate"` row that already carries a real token now
+REQUIRES a matching one on every touch, not just when one happens to be
+supplied, so a caller cannot simply omit `--attempt-id` to bypass the
+check entirely). No caller today (`check_unit_lease.py`'s CLI,
+`sub-iterate-runner.md`'s brief) passes a real `attempt_id`, so round 22's
+requirement is fully inert until R5a wires one through — a never-claimed
+row (no `attempt_id` yet) is completely unaffected and behaves exactly as
+before.
 
 **Warn-and-continue, never fatal.** A touch can fail for reasons that say
 nothing about whether the runner's own build is healthy — the lock released
@@ -207,6 +212,30 @@ def touch_unit_lease(
                 raise UnitLeaseError(
                     f"attempt token mismatch for {unit_id!r}: touch carries {attempt_id!r}, "
                     f"row's real token is {existing_attempt_id!r} — refusing to mutate lease fields")
+            # External Tier-3 PR review (GPT, round 22): rounds 7-8 above
+            # only validate a SUPPLIED token — they say nothing about a
+            # caller that supplies NONE while the row already carries a
+            # real one. That tokenless path let ANY caller (a stale runner
+            # whose claim was already reclaimed, in particular) keep
+            # mutating a CLAIMED row's lease fields — including extending
+            # `lease_expires_at` indefinitely — with no proof of current
+            # ownership, undermining the single-writer fencing R4 exists to
+            # provide. Scoped to `kind == "sub_iterate"` (the only kind
+            # `attempt_id` is ever minted for) and to rows that already
+            # carry a token — a never-claimed row has nothing to prove
+            # ownership of yet, and is unaffected. This is a no-op against
+            # every row in production TODAY (see "Known limitation" above:
+            # `loop_claim._claim_unit`, via `cmd_next_batch`, is the sole
+            # minter, and nothing dispatches through that path until R5a's
+            # flip — `campaign-mode.md`'s own "R4's cmd_next_batch is the
+            # first wiring point" note) — it only takes effect once a row
+            # actually carries a real token, which is exactly the case this
+            # check exists to protect.
+            if state.get("kind") == "sub_iterate" and existing_attempt_id and not attempt_id:
+                raise UnitLeaseError(
+                    f"attempt token required for {unit_id!r}: row is claimed (token "
+                    f"{existing_attempt_id!r}), touch supplied none — refusing to mutate "
+                    "a claimed row's lease fields without proof of current ownership")
 
             existing_attempt = unit.get("attempt")
             stale_attempt_conflict = (

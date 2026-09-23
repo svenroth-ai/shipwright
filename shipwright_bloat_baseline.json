@@ -858,6 +858,13 @@
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md"
     },
     {
+      "path": "shared/scripts/lib/unit_lease.py",
+      "limit": 300,
+      "current": 323,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-unit-lease-bloat.md"
+    },
+    {
       "path": "shared/scripts/lib/campaign_graph.py",
       "limit": 300,
       "current": 354,

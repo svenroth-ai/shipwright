@@ -113,17 +113,55 @@ def test_touch_rejects_a_mismatched_attempt_id(state_path):
     assert unit["attempt_id"] == "a0"
 
 
-def test_touch_with_no_attempt_id_preserves_an_existing_one(state_path):
-    """Stage-3 doubt review (HIGH #3): `attempt_id` defaults to `None` and no
-    caller today (`check_unit_lease.py`'s CLI, `sub-iterate-runner.md`'s
-    brief) ever passes a real one — a default-arg heartbeat touch must not
-    null out a fencing token a prior atomic claim already minted."""
+def test_touch_with_matching_attempt_id_preserves_it(state_path):
+    """Stage-3 doubt review (HIGH #3): `attempt_id` defaults to `None` — a
+    touch that DOES supply the row's real current token must not null it
+    out or otherwise disturb it; the field is only ever echoed back, never
+    minted or cleared, by this function."""
     _seed_attempt_id(state_path, "R2", "a0")
-    lease2 = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2")
+    lease2 = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2", attempt_id="a0")
     assert lease2["attempt_id"] == "a0"
     state = json.loads(state_path.read_text(encoding="utf-8"))
     unit = next(u for u in state["units"] if u["id"] == "R2")
     assert unit["attempt_id"] == "a0"
+
+
+def test_touch_with_no_attempt_id_on_a_claimed_sub_iterate_row_is_rejected(state_path):
+    """External Tier-3 PR review (GPT, PR #790 round 22): SUPERSEDES the
+    former `test_touch_with_no_attempt_id_preserves_an_existing_one` — that
+    test asserted a tokenless touch of an already-claimed row SUCCEEDED
+    (defending only against nulling the token out). Round 22 closes the
+    real gap that shape left open: ANY caller — a stale runner whose claim
+    was reclaimed, in particular — could omit `--attempt-id` entirely and
+    still mutate a claimed row's lease fields, extending
+    `lease_expires_at` indefinitely with no proof of current ownership. A
+    `kind == "sub_iterate"` row that already carries a real token must now
+    REQUIRE one on every touch; a tokenless touch is rejected before any
+    lease field is mutated."""
+    _seed_attempt_id(state_path, "R2", "a0")
+    with pytest.raises(UnitLeaseError, match="attempt token required"):
+        touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2")
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    unit = next(u for u in state["units"] if u["id"] == "R2")
+    assert unit["attempt_id"] == "a0"  # unchanged
+    assert "worktree" not in unit  # rejected before any lease field was mutated
+
+
+def test_touch_with_no_attempt_id_on_a_claimed_section_row_still_succeeds(state_path):
+    """Round 22's new requirement is scoped to `kind == "sub_iterate"` — the
+    only kind `attempt_id` is ever minted for. A `kind == "section"` state
+    (pre-R4 build-orchestrator campaigns, a different `loop_state.json`
+    shape entirely) must behave exactly as before: a tokenless touch still
+    succeeds even if the row happens to carry an `attempt_id`-shaped field
+    (which no real section row ever does — this only proves the kind gate
+    itself, not a real production shape)."""
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["kind"] = "section"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    _seed_attempt_id(state_path, "R2", "a0")
+
+    lease = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2")
+    assert lease["worktree"] == "/wt2"
 
 
 def test_touch_raises_for_a_missing_unit_id(state_path):
@@ -199,67 +237,6 @@ def test_is_unit_lease_stale_fails_closed_on_a_malformed_present_value():
     assert is_unit_lease_stale({"lease_expires_at": None}) is True
 
 
-# --- ghost-touch marking + campaign-worktree cross-check ---------------------
-
-
-def test_touch_marks_stale_attempt_conflict_without_rejecting(state_path):
-    """No fencing rejection — the touch still succeeds — but a caller CAN
-    tell it touched a row whose attempt has since moved on."""
-    touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=2)
-    lease = touch_unit_lease(state_path, "R2", worktree="/wt-old", branch="b-old", attempt=0)
-    assert lease["stale_attempt_conflict"] is True
-    # Still wrote the (stale) caller's own values — no rejection.
-    state = json.loads(state_path.read_text(encoding="utf-8"))
-    unit = next(u for u in state["units"] if u["id"] == "R2")
-    assert unit["worktree"] == "/wt-old"
-
-
-def test_touch_does_not_mark_conflict_for_a_normal_same_or_higher_attempt(state_path):
-    touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0)
-    lease = touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0)
-    assert lease["stale_attempt_conflict"] is False
-    lease2 = touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=1)
-    assert lease2["stale_attempt_conflict"] is False
-
-
-def test_touch_never_marks_conflict_on_the_very_first_touch(state_path):
-    lease = touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0)
-    assert lease["stale_attempt_conflict"] is False
-
-
-def test_touch_accepts_a_matching_campaign_worktree(tmp_path, state_path):
-    campaign_worktree = state_path.parent.parent  # state_path is <cw>/.shipwright/loop_state.json
-    lease = touch_unit_lease(
-        state_path, "R2", worktree="/wt", branch="b",
-        expected_campaign_worktree=str(campaign_worktree),
-    )
-    assert lease["worktree"] == "/wt"
-
-
-def test_touch_never_overwrites_an_existing_attempt_counter(state_path):
-    """`attempt` on the row is owned by autonomous_loop.py's own retry
-    counter (cmd_next / _reconcile_in_progress), not this module — a
-    heartbeat that always touches with its own attempt=0 (the runner's real
-    call shape) must never reset it (Stage-2 code review, high)."""
-    state = json.loads(state_path.read_text(encoding="utf-8"))
-    unit = next(u for u in state["units"] if u["id"] == "R2")
-    unit["attempt"] = 2
-    state_path.write_text(json.dumps(state), encoding="utf-8")
-
-    lease = touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0)
-    assert lease["stale_attempt_conflict"] is True
-    assert lease["attempt"] == 0  # the caller's own value, still echoed back
-
-    reloaded = json.loads(state_path.read_text(encoding="utf-8"))
-    unit = next(u for u in reloaded["units"] if u["id"] == "R2")
-    assert unit["attempt"] == 2  # NOT reset
-
-
-def test_touch_rejects_a_mismatched_campaign_worktree(tmp_path, state_path):
-    other = tmp_path / "some-other-worktree"
-    other.mkdir()
-    with pytest.raises(UnitLeaseError, match="drifted apart"):
-        touch_unit_lease(
-            state_path, "R2", worktree="/wt", branch="b",
-            expected_campaign_worktree=str(other),
-        )
+# Ghost-touch marking (`stale_attempt_conflict`) and the
+# `expected_campaign_worktree` cross-check are covered in the sibling
+# `test_unit_lease_conflict_and_worktree.py`.
