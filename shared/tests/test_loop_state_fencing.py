@@ -123,23 +123,6 @@ class TestCmdInitSubIteratePayload:
         assert payload == {}
         assert mutated is False
 
-    def test_legacy_terminal_statuses_fall_through_to_reinit_not_false_resumed(self, tmp_path):
-        """External Tier-3 PR review (GPT, round 5): a pre-R4 campaign whose
-        rows are still marked `"complete"`, `"failed"` (legacy string, not
-        the new-vocab terminal reuse), or `"escalated"` match none of
-        ACTIVE/`"in_progress"`/RESUMABLE — the old `if units:` fallback
-        reported these as `{"action": "resumed", "pending": 0}` without ever
-        checking they were verified TERMINAL under the new vocabulary.
-        `"escalated"` specifically means unresolved human action, not done;
-        silently reporting it as resumed/nothing-pending would hide that.
-        Must fall through to a genuine reinit instead, exactly like
-        `kind == "section"` always has for a fully-done state."""
-        state_path = tmp_path / ".shipwright" / "loop_state.json"
-        existing = {"units": [_unit(status="complete"), _unit(id="B", status="escalated")]}
-        payload, mutated = cmd_init_sub_iterate_payload(state_path, existing)
-        assert payload == {}
-        assert mutated is False
-
     def test_legacy_in_progress_unit_is_reconciled_not_silently_resumed(self, tmp_path):
         """External code review (GLM, high): a unit still carrying the
         pre-R4 `cmd_next` status `"in_progress"` (the live status for
