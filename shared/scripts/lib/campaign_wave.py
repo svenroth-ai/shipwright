@@ -96,10 +96,10 @@ def per_unit_worktree_identity(project_root: Path) -> str | None:
     Validates BOTH parsed components (`slug`, `unit_id`) via the same
     `lib.campaign_graph.id_charset_ok` `composite_worktree_name` enforces at
     write time, not just the directory name's superficial `campaign-`/`--`
-    shape — a directory that merely LOOKS composite (e.g. a hand-created
-    `campaign-notes--draft` scratch dir, or one with an empty component,
-    `campaign---x`) must not be treated as a genuine per-unit worktree
-    identity (code review round 3, LOW).
+    shape — a directory that merely LOOKS composite but has an empty or
+    charset-invalid component (`campaign---x`, `campaign-my dag--R5a`) must
+    not be treated as a genuine per-unit worktree identity (code review
+    round 3, LOW).
     """
     name = Path(project_root).name
     match = _COMPOSITE_WORKTREE_RE.match(name)
@@ -142,7 +142,7 @@ def write_wave_aware_handoff(project_root: Path, session_id: str, content: str,
     sibling fan-out invocation, exactly the hazard `_run_id.py`'s own
     "Eager MODULE imports" note exists to prevent.
     """
-    unit = resolve_wave_safe_unit_value(loop_unit) if loop_unit else loop_unit
+    unit = resolve_wave_safe_unit_value(loop_unit)
     if loop_unit and not unit:
         unit = per_unit_worktree_identity(Path(project_root))
     if loop_unit and not unit and resolve_fallback is not None:

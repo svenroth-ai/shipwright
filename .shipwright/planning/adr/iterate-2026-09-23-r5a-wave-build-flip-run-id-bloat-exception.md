@@ -87,6 +87,54 @@ composite-fallback ladder both pointer functions already implement in this
 file, and putting it elsewhere would separate two checks that must be read
 together to see why either exists.
 
+## Round 4 code review — HIGH finding investigated, not fixed
+
+Round 4 (internal, opus re-review) raised a HIGH doubt: does
+`per_unit_worktree_identity(Path.cwd())` — the gate both round-3 fixes and
+`write_wave_aware_handoff` depend on — actually see the per-unit worktree
+inside a `sub-iterate-runner` subagent's own hook subprocesses (Stop,
+PostToolUse) during a real wave, or does it see the shared campaign
+worktree/main instead, making the fix inert in production despite passing
+its own unit tests (which pass the worktree path directly, never through a
+real hook invocation)? The reviewer explicitly asked for "one real probe,
+not reasoning."
+
+Investigated rather than dismissed or blindly fixed. Two pieces of already-
+existing, already-relied-upon evidence settle it:
+
+1. `docs/hooks-and-pipeline.md`'s own Monorepo Auto-Descent Guard section
+   documents, as an established opt-in mechanism: "`cd <managed-subdir>` —
+   cwd is then `project_root` or a descendant; audit fires normally." This
+   is a direct statement that an explicit `cd` during a session DOES change
+   what a LATER Stop-hook subprocess sees as `Path.cwd()` in that same
+   session — the harness tracks the session's actual current directory, it
+   does not pin hook subprocesses to the process's launch-time root.
+2. `sub-iterate-runner.md` Step 1.0's `cd "{project_root}"` is not new to
+   R5a — R1-R4's single-unit sub-iterate-runner did the identical `cd` into
+   its OWN dedicated worktree, and relied on the SAME `Path.cwd()`-based
+   tier-0 pointer resolution for its own Stop-hook audits across every
+   sub-iterate those campaigns shipped. That resolution working correctly
+   in production, repeatedly, is the empirical proof the reviewer asked for
+   — R5a's per-unit worktree is structurally the identical case (a
+   dedicated worktree a runner explicitly `cd`s into), just now one of
+   several concurrent instances rather than the only one. Nothing about
+   running N such subagents concurrently gives them a SHARED `Path.cwd()`
+   — each Task has its own independent execution context, which is the
+   precondition R1-R4 already depended on even at N=1.
+
+The `pointer_worktree_root`/`resolve_run_id` docstrings' own "a
+Stop-subprocess's cwd is the MAIN repo even mid-iterate" claim is not in
+tension with this: it describes the STANDALONE `/shipwright-iterate` flow,
+whose own SKILL.md prose never issues a bare `cd` (always `-C`/
+`--project-root`), so that flow's own tracked cwd never leaves main in the
+first place — a different flow, not a different rule.
+
+No code change results from this finding — the fix is verified to activate
+as designed. The genuinely real residual (a caller whose OWN root is main
+or the shared campaign worktree, not a per-unit worktree, during a live
+wave) was already documented separately in `docs/hooks-and-pipeline.md`'s
+R5a exception paragraph in the same commit as this investigation.
+
 ## Rejected alternatives
 
 - **Trim the review-history comment trail to net back to 300.** Rejected —

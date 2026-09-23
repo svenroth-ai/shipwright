@@ -293,11 +293,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        is passed to the brief below as `campaign_worktree`, unchanged). Then
        run the per-unit spawn-guard from `references/campaign-worktree.md`
        against THAT unit's own worktree. Non-zero (setup OR guard, either
-       one) = release EVERY other unit already claimed by 3a this wave
+       one) = release EVERY unit claimed by 3a this wave, THIS ONE INCLUDED
        (`loop_claim.py release --attempt-id "{its own attempt_id from 3a}"`
        for each — external review, openai, medium: a claim must never be
        left stranded `claimed` just because a LATER unit in the same fixed
-       order failed setup), THEN STRICT-STOP the whole wave, go to step 4, do
+       order failed setup; the failing unit itself is equally still
+       `claimed` at this point — 1.0.5 never ran for it either — so
+       excluding it from the release would strand exactly the unit whose
+       own failure triggered this branch, code review round 4), THEN
+       STRICT-STOP the whole wave, go to step 4, do
        NOT spawn anything from it. Once every unit in `claimed` has its own
        worktree and has passed its own guard, spawn ALL
        of them as **parallel `Task` calls in ONE message**, for EVERY unit

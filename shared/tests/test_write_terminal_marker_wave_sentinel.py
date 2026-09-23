@@ -31,6 +31,19 @@ def test_noops_under_the_wave_sentinel(tmp_path, monkeypatch, capsys):
     assert not (tmp_path / ".shipwright" / "runs").exists()
 
 
+def test_noops_under_a_padded_sentinel(tmp_path, monkeypatch):
+    """A CLAUDE_ENV_FILE round-trip can pad the exported value with
+    whitespace (code review round 3's own motivating hazard) — the gate
+    must still recognise it (round 4, MEDIUM: zero coverage until now)."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", "  __campaign_wave__\n")
+    monkeypatch.setattr(sys, "stdin", __import__("io").StringIO("{}"))
+
+    assert write_terminal_marker.main() == 0
+    assert not (tmp_path / ".shipwright" / "runs").exists()
+
+
 def test_still_writes_for_a_genuine_per_unit_id(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")

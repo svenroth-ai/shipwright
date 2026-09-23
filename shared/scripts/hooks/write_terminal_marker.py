@@ -27,7 +27,18 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[1]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from lib.campaign_wave import is_wave_sentinel  # noqa: E402
+try:
+    from lib.campaign_wave import is_wave_sentinel  # noqa: E402
+except ImportError:
+    # This hook is still load-bearing for kind == "section" (shipwright-
+    # build's --autonomous loop polls the DONE file it writes) — a packaging
+    # fault in lib.campaign_wave (or its own lib.campaign_graph import) must
+    # not hard-fail this module before main() runs and silently hang that
+    # poll (code review round 4, LOW). Duplicating the literal here is a
+    # deliberately narrow fallback, not a second source of truth: it is
+    # never reached while the normal import succeeds.
+    def is_wave_sentinel(value: str | None) -> bool:
+        return (value or "").strip() == "__campaign_wave__"
 
 
 def main() -> int:

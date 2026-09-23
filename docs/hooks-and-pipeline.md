@@ -2282,7 +2282,15 @@ writes the identical session-keyed pointer file
 gated on `per_unit_worktree_identity(caller_root)` being non-`None` — and
 fall through past source 0 rather than hand a caller its sibling's `run_id`
 when the shared pointer was last written by a different unit. Inert (never
-triggers) for a standalone iterate or a main-root-rooted audit.
+triggers) for a standalone iterate or a main-root-rooted audit — which is
+also this fix's documented residual: a caller whose OWN root is main or the
+shared campaign worktree (not a per-unit worktree) during a live wave —
+e.g. the orchestrator's own Stop hook, or a separate session inspecting
+`main` mid-wave — still resolves source 0 to whichever sibling's setup call
+wrote the shared pointer last, since `per_unit_worktree_identity(caller_root)`
+correctly returns `None` for it and the new guard has nothing to gate on.
+Pre-R5a this ambiguity did not exist: exactly one unit was ever live, so the
+pointer was unambiguous for every caller (code review round 4).
 
 Source 0 is the per-session run pointer `setup_iterate_worktree.py` writes at
 B1a (`iterate-2026-08-06-resolve-run-id-seam`). Sources 1-3 are structurally

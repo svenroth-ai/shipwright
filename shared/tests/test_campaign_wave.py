@@ -37,6 +37,14 @@ class TestSentinelPredicates:
     def test_resolve_wave_safe_unit_value_empties_the_sentinel(self):
         assert resolve_wave_safe_unit_value(WAVE_UNIT_ID_SENTINEL) == ""
 
+    def test_a_padded_sentinel_is_still_recognised(self):
+        """Code review round 3's own fix: an unstripped CLAUDE_ENV_FILE
+        round-trip artifact must not slip past `is_wave_sentinel` and get
+        treated as a genuine per-unit id (round 4, MEDIUM — this fix had
+        zero coverage)."""
+        assert is_wave_sentinel(f"  {WAVE_UNIT_ID_SENTINEL}\n") is True
+        assert resolve_wave_safe_unit_value(f"  {WAVE_UNIT_ID_SENTINEL}  ") == ""
+
     def test_resolve_wave_safe_unit_value_passes_a_real_id_through(self):
         assert resolve_wave_safe_unit_value("R5a") == "R5a"
 
@@ -131,7 +139,7 @@ class TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel:
         assert WAVE_UNIT_ID_SENTINEL not in result.name
         assert result.name == "iterate-2026-09-23-r5a-x.md"
 
-    def test_two_units_sharing_the_sentinel_resolve_to_distinct_files(self, tmp_path, monkeypatch):
+    def test_two_units_sharing_the_sentinel_resolve_to_distinct_files(self, tmp_path):
         resolved = {"unit-a-root": "iterate-a", "unit-b-root": "iterate-b"}
         wt_a = tmp_path / "unit-a-root"
         wt_b = tmp_path / "unit-b-root"
