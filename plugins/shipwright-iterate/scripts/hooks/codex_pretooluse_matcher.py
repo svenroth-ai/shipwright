@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import shlex
 import sys
-from pathlib import Path
+from pathlib import PureWindowsPath
 
 _SETUP_SCRIPT_BASENAME = "setup_iterate_worktree.py"
 _SHELL_OPERATORS = ("&&", "||", ";", "|", "&")
@@ -45,13 +45,24 @@ _UNSAFE_SUBSTRINGS = ("\n", "\r", "$(", "`")
 _REDIRECTION_OR_GROUPING = (">", "<", ">>", "<<", "(", ")")
 
 
+def _basename(token: str) -> str:
+    """Basename of ``token``, splitting on BOTH ``/`` and ``\\`` regardless of
+    host platform (external review, block: ``pathlib.Path(...).name`` uses
+    the host's own separator rules, so a Windows-style path only split
+    correctly on a Windows host -- the same command denied on Linux CI,
+    where ``PosixPath`` never treats ``\\`` as a separator). ``PureWindowsPath``
+    accepts both separators unconditionally (Windows itself does), so it is
+    the one basename rule safe to apply everywhere."""
+    return PureWindowsPath(token).name
+
+
 def _unquote(token: str) -> str:
     """Strip one matching pair of leading/trailing quote characters.
     ``shlex.split(..., posix=False)`` (used on Windows — see
     ``_bash_command_matches_setup``) deliberately does NOT strip quotes the
     way POSIX mode does, so a quoted path token like
     ``"C:\\...\\setup_iterate_worktree.py"`` otherwise keeps its literal
-    trailing ``"`` — corrupting ``Path(token).name`` into
+    trailing ``"`` — corrupting ``_basename(token)`` into
     ``setup_iterate_worktree.py"`` and silently denying a legitimate
     invocation. A no-op on POSIX (its tokens are already unquoted)."""
     if len(token) >= 2 and token[0] == token[-1] and token[0] in ('"', "'"):
@@ -105,7 +116,7 @@ def _segment_targets_setup(segment: list[str]) -> bool:
     # command past the gate (that still needs a shell operator, already
     # denied by the caller), so it's the same cooperative-enforcement
     # boundary, not a new bypass class (code-reviewer finding, low, round 2).
-    program = Path(segment[0]).name
+    program = _basename(segment[0])
     if program == _SETUP_SCRIPT_BASENAME:
         return True
     rest = segment[1:]
@@ -120,12 +131,12 @@ def _segment_targets_setup(segment: list[str]) -> bool:
                 idx += 1  # also consume this flag's value token
         if idx < len(rest) and rest[idx] == "--":
             idx += 1
-        return idx < len(rest) and Path(rest[idx]).name == _SETUP_SCRIPT_BASENAME
+        return idx < len(rest) and _basename(rest[idx]) == _SETUP_SCRIPT_BASENAME
     if program in _INTERPRETER_WRAPPERS:
         idx = 0
         while idx < len(rest) and rest[idx].startswith("-"):
             idx += 1
-        return idx < len(rest) and Path(rest[idx]).name == _SETUP_SCRIPT_BASENAME
+        return idx < len(rest) and _basename(rest[idx]) == _SETUP_SCRIPT_BASENAME
     return False
 
 

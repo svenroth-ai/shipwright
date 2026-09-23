@@ -15,12 +15,34 @@ HOOK_SCRIPT = (
 )
 sys.path.insert(0, str(HOOK_SCRIPT.parent))
 from codex_pretooluse_matcher import (  # noqa: E402
+    _basename,
     _bash_command_matches_setup,
     _is_bare_cd,
     _segments,
     _unquote,
     decide,
 )
+
+
+class TestBasename:
+    """`PureWindowsPath`-backed, so these assertions hold on every host --
+    unlike `pathlib.Path(...).name`, which only split on `\\` on Windows
+    itself (external review, block: this exact gap denied a valid
+    Windows-form path on Linux CI while passing locally on a Windows dev
+    box)."""
+
+    def test_windows_backslash_path_yields_basename(self):
+        assert _basename("C:\\repo\\shared\\scripts\\tools\\setup_iterate_worktree.py") == (
+            "setup_iterate_worktree.py"
+        )
+
+    def test_posix_forward_slash_path_yields_basename(self):
+        assert _basename("shared/scripts/tools/setup_iterate_worktree.py") == (
+            "setup_iterate_worktree.py"
+        )
+
+    def test_bare_name_is_unchanged(self):
+        assert _basename("setup_iterate_worktree.py") == "setup_iterate_worktree.py"
 
 
 class TestUnquote:
