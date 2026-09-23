@@ -262,6 +262,21 @@ def is_unit_ready(unit: dict, all_units: list[dict]) -> bool:
     exact-case lookup here would then never find it and block the dependent
     forever — a deadlock the write-time validator explicitly promised
     wouldn't happen. Resolve via the same case-fold `campaign_graph.py` uses.
+
+    **No subprocess/git calls happen here** (external Tier-3 review, PR
+    #790 round 15 — raised as a BLOCK, verified incorrect against this
+    exact function body and closed without a behavior change): this is a
+    pure dict lookup against each `dep`'s already-populated
+    `merged_commit` field. The git-based ancestry check that actually
+    populates `merged_commit` runs elsewhere, cwd-aware in both places it
+    matters — `loop_claim.py::_ancestry_ok` (called from `cmd_next_batch`
+    right alongside this function, with `cwd=args.campaign_worktree`) and
+    `loop_mark.py::cmd_mark_merged` (its own local `_is_ancestor`, same
+    `cwd=args.campaign_worktree` threading, explicitly NOT delegating to
+    this module's cwd-less `verify_merged_commit_ancestry` for that
+    reason — see that function's own call site comment). This module's
+    `verify_merged_commit_ancestry` only ever runs from `_load_units_from`
+    at `autonomous_loop.py::cmd_init` time, a different command entirely.
     """
     by_id = {str(u.get("id")).lower(): u for u in all_units}
     for dep_id in unit.get("depends_on") or []:

@@ -287,11 +287,31 @@ itself). Not a new responsibility — completing the same guarantee Round 8
 already gave `loop_id`, for the sibling argument this function always
 accepted but never checked.
 
+### Round 15 growth (939 -> 954)
+
+External Tier-3 review (GPT, PR #790 round 15) raised a BLOCK claiming
+`is_unit_ready`'s "ancestry verification runs Git commands without the
+explicitly supplied `campaign_worktree`". Verified against this exact
+function body and found INCORRECT: `is_unit_ready` (above) is a pure
+dict lookup with zero subprocess calls — it only reads each dependency's
+already-populated `merged_commit` field. The actual git-invoking
+ancestry checks reachable from `cmd_next_batch`
+(`loop_claim.py::_ancestry_ok`) already correctly thread
+`cwd=args.campaign_worktree` (added round 11); `cmd_mark_merged`'s own
+`_is_ancestor` does the same. This module's cwd-less
+`verify_merged_commit_ancestry` only runs from a genuinely different
+command (`autonomous_loop.py::cmd_init`'s `_load_units_from`), not from
+`next-batch`'s call path at all — the reviewer conflated the two
+ancestry-checking functions. No behavior change: added a docstring note
+to `is_unit_ready` making this boundary explicit for the next reader (or
+reviewer) who has the same question, since the confusion was genuine
+even though the finding was not.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 939-line ceiling
-  (see Round 9 growth above), not 278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 954-line ceiling
+  (see Round 15 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`
