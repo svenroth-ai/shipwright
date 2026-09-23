@@ -265,6 +265,60 @@ the real files before any fix. Findings:
    of one, not a new class of gap. A liveness/staleness detector for
    `running` rows is a properly-scoped follow-up.
 
+## External-review findings (2026-09-23T16:36, glm+openai, verdict "revise") — re-verified against current code
+
+Recorded in the review ledger under `external_code` before the round-2..6
+fixes above landed; the ledger keeps that original snapshot (review history
+is not overwritten — see "Rejected alternatives" below), so this section is
+the durable record of what happened to each finding since. All 10 re-checked
+against the code currently on this branch, not assumed fixed from memory:
+
+- **HIGH, tier-3 sentinel-collision on a pointer-less fresh worktree** —
+  FIXED. `per_unit_worktree_identity` (round 2's own fix, already on this
+  branch when the review ran) derives identity from the worktree's OWN
+  directory name, never a pointer file, so a fresh checkout with no runtime
+  state still resolves distinctly. Confirmed by reading `resolve_run_id`'s
+  tier-3 branch directly. The residual (whether `Path.cwd()` reaches this
+  function as the per-unit worktree at all) is the SAME open question as
+  "Round 4" above, not a separate gap this finding adds.
+- **HIGH, sub-iterate-runner.md's isolation check unconditional, breaking
+  standalone dispatches** — FIXED. Step 0 now reads "When `unit_id` is
+  absent (standalone-shaped dispatch)... Else..."; Step 6 declares "One
+  canonical presence check for this whole file: `unit_id`" across Steps 1.0,
+  1.0.5, and 6. Confirmed by reading the file directly.
+- **MEDIUM, no no-progress circuit breaker for an all-launch-failed wave** —
+  FIXED exactly as suggested: 3i now has an explicit "No-progress guard
+  (external review, glm, medium)" sentence, attributed to this finding.
+- **LOW, `attempt_id`/`attempt` guard-field inconsistency** — FIXED, same
+  commit as the canonical `unit_id` check above.
+- **LOW, derived-snapshot concurrency test covers 10 of "twelve" paths** —
+  FIXED (this round): the test file's docstring now names the two excluded
+  paths (`TEST_RESULTS`, `SESSION_HANDOFF`) and why `lib.derived_snapshots`
+  itself excludes them from `RESTORABLE_SNAPSHOTS`.
+- **MEDIUM, 3c STRICT-STOPs without releasing already-claimed units** —
+  FIXED (rounds 2 and 4 above; round 4 also closed the asymmetry where the
+  failing unit itself was excluded from the release).
+- **MEDIUM, spec AC says "unit_id threaded directly" but code uses
+  pointer-based resolution** — a wording mismatch against the ORIGINAL plan
+  document (`2026-09-20-campaign-dag-scheduler-plan.md`), not against
+  anything a running campaign reads. The ADR's own Context section already
+  documents why pointer-based resolution was chosen over literal threading
+  (round 2's fix). Not amending the historical plan doc to match — that
+  document is finished-work prose, not a live artifact a gate re-checks.
+- **MEDIUM, the serialization test only guards markdown prose, not a
+  Python-level invariant** — genuinely not fixable the way suggested: the
+  invariant it names ("wave N+1 is not computed until wave N's Task batch
+  has fully returned") is enforced by the orchestrating AGENT's own
+  turn-based execution — nothing calls `cmd_next_batch` again until every
+  `Task` in the current message returns — not by any state `loop_claim.py`
+  itself tracks. A test asserting `cmd_next_batch` "refuses" a premature
+  call would test a refusal the function has no reason to implement, since
+  the invariant does not live in its own state machine. Already logged as
+  an accepted limitation at plan-review time (finding #8); left as-is.
+- **HIGH + MEDIUM, duplicate citations of the tier-3 and 3f-bis findings
+  above under openai's separate wording** — same dispositions as their glm
+  counterparts.
+
 ## Rejected alternatives
 
 - **Trim the review-history comment trail to net back to 300.** Rejected —

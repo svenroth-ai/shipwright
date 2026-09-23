@@ -10,6 +10,15 @@ follows from git worktrees being a thing.
 Split from `test_derived_snapshots.py`/`test_derived_snapshots_integrate.py`
 (both already scoped to the single-worktree case) — this file never existed
 before, no baseline implication.
+
+Covers `RESTORABLE_SNAPSHOTS` (ten of the twelve `DERIVED_SNAPSHOTS`), not all
+twelve — a decision, not an oversight (external review, LOW): `TEST_RESULTS`
+and `SESSION_HANDOFF` are excluded from `RESTORABLE_SNAPSHOTS` by
+`lib.derived_snapshots`'s own definition, since a mid-run restore must never
+reset either of them to HEAD (see that module's comment on the set). Nothing
+in this file's own subject exercises a reset that could touch them, so a
+concurrency test over the other two would test code this mechanism never
+calls.
 """
 
 from __future__ import annotations

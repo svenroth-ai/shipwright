@@ -150,27 +150,29 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-23T16:16:31.639267+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-23T19:25:57.664926+00:00",
+      "disposition": "Six internal opus code-reviewer rounds ran manually by the campaign orchestrator (ADR-029 delegation: the sub-iterate-runner has no Agent tool, so the cascade runs at orchestrator level). Rounds 1-2 fixed the initial tier-0/tier-3 sentinel-collision and 3c release-path findings (superseding the earlier external_code review's overlapping findings). Round 3 found and fixed a deeper instance of the same collision class plus documentation drift. Round 4 found a 3c release-path asymmetry bug (fixed) and raised a HIGH doubt about hook-subprocess Path.cwd() resolution that round 4's own investigation wrongly closed as verified. Round 5 caught and retracted that wrong conclusion, correcting the record to genuinely-open with a named cheap probe, plus two stale-doc findings (fixed). Round 6 independently verified the doubt-reviewer's critical Doubt 1 fix (setup_unit_worktree.py's wrong project_root, HIGH, confirmed and fixed with a regression test) and found five bookkeeping/wording inaccuracies in that fix commit's own prose (all corrected in a follow-up commit). Final state: zero outstanding code-review findings; the one genuinely open item (hook-subprocess Path.cwd() resolution during a live wave) is tracked as a named, cheap, first-live-wave empirical probe in the run-id bloat-exception ADR, not a defect.",
+      "recorded_by": "orchestrator-manual-cascade",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-23T16:16:31.752317+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-23T19:26:16.761315+00:00",
+      "disposition": "One internal opus doubt-reviewer pass ran manually by the campaign orchestrator (ADR-029 delegation), fresh-context adversarial pass over the full diff, triggered per the doubt-reviewer's own spawn criteria (concurrency, cross-plugin imports, irreversible worktree/git operations). Raised six doubts, each independently re-verified against the actual code (not taken on faith) before any fix: Doubt 1 (HIGH, CONFIRMED) -- setup_unit_worktree.py passed the wrong path to setup_iterate_worktree(), which would have made every campaign wave silently fail to create any per-unit worktree and STRICT-STOP on first invocation; fixed with a regression test proving the failure mode and the fix. Doubt 2 (plausible) -- WAVE_MAX_PARALLEL cross-Bash-call fragility; defensively fixed with a shell default. Doubt 3a (CONFIRMED) -- generate_handoff_on_stop.py never fires for a wave's own runners (Stop-only registration, no SubagentStop path); documented as a confirmed, proportionate, non-blocking gap. Doubt 3b -- folded into the already-tracked Path.cwd() open question, not a separate bug. Doubt 4 -- REFUTED (worktree setup is sequential, not concurrent, per campaign-mode.md's own 3c prose). Doubts 5-6 -- acknowledged as pre-existing-class gaps R5a generalizes but does not introduce. All six dispositions recorded in the run-id bloat-exception ADR's Round 6 doubt review section. A follow-up internal code-reviewer pass then independently verified the Doubt-1 fix itself and found five wording/bookkeeping inaccuracies in that fix's own commit, all corrected.",
+      "recorded_by": "orchestrator-manual-cascade",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
