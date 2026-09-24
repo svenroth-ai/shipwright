@@ -158,7 +158,7 @@ _atomic_sync_dir() {
     # its `mkdir` by microseconds, so seconds of silence is already a strong
     # dead-installer signal, not a slow one.
     local _EMPTY_LOCK_GRACE_S=5
-    local waited=0 holder_pid="" holder_token="" empty_pid_waits=0 reclaim_seq=0
+    local waited=0 holder_pid="" holder_token="" empty_pid_waits=0
     while true; do
         if mkdir "$lock" 2>/dev/null; then
             _CURRENT_SYNC_LOCK="$lock"
@@ -227,24 +227,47 @@ _atomic_sync_dir() {
             # The high-entropy token paired with every pid write closes that:
             # requiring BOTH to match makes an accidental collision on pid
             # alone no longer enough to call it "the same instance".
-            # A per-attempt sequence number, not just "$$", names $discard:
-            # round 13 deliberately leaves $discard behind on a failed
-            # restore (see the comment past this whole `if`), and this
-            # `continue`s back to the top of the SAME process's own `while`
-            # loop above — a second reclaim attempt by this process reuses
-            # "$$" unchanged, so an unqualified "${lock}.stale.$$" would
-            # collide with that leftover directory. A bare (non `-T`) `mv`
-            # onto an existing directory target moves the source INSIDE it
-            # instead of failing (the exact round-11 nesting gotcha), so a
-            # colliding path here would nest this attempt's newly-claimed
-            # lock under the previous attempt's preserved one instead of
-            # atomically claiming it (Tier-3 review, PR #796 round 14). The
-            # sequence number sits BEFORE "$$", not after: the leftover
-            # sweep below (`_pid_is_alive "${leftover##*.}"`) reads the PID
-            # from the LAST dot-segment of every "*.sync.lock.*" path, and
-            # that must keep meaning "$$", never a sequence number.
-            reclaim_seq=$((reclaim_seq + 1))
-            local discard="${lock}.stale.${reclaim_seq}.$$"
+            # $discard must be a fresh path every time it is computed, not
+            # merely distinct within THIS process's own reclaim attempts:
+            # round 13 deliberately leaves $discard behind when a restore
+            # fails (see the comment past this whole `if`), and a leftover
+            # from a LONG-DEAD prior run can persist past the leftover sweep
+            # below if that sweep's own pid-liveness check is fooled the
+            # same way round 15 closed above — pid reuse. A later, unrelated
+            # process assigned that exact recycled pid would then compute
+            # the SAME name an earlier round's sequence-number-based scheme
+            # (round 14) always started from "1" for, and a bare (non `-T`)
+            # `mv "$lock" "$discard"` onto an existing directory target
+            # moves the source INSIDE it instead of failing (the round-11
+            # nesting gotcha yet again) — so this process could then inspect
+            # or delete that old leftover's content instead of the lock it
+            # just claimed (Tier-3 review, PR #796 round 16). Folding a
+            # random per-attempt token into the name (the SAME
+            # `_new_claim_token` used for the lock's own identity, round 15)
+            # replaces the predictable sequence number, and checking the
+            # candidate is genuinely free before committing to it — retrying
+            # with a fresh token on the vanishingly unlikely collision rather
+            # than trusting a single random draw — is the "ensure absent,
+            # retry on collision" half of that same review. The token sits
+            # BEFORE "$$", not after: the leftover sweep below
+            # (`_pid_is_alive "${leftover##*.}"`) reads the PID from the LAST
+            # dot-segment of every "*.sync.lock.*" path, and that must keep
+            # meaning "$$", never the token.
+            local discard="" _discard_try _discard_candidate
+            for _discard_try in 1 2 3 4 5; do
+                _discard_candidate="${lock}.stale.$(_new_claim_token).$$"
+                if [ ! -e "$_discard_candidate" ]; then
+                    discard="$_discard_candidate"
+                    break
+                fi
+            done
+            if [ -z "$discard" ]; then
+                # Every candidate in a row was already taken (in practice:
+                # never) — treat it the same as losing the reclaim race
+                # outright rather than force a claim onto an occupied name.
+                empty_pid_waits=0
+                continue
+            fi
             if mv "$lock" "$discard" 2>/dev/null; then
                 local claimed_pid claimed_token
                 claimed_pid=$(cat "$discard/pid" 2>/dev/null || echo "")
