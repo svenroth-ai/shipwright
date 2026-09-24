@@ -98,11 +98,111 @@ liveness becomes fencing-verifiable rather than guessed from git history,
 `_reconcile_in_progress`'s branch-has-commits path (and this guard clause
 alongside it) may be removable outright rather than merely gated.
 
+### Round 2 growth (442 -> 469)
+
+Campaign `campaign-dag-scheduler` R4's own Stage-3 doubt review (4 HIGH + 1
+medium + 2 low against PR #790) landed two fixes in `cmd_finalize`/
+`cmd_record`, both hardening existing responsibilities of this dispatcher,
+not new ones:
+
+- **HIGH #1:** `cmd_finalize`'s `kind == "sub_iterate"` dispatch (added
+  after this file's original 442-line baseline) called the new, strict
+  `sub_iterate_finalize_summary` unconditionally, refusing ANY non-TERMINAL
+  unit with no compatibility path for a row still carrying pre-R4 legacy
+  vocabulary — live production risk for every campaign not yet touched by
+  R4's atomic-claim flow. Fixed by gating that dispatch on `any(u.get(
+  "attempt_id") for u in state["units"])` (the SAME compatibility boundary
+  `loop_state.resolve_record_status`/`enforce_record_fencing` already use),
+  falling through to the untouched legacy branch below otherwise.
+- **LOW #1:** `cmd_record`'s mutation write-loop used an exact-match `--unit`
+  lookup while its own fencing pre-check (`enforce_record_fencing`, via
+  `find_unit_row`) is case-fold-aware — a case-mismatched but genuinely
+  existing unit id passed the fence and then silently found nothing in the
+  write loop, still reporting `{"recorded": true}` / exit 0. Fixed by
+  switching the `kind == "sub_iterate"` mutation lookup to `find_unit_row`
+  too (`kind == "section"` keeps its original exact-match lookup, unchanged)
+  and hard-failing (exit 3) when even that finds nothing.
+
+### Round 3 growth (469 -> 491)
+
+Scoped orchestrator-level re-review of Round 2's own HIGH #1 fix found a
+real gap in the compatibility gate, plus one further instance of Round 2's
+own LOW #1 defect class it had not covered — both hardening, not new
+responsibilities:
+
+- **Gate-mixing gap:** Round 2's `any(u.get("attempt_id"))` gate is an OR
+  over units, but `sub_iterate_finalize_summary`'s own refusal is an AND —
+  a campaign straddling the R5a flip (some units finished under the old
+  serial path with no `attempt_id`, others claimed by the new atomic-claim
+  flow) routed into the strict branch anyway and refused finalize forever,
+  since nothing promotes a legacy `"complete"` row into the 9-state
+  vocabulary post-hoc. Fixed by additionally requiring `all(u["status"] in
+  STATES for u in state["units"])` before trusting the strict branch; a
+  mixed campaign now falls through to the legacy branch below, exactly
+  pre-R4 behaviour and therefore never worse.
+- **LOW #1's remaining instances:** the case-fold fix only reached
+  `cmd_record`'s success-path write loop; its non-JSON-result and
+  contract-violation failure branches still used the same exact-match
+  lookup Round 2 fixed elsewhere, so a case-mismatched unit id could still
+  pass the fencing pre-check and then silently fail to be marked `failed`.
+  Fixed with the identical `find_unit_row`-when-`sub_iterate` pattern
+  Round 2 already established, at both remaining sites.
+
+### Round 4 growth (491 -> 514)
+
+External Tier-3 review (GPT, PR #790 round 21) found `cmd_record`'s two
+`runs_dir_for` call sites both unguarded for the `ValueError` that helper
+raises on a charset-rejected id (round 9 of the sibling
+`iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md`): the
+non-JSON-result fallback lookup passes raw, unvalidated `args.unit`
+straight through, and the success-path `result.json` write passes an
+already state-matched row's `unit["id"]` — canonical, but still reachable
+from a hand-edited/corrupted `loop_state.json`, the exact threat model
+round 19 of that same sibling ADR already fixed for
+`lib.loop_state._reconcile_legacy`. Either site previously crashed the
+whole CLI with an uncaught traceback on a malformed id instead of this
+function's own structured-failure shape. Fixed by wrapping both calls:
+the fallback lookup treats a `ValueError` the same as "no fallback
+available" (falls through to the existing non-JSON structured-failure
+path, exit 3); the success-path write returns a controlled `{"recorded":
+false, ...}` response and exit 3 without ever calling `_save_state` — the
+in-memory mutations already applied to that block are discarded, never
+persisted. Not a new responsibility — closing the same gap round 9/19
+already closed elsewhere, for the two call sites in this module that had
+been missed. Two new regression tests, in a new file (not the sibling
+`test_autonomous_loop.py`, already `"state": "grandfathered"` at 442
+lines — growing a grandfathered file needs converting it to a filed
+`exception` first, not a bare bump):
+`test_autonomous_loop_record_runs_dir_safety.py`.
+
+### Round 5 growth (514 -> 539)
+
+External Tier-3 review (GPT, PR #790 round 23) found `cmd_record`'s third
+`handoff_dir_for` call (the handoff-path lookup right after the round-4
+`result.json` write) and `cmd_finalize`'s own `handoff_dir_for` call both
+unguarded for the same `ValueError`. Independently verified before fixing:
+the `cmd_record` site is passed the exact same `state["loop_id"]` value that
+the immediately preceding `runs_dir_for` call (round 4, two lines above)
+already validated — `runs_dir_for` charset-checks `loop_id` itself, not only
+`unit_id` — so that specific call cannot raise on this path today. Wrapped
+it anyway, for defense in depth and consistency with this module's own
+established style, and documented in-line why no new test covers it (one
+would only re-prove the existing round-4 coverage). `cmd_finalize`'s call is
+the genuine gap: nothing in that function validates `state["loop_id"]`
+first, so a corrupted state file crashed it uncaught. Fixed with the same
+`try`/`except ValueError` shape, returning a structured `{"error": ...}` on
+stderr and exit 1 (mirroring `sub_iterate_finalize_summary`'s existing
+error-return convention two branches above it in the same function). One new
+regression test, in the same round-4 sibling file (still well under the
+300-line guideline): `test_autonomous_loop_record_runs_dir_safety.py`.
+
 ## Consequences
 
 - `_reconcile_in_progress` may grow further before the anti-ratchet blocks
-  again (454-line current). Not a licence to keep growing — the next
-  crossing needs its own ADR.
+  again (539-line current, per Round 5 growth above). Not a licence to keep
+  growing — the next crossing needs its own ADR.
+- `test_autonomous_loop_record_runs_dir_safety.py` is a brand-new file — no
+  baseline implication, it never existed before this round.
 - A unit that has EVER been lease-touched is now reset to `pending` (attempt
   bumped) by `cmd_init` whenever no `result.json` exists for it, live lease
   or not — this is a deliberate trade: it can restart a build that was, in

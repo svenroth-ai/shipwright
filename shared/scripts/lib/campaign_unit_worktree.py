@@ -1,11 +1,11 @@
-"""Per-unit campaign worktree identity + path-safety capability (R2).
+"""Per-unit campaign worktree identity + path-safety capability (R2; wired
+into the live campaign loop by R5a, "the flip").
 
 Campaign ``campaign-dag-scheduler`` R2
 (``.shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R2-worktree-capability.md``).
-Builds — as a CAPABILITY, not yet wired live into the campaign loop
-(``references/campaign-worktree.md``; R5a performs the flip once R4's claim
-mechanics exist) — the naming, guard-mode identity, and Windows path-length
-machinery a per-unit worktree needs. This module is the single place that
+Builds (``references/campaign-worktree.md``) the naming, guard-mode identity,
+and Windows path-length machinery a per-unit worktree needs. This module is
+the single place that
 constructs the composite identity string, so every call site (the
 ``setup_unit_worktree.py`` wrapper, the runner's own isolation guard, a
 future R4 reconcile/cleanup) builds the byte-identical value —

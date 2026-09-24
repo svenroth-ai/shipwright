@@ -38,7 +38,8 @@ from lib.events_log import resolve_events_path  # noqa: E402
 # finding): it is the one source scoped to "which run IS this session
 # executing" -- the other resolve_run_id fallbacks (run_config, events.jsonl)
 # are project-global and can outlive the run that minted them.
-from ._run_id import pointer_run_id, pointer_worktree_root, resolve_run_id  # noqa: E402,F401
+from ._run_id import pointer_run_id, pointer_worktree_root  # noqa: E402,F401
+from ._run_id_resolve import resolve_run_id  # noqa: E402,F401
 # Engagement predicate lives in _engagement, which imports nothing from this
 # package — so the edge is one-way and acyclic — and keeps resolve_engaged_phases
 # next to the other session-state resolvers.

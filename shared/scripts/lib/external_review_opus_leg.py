@@ -2,7 +2,7 @@
 
 Split out as a sibling to ``external_review_default_legs.py`` (already near
 the 300-line guideline) rather than folded into it. Exists so a
-Codex-authored diff (``gpt-5.6-terra``) can be reviewed by a genuinely
+Codex-authored diff (``gpt-6-sol``) can be reviewed by a genuinely
 cross-vendor model instead of another OpenAI-family model answering the
 "openai" identity — see ``external_review_routing.DRIVER_ROSTERS``.
 """

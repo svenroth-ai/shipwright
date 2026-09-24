@@ -2,12 +2,15 @@
 (iterate-2026-06-13-campaign-serial-default).
 
 Replaces the old build-all-then-drain model (test_campaign_serial_drain.py).
-Interleaved-serial: build ONE sub-iterate -> open PR -> wait CI green -> MERGE ->
-build the NEXT from fresh origin/<default>. Only ever ONE campaign PR is open at
-a time, so the multi-open-PR snapshot cascade that motivated the end-stage drain
-cannot form — there is NO drain and NO regenerate-at-merge. The agent only
-executes what the prose says, so the prose is the implementation (mirrors
-test_f11_automerge_arm).
+Interleaved-serial on the MERGE lane: PRs are reviewed and merged one at a
+time, in fixed order — never two at once — so the multi-open-PR snapshot
+cascade that motivated the end-stage drain cannot form ACROSS merges — there
+is NO drain and NO regenerate-at-merge. (Since campaign-dag-scheduler R5a,
+several sub-iterates may BUILD concurrently within one wave before any of
+them merge; only the merge lane itself stays serial — see campaign-mode.md's
+own "Why interleaved-serial" section for the within-wave caveat that carves
+out.) The agent only executes what the prose says, so the prose is the
+implementation (mirrors test_f11_automerge_arm).
 """
 
 from __future__ import annotations
@@ -80,8 +83,9 @@ def test_no_end_stage_drain() -> None:
         "interleaved-serial merges each PR in turn inside the loop."
     )
     assert "ensure_current" not in text, (
-        "the campaign loop must not run ensure_current regenerate-at-merge — with "
-        "one PR open at a time the next sub-iterate composes on the prior merge."
+        "the campaign loop must not run ensure_current regenerate-at-merge — the "
+        "merge lane is serial, so the next wave composes on main after the prior "
+        "wave's own merges."
     )
 
 

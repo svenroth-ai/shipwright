@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-24-model-version-bump",
+    "date": "2026-09-24",
+    "unit": {
+      "status": "passed",
+      "passed": 19845,
+      "total": 19923
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 558,
+      "total": 558
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the renamed Opus 5.5 pricing entry carries the correct new rates, and the retired claude-opus-5 entry stays priced at its old rate for historical transcripts",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_pricing.py::test_opus_5_5_rates_match_current_models_table PASSED, test_opus_5_retired_rate_stays_priced_for_historical_transcripts PASSED"
+        },
+        {
+          "behavior": "the external-review opus identity (claude_cli + openrouter_opus routes) resolves to claude-opus-5-5 and the identity-lock still rejects a mismatched config",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_external_review_opus_leg.py, test_external_review_opus_leg_dispatch.py PASSED"
+        },
+        {
+          "behavior": "all three openai routes (openrouter_chatgpt/chatgpt/codex) collapse to the same gpt-6-sol identity and the identity-lock still rejects a mismatched config",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_external_review_gpt_leg_provider.py::test_codex_binding_accepts_the_locked_model, test_codex_binding_shares_the_openai_identity_and_model_with_the_api_routes PASSED"
+        },
+        {
+          "behavior": "CODEX_REVIEW_MODEL's hardcoded default resolves to gpt-6-sol when nothing else names a value",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_model_resolution.py::test_hardcoded_default_when_nothing_else_is_set PASSED"
+        },
+        {
+          "behavior": "the CI PR-review model and the module's own local-fallback default agree on openai/gpt-6-luna",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_openrouter.py PASSED"
+        },
+        {
+          "behavior": "the GLM review leg's outgoing HTTP body reflects the renamed openai/gpt-6-sol model field",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_glm_review_routing.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-model-version-bump",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

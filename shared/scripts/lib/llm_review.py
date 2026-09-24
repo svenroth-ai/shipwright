@@ -92,11 +92,11 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
 # external_review.py grew the --driver-selected 'opus' identity.
 DEFAULT_MODELS = {
     "openrouter_glm": "z-ai/glm-5.3",
-    "openrouter_chatgpt": "openai/gpt-5.6-terra",
-    "chatgpt": "gpt-5.6-terra",
-    "codex": "gpt-5.6-terra",
-    "claude_cli": "claude-opus-5",
-    "openrouter_opus": "anthropic/claude-opus-5",
+    "openrouter_chatgpt": "openai/gpt-6-sol",
+    "chatgpt": "gpt-6-sol",
+    "codex": "gpt-6-sol",
+    "claude_cli": "claude-opus-5-5",
+    "openrouter_opus": "anthropic/claude-opus-5-5",
 }
 
 

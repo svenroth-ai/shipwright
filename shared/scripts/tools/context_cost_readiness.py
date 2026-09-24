@@ -54,6 +54,7 @@ from lib import model_pricing  # noqa: E402
 # known model" by this table's own bare MODEL_CONTEXT_WINDOWS.get(model)).
 MODEL_CONTEXT_WINDOWS = {
     "claude-opus-5": 1_000_000,
+    "claude-opus-5-5": 1_000_000,
     "claude-sonnet-5": 1_000_000,
     "claude-haiku-4-5": 200_000,
 }

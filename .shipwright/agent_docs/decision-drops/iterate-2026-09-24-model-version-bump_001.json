@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-24-model-version-bump",
+  "date": "2026-09-24",
+  "section": "Iterate — change: model version bump",
+  "title": "Rename retired/bumped model identifiers",
+  "context": "Upstream model catalog updated: Opus 5 -> 5.5, Terra retired, Sol and Luna bumped to v6.",
+  "decision": "Rename the literal model ids across pricing, review routing, CI and docs; keep retired ids priced for historical transcripts.",
+  "consequences": "Reviews/CI now target the new models; old cost transcripts still resolve correctly.",
+  "rationale": "A pure rename keeps identity-lock bindings and cost tracking correct without behavior change.",
+  "rejected": "Dropping the old claude-opus-5 pricing entry entirely -- rejected: it would unprice historical transcripts (code-reviewer MEDIUM finding).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

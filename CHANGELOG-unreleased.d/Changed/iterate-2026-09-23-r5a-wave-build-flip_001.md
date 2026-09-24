@@ -1,0 +1,1 @@
+iterate(campaign): campaign orchestrator now builds each wave of independent, dependency-cleared sub-iterates concurrently (multi-Task spawn in one message) instead of one at a time, still serializing merge/review per wave

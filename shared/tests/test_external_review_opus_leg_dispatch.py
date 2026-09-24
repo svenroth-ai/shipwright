@@ -16,7 +16,7 @@ if str(_LIB_DIR) not in sys.path:
 
 import external_review_opus_leg as legs  # noqa: E402
 
-_CONFIG = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 1}}
+_CONFIG = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 1}}
 
 
 class _FakeCompleted:
@@ -89,7 +89,7 @@ def test_review_claude_cli_sends_content_via_stdin_not_argv(monkeypatch):
     )
     assert "--permission-mode" in captured["argv"] and "dontAsk" in captured["argv"]
     argv = captured["argv"]
-    assert "--model" in argv and "claude-opus-5" in argv, (
+    assert "--model" in argv and "claude-opus-5-5" in argv, (
         "the pinned model from config must reach argv — dropping --model "
         "would silently fall back to the CLI's own default model"
     )
@@ -121,7 +121,7 @@ def test_review_claude_cli_retries_once_on_a_degraded_empty_reply(monkeypatch):
 def test_review_claude_cli_reports_a_nonzero_exit_as_error_without_retrying(monkeypatch):
     monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
     monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
-    config_with_retries = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 2}}
+    config_with_retries = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 2}}
     attempts = {"n": 0}
 
     def _fake_run(*_a, **_k):
@@ -138,7 +138,7 @@ def test_review_claude_cli_reports_a_nonzero_exit_as_error_without_retrying(monk
 def test_review_claude_cli_timeout_is_error_and_not_retried(monkeypatch):
     monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
     monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
-    config_with_retries = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 2, "timeout_seconds": 1}}
+    config_with_retries = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 2, "timeout_seconds": 1}}
     attempts = {"n": 0}
 
     def _raise(*_a, **_k):

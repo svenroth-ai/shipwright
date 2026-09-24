@@ -29,12 +29,14 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 # Canonical greenfield/foreign predicate — single SSoT every hook shares.
 from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.campaign_wave import write_wave_aware_handoff  # noqa: E402
 from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.handoff_phase_status import (  # noqa: E402
     phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
     phase_tasks_progress as _phase_tasks_progress,
 )
+from lib.phase_quality import resolve_run_id  # noqa: E402
 from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
 
 _RUN_CONFIG_NAME = "shipwright_run_config.json"
@@ -326,22 +328,15 @@ def main() -> int:
 
         content = generate_handoff(project_root, session_id, reason="session end")
 
-        # A phase-namespaced handoff branch used to fire under the removed
-        # multi_session mode; single_session never matches it. Removed with
-        # the engine (iterate-2026-07-14-remove-multi-session).
-        loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
-        loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID")
-        if loop_id and loop_unit:
-            namespaced_dir = project_root / ".shipwright" / "planning" / "handoffs" / loop_id
-            namespaced_dir.mkdir(parents=True, exist_ok=True)
-            namespaced_path = namespaced_dir / f"{loop_unit}.md"
-            namespaced_path.write_text(content, encoding="utf-8")
-            handoff_path = namespaced_path
-        else:
-            # Write to gitignored runtime/ subdir. Iterate-finalize will
-            # copy this to the tracked path at F5b.
-            runtime_dir.mkdir(parents=True, exist_ok=True)
-            handoff_path.write_text(content, encoding="utf-8")
+        # Namespaced-vs-runtime write (campaign-dag-scheduler R5a: the
+        # wave-sentinel-aware resolution lives in campaign_wave.py, not here,
+        # to stay inside this hook's own filed bloat exception).
+        handoff_path = write_wave_aware_handoff(
+            project_root, session_id, content,
+            os.environ.get("SHIPWRIGHT_LOOP_ID"), os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID"),
+            runtime_dir, handoff_path,
+            resolve_fallback=lambda: resolve_run_id(project_root, session_id),
+        )
 
         # Update build dashboard with "paused" status — also writes to
         # runtime/. The tracked dashboard is written exclusively by

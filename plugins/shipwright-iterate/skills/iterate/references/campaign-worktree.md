@@ -100,8 +100,11 @@ instant it runs — it does not cover the wait that follows. `campaign-mode.md`
 loop step 3a `touch`es this lock at the top of every iteration, and step 3g
 touches it again immediately before `gh pr checks --watch`, but **two**
 windows remain genuinely unbounded and untouched while they run: (1) the
-`sub-iterate-runner` Task itself (3c spawn through 3d's wait on the terminal
-DONE marker: build + reviews + F0–F6 + push) — the loop's longest block, and
+`sub-iterate-runner` Task(s) themselves (3c's multi-spawn through the
+implicit wave-return once every Task in that message has returned — R5a
+retired the terminal DONE marker for `kind == "sub_iterate"`, see
+`campaign-mode.md` 3d — covering build + reviews + F0–F6 + push per unit) —
+the loop's longest block, and
 (2) `gh pr checks --watch` plus the merge-status poll after it, which the 3g
 touch only precedes rather than covers. A sub-iterate — or a slow CI run —
 that takes longer than `DEFAULT_STALE_AFTER_SECONDS` (7200s / 2h — a round,
@@ -202,17 +205,16 @@ tried and rejected (it cannot tell two campaigns whose slugs are themselves a
 hyphenated extension of one another, e.g. `req3` vs `req3-04`, from a slug
 plus a sub-iterate suffix).
 
-## Per-unit worktree path (capability — R2; R5a wires it live)
+## Per-unit worktree path (R2 built it; R5a wires it live)
 
-R2 builds the naming, guard-mode identity, lease mechanism, and worktree
-wrapper a per-unit worktree needs — **as a capability, not yet wired into
-the live loop above.** Every `{project_root}` in this document today still
-means the ONE shared campaign worktree; a per-unit checkout only exists once
-a caller explicitly invokes `setup_unit_worktree.py` (nothing in
-`campaign-mode.md`'s live steps does yet). R5a performs that flip, once R4's
-claim mechanics (`attempt`, `attempt_id`, fencing) exist — until then this
-section describes machinery that exists and is tested, not behavior a
-running campaign exhibits.
+R2 built the naming, guard-mode identity, lease mechanism, and worktree
+wrapper a per-unit worktree needs; R5a ("the flip") wires it into the live
+loop — `campaign-mode.md` step 3c now invokes `setup_unit_worktree.py` for
+every unit in a wave, each into its own `.worktrees/campaign-{slug}--{id}`
+sibling, before any concurrent `Task` spawn. Every OTHER `{project_root}` in
+this document still means the ONE shared campaign worktree — the per-unit
+path exists only for the duration of one unit's own build, spawned as that
+unit's own `project_root` (never the shared one) in the runner's brief.
 
 **Path form:** `.worktrees/campaign-{slug}--{unit_id}` for attempt 0, and
 `.worktrees/campaign-{slug}--{unit_id}-a{attempt}` for a retry attempt >= 1

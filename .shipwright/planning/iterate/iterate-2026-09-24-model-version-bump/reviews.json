@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-24-model-version-bump",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:52:37.049142+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:52:37.166958+00:00",
+      "disposition": "small complexity CHANGE; no plan phase runs below medium per the Phase Matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/model_pricing.py",
+          "line": 48,
+          "finding": "The `claude-opus-5` pricing key was replaced with `claude-opus-5-5` when it should have been added alongside it. `resolve_model_id` accepts only an exact match or a date-stripped match and falls back to nothing else, so every transcript recorded under `claude-opus-5` / `claude-opus-5-YYYYMMDD` now returns `(None, True)` (unpriced). Same problem in `MODEL_CONTEXT_WINDOWS` in `context_cost_readiness.py`.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 853,
+          "finding": "One prose reference was missed: 'GPT-5.6 Terra' still present in the /shipwright-plan section.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/codex_review_roles.py",
+          "line": 53,
+          "finding": "Comment quoted AGENTS.md verbatim; AGENTS.md itself was not updated (deliberately excluded), so the quotation is now false and would remain false even after AGENTS.md is removed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 100,
+          "finding": "Same AGENTS.md-quoting issue, plus one reflowed line (~106) exceeded the block's usual width and added history-in-source provenance ('merged from the retired gpt-5.6-terra').",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/model_pricing.py",
+          "line": 3,
+          "finding": "Module docstring's provenance line no longer covered every row after the Opus 5.5 rate change.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-24T06:58:22.372837+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:54:29.290748+00:00",
+      "disposition": "diff is a pure string-literal rename; no migrations, async/concurrency, cross-plugin imports, or irreversible ops, so Stage 3 does not apply per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-09-24T06:54:06.776998+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] I reviewed the diff against the spec's four rename scopes plus the pricing update, and checked the derived values.\n\n**Verification performed:**\n\n1. **Spec coverage** — All four rename scopes are present: Opus 5 → 5.5 with $4/$20 rates (`model_pricing.py`, `context_cost_readiness.py`), external-review opus identity (`external_review.json`, `external_review_routing.py`, `llm_review.py`, `docs/guide.md`), Terra/Sol collapse to `gpt-6-sol` (config, routing, transport, prompts, schema docs), and CI + local-fallback Luna bump (`pr-review-run.yml`, `pr_review_openrouter.py`), with `AGENTS.md` untouched as specified.\n\n2. **Derived pricing math** — `_priced(4.00, 20.00)` with the historical 1.25×/2×/0.1× multipliers yields cache_write_5m=5.00, 1h=8.00, read=0.40, matching the updated test expectations exactly. The composite cost test (4 + 20 + 0.4 + 5 + 8 = 37.4) is internally consistent. Note the pre-existing behavior that cache rates are *derived* from input via multipliers rather than independently operator-supplied — the spec only pinned input/output rates, so this is compliant.\n\n3. **Identity-lock symmetry** — The three \"openai\" routes (`openrouter_chatgpt`/`chatgpt`/`codex`) all collapse to the same `gpt-6-sol` string, and both opus legs pin the identical `claude-opus-5-5` — the cross-transport identity lock the `_comment` in `external_review.json` promises is preserved. Tests (`test_codex_binding_shares_the_openai_identity_and_model_with_the_api_routes`) still assert this invariant with the new literals.\n\n4. **Test quality** — The updated tests assert exact literals and exact derived costs, so a wrong rate or a dropped `--model` flag would fail. The forbidden-config parametrization still exercises the fail-closed path.\n\n5. **Regressions** — `DEFAULT_MODEL = LUNA_MODEL` still holds in `pr_review_openrouter.py`, and the CI env var matches the local fallback, keeping local/CI agreement per the spec's point 4.\n\nNo correctness, security, or spec defects found. […truncated]\n\n[openai] I found no concrete defects in the supplied diff. The changed model pins, pricing rates, CI default, and affected test expectations align with the specification. I could not inspect the repository beyond the supplied diff, so I cannot verify whether unchanged files contain additional live references.\n\nOverall assessment: ship-as-is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:54:06.646850+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:52:37.285095+00:00",
+      "disposition": "small complexity; the internal plan-review arm only runs at medium+ per iteration-planning.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib import codex_review_model_resolution as resolution  # noqa: E402
 
-DEFAULT = "gpt-5.6-sol"
+DEFAULT = "gpt-6-sol"
 
 
 def _stub_config(monkeypatch: pytest.MonkeyPatch, config: dict) -> None:
