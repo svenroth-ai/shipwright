@@ -64,8 +64,11 @@ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
 #: `codex_review_model_resolution.py`'s dynamic precedence over it, already
 #: govern. `shared/tests/test_agents_md_claude_md_parity.py::
 #: test_agents_md_does_not_hardcode_codex_review_models` now guards the
-#: opposite direction — that the prose never comes back. The dispatch call
-#: never actually enforced this value until this iterate (no
+#: opposite direction — that the prose never comes back.
+#:
+#: Matches the Codex operating policy (review subagents run gpt-6-sol
+#: with high reasoning) — a policy the dispatch call never actually
+#: enforced until this iterate (no
 #: `model_reasoning_effort` reached `codex exec`'s argv at all). Pinned by
 #: assertion, not just documented, so a later edit here has to also touch
 #: this line consciously — an enum-membership check against Codex CLI's
