@@ -1,6 +1,6 @@
 # Step 7: Project Scaffolding (NEW — Shipwright Enhancement)
 
-**Goal:** Generate CLAUDE.md and .shipwright/agent_docs/ for the target project.
+**Goal:** Generate CLAUDE.md, AGENTS.md, and .shipwright/agent_docs/ for the target project.
 
 **This step only runs for Full Application scope.** Extensions already have these files.
 
@@ -16,10 +16,12 @@ See [project-scaffolding.md](project-scaffolding.md) for details.
 ## Generate these files in the project root
 
 1. **CLAUDE.md** — from template, filled with project-specific values
-2. **.shipwright/agent_docs/architecture.md** — system architecture from interview
-3. **.shipwright/agent_docs/decision_log.md** — initialized with header
-4. **.shipwright/agent_docs/conventions.md** — from profile's architecture rules and folder structure
-5. **`.claude/rules/*.md`** — path-specific rules from profile (Claude Architect Best Practice)
+2. **AGENTS.md** — Codex CLI's counterpart to CLAUDE.md, see
+   [project-scaffolding.md](project-scaffolding.md) step 2
+3. **.shipwright/agent_docs/architecture.md** — system architecture from interview
+4. **.shipwright/agent_docs/decision_log.md** — initialized with header
+5. **.shipwright/agent_docs/conventions.md** — from profile's architecture rules and folder structure
+6. **`.claude/rules/*.md`** — path-specific rules from profile (Claude Architect Best Practice)
 
 ## Path-specific rules generation
 
@@ -124,4 +126,4 @@ gh api repos/{owner}/{repo} -X PATCH -f delete_branch_on_merge=true
 ```
 This prevents stale feature branches from accumulating after Shipwright's `gh pr merge --merge --delete-branch` (in changelog phase) or manual UI merges.
 
-**Checkpoint:** CLAUDE.md existence + `supabase/config.toml` existence (if supabase-nextjs profile).
+**Checkpoint:** CLAUDE.md existence + AGENTS.md existence + `supabase/config.toml` existence (if supabase-nextjs profile).

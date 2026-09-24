@@ -1,0 +1,35 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin shared render function + irreversible-ish file overwrite of a user's real AGENTS.md/CLAUDE.md, gated by byte-threshold heuristics and append-idempotency logic",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "greenfield /shipwright-project always writes AGENTS.md unconditionally (mini-plan decision 2)",
+      "disproof_attempt": "SKILL.md Step 7/8 and two of its own reference/checkpoint files (step-7-scaffolding.md, step-8-completion.md) were not updated in the original diff and still enumerated only CLAUDE.md in their Goal line, Key sub-flows list, Checkpoint line, Verification checklist, and completion banner — an agent following those surfaces as the authoritative TODO had no textual cue that AGENTS.md needed to exist, and nothing code-level gates on its presence.",
+      "file": "plugins/shipwright-project/skills/project/SKILL.md, plugins/shipwright-project/skills/project/references/step-7-scaffolding.md, plugins/shipwright-project/skills/project/references/step-8-completion.md",
+      "what_would_resolve_it": "Add AGENTS.md to all enumerations/checkpoints/banner",
+      "resolution": "FIXED: added AGENTS.md to SKILL.md Step 7's Goal/Key-sub-flows/Checkpoint, the index line, Step 8's Verification item 3; step-7-scaffolding.md's Goal/generate-list/Checkpoint; and step-8-completion.md's Verification item 3 and completion banner."
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the Codex appendix append is idempotent — a second/third/fourth adopt run never duplicates content",
+      "disproof_attempt": "The marker check is decoupled from the visible heading, but an existing AGENTS.md whose content matches the appendix bytes yet is missing the marker line (e.g. a hand-copy of the rendered view, which visually hides HTML comments, or a markdown formatter stripping comments) would receive a full duplicate append on the next adopt run.",
+      "file": "plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py (_append_codex_appendix, CODEX_APPENDIX_MARKER)",
+      "what_would_resolve_it": "A content-similarity secondary check, or an explicit written acceptance that a marker-stripped hand-copy producing a visible duplicate is an acceptable, narrow edge case",
+      "resolution": "ACCEPTED AS-IS, rebutted: the standing-request section's own idempotency check (STANDING_REQUEST_HEADING) is likewise a plain heading-text match with no content-hash fallback, and is pre-existing, already-shipped, already-accepted behavior for CLAUDE.md. This doubt's scenario is the same risk shape uniformly present across every idempotency marker in this system, not a new regression this diff introduces. A content-hash secondary check would also cut against the marker design's actual purpose (surviving a legitimate appendix reword), so was not added."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "AGENTS.md's shared body cannot drift from CLAUDE.md's despite being rendered by a single shared function (the 'single-source guarantee')",
+      "disproof_attempt": "This is code-enforced for the brownfield (adopt) path, but NOT for the greenfield (/shipwright-project) path: project-scaffolding.md asks the LLM agent to perform two manual find/replace substitutions inside fully-filled prose (harder than isolated-token substitution), and the only automated check verified the instruction FILE names the right appendix path, not that any scaffolded project's actual output received both substitutions correctly.",
+      "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md (step 2), shared/tests/test_claude_md_template.py",
+      "what_would_resolve_it": "Either accept as a known, slightly-increased risk, or add a lightweight check that the two substitutions are mechanically well-defined",
+      "resolution": "PARTIALLY FIXED: added test_greenfield_agents_md_substitution_instructions_match_the_render_path (in the new shared/tests/test_agents_md_greenfield_scaffolding.py), which mechanically performs the two literal substitutions project-scaffolding.md instructs against the template's own text and asserts the result matches the exact host-specific fragments _render_claude_md(host_name='Codex') produces. This proves the instructed substitution text is not stale relative to the code path; it cannot prove an executing agent will actually perform the substitutions, which remains an accepted, inherent property of instruction-driven (not code-driven) generation, consistent with how CLAUDE.md's own greenfield path already works today."
+    }
+  ],
+  "summary": "One high-severity doubt (SKILL.md/reference-doc drift) was a real, concrete gap and has been fixed. The medium doubt (idempotency under a marker-stripped hand-copy) is accepted as a narrow, pre-existing risk shape shared with the standing-request section's own marker design, not a new regression. The low doubt (greenfield single-source guarantee not code-enforced) is partially closed by a new mechanical-equivalence test; full closure would require an end-to-end scaffolding integration test, deferred as disproportionate to this diff's scope."
+}

@@ -6,7 +6,7 @@
 
 1. All declared splits have spec.md files
 2. project-manifest.md exists and lists all splits with execution order
-3. CLAUDE.md exists (Full Application only)
+3. CLAUDE.md and AGENTS.md exist (Full Application only)
 4. .shipwright/agent_docs/ directory exists with all 3 files — architecture.md,
    decision_log.md, conventions.md (Full Application only; session_handoff.md
    is written later by the Stop hook, not scaffolded here, and does not count
@@ -162,6 +162,7 @@ Created {N} split(s):
 
 Project manifest: project-manifest.md
 {CLAUDE.md: Generated (Full Application only)}
+{AGENTS.md: Generated (Full Application only)}
 {.shipwright/agent_docs/: Generated (Full Application only)}
 
 Next steps:

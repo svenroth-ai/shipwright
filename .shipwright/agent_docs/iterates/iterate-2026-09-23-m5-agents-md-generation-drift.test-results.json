@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-23-m5-agents-md-generation-drift",
+    "date": "2026-09-24",
+    "unit": {
+      "status": "passed",
+      "passed": 11533,
+      "total": 11533
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "one unit (shared/tests) was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path); tracked as trg-f64d1c27, does not affect this run's GREEN status",
+      "F0 leak-guard reported 6 main-tree paths dirty since this run's worktree snapshot; attributed to a different, concurrently active session (PR #796, marketplace-sync-atomic-swap; mtimes 2026-09-24, main HEAD advanced past the snapshot commit) and NOT this run's own leak. Resolved per the documented remedy: .shipwright/runs/<run_id>/main_tree_snapshot.json (gitignored, main tree) amended with a baseline_amendments entry recording the attribution reasoning, never deleting the other session's files."
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-adopt pytest plugins/shipwright-adopt/tests/test_agents_md_renderer.py -q",
+      "tests_run": 15,
+      "exit_code": 0,
+      "justification": "AGENTS.md renderer/appendix logic has no startable web/dev-server surface of its own; verified via its own focused CLI test module plus the full F0 suite."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "brownfield adopt writes AGENTS.md via the same _render_claude_md(host_name=...) path CLAUDE.md uses, appending the shared Codex appendix idempotently",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_agents_md_renderer.py (15 tests) PASSED"
+        },
+        {
+          "behavior": "load-bearing-preservation policy (>1KB existing file preserved, suggestion side-file written) applies identically to an existing AGENTS.md, keyed by explicit filename",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_agents_md_renderer.py::test_append_preserves_original_crlf_line_endings and sibling preserve_existing cases PASSED"
+        },
+        {
+          "behavior": "greenfield project-scaffolding.md's '### 2. AGENTS.md' step points at the real appendix file and its instructed host-name/growth-gate substitutions are not stale relative to the render path",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agents_md_greenfield_scaffolding.py (2 tests) PASSED"
+        },
+        {
+          "behavior": "CLAUDE.md's own (unrelated) generation stays untouched by this change",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_claude_md_template.py (6 tests, byte-identical to merge-base) PASSED"
+        },
+        {
+          "behavior": "root AGENTS.md no longer hardcodes a Codex model-slug/reasoning-effort default that duplicates codex_review_model_resolution.py's dynamic resolution, while the pre-existing xhigh/max cautionary line is untouched",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agents_md_claude_md_parity.py (5 tests) PASSED"
+        },
+        {
+          "behavior": "adopt's artifacts-dict reports claude_md and agents_md absence symmetrically when neither file exists yet",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-project/tests/test_write_project_config_artifacts.py::test_artifacts_dict_reports_agents_md_absent PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-23-m5-agents-md-generation-drift",
+    "commit": "8adb23ec1a7db5a1b393fa9afff015ee2cdcfb1c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

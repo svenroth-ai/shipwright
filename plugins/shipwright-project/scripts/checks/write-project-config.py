@@ -79,6 +79,7 @@ def main() -> int:
             ],
             "artifacts": {
                 "claude_md": (project_root / "CLAUDE.md").exists(),
+                "agents_md": (project_root / "AGENTS.md").exists(),
                 "agent_docs": (project_root / ".shipwright" / "agent_docs").is_dir(),  # artifact-path-canon: legacy
                 "manifest": state["manifest_created"],
             },

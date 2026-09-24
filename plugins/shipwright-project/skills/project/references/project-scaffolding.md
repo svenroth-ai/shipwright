@@ -40,7 +40,41 @@ Fill placeholders:
 - `{BUILD_COMMAND}` — from profile (e.g., "npm run build")
 - `{TEST_COMMAND}` — from profile (e.g., "npx vitest run")
 
-### 2. .shipwright/agent_docs/architecture.md
+### 2. AGENTS.md
+
+Codex CLI reads `AGENTS.md` as its own, native, first-class convention — not
+as a fallback for a missing `CLAUDE.md`. Write it unconditionally, alongside
+CLAUDE.md, for every Full Application scope project — never gated on an
+interview answer.
+
+Do **not** load a second template. Reuse the CLAUDE.md content you just
+filled from `claude-md-template.md`, with two substitutions — miss either one
+and the generated AGENTS.md misnames itself or cites a gate that doesn't
+apply to it:
+1. In the standing-request section (`## Review subagents: standing request.
+   Workflows: ask every time.`), change `Claude Code withholds subagent
+   spawning until the user asks` to `Codex withholds subagent spawning until
+   the user asks`.
+2. In the `## Editing this file (keep it lean)` section: change the opening
+   `CLAUDE.md is **orientation + a terse invariant index**` to `AGENTS.md is
+   **orientation + a terse invariant index**`, and replace the final
+   `- **Growth is gated:** ...` bullet (which names a `check_agent_doc_budget.py`
+   enforcement and a `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK` env var that only ever
+   apply to CLAUDE.md) with `- **No automated growth gate for this file
+   yet** — keep it lean by the same restraint CLAUDE.md's line-cap enforces;
+   watch it by hand.`
+
+No other text changes — those two spots are the only host-specific content
+in the whole shared body.
+
+Then append the Codex-only appendix verbatim: load
+`{plugin_root}/../../shared/templates/codex-agents-md-appendix.md` and add its
+full content to the end of the file, separated by a blank line. This is the
+same appendix `/shipwright-adopt` appends when writing a brownfield project's
+`AGENTS.md` — the two producers share this one appendix file so there is
+nothing Codex-specific to keep in sync in two places.
+
+### 3. .shipwright/agent_docs/architecture.md
 
 Load template from `{plugin_root}/../../shared/templates/agent-docs/architecture.md.template`.
 
@@ -49,13 +83,13 @@ Fill with:
 - Architecture decisions from interview
 - Data flow description from requirements
 
-### 3. .shipwright/agent_docs/decision_log.md
+### 4. .shipwright/agent_docs/decision_log.md
 
 Load template from `{plugin_root}/../../shared/templates/agent-docs/decision-log.md.template`.
 
 Initialize with project name and profile name. No entries yet — shipwright-build will populate this.
 
-### 4. .shipwright/agent_docs/conventions.md
+### 5. .shipwright/agent_docs/conventions.md
 
 Load template from `{plugin_root}/../../shared/templates/agent-docs/conventions.md.template`.
 
@@ -79,6 +113,7 @@ Write `shipwright_project_config.json` to the project root:
   ],
   "artifacts": {
     "claude_md": true,
+    "agents_md": true,
     "agent_docs": true,
     "manifest": true
   }
