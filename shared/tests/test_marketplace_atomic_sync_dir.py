@@ -11,6 +11,7 @@ non-greedy ``^\\}`` anchor find the right one without a real bash parser.
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -31,14 +32,30 @@ def _require_bash() -> None:
         pytest.fail("bash ships on every CI runner; install Git Bash locally")
 
 
+def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
+    """Writes the script to a temp file and runs `bash <file>` instead of
+    `bash -c <script>` — `_atomic_sync_dir`'s own extracted text now runs well
+    past 8000 characters, and Windows' classic ~8191-char command-line limit
+    truncated it mid-function when passed inline, producing a baffling
+    "unexpected end of file" bash syntax error with no size hint anywhere in
+    it. A file has no such ceiling."""
+    _require_bash()
+    with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False, encoding="utf-8") as f:
+        f.write(script)
+        script_path = f.name
+    try:
+        return subprocess.run(["bash", script_path], capture_output=True, text=True, **kwargs)
+    finally:
+        Path(script_path).unlink(missing_ok=True)
+
+
 def _run(body: str) -> subprocess.CompletedProcess:
     """`_atomic_sync_dir` calls `_pid_is_alive` (its lock's liveness check),
     a separate top-level function — without extracting it too, every fixture
     run would fail on "command not found" instead of exercising the lock."""
-    _require_bash()
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
               + _extract("_atomic_sync_dir") + "\n" + _extract("sync_dir_from_to") + "\n" + body)
-    return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+    return _run_script(script)
 
 
 def _p(path: Path) -> str:
@@ -115,7 +132,7 @@ def test_live_pid_leftover_survives_the_sweep(tmp_path):
         + 'echo "LIVE_SURVIVED=$([ -d "' + _p(dst) + '.sync-new.$holder" ] && echo yes || echo no)"\n'
         + 'echo "DEAD_SWEPT=$([ -d "$dead_leftover" ] && echo no || echo yes)"\n'
     )
-    res = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+    res = _run_script(script, timeout=30)
 
     assert res.returncode == 0, res.stderr
     assert "LIVE_SURVIVED=yes" in res.stdout, res.stdout
@@ -138,6 +155,61 @@ def test_stale_lock_with_dead_holder_is_reclaimed(tmp_path):
     assert res.returncode == 0, res.stderr
     assert (dst / "a.py").exists()
     assert not lock.exists(), "the reclaimed (and then re-released) lock should not survive a clean run"
+
+
+def test_lock_is_installed_atomically_not_mkdir_then_stamped():
+    """Tier-3 review, PR #796 round 2: a bare `mkdir "$lock"` immediately
+    followed by writing its PID left a window where a concurrent reader saw
+    the lock with no PID yet, called it stale, and stole it out from under a
+    process that still believed it held it. The PID must be written into a
+    PRIVATE candidate dir BEFORE the one atomic rename that installs it —
+    checked structurally since reproducing the actual race needs real OS
+    thread interleaving a unit test can't reliably force."""
+    body = _extract("_atomic_sync_dir")
+    code_lines = [line for line in body.splitlines() if not line.strip().startswith("#")]
+    assert not any('mkdir "$lock"' in line for line in code_lines), (
+        'a bare `mkdir "$lock"` reintroduces the pid-less window this guards against')
+    assert re.search(r'mv -T "\$candidate" "\$lock"', body), (
+        "expected the lock to be installed via one atomic rename of a fully-formed candidate")
+
+
+def test_source_root_is_not_mkdirred_as_a_bogus_nested_path(tmp_path):
+    """`${dir#$src/}` doesn't strip $src itself (no trailing slash on $src to
+    match against), so without `-mindepth 1` on the directory-skeleton scan,
+    every sync mkdir'd the whole absolute source path as a junk empty
+    directory tree inside staging (Tier-3 review, PR #796 round 2)."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    (src / "sub").mkdir(parents=True)
+    (src / "sub" / "a.py").write_text("a", encoding="utf-8")
+
+    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
+
+    assert res.returncode == 0, res.stderr
+    top_level = sorted(p.name for p in dst.iterdir())
+    assert top_level == ["sub"], (
+        f"expected only 'sub' at the destination root, found {top_level} — "
+        "the source root itself was likely mkdir'd as a bogus nested path")
+
+
+def test_orphaned_backup_is_recovered_before_the_sweep_would_discard_it(tmp_path):
+    """Tier-3 review, PR #796 round 2: a crash between the swap's two `mv`s
+    leaves $dst MISSING with its only backup sitting in a dead process's
+    $old. Simulate exactly that and confirm noprune's dst-only preservation
+    still sees the old content — provable only if it was recovered into
+    $dst before that step runs, not discarded by the leftover sweep."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "keep.py").write_text("a", encoding="utf-8")
+    # No dst/ at all — simulates dst having already been renamed away.
+    orphan = dst.parent / (dst.name + ".sync-old.99999999")
+    orphan.mkdir()
+    (orphan / "mirror_owned.py").write_text("b", encoding="utf-8")
+
+    res = _run(f'sync_dir_from_to "{_p(src)}" "{_p(dst)}"')
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "keep.py").exists()
+    assert (dst / "mirror_owned.py").exists(), "the orphaned backup's content was lost, not recovered"
 
 
 def test_default_prune_removes_files_absent_from_source(tmp_path):

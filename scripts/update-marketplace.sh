@@ -97,27 +97,52 @@ _atomic_sync_dir() {
     # Serialize concurrent syncs of the SAME $dst (Tier-3 review, PR #796):
     # without this, two runs race the final mv-swap below and can interleave
     # it, and the leftover sweep just below could delete an ACTIVE run's own
-    # staging/old dirs, not just a dead one's. `mkdir` is atomic on POSIX and
-    # NTFS-via-MSYS alike, so it doubles as a portable mutex with no `flock`
-    # dependency. A PID file inside lets a later run tell a live holder apart
-    # from one that crashed mid-sync and self-heal past the stale lock instead
-    # of deadlocking every future sync of this $dst forever.
-    local waited=0 holder_pid=""
-    while ! mkdir "$lock" 2>/dev/null; do
+    # staging/old dirs, not just a dead one's. `mkdir "$lock"` THEN writing the
+    # PID file left a window where the lock existed with no PID yet — a second
+    # process reading it there sees an empty holder, calls it stale, and
+    # deletes a lock the first process still believes it holds (round 2 of
+    # this same review). Build the PID-stamped lock fully under a PRIVATE,
+    # PID-suffixed name first, then install it with `mv -T` in ONE rename: a
+    # POSIX/NTFS-via-MSYS directory rename onto an EMPTY target succeeds
+    # atomically, and onto a NON-empty one fails outright with neither side
+    # touched (verified on this Windows Git Bash) — so the lock is either
+    # fully absent, or fully formed with its PID already in place. No window.
+    local waited=0 holder_pid="" candidate="${dst}.sync.lock.$$"
+    while true; do
+        rm -rf "$candidate" 2>/dev/null || true
+        mkdir "$candidate"
+        echo "$$" > "$candidate/pid"
+        if mv -T "$candidate" "$lock" 2>/dev/null; then
+            break
+        fi
+        rm -rf "$candidate" 2>/dev/null || true
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
-        if ! _pid_is_alive "$holder_pid"; then
+        if [ -n "$holder_pid" ] && ! _pid_is_alive "$holder_pid"; then
             rm -rf "$lock" 2>/dev/null || true
             continue
         fi
         if [ "$waited" -ge 120 ]; then
-            echo "  [!!] ${label}: timed out waiting for pid ${holder_pid} to finish syncing $dst" >&2
+            echo "  [!!] ${label}: timed out waiting for pid ${holder_pid:-unknown} to finish syncing $dst" >&2
             return 1
         fi
         sleep 1
         waited=$((waited + 1))
     done
-    echo "$$" > "$lock/pid"
     _CURRENT_SYNC_LOCK="$lock"
+
+    # An interrupted swap (crash between the two `mv`s below) can leave $dst
+    # MISSING with its only backup sitting in a dead process's $old — recover
+    # it before the sweep just below would otherwise discard the last copy of
+    # the previous destination outright (Tier-3 review, PR #796 round 2).
+    if [ ! -d "$dst" ]; then
+        for orphan in "${dst}".sync-old.*; do
+            [ -d "$orphan" ] || continue
+            if ! _pid_is_alive "${orphan##*.}"; then
+                mv "$orphan" "$dst"
+                break
+            fi
+        done
+    fi
 
     # A prior run killed mid-swap (Ctrl-C, timeout) leaves its own PID-named
     # staging/old dirs behind forever — nothing else ever matches that PID
@@ -146,9 +171,14 @@ _atomic_sync_dir() {
     # pattern here (e.g. `*/.git*` without the trailing slash) also matches
     # unrelated names like `.github`, leaving a directory the file loop still
     # expects to exist uncreated (`cp: ... No such file or directory`).
+    # `-mindepth 1` excludes $src itself: `find` always yields the search root
+    # first, and `${dir#$src/}` (no trailing slash on $src to match against)
+    # leaves THAT one entry unstripped, mkdir'ing the whole absolute source
+    # path as a bogus nested directory inside staging every run (Tier-3
+    # review, PR #796 round 2).
     while IFS= read -r -d '' dir; do
         mkdir -p "$staging/${dir#$src/}"
-    done < <(find "$src" -type d \
+    done < <(find "$src" -mindepth 1 -type d \
         -not -name "__pycache__" -not -path "*/__pycache__/*" \
         -not -name ".venv" -not -path "*/.venv/*" \
         -not -name ".pytest_cache" -not -path "*/.pytest_cache/*" \
