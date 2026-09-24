@@ -10,6 +10,7 @@ background thread partway through the hook's retry budget, and assert the
 import still succeeds instead of raising ModuleNotFoundError.
 """
 
+import builtins
 import shutil
 import subprocess
 import sys
@@ -63,6 +64,46 @@ def test_import_survives_lib_vanishing_and_reappearing_mid_retry(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "ModuleNotFoundError" not in result.stderr, result.stderr
+
+
+def test_import_retry_loop_retries_then_succeeds_in_process():
+    """Same round-5 retry loop the tests above prove via a real filesystem
+    race — but driven IN-PROCESS instead of through ``subprocess.run``, so
+    coverage.py's tracer can see it. A subprocess child is invisible to the
+    parent's coverage measurement, so the diff-coverage gate reported the
+    except/raise/sleep lines uncovered despite them being exhaustively
+    proven above (feedback_subprocess_tests_are_invisible_to_diff_coverage).
+    Extracts the literal ``for``/``except`` block and drives it with a
+    patched ``__import__`` that fails once before delegating to the real
+    one — the race itself needs no re-proving here, only the loop's own
+    control flow needs to execute where coverage is watching."""
+    hook_path = _REAL_SCRIPTS / "hooks" / "generate_handoff_on_stop.py"
+    src = hook_path.read_text(encoding="utf-8")
+    start = src.index("for _attempt in range(20):")
+    end = src.index("\n\n", start)
+    # Padded with the file's own leading newlines so the compiled code
+    # object's line numbers match generate_handoff_on_stop.py's real ones —
+    # coverage.py (and diff-cover after it) attributes hits by (filename,
+    # lineno), so line 1 here would silently miss the lines the gate checks.
+    start_line = src.count("\n", 0, start)
+    loop_src = ("\n" * start_line) + src[start:end]
+
+    real_import = builtins.__import__
+    calls = {"n": 0}
+
+    def flaky_import(name, *args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ModuleNotFoundError(name)
+        return real_import(name, *args, **kwargs)
+
+    patched_builtins = builtins.__dict__.copy()
+    patched_builtins["__import__"] = flaky_import
+    namespace = {"time": time, "__builtins__": patched_builtins}
+    exec(compile(loop_src, str(hook_path), "exec"), namespace)  # noqa: S102
+
+    assert calls["n"] > 1, "the retry never attempted a second import after the first failure"
+    assert "durable_atomic_write" in namespace, "the loop did not complete a successful retry"
 
 
 def test_import_fails_when_lib_never_reappears(tmp_path):
