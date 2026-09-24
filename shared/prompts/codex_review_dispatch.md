@@ -25,7 +25,7 @@ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
   --plan-file "{the plan file — required for role plan_review only}" \
   --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
-    gpt-5.6-terra — optional; unset defers to this role's session env var,
+    gpt-6-sol — optional; unset defers to this role's session env var,
     then shipwright_model_config.json's codex_review/codex_plan_review key,
     then the hardcoded default}"]
 ```

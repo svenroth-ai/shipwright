@@ -177,7 +177,7 @@ def load_model_config(project_root: Path | str) -> dict[str, Any]:
         # back to the hardcoded default, which would otherwise happen with
         # no warning at all (code-reviewer MEDIUM, 2026-09-18).
         if isinstance(value, str) and value.strip():
-            # Trimmed, not stored verbatim: a padded slug (" gpt-5.6-terra")
+            # Trimmed, not stored verbatim: a padded slug (" gpt-6-sol")
             # would otherwise pass this check but hard-fail the allowlist
             # downstream, over a whitespace typo (external code review, LOW,
             # 2026-09-18).

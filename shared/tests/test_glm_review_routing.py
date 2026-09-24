@@ -135,7 +135,7 @@ def test_forbidden_provider_config_stops_before_client_creation(monkeypatch):
 @pytest.mark.parametrize(
     "reviewer,route,model_key,forbidden",
     [
-        ("glm", "openrouter", "openrouter_glm", "openai/gpt-5.6-terra"),
+        ("glm", "openrouter", "openrouter_glm", "openai/gpt-6-sol"),
         ("openai", "openrouter", "openrouter_chatgpt", "z-ai/glm-5.3"),
         ("openai", "direct", "chatgpt", "z-ai/glm-5.3"),
     ],
@@ -248,7 +248,7 @@ def test_gpt_openrouter_body_has_no_glm_provider_policy(monkeypatch):
     )
 
     assert result["status"] == "success"
-    assert captured[0]["model"] == "openai/gpt-5.6-terra"
+    assert captured[0]["model"] == "openai/gpt-6-sol"
     assert "provider" not in captured[0]
     assert "reasoning" not in captured[0]
     assert "models" not in captured[0]

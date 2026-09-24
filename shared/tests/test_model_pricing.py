@@ -17,17 +17,29 @@ from lib import model_pricing as mp  # noqa: E402
 
 
 def test_pricing_table_has_the_three_current_models():
-    for model_id in ("claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"):
+    for model_id in ("claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5"):
         assert model_id in mp.MODEL_PRICING
 
 
-def test_opus_5_rates_match_current_models_table():
+def test_opus_5_5_rates_match_current_models_table():
+    price = mp.MODEL_PRICING["claude-opus-5-5"]
+    assert price.input == 4.00
+    assert price.output == 20.00
+    assert price.cache_write_5m == 5.00
+    assert price.cache_write_1h == 8.00
+    assert price.cache_read == 0.40
+
+
+def test_opus_5_retired_rate_stays_priced_for_historical_transcripts():
+    """A transcript recorded before the Opus 5.5 bump still names
+    ``claude-opus-5`` and must resolve at the rate that was live when the
+    call was made, never at the new model's rate and never unpriced."""
     price = mp.MODEL_PRICING["claude-opus-5"]
     assert price.input == 5.00
     assert price.output == 25.00
-    assert price.cache_write_5m == 6.25
-    assert price.cache_write_1h == 10.00
-    assert price.cache_read == 0.50
+    cost, unpriced = mp.compute_cost_usd("claude-opus-5", {"input_tokens": 1_000_000})
+    assert unpriced is False
+    assert cost == 5.00
 
 
 def test_sonnet_5_rates_are_standard_not_intro():
@@ -46,10 +58,10 @@ def test_cost_prices_each_token_type_at_its_own_rate():
             "ephemeral_1h_input_tokens": 1_000_000,
         },
     }
-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
+    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
     assert unpriced is False
-    # 5 + 25 + 0.5 + 6.25 + 10 = 46.75
-    assert cost == 46.75
+    # 4 + 20 + 0.4 + 5 + 8 = 37.4
+    assert cost == 37.4
 
 
 def test_cache_read_only_usage_prices_at_cache_read_rate_not_input_rate():
@@ -63,9 +75,9 @@ def test_cache_read_only_usage_prices_at_cache_read_rate_not_input_rate():
 
 def test_aggregate_cache_creation_without_ttl_split_prices_at_5m_default():
     usage = {"cache_creation_input_tokens": 1_000_000}
-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
+    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
     assert unpriced is False
-    assert cost == 6.25  # 5m TTL is the documented default when unspecified
+    assert cost == 5.00  # 5m TTL is the documented default when unspecified
 
 
 def test_split_and_aggregate_present_together_does_not_double_count():
@@ -73,9 +85,9 @@ def test_split_and_aggregate_present_together_does_not_double_count():
         "cache_creation_input_tokens": 1_000_000,
         "cache_creation": {"ephemeral_5m_input_tokens": 1_000_000},
     }
-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
+    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
     assert unpriced is False
-    assert cost == 6.25  # split wins; aggregate is not added on top
+    assert cost == 5.00  # split wins; aggregate is not added on top
 
 
 def test_ttl_split_present_with_explicit_zero_wins_over_a_nonzero_aggregate():
@@ -90,7 +102,7 @@ def test_ttl_split_present_with_explicit_zero_wins_over_a_nonzero_aggregate():
             "ephemeral_1h_input_tokens": 0,
         },
     }
-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
+    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
     assert unpriced is False
     assert cost == 0.0  # split (explicitly zero) wins; aggregate never used
 
@@ -143,9 +155,9 @@ def test_non_numeric_token_field_degrades_that_field_to_zero_not_a_crash():
     # TypeError out of the whole cost calculation instead of the malformed
     # field degrading to 0 for that one token type.
     usage = {"input_tokens": "one hundred", "output_tokens": 1_000_000}
-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
+    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
     assert unpriced is False
-    assert cost == 25.00  # input_tokens ignored (malformed), output priced normally
+    assert cost == 20.00  # input_tokens ignored (malformed), output priced normally
 
 
 def test_many_sub_microdollar_calls_are_not_individually_rounded_to_zero():

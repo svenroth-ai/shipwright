@@ -38,6 +38,6 @@ def test_degraded_review_keeps_reason_and_partial_body(tmp_path, monkeypatch):
     assert "- Status: **degraded**" in rendered
     assert "- Reason: reply cut off" in rendered
     assert "## Reviewer: glm" in rendered
-    assert "z-ai/glm-5.3, openai/gpt-5.6-terra" in rendered
+    assert "z-ai/glm-5.3, openai/gpt-6-sol" in rendered
     assert "partial finding body" in rendered
     assert captured["timeout"] == 240

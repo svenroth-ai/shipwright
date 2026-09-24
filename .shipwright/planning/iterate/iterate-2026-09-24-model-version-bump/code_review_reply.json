@@ -1,0 +1,51 @@
+{
+  "section": "iterate-2026-09-24-model-version-bump",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/model_pricing.py",
+      "line": 48,
+      "finding": "The `claude-opus-5` pricing key was replaced with `claude-opus-5-5` when it should have been added alongside it. `resolve_model_id` accepts only an exact match or a date-stripped match and falls back to nothing else, so every transcript recorded under `claude-opus-5` / `claude-opus-5-YYYYMMDD` now returns `(None, True)` (unpriced). Same problem in `MODEL_CONTEXT_WINDOWS` in `context_cost_readiness.py`.",
+      "outcome": "fixed",
+      "disposition": "Restored `\"claude-opus-5\": _priced(5.00, 25.00)` in MODEL_PRICING and `\"claude-opus-5\": 1_000_000` in MODEL_CONTEXT_WINDOWS, alongside the new `claude-opus-5-5` entries. Added `test_opus_5_retired_rate_stays_priced_for_historical_transcripts` in test_model_pricing.py and updated the module docstring's provenance note. Full shared/tests + shared/scripts/tools/tests suites re-run green."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "docs/guide.md",
+      "line": 853,
+      "finding": "One prose reference was missed: 'GPT-5.6 Terra' still present in the /shipwright-plan section.",
+      "outcome": "fixed",
+      "disposition": "Changed to 'GPT-6 Sol'. Repo-wide grep confirms no remaining live 'Terra' references."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/codex_review_roles.py",
+      "line": 53,
+      "finding": "Comment quoted AGENTS.md verbatim; AGENTS.md itself was not updated (deliberately excluded), so the quotation is now false and would remain false even after AGENTS.md is removed.",
+      "outcome": "fixed",
+      "disposition": "Reworded to describe the policy directly instead of quoting AGENTS.md."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "line": 100,
+      "finding": "Same AGENTS.md-quoting issue, plus one reflowed line (~106) exceeded the block's usual width and added history-in-source provenance ('merged from the retired gpt-5.6-terra').",
+      "outcome": "fixed",
+      "disposition": "Reworded to not quote AGENTS.md, dropped the retired-model provenance clause, and re-wrapped the block to its original 11-line span (file confirmed still exactly 300 lines)."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/model_pricing.py",
+      "line": 3,
+      "finding": "Module docstring's provenance line no longer covered every row after the Opus 5.5 rate change.",
+      "outcome": "fixed",
+      "disposition": "Docstring now notes Opus 5.5's rate is operator-supplied (2026-09-24) separately from the Current Models table date, and adds a note that retired ids are kept, never deleted."
+    }
+  ],
+  "verdict": "APPROVE (after fixes)"
+}

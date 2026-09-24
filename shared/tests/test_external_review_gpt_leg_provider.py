@@ -49,8 +49,8 @@ def test_gpt_leg_provider_falls_back_to_api_on_an_unhashable_value():
 
 
 def test_codex_binding_accepts_the_locked_model():
-    config = {"models": {"codex": "gpt-5.6-terra"}}
-    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-5.6-terra"
+    config = {"models": {"codex": "gpt-6-sol"}}
+    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6-sol"
 
 
 def test_codex_binding_rejects_a_different_configured_model():
@@ -73,6 +73,6 @@ def test_codex_binding_shares_the_openai_identity_and_model_with_the_api_routes(
     """Same reviewer ('openai'), same model string, across all three routes —
     a mixed pass (e.g. codex answers this run, openrouter answered last run)
     must not read as two different reviewers."""
-    config = {"models": {"chatgpt": "gpt-5.6-terra", "openrouter_chatgpt": "openai/gpt-5.6-terra", "codex": "gpt-5.6-terra"}}
-    assert resolve_reviewer_model(config, "openai", "direct") == "gpt-5.6-terra"
-    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-5.6-terra"
+    config = {"models": {"chatgpt": "gpt-6-sol", "openrouter_chatgpt": "openai/gpt-6-sol", "codex": "gpt-6-sol"}}
+    assert resolve_reviewer_model(config, "openai", "direct") == "gpt-6-sol"
+    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6-sol"

@@ -342,7 +342,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    (`--driver` is **required, no default** — `claude` when this session runs
    under Claude Code, `codex` when it runs under Codex CLI. It picks the
    independent-review identity: `claude` keeps `{glm, openai}`; `codex` swaps
-   to `{glm, opus}`, because a Codex-authored diff (`gpt-5.6-terra`) reviewed
+   to `{glm, opus}`, because a Codex-authored diff (`gpt-6-sol`) reviewed
    by another OpenAI-family model would not be independent. Never hardcode
    this — resolve it from which harness is actually driving the session.
    **Resolution rule:** this is self-evident to the program executing these

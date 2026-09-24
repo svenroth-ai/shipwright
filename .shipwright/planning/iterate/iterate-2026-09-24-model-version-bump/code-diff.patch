@@ -1,0 +1,613 @@
+diff --git a/.github/workflows/pr-review-run.yml b/.github/workflows/pr-review-run.yml
+index e5b73de89..5faa2173a 100644
+--- a/.github/workflows/pr-review-run.yml
++++ b/.github/workflows/pr-review-run.yml
+@@ -249,7 +249,7 @@ jobs:
+           # path if this model's own verdicts ever need bypassing, with the
+           # internal review passes (spec/code/doubt) still required as
+           # evidence.
+-          SHIPWRIGHT_PR_REVIEW_MODEL: openai/gpt-5.6-luna
++          SHIPWRIGHT_PR_REVIEW_MODEL: openai/gpt-6-luna
+           PR_NUMBER: ${{ steps.pr.outputs.number }}
+           REPO: ${{ github.repository }}
+         run: |
+diff --git a/docs/guide.md b/docs/guide.md
+index a74698bed..a50e20edc 100644
+--- a/docs/guide.md
++++ b/docs/guide.md
+@@ -1484,7 +1484,7 @@ The profile configures two deployment environments: **DEV** (auto-deploy on push
+ 
+ ### External LLM Review
+ 
+-Shipwright can send artifacts to external LLMs for an independent second opinion, GLM 5.3 always paired with a second identity chosen by `--driver` (required, no default): `claude` pairs it with GPT-5.6 Terra, `codex` pairs it with Opus 5 (local Claude CLI, OpenRouter fallback) -- Codex CLI already drives its own subagents, so a second Codex-launched OpenAI call would be a same-vendor rubber stamp. `--driver codex` also applies under Codextender mode (`CODEXTENDER_ACTIVE` set) even though the driving binary is `claude` -- the diff was still authored by a Codex-backed model, so the roster swaps for the same reason. The same CLI -- `shared/scripts/tools/external_review.py` -- runs four review modes; which one fires depends on the phase that triggers it.
++Shipwright can send artifacts to external LLMs for an independent second opinion, GLM 5.3 always paired with a second identity chosen by `--driver` (required, no default): `claude` pairs it with GPT-6 Sol, `codex` pairs it with Opus 5.5 (local Claude CLI, OpenRouter fallback) -- Codex CLI already drives its own subagents, so a second Codex-launched OpenAI call would be a same-vendor rubber stamp. `--driver codex` also applies under Codextender mode (`CODEXTENDER_ACTIVE` set) even though the driving binary is `claude` -- the diff was still authored by a Codex-backed model, so the roster swaps for the same reason. The same CLI -- `shared/scripts/tools/external_review.py` -- runs four review modes; which one fires depends on the phase that triggers it.
+ 
+ | Mode | Trigger | Reviews | Marker file |
+ |---|---|---|---|
+@@ -1535,7 +1535,7 @@ OPENAI_API_KEY=sk-your-key
+ 
+ **Empty-diff short-circuit:** Code mode skips the API call entirely if the diff file is empty or whitespace-only. The marker records `status: skipped_user_opt_out` with `reason: "empty_diff"`.
+ 
+-**Model identity lock:** The review arms are fixed to `z-ai/glm-5.3` and `openai/gpt-5.6-terra` (or `gpt-5.6-terra` direct). A differing config value or `SHIPWRIGHT_REVIEW_MODEL_<KEY>` override fails before client creation, preventing a model from travelling under the wrong reviewer identity or routing policy.
++**Model identity lock:** The review arms are fixed to `z-ai/glm-5.3` and `openai/gpt-6-sol` (or `gpt-6-sol` direct). A differing config value or `SHIPWRIGHT_REVIEW_MODEL_<KEY>` override fails before client creation, preventing a model from travelling under the wrong reviewer identity or routing policy.
+ 
+ ### Security Scanning
+ 
+@@ -2716,7 +2716,7 @@ These are invoked automatically by the pipeline but can also run standalone for
+ | `append_changelog_entry.py` | Atomic Keep-a-Changelog writer for canon step C5. Dedupes by entry body and holds `CHANGELOG.md.lock` via `file_lock.py` (cross-platform, 5 s timeout). | `--project-root <path>` · `--category Added\|Changed\|Fixed\|Deprecated\|Removed\|Security` · `--entry "..."` |
+ | `append_phase_history.py` | Atomic read-modify-write on `shipwright_run_config.json::phase_history[<phase>]`. 50-entry retention per phase, file-lock serialised. | `--project-root <path>` · `--phase <phase>` · `--entry-json '{...}'` · `--run-id <id>` |
+ | `generate_session_handoff.py` | Session-handoff writer. The `--canon-marker` flag lets phase finalization steps tag the handoff so the PostStop hook does not clobber it. | `--canon-marker` (emit YAML frontmatter with `canon_generated: true` + `run_id`) · `--phase <phase>` · `--preserve-canon-marker` (for a write that does NOT pass `--canon-marker`: keep the marker already on disk instead of dropping it, so a mid-phase handoff cannot erase a completed split's C3 evidence; ignored when `--canon-marker` is passed, including its degraded no-`SHIPWRIGHT_RUN_ID` path) · `--reason "..."` · `--project-root <path>`. Requires `SHIPWRIGHT_RUN_ID` env var when `--canon-marker` is set (degrades safely with a stderr warning otherwise). |
+-| `external_review.py` | External LLM review CLI. Runs GLM + a second identity (OpenAI, or Opus 5 under `--driver codex`) in parallel via OpenRouter (or GPT alone via direct OpenAI) and emits a unified `{success, provider, reviews, verdicts, statuses, contradiction}` JSON envelope. Each reviewer ends with a `SHIPWRIGHT_VERDICT:` line; the envelope carries both verdicts and whether they contradict each other, so a disagreement cannot be flattened into a finding count. Four modes share the same dispatch surface, each bound to exactly ONE input flag — a flag belonging to another mode is a usage error, never silently ignored, because `--mode architecture` earns its different answer only from reading a brief rather than the plan. The GPT ("openai") leg's route is resolved separately from `external_review.gpt_leg.provider` — `"api"` (default, this env-key chain) or `"codex"` (the Codex CLI, flat-cost under a subscription; falls back to `"api"` when unavailable) — that leg only exists under `--driver claude`. | `--mode plan\|iterate\|code\|architecture` · `--driver claude\|codex` (required, no default — `claude` for Claude Code plugins, `codex` when Codex CLI drives the run) · `--plan-file <path>` (plan/iterate) OR `--diff-file <path>` (code) OR `--brief-file <path>` (architecture) · `--spec-file <path>` · `--plugin-root <path>` · env: `OPENROUTER_API_KEY` or `OPENAI_API_KEY` · reviewer/model identities are fixed; differing `SHIPWRIGHT_REVIEW_MODEL_<KEY>` values fail closed |
++| `external_review.py` | External LLM review CLI. Runs GLM + a second identity (OpenAI, or Opus 5.5 under `--driver codex`) in parallel via OpenRouter (or GPT alone via direct OpenAI) and emits a unified `{success, provider, reviews, verdicts, statuses, contradiction}` JSON envelope. Each reviewer ends with a `SHIPWRIGHT_VERDICT:` line; the envelope carries both verdicts and whether they contradict each other, so a disagreement cannot be flattened into a finding count. Four modes share the same dispatch surface, each bound to exactly ONE input flag — a flag belonging to another mode is a usage error, never silently ignored, because `--mode architecture` earns its different answer only from reading a brief rather than the plan. The GPT ("openai") leg's route is resolved separately from `external_review.gpt_leg.provider` — `"api"` (default, this env-key chain) or `"codex"` (the Codex CLI, flat-cost under a subscription; falls back to `"api"` when unavailable) — that leg only exists under `--driver claude`. | `--mode plan\|iterate\|code\|architecture` · `--driver claude\|codex` (required, no default — `claude` for Claude Code plugins, `codex` when Codex CLI drives the run) · `--plan-file <path>` (plan/iterate) OR `--diff-file <path>` (code) OR `--brief-file <path>` (architecture) · `--spec-file <path>` · `--plugin-root <path>` · env: `OPENROUTER_API_KEY` or `OPENAI_API_KEY` · reviewer/model identities are fixed; differing `SHIPWRIGHT_REVIEW_MODEL_<KEY>` values fail closed |
+ | `mark-review-state.py` | Writes the marker file that downstream phases and compliance read to confirm a review-step branch (A/B/C) ran to completion. Two filenames: `external_review_state.json` for plan/iterate, `external_code_review_state.json` for the code-review cascade. Markers use schema 4 with `glm`/`openai`, or schema 5 with `glm`/`opus` (the `--driver codex` roster); readers retain compatibility with historical schema-3 `deepseek`/`openai` markers, historical schema-2 `gemini`/`openai` markers, and older unversioned markers. The external-review JSON envelope separately emits `review_schema: 2`; its historical schema 1 was implicit. | `--planning-dir <path>` · `--status completed\|skipped_user_opt_out\|skipped_config_disabled` · `--review-type plan\|iterate\|code` (omitted = plan/iterate marker) · `--provider openrouter\|openai` · `--findings-count N` · `--reason "..."` · `--self-review-fallback-ran` · `--verdict reviewer=approve\|revise\|reject\|unknown\|unavailable` (repeatable, `glm`/`openai` or `glm`/`opus`; the contradiction between the two is derived, never asserted) · `--contradiction-resolution "..."` (required before a disagreement stops blocking) |
+ 
+ The per-phase verifier modules under `shared/scripts/tools/verifiers/` (`project_checks.py`, `design_checks.py`, `plan_checks.py`, `plan_gate_checks.py`, `build_checks.py`, `test_checks.py`, `changelog_checks.py`, `deploy_checks.py`, `iterate_checks.py`) share generic C1–C5 helpers and F1/F2/F3 ADR integrity checks from `common.py`. The full Canon Coverage matrix is in [docs/hooks-and-pipeline.md](hooks-and-pipeline.md#canon-coverage--iterate-12-final-state).
+diff --git a/docs/hooks-and-pipeline.md b/docs/hooks-and-pipeline.md
+index 237d003d7..c70fbaad3 100644
+--- a/docs/hooks-and-pipeline.md
++++ b/docs/hooks-and-pipeline.md
+@@ -3634,7 +3634,7 @@ orchestrator (mandate, not a guarantee): writes the reply to its payload
+ | `.shipwright/agent_docs/iterates/<run_id>.test-results.json` | iterate F5c (`append_iterate_entry.py`): validates `iterate_latest.run_id`, then atomically installs the exact root-snapshot bytes once | F11 immutable-evidence gate; future per-run evidence consumers. Tracked and never summary-retention-pruned; root `shipwright_test_results.json` remains excluded from iterate commits. |
+ | `shipwright_compliance_config.json` | update_compliance.py, run_audit.py (`last_audit` / `last_full_audit`) | Compliance (phases_covered; the audit record → the `Consistency-audit:` provenance line in every evidence document) |
+ | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
+-| `shipwright_model_config.json` (optional; schema `shared/schemas/model_config.schema.json`) | Operator, hand-authored at the MAIN repo root | `/shipwright-iterate` and `/shipwright-build` at their Planned Run Summary / Session Report step, via `resolve_model_tier.py` (`lib.model_tier_config`) — resolves the per-role (`review`/`finalization`/`execution`/`plan_review`) Claude model tier for that run's Agent-tool spawns. `/shipwright-plan` Step 5-int and `/shipwright-iterate`'s own Internal Plan Review sub-step (medium+, before Branch A/B/C) both resolve `plan_review` before spawning `shipwright-plan:opus-plan-reviewer` — a cross-plugin `Agent` spawn, so a consumer with only `shipwright-iterate` installed degrades to `Ran: no (shipwright-plan not installed)` there. Absent file = today's behavior (`inherit` for every role, bit-identical). An optional `floors` block is read at F11 by `review_record_model_tier`'s advisory (never blocking) `model_tier_note()`, keyed per role (`review` judges `spec`/`code`/`doubt`; `plan_review` judges `plan_internal` only — never the external `plan` row). Two further optional keys, `codex_review`/`codex_plan_review` (a Codex model slug, e.g. `gpt-5.6-terra`) — a separate, non-Claude axis for the Codex-CLI internal-review transport (`lib.codex_review_transport.run_codex_review`), resolved by `lib.codex_review_model_resolution.resolve_codex_review_model` in this precedence: `tools/review_via_codex.py`'s `--codex-model` (per-run) beats that role's `SHIPWRIGHT_CODEX_REVIEW_MODEL` (spec/code/doubt) or `SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL` (plan_review) session env var beats this config key beats the hardcoded `CODEX_REVIEW_MODEL` (`gpt-5.6-sol`) default. Validated only by an unconditional syntactic allowlist, never a live Codex catalog call — iterate-2026-09-18-codex-review-tier-config, session env var added iterate-2026-09-19-codex-reviewer-session-override. |
++| `shipwright_model_config.json` (optional; schema `shared/schemas/model_config.schema.json`) | Operator, hand-authored at the MAIN repo root | `/shipwright-iterate` and `/shipwright-build` at their Planned Run Summary / Session Report step, via `resolve_model_tier.py` (`lib.model_tier_config`) — resolves the per-role (`review`/`finalization`/`execution`/`plan_review`) Claude model tier for that run's Agent-tool spawns. `/shipwright-plan` Step 5-int and `/shipwright-iterate`'s own Internal Plan Review sub-step (medium+, before Branch A/B/C) both resolve `plan_review` before spawning `shipwright-plan:opus-plan-reviewer` — a cross-plugin `Agent` spawn, so a consumer with only `shipwright-iterate` installed degrades to `Ran: no (shipwright-plan not installed)` there. Absent file = today's behavior (`inherit` for every role, bit-identical). An optional `floors` block is read at F11 by `review_record_model_tier`'s advisory (never blocking) `model_tier_note()`, keyed per role (`review` judges `spec`/`code`/`doubt`; `plan_review` judges `plan_internal` only — never the external `plan` row). Two further optional keys, `codex_review`/`codex_plan_review` (a Codex model slug, e.g. `gpt-6-sol`) — a separate, non-Claude axis for the Codex-CLI internal-review transport (`lib.codex_review_transport.run_codex_review`), resolved by `lib.codex_review_model_resolution.resolve_codex_review_model` in this precedence: `tools/review_via_codex.py`'s `--codex-model` (per-run) beats that role's `SHIPWRIGHT_CODEX_REVIEW_MODEL` (spec/code/doubt) or `SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL` (plan_review) session env var beats this config key beats the hardcoded `CODEX_REVIEW_MODEL` (`gpt-6-sol`) default. Validated only by an unconditional syntactic allowlist, never a live Codex catalog call — iterate-2026-09-18-codex-review-tier-config, session env var added iterate-2026-09-19-codex-reviewer-session-override. |
+ | `CODEXTENDER_ACTIVE` (env var, not a config file — listed here alongside `shipwright_model_config.json` because it feeds the same review-driver-selection decision) | Whatever process actually launches the `claude` binary under Codextender mode — a manual operator `export`/`set`, or (once built) the WebUI's Codextender launcher module | Every `--driver claude\|codex` selection site across `/shipwright-plan`, `/shipwright-build` and `/shipwright-iterate` (both the hardcoded-`claude` sites and the sites that resolve a `{driver}` template placeholder, per `iteration-planning.md`'s Resolution rule): `codex` roster (`{glm, opus}`) when set, even though the driving harness is still `claude` — because the diff was actually authored by a Codex-backed model (Codextender routes the session's own `ANTHROPIC_*` env vars at a local Codex-backed proxy), so reviewing it with the `claude`-roster's OpenAI-family leg would not be independent. Any non-empty value counts as active (the shipped launcher only ever emits `1`) — to disable, unset the variable, not set it to `0`. **A separate axis from `shared/scripts/lib/codex_runtime.py`'s `is_codex_runtime()`** (added R1b/#786) — that function answers a different question (is the resolved plugin root a genuine on-disk Codex-bundle shape?) and correctly returns `False` under Codextender, since the plugin root is an ordinary Claude plugin cache and Claude Code genuinely is the driving harness. Do not fold the two together. |
+ | `shipwright_iterate_config.json` | /shipwright-project or /shipwright-adopt; operator overrides | /shipwright-iterate (`events_context.mode`, external plan/code-review gates). `events_context.mode` defaults to `compact`; `shadow` keeps the compact prompt bundle while measuring full cost; `full` is explicit rollback/forensics only. `external_review.gpt_leg.provider` (`"api"` default \| `"codex"`) picks which transport answers the "openai" reviewer identity — OpenRouter/direct (metered) or the Codex CLI (flat-cost under a ChatGPT/Codex subscription), read via `external_review_config.gpt_leg_provider()`; falls back to `"api"` when codex is unavailable for the operator. Same deep-merge as every other field here — shared/config/external_review.json's shipped default, overridable per project. |
+ | `shipwright_changelog_config.json` (optional; project-authored) | Operator, hand-authored at the project root | `/shipwright-changelog` Step 5.4 (`sync_release_manifests.py`) — the `published_manifests` list of project-published package manifests (e.g. `bootstrapper/package.json`) to keep in lock-step with the release version, and `changelog_checks.check_manifest_version_matches_tag` (Step 7 standing check). Absent file or empty `published_manifests` = no-op, exactly today's behavior. Full contract: `plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md`. |
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+index 81ac735f5..9b775e3c4 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+@@ -342,7 +342,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+    (`--driver` is **required, no default** — `claude` when this session runs
+    under Claude Code, `codex` when it runs under Codex CLI. It picks the
+    independent-review identity: `claude` keeps `{glm, openai}`; `codex` swaps
+-   to `{glm, opus}`, because a Codex-authored diff (`gpt-5.6-terra`) reviewed
++   to `{glm, opus}`, because a Codex-authored diff (`gpt-6-sol`) reviewed
+    by another OpenAI-family model would not be independent. Never hardcode
+    this — resolve it from which harness is actually driving the session.
+    **Resolution rule:** this is self-evident to the program executing these
+diff --git a/plugins/shipwright-security/scripts/lib/pr_review_openrouter.py b/plugins/shipwright-security/scripts/lib/pr_review_openrouter.py
+index ed89f0848..d43a7aec3 100644
+--- a/plugins/shipwright-security/scripts/lib/pr_review_openrouter.py
++++ b/plugins/shipwright-security/scripts/lib/pr_review_openrouter.py
+@@ -35,7 +35,7 @@ __all__ = [
+ # .shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md
+ DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
+ GLM_MODEL = "z-ai/glm-5.3"
+-LUNA_MODEL = "openai/gpt-5.6-luna"
++LUNA_MODEL = "openai/gpt-6-luna"
+ DEFAULT_MODEL = LUNA_MODEL
+ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+ 
+diff --git a/plugins/shipwright-security/tests/test_pr_review_openrouter.py b/plugins/shipwright-security/tests/test_pr_review_openrouter.py
+index d0bcef64a..90e45e20a 100644
+--- a/plugins/shipwright-security/tests/test_pr_review_openrouter.py
++++ b/plugins/shipwright-security/tests/test_pr_review_openrouter.py
+@@ -31,7 +31,7 @@ FAKE_KEY = "ORTESTKEY-not-a-real-credential-0123456789"
+ class TestDefaults:
+ 
+     def test_default_model_is_luna(self):
+-        assert O.DEFAULT_MODEL == O.LUNA_MODEL == "openai/gpt-5.6-luna"
++        assert O.DEFAULT_MODEL == O.LUNA_MODEL == "openai/gpt-6-luna"
+ 
+     def test_glm_model_constant_still_exists_for_the_operator_override(self):
+         assert O.GLM_MODEL == "z-ai/glm-5.3"
+diff --git a/shared/config/external_review.json b/shared/config/external_review.json
+index 05d07aaa2..6f9ad366c 100644
+--- a/shared/config/external_review.json
++++ b/shared/config/external_review.json
+@@ -14,12 +14,12 @@
+     "_comment_opus_leg": "opus_leg.provider: which route answers the 'opus' reviewer identity (used when --driver codex selects the {glm, opus} roster). 'claude_cli' (default) = the local `claude` CLI, flat-cost under a Claude subscription; requires `claude` installed (`claude --version`) and never resolves to a `.cmd`/`.bat` shim on Windows (BatBadBut argv-injection guard — falls back instead). Falls back to 'openrouter' when the CLI is unavailable or refused, and skips the leg entirely if neither route is usable. No ZDR allowlist needed for this leg (Sven: single-provider, not GLM/DeepSeek's multi-endpoint aggregation)."
+   },
+   "models": {
+-    "chatgpt": "gpt-5.6-terra",
++    "chatgpt": "gpt-6-sol",
+     "openrouter_glm": "z-ai/glm-5.3",
+-    "openrouter_chatgpt": "openai/gpt-5.6-terra",
+-    "codex": "gpt-5.6-terra",
+-    "claude_cli": "claude-opus-5",
+-    "openrouter_opus": "anthropic/claude-opus-5",
++    "openrouter_chatgpt": "openai/gpt-6-sol",
++    "codex": "gpt-6-sol",
++    "claude_cli": "claude-opus-5-5",
++    "openrouter_opus": "anthropic/claude-opus-5-5",
+     "_comment": "Identity-locked review models: GLM always uses its OpenRouter model; GPT uses its OpenRouter, direct, or Codex-CLI model — same 'openai' reviewer identity across all three, same model string, different transport. Opus uses its Claude-CLI or OpenRouter model — same 'opus' reviewer identity across both, same pinned full model id (not the floating 'opus' alias) so both legs identity-lock to the exact same string. Runtime rejects config or environment overrides that differ from these exact identifiers."
+   },
+   "glm_routing": {
+diff --git a/shared/prompts/codex_review_dispatch.md b/shared/prompts/codex_review_dispatch.md
+index 95875a372..62049409c 100644
+--- a/shared/prompts/codex_review_dispatch.md
++++ b/shared/prompts/codex_review_dispatch.md
+@@ -25,7 +25,7 @@ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
+   --plan-file "{the plan file — required for role plan_review only}" \
+   --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
+   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
+-    gpt-5.6-terra — optional; unset defers to this role's session env var,
++    gpt-6-sol — optional; unset defers to this role's session env var,
+     then shipwright_model_config.json's codex_review/codex_plan_review key,
+     then the hardcoded default}"]
+ ```
+diff --git a/shared/schemas/model_config.schema.json b/shared/schemas/model_config.schema.json
+index 2fc3bb24b..69d8f97ce 100644
+--- a/shared/schemas/model_config.schema.json
++++ b/shared/schemas/model_config.schema.json
+@@ -12,7 +12,7 @@
+     "plan_review": { "$ref": "#/$defs/Tier" },
+     "codex_review": {
+       "type": "string",
+-      "description": "Optional override for the model the Codex-CLI internal-review transport uses for the spec/code/doubt-reviewer roles when Codex is the driving harness. A Codex model slug (e.g. 'gpt-5.6-sol'), not one of the Claude Tier values. Not schema-validated against a closed enum — Codex's own launch is the semantic check; an unconditional syntactic allowlist (shared/scripts/lib/codex_review_transport.py) is the only shipwright-side validation. Beaten by a per-run --codex-model flag and by the session-scoped SHIPWRIGHT_CODEX_REVIEW_MODEL env var; unset (and no env var) falls back to the hardcoded default.",
++      "description": "Optional override for the model the Codex-CLI internal-review transport uses for the spec/code/doubt-reviewer roles when Codex is the driving harness. A Codex model slug (e.g. 'gpt-6-sol'), not one of the Claude Tier values. Not schema-validated against a closed enum — Codex's own launch is the semantic check; an unconditional syntactic allowlist (shared/scripts/lib/codex_review_transport.py) is the only shipwright-side validation. Beaten by a per-run --codex-model flag and by the session-scoped SHIPWRIGHT_CODEX_REVIEW_MODEL env var; unset (and no env var) falls back to the hardcoded default.",
+       "minLength": 1
+     },
+     "codex_plan_review": {
+diff --git a/shared/scripts/lib/codex_review_roles.py b/shared/scripts/lib/codex_review_roles.py
+index f68bcf2de..b7753b3f7 100644
+--- a/shared/scripts/lib/codex_review_roles.py
++++ b/shared/scripts/lib/codex_review_roles.py
+@@ -56,7 +56,7 @@ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
+         "no schema/transport entry has nothing for this contract to describe"
+     )
+ 
+-#: Matches AGENTS.md's own stated Codex operating policy ("Use gpt-5.6-sol
++#: Matches AGENTS.md's own stated Codex operating policy ("Use gpt-6-sol
+ #: with high reasoning for required review subagents") — a policy the
+ #: dispatch call never actually enforced until this iterate (no
+ #: `model_reasoning_effort` reached `codex exec`'s argv at all). Pinned by
+diff --git a/shared/scripts/lib/codex_review_transport.py b/shared/scripts/lib/codex_review_transport.py
+index dff752ed0..447ff9bab 100644
+--- a/shared/scripts/lib/codex_review_transport.py
++++ b/shared/scripts/lib/codex_review_transport.py
+@@ -99,16 +99,16 @@ __all__ = [
+ 
+ #: Matches AGENTS.md's own operating policy (Internal Plan Review, resolved
+ #: 2026-09-17: kept same-vendor-by-design, mirroring Claude's own
+-#: opus-reviews-sonnet internal-cascade split) — distinct from `models.codex`
+-#: (`gpt-5.6-terra`, execution/finalization). The last-resort fallback when
+-#: nothing else names a value — see `codex_review_model_resolution.py` for
+-#: the full precedence chain (`model` argument > session env var > project
+-#: config > this constant) and the `_CODEX_MODEL_SLUG_PATTERN` allowlist
++#: opus-reviews-sonnet internal-cascade split) — a separate axis from
++#: `models.codex` (`gpt-6-sol`, merged from the retired `gpt-5.6-terra`,
++#: execution/finalization). Last-resort fallback when nothing else names a
++#: value — see `codex_review_model_resolution.py` for the full precedence
++#: chain (`model` arg > env var > config > this constant) and the `_CODEX_MODEL_SLUG_PATTERN` allowlist
+ #: below for why an override can never reach `codex exec`'s argv unvalidated
+ #: (raise-before-launch lock, reinstated iterate-2026-09-18-codex-review-tier-config
+ #: after AC2 removed and this run's own predecessor found it insufficiently
+ #: enforced; see each run's own ADR).
+-CODEX_REVIEW_MODEL = "gpt-5.6-sol"
++CODEX_REVIEW_MODEL = "gpt-6-sol"
+ 
+ #: Syntactic allowlist for a Codex model slug — the ONLY shipwright-side
+ #: validation (no live catalog call; see the mini-plan's "Simplification
+diff --git a/shared/scripts/lib/external_review_opus_leg.py b/shared/scripts/lib/external_review_opus_leg.py
+index 55c8645b2..de29e4ff7 100644
+--- a/shared/scripts/lib/external_review_opus_leg.py
++++ b/shared/scripts/lib/external_review_opus_leg.py
+@@ -2,7 +2,7 @@
+ 
+ Split out as a sibling to ``external_review_default_legs.py`` (already near
+ the 300-line guideline) rather than folded into it. Exists so a
+-Codex-authored diff (``gpt-5.6-terra``) can be reviewed by a genuinely
++Codex-authored diff (``gpt-6-sol``) can be reviewed by a genuinely
+ cross-vendor model instead of another OpenAI-family model answering the
+ "openai" identity — see ``external_review_routing.DRIVER_ROSTERS``.
+ """
+diff --git a/shared/scripts/lib/external_review_routing.py b/shared/scripts/lib/external_review_routing.py
+index ad61fd330..d4afa28f7 100644
+--- a/shared/scripts/lib/external_review_routing.py
++++ b/shared/scripts/lib/external_review_routing.py
+@@ -23,7 +23,7 @@ __all__ = [
+ # Claude Agent-tiers (opus/sonnet/haiku/inherit/fable), which govern which Claude
+ # model a spawned subagent gets. "driver" governs which external reviewer
+ # identities are independent of the diff's own author: a Codex-authored diff
+-# (gpt-5.6-terra) reviewed by another OpenAI-family model is not independent,
++# (gpt-6-sol) reviewed by another OpenAI-family model is not independent,
+ # so `codex` swaps the OpenAI-family "openai" leg for the cross-vendor "opus"
+ # leg. `claude` keeps today's roster unchanged.
+ DRIVER_CHOICES: tuple[str, ...] = ("claude", "codex")
+@@ -61,18 +61,18 @@ _REVIEW_MODEL_BINDINGS = {
+     ),
+     ("openai", "openrouter"): (
+         "openrouter_chatgpt",
+-        "openai/gpt-5.6-terra",
++        "openai/gpt-6-sol",
+     ),
+-    ("openai", "direct"): ("chatgpt", "gpt-5.6-terra"),
++    ("openai", "direct"): ("chatgpt", "gpt-6-sol"),
+     # Same "openai" reviewer identity, same model, routed through the Codex
+     # CLI instead of the OpenRouter/direct API (external_review_default_legs
+     # .review_codex — flat-cost under a ChatGPT/Codex subscription).
+-    ("openai", "codex"): ("codex", "gpt-5.6-terra"),
++    ("openai", "codex"): ("codex", "gpt-6-sol"),
+     # "opus" reviewer identity (--driver codex roster): local Claude CLI or
+     # OpenRouter, same pinned full model id on both legs (not the floating
+     # "opus" alias) so the identity-lock is symmetric across transports.
+-    ("opus", "claude_cli"): ("claude_cli", "claude-opus-5"),
+-    ("opus", "openrouter"): ("openrouter_opus", "anthropic/claude-opus-5"),
++    ("opus", "claude_cli"): ("claude_cli", "claude-opus-5-5"),
++    ("opus", "openrouter"): ("openrouter_opus", "anthropic/claude-opus-5-5"),
+ }
+ 
+ 
+diff --git a/shared/scripts/lib/llm_review.py b/shared/scripts/lib/llm_review.py
+index d760c8a10..4b2d2edd0 100644
+--- a/shared/scripts/lib/llm_review.py
++++ b/shared/scripts/lib/llm_review.py
+@@ -92,11 +92,11 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
+ # external_review.py grew the --driver-selected 'opus' identity.
+ DEFAULT_MODELS = {
+     "openrouter_glm": "z-ai/glm-5.3",
+-    "openrouter_chatgpt": "openai/gpt-5.6-terra",
+-    "chatgpt": "gpt-5.6-terra",
+-    "codex": "gpt-5.6-terra",
+-    "claude_cli": "claude-opus-5",
+-    "openrouter_opus": "anthropic/claude-opus-5",
++    "openrouter_chatgpt": "openai/gpt-6-sol",
++    "chatgpt": "gpt-6-sol",
++    "codex": "gpt-6-sol",
++    "claude_cli": "claude-opus-5-5",
++    "openrouter_opus": "anthropic/claude-opus-5-5",
+ }
+ 
+ 
+diff --git a/shared/scripts/lib/model_pricing.py b/shared/scripts/lib/model_pricing.py
+index cb2eb4cd1..74ac66ee0 100644
+--- a/shared/scripts/lib/model_pricing.py
++++ b/shared/scripts/lib/model_pricing.py
+@@ -45,7 +45,7 @@ def _priced(input_rate: float, output_rate: float) -> ModelPrice:
+ 
+ 
+ MODEL_PRICING: dict[str, ModelPrice] = {
+-    "claude-opus-5": _priced(5.00, 25.00),
++    "claude-opus-5-5": _priced(4.00, 20.00),
+     "claude-sonnet-5": _priced(3.00, 15.00),
+     "claude-haiku-4-5": _priced(1.00, 5.00),
+ }
+diff --git a/shared/scripts/lib/model_tier_config.py b/shared/scripts/lib/model_tier_config.py
+index 5da9c9081..0decf79d4 100644
+--- a/shared/scripts/lib/model_tier_config.py
++++ b/shared/scripts/lib/model_tier_config.py
+@@ -177,7 +177,7 @@ def load_model_config(project_root: Path | str) -> dict[str, Any]:
+         # back to the hardcoded default, which would otherwise happen with
+         # no warning at all (code-reviewer MEDIUM, 2026-09-18).
+         if isinstance(value, str) and value.strip():
+-            # Trimmed, not stored verbatim: a padded slug (" gpt-5.6-terra")
++            # Trimmed, not stored verbatim: a padded slug (" gpt-6-sol")
+             # would otherwise pass this check but hard-fail the allowlist
+             # downstream, over a whitespace typo (external code review, LOW,
+             # 2026-09-18).
+diff --git a/shared/scripts/tools/context_cost_readiness.py b/shared/scripts/tools/context_cost_readiness.py
+index d1f96df5f..a6bf30b2e 100644
+--- a/shared/scripts/tools/context_cost_readiness.py
++++ b/shared/scripts/tools/context_cost_readiness.py
+@@ -53,7 +53,7 @@ from lib import model_pricing  # noqa: E402
+ # dated snapshot id like "claude-sonnet-5-20260612" was read back as "not a
+ # known model" by this table's own bare MODEL_CONTEXT_WINDOWS.get(model)).
+ MODEL_CONTEXT_WINDOWS = {
+-    "claude-opus-5": 1_000_000,
++    "claude-opus-5-5": 1_000_000,
+     "claude-sonnet-5": 1_000_000,
+     "claude-haiku-4-5": 200_000,
+ }
+diff --git a/shared/scripts/tools/review_assistant_ui_plan.py b/shared/scripts/tools/review_assistant_ui_plan.py
+index 0538a01f2..3d993e077 100644
+--- a/shared/scripts/tools/review_assistant_ui_plan.py
++++ b/shared/scripts/tools/review_assistant_ui_plan.py
+@@ -118,7 +118,7 @@ def main() -> int:
+     md_lines.append(f"# External LLM Review — {plan_path.name}")
+     md_lines.append("")
+     md_lines.append(f"- Provider: `{result.get('provider')}`")
+-    md_lines.append("- Reviewer models: z-ai/glm-5.3, openai/gpt-5.6-terra")
++    md_lines.append("- Reviewer models: z-ai/glm-5.3, openai/gpt-6-sol")
+     md_lines.append("")
+     for name, review in result.get("reviews", {}).items():
+         md_lines.append(f"## Reviewer: {name}")
+diff --git a/shared/scripts/tools/review_via_codex.py b/shared/scripts/tools/review_via_codex.py
+index d961a4a92..d70e81f2c 100644
+--- a/shared/scripts/tools/review_via_codex.py
++++ b/shared/scripts/tools/review_via_codex.py
+@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
+     # `run_codex_review` itself -- see `lib.codex_review_model_resolution`.
+     parser.add_argument("--codex-model", default=None,
+                         help="per-run override for the Codex reviewer model "
+-                             "(a Codex model slug, e.g. gpt-5.6-terra); for a "
++                             "(a Codex model slug, e.g. gpt-6-sol); for a "
+                              "session-scoped override with no flag to thread, "
+                              "set SHIPWRIGHT_CODEX_REVIEW_MODEL (spec/code/doubt) "
+                              "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review)")
+diff --git a/shared/scripts/tools/tests/test_backfill_engine_units.py b/shared/scripts/tools/tests/test_backfill_engine_units.py
+index 9a43a720b..649e865d8 100644
+--- a/shared/scripts/tools/tests/test_backfill_engine_units.py
++++ b/shared/scripts/tools/tests/test_backfill_engine_units.py
+@@ -80,7 +80,7 @@ def _routing_config():
+     return {
+         "models": {
+             "openrouter_glm": "z-ai/glm-5.3",
+-            "openrouter_chatgpt": "openai/gpt-5.6-terra",
++            "openrouter_chatgpt": "openai/gpt-6-sol",
+         },
+         "glm_routing": {
+             "provider_allowlist": [
+@@ -133,7 +133,7 @@ def test_openrouter_adjudicate_consensus_via_fake_openai(monkeypatch):
+         },
+         "reasoning": {"effort": "low"},
+     }
+-    assert calls[1]["model"] == "openai/gpt-5.6-terra"
++    assert calls[1]["model"] == "openai/gpt-6-sol"
+     assert calls[1]["extra_body"] == {}
+ 
+ 
+diff --git a/shared/tests/test_codex_review_model_resolution.py b/shared/tests/test_codex_review_model_resolution.py
+index 42b5932d2..c1a6ad2fb 100644
+--- a/shared/tests/test_codex_review_model_resolution.py
++++ b/shared/tests/test_codex_review_model_resolution.py
+@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+ 
+ from lib import codex_review_model_resolution as resolution  # noqa: E402
+ 
+-DEFAULT = "gpt-5.6-sol"
++DEFAULT = "gpt-6-sol"
+ 
+ 
+ def _stub_config(monkeypatch: pytest.MonkeyPatch, config: dict) -> None:
+diff --git a/shared/tests/test_external_review_codex_leg.py b/shared/tests/test_external_review_codex_leg.py
+index e4c1e4e09..274f7dfe1 100644
+--- a/shared/tests/test_external_review_codex_leg.py
++++ b/shared/tests/test_external_review_codex_leg.py
+@@ -20,7 +20,7 @@ for _d in (_LIB_DIR, _TOOLS_DIR):
+ import cmd_resolver  # noqa: E402
+ import external_review_default_legs as legs  # noqa: E402
+ 
+-_CONFIG = {"models": {"codex": "gpt-5.6-terra"}, "codex": {"max_retries": 1}}
++_CONFIG = {"models": {"codex": "gpt-6-sol"}, "codex": {"max_retries": 1}}
+ 
+ 
+ class _FakeCompleted:
+@@ -100,7 +100,7 @@ def test_review_codex_reports_a_nonzero_exit_as_error_without_retrying(monkeypat
+     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
+     monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
+     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
+-    config_with_retries = {"models": {"codex": "gpt-5.6-terra"}, "codex": {"max_retries": 2}}
++    config_with_retries = {"models": {"codex": "gpt-6-sol"}, "codex": {"max_retries": 2}}
+     attempts = {"n": 0}
+ 
+     def _fake_run(*_a, **_k):
+@@ -118,7 +118,7 @@ def test_review_codex_timeout_is_error_and_not_retried(monkeypatch, tmp_path):
+     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
+     monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
+     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
+-    config_with_retries = {"models": {"codex": "gpt-5.6-terra"}, "codex": {"max_retries": 2, "timeout_seconds": 1}}
++    config_with_retries = {"models": {"codex": "gpt-6-sol"}, "codex": {"max_retries": 2, "timeout_seconds": 1}}
+     attempts = {"n": 0}
+ 
+     def _raise(*_a, **_k):
+diff --git a/shared/tests/test_external_review_gpt_leg_provider.py b/shared/tests/test_external_review_gpt_leg_provider.py
+index ff676cf6d..61fb0334f 100644
+--- a/shared/tests/test_external_review_gpt_leg_provider.py
++++ b/shared/tests/test_external_review_gpt_leg_provider.py
+@@ -49,8 +49,8 @@ def test_gpt_leg_provider_falls_back_to_api_on_an_unhashable_value():
+ 
+ 
+ def test_codex_binding_accepts_the_locked_model():
+-    config = {"models": {"codex": "gpt-5.6-terra"}}
+-    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-5.6-terra"
++    config = {"models": {"codex": "gpt-6-sol"}}
++    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6-sol"
+ 
+ 
+ def test_codex_binding_rejects_a_different_configured_model():
+@@ -73,6 +73,6 @@ def test_codex_binding_shares_the_openai_identity_and_model_with_the_api_routes(
+     """Same reviewer ('openai'), same model string, across all three routes —
+     a mixed pass (e.g. codex answers this run, openrouter answered last run)
+     must not read as two different reviewers."""
+-    config = {"models": {"chatgpt": "gpt-5.6-terra", "openrouter_chatgpt": "openai/gpt-5.6-terra", "codex": "gpt-5.6-terra"}}
+-    assert resolve_reviewer_model(config, "openai", "direct") == "gpt-5.6-terra"
+-    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-5.6-terra"
++    config = {"models": {"chatgpt": "gpt-6-sol", "openrouter_chatgpt": "openai/gpt-6-sol", "codex": "gpt-6-sol"}}
++    assert resolve_reviewer_model(config, "openai", "direct") == "gpt-6-sol"
++    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6-sol"
+diff --git a/shared/tests/test_external_review_openai_param.py b/shared/tests/test_external_review_openai_param.py
+index e796f7cf4..edea539a2 100644
+--- a/shared/tests/test_external_review_openai_param.py
++++ b/shared/tests/test_external_review_openai_param.py
+@@ -64,7 +64,7 @@ def test_review_with_openai_uses_max_completion_tokens(monkeypatch):
+     monkeypatch.setattr(openai, "OpenAI", _make_fake_openai(captured))
+ 
+     config = {
+-        "models": {"chatgpt": "gpt-5.6-terra"},
++        "models": {"chatgpt": "gpt-6-sol"},
+         "llm_client": {"timeout_seconds": 5},
+     }
+     result = external_review.review_with_openai(
+diff --git a/shared/tests/test_external_review_opus_leg.py b/shared/tests/test_external_review_opus_leg.py
+index 4731f4af9..ed0fa2255 100644
+--- a/shared/tests/test_external_review_opus_leg.py
++++ b/shared/tests/test_external_review_opus_leg.py
+@@ -18,7 +18,7 @@ if str(_LIB_DIR) not in sys.path:
+ 
+ import external_review_opus_leg as legs  # noqa: E402
+ 
+-_CONFIG = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 1}}
++_CONFIG = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 1}}
+ 
+ 
+ class _FakeCompleted:
+diff --git a/shared/tests/test_external_review_opus_leg_dispatch.py b/shared/tests/test_external_review_opus_leg_dispatch.py
+index ae8e7e081..0bbbcedb2 100644
+--- a/shared/tests/test_external_review_opus_leg_dispatch.py
++++ b/shared/tests/test_external_review_opus_leg_dispatch.py
+@@ -16,7 +16,7 @@ if str(_LIB_DIR) not in sys.path:
+ 
+ import external_review_opus_leg as legs  # noqa: E402
+ 
+-_CONFIG = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 1}}
++_CONFIG = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 1}}
+ 
+ 
+ class _FakeCompleted:
+@@ -89,7 +89,7 @@ def test_review_claude_cli_sends_content_via_stdin_not_argv(monkeypatch):
+     )
+     assert "--permission-mode" in captured["argv"] and "dontAsk" in captured["argv"]
+     argv = captured["argv"]
+-    assert "--model" in argv and "claude-opus-5" in argv, (
++    assert "--model" in argv and "claude-opus-5-5" in argv, (
+         "the pinned model from config must reach argv — dropping --model "
+         "would silently fall back to the CLI's own default model"
+     )
+@@ -121,7 +121,7 @@ def test_review_claude_cli_retries_once_on_a_degraded_empty_reply(monkeypatch):
+ def test_review_claude_cli_reports_a_nonzero_exit_as_error_without_retrying(monkeypatch):
+     monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+     monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+-    config_with_retries = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 2}}
++    config_with_retries = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 2}}
+     attempts = {"n": 0}
+ 
+     def _fake_run(*_a, **_k):
+@@ -138,7 +138,7 @@ def test_review_claude_cli_reports_a_nonzero_exit_as_error_without_retrying(monk
+ def test_review_claude_cli_timeout_is_error_and_not_retried(monkeypatch):
+     monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+     monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+-    config_with_retries = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 2, "timeout_seconds": 1}}
++    config_with_retries = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 2, "timeout_seconds": 1}}
+     attempts = {"n": 0}
+ 
+     def _raise(*_a, **_k):
+diff --git a/shared/tests/test_glm_review_routing.py b/shared/tests/test_glm_review_routing.py
+index a2f68fe0d..bc09127cc 100644
+--- a/shared/tests/test_glm_review_routing.py
++++ b/shared/tests/test_glm_review_routing.py
+@@ -135,7 +135,7 @@ def test_forbidden_provider_config_stops_before_client_creation(monkeypatch):
+ @pytest.mark.parametrize(
+     "reviewer,route,model_key,forbidden",
+     [
+-        ("glm", "openrouter", "openrouter_glm", "openai/gpt-5.6-terra"),
++        ("glm", "openrouter", "openrouter_glm", "openai/gpt-6-sol"),
+         ("openai", "openrouter", "openrouter_chatgpt", "z-ai/glm-5.3"),
+         ("openai", "direct", "chatgpt", "z-ai/glm-5.3"),
+     ],
+@@ -248,7 +248,7 @@ def test_gpt_openrouter_body_has_no_glm_provider_policy(monkeypatch):
+     )
+ 
+     assert result["status"] == "success"
+-    assert captured[0]["model"] == "openai/gpt-5.6-terra"
++    assert captured[0]["model"] == "openai/gpt-6-sol"
+     assert "provider" not in captured[0]
+     assert "reasoning" not in captured[0]
+     assert "models" not in captured[0]
+diff --git a/shared/tests/test_llm_review.py b/shared/tests/test_llm_review.py
+index 57cc53d26..8b2929fc4 100644
+--- a/shared/tests/test_llm_review.py
++++ b/shared/tests/test_llm_review.py
+@@ -59,7 +59,7 @@ def test_llm_review_openai_uses_max_completion_tokens(monkeypatch):
+ 
+     result = llm_review._review_openai(
+         "CONTENT", "CONTEXT", "system", "u {CONTENT} {CONTEXT}",
+-        {"models": {"chatgpt": "gpt-5.6-terra"}}, 5,
++        {"models": {"chatgpt": "gpt-6-sol"}}, 5,
+     )
+ 
+     assert result["status"] == "success"
+diff --git a/shared/tests/test_model_pricing.py b/shared/tests/test_model_pricing.py
+index 53b65d69e..7f6dffb68 100644
+--- a/shared/tests/test_model_pricing.py
++++ b/shared/tests/test_model_pricing.py
+@@ -17,17 +17,17 @@ from lib import model_pricing as mp  # noqa: E402
+ 
+ 
+ def test_pricing_table_has_the_three_current_models():
+-    for model_id in ("claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"):
++    for model_id in ("claude-opus-5-5", "claude-sonnet-5", "claude-haiku-4-5"):
+         assert model_id in mp.MODEL_PRICING
+ 
+ 
+-def test_opus_5_rates_match_current_models_table():
+-    price = mp.MODEL_PRICING["claude-opus-5"]
+-    assert price.input == 5.00
+-    assert price.output == 25.00
+-    assert price.cache_write_5m == 6.25
+-    assert price.cache_write_1h == 10.00
+-    assert price.cache_read == 0.50
++def test_opus_5_5_rates_match_current_models_table():
++    price = mp.MODEL_PRICING["claude-opus-5-5"]
++    assert price.input == 4.00
++    assert price.output == 20.00
++    assert price.cache_write_5m == 5.00
++    assert price.cache_write_1h == 8.00
++    assert price.cache_read == 0.40
+ 
+ 
+ def test_sonnet_5_rates_are_standard_not_intro():
+@@ -46,10 +46,10 @@ def test_cost_prices_each_token_type_at_its_own_rate():
+             "ephemeral_1h_input_tokens": 1_000_000,
+         },
+     }
+-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
++    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
+     assert unpriced is False
+-    # 5 + 25 + 0.5 + 6.25 + 10 = 46.75
+-    assert cost == 46.75
++    # 4 + 20 + 0.4 + 5 + 8 = 37.4
++    assert cost == 37.4
+ 
+ 
+ def test_cache_read_only_usage_prices_at_cache_read_rate_not_input_rate():
+@@ -63,9 +63,9 @@ def test_cache_read_only_usage_prices_at_cache_read_rate_not_input_rate():
+ 
+ def test_aggregate_cache_creation_without_ttl_split_prices_at_5m_default():
+     usage = {"cache_creation_input_tokens": 1_000_000}
+-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
++    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
+     assert unpriced is False
+-    assert cost == 6.25  # 5m TTL is the documented default when unspecified
++    assert cost == 5.00  # 5m TTL is the documented default when unspecified
+ 
+ 
+ def test_split_and_aggregate_present_together_does_not_double_count():
+@@ -73,9 +73,9 @@ def test_split_and_aggregate_present_together_does_not_double_count():
+         "cache_creation_input_tokens": 1_000_000,
+         "cache_creation": {"ephemeral_5m_input_tokens": 1_000_000},
+     }
+-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
++    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
+     assert unpriced is False
+-    assert cost == 6.25  # split wins; aggregate is not added on top
++    assert cost == 5.00  # split wins; aggregate is not added on top
+ 
+ 
+ def test_ttl_split_present_with_explicit_zero_wins_over_a_nonzero_aggregate():
+@@ -90,7 +90,7 @@ def test_ttl_split_present_with_explicit_zero_wins_over_a_nonzero_aggregate():
+             "ephemeral_1h_input_tokens": 0,
+         },
+     }
+-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
++    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
+     assert unpriced is False
+     assert cost == 0.0  # split (explicitly zero) wins; aggregate never used
+ 
+@@ -143,9 +143,9 @@ def test_non_numeric_token_field_degrades_that_field_to_zero_not_a_crash():
+     # TypeError out of the whole cost calculation instead of the malformed
+     # field degrading to 0 for that one token type.
+     usage = {"input_tokens": "one hundred", "output_tokens": 1_000_000}
+-    cost, unpriced = mp.compute_cost_usd("claude-opus-5", usage)
++    cost, unpriced = mp.compute_cost_usd("claude-opus-5-5", usage)
+     assert unpriced is False
+-    assert cost == 25.00  # input_tokens ignored (malformed), output priced normally
++    assert cost == 20.00  # input_tokens ignored (malformed), output priced normally
+ 
+ 
+ def test_many_sub_microdollar_calls_are_not_individually_rounded_to_zero():
+diff --git a/shared/tests/test_review_assistant_ui_plan.py b/shared/tests/test_review_assistant_ui_plan.py
+index e8c3cacfc..18796cfac 100644
+--- a/shared/tests/test_review_assistant_ui_plan.py
++++ b/shared/tests/test_review_assistant_ui_plan.py
+@@ -38,6 +38,6 @@ def test_degraded_review_keeps_reason_and_partial_body(tmp_path, monkeypatch):
+     assert "- Status: **degraded**" in rendered
+     assert "- Reason: reply cut off" in rendered
+     assert "## Reviewer: glm" in rendered
+-    assert "z-ai/glm-5.3, openai/gpt-5.6-terra" in rendered
++    assert "z-ai/glm-5.3, openai/gpt-6-sol" in rendered
+     assert "partial finding body" in rendered
+     assert captured["timeout"] == 240
