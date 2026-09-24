@@ -52,6 +52,26 @@ _new_claim_token() {
     printf '%s-%s-%s' "$$" "$RANDOM" "$RANDOM"
 }
 
+# `while read < <(find ...)` never surfaces `find`'s own exit status: the
+# process substitution runs in a background subshell the calling command's
+# `$?` (and `set -e`) know nothing about, so a `find` that dies partway
+# through (permission error, interrupted scan) is silently indistinguishable
+# from one that legitimately enumerated everything and found nothing more —
+# the while loop just sees EOF either way and the caller sees success (Tier-3
+# review, PR #796 round 17). Writing the listing into a real FILE first, with
+# `find`'s own exit status checked directly on that write, closes this: every
+# `_atomic_sync_dir` enumeration below goes through here and its caller must
+# treat a non-zero return as "abort before touching $staging/$dst", never
+# "proceed with whatever was enumerated so far".
+_find0_to_file() {
+    local outfile="$1" desc="$2"
+    shift 2
+    if ! find "$@" -print0 > "$outfile"; then
+        echo "  [!!] enumerating $desc failed" >&2
+        return 1
+    fi
+}
+
 MARKETPLACE_NAME="shipwright"
 MARKETPLACE_DIR="$HOME/.claude/plugins/marketplaces/shipwright"
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
@@ -395,25 +415,31 @@ _atomic_sync_dir() {
     # leaves THAT one entry unstripped, mkdir'ing the whole absolute source
     # path as a bogus nested directory inside staging every run (Tier-3
     # review, PR #796 round 2).
-    while IFS= read -r -d '' dir; do
-        mkdir -p "$staging/${dir#$src/}"
-    done < <(find "$src" -mindepth 1 -type d \
+    local _dirlist="$staging/.find-dirs"
+    _find0_to_file "$_dirlist" "directories under $src" "$src" -mindepth 1 -type d \
         -not -name "__pycache__" -not -path "*/__pycache__/*" \
         -not -name ".venv" -not -path "*/.venv/*" \
         -not -name ".pytest_cache" -not -path "*/.pytest_cache/*" \
-        -not -name ".git" -not -path "*/.git/*" \
-        -print0)
+        -not -name ".git" -not -path "*/.git/*" || return 1
+    while IFS= read -r -d '' dir; do
+        mkdir -p "$staging/${dir#$src/}"
+    done < "$_dirlist"
+    rm -f "$_dirlist"
 
     # __pycache__/.venv/.pytest_cache: bulk `cp -r` per matched top-level dir
     # (found via `-prune`, so a nested one under `.venv` isn't independently
     # matched and double-copied) — these can be tens of thousands of tiny
     # files, far too slow to copy one at a time on Windows.
     if [ -d "$dst" ]; then
+        local _cachelist="$staging/.find-caches"
+        _find0_to_file "$_cachelist" "cache directories under $dst" "$dst" \
+            \( -name "__pycache__" -o -name ".venv" -o -name ".pytest_cache" \) -prune || return 1
         while IFS= read -r -d '' cache_dir; do
             local rel="${cache_dir#$dst/}"
             mkdir -p "$(dirname "$staging/$rel")"
             cp -r "$cache_dir" "$staging/$rel"
-        done < <(find "$dst" \( -name "__pycache__" -o -name ".venv" -o -name ".pytest_cache" \) -prune -print0)
+        done < "$_cachelist"
+        rm -f "$_cachelist"
     fi
 
     # Single pass over $src, comparing each file directly against the LIVE
@@ -424,6 +450,14 @@ _atomic_sync_dir() {
     # linked (not copied) from $dst: content is already verified identical,
     # so `cp -l` skips the read+write I/O and just adds a directory entry.
     local added=0 changed=0 removed=0
+    local _filelist="$staging/.find-files"
+    _find0_to_file "$_filelist" "files under $src" "$src" -type f \
+        -not -path "*/__pycache__/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/.pytest_cache/*" \
+        -not -path "*/.git/*" \
+        -not -name "*.pyc" \
+        -not -name ".python-version" || return 1
     while IFS= read -r -d '' file; do
         local rel_path="${file#$src/}"
         local target_file="$staging/$rel_path"
@@ -438,14 +472,8 @@ _atomic_sync_dir() {
         else
             cp -l "$dst_file" "$target_file" 2>/dev/null || cp "$dst_file" "$target_file"
         fi
-    done < <(find "$src" -type f \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/.pytest_cache/*" \
-        -not -path "*/.git/*" \
-        -not -name "*.pyc" \
-        -not -name ".python-version" \
-        -print0)
+    done < "$_filelist"
+    rm -f "$_filelist"
 
     # Files present in the old target but absent from $src (renamed/deleted
     # upstream) were never copied into staging above, so nothing needs
@@ -461,6 +489,11 @@ _atomic_sync_dir() {
     # dropped such files even though noprune's contract has no distribution
     # policy to justify that (Tier-3 review, PR #796 round 3).
     if [ -d "$dst" ]; then
+        local _dstfilelist="$staging/.find-dst-files"
+        _find0_to_file "$_dstfilelist" "files under $dst" "$dst" -type f \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/.venv/*" \
+            -not -path "*/.pytest_cache/*" || return 1
         while IFS= read -r -d '' dst_file; do
             local rel="${dst_file#$dst/}"
             if [ "$prune" = "prune" ]; then
@@ -472,11 +505,8 @@ _atomic_sync_dir() {
                 mkdir -p "$(dirname "$target")"
                 cp "$dst_file" "$target"
             fi
-        done < <(find "$dst" -type f \
-            -not -path "*/__pycache__/*" \
-            -not -path "*/.venv/*" \
-            -not -path "*/.pytest_cache/*" \
-            -print0)
+        done < "$_dstfilelist"
+        rm -f "$_dstfilelist"
     fi
 
     rm -rf "$old" 2>/dev/null || true

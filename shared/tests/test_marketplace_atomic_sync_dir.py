@@ -55,14 +55,15 @@ def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
-    """`_atomic_sync_dir` calls `_pid_is_alive`, `_lock_is_owned_by`, and
-    `_new_claim_token` (its lock's liveness, ownership, and per-claim-identity
-    helpers), separate top-level functions — without extracting them too,
-    every fixture run would fail on "command not found" instead of
-    exercising the lock."""
+    """`_atomic_sync_dir` calls `_pid_is_alive`, `_lock_is_owned_by`,
+    `_new_claim_token`, and `_find0_to_file` (its lock's liveness, ownership,
+    per-claim-identity, and enumeration-checking helpers), separate top-level
+    functions — without extracting them too, every fixture run would fail on
+    "command not found" instead of exercising the lock."""
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
               + _extract("_lock_is_owned_by") + "\n"
               + _extract("_new_claim_token") + "\n"
+              + _extract("_find0_to_file") + "\n"
               + _extract("_atomic_sync_dir") + "\n" + _extract("sync_dir_from_to") + "\n" + body)
     return _run_script(script)
 
@@ -207,3 +208,48 @@ def test_sync_dir_from_to_does_not_prune_unrelated_files(tmp_path):
     assert res.returncode == 0, res.stderr
     assert (dst / "keep.py").exists()
     assert (dst / "user_added.py").exists(), "sync_dir_from_to must not prune"
+
+
+def test_source_enumeration_failure_aborts_before_the_swap(tmp_path):
+    """Tier-3 review, PR #796 round 17: `while read < <(find ...)` never
+    surfaces find's own exit status — the process substitution runs in a
+    background subshell the calling command's `$?` (and `set -e`) know
+    nothing about, so a `find` that dies partway through a scan (permission
+    error, interrupted read) was silently indistinguishable from one that
+    legitimately enumerated everything, and the swap below would still
+    replace $dst with an INCOMPLETE staging tree. Reproduced with a stubbed
+    `find` that always fails, simulating a scan that dies immediately: the
+    sync must report failure and abort before ever touching $dst, leaving
+    its original content untouched and never publishing $src's own file."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "new_file.py").write_text("new", encoding="utf-8")
+    dst.mkdir()
+    (dst / "original.py").write_text("original", encoding="utf-8")
+
+    script = ("set -euo pipefail\n"
+              + _extract("_pid_is_alive") + "\n"
+              + _extract("_lock_is_owned_by") + "\n"
+              + _extract("_new_claim_token") + "\n"
+              + _extract("_find0_to_file") + "\n"
+              + _extract("_atomic_sync_dir") + "\n"
+              + 'find() { return 1; }\n'  # simulate an enumeration scan that dies
+              + f'if _atomic_sync_dir "{_p(src)}" "{_p(dst)}" label; then\n'
+              + '    echo "SYNC_RESULT=succeeded"\n'
+              + 'else\n'
+              + '    echo "SYNC_RESULT=failed"\n'
+              + 'fi\n'
+              + f'echo "ORIGINAL_SURVIVED=$([ -f "{_p(dst)}/original.py" ] && echo yes || echo no)"\n'
+              + f'echo "NEW_FILE_LEAKED=$([ -f "{_p(dst)}/new_file.py" ] && echo yes || echo no)"\n')
+    res = _run_script(script)
+
+    assert res.returncode == 0, res.stderr
+    assert "SYNC_RESULT=failed" in res.stdout, (
+        "an enumeration failure must make _atomic_sync_dir report failure, not silently "
+        "succeed with an incomplete result — " + res.stdout)
+    assert "ORIGINAL_SURVIVED=yes" in res.stdout, (
+        "the original destination content was lost even though enumeration failed before "
+        "any swap should have happened — " + res.stdout)
+    assert "NEW_FILE_LEAKED=no" in res.stdout, (
+        "the swap ran despite a failed enumeration, publishing an incomplete destination — "
+        + res.stdout)
