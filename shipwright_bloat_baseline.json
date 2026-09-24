@@ -454,16 +454,16 @@
     {
       "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
       "limit": 400,
-      "current": 512,
+      "current": 528,
       "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-bloat-exception.md"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-sub-iterate-runner-bloat-exception.md"
     },
     {
       "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
       "limit": 400,
-      "current": 810,
+      "current": 1082,
       "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-campaign-mode-bloat-exception.md"
     },
     {
       "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",

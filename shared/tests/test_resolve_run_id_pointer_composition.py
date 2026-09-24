@@ -99,6 +99,31 @@ def test_a_plain_checkout_audit_resolves_its_own_pointer(
     assert pq.resolve_run_id(work, SID) == RID
 
 
+def test_a_wave_unit_never_inherits_a_siblings_shared_session_pointer(
+    git_origin_repo: tuple[Path, Path], make_worktree: Any,
+) -> None:
+    """R5a code review round 3, HIGH: ``setup_unit_worktree.py`` writes ONE
+    session-keyed pointer per unit (``write_run_pointer``), and every unit in
+    a wave shares one ``SHIPWRIGHT_SESSION_ID`` — so the LAST unit to set up
+    wins the ONE file both units share. Querying from unit A's own worktree
+    must not silently inherit unit B's run_id through tier 0 just because the
+    shared pointer happens to name B's (also genuinely live) worktree."""
+    work, _ = git_origin_repo
+    wt_a = make_worktree(work, "campaign-mydag--R5a")
+    wt_b = make_worktree(work, "campaign-mydag--R5b")
+    # Simulates the real race: B's setup call landed last, overwriting the
+    # one pointer file (same session_id) both units share.
+    wi.write_run_pointer(
+        work, run_id="iterate-2026-09-23-r5b", slug="campaign-mydag--R5b",
+        branch="iterate/campaign-mydag--R5b", worktree_path=wt_b, session_id=SID)
+
+    # A must NOT get B's run_id back — falls through to tier 4 (session_id)
+    # since no run_config/events/loop-vars exist in this fixture.
+    assert pq.resolve_run_id(wt_a, SID) == SID
+    # B, querying from its own correctly-pointed worktree, still gets it.
+    assert pq.resolve_run_id(wt_b, SID) == "iterate-2026-09-23-r5b"
+
+
 def test_s9_and_s10_stop_skipping_once_the_seam_is_repaired(
     git_origin_repo: tuple[Path, Path], make_worktree: Any, would_warn: None,
 ) -> None:

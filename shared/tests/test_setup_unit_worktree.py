@@ -98,6 +98,30 @@ def test_repeat_call_for_the_same_unit_is_a_clean_collision_not_partial_state(gi
     assert wt.is_dir()
 
 
+def test_project_root_as_a_linked_worktree_still_creates_a_real_per_unit_worktree(
+    git_origin_repo,
+):
+    """campaign-mode.md 3c invokes this with --project-root = the SHARED
+    campaign worktree, which is itself a linked worktree of main (R5a doubt
+    review, HIGH): is_worktree() is true for it too, so passing that path
+    straight through to setup_iterate_worktree.setup() used to hit its
+    already-inside-a-worktree no-op branch and never create a per-unit
+    worktree at all. Regression for main_root resolution before delegating."""
+    work, _ = git_origin_repo
+    shared_wt = work / ".worktrees" / "campaign-dag-scheduler"
+    subprocess.run(
+        ["git", "worktree", "add", "-q", "-b", "campaign/dag-scheduler", str(shared_wt)],
+        cwd=str(work), check=True,
+    )
+    result = _run(shared_wt)
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["action"] == "created"
+    wt = Path(payload["project_root"])
+    assert wt == (work / ".worktrees" / "campaign-dag-scheduler--R2")
+    assert wt.is_dir()
+
+
 def test_path_too_long_is_rejected_before_touching_git(git_origin_repo):
     """The wrapper's own path-length gate must fire and exit 5 BEFORE any
     git call. Uses ``--max-path`` (added for exactly this: a deterministic

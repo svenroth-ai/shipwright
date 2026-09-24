@@ -22,9 +22,9 @@ from _campaign_prose_harness import CAMPAIGN_DOC, RUNNER_DOC, norm  # noqa: E402
 
 def _step_3c() -> str:
     text = CAMPAIGN_DOC.read_text(encoding="utf-8")
-    start = text.index("3c. **Worktree guard")
+    start = text.index("3c. **Per-unit worktree, then multi-spawn")
     rest = text[start:]
-    end = rest.index("3d. Wait for terminal marker")
+    end = rest.index("3d. **Wave-return")
     return norm(rest[:end])
 
 
@@ -35,7 +35,12 @@ def test_step_3c_spawn_brief_populates_campaign_worktree_and_state_path():
     # Not just mentioned — populated FROM `{project_root}`, the value that
     # actually exists at spawn time (external review's exact finding: a
     # bare mention with no producer is indistinguishable from a promise).
-    assert "campaign_worktree (= {project_root}" in body
+    # Since campaign-dag-scheduler R5a's flip, `{project_root}` in the brief
+    # is THIS unit's own per-unit worktree, distinct from the shared
+    # `campaign_worktree` — so the brief populates `campaign_worktree` from
+    # the loop's OWN `{project_root}` (the orchestrator's worktree), not the
+    # per-unit one.
+    assert "campaign_worktree (= {project_root}, the shared" in body
 
 
 def test_runner_input_section_documents_both_new_brief_parameters():

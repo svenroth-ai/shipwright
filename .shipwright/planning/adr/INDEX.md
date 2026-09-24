@@ -169,3 +169,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — `shared/scripts/lib/unit_lease.py` raised to 323-LOC](iterate-2026-09-22-r4-state-mechanics-unit-lease-bloat.md)
 - [ADR: Codextender monorepo integration — Part C](iterate-2026-09-23-codextender-monorepo-part-c-details.md)
 - [ADR: Split two test files that crossed the 300-line bloat gate post-merge](iterate-2026-09-23-codextender-part-c-bloat-split-details.md)
+- [Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 1082-LOC](iterate-2026-09-23-r5a-wave-build-flip-campaign-mode-bloat-exception.md)
+- [Bloat exception — `shared/scripts/lib/phase_quality/_run_id.py` raised to 335-LOC](iterate-2026-09-23-r5a-wave-build-flip-run-id-bloat-exception.md)
+- [Bloat exception addendum — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 528-LOC](iterate-2026-09-23-r5a-wave-build-flip-sub-iterate-runner-bloat-exception.md)
+- [iterate-2026-09-23-r5a-wave-build-flip — campaign-dag-scheduler R5a](iterate-2026-09-23-r5a-wave-build-flip.md)

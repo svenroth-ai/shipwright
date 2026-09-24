@@ -610,10 +610,20 @@ or merges stale (Group-E staleness noise). The contract:
   reported with the incomplete comparison noted, and with no findings the check
   is a visible SKIP, never a pass.
 - **Autonomous campaign** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate F11
-  does NOT arm; the orchestrator runs **interleaved-serial** (campaign-mode.md) —
-  build one sub-iterate → PR → CI-green → MERGE → build the next off fresh
-  `origin/<default>`. Only ONE campaign PR is open at a time, so the snapshot
-  cascade cannot form and no per-PR regenerate-at-merge drain is needed.
+  does NOT arm; the orchestrator runs **interleaved-serial** on the *merge lane*
+  (campaign-mode.md). Since campaign-dag-scheduler R5a ("the flip"), a WAVE of
+  ready sub-iterates builds **concurrently** — each its own PR, opened and left
+  open — and only the MERGE lane itself stays one-at-a-time: PRs are reviewed
+  and merged in fixed order, never two at once, before the next wave's ready
+  set is computed off the now-advanced `origin/<default>`. The snapshot cascade
+  therefore cannot form ACROSS waves (the next wave always starts from a `main`
+  that already contains every merge the drained wave performed), but CAN form
+  WITHIN one wave — two sibling units branching from the SAME pre-wave `main`
+  and both touching a shared derived file can still hit the 3-way/regenerate
+  problem once the later one merges. This is a documented, deliberate gap
+  (`campaign-mode.md`'s own "Why interleaved-serial" section), closed by a
+  later sub-iterate's serial-merge-lane revision (review pinning, staleness
+  cascade), not by R5a itself.
 
 This is host-agnostic (the regeneration uses `integrate_main`/git, never a
 GitHub-only API), reuses existing machinery, and softens no gate — `audit_staleness`
@@ -1807,7 +1817,12 @@ Claude's Bash tool. When `SHIPWRIGHT_LOOP_UNIT_ID` is set (an active
 campaign sub-iterate runner), it is appended the same way (trg-33d30377 —
 `record_ci_supplychain_ack.py`'s authorship guard reads it via
 `os.environ`, which only this write, not `additionalContext`, can reach).
-Idempotent per variable: never duplicates an export line.
+Idempotent per variable: never duplicates an export line. Under a
+campaign-dag-scheduler R5a wave, every concurrently-spawned runner shares
+the SAME `CLAUDE_ENV_FILE`-propagated `SHIPWRIGHT_LOOP_UNIT_ID` value — the
+fixed wave sentinel `"__campaign_wave__"`, not a genuine per-unit id — by
+design; nothing here treats it as identity (see `lib.campaign_wave` and the
+run-id resolution table above for the consumers that must not either).
 
 This single hook replaced 8 per-plugin duplicates that used to live
 under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
@@ -2259,6 +2274,46 @@ Stop-time audits — `audit_phase_quality_on_stop` and `audit_compliance_on_stop
 | 2 | latest `run_started` event in `shipwright_events.jsonl` | project |
 | 3 | `SHIPWRIGHT_LOOP_ID` (+ `SHIPWRIGHT_LOOP_UNIT_ID`) | process (campaign) |
 | 4 | the session id, else `"unknown"` | session |
+
+**Campaign-dag-scheduler R5a wave-scoped exception (both source 0 and source
+3).** During a wave, `SHIPWRIGHT_LOOP_UNIT_ID` is exported ONCE, shared by
+every concurrently-spawned `sub-iterate-runner`, set to the fixed
+non-identity-bearing sentinel `"__campaign_wave__"` (`lib.campaign_wave`) —
+so neither source can use it, or the run pointer it shares, at face value.
+Source 3 resolves via `lib.campaign_wave.per_unit_worktree_identity` (the
+calling unit's own per-unit worktree directory basename) instead of the raw
+loop-var pair whenever `project_root` is shaped like one. Source 0 has the
+same hazard one tier earlier: every unit's `setup_unit_worktree.py` call
+writes the identical session-keyed pointer file
+(`<main_root>/.shipwright/iterate_active/<session_id>.json`, one
+`SHIPWRIGHT_SESSION_ID` per wave, not per unit), so `pointer_run_id` and
+`pointer_worktree_root` both additionally check
+`_pointer_targets_a_different_wave_unit(pointer_worktree, caller_root)` —
+gated on `per_unit_worktree_identity(caller_root)` being non-`None` — and
+fall through past source 0 rather than hand a caller its sibling's `run_id`
+when the shared pointer was last written by a different unit. That guard
+alone is inert for a caller whose OWN root is main or the shared campaign
+worktree (not a per-unit worktree) during a live wave — e.g. the
+orchestrator's own Stop hook — since `per_unit_worktree_identity(caller_root)`
+correctly returns `None` for it and the guard has nothing to gate on; a
+SEPARATE, unconditional check closes that case instead (external Tier-3 PR
+review, blocking, R5a): `_in_wave_but_identity_unverifiable(caller_root)`
+fails BOTH `pointer_run_id` and `pointer_worktree_root` closed — refusing
+source 0 outright, before the pointer file is even read — whenever the
+`SHIPWRIGHT_LOOP_UNIT_ID` sentinel is set (a signal proven to reach a
+Stop-hook subprocess correctly, since the CI-supplychain-authorship-guard
+has relied on this same env var's truthiness since before R5a) but
+`per_unit_worktree_identity(caller_root)` cannot prove the caller IS a
+per-unit worktree. Such a caller falls through all the way to source 3,
+which fails the same identity check and falls through to `SHIPWRIGHT_LOOP_ID`
+alone — a shared, non-attributing value — rather than a confidently wrong
+sibling's `run_id`. Deliberately independent of whether `Path.cwd()`
+resolves to the per-unit worktree inside a hook subprocess (the "Round 4"
+question the run-id bloat-exception ADR still tracks as open) — this check
+only needs the ALREADY-per-unit case to keep working, not the non-per-unit
+case to resolve cwd correctly. Pre-R5a this ambiguity did not exist: exactly
+one unit was ever live, so the pointer was unambiguous for every caller
+(code review round 4).
 
 Source 0 is the per-session run pointer `setup_iterate_worktree.py` writes at
 B1a (`iterate-2026-08-06-resolve-run-id-seam`). Sources 1-3 are structurally

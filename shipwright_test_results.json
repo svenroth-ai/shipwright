@@ -1,14 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-09-11-wire-promote-required-layers",
-    "date": "2026-09-11",
+    "run_id": "iterate-2026-09-23-r5a-wave-build-flip",
+    "date": "2026-09-23",
     "unit": {
       "status": "passed",
-      "passed": 10482,
-      "total": 10482
+      "passed": 11735,
+      "total": 11735
     },
     "integration": {
-      "status": "not_run"
+      "status": "passed",
+      "passed": 3,
+      "total": 3
     },
     "pgtap": {
       "status": "not_run"
@@ -22,84 +24,66 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      "one unit was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path); flagged as trg-f64d1c27 for follow-up, does not affect this run's GREEN status"
-    ],
+    "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_campaign_wave.py shared/tests/test_campaign_wave_serialization_prose.py shared/tests/test_derived_snapshots_wave_concurrency.py shared/tests/test_wave_launch_failure_and_reconcile.py shared/tests/test_r2_worktree_capability_prose.py -v",
       "exit_code": 0,
-      "justification": "internal worktree-setup/finalization tooling (wires an existing CLI into the iterate lifecycle); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+      "tests_run": 28,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-23-r5a-wave-build-flip/surface_verification.log",
+      "timestamp": "2026-09-23T16:14:02.640Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a found promotion is delivered as its own small PR against the default branch, and the local (triggering) branch is reset back to its pre-promotion HEAD, untouched",
+          "behavior": "wave-level ready-set computation calls the BATCH claim primitive and campaign-mode.md's own prose states the merge-lane serialization rule explicitly",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_promotion_is_delivered_as_its_own_pr_and_local_branch_is_untouched PASSED"
+          "evidence": "shared/tests/test_campaign_wave_serialization_prose.py::test_waves_serialize_on_the_merge_lane_is_stated_explicitly PASSED"
         },
         {
-          "behavior": "a ledger-only promotion (no code change) is still committed and delivered as its own PR",
+          "behavior": "a unit still `claimed` at wave-return (launch failure) is released back to `pending` and reclaimed on the next wave WITHOUT a double attempt bump",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_ledger_only_promotion_is_still_committed_and_delivered PASSED"
+          "evidence": "shared/tests/test_wave_launch_failure_and_reconcile.py::TestLaunchFailureReleaseAndReclaim::test_a_never_started_unit_is_released_then_reclaimed_without_double_bump PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "an already-open promotion PR causes this sweep to skip the push and report not_delivered rather than opening a duplicate",
+          "behavior": "a `running`-with-no-result.json unit is demoted to `failed` through the SAME fenced record path a real result uses, never silently re-claimed",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_existing_open_pr_skips_push_and_reports_not_delivered PASSED"
+          "evidence": "shared/tests/test_wave_launch_failure_and_reconcile.py::TestRunningWithNoResultDemotedToFailed::test_promoted_unit_with_no_result_is_demoted_and_never_reclaimed PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "a push failure still resets the local branch back to pre-promotion HEAD",
+          "behavior": "restore_derived_to_head operating in one unit's per-unit worktree never touches a sibling unit's dirty derived-snapshot copy, even under REAL concurrent execution",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_push_failure_still_resets_local_branch PASSED"
+          "evidence": "shared/tests/test_derived_snapshots_wave_concurrency.py::test_truly_concurrent_restores_across_all_ten_restorable_paths_never_cross_contaminate PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "a `gh pr create` failure (after a successful push) still resets the local branch",
+          "behavior": "the authorship guard still refuses under the wave-scoped sentinel (truthiness-only, value-independent)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_pr_create_failure_still_resets_local_branch PASSED"
+          "evidence": "shared/tests/test_campaign_wave.py::TestAuthorshipGuardStillRefusesUnderTheSentinel::test_guard_refuses_when_the_sentinel_is_set PASSED"
         },
         {
-          "behavior": "a push timeout degrades to not_delivered and still resets the local branch",
+          "behavior": "no real campaign unit id can ever collide with the wave sentinel literal",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_push_timeout_degrades_to_not_delivered_and_still_resets_local_branch PASSED"
+          "evidence": "shared/tests/test_campaign_wave.py::TestSentinelPredicates::test_no_real_id_can_collide_with_the_sentinel PASSED"
         },
         {
-          "behavior": "an unreadable/empty pre-promotion HEAD sha is reported as rollback_failed rather than silently skipping the reset",
+          "behavior": "sibling units in the same wave never collide on the same handoff/run-id identity, even when the session-keyed pointer would itself collide",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_deliver_as_own_pr_with_empty_pre_sha_is_rollback_failed PASSED"
-        },
-        {
-          "behavior": "the final rollback reset's own returncode is checked -- a failing reset is reported rollback_failed with a CRITICAL warning, never swallowed as success",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_final_reset_failure_reports_rollback_failed PASSED"
-        },
-        {
-          "behavior": "an unreadable pre-sha (rev-parse HEAD failure) bails out before any `git add` is run, so nothing is ever staged against an unknown base",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_sweep.py::test_unreadable_pre_sha_bails_before_staging PASSED"
-        },
-        {
-          "behavior": "a commit failure after staging rolls back the staged residue (best-effort hard reset) instead of leaving the worktree dirty",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_layer_promotion_sweep.py::test_commit_failure_rolls_back_staged_residue PASSED"
-        },
-        {
-          "behavior": "the promotion sweep is invoked during worktree setup and its warnings (including a delivered promotion's PR url) surface in setup's own warnings[]",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_setup_iterate_worktree_sweeps.py::test_layer_promotion_sweep_is_invoked_and_surfaces_warnings PASSED"
-        },
-        {
-          "behavior": "the promotion sweep runs BEFORE the canon self-heal + outbox sweep, so its own push never ships an unrelated self-heal/outbox commit riding along on the shared ancestry",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_setup_iterate_worktree_sweeps.py::test_layer_promotion_sweep_runs_before_selfheal_and_outbox_sweep PASSED"
+          "evidence": "shared/tests/test_campaign_wave.py::TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel::test_worktree_basename_wins_over_a_colliding_shared_session_pointer PASSED"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 7,
+        "tested": 7,
         "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },
