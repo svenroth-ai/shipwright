@@ -122,28 +122,49 @@ _atomic_sync_dir() {
     # outright without admin/Developer Mode on Windows, which end-users on
     # this very toolchain are known to run without (see the existing
     # symlink-then-copy-fallback a few dozen lines below).
-    local waited=0 holder_pid=""
+    # `_CURRENT_SYNC_LOCK` is set the instant `mkdir` succeeds, not after the
+    # PID write just below — if THIS process dies (errexit, Ctrl-C) in that
+    # gap, the script-wide EXIT trap still owns cleanup and removes it, so no
+    # future run ever sees an empty-PID lock from a trappable exit at all
+    # (Tier-3 review, PR #796 round 7). That trap can't fire on an
+    # untrappable kill (SIGKILL, OOM), though, so an empty PID that persists
+    # past a bounded grace period — `_EMPTY_LOCK_GRACE_S` retries, not the
+    # dead-PID path above since there IS no PID to check liveness of — is
+    # reclaimed the same atomic way: a legitimate installer's `echo` follows
+    # its `mkdir` by microseconds, so seconds of silence is already a strong
+    # dead-installer signal, not a slow one.
+    local _EMPTY_LOCK_GRACE_S=5
+    local waited=0 holder_pid="" empty_pid_waits=0
     while true; do
         if mkdir "$lock" 2>/dev/null; then
+            _CURRENT_SYNC_LOCK="$lock"
             echo "$$" > "$lock/pid"
             break
         fi
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
-        if [ -n "$holder_pid" ] && ! _pid_is_alive "$holder_pid"; then
-            # Two contenders can both read the SAME dead PID here. A bare
-            # `rm -rf "$lock"` deletes by name only — if the other contender
-            # wins the race, installs its own live lock, and THIS process's
-            # rm then runs, it deletes that live lock out from under a
-            # process that still believes it holds it (Tier-3 review, PR
-            # #796 round 3). `mv "$lock" "$discard"` claims the EXACT stale
-            # instance atomically instead: rename() on the same filesystem is
-            # one syscall, so only one contender's mv can succeed for a given
-            # lock instance — the loser gets ENOENT and simply retries from
-            # the top, never touching whatever now lives at "$lock".
+        if [ -n "$holder_pid" ]; then
+            empty_pid_waits=0
+        else
+            empty_pid_waits=$((empty_pid_waits + 1))
+        fi
+        if { [ -n "$holder_pid" ] && ! _pid_is_alive "$holder_pid"; } \
+            || [ "$empty_pid_waits" -ge "$_EMPTY_LOCK_GRACE_S" ]; then
+            # Two contenders can both decide the same lock is reclaimable
+            # here. A bare `rm -rf "$lock"` deletes by name only — if the
+            # other contender wins the race, installs its own live lock, and
+            # THIS process's rm then runs, it deletes that live lock out from
+            # under a process that still believes it holds it (Tier-3
+            # review, PR #796 round 3). `mv "$lock" "$discard"` claims the
+            # EXACT stale instance atomically instead: rename() on the same
+            # filesystem is one syscall, so only one contender's mv can
+            # succeed for a given lock instance — the loser gets ENOENT and
+            # simply retries from the top, never touching whatever now lives
+            # at "$lock".
             local discard="${lock}.stale.$$"
             if mv "$lock" "$discard" 2>/dev/null; then
                 rm -rf "$discard" 2>/dev/null || true
             fi
+            empty_pid_waits=0
             continue
         fi
         if [ "$waited" -ge 120 ]; then
@@ -153,7 +174,6 @@ _atomic_sync_dir() {
         sleep 1
         waited=$((waited + 1))
     done
-    _CURRENT_SYNC_LOCK="$lock"
 
     # An interrupted swap (crash between the two `mv`s below) can leave $dst
     # MISSING with its only backup sitting in a dead process's $old — recover

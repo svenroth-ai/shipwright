@@ -175,6 +175,48 @@ def test_lock_with_unwritten_pid_is_not_stolen_as_stale(tmp_path):
     assert "SYNCED_AFTER_DEAD_PID=yes" in res.stdout, res.stdout
 
 
+def test_lock_is_registered_for_exit_trap_cleanup_before_pid_write():
+    """Tier-3 review, PR #796 round 7: `_CURRENT_SYNC_LOCK` used to be set
+    only after the whole acquisition loop broke — including the pid write —
+    so if THIS process died in the gap between `mkdir "$lock"` succeeding and
+    writing its own pid, the script-wide EXIT trap saw an empty
+    `_CURRENT_SYNC_LOCK` and could not clean up. Checked structurally: the
+    assignment must appear before the pid write within the mkdir success
+    branch, not after it."""
+    body = _extract("_atomic_sync_dir")
+    mkdir_idx = body.index('if mkdir "$lock" 2>/dev/null; then')
+    assign_idx = body.index('_CURRENT_SYNC_LOCK="$lock"', mkdir_idx)
+    pid_write_idx = body.index('echo "$$" > "$lock/pid"', mkdir_idx)
+    assert assign_idx < pid_write_idx, (
+        "_CURRENT_SYNC_LOCK must be assigned before the pid write so the EXIT trap "
+        "can clean up a lock this process claimed but died before finishing")
+
+
+def test_persistently_empty_lock_is_reclaimed_after_grace_period(tmp_path):
+    """Tier-3 review, PR #796 round 7: an installer that dies between `mkdir
+    "$lock"` and writing its pid (SIGKILL, OOM — anything the EXIT trap can't
+    catch) leaves a lock with no pid file that nothing can ever confirm as
+    dead, since there's no pid to check liveness of. Treating "no pid yet" as
+    permanently "still installing" (the round-6 fix) turns a narrow crash
+    window into an unbounded outage: every future sync would wait the full
+    120s and fail, forever, until someone manually deletes the stray lock.
+    Simulate exactly that — a lock with no pid file that nothing ever fills —
+    and confirm the sync still recovers, just after the bounded grace period
+    instead of immediately."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "a.py").write_text("a", encoding="utf-8")
+    lock = dst.parent / (dst.name + ".sync.lock")
+    lock.mkdir(parents=True)
+    # No pid file, and nothing ever writes one — simulates an installer that
+    # died before it could, not one merely mid-write.
+
+    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "a.py").exists()
+
+
 def test_dst_parent_directory_is_created_before_lock_acquisition(tmp_path):
     """Tier-3 review, PR #796 round 4: the lock is a SIBLING of $dst (built
     as `${dst}.sync.lock`), so `mkdir "$lock"` needs $dst's parent to already
