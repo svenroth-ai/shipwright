@@ -55,12 +55,14 @@ def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
-    """`_atomic_sync_dir` calls `_pid_is_alive` and `_lock_is_owned_by` (its
-    lock's liveness and ownership checks), separate top-level functions —
-    without extracting them too, every fixture run would fail on "command
-    not found" instead of exercising the lock."""
+    """`_atomic_sync_dir` calls `_pid_is_alive`, `_lock_is_owned_by`, and
+    `_new_claim_token` (its lock's liveness, ownership, and per-claim-identity
+    helpers), separate top-level functions — without extracting them too,
+    every fixture run would fail on "command not found" instead of
+    exercising the lock."""
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
               + _extract("_lock_is_owned_by") + "\n"
+              + _extract("_new_claim_token") + "\n"
               + _extract("_atomic_sync_dir") + "\n" + _extract("sync_dir_from_to") + "\n" + body)
     return _run_script(script)
 

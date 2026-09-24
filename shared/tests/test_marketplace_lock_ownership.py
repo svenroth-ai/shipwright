@@ -149,6 +149,7 @@ def test_restore_does_not_nest_a_mismatched_claim_under_a_reclaimed_lock(tmp_pat
     script = ("set -euo pipefail\n"
               + f'lock="{_p(lock)}"\n' + f'discard="{_p(discard)}"\n'
               + 'holder_pid="99999999"\n'  # what this process originally observed, now stale
+              + 'holder_token=""\n'  # unused here: the pid alone already mismatches
               + "_reclaim() {\n" + mismatch_block + "\n}\n_reclaim\n"
               + f'echo "LIVE_PID=$(cat "{_p(lock)}/pid" 2>/dev/null || echo MISSING)"\n'
               + f'echo "NESTED_COUNT=$(find "{_p(lock)}" -mindepth 1 -maxdepth 1 -type d | wc -l)"\n')
@@ -188,6 +189,7 @@ def test_mismatch_restore_failure_preserves_discard_instead_of_deleting_it(tmp_p
     script = ("set -euo pipefail\n"
               + f'lock="{_p(lock)}"\n' + f'discard="{_p(discard)}"\n'
               + 'holder_pid="99999999"\n'
+              + 'holder_token=""\n'  # unused here: the pid alone already mismatches
               + "_reclaim() {\n" + mismatch_block + "\n}\n_reclaim\n"
               + f'echo "DISCARD_SURVIVED=$([ -d "{_p(discard)}" ] && echo yes || echo no)"\n'
               + f'echo "DISCARD_PID=$(cat "{_p(discard)}/pid" 2>/dev/null || echo MISSING)"\n')
@@ -198,6 +200,52 @@ def test_mismatch_restore_failure_preserves_discard_instead_of_deleting_it(tmp_p
         "the mismatched claim's stolen pid was deleted instead of preserved — " + res.stdout)
     assert "DISCARD_PID=live_replacement_pid" in res.stdout, (
         "the mismatched claim's content was lost — " + res.stdout)
+
+
+def test_pid_reuse_does_not_defeat_the_mismatch_check(tmp_path):
+    """Tier-3 review, PR #796 round 15: comparing only the re-read pid
+    against the pid originally observed is not a reliable "same instance"
+    check — the OS recycles pid numbers, so a genuinely different live
+    replacement can coincidentally carry the SAME numeric pid the stale
+    instance had. Under a pid-only comparison this looks identical to
+    "nothing changed, safe to discard", and the live replacement would be
+    deleted exactly like the round-8 ABA race this mechanism already
+    defends against — just via pid coincidence instead of a stale-lock
+    removal race. Reproduced directly: a discard whose claimed pid matches
+    what was originally observed, but whose token (a random per-claim
+    identity paired with every pid write, effectively never repeated across
+    genuinely different claims) does not — the mismatch must still be
+    detected and the claim restored, never discarded."""
+    body = _extract("_atomic_sync_dir")
+    start = body.index("local claimed_pid")
+    end = body.index('\n                fi\n', start) + len('\n                fi\n')
+    mismatch_block = body[start:end]
+
+    lock = tmp_path / "dst.sync.lock"  # deliberately absent: the restore's own mkdir must succeed
+    discard = tmp_path / "dst.sync.lock.stale.12345"
+    discard.mkdir()
+    (discard / "pid").write_text("99999999", encoding="utf-8")
+    (discard / "token").write_text("live_replacement_token", encoding="utf-8")
+
+    script = ("set -euo pipefail\n"
+              + f'lock="{_p(lock)}"\n' + f'discard="{_p(discard)}"\n'
+              + 'holder_pid="99999999"\n'  # coincidentally the SAME pid, via reuse
+              + 'holder_token="original_stale_token"\n'  # but NOT the same claim
+              + "_reclaim() {\n" + mismatch_block + "\n}\n_reclaim\n"
+              + f'echo "LOCK_PID=$(cat "{_p(lock)}/pid" 2>/dev/null || echo MISSING)"\n'
+              + f'echo "LOCK_TOKEN=$(cat "{_p(lock)}/token" 2>/dev/null || echo MISSING)"\n'
+              + f'echo "DISCARD_SURVIVED=$([ -d "{_p(discard)}" ] && echo yes || echo no)"\n')
+    res = _run_script(script)
+
+    assert res.returncode == 0, res.stderr
+    assert "LOCK_PID=99999999" in res.stdout, (
+        "the live replacement (matched on pid alone, via reuse) was deleted instead of "
+        "restored — " + res.stdout)
+    assert "LOCK_TOKEN=live_replacement_token" in res.stdout, (
+        "the live replacement's token was not restored alongside its pid — " + res.stdout)
+    assert "DISCARD_SURVIVED=no" in res.stdout, (
+        "expected the restore to complete and clean up $discard, not fall into the "
+        "leave-it-behind failure path — " + res.stdout)
 
 
 def test_second_reclaim_attempt_does_not_collide_with_a_preserved_discard(tmp_path):
@@ -234,6 +282,7 @@ def test_second_reclaim_attempt_does_not_collide_with_a_preserved_discard(tmp_pa
               + 'mkdir -p "$discard1"\n'
               + 'echo "attempt1_orphan_pid" > "$discard1/pid"\n'
               + 'holder_pid="third_process_pid"\n'
+              + 'holder_token=""\n'  # no token file was ever written for this fixture's lock
               + 'reclaim_seq=1\n'
               + "_reclaim() {\n" + reclaim_snippet + "\n}\n_reclaim\n"
               + 'echo "DISCARD1_SURVIVED=$([ -d "$discard1" ] && echo yes || echo no)"\n'

@@ -43,6 +43,15 @@ _pid_is_alive() {
     [ -n "$1" ] && kill -0 "$1" 2>/dev/null
 }
 
+# A random, high-entropy per-CLAIM identity — a pid alone is not one: the OS
+# recycles pid numbers, so a genuinely different, later claim can coincide
+# with an earlier one's pid by pure chance. Every "$lock/pid" write below is
+# paired with one of these into "$lock/token", and the ABA mismatch check
+# compares BOTH, not the pid alone (Tier-3 review, PR #796 round 15).
+_new_claim_token() {
+    printf '%s-%s-%s' "$$" "$RANDOM" "$RANDOM"
+}
+
 MARKETPLACE_NAME="shipwright"
 MARKETPLACE_DIR="$HOME/.claude/plugins/marketplaces/shipwright"
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
@@ -149,20 +158,25 @@ _atomic_sync_dir() {
     # its `mkdir` by microseconds, so seconds of silence is already a strong
     # dead-installer signal, not a slow one.
     local _EMPTY_LOCK_GRACE_S=5
-    local waited=0 holder_pid="" empty_pid_waits=0 reclaim_seq=0
+    local waited=0 holder_pid="" holder_token="" empty_pid_waits=0 reclaim_seq=0
     while true; do
         if mkdir "$lock" 2>/dev/null; then
             _CURRENT_SYNC_LOCK="$lock"
-            if (set -C; echo "$$" > "$lock/pid") 2>/dev/null; then
+            if (set -C; echo "$$" > "$lock/pid") 2>/dev/null \
+                && (set -C; _new_claim_token > "$lock/token") 2>/dev/null; then
                 break
             fi
             # Lost the race: this process was merely PAUSED (OS scheduling
             # under load, not a crash) between claiming the empty "$lock"
-            # directory above and writing its own pid into it. In that gap,
-            # another contender's grace-period reclamation
-            # (`_EMPTY_LOCK_GRACE_S` below) can come and go, replacing
-            # "$lock" with its own live claim before this process resumes —
-            # a plain `echo ... > "$lock/pid"` would then silently
+            # directory above and writing its own pid (or, having written
+            # that, its own token — but once the pid write above succeeds
+            # this process is provably alive and non-empty, so nobody else
+            # can reclaim "$lock" out from under it before the token write
+            # right after; a failure here can only mean the PID write itself
+            # lost the race). In that gap, another contender's grace-period
+            # reclamation (`_EMPTY_LOCK_GRACE_S` below) can come and go,
+            # replacing "$lock" with its own live claim before this process
+            # resumes — a plain `echo ... > "$lock/pid"` would then silently
             # overwrite that live claim's pid with this process's own,
             # letting BOTH processes believe they hold the lock and sync
             # the same $dst concurrently (Tier-3 review, PR #796 round 12).
@@ -179,6 +193,7 @@ _atomic_sync_dir() {
             continue
         fi
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
+        holder_token=$(cat "$lock/token" 2>/dev/null || echo "")
         if [ -n "$holder_pid" ]; then
             empty_pid_waits=0
         else
@@ -204,6 +219,14 @@ _atomic_sync_dir() {
             # unchanged pid confirms the same instance, safe to discard; a
             # changed one means a live replacement was grabbed by mistake,
             # so it is put back for its rightful owner instead of deleted.
+            # The pid alone is not a unique instance identity, though — the
+            # OS recycles pid numbers, so a genuinely different live
+            # replacement can coincidentally carry the SAME pid the stale
+            # instance had, matching on pid alone and getting deleted as if
+            # it were the same stale claim (Tier-3 review, PR #796 round 15).
+            # The high-entropy token paired with every pid write closes that:
+            # requiring BOTH to match makes an accidental collision on pid
+            # alone no longer enough to call it "the same instance".
             # A per-attempt sequence number, not just "$$", names $discard:
             # round 13 deliberately leaves $discard behind on a failed
             # restore (see the comment past this whole `if`), and this
@@ -223,9 +246,10 @@ _atomic_sync_dir() {
             reclaim_seq=$((reclaim_seq + 1))
             local discard="${lock}.stale.${reclaim_seq}.$$"
             if mv "$lock" "$discard" 2>/dev/null; then
-                local claimed_pid
+                local claimed_pid claimed_token
                 claimed_pid=$(cat "$discard/pid" 2>/dev/null || echo "")
-                if [ "$claimed_pid" = "$holder_pid" ]; then
+                claimed_token=$(cat "$discard/token" 2>/dev/null || echo "")
+                if [ "$claimed_pid" = "$holder_pid" ] && [ "$claimed_token" = "$holder_token" ]; then
                     rm -rf "$discard" 2>/dev/null || true
                 elif mkdir "$lock" 2>/dev/null; then
                     # Restoring via a fresh `mkdir` claim, never a
@@ -262,8 +286,15 @@ _atomic_sync_dir() {
                     # noclobber left it. $discard is only cleaned up once
                     # its content has actually been preserved into "$lock"
                     # below (see the round-13 comment past this whole `if`
-                    # for why an unconditional cleanup here is unsafe).
-                    if (set -C; cat "$discard/pid" > "$lock/pid") 2>/dev/null; then
+                    # for why an unconditional cleanup here is unsafe). The
+                    # token is restored the same noclobber way right after
+                    # the pid (round 15): once the pid write above succeeds,
+                    # this restore is provably alive and non-empty, so
+                    # nobody else can replace "$lock" before the token write
+                    # runs — a failure here can only mean the pid write
+                    # itself lost the race, same as before.
+                    if (set -C; cat "$discard/pid" > "$lock/pid") 2>/dev/null \
+                        && (set -C; cat "$discard/token" > "$lock/token") 2>/dev/null; then
                         rmdir "$discard" 2>/dev/null || rm -rf "$discard" 2>/dev/null || true
                     fi
                 fi

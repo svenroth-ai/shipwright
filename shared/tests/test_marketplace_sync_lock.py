@@ -59,12 +59,18 @@ def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
-    """`_atomic_sync_dir` calls `_pid_is_alive` and `_lock_is_owned_by` (its
-    lock's liveness and ownership checks), separate top-level functions —
-    without extracting them too, every fixture run would fail on "command
-    not found" instead of exercising the lock."""
+    """`_atomic_sync_dir` calls `_pid_is_alive`, `_lock_is_owned_by`, and
+    `_new_claim_token` (its lock's liveness, ownership, and per-claim-identity
+    helpers), separate top-level functions — without extracting them too,
+    every fixture run would fail on "command not found" instead of
+    exercising the lock. A missing `_new_claim_token` in particular fails
+    silently under `set -u`/`&&` (the claim's `if` condition just goes
+    false) and self-deadlocks the whole retry loop for the full 120s
+    timeout, since the lock this process itself half-claimed then looks
+    alive and un-reclaimable to its own next iteration."""
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
               + _extract("_lock_is_owned_by") + "\n"
+              + _extract("_new_claim_token") + "\n"
               + _extract("_atomic_sync_dir") + "\n" + body)
     return _run_script(script)
 
@@ -90,6 +96,7 @@ def test_live_pid_leftover_survives_the_sweep(tmp_path):
         "set -euo pipefail\n"
         + _extract("_pid_is_alive") + "\n"
         + _extract("_lock_is_owned_by") + "\n"
+        + _extract("_new_claim_token") + "\n"
         + _extract("_atomic_sync_dir") + "\n"
         + f'live_leftover="{_p(dst)}.sync-new.live_holder"\n'
         + f'dead_leftover="{_p(dst)}.sync-new.99999999"\n'
@@ -166,6 +173,7 @@ def test_lock_with_unwritten_pid_is_not_stolen_as_stale(tmp_path):
         "set -euo pipefail\n"
         + _extract("_pid_is_alive") + "\n"
         + _extract("_lock_is_owned_by") + "\n"
+        + _extract("_new_claim_token") + "\n"
         + _extract("_atomic_sync_dir") + "\n"
         + f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label &\n'
         + "bg=$!\n"
