@@ -57,6 +57,94 @@ if [ -z "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+# Sync $src into $dst as an ATOMIC directory swap, not a file-by-file
+# overwrite of the live target. A live Claude Code session's Stop hook can
+# import from $dst (e.g. `lib.campaign_wave`) at any instant; the previous
+# implementation copied newly-added files into $dst one at a time via a long
+# -running `find | while read` loop, so a brand-new module was simply ABSENT
+# from the live cache for the entire loop's duration, until `find`'s
+# traversal reached it — a concurrent `import lib.campaign_wave` in that
+# window raised ModuleNotFoundError even though the file existed in the repo
+# and the marketplace clone (iterate-2026-09-24-stop-hook-cache-race).
+# Building the merged tree in a staging dir first and swapping it in with two
+# back-to-back `mv`s (each a single atomic rename syscall) shrinks that
+# exposure from "however long the copy takes" to the gap between two
+# syscalls — no reader ever observes a tree with some files updated and
+# others still missing.
+_atomic_sync_dir() {
+    local src="$1" dst="$2" label="$3"
+    local staging="${dst}.sync-new.$$"
+    local old="${dst}.sync-old.$$"
+
+    rm -rf "$staging"
+    mkdir -p "$staging"
+
+    # Seed staging with the current target so unrelated pre-existing files
+    # (e.g. a Windows real-dir mirror's own state) survive files not present
+    # in $src; the loop below then adds/overwrites everything $src has.
+    if [ -d "$dst" ]; then
+        while IFS= read -r -d '' cached_file; do
+            local rel="${cached_file#$dst/}"
+            local target="$staging/$rel"
+            mkdir -p "$(dirname "$target")"
+            cp "$cached_file" "$target"
+        done < <(find "$dst" -type f \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/.venv/*" \
+            -not -path "*/.pytest_cache/*" \
+            -print0)
+    fi
+
+    local added=0 changed=0 removed=0
+    while IFS= read -r -d '' file; do
+        local rel_path="${file#$src/}"
+        local target_file="$staging/$rel_path"
+        mkdir -p "$(dirname "$target_file")"
+
+        if [ ! -f "$target_file" ]; then
+            cp "$file" "$target_file"
+            ((added++)) || true
+        elif ! diff -q --strip-trailing-cr "$file" "$target_file" > /dev/null 2>&1; then
+            cp "$file" "$target_file"
+            ((changed++)) || true
+        fi
+    done < <(find "$src" -type f \
+        -not -path "*/__pycache__/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/.pytest_cache/*" \
+        -not -path "*/.git/*" \
+        -not -name "*.pyc" \
+        -not -name ".python-version" \
+        -print0)
+
+    # Files present in the old target but absent from $src (renamed/deleted
+    # upstream) must not survive into staging — drop anything staging holds
+    # that $src does not have, mirroring the old two-pass add/remove logic
+    # but computed BEFORE the swap instead of against the live dir.
+    if [ -d "$staging" ]; then
+        while IFS= read -r -d '' staged_file; do
+            local rel="${staged_file#$staging/}"
+            if [ ! -f "$src/$rel" ]; then
+                rm "$staged_file"
+                ((removed++)) || true
+            fi
+        done < <(find "$staging" -type f -print0)
+    fi
+
+    rm -rf "$old" 2>/dev/null || true
+    if [ -d "$dst" ]; then
+        mv "$dst" "$old"
+    fi
+    mv "$staging" "$dst"
+    rm -rf "$old" 2>/dev/null || true
+
+    if [ "$changed" -gt 0 ] || [ "$added" -gt 0 ] || [ "$removed" -gt 0 ]; then
+        echo "  [OK] ${label}: ${added} added, ${changed} updated, ${removed} removed"
+    else
+        echo "  [OK] ${label}: up to date"
+    fi
+}
+
 # Resolve a plugin's installed cache path from installed_plugins.json (empty
 # when the plugin is not installed). Single source of truth for the three
 # lookups below. Uses $PYTHON_BIN (never a bare `python` — F37).
@@ -160,26 +248,6 @@ for plugin in "${PLUGINS[@]}"; do
         continue
     fi
 
-    # Full sync: copy all files from source to installed cache
-    changed=0
-    added=0
-
-    # Sync all files, preserving directory structure
-    # Exclude: __pycache__, .venv, .pytest_cache, .git, *.pyc
-    while IFS= read -r -d '' file; do
-        rel_path="${file#$src_dir/}"
-        target_file="$cache_target/$rel_path"
-        target_dir="$(dirname "$target_file")"
-
-        mkdir -p "$target_dir"
-
-        if [ ! -f "$target_file" ]; then
-            cp "$file" "$target_file"
-            ((added++)) || true
-        elif ! diff -q --strip-trailing-cr "$file" "$target_file" > /dev/null 2>&1; then
-            cp "$file" "$target_file"
-            ((changed++)) || true
-        fi
     # `.python-version` is EXCLUDED on purpose (iterate-2026-08-01-pin-python-311).
     # Each plugin dir carries one so a contributor's `cd plugins/x && uv run pytest
     # tests/` uses the 3.11 this repo's CI judges pushes with. That is a MONOREPO
@@ -188,36 +256,8 @@ for plugin in "${PLUGINS[@]}"; do
     # version file in the --project dir - measured, 3.12.13 -> 3.11.15. Consumers
     # declare `>=3.11` and must keep resolving whatever satisfies that; forcing an
     # interpreter download on them, or failing where downloads are blocked, is not
-    # this repo's call to make.
-    done < <(find "$src_dir" -type f \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/.pytest_cache/*" \
-        -not -path "*/.git/*" \
-        -not -name "*.pyc" \
-        -not -name ".python-version" \
-        -print0)
-
-    # Remove files in cache that no longer exist in source
-    removed=0
-    while IFS= read -r -d '' cached_file; do
-        rel_path="${cached_file#$cache_target/}"
-        src_file="$src_dir/$rel_path"
-        if [ ! -f "$src_file" ]; then
-            rm "$cached_file"
-            ((removed++)) || true
-        fi
-    done < <(find "$cache_target" -type f \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/.pytest_cache/*" \
-        -print0)
-
-    if [ "$changed" -gt 0 ] || [ "$added" -gt 0 ] || [ "$removed" -gt 0 ]; then
-        echo "  [OK] ${plugin}: ${added} added, ${changed} updated, ${removed} removed"
-    else
-        echo "  [OK] ${plugin}: up to date"
-    fi
+    # this repo's call to make. (Enforced inside `_atomic_sync_dir`'s find call.)
+    _atomic_sync_dir "$src_dir" "$cache_target" "$plugin"
     ((synced++)) || true
 done
 
@@ -230,53 +270,7 @@ SHARED_SRC="$MARKETPLACE_DIR/shared"
 SHARED_TARGET="$HOME/.claude/plugins/cache/shipwright/shared"
 
 if [ -d "$SHARED_SRC" ]; then
-    mkdir -p "$SHARED_TARGET"
-
-    shared_changed=0
-    shared_added=0
-
-    while IFS= read -r -d '' file; do
-        rel_path="${file#$SHARED_SRC/}"
-        target_file="$SHARED_TARGET/$rel_path"
-        target_dir="$(dirname "$target_file")"
-
-        mkdir -p "$target_dir"
-
-        if [ ! -f "$target_file" ]; then
-            cp "$file" "$target_file"
-            ((shared_added++)) || true
-        elif ! diff -q --strip-trailing-cr "$file" "$target_file" > /dev/null 2>&1; then
-            cp "$file" "$target_file"
-            ((shared_changed++)) || true
-        fi
-    done < <(find "$SHARED_SRC" -type f \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/.pytest_cache/*" \
-        -not -name "*.pyc" \
-        -not -name ".python-version" \
-        -print0)
-
-    # Remove files in cache that no longer exist in source
-    shared_removed=0
-    while IFS= read -r -d '' cached_file; do
-        rel_path="${cached_file#$SHARED_TARGET/}"
-        src_file="$SHARED_SRC/$rel_path"
-        if [ ! -f "$src_file" ]; then
-            rm "$cached_file"
-            ((shared_removed++)) || true
-        fi
-    done < <(find "$SHARED_TARGET" -type f \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/.pytest_cache/*" \
-        -print0)
-
-    if [ "$shared_changed" -gt 0 ] || [ "$shared_added" -gt 0 ] || [ "$shared_removed" -gt 0 ]; then
-        echo "  [OK] shared: ${shared_added} added, ${shared_changed} updated, ${shared_removed} removed"
-    else
-        echo "  [OK] shared: up to date"
-    fi
+    _atomic_sync_dir "$SHARED_SRC" "$SHARED_TARGET" "shared"
 else
     echo "  [!!] shared/ not found in marketplace"
 fi
@@ -295,28 +289,12 @@ links_created=0
 links_updated=0
 dirs_synced=0
 
-# Helper: file-by-file copy from $1 to $2, preserving directory structure.
+# Helper: atomic copy from $1 to $2, preserving directory structure.
 # Used when $link_path exists as a real directory (e.g. Windows where ln -s
 # silently degrades to copy/junction, or end-users on older script versions
 # that mirrored via copy). Without this, runtime resolves stale code.
 sync_dir_from_to() {
-    local src="$1" dst="$2"
-    mkdir -p "$dst"
-    while IFS= read -r -d '' file; do
-        local rel="${file#$src/}"
-        local target="$dst/$rel"
-        mkdir -p "$(dirname "$target")"
-        if [ ! -f "$target" ] || ! diff -q --strip-trailing-cr "$file" "$target" > /dev/null 2>&1; then
-            cp "$file" "$target"
-        fi
-    done < <(find "$src" -type f \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/.pytest_cache/*" \
-        -not -path "*/.git/*" \
-        -not -name "*.pyc" \
-        -not -name ".python-version" \
-        -print0)
+    _atomic_sync_dir "$1" "$2" "$(basename "$2")" >/dev/null
 }
 
 for plugin in "${PLUGINS[@]}"; do
