@@ -96,34 +96,38 @@ _atomic_sync_dir() {
 
     # A first-ever sync to a not-yet-existing target (e.g. a brand new cache
     # root, or a plugin mirror directory before its first copy) has no parent
-    # directory yet. The lock below is a SIBLING of $dst, so `mkdir
-    # "$candidate"` needs that parent to already exist; without this it exits
-    # under `set -e` before ever reaching the `mkdir -p "$staging"` that would
+    # directory yet. The lock below is a SIBLING of $dst, so `mkdir "$lock"`
+    # needs that parent to already exist; without this it exits under
+    # `set -e` before ever reaching the `mkdir -p "$staging"` that would
     # otherwise have created the whole tree (Tier-3 review, PR #796 round 4).
     mkdir -p "$(dirname "$dst")"
 
     # Serialize concurrent syncs of the SAME $dst (Tier-3 review, PR #796):
     # without this, two runs race the final mv-swap below and can interleave
     # it, and the leftover sweep just below could delete an ACTIVE run's own
-    # staging/old dirs, not just a dead one's. `mkdir "$lock"` THEN writing the
-    # PID file left a window where the lock existed with no PID yet — a second
-    # process reading it there sees an empty holder, calls it stale, and
-    # deletes a lock the first process still believes it holds (round 2 of
-    # this same review). Build the PID-stamped lock fully under a PRIVATE,
-    # PID-suffixed name first, then install it with `mv -T` in ONE rename: a
-    # POSIX/NTFS-via-MSYS directory rename onto an EMPTY target succeeds
-    # atomically, and onto a NON-empty one fails outright with neither side
-    # touched (verified on this Windows Git Bash) — so the lock is either
-    # fully absent, or fully formed with its PID already in place. No window.
-    local waited=0 holder_pid="" candidate="${dst}.sync.lock.$$"
+    # staging/old dirs, not just a dead one's. `mkdir "$lock"` is the ONLY
+    # claim step here (no separate "build under a private name, then mv -T
+    # into place" — an earlier revision used that for the same reason `-T`
+    # exists: GNU `mv` treats an existing directory target as "move INTO it"
+    # rather than "replace it", and `-T` disables that. But `-T` is a GNU
+    # extension BSD's (macOS) `mv` lacks, so every lock attempt failed there
+    # and every sync timed out — round 6 of this review; `mkdir` alone needs
+    # no flags on any platform, though it re-opens the exact window `mv -T`
+    # closed: the lock exists but its PID isn't written yet. Rather than
+    # papering over that with another rename trick, an UNREADABLE pid below
+    # is treated as "still being installed", never as stale — only a pid that
+    # reads back as a genuinely dead process is ever reclaimed. `ln -s`,
+    # which would sidestep the window entirely (its target string IS the
+    # payload, set atomically at creation), was tried and rejected: it fails
+    # outright without admin/Developer Mode on Windows, which end-users on
+    # this very toolchain are known to run without (see the existing
+    # symlink-then-copy-fallback a few dozen lines below).
+    local waited=0 holder_pid=""
     while true; do
-        rm -rf "$candidate" 2>/dev/null || true
-        mkdir "$candidate"
-        echo "$$" > "$candidate/pid"
-        if mv -T "$candidate" "$lock" 2>/dev/null; then
+        if mkdir "$lock" 2>/dev/null; then
+            echo "$$" > "$lock/pid"
             break
         fi
-        rm -rf "$candidate" 2>/dev/null || true
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
         if [ -n "$holder_pid" ] && ! _pid_is_alive "$holder_pid"; then
             # Two contenders can both read the SAME dead PID here. A bare
@@ -166,11 +170,10 @@ _atomic_sync_dir() {
     fi
 
     # A prior run killed mid-swap (Ctrl-C, timeout) leaves its own PID-named
-    # staging/old/lock-candidate dirs behind forever — nothing else ever
-    # matches that PID again to clean them up. `.sync.lock.*` also catches an
-    # abandoned candidate (died between `mkdir` and the install) and an
-    # abandoned stale-lock claim (died between the claiming `mv` and its
-    # `rm -rf`) — the bare "$lock" itself has no trailing PID suffix, so this
+    # staging/old dirs, or an abandoned stale-lock claim (died between the
+    # claiming `mv` and its `rm -rf`), behind forever — nothing else ever
+    # matches that PID again to clean them up. `.sync.lock.*` catches the
+    # latter — the bare "$lock" itself has no trailing PID suffix, so this
     # glob can never match a currently-installed live lock. Self-heal by
     # sweeping DEAD-process leftovers for this $dst before starting a fresh
     # one; the lock above already rules out a live concurrent holder, but a

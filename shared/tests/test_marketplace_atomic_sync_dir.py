@@ -1,5 +1,10 @@
 """Behavioral tests for update-marketplace.sh's ``_atomic_sync_dir`` helper.
 
+Lock acquisition and staleness reclamation live in the sibling
+``test_marketplace_sync_lock.py`` instead (split out when this file crossed
+the 300-line guideline); this file covers the general sync/swap behavior —
+pycache/venv preservation, pruning, orphan recovery.
+
 Extracts the function (and its ``sync_dir_from_to`` wrapper) out of the real
 script and drives it against fixture trees under ``bash``, rather than
 sourcing the whole script (which would immediately try to fetch the real
@@ -107,86 +112,6 @@ def test_github_directory_is_not_mistaken_for_git(tmp_path):
     assert (dst / ".github" / "workflows" / "ci.yml").exists()
 
 
-def test_live_pid_leftover_survives_the_sweep(tmp_path):
-    """Tier-3 review, PR #796: a name-only sweep of `.sync-new.*`/`.sync-old.*`
-    cannot tell a dead process's leftover apart from a CONCURRENT, still-running
-    sync's own staging dir — it would delete both. Simulate the latter with a
-    real background process's PID and confirm its leftover survives, while a
-    leftover under an unused PID (nothing on the system has it) is swept."""
-    src, dst = tmp_path / "src", tmp_path / "dst"
-    src.mkdir()
-    (src / "a.py").write_text("a", encoding="utf-8")
-    dst.mkdir()
-
-    script = (
-        "set -euo pipefail\n"
-        + _extract("_pid_is_alive") + "\n"
-        + _extract("_atomic_sync_dir") + "\n"
-        + f'live_leftover="{_p(dst)}.sync-new.live_holder"\n'
-        + f'dead_leftover="{_p(dst)}.sync-new.99999999"\n'
-        + 'mkdir -p "$live_leftover" "$dead_leftover"\n'
-        + 'sleep 30 & holder=$!\n'
-        + 'mv "$live_leftover" "' + _p(dst) + '.sync-new.$holder"\n'
-        + f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label\n'
-        + 'kill "$holder" 2>/dev/null || true\n'
-        + 'echo "LIVE_SURVIVED=$([ -d "' + _p(dst) + '.sync-new.$holder" ] && echo yes || echo no)"\n'
-        + 'echo "DEAD_SWEPT=$([ -d "$dead_leftover" ] && echo no || echo yes)"\n'
-    )
-    res = _run_script(script, timeout=30)
-
-    assert res.returncode == 0, res.stderr
-    assert "LIVE_SURVIVED=yes" in res.stdout, res.stdout
-    assert "DEAD_SWEPT=yes" in res.stdout, res.stdout
-
-
-def test_stale_lock_with_dead_holder_is_reclaimed(tmp_path):
-    """A lock left behind by a crashed process (killed, OOM) must not
-    deadlock every future sync of this $dst forever."""
-    src, dst = tmp_path / "src", tmp_path / "dst"
-    src.mkdir()
-    (src / "a.py").write_text("a", encoding="utf-8")
-    dst.mkdir()
-    lock = dst.parent / (dst.name + ".sync.lock")
-    lock.mkdir()
-    (lock / "pid").write_text("99999999", encoding="utf-8")
-
-    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
-
-    assert res.returncode == 0, res.stderr
-    assert (dst / "a.py").exists()
-    assert not lock.exists(), "the reclaimed (and then re-released) lock should not survive a clean run"
-
-
-def test_stale_lock_is_claimed_atomically_not_deleted_by_name(tmp_path):
-    """Tier-3 review, PR #796 round 3: two contenders can both read the same
-    dead PID; a bare `rm -rf "$lock"` deletes by name only, so if the other
-    contender wins the race and installs its own live lock first, THIS
-    process's rm then deletes that live lock out from under it. Reclaiming
-    must `mv "$lock"` away first — a rename that only one contender's attempt
-    can ever win for a given lock instance — checked structurally since
-    reproducing the actual race needs real OS thread interleaving."""
-    body = _extract("_atomic_sync_dir")
-    assert re.search(r'mv "\$lock" "\$discard"', body), (
-        "expected the stale lock to be claimed via `mv` (atomic) before being discarded — "
-        "a bare `rm -rf \"$lock\"` here would delete by name only, racing a concurrent winner")
-
-
-def test_lock_is_installed_atomically_not_mkdir_then_stamped():
-    """Tier-3 review, PR #796 round 2: a bare `mkdir "$lock"` immediately
-    followed by writing its PID left a window where a concurrent reader saw
-    the lock with no PID yet, called it stale, and stole it out from under a
-    process that still believed it held it. The PID must be written into a
-    PRIVATE candidate dir BEFORE the one atomic rename that installs it —
-    checked structurally since reproducing the actual race needs real OS
-    thread interleaving a unit test can't reliably force."""
-    body = _extract("_atomic_sync_dir")
-    code_lines = [line for line in body.splitlines() if not line.strip().startswith("#")]
-    assert not any('mkdir "$lock"' in line for line in code_lines), (
-        'a bare `mkdir "$lock"` reintroduces the pid-less window this guards against')
-    assert re.search(r'mv -T "\$candidate" "\$lock"', body), (
-        "expected the lock to be installed via one atomic rename of a fully-formed candidate")
-
-
 def test_source_root_is_not_mkdirred_as_a_bogus_nested_path(tmp_path):
     """`${dir#$src/}` doesn't strip $src itself (no trailing slash on $src to
     match against), so without `-mindepth 1` on the directory-skeleton scan,
@@ -247,24 +172,6 @@ def test_noprune_preserves_a_dst_file_the_copy_loop_excludes_by_name_even_when_s
     assert (dst / "keep.py").exists()
     assert (dst / ".python-version").exists(), (
         "excluded-by-name file present in both trees was dropped instead of preserved")
-
-
-def test_dst_parent_directory_is_created_before_lock_acquisition(tmp_path):
-    """Tier-3 review, PR #796 round 4: the lock is a SIBLING of $dst (built
-    under `${dst}.sync.lock.$$`), so `mkdir "$candidate"` needs $dst's parent
-    to already exist. A first-ever sync into a not-yet-existing cache root
-    (or a plugin mirror directory before its first copy) has no such parent,
-    so this exited under `set -e` before ever reaching the `mkdir -p
-    "$staging"` that would otherwise have created the whole tree."""
-    src = tmp_path / "src"
-    src.mkdir()
-    (src / "a.py").write_text("a", encoding="utf-8")
-    dst = tmp_path / "not_yet_created" / "nested" / "dst"
-
-    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
-
-    assert res.returncode == 0, res.stderr
-    assert (dst / "a.py").exists()
 
 
 def test_default_prune_removes_files_absent_from_source(tmp_path):
