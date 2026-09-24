@@ -10,13 +10,15 @@ background thread partway through the hook's retry budget, and assert the
 import still succeeds instead of raising ModuleNotFoundError.
 """
 
-import builtins
+import importlib.util
 import shutil
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
+
+import pytest
 
 _REAL_SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 
@@ -66,44 +68,56 @@ def test_import_survives_lib_vanishing_and_reappearing_mid_retry(tmp_path):
     assert "ModuleNotFoundError" not in result.stderr, result.stderr
 
 
-def test_import_retry_loop_retries_then_succeeds_in_process():
-    """Same round-5 retry loop the tests above prove via a real filesystem
-    race — but driven IN-PROCESS instead of through ``subprocess.run``, so
-    coverage.py's tracer can see it. A subprocess child is invisible to the
-    parent's coverage measurement, so the diff-coverage gate reported the
-    except/raise/sleep lines uncovered despite them being exhaustively
-    proven above (feedback_subprocess_tests_are_invisible_to_diff_coverage).
-    Extracts the literal ``for``/``except`` block and drives it with a
-    patched ``__import__`` that fails once before delegating to the real
-    one — the race itself needs no re-proving here, only the loop's own
-    control flow needs to execute where coverage is watching."""
+def _load_hook_module_in_process():
+    """Loads the real hook file via ``spec_from_file_location`` — a hook
+    script is never on a normal package path, so this is the standard way to
+    import one directly (not dynamic code execution: the same mechanism
+    ``importlib`` itself uses). Gives tests direct access to
+    ``_do_lib_imports``/``_import_lib_with_retry`` without a subprocess."""
     hook_path = _REAL_SCRIPTS / "hooks" / "generate_handoff_on_stop.py"
-    src = hook_path.read_text(encoding="utf-8")
-    start = src.index("for _attempt in range(20):")
-    end = src.index("\n\n", start)
-    # Padded with the file's own leading newlines so the compiled code
-    # object's line numbers match generate_handoff_on_stop.py's real ones —
-    # coverage.py (and diff-cover after it) attributes hits by (filename,
-    # lineno), so line 1 here would silently miss the lines the gate checks.
-    start_line = src.count("\n", 0, start)
-    loop_src = ("\n" * start_line) + src[start:end]
+    spec = importlib.util.spec_from_file_location("generate_handoff_on_stop", hook_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-    real_import = builtins.__import__
+
+def test_import_retry_helper_retries_then_succeeds_in_process():
+    """Same round-5 retry the tests above prove via a real filesystem race —
+    but driven IN-PROCESS through the directly callable
+    ``_import_lib_with_retry`` helper, so coverage.py's tracer can see it. A
+    subprocess child is invisible to the parent's coverage measurement, so
+    the diff-coverage gate reported this loop uncovered despite it being
+    exhaustively proven above (feedback_subprocess_tests_are_invisible_to_
+    diff_coverage). Tier-3 review, PR #796 round 14 rejected an earlier
+    version of this test that used ``exec(compile(...))`` on extracted
+    source text as a security-blocking dynamic-execution pattern —
+    ``_import_lib_with_retry``'s ``do_import`` parameter exists precisely so
+    a test can inject a controlled failure without it."""
+    module = _load_hook_module_in_process()
     calls = {"n": 0}
 
-    def flaky_import(name, *args, **kwargs):
+    def flaky_import():
         calls["n"] += 1
         if calls["n"] == 1:
-            raise ModuleNotFoundError(name)
-        return real_import(name, *args, **kwargs)
+            raise ModuleNotFoundError("lib.atomic_write")
+        return module._do_lib_imports()
 
-    patched_builtins = builtins.__dict__.copy()
-    patched_builtins["__import__"] = flaky_import
-    namespace = {"time": time, "__builtins__": patched_builtins}
-    exec(compile(loop_src, str(hook_path), "exec"), namespace)  # noqa: S102
+    result = module._import_lib_with_retry(do_import=flaky_import, attempts=5, delay=0)
 
-    assert calls["n"] > 1, "the retry never attempted a second import after the first failure"
-    assert "durable_atomic_write" in namespace, "the loop did not complete a successful retry"
+    assert calls["n"] == 2, "expected exactly one retry after the first failure"
+    assert result == module._do_lib_imports()
+
+
+def test_import_retry_helper_raises_after_exhausting_attempts():
+    """The retry has the same bound as the real filesystem-race case above —
+    a persistent failure must still raise, not hang or swallow it silently."""
+    module = _load_hook_module_in_process()
+
+    def always_fails():
+        raise ModuleNotFoundError("lib.atomic_write")
+
+    with pytest.raises(ModuleNotFoundError):
+        module._import_lib_with_retry(do_import=always_fails, attempts=3, delay=0)
 
 
 def test_import_fails_when_lib_never_reappears(tmp_path):

@@ -149,7 +149,7 @@ _atomic_sync_dir() {
     # its `mkdir` by microseconds, so seconds of silence is already a strong
     # dead-installer signal, not a slow one.
     local _EMPTY_LOCK_GRACE_S=5
-    local waited=0 holder_pid="" empty_pid_waits=0
+    local waited=0 holder_pid="" empty_pid_waits=0 reclaim_seq=0
     while true; do
         if mkdir "$lock" 2>/dev/null; then
             _CURRENT_SYNC_LOCK="$lock"
@@ -204,7 +204,24 @@ _atomic_sync_dir() {
             # unchanged pid confirms the same instance, safe to discard; a
             # changed one means a live replacement was grabbed by mistake,
             # so it is put back for its rightful owner instead of deleted.
-            local discard="${lock}.stale.$$"
+            # A per-attempt sequence number, not just "$$", names $discard:
+            # round 13 deliberately leaves $discard behind on a failed
+            # restore (see the comment past this whole `if`), and this
+            # `continue`s back to the top of the SAME process's own `while`
+            # loop above — a second reclaim attempt by this process reuses
+            # "$$" unchanged, so an unqualified "${lock}.stale.$$" would
+            # collide with that leftover directory. A bare (non `-T`) `mv`
+            # onto an existing directory target moves the source INSIDE it
+            # instead of failing (the exact round-11 nesting gotcha), so a
+            # colliding path here would nest this attempt's newly-claimed
+            # lock under the previous attempt's preserved one instead of
+            # atomically claiming it (Tier-3 review, PR #796 round 14). The
+            # sequence number sits BEFORE "$$", not after: the leftover
+            # sweep below (`_pid_is_alive "${leftover##*.}"`) reads the PID
+            # from the LAST dot-segment of every "*.sync.lock.*" path, and
+            # that must keep meaning "$$", never a sequence number.
+            reclaim_seq=$((reclaim_seq + 1))
+            local discard="${lock}.stale.${reclaim_seq}.$$"
             if mv "$lock" "$discard" 2>/dev/null; then
                 local claimed_pid
                 claimed_pid=$(cat "$discard/pid" 2>/dev/null || echo "")

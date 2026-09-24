@@ -23,23 +23,45 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-# Canonical greenfield/foreign predicate, single SSoT every hook shares. `for` (not a function) keeps these at module scope while retrying past update-marketplace.sh's atomic-swap absence gap (iterate-2026-09-24-stop-hook-cache-race). Also catches FileNotFoundError: a lookup that already located a lib/*.py file can still lose the race to the loader's own open() of that path once the swap renames the directory away underneath it (Tier-3 review, PR #796 round 5).
-for _attempt in range(20):
-    try:
-        from lib.atomic_write import durable_atomic_write
-        from lib.campaign_wave import write_wave_aware_handoff
-        from lib.canon_frontmatter import parse_canon_frontmatter
-        from lib.file_lock import LockTimeout, file_lock
-        from lib.handoff_phase_status import (
-            phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
-            phase_tasks_progress as _phase_tasks_progress,
-        )
-        from lib.phase_quality import resolve_run_id
-        from lib.project_root import is_shipwright_project, resolve_project_root
-        break
-    except (ModuleNotFoundError, FileNotFoundError):
-        if _attempt == 19: raise
-        time.sleep(0.05)
+def _do_lib_imports() -> tuple:
+    """Plain callable, not inline module-top code, so the retry below is a
+    directly callable helper a test can drive without dynamic execution
+    (Tier-3 review, PR #796 round 14 rejected exec(compile(...)) as a
+    security-blocking pattern). A tuple, not locals(): every name is
+    referenced explicitly so ruff still flags a genuinely unused import."""
+    from lib.atomic_write import durable_atomic_write
+    from lib.campaign_wave import write_wave_aware_handoff
+    from lib.canon_frontmatter import parse_canon_frontmatter
+    from lib.file_lock import LockTimeout, file_lock
+    from lib.handoff_phase_status import (
+        phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
+        phase_tasks_progress as _phase_tasks_progress,
+    )
+    from lib.phase_quality import resolve_run_id
+    from lib.project_root import is_shipwright_project, resolve_project_root
+    return (durable_atomic_write, write_wave_aware_handoff, parse_canon_frontmatter, LockTimeout, file_lock,
+            _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
+            is_shipwright_project, resolve_project_root)
+
+
+def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay: float = 0.05) -> tuple:
+    """Retries past update-marketplace.sh's atomic-swap absence gap
+    (iterate-2026-09-24-stop-hook-cache-race): ModuleNotFoundError while
+    `lib` is briefly absent, or FileNotFoundError from the loader's own
+    open() losing the swap's rename race on an already-located file
+    (round 5)."""
+    for attempt in range(attempts):
+        try:
+            return do_import()
+        except (ModuleNotFoundError, FileNotFoundError):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay)
+
+
+(durable_atomic_write, write_wave_aware_handoff, parse_canon_frontmatter, LockTimeout, file_lock,
+ _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
+ is_shipwright_project, resolve_project_root) = _import_lib_with_retry()
 
 _RUN_CONFIG_NAME = "shipwright_run_config.json"
 # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same

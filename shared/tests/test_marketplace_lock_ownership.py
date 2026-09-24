@@ -198,3 +198,54 @@ def test_mismatch_restore_failure_preserves_discard_instead_of_deleting_it(tmp_p
         "the mismatched claim's stolen pid was deleted instead of preserved — " + res.stdout)
     assert "DISCARD_PID=live_replacement_pid" in res.stdout, (
         "the mismatched claim's content was lost — " + res.stdout)
+
+
+def test_second_reclaim_attempt_does_not_collide_with_a_preserved_discard(tmp_path):
+    """Tier-3 review, PR #796 round 14: round 13 deliberately leaves $discard
+    behind when a restore fails (so a stolen live claim is never destroyed) —
+    but that leftover sat at a path named only after this process's own
+    "$$", and this process's OWN next reclaim attempt (the `continue` a few
+    lines below loops back into the very same `while` this all lives in)
+    reused that identical name. A bare (non `-T`) `mv "$lock" "$discard"`
+    onto an EXISTING directory target moves the source INSIDE it instead of
+    failing — the same round-11 nesting gotcha, but for this OUTER claiming
+    mv, and now with the first attempt's own preserved content already
+    sitting there to be nested into; the mismatch-handling code that follows
+    would then read the wrong (stale, top-level) pid file and could delete
+    the whole thing — a live lock this SECOND attempt just grabbed, hidden
+    one level down. Reproduced by pre-populating a first attempt's leftover
+    discard directly (the `reclaim_seq=1` shape) and driving a second
+    attempt (starting at that same `reclaim_seq=1`, incrementing to 2)
+    against a lock a third process now occupies: the fix's per-attempt
+    sequence number must keep the two discard paths distinct, so the first
+    attempt's leftover survives completely untouched."""
+    body = _extract("_atomic_sync_dir")
+    start = body.index("reclaim_seq=$((reclaim_seq + 1))")
+    end = body.index("# No unconditional", start)
+    reclaim_snippet = body[start:end]
+
+    lock = tmp_path / "dst.sync.lock"
+    lock.mkdir()
+    (lock / "pid").write_text("third_process_pid", encoding="utf-8")
+
+    script = ("set -euo pipefail\n"
+              + f'lock="{_p(lock)}"\n'
+              + 'discard1="${lock}.stale.1.$$"\n'
+              + 'mkdir -p "$discard1"\n'
+              + 'echo "attempt1_orphan_pid" > "$discard1/pid"\n'
+              + 'holder_pid="third_process_pid"\n'
+              + 'reclaim_seq=1\n'
+              + "_reclaim() {\n" + reclaim_snippet + "\n}\n_reclaim\n"
+              + 'echo "DISCARD1_SURVIVED=$([ -d "$discard1" ] && echo yes || echo no)"\n'
+              + 'echo "DISCARD1_PID=$(cat "$discard1/pid" 2>/dev/null || echo MISSING)"\n'
+              + 'echo "DISCARD1_NESTED_COUNT=$(find "$discard1" -mindepth 1 -maxdepth 1 -type d | wc -l)"\n')
+    res = _run_script(script)
+
+    assert res.returncode == 0, res.stderr
+    assert "DISCARD1_SURVIVED=yes" in res.stdout, (
+        "the first attempt's preserved claim was destroyed by the second attempt — " + res.stdout)
+    assert "DISCARD1_PID=attempt1_orphan_pid" in res.stdout, (
+        "the first attempt's preserved claim's content was overwritten — " + res.stdout)
+    assert "DISCARD1_NESTED_COUNT=0" in res.stdout, (
+        "the second attempt's claim was nested inside the first attempt's leftover "
+        "instead of using its own distinct discard path — " + res.stdout)
