@@ -4,7 +4,10 @@ Split out of ``test_marketplace_atomic_sync_dir.py`` (which crossed the
 300-line guideline) along an existing seam: this file covers only lock
 acquisition, staleness reclamation, and the pre-lock parent-directory
 creation it depends on. General sync/swap behavior (pycache preservation,
-pruning, orphan recovery) stays in the sibling file.
+pruning, orphan recovery) stays in that sibling file; lock OWNERSHIP
+verification before deletion (the ABA-race fix and the release-site guard)
+was split out again into ``test_marketplace_lock_ownership.py`` when this
+file itself crossed the guideline.
 
 Extracts the function (and its ``_pid_is_alive`` helper) out of the real
 script and drives it against fixture trees under ``bash``, rather than
@@ -56,10 +59,12 @@ def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
-    """`_atomic_sync_dir` calls `_pid_is_alive` (its lock's liveness check),
-    a separate top-level function — without extracting it too, every fixture
-    run would fail on "command not found" instead of exercising the lock."""
+    """`_atomic_sync_dir` calls `_pid_is_alive` and `_lock_is_owned_by` (its
+    lock's liveness and ownership checks), separate top-level functions —
+    without extracting them too, every fixture run would fail on "command
+    not found" instead of exercising the lock."""
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
+              + _extract("_lock_is_owned_by") + "\n"
               + _extract("_atomic_sync_dir") + "\n" + body)
     return _run_script(script)
 
@@ -84,6 +89,7 @@ def test_live_pid_leftover_survives_the_sweep(tmp_path):
     script = (
         "set -euo pipefail\n"
         + _extract("_pid_is_alive") + "\n"
+        + _extract("_lock_is_owned_by") + "\n"
         + _extract("_atomic_sync_dir") + "\n"
         + f'live_leftover="{_p(dst)}.sync-new.live_holder"\n'
         + f'dead_leftover="{_p(dst)}.sync-new.99999999"\n'
@@ -134,30 +140,6 @@ def test_stale_lock_is_claimed_atomically_not_deleted_by_name(tmp_path):
         "a bare `rm -rf \"$lock\"` here would delete by name only, racing a concurrent winner")
 
 
-def test_reclaimed_lock_is_verified_before_deletion_not_trusted_by_path(tmp_path):
-    """Tier-3 review, PR #796 round 8: `mv "$lock" "$discard"` claims
-    WHATEVER currently sits at "$lock", not verifiably the specific stale
-    instance a reclaimer just read the pid of — an ABA race. Another
-    reclaimer can remove the stale lock and a genuinely fresh, live one can
-    install at the same path in the gap between that read and this mv, and
-    the mv would then silently steal (and, before this fix, delete) the live
-    replacement instead. Checked structurally, like the sibling atomic-claim
-    test above: reproducing the actual four-process interleaving needs real
-    OS thread scheduling a unit test can't reliably force. The fix must read
-    the claimed instance's own pid back and compare it to what was expected
-    before deciding to discard it, and restore (not delete) on a mismatch."""
-    body = _extract("_atomic_sync_dir")
-    mv_idx = body.index('if mv "$lock" "$discard" 2>/dev/null; then')
-    tail = body[mv_idx:]
-    assert re.search(r'claimed_pid=\$\(cat "\$discard/pid"', tail), (
-        "expected the claimed instance's pid to be re-read after the mv, "
-        "before deciding whether it is safe to discard")
-    assert re.search(r'\[ "\$claimed_pid" = "\$holder_pid" \]', tail), (
-        "expected the re-read pid to be compared against the one observed before the mv")
-    assert re.search(r'mv "\$discard" "\$lock"', tail), (
-        "expected a mismatched (live, replacement) claim to be restored, not deleted outright")
-
-
 def test_lock_with_unwritten_pid_is_not_stolen_as_stale(tmp_path):
     """Tier-3 review, PR #796 round 2 found this window under an earlier
     `mkdir "$lock"`-then-stamp design: a concurrent reader saw the lock with
@@ -183,6 +165,7 @@ def test_lock_with_unwritten_pid_is_not_stolen_as_stale(tmp_path):
     script = (
         "set -euo pipefail\n"
         + _extract("_pid_is_alive") + "\n"
+        + _extract("_lock_is_owned_by") + "\n"
         + _extract("_atomic_sync_dir") + "\n"
         + f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label &\n'
         + "bg=$!\n"

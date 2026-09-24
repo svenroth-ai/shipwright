@@ -11,14 +11,29 @@
 # are always reflected, regardless of version number changes.
 set -euo pipefail
 
+# True if lock directory $1 currently records $2 as its holder — read its
+# own pid file and compare, rather than trusting that a path still refers to
+# whatever its caller once created there. A failed stale-lock restore (round
+# 9 of this review) can leave a DIFFERENT process's live lock sitting at a
+# path this process once owned; without this check, that process's own
+# eventual cleanup (`rm -rf "$lock"`, unconditional and by path alone) would
+# delete the new owner's lock out from under it, letting a THIRD contender
+# in and cascading the exact corruption locking exists to prevent (Tier-3
+# review, PR #796 round 10). Every deletion of a NAMED (non-private) lock
+# path must go through this, never a bare `rm -rf "$lock"`.
+_lock_is_owned_by() {
+    [ "$(cat "$1/pid" 2>/dev/null || echo "")" = "$2" ]
+}
+
 # _atomic_sync_dir (below) holds at most one lock at a time — its calls are
 # sequential, never parallel, within this script. A single tracked path is
 # therefore enough for a script-wide EXIT trap to release whatever lock this
 # process currently holds if it dies mid-sync (errexit, Ctrl-C, kill): without
 # this, a lock acquired then never released via the function's own normal
-# cleanup would deadlock every future sync of that $dst forever.
+# cleanup would deadlock every future sync of that $dst forever. Guarded by
+# `_lock_is_owned_by` for the reason in its own comment above.
 _CURRENT_SYNC_LOCK=""
-trap '[ -n "$_CURRENT_SYNC_LOCK" ] && rm -rf "$_CURRENT_SYNC_LOCK" 2>/dev/null; true' EXIT
+trap '[ -n "$_CURRENT_SYNC_LOCK" ] && _lock_is_owned_by "$_CURRENT_SYNC_LOCK" "$$" && rm -rf "$_CURRENT_SYNC_LOCK" 2>/dev/null; true' EXIT
 
 # True if $1 names a Windows/MSYS PID that is still alive — used to tell a
 # leftover from a process that crashed mid-sync apart from one a CONCURRENT,
@@ -330,7 +345,13 @@ _atomic_sync_dir() {
     mv "$staging" "$dst"
     rm -rf "$old" 2>/dev/null || true
 
-    rm -rf "$lock" 2>/dev/null || true
+    # `_lock_is_owned_by` guard: see its own comment near the top of this
+    # file for why a bare `rm -rf "$lock"` here is unsafe. `|| true`: under
+    # `set -e`, an unguarded `&&` chain used as a standalone statement (not
+    # an `if` condition) aborts the whole script the moment the ownership
+    # check itself returns false — which is the expected, non-error outcome
+    # in the rare race this guards against, not a failure to propagate.
+    _lock_is_owned_by "$lock" "$$" && rm -rf "$lock" 2>/dev/null || true
     _CURRENT_SYNC_LOCK=""
 
     if [ "$changed" -gt 0 ] || [ "$added" -gt 0 ] || [ "$removed" -gt 0 ]; then
