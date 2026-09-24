@@ -72,41 +72,72 @@ fi
 # syscalls — no reader ever observes a tree with some files updated and
 # others still missing.
 _atomic_sync_dir() {
-    local src="$1" dst="$2" label="$3"
+    local src="$1" dst="$2" label="$3" prune="${4:-prune}"
     local staging="${dst}.sync-new.$$"
     local old="${dst}.sync-old.$$"
 
+    # A prior run killed mid-swap (Ctrl-C, timeout) leaves its own PID-named
+    # staging/old dirs behind forever — nothing else ever matches that PID
+    # again to clean them up. Self-heal by sweeping any leftovers for this
+    # $dst before starting a fresh one.
+    rm -rf "${dst}".sync-new.* "${dst}".sync-old.* 2>/dev/null || true
     rm -rf "$staging"
     mkdir -p "$staging"
 
-    # Seed staging with the current target so unrelated pre-existing files
-    # (e.g. a Windows real-dir mirror's own state) survive files not present
-    # in $src; the loop below then adds/overwrites everything $src has.
+    # Pre-create the directory skeleton from $src's own tree in ONE pass,
+    # instead of a per-file `mkdir -p "$(dirname "$target")"` — that idiom
+    # forks a subshell for the `$(...)`, an external `dirname`, AND `mkdir`,
+    # i.e. up to 3 process spawns PER FILE. Over shared/'s ~1800 files that
+    # measured as the dominant cost of a 180+ second hang on Windows Git
+    # Bash, where each spawn is a full CreateProcess call. `${dir#$src/}` is
+    # a bash builtin substitution — no subprocess at all.
+    # Exclusions must match the file-copy loop below EXACTLY (`-name` for the
+    # dir itself, `-path .../name/*` for anything nested under it) — a looser
+    # pattern here (e.g. `*/.git*` without the trailing slash) also matches
+    # unrelated names like `.github`, leaving a directory the file loop still
+    # expects to exist uncreated (`cp: ... No such file or directory`).
+    while IFS= read -r -d '' dir; do
+        mkdir -p "$staging/${dir#$src/}"
+    done < <(find "$src" -type d \
+        -not -name "__pycache__" -not -path "*/__pycache__/*" \
+        -not -name ".venv" -not -path "*/.venv/*" \
+        -not -name ".pytest_cache" -not -path "*/.pytest_cache/*" \
+        -not -name ".git" -not -path "*/.git/*" \
+        -print0)
+
+    # __pycache__/.venv/.pytest_cache: bulk `cp -r` per matched top-level dir
+    # (found via `-prune`, so a nested one under `.venv` isn't independently
+    # matched and double-copied) — these can be tens of thousands of tiny
+    # files, far too slow to copy one at a time on Windows.
     if [ -d "$dst" ]; then
-        while IFS= read -r -d '' cached_file; do
-            local rel="${cached_file#$dst/}"
-            local target="$staging/$rel"
-            mkdir -p "$(dirname "$target")"
-            cp "$cached_file" "$target"
-        done < <(find "$dst" -type f \
-            -not -path "*/__pycache__/*" \
-            -not -path "*/.venv/*" \
-            -not -path "*/.pytest_cache/*" \
-            -print0)
+        while IFS= read -r -d '' cache_dir; do
+            local rel="${cache_dir#$dst/}"
+            mkdir -p "$(dirname "$staging/$rel")"
+            cp -r "$cache_dir" "$staging/$rel"
+        done < <(find "$dst" \( -name "__pycache__" -o -name ".venv" -o -name ".pytest_cache" \) -prune -print0)
     fi
 
+    # Single pass over $src, comparing each file directly against the LIVE
+    # $dst — NOT a staging seed copied in first. An earlier revision seeded
+    # every existing file into staging, then diffed $src against that seed
+    # here: a full second copy-and-compare pass over the entire tree, for
+    # nothing, on top of the per-file mkdir cost above. Unchanged files are
+    # linked (not copied) from $dst: content is already verified identical,
+    # so `cp -l` skips the read+write I/O and just adds a directory entry.
     local added=0 changed=0 removed=0
     while IFS= read -r -d '' file; do
         local rel_path="${file#$src/}"
         local target_file="$staging/$rel_path"
-        mkdir -p "$(dirname "$target_file")"
+        local dst_file="$dst/$rel_path"
 
-        if [ ! -f "$target_file" ]; then
+        if [ ! -f "$dst_file" ]; then
             cp "$file" "$target_file"
             ((added++)) || true
-        elif ! diff -q --strip-trailing-cr "$file" "$target_file" > /dev/null 2>&1; then
+        elif ! diff -q --strip-trailing-cr "$file" "$dst_file" > /dev/null 2>&1; then
             cp "$file" "$target_file"
             ((changed++)) || true
+        else
+            cp -l "$dst_file" "$target_file" 2>/dev/null || cp "$dst_file" "$target_file"
         fi
     done < <(find "$src" -type f \
         -not -path "*/__pycache__/*" \
@@ -118,17 +149,28 @@ _atomic_sync_dir() {
         -print0)
 
     # Files present in the old target but absent from $src (renamed/deleted
-    # upstream) must not survive into staging — drop anything staging holds
-    # that $src does not have, mirroring the old two-pass add/remove logic
-    # but computed BEFORE the swap instead of against the live dir.
-    if [ -d "$staging" ]; then
-        while IFS= read -r -d '' staged_file; do
-            local rel="${staged_file#$staging/}"
+    # upstream) were never copied into staging above, so nothing needs
+    # deleting here — this just counts them for the summary line. For
+    # $prune=noprune (the Windows real-dir plugin mirror, which must PRESERVE
+    # mirror-owned files the old behavior always kept) they are instead
+    # copied into staging now, since nothing seeded them earlier either.
+    if [ -d "$dst" ]; then
+        while IFS= read -r -d '' dst_file; do
+            local rel="${dst_file#$dst/}"
             if [ ! -f "$src/$rel" ]; then
-                rm "$staged_file"
-                ((removed++)) || true
+                if [ "$prune" = "prune" ]; then
+                    ((removed++)) || true
+                else
+                    local target="$staging/$rel"
+                    mkdir -p "$(dirname "$target")"
+                    cp "$dst_file" "$target"
+                fi
             fi
-        done < <(find "$staging" -type f -print0)
+        done < <(find "$dst" -type f \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/.venv/*" \
+            -not -path "*/.pytest_cache/*" \
+            -print0)
     fi
 
     rm -rf "$old" 2>/dev/null || true
@@ -294,7 +336,7 @@ dirs_synced=0
 # silently degrades to copy/junction, or end-users on older script versions
 # that mirrored via copy). Without this, runtime resolves stale code.
 sync_dir_from_to() {
-    _atomic_sync_dir "$1" "$2" "$(basename "$2")" >/dev/null
+    _atomic_sync_dir "$1" "$2" "$(basename "$2")" noprune >/dev/null
 }
 
 for plugin in "${PLUGINS[@]}"; do

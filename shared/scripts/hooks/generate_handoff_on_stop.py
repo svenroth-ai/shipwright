@@ -14,11 +14,7 @@ Usage (from hooks.json):
 
 from __future__ import annotations
 
-import json
-import os
-import subprocess
-import sys
-import uuid
+import json, os, subprocess, sys, time, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -43,6 +39,7 @@ for _attempt in range(20):
         break
     except ModuleNotFoundError:
         if _attempt == 19: raise
+        time.sleep(0.05)
 
 _RUN_CONFIG_NAME = "shipwright_run_config.json"
 # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same

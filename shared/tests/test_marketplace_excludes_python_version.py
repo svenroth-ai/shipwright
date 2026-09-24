@@ -35,13 +35,12 @@ _FIND_BLOCK = re.compile(r"find \"\$(\w+)\" -type f(.*?)-print0", re.DOTALL)
 #: iterate-2026-09-24-stop-hook-cache-race collapsed all three copy call sites (plugin,
 #: shared/, and the cross-plugin-symlink Windows fallback) into one shared
 #: `_atomic_sync_dir` helper, so there is exactly one COPY-side find block left in the
-#: source text — parameterized, not duplicated per caller. `dst`/`staging` are that same
-#: helper's TARGET-side scans (seeding staging from the old tree, then checking staging
-#: against `$src` to drop what source no longer has) — those must NOT carry the
-#: exclusion, or a `.python-version` synced before this change would be immortal in
-#: every existing cache.
+#: source text — parameterized, not duplicated per caller. `dst` is that same helper's
+#: TARGET-side scan (walking the old tree to bulk-copy pycache/.venv/.pytest_cache and to
+#: count/reintroduce files `$src` no longer has) — it must NOT carry the exclusion, or a
+#: `.python-version` synced before this change would be immortal in every existing cache.
 _COPY_SOURCE = "src"
-_PRUNE_SOURCES = {"dst", "staging"}
+_PRUNE_SOURCES = {"dst"}
 #: The three real call sites that must route through the shared helper — a copy loop
 #: written inline instead would bypass this test entirely.
 _SYNC_CALL_SITES = ('_atomic_sync_dir "$src_dir" "$cache_target"',
