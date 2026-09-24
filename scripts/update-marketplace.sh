@@ -242,19 +242,28 @@ _atomic_sync_dir() {
                     # therefore no longer ours to populate, but it is also
                     # not safe to delete (round 9) since ownership can no
                     # longer be confirmed either way — leave it exactly as
-                    # noclobber left it and only clean up $discard, which
-                    # remains uniquely ours regardless of the outcome.
-                    (set -C; cat "$discard/pid" > "$lock/pid") 2>/dev/null || true
-                    rmdir "$discard" 2>/dev/null || rm -rf "$discard" 2>/dev/null || true
-                else
-                    # Could not restore (something else has since taken
-                    # "$lock" again). $discard is a path unique to THIS
-                    # process's own pid ($$), never shared with or
-                    # referenced by any other process, so deleting it here
-                    # is always safe regardless of what it still contains.
-                    rm -rf "$discard" 2>/dev/null || true
+                    # noclobber left it. $discard is only cleaned up once
+                    # its content has actually been preserved into "$lock"
+                    # below (see the round-13 comment past this whole `if`
+                    # for why an unconditional cleanup here is unsafe).
+                    if (set -C; cat "$discard/pid" > "$lock/pid") 2>/dev/null; then
+                        rmdir "$discard" 2>/dev/null || rm -rf "$discard" 2>/dev/null || true
+                    fi
                 fi
             fi
+            # No unconditional `else`/cleanup of $discard beyond the two
+            # success paths above: if "$lock" is occupied again by the time
+            # this restore's own `mkdir` runs, or a further contender's
+            # noclobber write races ahead of ours, $discard may still hold
+            # a live replacement lock this process's earlier claiming `mv`
+            # accidentally stole from its rightful owner (Tier-3 review,
+            # PR #796 round 13). Deleting it in either case would destroy
+            # that owner's only remaining trace with no way to recover it.
+            # Left in place, it is a path unique to THIS process's own pid
+            # ($$), so the leftover sweep a few lines below (matching
+            # "${dst}".sync.lock.*) reaps it automatically once THIS
+            # process — never the stolen claim's own owner — is confirmed
+            # dead, not sooner.
             empty_pid_waits=0
             continue
         fi

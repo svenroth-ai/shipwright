@@ -1,11 +1,15 @@
-"""Behavioral tests for update-marketplace.sh's lock OWNERSHIP verification.
+"""Behavioral tests for update-marketplace.sh's ABA claim-and-restore
+mismatch handling.
 
 Split out of ``test_marketplace_sync_lock.py`` (which crossed the 300-line
-guideline) along the seam the round-8/9 review findings drew: this file
-covers verifying a lock's ownership before ever deleting it — the ABA-race
-fix (claim-then-recheck) and the release-site guard (`_lock_is_owned_by`)
-used at both the normal completion path and the script-wide EXIT trap.
-Acquisition and staleness reclamation stay in the sibling file.
+guideline) along the seam the round-8/9 review findings drew, then split
+again into ``test_marketplace_lock_guards.py`` (release-site and pid-write
+ownership guards, rounds 9/12) when this file itself crossed the guideline
+a second time. This file covers only the reclaim mechanism itself: claiming
+a stale-looking lock, discovering a mismatch (round 8's ABA race), and
+either restoring or safely preserving what was mistakenly claimed
+(rounds 11/13). Acquisition and staleness reclamation stay in the
+``test_marketplace_sync_lock.py`` sibling file.
 
 Extracts functions out of the real script and drives them against fixture
 trees under ``bash``, rather than sourcing the whole script (which would
@@ -26,9 +30,6 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 UPDATE_SH = REPO_ROOT / "scripts" / "update-marketplace.sh"
 _SRC = UPDATE_SH.read_text(encoding="utf-8")
-
-_RELEASE_GUARD_RE = r'_lock_is_owned_by "\$lock" "\$\$" && rm -rf "\$lock" 2>/dev/null \|\| true'
-_INITIAL_PID_WRITE_RE = r'\(set -C; echo "\$\$" > "\$lock/pid"\) 2>/dev/null'
 
 
 def _extract(name: str) -> str:
@@ -161,119 +162,39 @@ def test_restore_does_not_nest_a_mismatched_claim_under_a_reclaimed_lock(tmp_pat
         "instead of being safely discarded — " + res.stdout)
 
 
-def test_release_guard_does_not_delete_a_lock_it_does_not_own(tmp_path):
-    """Tier-3 review, PR #796 round 9 (10th round): the round-8 fix's own
-    restore-failure fallback only ever discarded the privately-named
-    `$discard` path, but never addressed the deeper flaw — the ORIGINAL lock
-    owner's own eventual release (both the normal completion path and the
-    EXIT trap) has never verified ownership before deleting, since round 1.
-    If a restore race (round 8) orphans this process's own lock and a
-    genuinely different, live process installs its own lock at the same
-    path, this process's later unconditional `rm -rf "$lock"` would delete
-    THAT live lock out from under its rightful owner, cascading the exact
-    corruption locking exists to prevent. Extracts the actual release line
-    used at the normal completion site (verbatim, so a future edit that
-    silently drops the guard fails this test) and runs it directly against a
-    lock this process demonstrably does not own — it must survive."""
-    m = re.search(_RELEASE_GUARD_RE, _SRC)
-    assert m, "release guard line not found verbatim in update-marketplace.sh — has it changed shape?"
-    lock = tmp_path / "dst.sync.lock"
-    lock.mkdir()
-    (lock / "pid").write_text("99999999", encoding="utf-8")
-
-    script = ("set -euo pipefail\n" + _extract("_lock_is_owned_by") + "\n"
-              + f'lock="{_p(lock)}"\n' + m.group(0) + "\n")
-    res = _run_script(script)
-
-    assert res.returncode == 0, res.stderr
-    assert lock.exists(), "the release guard deleted a lock it does not own"
-
-
-def test_release_guard_deletes_a_lock_it_does_own(tmp_path):
-    """Companion to the test above: confirms the guard isn't just trivially
-    inert (never deleting anything) — a lock genuinely stamped with this
-    process's own pid must still be released as before."""
-    m = re.search(_RELEASE_GUARD_RE, _SRC)
-    assert m, "release guard line not found verbatim in update-marketplace.sh — has it changed shape?"
-    lock = tmp_path / "dst.sync.lock"
-    lock.mkdir()
-
-    script = ("set -euo pipefail\n" + _extract("_lock_is_owned_by") + "\n"
-              + f'lock="{_p(lock)}"\n' + 'echo "$$" > "' + _p(lock) + '/pid"\n' + m.group(0) + "\n")
-    res = _run_script(script)
-
-    assert res.returncode == 0, res.stderr
-    assert not lock.exists(), "the release guard failed to delete a lock this process genuinely owns"
-
-
-def test_exit_trap_verifies_ownership_before_deleting():
-    """The script-wide EXIT trap is the OTHER unconditional-release site the
-    round-9 review flagged — it must go through the same ownership check as
-    the normal completion path, not just trust `_CURRENT_SYNC_LOCK` by path."""
-    trap_line = re.search(r"^trap '.*' EXIT$", _SRC, flags=re.MULTILINE)
-    assert trap_line, "EXIT trap registration not found — has it moved or changed shape?"
-    assert "_lock_is_owned_by" in trap_line.group(0), (
-        "the EXIT trap must verify ownership via _lock_is_owned_by before deleting "
-        "_CURRENT_SYNC_LOCK, not delete it by path alone")
-
-
-def test_initial_pid_write_does_not_overwrite_a_replacement_lock(tmp_path):
-    """Tier-3 review, PR #796 round 12: the grace-period reclamation (sibling
-    file's test_persistently_empty_lock_is_reclaimed_after_grace_period)
-    treats an empty "$lock" as abandoned after a bounded silence — but a
-    merely PAUSED (not dead) installer can resume AFTER another process has
-    already reclaimed and repopulated that same path with its own live
-    claim. A plain `echo "$$" > "$lock/pid"` would then silently overwrite
-    the new owner's pid with the paused process's own, letting both believe
-    they hold the lock and sync the same $dst concurrently. Extracts the
-    actual pid-write line verbatim (so a future edit that drops the
-    noclobber guard fails this test) and runs it directly against a lock
-    already populated by someone else — it must fail, leaving the existing
-    owner's pid untouched."""
-    m = re.search(_INITIAL_PID_WRITE_RE, _SRC)
-    assert m, "noclobber pid-write line not found verbatim in update-marketplace.sh — has it changed shape?"
-    lock = tmp_path / "dst.sync.lock"
-    lock.mkdir()
-    (lock / "pid").write_text("replacement_owner_pid", encoding="utf-8")
-
-    script = "set -euo pipefail\n" + f'lock="{_p(lock)}"\n' + m.group(0) + "\n"
-    res = _run_script(script)
-
-    assert res.returncode != 0, "the noclobber pid-write must fail when the lock is already owned"
-    assert (lock / "pid").read_text(encoding="utf-8") == "replacement_owner_pid", (
-        "the replacement owner's pid was overwritten by the paused process's own write")
-
-
-def test_initial_pid_write_succeeds_on_a_freshly_claimed_lock(tmp_path):
-    """Companion to the test above: confirms the noclobber guard isn't just
-    trivially inert (never succeeding) — the normal, uncontested fast path
-    (nobody else has touched the lock since this process's own `mkdir`)
-    must still write the pid as before."""
-    m = re.search(_INITIAL_PID_WRITE_RE, _SRC)
-    assert m, "noclobber pid-write line not found verbatim in update-marketplace.sh — has it changed shape?"
-    lock = tmp_path / "dst.sync.lock"
-    lock.mkdir()
-
-    script = "set -euo pipefail\n" + f'lock="{_p(lock)}"\n' + m.group(0) + "\n"
-    res = _run_script(script)
-
-    assert res.returncode == 0, res.stderr
-    assert (lock / "pid").read_text(encoding="utf-8").strip() != "", (
-        "the pid was not written on the uncontested fast path")
-
-
-def test_failed_pid_write_resets_current_sync_lock_and_retries():
-    """A process that loses the noclobber race above must not proceed as if
-    it holds the lock — `_CURRENT_SYNC_LOCK` (which the EXIT trap uses to
-    decide what to clean up) must be reset, and acquisition must retry from
-    scratch (`continue`), never fall through to the sync body as if it had
-    `break`-en out with a genuine claim."""
+def test_mismatch_restore_failure_preserves_discard_instead_of_deleting_it(tmp_path):
+    """Tier-3 review, PR #796 round 13: when a mismatched (live, replacement)
+    claim's restore cannot complete — here because "$lock" is already
+    occupied again by the time this restore's own `mkdir` runs, the same
+    end-state the round-11 nesting test above constructs — $discard may
+    still hold a live replacement lock this process's earlier claiming `mv`
+    accidentally stole from its rightful owner. The pre-fix code
+    unconditionally `rm -rf`'d $discard in this branch, destroying that
+    owner's only remaining trace with no way to recover it. The fix leaves
+    $discard in place for the existing leftover sweep to reap once THIS
+    process (never the stolen claim's own owner) is confirmed dead."""
     body = _extract("_atomic_sync_dir")
-    mkdir_idx = body.index('if mkdir "$lock" 2>/dev/null; then')
-    write_idx = body.index('(set -C; echo "$$" > "$lock/pid")', mkdir_idx)
-    tail = body[write_idx:]
-    reset_idx = tail.index('_CURRENT_SYNC_LOCK=""')
-    continue_idx = tail.index("continue")
-    assert reset_idx < continue_idx, (
-        "expected _CURRENT_SYNC_LOCK to be reset before retrying acquisition "
-        "after losing the noclobber race")
+    start = body.index("local claimed_pid")
+    end = body.index('\n                fi\n', start) + len('\n                fi\n')
+    mismatch_block = body[start:end]
+
+    lock = tmp_path / "dst.sync.lock"
+    lock.mkdir()
+    (lock / "pid").write_text("third_process_pid", encoding="utf-8")
+    discard = tmp_path / "dst.sync.lock.stale.12345"
+    discard.mkdir()
+    (discard / "pid").write_text("live_replacement_pid", encoding="utf-8")
+
+    script = ("set -euo pipefail\n"
+              + f'lock="{_p(lock)}"\n' + f'discard="{_p(discard)}"\n'
+              + 'holder_pid="99999999"\n'
+              + "_reclaim() {\n" + mismatch_block + "\n}\n_reclaim\n"
+              + f'echo "DISCARD_SURVIVED=$([ -d "{_p(discard)}" ] && echo yes || echo no)"\n'
+              + f'echo "DISCARD_PID=$(cat "{_p(discard)}/pid" 2>/dev/null || echo MISSING)"\n')
+    res = _run_script(script)
+
+    assert res.returncode == 0, res.stderr
+    assert "DISCARD_SURVIVED=yes" in res.stdout, (
+        "the mismatched claim's stolen pid was deleted instead of preserved — " + res.stdout)
+    assert "DISCARD_PID=live_replacement_pid" in res.stdout, (
+        "the mismatched claim's content was lost — " + res.stdout)
