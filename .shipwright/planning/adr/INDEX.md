@@ -173,3 +173,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — `shared/scripts/lib/phase_quality/_run_id.py` raised to 335-LOC](iterate-2026-09-23-r5a-wave-build-flip-run-id-bloat-exception.md)
 - [Bloat exception addendum — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 528-LOC](iterate-2026-09-23-r5a-wave-build-flip-sub-iterate-runner-bloat-exception.md)
 - [iterate-2026-09-23-r5a-wave-build-flip — campaign-dag-scheduler R5a](iterate-2026-09-23-r5a-wave-build-flip.md)
+- [Serial merge lane: review pinning, staleness cascade, STRICT-STOP](iterate-2026-09-24-r5b-merge-lane-serial-merge-lane.md)

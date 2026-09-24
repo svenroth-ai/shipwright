@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-09-22T11:29:50.160035+00:00
-Source-State: run=iterate-2026-09-22-r1b-codex-hooks-config-layer-shim base=42e45008dbd9
-Consistency-audit: last run 2026-07-28 (56 days earlier) — FAIL
+Generated: 2026-09-24T06:44:57.450745+00:00
+Source-State: run=iterate-2026-09-24-r5b-merge-lane
+Consistency-audit: last run 2026-07-28 (58 days earlier) — FAIL
 
 ## Requirements Coverage
 
@@ -28,7 +28,7 @@ Consistency-audit: last run 2026-07-28 (56 days earlier) — FAIL
 | [FR-01.18](../../.shipwright/planning/01-adopted/spec.md#fr-0118)<a id="rtm-fr-0118"></a> | Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents. | Should | [evt-59e45022](#evt-59e45022), [evt-787daddf](#evt-787daddf) | 17317/17376 → 13854/13894 | 2026-09-12 ([iter](#evt-787daddf)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.19](../../.shipwright/planning/01-adopted/spec.md#fr-0119)<a id="rtm-fr-0119"></a> | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | Should | [evt-057de78a](#evt-057de78a), [evt-b186118f](#evt-b186118f), [evt-0bf72871](#evt-0bf72871) | 1488/1488 → 12433/12433 | 2026-09-15 ([iter](#evt-0bf72871)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.20](../../.shipwright/planning/01-adopted/spec.md#fr-0120)<a id="rtm-fr-0120"></a> | Measure what a session actually costs, from the assistant's own record of what it sent and received, counted once per exchange no matter how many lines that exchange left behind — and break the total down by which pipeline phase spent it, shown as the session runs rather than only after it ends. Adds this real, priced figure as an alternative to a rough stand-in that only counted tool calls, usable at the same points that stand-in already warns at — the stand-in itself keeps running until a later change compares the two and switches over. Also checks, the way the existing pre-push checks do, whether the session's own auto-compaction setting and effort level are set sanely for its context window. | Should | [evt-0bf72871](#evt-0bf72871) | 12433/12433 | 2026-09-15 ([iter](#evt-0bf72871)) | ✅ | COVERED | MISSING | — | — |
-| [FR-01.21](../../.shipwright/planning/01-adopted/spec.md#fr-0121)<a id="rtm-fr-0121"></a> | Shipwright can be installed for Codex as a single, verifiably reproducible plugin bundle carrying every one of its skills, instead of the tool depending on a machine-specific cache directory that was only ever built for a different assistant. The environment variable a script reads to find its own plugin's files resolves the same way no matter which of the two assistants installed it. Its hooks also actually run under Codex, via a global config-layer sync — not just its skills. | Should | — | — | — | ✅ | NOT VERIFIED | MISSING | — | MISSING |
+| [FR-01.21](../../.shipwright/planning/01-adopted/spec.md#fr-0121)<a id="rtm-fr-0121"></a> | Shipwright can be installed for Codex as a single, verifiably reproducible plugin bundle carrying every one of its skills, instead of the tool depending on a machine-specific cache directory that was only ever built for a different assistant. The environment variable a script reads to find its own plugin's files resolves the same way no matter which of the two assistants installed it. Its hooks also actually run under Codex, via a global config-layer sync — not just its skills. | Should | [evt-6793fcb6](#evt-6793fcb6) | 20098/20175 | 2026-09-23 ([iter](#evt-6793fcb6)) | ✅ | COVERED | MISSING | — | MISSING |
 
 > **Legend** — *Tests*: `passed/total` of the latest event that ran tests; `first → latest` shows progression across tested runs. *Last tested*: date of that event (`iter` / `build` source); age is informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected FR re-verified since its last change · ⚠️ needs re-verification (behavior changed, not yet re-tested) · — not behavior-touched. *Unit / Integration / E2E* (traceability manifest): `ok` an executed-passing tagged test covers the FR at that layer · `MISSING` the layer is required but has no executed-passing test · `?` ambiguous — the display id is shared across namespaces so the fanned tag is not credited (D-layer defers this to TT5) · `n/a` layer not required · — no manifest entry.
 
@@ -36,6 +36,14 @@ Consistency-audit: last run 2026-07-28 (56 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-f7cfa441"></a>The automated multi-part build loop now double-checks it merges exactly the reviewed pull request, records a verified merge commit, safely re-reviews a branch after a rebase, and always cleans up and unlocks itself when stopped early. | iterate | change |  | 11794/11794 | — | 2026-09-24 |
+| <a id="evt-0233ea5a"></a>The campaign orchestrator now builds a whole wave of independent, dependency-cleared sub-iterates at once instead of one at a time, then still merges them one at a time before starting the next wave | iterate | feature |  | 11738/11738 | — | 2026-09-23 |
+| <a id="evt-6a59c108"></a>evt-6a59c108 |  | change |  | — | — | 2026-09-23 |
+| <a id="evt-7649fb19"></a>Split two test files that crossed the 300-line bloat gate after PR #791 merged: shared/tests/test_external_review_opus_leg.py and integration-tests/test_external_review_driver_prose_contract.py, both grown past the limit while adding regression tests. Pure, byte-verified-equivalent reorganization along existing section boundaries -- no test logic changed, all 38 tests plus the full shared/tests and integration-tests suites re-verified passing. | iterate | change |  | 12032/12076 | — | 2026-09-23 |
+| <a id="evt-6b91017a"></a>Fixed Shipwright's internal code-review tooling so it picks the right independent reviewer model when running under Codextender mode, and closed a bug where a review step could silently inherit unrelated Anthropic environment settings from its parent process. | iterate | change |  | 20009/20087 | — | 2026-09-23 |
+| <a id="evt-6793fcb6"></a>When Codex starts an iterate, its very first action is now nudged to run the required setup step before anything else, and every existing hook across the whole toolkit was catalogued for how safe it is to run automatically. | iterate | feature | [FR-01.21](#rtm-fr-0121) | 20098/20175 | — | 2026-09-23 |
+| <a id="evt-bfa9fa2d"></a>Campaigns can now safely run several sub-iterates in parallel: each one is claimed exactly once, tracked through a clear set of states, and never double-claimed or silently lost. | iterate | change |  | 11595/11639 | — | 2026-09-23 |
+| <a id="evt-3252972f"></a>Fixes a latent bug where the campaign review step would misattribute a reviewed diff to the wrong sub-iterate once R5a gives each unit its own worktree. | iterate | bug |  | 11403/11403 | — | 2026-09-22 |
 | <a id="evt-de6489e2"></a>Shipwright's Codex-CLI hooks (session-start, stop, etc.) now actually fire -- they were silently never running before this fix. | iterate | change |  | 19722/19799 | — | 2026-09-22 |
 | <a id="evt-912e2c37"></a>Adds the internal building blocks a future per-unit worktree needs (safe naming, a Windows path-length check, and a heartbeat) without turning it on yet, and wires the existing campaign heartbeat into each build step. | iterate | feature |  | 11372/11372 | — | 2026-09-22 |
 | <a id="evt-d552990f"></a>Campaign sub-iterates can now declare which other sub-iterates must merge first, and the campaign loop will skip a sub-iterate until its dependency has actually merged. | iterate | feature |  | 19768/19768 | — | 2026-09-21 |
@@ -703,14 +711,10 @@ Consistency-audit: last run 2026-07-28 (56 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 660 |
+| Iterate changes | 667 |
 | Requirements total | 21 |
-| Requirements verified | 20/21 |
+| Requirements verified | 21/21 |
 | Must-have verified | 14/14 |
-
-### FRs without tests
-
-- [FR-01.21](../../.shipwright/planning/01-adopted/spec.md) (Should): Shipwright can be installed for Codex as a single, verifiably reproducible plugi
 
 ### FRs with open triage items
 

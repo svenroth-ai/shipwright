@@ -494,10 +494,10 @@ def test_step_3f_bis_every_run_dir_use_opens_within_its_own_block():
     # case where an author does add the second rebuild.
     step_3g = _step_3g()
     positions_3g = [m.start() for m in usage.finditer(step_3g)]
-    assert len(positions_3g) >= 3, (
-        f"expected at least 3 $run_dir/-prefixed usages in 3g — got "
-        f"{len(positions_3g)}, which means the scan itself is broken, not "
-        "that the step shrank"
+    # R5b: floor 3 -> 2 (head_pin now reads verify's `.pin.shipped_head`).
+    assert len(positions_3g) >= 2, (
+        f"expected at least 2 $run_dir/-prefixed usages in 3g — got {len(positions_3g)}, "
+        "which means the scan itself is broken, not that the step shrank"
     )
     rebuild_count = step_3g.count(rederive)
     assert rebuild_count == 1, (

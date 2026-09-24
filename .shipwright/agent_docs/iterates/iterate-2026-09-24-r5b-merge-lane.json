@@ -1,0 +1,73 @@
+{
+  "run_id": "iterate-2026-09-24-r5b-merge-lane",
+  "date": "2026-09-24T06:45:31.913222Z",
+  "event_at": "2026-09-24T06:44:57.450745+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-r5b-merge-lane",
+  "spec": ".shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R5b-merge-lane.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-24-r5b-merge-lane",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "check_review_attribution.py --mode verify wired at every point: exact HEAD==reviewed_head assert (+ post-commit commit-parent assert) before the reviews.json commit, with delete-pin+demote-and-reenter on deviation; shipped_head read from review_pin.json directly at 3g; PR-identity (node id/head ref/base ref) verified before merge; pin/CI invalidated on any rebase",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_r5b_merge_lane_prose.py::test_a_head_deviation_invalidates_the_pin_and_demotes_reenters, ::test_commit_parent_is_asserted_after_the_reviews_json_commit, ::test_head_pin_reads_shipped_head_from_review_pin_json_directly, ::test_pr_identity_is_verified_before_merge_not_only_head_sha PASSED; shared/tests/test_check_review_attribution_invalidate.py::TestStalenessCascade PASSED"
+      },
+      {
+        "behavior": "merged_commit captured only after the existing MERGED poll extended to require non-empty mergeCommit.oid, bounded (merge_confirmation_timeout on timeout), strict-SHA-validated, written via cmd_mark_merged (never cmd_record/cmd_mark), never via git rev-parse origin/{default}",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_r5b_merge_lane_prose.py::test_merge_commit_confirmation_is_bounded_and_checked_after_the_merged_poll, ::test_merge_confirmation_timeout_demotes_the_unit_not_the_whole_wave, ::test_confirmed_sha_is_recorded_via_mark_merged_not_record_or_mark, ::test_no_git_rev_parse_origin_default_fallback_for_merged_commit PASSED"
+      },
+      {
+        "behavior": "currency/staleness check sits in reviewed, not merging (UNKNOWN mergeability bounded-polled, never promoted immediately); mid-flight CONFLICTING triggers a rebase cascade that actually invokes ensure_current.py, resets its counter on a fresh attempt, and demotes to held at max_rebase_reviews=2",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_r5b_merge_lane_prose.py::test_built_promotes_to_reviewed_before_the_currency_check, ::test_currency_check_promotes_reviewed_to_merging_only_when_current, ::test_unknown_mergeable_is_polled_bounded_before_treated_as_current, ::test_conflicting_mergeable_triggers_the_rebase_cascade, ::test_rebase_cascade_actually_invokes_ensure_current_not_just_a_comment, ::test_rebase_count_resets_on_a_fresh_attempt, ::test_max_rebase_reviews_is_two_and_exhaustion_demotes_to_held PASSED"
+      },
+      {
+        "behavior": "staleness is triggered only by an actual rebase/integrate action on the unit's own branch, never by unrelated origin/{default} drift from a sibling's merge",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_r5b_merge_lane_prose.py::test_staleness_trigger_is_scoped_to_this_units_own_branch PASSED; shared/tests/test_check_review_attribution_invalidate.py::TestStalenessCascade::test_unrelated_sibling_merge_does_not_invalidate_this_units_pin (negative), ::test_an_actual_rebase_invalidates_the_pin (positive) PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "STRICT-STOP sweeps pending/claimed -> held immediately (swept_never_started); max_drain_seconds force-resolves a heartbeating-but-stuck running/merging unit; session-lock release is guaranteed only after cmd_finalize confirms every unit reached a terminal status",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_drain.py (15 tests: sweep_never_started, drain_once, remaining_active, run_drain incl. the exact STRICT-STOP scenario) PASSED; shared/tests/test_campaign_r5b_merge_lane_prose.py::test_strict_stop_is_redefined_to_drain_before_finalize, ::test_step_4_drains_before_finalize_and_releases_after, ::test_step_4_drain_and_finalize_are_checked_not_bare, ::test_exit_4_sweeps_and_finalizes_instead_of_stopping_without_finalize PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "step-3h status mapping: merged->complete, failed->failed, held->failed only for a mid-flight-demotion reason_code, else held->pending; campaign_progress.py's existing 5-token --status enum unchanged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_r5b_merge_lane_prose.py::test_step_3h_maps_merged_to_complete_failed_to_failed, ::test_step_3h_maps_swept_reason_codes_to_pending_not_failed, ::test_step_3h_does_not_change_campaign_progress_enum PASSED"
+      },
+      {
+        "behavior": "shipped_head/PR-identity checks compose correctly across two sequential real-git merges (the required integration composition test)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_check_review_attribution_invalidate.py::TestTwoSequentialMergesComposition::test_shipped_head_and_pr_identity_survive_two_sequential_merges PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_campaign_drain.py shared/tests/test_check_review_attribution_invalidate.py shared/tests/test_campaign_r5b_merge_lane_prose.py shared/tests/test_campaign_step_3f_bis.py shared/tests/test_campaign_wave_serialization_prose.py shared/tests/test_campaign_review_contract_prose.py -v",
+    "exit_code": 0,
+    "tests_run": 90,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-24-r5b-merge-lane/surface_verification.json",
+    "timestamp": "2026-09-24T00:00:00Z"
+  }
+}

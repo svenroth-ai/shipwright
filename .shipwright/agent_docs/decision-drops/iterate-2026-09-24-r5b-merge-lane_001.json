@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-24-r5b-merge-lane",
+  "date": "2026-09-24",
+  "section": "Iterate - infra: campaign-dag-scheduler R5b serial merge lane",
+  "title": "Serial merge lane: review pinning, staleness cascade, STRICT-STOP",
+  "context": "Merge lane lacked exact pin assertion, PR-identity check, validated merge-SHA recording, and STRICT-STOP drain semantics.",
+  "decision": "Add HEAD==reviewed_head and commit-parent asserts, PR-identity pre-merge check, bounded mergeCommit.oid confirm via cmd_mark_merged, rebase-triggered staleness cascade, and campaign_drain.py for STRICT-STOP.",
+  "consequences": "Merge lane provably merges only the pinned diff/PR, records a validated SHA, and STRICT-STOP always finalizes with the lock released.",
+  "rationale": "Reuses existing SHA-guard and cmd_mark override patterns rather than duplicating them; keys staleness off the unit own branch tip, not origin default drift.",
+  "rejected": "New fencing mutators per demotion; base-SHA-drift-keyed staleness would re-review every sibling on any merge.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-24-r5b-merge-lane-serial-merge-lane.md"
+}
