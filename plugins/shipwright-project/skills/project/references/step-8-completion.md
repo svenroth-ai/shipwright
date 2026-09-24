@@ -6,7 +6,15 @@
 
 1. All declared splits have spec.md files
 2. project-manifest.md exists and lists all splits with execution order
-3. CLAUDE.md and AGENTS.md exist (Full Application only)
+3. CLAUDE.md and AGENTS.md exist (Full Application only). AGENTS.md's
+   generation is agent-instruction-driven (project-scaffolding.md step 2),
+   not a deterministic render call, so this is code-level gated rather
+   than left to the prose alone: `check_agents_md_completion`
+   (`shared/scripts/tools/verifiers/project_checks.py`) is registered in
+   the same `run_project_checks` dispatcher item 7 below uses, ERROR
+   severity, and BLOCKS the `update-step` call further down unless
+   AGENTS.md exists and contains the Codex appendix marker. No separate
+   CLI to run here — it fires automatically when `update-step` runs.
 4. .shipwright/agent_docs/ directory exists with all 3 files — architecture.md,
    decision_log.md, conventions.md (Full Application only; session_handoff.md
    is written later by the Stop hook, not scaffolded here, and does not count

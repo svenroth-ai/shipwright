@@ -219,7 +219,8 @@ canon, and the final summary banner.
 
 1. All declared splits have spec.md files
 2. project-manifest.md exists and lists all splits with execution order
-3. CLAUDE.md and AGENTS.md exist (Full Application only)
+3. CLAUDE.md and AGENTS.md exist (Full Application only) — AGENTS.md is
+   code-gated (`check_agents_md_completion`), see step-8-completion.md
 4. `.shipwright/agent_docs/` directory exists with all 3 files —
    `architecture.md`, `decision_log.md`, `conventions.md` (Full Application
    only; `session_handoff.md` is written later by the Stop hook, not
