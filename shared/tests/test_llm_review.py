@@ -59,7 +59,7 @@ def test_llm_review_openai_uses_max_completion_tokens(monkeypatch):
 
     result = llm_review._review_openai(
         "CONTENT", "CONTEXT", "system", "u {CONTENT} {CONTEXT}",
-        {"models": {"chatgpt": "gpt-5.6-terra"}}, 5,
+        {"models": {"chatgpt": "gpt-6-sol"}}, 5,
     )
 
     assert result["status"] == "success"

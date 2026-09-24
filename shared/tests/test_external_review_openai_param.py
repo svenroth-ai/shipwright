@@ -64,7 +64,7 @@ def test_review_with_openai_uses_max_completion_tokens(monkeypatch):
     monkeypatch.setattr(openai, "OpenAI", _make_fake_openai(captured))
 
     config = {
-        "models": {"chatgpt": "gpt-5.6-terra"},
+        "models": {"chatgpt": "gpt-6-sol"},
         "llm_client": {"timeout_seconds": 5},
     }
     result = external_review.review_with_openai(

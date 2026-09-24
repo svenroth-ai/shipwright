@@ -56,9 +56,9 @@ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
         "no schema/transport entry has nothing for this contract to describe"
     )
 
-#: Matches AGENTS.md's own stated Codex operating policy ("Use gpt-5.6-sol
-#: with high reasoning for required review subagents") — a policy the
-#: dispatch call never actually enforced until this iterate (no
+#: Matches the Codex operating policy (review subagents run gpt-6-sol
+#: with high reasoning) — a policy the dispatch call never actually
+#: enforced until this iterate (no
 #: `model_reasoning_effort` reached `codex exec`'s argv at all). Pinned by
 #: assertion, not just documented, so a later edit here has to also touch
 #: this line consciously — an enum-membership check against Codex CLI's

@@ -35,7 +35,7 @@ __all__ = [
 # .shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md
 DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
 GLM_MODEL = "z-ai/glm-5.3"
-LUNA_MODEL = "openai/gpt-5.6-luna"
+LUNA_MODEL = "openai/gpt-6-luna"
 DEFAULT_MODEL = LUNA_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 

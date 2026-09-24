@@ -23,7 +23,7 @@ __all__ = [
 # Claude Agent-tiers (opus/sonnet/haiku/inherit/fable), which govern which Claude
 # model a spawned subagent gets. "driver" governs which external reviewer
 # identities are independent of the diff's own author: a Codex-authored diff
-# (gpt-5.6-terra) reviewed by another OpenAI-family model is not independent,
+# (gpt-6-sol) reviewed by another OpenAI-family model is not independent,
 # so `codex` swaps the OpenAI-family "openai" leg for the cross-vendor "opus"
 # leg. `claude` keeps today's roster unchanged.
 DRIVER_CHOICES: tuple[str, ...] = ("claude", "codex")
@@ -61,18 +61,18 @@ _REVIEW_MODEL_BINDINGS = {
     ),
     ("openai", "openrouter"): (
         "openrouter_chatgpt",
-        "openai/gpt-5.6-terra",
+        "openai/gpt-6-sol",
     ),
-    ("openai", "direct"): ("chatgpt", "gpt-5.6-terra"),
+    ("openai", "direct"): ("chatgpt", "gpt-6-sol"),
     # Same "openai" reviewer identity, same model, routed through the Codex
     # CLI instead of the OpenRouter/direct API (external_review_default_legs
     # .review_codex — flat-cost under a ChatGPT/Codex subscription).
-    ("openai", "codex"): ("codex", "gpt-5.6-terra"),
+    ("openai", "codex"): ("codex", "gpt-6-sol"),
     # "opus" reviewer identity (--driver codex roster): local Claude CLI or
     # OpenRouter, same pinned full model id on both legs (not the floating
     # "opus" alias) so the identity-lock is symmetric across transports.
-    ("opus", "claude_cli"): ("claude_cli", "claude-opus-5"),
-    ("opus", "openrouter"): ("openrouter_opus", "anthropic/claude-opus-5"),
+    ("opus", "claude_cli"): ("claude_cli", "claude-opus-5-5"),
+    ("opus", "openrouter"): ("openrouter_opus", "anthropic/claude-opus-5-5"),
 }
 
 
