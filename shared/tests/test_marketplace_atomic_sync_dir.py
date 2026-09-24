@@ -32,8 +32,12 @@ def _require_bash() -> None:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
+    """`_atomic_sync_dir` calls `_pid_is_alive` (its lock's liveness check),
+    a separate top-level function — without extracting it too, every fixture
+    run would fail on "command not found" instead of exercising the lock."""
     _require_bash()
-    script = "set -euo pipefail\n" + _extract("_atomic_sync_dir") + "\n" + _extract("sync_dir_from_to") + "\n" + body
+    script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
+              + _extract("_atomic_sync_dir") + "\n" + _extract("sync_dir_from_to") + "\n" + body)
     return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
 
 
@@ -84,6 +88,56 @@ def test_github_directory_is_not_mistaken_for_git(tmp_path):
 
     assert res.returncode == 0, res.stderr
     assert (dst / ".github" / "workflows" / "ci.yml").exists()
+
+
+def test_live_pid_leftover_survives_the_sweep(tmp_path):
+    """Tier-3 review, PR #796: a name-only sweep of `.sync-new.*`/`.sync-old.*`
+    cannot tell a dead process's leftover apart from a CONCURRENT, still-running
+    sync's own staging dir — it would delete both. Simulate the latter with a
+    real background process's PID and confirm its leftover survives, while a
+    leftover under an unused PID (nothing on the system has it) is swept."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "a.py").write_text("a", encoding="utf-8")
+    dst.mkdir()
+
+    script = (
+        "set -euo pipefail\n"
+        + _extract("_pid_is_alive") + "\n"
+        + _extract("_atomic_sync_dir") + "\n"
+        + f'live_leftover="{_p(dst)}.sync-new.live_holder"\n'
+        + f'dead_leftover="{_p(dst)}.sync-new.99999999"\n'
+        + 'mkdir -p "$live_leftover" "$dead_leftover"\n'
+        + 'sleep 30 & holder=$!\n'
+        + 'mv "$live_leftover" "' + _p(dst) + '.sync-new.$holder"\n'
+        + f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label\n'
+        + 'kill "$holder" 2>/dev/null || true\n'
+        + 'echo "LIVE_SURVIVED=$([ -d "' + _p(dst) + '.sync-new.$holder" ] && echo yes || echo no)"\n'
+        + 'echo "DEAD_SWEPT=$([ -d "$dead_leftover" ] && echo no || echo yes)"\n'
+    )
+    res = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+
+    assert res.returncode == 0, res.stderr
+    assert "LIVE_SURVIVED=yes" in res.stdout, res.stdout
+    assert "DEAD_SWEPT=yes" in res.stdout, res.stdout
+
+
+def test_stale_lock_with_dead_holder_is_reclaimed(tmp_path):
+    """A lock left behind by a crashed process (killed, OOM) must not
+    deadlock every future sync of this $dst forever."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "a.py").write_text("a", encoding="utf-8")
+    dst.mkdir()
+    lock = dst.parent / (dst.name + ".sync.lock")
+    lock.mkdir()
+    (lock / "pid").write_text("99999999", encoding="utf-8")
+
+    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "a.py").exists()
+    assert not lock.exists(), "the reclaimed (and then re-released) lock should not survive a clean run"
 
 
 def test_default_prune_removes_files_absent_from_source(tmp_path):

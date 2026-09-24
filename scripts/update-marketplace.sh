@@ -11,6 +11,23 @@
 # are always reflected, regardless of version number changes.
 set -euo pipefail
 
+# _atomic_sync_dir (below) holds at most one lock at a time — its calls are
+# sequential, never parallel, within this script. A single tracked path is
+# therefore enough for a script-wide EXIT trap to release whatever lock this
+# process currently holds if it dies mid-sync (errexit, Ctrl-C, kill): without
+# this, a lock acquired then never released via the function's own normal
+# cleanup would deadlock every future sync of that $dst forever.
+_CURRENT_SYNC_LOCK=""
+trap '[ -n "$_CURRENT_SYNC_LOCK" ] && rm -rf "$_CURRENT_SYNC_LOCK" 2>/dev/null; true' EXIT
+
+# True if $1 names a Windows/MSYS PID that is still alive — used to tell a
+# leftover from a process that crashed mid-sync apart from one a CONCURRENT,
+# still-running sync still owns (Tier-3 review, PR #796: blindly sweeping by
+# name alone can delete another active sync's own staging/backup/lock dirs).
+_pid_is_alive() {
+    [ -n "$1" ] && kill -0 "$1" 2>/dev/null
+}
+
 MARKETPLACE_NAME="shipwright"
 MARKETPLACE_DIR="$HOME/.claude/plugins/marketplaces/shipwright"
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
@@ -75,12 +92,45 @@ _atomic_sync_dir() {
     local src="$1" dst="$2" label="$3" prune="${4:-prune}"
     local staging="${dst}.sync-new.$$"
     local old="${dst}.sync-old.$$"
+    local lock="${dst}.sync.lock"
+
+    # Serialize concurrent syncs of the SAME $dst (Tier-3 review, PR #796):
+    # without this, two runs race the final mv-swap below and can interleave
+    # it, and the leftover sweep just below could delete an ACTIVE run's own
+    # staging/old dirs, not just a dead one's. `mkdir` is atomic on POSIX and
+    # NTFS-via-MSYS alike, so it doubles as a portable mutex with no `flock`
+    # dependency. A PID file inside lets a later run tell a live holder apart
+    # from one that crashed mid-sync and self-heal past the stale lock instead
+    # of deadlocking every future sync of this $dst forever.
+    local waited=0 holder_pid=""
+    while ! mkdir "$lock" 2>/dev/null; do
+        holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
+        if ! _pid_is_alive "$holder_pid"; then
+            rm -rf "$lock" 2>/dev/null || true
+            continue
+        fi
+        if [ "$waited" -ge 120 ]; then
+            echo "  [!!] ${label}: timed out waiting for pid ${holder_pid} to finish syncing $dst" >&2
+            return 1
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    echo "$$" > "$lock/pid"
+    _CURRENT_SYNC_LOCK="$lock"
 
     # A prior run killed mid-swap (Ctrl-C, timeout) leaves its own PID-named
     # staging/old dirs behind forever — nothing else ever matches that PID
-    # again to clean them up. Self-heal by sweeping any leftovers for this
-    # $dst before starting a fresh one.
-    rm -rf "${dst}".sync-new.* "${dst}".sync-old.* 2>/dev/null || true
+    # again to clean them up. Self-heal by sweeping DEAD-process leftovers for
+    # this $dst before starting a fresh one; the lock above already rules out
+    # a live concurrent holder, but a name-only match here would still be
+    # blind to that distinction on its own.
+    for leftover in "${dst}".sync-new.* "${dst}".sync-old.*; do
+        [ -e "$leftover" ] || continue
+        if ! _pid_is_alive "${leftover##*.}"; then
+            rm -rf "$leftover" 2>/dev/null || true
+        fi
+    done
     rm -rf "$staging"
     mkdir -p "$staging"
 
@@ -179,6 +229,9 @@ _atomic_sync_dir() {
     fi
     mv "$staging" "$dst"
     rm -rf "$old" 2>/dev/null || true
+
+    rm -rf "$lock" 2>/dev/null || true
+    _CURRENT_SYNC_LOCK=""
 
     if [ "$changed" -gt 0 ] || [ "$added" -gt 0 ] || [ "$removed" -gt 0 ]; then
         echo "  [OK] ${label}: ${added} added, ${changed} updated, ${removed} removed"
