@@ -27,17 +27,22 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-# Canonical greenfield/foreign predicate — single SSoT every hook shares.
-from lib.atomic_write import durable_atomic_write  # noqa: E402
-from lib.campaign_wave import write_wave_aware_handoff  # noqa: E402
-from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
-from lib.file_lock import LockTimeout, file_lock  # noqa: E402
-from lib.handoff_phase_status import (  # noqa: E402
-    phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
-    phase_tasks_progress as _phase_tasks_progress,
-)
-from lib.phase_quality import resolve_run_id  # noqa: E402
-from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
+# Canonical greenfield/foreign predicate, single SSoT every hook shares. `for` (not a function) keeps these at module scope while retrying past update-marketplace.sh's atomic-swap absence gap (iterate-2026-09-24-stop-hook-cache-race).
+for _attempt in range(20):
+    try:
+        from lib.atomic_write import durable_atomic_write
+        from lib.campaign_wave import write_wave_aware_handoff
+        from lib.canon_frontmatter import parse_canon_frontmatter
+        from lib.file_lock import LockTimeout, file_lock
+        from lib.handoff_phase_status import (
+            phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
+            phase_tasks_progress as _phase_tasks_progress,
+        )
+        from lib.phase_quality import resolve_run_id
+        from lib.project_root import is_shipwright_project, resolve_project_root
+        break
+    except ModuleNotFoundError:
+        if _attempt == 19: raise
 
 _RUN_CONFIG_NAME = "shipwright_run_config.json"
 # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same
