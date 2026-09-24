@@ -188,9 +188,34 @@ _atomic_sync_dir() {
                 claimed_pid=$(cat "$discard/pid" 2>/dev/null || echo "")
                 if [ "$claimed_pid" = "$holder_pid" ]; then
                     rm -rf "$discard" 2>/dev/null || true
-                elif ! mv "$discard" "$lock" 2>/dev/null; then
+                elif mkdir "$lock" 2>/dev/null; then
+                    # Restoring via a fresh `mkdir` claim, never a
+                    # directory-to-directory `mv "$discard" "$lock"` — that
+                    # does NOT reliably fail when "$lock" already exists
+                    # again (a genuinely different process re-claimed it in
+                    # the gap between our own claiming mv above and this
+                    # restore): a plain (non `-T`) `mv` onto an existing
+                    # directory target MOVES the source INSIDE it instead of
+                    # failing, nesting the mismatched claim under the new
+                    # live lock rather than restoring it to the top level —
+                    # exactly the "move into an existing directory" gotcha
+                    # `-T` exists for, and `-T` is the GNU-only flag round 6
+                    # already rejected for breaking every lock attempt on
+                    # BSD (Tier-3 review, PR #796 round 11). `mkdir "$lock"`
+                    # gives the same all-or-nothing signal portably: it
+                    # fails if and only if something already occupies
+                    # "$lock" again, with no directory-nesting side effect
+                    # either way. Only the pid FILE is moved (not the whole
+                    # $discard directory) since a plain-file `mv` onto a
+                    # path that does not yet exist has no such ambiguity.
+                    mv "$discard/pid" "$lock/pid" 2>/dev/null || true
+                    rmdir "$discard" 2>/dev/null || rm -rf "$discard" 2>/dev/null || true
+                else
                     # Could not restore (something else has since taken
-                    # "$lock" again) — nowhere left to put it back.
+                    # "$lock" again). $discard is a path unique to THIS
+                    # process's own pid ($$), never shared with or
+                    # referenced by any other process, so deleting it here
+                    # is always safe regardless of what it still contains.
                     rm -rf "$discard" 2>/dev/null || true
                 fi
             fi
