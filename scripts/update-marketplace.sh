@@ -154,15 +154,30 @@ _atomic_sync_dir() {
             # other contender wins the race, installs its own live lock, and
             # THIS process's rm then runs, it deletes that live lock out from
             # under a process that still believes it holds it (Tier-3
-            # review, PR #796 round 3). `mv "$lock" "$discard"` claims the
-            # EXACT stale instance atomically instead: rename() on the same
-            # filesystem is one syscall, so only one contender's mv can
-            # succeed for a given lock instance — the loser gets ENOENT and
-            # simply retries from the top, never touching whatever now lives
-            # at "$lock".
+            # review, PR #796 round 3). `mv "$lock" "$discard"` claims
+            # WHATEVER currently sits at "$lock" atomically — but that is not
+            # necessarily the stale instance just read above: another
+            # reclaimer can remove it and a genuinely fresh, live lock can
+            # install at the same path in the gap between that read and this
+            # mv, and this mv would then silently steal ITS lock instead
+            # (Tier-3 review, PR #796 round 8 — an ABA race: the path is
+            # occupied at claim time, but not necessarily by what was
+            # observed). Re-reading the claimed instance's own pid and
+            # comparing it to what was just read closes the common case: an
+            # unchanged pid confirms the same instance, safe to discard; a
+            # changed one means a live replacement was grabbed by mistake,
+            # so it is put back for its rightful owner instead of deleted.
             local discard="${lock}.stale.$$"
             if mv "$lock" "$discard" 2>/dev/null; then
-                rm -rf "$discard" 2>/dev/null || true
+                local claimed_pid
+                claimed_pid=$(cat "$discard/pid" 2>/dev/null || echo "")
+                if [ "$claimed_pid" = "$holder_pid" ]; then
+                    rm -rf "$discard" 2>/dev/null || true
+                elif ! mv "$discard" "$lock" 2>/dev/null; then
+                    # Could not restore (something else has since taken
+                    # "$lock" again) — nowhere left to put it back.
+                    rm -rf "$discard" 2>/dev/null || true
+                fi
             fi
             empty_pid_waits=0
             continue

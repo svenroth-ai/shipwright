@@ -134,6 +134,30 @@ def test_stale_lock_is_claimed_atomically_not_deleted_by_name(tmp_path):
         "a bare `rm -rf \"$lock\"` here would delete by name only, racing a concurrent winner")
 
 
+def test_reclaimed_lock_is_verified_before_deletion_not_trusted_by_path(tmp_path):
+    """Tier-3 review, PR #796 round 8: `mv "$lock" "$discard"` claims
+    WHATEVER currently sits at "$lock", not verifiably the specific stale
+    instance a reclaimer just read the pid of — an ABA race. Another
+    reclaimer can remove the stale lock and a genuinely fresh, live one can
+    install at the same path in the gap between that read and this mv, and
+    the mv would then silently steal (and, before this fix, delete) the live
+    replacement instead. Checked structurally, like the sibling atomic-claim
+    test above: reproducing the actual four-process interleaving needs real
+    OS thread scheduling a unit test can't reliably force. The fix must read
+    the claimed instance's own pid back and compare it to what was expected
+    before deciding to discard it, and restore (not delete) on a mismatch."""
+    body = _extract("_atomic_sync_dir")
+    mv_idx = body.index('if mv "$lock" "$discard" 2>/dev/null; then')
+    tail = body[mv_idx:]
+    assert re.search(r'claimed_pid=\$\(cat "\$discard/pid"', tail), (
+        "expected the claimed instance's pid to be re-read after the mv, "
+        "before deciding whether it is safe to discard")
+    assert re.search(r'\[ "\$claimed_pid" = "\$holder_pid" \]', tail), (
+        "expected the re-read pid to be compared against the one observed before the mv")
+    assert re.search(r'mv "\$discard" "\$lock"', tail), (
+        "expected a mismatched (live, replacement) claim to be restored, not deleted outright")
+
+
 def test_lock_with_unwritten_pid_is_not_stolen_as_stale(tmp_path):
     """Tier-3 review, PR #796 round 2 found this window under an earlier
     `mkdir "$lock"`-then-stamp design: a concurrent reader saw the lock with
