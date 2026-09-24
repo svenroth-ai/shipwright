@@ -118,7 +118,20 @@ _atomic_sync_dir() {
         rm -rf "$candidate" 2>/dev/null || true
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
         if [ -n "$holder_pid" ] && ! _pid_is_alive "$holder_pid"; then
-            rm -rf "$lock" 2>/dev/null || true
+            # Two contenders can both read the SAME dead PID here. A bare
+            # `rm -rf "$lock"` deletes by name only — if the other contender
+            # wins the race, installs its own live lock, and THIS process's
+            # rm then runs, it deletes that live lock out from under a
+            # process that still believes it holds it (Tier-3 review, PR
+            # #796 round 3). `mv "$lock" "$discard"` claims the EXACT stale
+            # instance atomically instead: rename() on the same filesystem is
+            # one syscall, so only one contender's mv can succeed for a given
+            # lock instance — the loser gets ENOENT and simply retries from
+            # the top, never touching whatever now lives at "$lock".
+            local discard="${lock}.stale.$$"
+            if mv "$lock" "$discard" 2>/dev/null; then
+                rm -rf "$discard" 2>/dev/null || true
+            fi
             continue
         fi
         if [ "$waited" -ge 120 ]; then
@@ -145,12 +158,16 @@ _atomic_sync_dir() {
     fi
 
     # A prior run killed mid-swap (Ctrl-C, timeout) leaves its own PID-named
-    # staging/old dirs behind forever — nothing else ever matches that PID
-    # again to clean them up. Self-heal by sweeping DEAD-process leftovers for
-    # this $dst before starting a fresh one; the lock above already rules out
-    # a live concurrent holder, but a name-only match here would still be
-    # blind to that distinction on its own.
-    for leftover in "${dst}".sync-new.* "${dst}".sync-old.*; do
+    # staging/old/lock-candidate dirs behind forever — nothing else ever
+    # matches that PID again to clean them up. `.sync.lock.*` also catches an
+    # abandoned candidate (died between `mkdir` and the install) and an
+    # abandoned stale-lock claim (died between the claiming `mv` and its
+    # `rm -rf`) — the bare "$lock" itself has no trailing PID suffix, so this
+    # glob can never match a currently-installed live lock. Self-heal by
+    # sweeping DEAD-process leftovers for this $dst before starting a fresh
+    # one; the lock above already rules out a live concurrent holder, but a
+    # name-only match here would still be blind to that distinction on its own.
+    for leftover in "${dst}".sync-new.* "${dst}".sync-old.* "${dst}".sync.lock.*; do
         [ -e "$leftover" ] || continue
         if ! _pid_is_alive "${leftover##*.}"; then
             rm -rf "$leftover" 2>/dev/null || true
@@ -230,21 +247,28 @@ _atomic_sync_dir() {
 
     # Files present in the old target but absent from $src (renamed/deleted
     # upstream) were never copied into staging above, so nothing needs
-    # deleting here — this just counts them for the summary line. For
-    # $prune=noprune (the Windows real-dir plugin mirror, which must PRESERVE
-    # mirror-owned files the old behavior always kept) they are instead
-    # copied into staging now, since nothing seeded them earlier either.
+    # deleting here — this just counts them for the summary line ($prune=prune
+    # only; excluded-by-name files like .python-version are CORRECTLY dropped
+    # here too, per the "must not be distributed" contract the exclusion list
+    # exists for). For $prune=noprune (the Windows real-dir plugin mirror,
+    # which must preserve EVERY mirror-owned file the old pure-copy behavior
+    # always kept), the check is against $staging, not $src: a file can exist
+    # in $src yet still be missing from staging because the copy loop's own
+    # name filters (.python-version, *.pyc) excluded it — checking $src alone
+    # wrongly treated "present in source" as "already handled" and silently
+    # dropped such files even though noprune's contract has no distribution
+    # policy to justify that (Tier-3 review, PR #796 round 3).
     if [ -d "$dst" ]; then
         while IFS= read -r -d '' dst_file; do
             local rel="${dst_file#$dst/}"
-            if [ ! -f "$src/$rel" ]; then
-                if [ "$prune" = "prune" ]; then
+            if [ "$prune" = "prune" ]; then
+                if [ ! -f "$src/$rel" ]; then
                     ((removed++)) || true
-                else
-                    local target="$staging/$rel"
-                    mkdir -p "$(dirname "$target")"
-                    cp "$dst_file" "$target"
                 fi
+            elif [ ! -f "$staging/$rel" ]; then
+                local target="$staging/$rel"
+                mkdir -p "$(dirname "$target")"
+                cp "$dst_file" "$target"
             fi
         done < <(find "$dst" -type f \
             -not -path "*/__pycache__/*" \

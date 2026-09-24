@@ -157,6 +157,20 @@ def test_stale_lock_with_dead_holder_is_reclaimed(tmp_path):
     assert not lock.exists(), "the reclaimed (and then re-released) lock should not survive a clean run"
 
 
+def test_stale_lock_is_claimed_atomically_not_deleted_by_name(tmp_path):
+    """Tier-3 review, PR #796 round 3: two contenders can both read the same
+    dead PID; a bare `rm -rf "$lock"` deletes by name only, so if the other
+    contender wins the race and installs its own live lock first, THIS
+    process's rm then deletes that live lock out from under it. Reclaiming
+    must `mv "$lock"` away first — a rename that only one contender's attempt
+    can ever win for a given lock instance — checked structurally since
+    reproducing the actual race needs real OS thread interleaving."""
+    body = _extract("_atomic_sync_dir")
+    assert re.search(r'mv "\$lock" "\$discard"', body), (
+        "expected the stale lock to be claimed via `mv` (atomic) before being discarded — "
+        "a bare `rm -rf \"$lock\"` here would delete by name only, racing a concurrent winner")
+
+
 def test_lock_is_installed_atomically_not_mkdir_then_stamped():
     """Tier-3 review, PR #796 round 2: a bare `mkdir "$lock"` immediately
     followed by writing its PID left a window where a concurrent reader saw
@@ -210,6 +224,29 @@ def test_orphaned_backup_is_recovered_before_the_sweep_would_discard_it(tmp_path
     assert res.returncode == 0, res.stderr
     assert (dst / "keep.py").exists()
     assert (dst / "mirror_owned.py").exists(), "the orphaned backup's content was lost, not recovered"
+
+
+def test_noprune_preserves_a_dst_file_the_copy_loop_excludes_by_name_even_when_src_also_has_it(tmp_path):
+    """Tier-3 review, PR #796 round 3: the noprune preservation step checked
+    `[ ! -f "$src/$rel" ]` — true only when $src altogether lacks the file.
+    A `.python-version` present in BOTH trees is never copied (the copy
+    loop's own `-not -name` exclusion refuses it), so it was never staged
+    either, yet that check saw it as "present in src" and skipped preserving
+    it too — silently dropping a file the old pure-copy mirror always kept.
+    noprune has no distribution policy to justify that; only prune mode does."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "keep.py").write_text("a", encoding="utf-8")
+    (src / ".python-version").write_text("3.11.15", encoding="utf-8")
+    dst.mkdir()
+    (dst / ".python-version").write_text("3.11.15", encoding="utf-8")
+
+    res = _run(f'sync_dir_from_to "{_p(src)}" "{_p(dst)}"')
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "keep.py").exists()
+    assert (dst / ".python-version").exists(), (
+        "excluded-by-name file present in both trees was dropped instead of preserved")
 
 
 def test_default_prune_removes_files_absent_from_source(tmp_path):
