@@ -14,6 +14,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+
+from lib.agents_md_substitutions import (  # noqa: E402
+    DOC_TITLE_CLAUDE,
+    DOC_TITLE_CODEX,
+    GROWTH_GATE_CLAUDE,
+    GROWTH_GATE_CODEX,
+    STANDING_REQUEST_CLAUDE,
+    STANDING_REQUEST_CODEX,
+    apply_codex_substitutions,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_PATH = REPO_ROOT / "shared" / "templates" / "claude-md-template.md"
@@ -65,24 +76,15 @@ def test_greenfield_agents_md_substitution_instructions_match_the_render_path() 
     host-specific fragments `_render_claude_md` produces for AGENTS.md. If a
     future edit to either side drifts the wording, this test catches it."""
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    assert "CLAUDE.md is **orientation + a terse invariant index**" in template
-    assert "Claude Code withholds subagent spawning until the user asks" in template
+    assert DOC_TITLE_CLAUDE in template
+    assert STANDING_REQUEST_CLAUDE in template
+    assert GROWTH_GATE_CLAUDE in template
 
-    # The two substitutions project-scaffolding.md's step "### 2. AGENTS.md"
-    # instructs, applied literally.
-    substituted = template.replace(
-        "Claude Code withholds subagent spawning until the user asks",
-        "Codex withholds subagent spawning until the user asks",
-    ).replace(
-        "CLAUDE.md is **orientation + a terse invariant index**",
-        "AGENTS.md is **orientation + a terse invariant index**",
-    ).replace(
-        "- **Growth is gated:** iterate finalization flags a change that net-grows this\n"
-        "  file by more than 30 lines (deliberate exception:\n"
-        "  `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1`).",
-        "- **No automated growth gate for this file yet** — keep it lean by the\n"
-        "  same restraint CLAUDE.md's line-cap enforces; watch it by hand.",
-    )
+    # The three substitutions project-scaffolding.md's step "### 2. AGENTS.md"
+    # instructs, applied via the SAME canonical pairs the completion check
+    # uses (shared/scripts/lib/agents_md_substitutions.py) — one definition,
+    # not a second inline copy that could drift from what the check enforces.
+    substituted = apply_codex_substitutions(template)
     assert "CLAUDE.md is **orientation" not in substituted
     assert "Claude Code withholds subagent spawning" not in substituted
     assert "SHIPWRIGHT_CLAUDE_MD_GROWTH_OK" not in substituted
@@ -107,14 +109,10 @@ def test_greenfield_agents_md_substitution_instructions_match_the_render_path() 
         capture_output=True, check=True,
     )
     rendered = result.stdout.decode("utf-8")
-    assert "AGENTS.md is **orientation + a terse invariant index**" in rendered
-    assert "Codex withholds subagent spawning until the user asks" in rendered
-    assert "No automated growth gate for this file yet" in rendered
-    for fragment in (
-        "AGENTS.md is **orientation + a terse invariant index**",
-        "Codex withholds subagent spawning until the user asks",
-        "No automated growth gate for this file yet",
-    ):
+    assert DOC_TITLE_CODEX in rendered
+    assert STANDING_REQUEST_CODEX in rendered
+    assert GROWTH_GATE_CODEX in rendered
+    for fragment in (DOC_TITLE_CODEX, STANDING_REQUEST_CODEX, GROWTH_GATE_CODEX):
         assert fragment in substituted, (
             f"literal instruction-driven substitution produced {fragment!r} "
             f"missing text — but the code path (_render_claude_md) has it; "

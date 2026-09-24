@@ -40,6 +40,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import _project_gate_wiring as _gate_wiring
+from .agents_md_completion_check import check_agents_md_completion
 from .common import (
     CheckResult,
     Severity,
@@ -145,69 +146,6 @@ def check_manifest_splits_match_dirs(project_root: Path) -> CheckResult:
             severity=Severity.WARNING.value,
         )
     return CheckResult(name, True, f"{len(declared)} split(s) match .shipwright/planning/ layout")
-
-
-def _read_codex_appendix_marker() -> str | None:
-    """The Codex appendix's idempotency marker, read from the template
-    itself rather than duplicated as a second hardcoded literal (the
-    same value ``plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py``
-    defines as ``CODEX_APPENDIX_MARKER`` — not imported directly because
-    ``shared/`` must not depend on a specific plugin, ADR-045). Returns
-    ``None`` when the template cannot be found or read, so the caller can
-    report that as its own distinct failure rather than a false negative.
-    """
-    template = Path(__file__).resolve().parents[3] / "templates" / "codex-agents-md-appendix.md"
-    try:
-        first_line = template.read_text(encoding="utf-8").splitlines()[0]
-    except (OSError, IndexError):
-        return None
-    return first_line.strip() or None
-
-
-def check_agents_md_completion(project_root: Path) -> CheckResult:
-    """AGENTS.md (Codex CLI's counterpart to CLAUDE.md) must actually be
-    written for a Full Application project, and must carry the shared
-    Codex appendix — not merely exist.
-
-    Greenfield generation (``project-scaffolding.md`` step 2) is agent-
-    instruction-driven prose, unlike adopt's brownfield path (a
-    deterministic ``agents_md_renderer.write_agents_md`` call) — this is
-    the executable backstop the required PR-review gate asked for twice
-    (iterate-2026-09-23-m5-agents-md-generation-drift, R4) so a slip in
-    following those instructions is caught at phase completion instead of
-    resting on trust alone. ERROR severity, like C1/C4/C5: a Full
-    Application project without it is not actually done.
-    """
-    name = "AGENTS.md completion (Codex appendix present)"
-    path = project_root / "shipwright_project_config.json"
-    if not path.exists():
-        return CheckResult(name, True, "no project config yet — nothing to check")
-    try:
-        import json
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        return CheckResult(name, False, f"malformed project config: {exc}")
-    if data.get("scope") != "full_app":
-        return CheckResult(name, True, "extension scope — CLAUDE.md/AGENTS.md not required")
-
-    agents_md = project_root / "AGENTS.md"
-    if not agents_md.exists():
-        return CheckResult(name, False, "AGENTS.md missing (Full Application scope requires it)")
-
-    marker = _read_codex_appendix_marker()
-    if marker is None:
-        return CheckResult(
-            name, False,
-            "cannot resolve shared/templates/codex-agents-md-appendix.md to read its marker",
-        )
-    content = agents_md.read_text(encoding="utf-8", errors="replace")
-    if marker not in content:
-        return CheckResult(
-            name, False,
-            f"AGENTS.md exists but is missing the Codex appendix marker ({marker!r}) — "
-            "the greenfield step must append shared/templates/codex-agents-md-appendix.md verbatim",
-        )
-    return CheckResult(name, True, "AGENTS.md present with Codex appendix marker")
 
 
 def check_grill_trace_completeness(project_root: Path) -> list[CheckResult]:

@@ -10,11 +10,16 @@
    generation is agent-instruction-driven (project-scaffolding.md step 2),
    not a deterministic render call, so this is code-level gated rather
    than left to the prose alone: `check_agents_md_completion`
-   (`shared/scripts/tools/verifiers/project_checks.py`) is registered in
-   the same `run_project_checks` dispatcher item 7 below uses, ERROR
-   severity, and BLOCKS the `update-step` call further down unless
-   AGENTS.md exists and contains the Codex appendix marker. No separate
-   CLI to run here — it fires automatically when `update-step` runs.
+   (`shared/scripts/tools/verifiers/agents_md_completion_check.py`) is
+   registered in the same `run_project_checks` dispatcher item 7 below
+   uses, ERROR severity, and BLOCKS the `update-step` call further down
+   unless AGENTS.md exists, contains the Codex appendix marker, AND its
+   body before the appendix is CLAUDE.md's actual content with the three
+   documented substitutions applied (not merely a file that happens to
+   contain the marker somewhere — checked against
+   `shared/scripts/lib/agents_md_substitutions.py`'s canonical pairs). No
+   separate CLI to run here — it fires automatically when `update-step`
+   runs.
 4. .shipwright/agent_docs/ directory exists with all 3 files — architecture.md,
    decision_log.md, conventions.md (Full Application only; session_handoff.md
    is written later by the Stop hook, not scaffolded here, and does not count
