@@ -23,7 +23,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-# Canonical greenfield/foreign predicate, single SSoT every hook shares. `for` (not a function) keeps these at module scope while retrying past update-marketplace.sh's atomic-swap absence gap (iterate-2026-09-24-stop-hook-cache-race).
+# Canonical greenfield/foreign predicate, single SSoT every hook shares. `for` (not a function) keeps these at module scope while retrying past update-marketplace.sh's atomic-swap absence gap (iterate-2026-09-24-stop-hook-cache-race). Also catches FileNotFoundError: a lookup that already located a lib/*.py file can still lose the race to the loader's own open() of that path once the swap renames the directory away underneath it (Tier-3 review, PR #796 round 5).
 for _attempt in range(20):
     try:
         from lib.atomic_write import durable_atomic_write
@@ -37,7 +37,7 @@ for _attempt in range(20):
         from lib.phase_quality import resolve_run_id
         from lib.project_root import is_shipwright_project, resolve_project_root
         break
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, FileNotFoundError):
         if _attempt == 19: raise
         time.sleep(0.05)
 

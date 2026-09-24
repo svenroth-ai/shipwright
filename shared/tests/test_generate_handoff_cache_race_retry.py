@@ -77,3 +77,67 @@ def test_import_fails_when_lib_never_reappears(tmp_path):
 
     assert result.returncode != 0
     assert "ModuleNotFoundError" in result.stderr, result.stderr
+
+
+# Tier-3 review, PR #796 round 5: the swap can also lose a narrower race than
+# "lib never existed" — the finder locates lib/atomic_write.py (stat
+# succeeds), but the loader's own subsequent open() of that same path can
+# still lose to the directory being renamed away in between, raising
+# FileNotFoundError instead of ModuleNotFoundError. A real filesystem
+# reproduction needs nanosecond-scale timing a test can't force, so this
+# drives the exact same code path deterministically by making
+# SourceFileLoader.get_data raise FileNotFoundError once, then succeed.
+_FLAKY_LOADER_PATCH = """
+import importlib.machinery
+_orig_get_data = importlib.machinery.SourceFileLoader.get_data
+_state = {"raised": False}
+def _flaky_get_data(self, path):
+    # Only the .py source read is unguarded in CPython's get_code() — the
+    # .pyc bytecode-cache read just above it is already wrapped in the
+    # stdlib's own try/except OSError, so matching that path too would
+    # trigger the (harmless, pre-existing) cache-miss fallback instead of
+    # the race this test exists to reproduce.
+    if path.endswith("atomic_write.py") and not _state["raised"]:
+        _state["raised"] = True
+        raise FileNotFoundError(path)
+    return _orig_get_data(self, path)
+importlib.machinery.SourceFileLoader.get_data = _flaky_get_data
+import generate_handoff_on_stop
+"""
+
+_ALWAYS_FLAKY_LOADER_PATCH = """
+import importlib.machinery
+_orig_get_data = importlib.machinery.SourceFileLoader.get_data
+def _always_flaky_get_data(self, path):
+    if path.endswith("atomic_write.py"):
+        raise FileNotFoundError(path)
+    return _orig_get_data(self, path)
+importlib.machinery.SourceFileLoader.get_data = _always_flaky_get_data
+import generate_handoff_on_stop
+"""
+
+
+def test_import_survives_a_transient_filenotfounderror_from_the_loaders_own_open(tmp_path):
+    hooks_dir = _prepare_isolated_hook_tree(tmp_path)
+
+    result = subprocess.run(
+        [sys.executable, "-c", _FLAKY_LOADER_PATCH],
+        cwd=hooks_dir, capture_output=True, text=True, timeout=15,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "FileNotFoundError" not in result.stderr, result.stderr
+
+
+def test_import_fails_when_the_loaders_open_never_recovers(tmp_path):
+    """The FileNotFoundError branch of the retry has the same bound — a
+    persistent failure must still raise, not hang or swallow it silently."""
+    hooks_dir = _prepare_isolated_hook_tree(tmp_path)
+
+    result = subprocess.run(
+        [sys.executable, "-c", _ALWAYS_FLAKY_LOADER_PATCH],
+        cwd=hooks_dir, capture_output=True, text=True, timeout=15,
+    )
+
+    assert result.returncode != 0
+    assert "FileNotFoundError" in result.stderr, result.stderr
