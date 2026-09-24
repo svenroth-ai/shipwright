@@ -249,6 +249,24 @@ def test_noprune_preserves_a_dst_file_the_copy_loop_excludes_by_name_even_when_s
         "excluded-by-name file present in both trees was dropped instead of preserved")
 
 
+def test_dst_parent_directory_is_created_before_lock_acquisition(tmp_path):
+    """Tier-3 review, PR #796 round 4: the lock is a SIBLING of $dst (built
+    under `${dst}.sync.lock.$$`), so `mkdir "$candidate"` needs $dst's parent
+    to already exist. A first-ever sync into a not-yet-existing cache root
+    (or a plugin mirror directory before its first copy) has no such parent,
+    so this exited under `set -e` before ever reaching the `mkdir -p
+    "$staging"` that would otherwise have created the whole tree."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "a.py").write_text("a", encoding="utf-8")
+    dst = tmp_path / "not_yet_created" / "nested" / "dst"
+
+    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "a.py").exists()
+
+
 def test_default_prune_removes_files_absent_from_source(tmp_path):
     src, dst = tmp_path / "src", tmp_path / "dst"
     src.mkdir()

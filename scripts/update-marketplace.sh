@@ -94,6 +94,14 @@ _atomic_sync_dir() {
     local old="${dst}.sync-old.$$"
     local lock="${dst}.sync.lock"
 
+    # A first-ever sync to a not-yet-existing target (e.g. a brand new cache
+    # root, or a plugin mirror directory before its first copy) has no parent
+    # directory yet. The lock below is a SIBLING of $dst, so `mkdir
+    # "$candidate"` needs that parent to already exist; without this it exits
+    # under `set -e` before ever reaching the `mkdir -p "$staging"` that would
+    # otherwise have created the whole tree (Tier-3 review, PR #796 round 4).
+    mkdir -p "$(dirname "$dst")"
+
     # Serialize concurrent syncs of the SAME $dst (Tier-3 review, PR #796):
     # without this, two runs race the final mv-swap below and can interleave
     # it, and the leftover sweep just below could delete an ACTIVE run's own
