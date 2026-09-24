@@ -28,6 +28,7 @@ UPDATE_SH = REPO_ROOT / "scripts" / "update-marketplace.sh"
 _SRC = UPDATE_SH.read_text(encoding="utf-8")
 
 _RELEASE_GUARD_RE = r'_lock_is_owned_by "\$lock" "\$\$" && rm -rf "\$lock" 2>/dev/null \|\| true'
+_INITIAL_PID_WRITE_RE = r'\(set -C; echo "\$\$" > "\$lock/pid"\) 2>/dev/null'
 
 
 def _extract(name: str) -> str:
@@ -87,9 +88,9 @@ def test_reclaimed_lock_is_verified_before_deletion_not_trusted_by_path(tmp_path
     assert re.search(r'elif mkdir "\$lock" 2>/dev/null; then', tail), (
         "expected a mismatched (live, replacement) claim to be restored via a fresh "
         "`mkdir \"$lock\"` claim, not deleted outright")
-    assert re.search(r'mv "\$discard/pid" "\$lock/pid"', tail), (
-        "expected only the pid FILE to be moved into the freshly mkdir'd lock, "
-        "not the whole $discard directory")
+    assert re.search(r'set -C; cat "\$discard/pid" > "\$lock/pid"', tail), (
+        "expected only the pid FILE's content to be noclobber-written into the "
+        "freshly mkdir'd lock, not the whole $discard directory nor an unprotected mv")
 
 
 def test_restore_never_uses_a_directory_to_directory_mv(tmp_path):
@@ -214,3 +215,65 @@ def test_exit_trap_verifies_ownership_before_deleting():
     assert "_lock_is_owned_by" in trap_line.group(0), (
         "the EXIT trap must verify ownership via _lock_is_owned_by before deleting "
         "_CURRENT_SYNC_LOCK, not delete it by path alone")
+
+
+def test_initial_pid_write_does_not_overwrite_a_replacement_lock(tmp_path):
+    """Tier-3 review, PR #796 round 12: the grace-period reclamation (sibling
+    file's test_persistently_empty_lock_is_reclaimed_after_grace_period)
+    treats an empty "$lock" as abandoned after a bounded silence — but a
+    merely PAUSED (not dead) installer can resume AFTER another process has
+    already reclaimed and repopulated that same path with its own live
+    claim. A plain `echo "$$" > "$lock/pid"` would then silently overwrite
+    the new owner's pid with the paused process's own, letting both believe
+    they hold the lock and sync the same $dst concurrently. Extracts the
+    actual pid-write line verbatim (so a future edit that drops the
+    noclobber guard fails this test) and runs it directly against a lock
+    already populated by someone else — it must fail, leaving the existing
+    owner's pid untouched."""
+    m = re.search(_INITIAL_PID_WRITE_RE, _SRC)
+    assert m, "noclobber pid-write line not found verbatim in update-marketplace.sh — has it changed shape?"
+    lock = tmp_path / "dst.sync.lock"
+    lock.mkdir()
+    (lock / "pid").write_text("replacement_owner_pid", encoding="utf-8")
+
+    script = "set -euo pipefail\n" + f'lock="{_p(lock)}"\n' + m.group(0) + "\n"
+    res = _run_script(script)
+
+    assert res.returncode != 0, "the noclobber pid-write must fail when the lock is already owned"
+    assert (lock / "pid").read_text(encoding="utf-8") == "replacement_owner_pid", (
+        "the replacement owner's pid was overwritten by the paused process's own write")
+
+
+def test_initial_pid_write_succeeds_on_a_freshly_claimed_lock(tmp_path):
+    """Companion to the test above: confirms the noclobber guard isn't just
+    trivially inert (never succeeding) — the normal, uncontested fast path
+    (nobody else has touched the lock since this process's own `mkdir`)
+    must still write the pid as before."""
+    m = re.search(_INITIAL_PID_WRITE_RE, _SRC)
+    assert m, "noclobber pid-write line not found verbatim in update-marketplace.sh — has it changed shape?"
+    lock = tmp_path / "dst.sync.lock"
+    lock.mkdir()
+
+    script = "set -euo pipefail\n" + f'lock="{_p(lock)}"\n' + m.group(0) + "\n"
+    res = _run_script(script)
+
+    assert res.returncode == 0, res.stderr
+    assert (lock / "pid").read_text(encoding="utf-8").strip() != "", (
+        "the pid was not written on the uncontested fast path")
+
+
+def test_failed_pid_write_resets_current_sync_lock_and_retries():
+    """A process that loses the noclobber race above must not proceed as if
+    it holds the lock — `_CURRENT_SYNC_LOCK` (which the EXIT trap uses to
+    decide what to clean up) must be reset, and acquisition must retry from
+    scratch (`continue`), never fall through to the sync body as if it had
+    `break`-en out with a genuine claim."""
+    body = _extract("_atomic_sync_dir")
+    mkdir_idx = body.index('if mkdir "$lock" 2>/dev/null; then')
+    write_idx = body.index('(set -C; echo "$$" > "$lock/pid")', mkdir_idx)
+    tail = body[write_idx:]
+    reset_idx = tail.index('_CURRENT_SYNC_LOCK=""')
+    continue_idx = tail.index("continue")
+    assert reset_idx < continue_idx, (
+        "expected _CURRENT_SYNC_LOCK to be reset before retrying acquisition "
+        "after losing the noclobber race")

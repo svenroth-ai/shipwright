@@ -153,8 +153,30 @@ _atomic_sync_dir() {
     while true; do
         if mkdir "$lock" 2>/dev/null; then
             _CURRENT_SYNC_LOCK="$lock"
-            echo "$$" > "$lock/pid"
-            break
+            if (set -C; echo "$$" > "$lock/pid") 2>/dev/null; then
+                break
+            fi
+            # Lost the race: this process was merely PAUSED (OS scheduling
+            # under load, not a crash) between claiming the empty "$lock"
+            # directory above and writing its own pid into it. In that gap,
+            # another contender's grace-period reclamation
+            # (`_EMPTY_LOCK_GRACE_S` below) can come and go, replacing
+            # "$lock" with its own live claim before this process resumes —
+            # a plain `echo ... > "$lock/pid"` would then silently
+            # overwrite that live claim's pid with this process's own,
+            # letting BOTH processes believe they hold the lock and sync
+            # the same $dst concurrently (Tier-3 review, PR #796 round 12).
+            # `set -C` (noclobber) turns the write itself into the
+            # ownership check: it is a shell BUILTIN redirection, not an
+            # external tool, so it is exactly as portable across
+            # GNU/BSD/Windows Git Bash as `mkdir` itself, and it fails
+            # atomically if "$lock/pid" already exists — which it never
+            # could at this point unless a replacement claim beat us to it.
+            # Nothing legitimate was ever held on this path, so there is
+            # nothing of ours to release; retry acquisition as if the
+            # `mkdir` itself had failed.
+            _CURRENT_SYNC_LOCK=""
+            continue
         fi
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
         if [ -n "$holder_pid" ]; then
@@ -208,7 +230,21 @@ _atomic_sync_dir() {
                     # either way. Only the pid FILE is moved (not the whole
                     # $discard directory) since a plain-file `mv` onto a
                     # path that does not yet exist has no such ambiguity.
-                    mv "$discard/pid" "$lock/pid" 2>/dev/null || true
+                    # `set -C` (noclobber), not a plain `mv`/`>`: this
+                    # `mkdir` reopens the SAME empty-window race the initial
+                    # claim above closes — if THIS restore is itself paused
+                    # between its own `mkdir "$lock"` and this write, a
+                    # further reclaimer can replace "$lock" again in the
+                    # gap, and an unconditional overwrite would silently
+                    # clobber ITS pid too (Tier-3 review, PR #796 round 12).
+                    # A failed write here means this restore attempt itself
+                    # lost the race; the freshly mkdir'd "$lock" is
+                    # therefore no longer ours to populate, but it is also
+                    # not safe to delete (round 9) since ownership can no
+                    # longer be confirmed either way — leave it exactly as
+                    # noclobber left it and only clean up $discard, which
+                    # remains uniquely ours regardless of the outcome.
+                    (set -C; cat "$discard/pid" > "$lock/pid") 2>/dev/null || true
                     rmdir "$discard" 2>/dev/null || rm -rf "$discard" 2>/dev/null || true
                 else
                     # Could not restore (something else has since taken
