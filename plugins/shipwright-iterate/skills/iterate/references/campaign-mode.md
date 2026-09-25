@@ -339,9 +339,14 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    (a limitation documented since this campaign's own first investigation
    doc, Finding 5), so a `merging` unit's own in-flight `gh pr checks
    --watch` / `gh pr merge` can still complete genuinely after its row is
-   force-held. See `lib.campaign_drain`'s own module docstring for the full
-   disposition (why neither cancelling nor waiting-until-confirmed-stopped
-   is implementable today, and the named reconciliation follow-up).
+   force-held. **R5b round 3 closes the resulting silent-corruption case**:
+   step 4 (Finalize) below now re-checks every `drain_timeout`-held unit's
+   PR against GitHub's own state and corrects the record to `merged` when
+   the worker's own merge landed after the forced transition — see
+   `lib.campaign_drain`'s own module docstring for the full disposition
+   (why neither cancelling nor waiting-until-confirmed-stopped is
+   implementable today, and why acting on the RECORD after the fact is the
+   remaining, sufficient remedy).
        → exit 0 → parse `claimed`: a JSON array, one object per unit this wave
          just claimed — `{id, spec_path, attempt, attempt_id, base_branch,
          depends_on}` — in campaign.md row order (`cmd_next_batch` preserves
@@ -1300,9 +1305,26 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        own post-merge processing is a different latency class than CI):
          unset confirmed_sha
          deadline=$(( $(date +%s) + 300 ))
+         gh_query_failures=0
          while [ "$(date +%s)" -lt "$deadline" ]; do
-           confirmed_sha=$(gh pr view "$pr_url" --json mergeCommit -q '.mergeCommit.oid // empty')
-           [ -n "$confirmed_sha" ] && break
+           if confirmed_sha=$(gh pr view "$pr_url" --json mergeCommit -q '.mergeCommit.oid // empty'); then
+             gh_query_failures=0
+             [ -n "$confirmed_sha" ] && break
+           else
+             # A `gh` command FAILURE (network, auth, rate limit) is not the
+             # same fact as "the query succeeded and mergeCommit is merely
+             # not populated yet" — conflating the two let a persistent `gh`
+             # outage silently ride out the full 300s bound below and demote
+             # the unit on the claim that its PR genuinely IS merged and
+             # only the SHA is late. That is a stronger, false claim when
+             # the truth is "we could not ask GitHub at all" (external
+             # review, R5b round 3, medium). Three consecutive failures —
+             # not the first — distinguishes a broken query from the
+             # transient blip this same loop already tolerates by retrying
+             # every 5s.
+             gh_query_failures=$((gh_query_failures + 1))
+             [ "$gh_query_failures" -lt 3 ] || STRICT-STOP
+           fi
            sleep 5
          done
        Timeout (still empty after the deadline) demotes ONLY this unit — never
@@ -1392,6 +1414,48 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
 4. **Finalize:**
    ```bash
    uv run "{shared_root}/scripts/lib/campaign_drain.py" run --state .shipwright/loop_state.json || STRICT-STOP
+   ```
+   **Reconcile `drain_timeout`-held merges before finalizing (campaign-dag-scheduler
+   R5b round 3, Tier-3 review — closes the live-reconciliation gap
+   `campaign_drain.py`'s own module docstring named as an unbuilt follow-up).**
+   A unit the drain force-transitioned `merging -> held`
+   (`reason_code: "drain_timeout"`) may have had its OWN in-flight `gh pr merge`
+   complete genuinely AFTER that forced transition — the drain changes the
+   RECORD, never the WORKER (no cancellation primitive exists for an
+   already-spawned Task). Before finalize can treat such a row as truly
+   not-merged, re-check each one against GitHub's own state and correct the
+   record if it actually landed, so the campaign never reports a unit as
+   held/unmerged while its PR sits merged on `origin/{default}`:
+   ```bash
+   loop_state=.shipwright/loop_state.json
+   drain_timeout_held=$(jq -r '.units[] | select(.status == "held" and .reason_code == "drain_timeout") | .id' "$loop_state")
+   for id in $drain_timeout_held; do
+     unit=$(jq -c --arg id "$id" '.units[] | select(.id == $id)' "$loop_state")
+     branch=$(jq -r '.branch' <<<"$unit")
+     unit_wt=$(jq -r '.worktree' <<<"$unit")
+     [ -d "$unit_wt" ] || unit_wt="{project_root}"
+     # A `gh` failure here (network, auth) must never block finalize — the
+     # row is already `held`, a safe terminal state; `continue` leaves it
+     # exactly as the drain recorded it, reconcilable on a LATER run instead
+     # of turning a best-effort correction into a new STRICT-STOP surface.
+     pr_state=$(cd "$unit_wt" && gh pr view "$branch" --json state,mergeCommit 2>/dev/null) || continue
+     [ "$(jq -r '.state' <<<"$pr_state")" = "MERGED" ] || continue
+     merged_sha=$(jq -r '.mergeCommit.oid // empty' <<<"$pr_state")
+     [ -n "$merged_sha" ] || continue
+     uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+       --state "$loop_state" --unit "$id" --status merged --force --confirm-no-task-running \
+       --campaign-worktree "{project_root}" --merged-commit "$merged_sha" \
+       --reason "drain_timeout reconciliation: the worker's own merge completed after the forced held transition" \
+       --operator "campaign-mode:4-reconcile" --reason-code drain_timeout_reconciled || STRICT-STOP
+   done
+   ```
+   `cmd_mark`'s own `--status merged` path re-fetches `origin` and verifies the
+   SHA's ancestry itself (never trusts a hand-derived value blindly, since this
+   is the one operator-override path), so no separate ancestry check is needed
+   here. A unit whose PR is genuinely still unmerged (the common case) or whose
+   `gh` query fails is left exactly as the drain recorded it — this pass only
+   ever CORRECTS a stale `held` into `merged`, never the reverse.
+   ```bash
    uv run ... finalize --state .shipwright/loop_state.json || STRICT-STOP
    uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" release --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"
    ```

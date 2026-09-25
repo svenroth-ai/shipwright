@@ -58,20 +58,27 @@ R-round of this campaign was built, not a gap this module introduced). A
 ``gh pr merge`` was already running when the bound elapsed can therefore
 still complete its merge genuinely, after its row has already been
 force-transitioned to ``held``. The two remedies an external reviewer
-proposed here — cancel/fence the worker, or never finalize until it is
-confirmed stopped — are not implementable with today's tooling: the first
-has no primitive to call, and the second would reintroduce the exact
-unbounded hang this module exists to close (a stuck-but-heartbeating runner
-would wedge the campaign forever). Accepted as a documented, scoped-down
-claim, matching how this same sub-iterate's ADR already disposed of the
-adjacent "lock-release survives a crash" pushback: "release on every path"
-means every path that reaches the release line, not a guarantee against
-what a worker outside this process's control does afterward. A live
-reconciliation pass (re-checking a `drain_timeout`-held `merging` unit's PR
-state before treating it as truly not-merged) would close the specific
-silent-corruption case and is a named follow-up, not built here — it is new
-plumbing (a `gh` round-trip, `loop_claim.py mark-merged` wiring, its own
-tests) rather than a fix to this module's existing logic.
+originally proposed here — cancel/fence the worker, or never finalize until
+it is confirmed stopped — are still not implementable with today's tooling:
+the first has no primitive to call, and the second would reintroduce the
+exact unbounded hang this module exists to close (a stuck-but-heartbeating
+runner would wedge the campaign forever).
+
+**R5b round 3: the live-reconciliation pass named above as a follow-up is
+now built** — ``campaign-mode.md`` step 4 (Finalize) re-checks every
+`drain_timeout`-held unit's PR against GitHub's own state, between
+``campaign_drain.py run`` and ``cmd_finalize``, and corrects the record to
+`merged` (via `loop_claim.py mark`'s audited operator-override path, which
+re-verifies the SHA's ancestry itself) when the worker's own merge landed
+after the forced transition. This closes the specific silent-corruption
+case (a unit recorded `held` while its PR is actually merged on
+`origin/{default}`) without needing to cancel or fence anything — it acts
+on the RECORD after the fact, exactly like this module's own forced
+transitions do, rather than attempting to control the WORKER. What remains
+a genuine, accepted limitation is narrower now: the state machine can be
+transiently inconsistent with GitHub between the forced `held` transition
+and step 4's next reconciliation pass — never permanently, and never
+silently past the next finalize.
 """
 
 from __future__ import annotations

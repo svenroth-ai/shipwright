@@ -140,3 +140,22 @@ def test_head_pin_reads_shipped_head_from_review_pin_json_directly():
         "head_pin's SHA must be read from review_pin.json's own "
         "shipped_head field before head_pin is constructed from it"
     )
+
+
+def test_merge_commit_confirmation_distinguishes_gh_query_failure_from_not_yet_merged():
+    """External review, R5b round 3, medium: a persistent `gh` command
+    failure (network, auth, rate limit) was indistinguishable from "the
+    query succeeded and mergeCommit is merely not populated yet" — both
+    silently rode out the full 300s bound and landed on
+    `merge_confirmation_timeout`, which asserts the PR genuinely IS merged
+    and only the SHA is late. Three consecutive `gh` failures (not the
+    first, since this loop already tolerates one transient blip by
+    retrying every 5s) must STRICT-STOP instead of silently exhausting the
+    timeout and mislabeling a broken query as a merged-but-unconfirmed PR."""
+    step = _step_3g()
+    assert "gh_query_failures" in step
+    fail_at = step.index("gh_query_failures")
+    window = step[fail_at:fail_at + 1400]
+    assert "gh_query_failures + 1" in window
+    assert '"$gh_query_failures" -lt 3' in window
+    assert "strict-stop" in window
