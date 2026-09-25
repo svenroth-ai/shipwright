@@ -1,9 +1,12 @@
 """Prose guards for campaign-dag-scheduler R5b ("serial merge lane: review
-pinning, staleness cascade, STRICT-STOP") — the drain/finalize (AC5), step-3h
+pinning, staleness cascade, STRICT-STOP") — the drain sweep (AC5), step-3h
 status mapping (AC6), and second-round external-review-fix acceptance
 criteria. Split out of `test_campaign_r5b_merge_lane_prose.py` when it
 crossed the 300-line guideline (round 2) — AC1-AC4 (3f-bis/3g core) stay
-there; this file covers AC5 onward, reusing the same harness."""
+there; this file covers AC5 onward, reusing the same harness. Step 4's own
+held-merge reconciliation pass (round 3-4) split further, into the sibling
+`test_campaign_r5b_merge_lane_prose_finalize.py`, when this file itself
+crossed the guideline (round 5)."""
 
 from __future__ import annotations
 
@@ -103,7 +106,12 @@ def test_step_3h_does_not_change_campaign_progress_enum():
 def test_pr_identity_is_verified_before_merge_not_only_head_sha():
     """External review (code-reviewer + doubt-reviewer, high): `--match-head-
     commit` alone proves only the head SHA, never that this is still the
-    pinned PR OBJECT (node id / head ref / base ref)."""
+    pinned PR OBJECT (node id / head ref / base ref). Round 5 (Tier-3
+    review, medium): field-name presence alone does not prove each fresh
+    value is actually COMPARED against its pinned counterpart, or that a
+    mismatch fail-closes — assert the three real equality checks and their
+    STRICT-STOP guards directly, not just that the names appear somewhere
+    in the window."""
     step = _step_3g()
     identity_at = step.index("pr_identity=")
     merge_at = step.rindex('gh pr merge')
@@ -112,6 +120,18 @@ def test_pr_identity_is_verified_before_merge_not_only_head_sha():
     assert "pinned_pr_node_id" in window
     assert "pinned_pr_head_ref" in window
     assert "pinned_pr_base_ref" in window
+
+    def _fail_closed_equality_check(field: str, pinned_var: str) -> None:
+        check = f'{field} <<<"$pr_identity")" = "${pinned_var}" ] || strict-stop'
+        assert check in window, (
+            f"{pinned_var} must be compared against a FRESH {field} read and "
+            "fail-closed (|| STRICT-STOP) on any mismatch, not merely be "
+            "read into a variable somewhere in this window"
+        )
+
+    _fail_closed_equality_check(".id", "pinned_pr_node_id")
+    _fail_closed_equality_check(".headrefname", "pinned_pr_head_ref")
+    _fail_closed_equality_check(".baserefname", "pinned_pr_base_ref")
 
 
 def test_rebase_cascade_actually_invokes_ensure_current_not_just_a_comment():
@@ -225,66 +245,3 @@ def test_drain_timeout_worker_continuation_limitation_is_disclosed():
     full = CAMPAIGN_DOC.read_text(encoding="utf-8").lower()
     assert "known, accepted limitation" in full
     assert "cancel an already-spawned" in full
-
-
-# --- Third-round external review fixes (R5b round 3, Tier-3 BLOCK) ---
-
-
-def test_held_merge_reconciliation_runs_between_drain_and_finalize():
-    """Tier-3 review, R5b round 3: closes the live-reconciliation gap
-    `campaign_drain.py`'s own module docstring named as an unbuilt follow-up
-    — a `drain_timeout`-held unit's own in-flight merge may have completed
-    genuinely after the forced transition, so finalize must never run
-    before this check corrects the record."""
-    step = _step_4()
-    drain_at = step.index("campaign_drain.py")
-    reconcile_at = step.index("reconcilable_held")
-    finalize_at = step.index("finalize --state")
-    assert drain_at < reconcile_at < finalize_at, (
-        "the held-merge reconciliation must run strictly between "
-        "campaign_drain.py's own drain and cmd_finalize"
-    )
-
-
-def test_held_merge_reconciliation_verifies_merged_state_before_correcting():
-    """A `gh` failure or a genuinely-still-open PR must leave the row exactly
-    as recorded -- this pass only ever corrects a stale `held` into
-    `merged`, never blocks finalize on a best-effort check."""
-    step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 1200]
-    assert "gh pr view" in window
-    assert '"merged"' in window
-    assert "mergecommit.oid" in window
-    assert "|| continue" in window
-
-
-def test_held_merge_reconciliation_marks_merged_via_forced_operator_override():
-    step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 1600]
-    mark_at = window.index('loop_claim.py" mark ')
-    tail = window[mark_at:mark_at + 400]
-    assert "--status merged" in tail
-    assert "--campaign-worktree" in tail
-    assert "--merged-commit" in tail
-    assert "held_merge_reconciled" in tail
-    assert "|| strict-stop" in tail
-
-
-# --- Fourth-round external review fixes (R5b round 4, Tier-3 BLOCK) ---
-
-
-def test_held_merge_reconciliation_covers_both_drain_timeout_and_confirmation_timeout():
-    """Tier-3 review, R5b round 4: round 3's reconciliation scoped to
-    `drain_timeout` alone left a `merge_confirmation_timeout` row -- whose PR
-    3g's own poll already confirmed MERGED, only the SHA confirmation timed
-    out -- with no path back to `merged`, mapping it to a permanent, false
-    `failed` at step 3h. Both `reason_code`s need the identical correction,
-    so one filter must cover both."""
-    step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 300]
-    assert '.status == "held"' in window
-    assert '.reason_code == "drain_timeout"' in window
-    assert '.reason_code == "merge_confirmation_timeout"' in window
