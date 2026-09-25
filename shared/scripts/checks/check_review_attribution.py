@@ -69,6 +69,7 @@ if str(_SHARED_LIB) not in sys.path:
 
 from lib.review_attribution import (  # noqa: E402
     ReviewAttributionError,
+    _safe_segment,
     pin,
     resolve_unit_identity,
     ship,
@@ -91,17 +92,25 @@ def invalidate(state_path, unit_id: str, *, project_root: str, campaign_worktree
     ``lib.review_attribution``'s private ``_pin_dir``/``_legacy_reviewed_
     head_path`` (that module is bloat-baseline-pinned with zero headroom) —
     the two path-construction lines are the whole surface, kept in lockstep
-    with :func:`lib.review_attribution.pin`'s own by the shared
-    ``_safe_segment``-equivalent invariant: `resolve_unit_identity` already
-    resolves and case-canonicalizes `unit_id`/`attempt_id`, so nothing here
-    re-derives an identity `pin()` did not already validate."""
+    with :func:`lib.review_attribution.pin`'s own by actually calling the
+    SAME ``_safe_segment`` guard those two path-builders apply (Tier-3
+    review, R5b round 2: an earlier draft's docstring claimed this parity
+    without the code enforcing it — ``loop_id``, a raw unvalidated CLI
+    argument, joined straight into a path later passed to ``unlink``, so a
+    crafted ``--loop-id ../../../whatever`` could delete a file outside the
+    intended ``runs/`` tree). `resolve_unit_identity` already resolves
+    `unit_id`/`attempt_id`, but does not itself validate them as safe path
+    segments — that is `_pin_dir`'s job, reproduced here."""
     if _CONTROL_CHAR_RE.search(reason):
         raise ReviewAttributionError(f"--reason {reason!r} contains a control character — rejected")
     state = json.loads(Path(state_path).read_text(encoding="utf-8"))
     identity = resolve_unit_identity(state, unit_id, campaign_worktree=campaign_worktree)
     canonical_id, attempt_id = identity["unit_id"], identity["attempt_id"]
-    unit_dir = Path(project_root) / ".shipwright" / "runs" / str(loop_id) / str(canonical_id)
-    pin_path = unit_dir / str(attempt_id) / "review_pin.json"
+    safe_loop_id = _safe_segment("loop_id", str(loop_id))
+    safe_unit_id = _safe_segment("unit_id", str(canonical_id))
+    safe_attempt_id = _safe_segment("attempt_id", str(attempt_id))
+    unit_dir = Path(project_root) / ".shipwright" / "runs" / safe_loop_id / safe_unit_id
+    pin_path = unit_dir / safe_attempt_id / "review_pin.json"
     legacy_path = unit_dir / "reviewed_head"
     pin_existed = pin_path.exists()
     pin_path.unlink(missing_ok=True)

@@ -46,6 +46,32 @@ move an unbounded number of rows atomically under ONE ``loop.lock``
 acquisition — looping N separate ``cmd_mark`` subprocess calls would not be
 atomic across them (a concurrent ``next-batch`` could claim a
 still-``pending`` row between two of those calls).
+
+**Known, accepted limitation (Tier-3 review, R5b round 2): a forced
+transition changes the RECORD, never the WORKER.** ``max_drain_seconds``
+guarantees the STATE MACHINE reaches a terminal status; it does not, and
+cannot, stop the spawned ``Task`` itself — the framework has no
+cancellation primitive for an already-running ``Task``
+(``2026-09-20-campaign-dag-scheduler.md``, Finding 5, documented before any
+R-round of this campaign was built, not a gap this module introduced). A
+``merging`` unit whose own in-flight ``gh pr checks --watch`` /
+``gh pr merge`` was already running when the bound elapsed can therefore
+still complete its merge genuinely, after its row has already been
+force-transitioned to ``held``. The two remedies an external reviewer
+proposed here — cancel/fence the worker, or never finalize until it is
+confirmed stopped — are not implementable with today's tooling: the first
+has no primitive to call, and the second would reintroduce the exact
+unbounded hang this module exists to close (a stuck-but-heartbeating runner
+would wedge the campaign forever). Accepted as a documented, scoped-down
+claim, matching how this same sub-iterate's ADR already disposed of the
+adjacent "lock-release survives a crash" pushback: "release on every path"
+means every path that reaches the release line, not a guarantee against
+what a worker outside this process's control does afterward. A live
+reconciliation pass (re-checking a `drain_timeout`-held `merging` unit's PR
+state before treating it as truly not-merged) would close the specific
+silent-corruption case and is a named follow-up, not built here — it is new
+plumbing (a `gh` round-trip, `loop_claim.py mark-merged` wiring, its own
+tests) rather than a fix to this module's existing logic.
 """
 
 from __future__ import annotations

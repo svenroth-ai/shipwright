@@ -4,7 +4,10 @@ R5b, ``sub-iterates/R5b-merge-lane.md``).
 
 Lives in its own file (not ``test_review_attribution.py``, bloat-baseline
 pinned with zero headroom at 640 lines) — same one-root convention as its
-sibling, reusing the ``git_origin_repo`` fixture.
+sibling, reusing the ``git_origin_repo`` fixture. The spec's own required
+two-sequential-merges composition test lives in the sibling
+``test_check_review_attribution_composition.py`` (split out round 2, when
+this file crossed the 300-line guideline).
 
 Covers the sub-iterate spec's own two required staleness-cascade tests:
 - NEGATIVE: an unrelated sibling merge advancing ``origin/main`` must NOT
@@ -24,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from lib.review_attribution import pin, ship, verify
+from lib.review_attribution import pin, verify
 
 # Mirrors test_check_review_attribution.py's own load-by-path convention:
 # `shared/scripts/checks/` is not a package on sys.path, so the CLI module is
@@ -103,6 +106,32 @@ def test_invalidate_rejects_a_control_character_in_reason(git_origin_repo):
         raise AssertionError("expected a rejection for a control character in --reason")
     except cra.ReviewAttributionError:
         pass
+
+
+def test_invalidate_rejects_a_path_traversal_loop_id(git_origin_repo):
+    """Tier-3 review, R5b round 2, security finding: `loop_id` is a raw CLI
+    argument joined straight into a path later passed to `unlink` — a crafted
+    `--loop-id` containing `..` must be rejected before it can escape the
+    intended `.shipwright/runs/<loop_id>/` tree, never silently deleting a
+    file elsewhere in the project."""
+    work, _origin = git_origin_repo
+    _git(work, "checkout", "-b", "iterate/unit-a", "main")
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "A", "branch": "iterate/unit-a", "worktree": str(work), "attempt": 0}])
+
+    # A traversal loop_id of ".." resolves runs/../A to .shipwright/A — a file
+    # this call must never be able to reach, let alone delete.
+    canary = work / ".shipwright" / "A" / "reviewed_head"
+    canary.parent.mkdir(parents=True, exist_ok=True)
+    canary.write_text("do not delete", encoding="utf-8")
+
+    try:
+        cra.invalidate(state_path, "A", project_root=str(work), campaign_worktree=str(work),
+                        loop_id="..", reason="rebase")
+        raise AssertionError("expected a rejection for a path-traversal loop_id")
+    except cra.ReviewAttributionError:
+        pass
+    assert canary.exists(), "a rejected loop_id must never reach unlink()"
 
 
 def test_cli_invalidate_mode_end_to_end(git_origin_repo, capsys):
@@ -188,91 +217,3 @@ class TestStalenessCascade:
         assert invalidated["pin_existed"] is True
         pin_path = work / ".shipwright" / "runs" / "r5b-test" / "A" / "a0" / "review_pin.json"
         assert not pin_path.exists()
-
-
-class TestTwoSequentialMergesComposition:
-    """The spec's own required integration test (R5b-merge-lane.md, Test
-    strategy): "a real-git composition test across two sequential merges,
-    asserting shipped_head/PR-identity checks at merge time." (External
-    review, glm + openai: flagged as missing entirely from this file's first
-    draft, which covered only the staleness-cascade pair.)
-
-    No ``gh`` calls (this repo's test style avoids a live GitHub dependency
-    for pure-git composition — see
-    ``test_campaign_serial_composition_integration.py``'s own
-    ``git push origin iterate/s1:main`` idiom, reused here): a "PR merge" is
-    simulated as pushing the unit's branch onto ``main`` directly, which is
-    exactly what ``gh pr merge --squash`` does from the git object model's
-    own point of view.
-
-    File name note (external review, glm, low): this file grew beyond pure
-    ``--mode invalidate`` coverage into the staleness-cascade and (now) the
-    composition test — both real-git scenarios sharing the same
-    ``git_origin_repo`` fixture setup, which is why they live here rather
-    than fragmenting one more file for each new real-git scenario.
-    """
-
-    def test_shipped_head_and_pr_identity_survive_two_sequential_merges(self, git_origin_repo):
-        work, origin = git_origin_repo
-
-        # --- Unit A: pin, ship (simulating 3f-bis's reviews.json commit),
-        # verify at merge time, then land on main (the "PR merge"). ---
-        _git(work, "checkout", "-b", "iterate/unit-a", "main")
-        _commit_file(work, "a.txt", "v1\n")
-        state_path = work / ".shipwright" / "loop_state.json"
-        _write_loop_state(state_path, [
-            {"id": "A", "branch": "iterate/unit-a", "worktree": str(work), "attempt": 0},
-            {"id": "B", "branch": "iterate/unit-b", "worktree": str(work), "attempt": 0},
-        ])
-        pinned_a = pin(state_path, "A", project_root=str(work), campaign_worktree=str(work),
-                       loop_id="r5b-test", default_branch="main",
-                       pr_node_id="PR_NODE_A", pr_head_ref="iterate/unit-a", pr_base_ref="main")
-        _commit_file(work, ".shipwright/planning/iterate/run-a/reviews.json", '{"self":"completed"}\n')
-        shipped_a = _git(work, "rev-parse", "HEAD")
-        ship(state_path, "A", project_root=str(work), campaign_worktree=str(work),
-             loop_id="r5b-test", shipped_head=shipped_a)
-
-        # Merge-time checks, mirroring 3g's own order: shipped_head first,
-        # then the PR-identity fields the new pre-merge check (campaign-mode.md
-        # 3g, R5b) compares against a fresh `gh pr view`.
-        verified_a = verify(state_path, "A", project_root=str(work), campaign_worktree=str(work),
-                            loop_id="r5b-test", against="shipped_head")
-        assert verified_a["ok"] is True
-        assert verified_a["pin"]["pr_node_id"] == "PR_NODE_A"
-        assert verified_a["pin"]["pr_head_ref"] == "iterate/unit-a"
-        assert verified_a["pin"]["pr_base_ref"] == "main"
-        assert verified_a["pin"]["shipped_head"] == shipped_a
-
-        # "PR merge" — push A's branch onto main directly (git-object-model
-        # equivalent of `gh pr merge --squash`), without ever advancing the
-        # local `main` ref this worktree happens to have checked out.
-        _git(work, "push", "origin", "iterate/unit-a:main")
-
-        # --- Unit B: branches off the FRESH remote main (containing A's
-        # merge), goes through the identical pin/ship/verify cycle, and its
-        # own merge-time checks must be unaffected by A's unrelated merge. ---
-        _git(work, "fetch", "origin")
-        _git(work, "checkout", "-b", "iterate/unit-b", "origin/main")
-        composed = (work / "a.txt").read_text(encoding="utf-8")
-        assert composed == "v1\n", "B must compose on top of A's merge"
-        _commit_file(work, "b.txt", "v1\n")
-        pinned_b = pin(state_path, "B", project_root=str(work), campaign_worktree=str(work),
-                       loop_id="r5b-test", default_branch="main",
-                       pr_node_id="PR_NODE_B", pr_head_ref="iterate/unit-b", pr_base_ref="main")
-        _commit_file(work, ".shipwright/planning/iterate/run-b/reviews.json", '{"self":"completed"}\n')
-        shipped_b = _git(work, "rev-parse", "HEAD")
-        ship(state_path, "B", project_root=str(work), campaign_worktree=str(work),
-             loop_id="r5b-test", shipped_head=shipped_b)
-
-        verified_b = verify(state_path, "B", project_root=str(work), campaign_worktree=str(work),
-                            loop_id="r5b-test", against="shipped_head")
-        assert verified_b["ok"] is True, (
-            "A's unrelated merge to main must not affect B's own shipped_head "
-            "verification at B's own merge time"
-        )
-        assert verified_b["pin"]["pr_node_id"] == "PR_NODE_B"
-        assert verified_b["pin"]["pr_head_ref"] == "iterate/unit-b"
-        assert verified_b["pin"]["pr_base_ref"] == "main"
-        assert pinned_a["pr_node_id"] != pinned_b["pr_node_id"], (
-            "sanity: the two units' PR identities must never be conflated"
-        )

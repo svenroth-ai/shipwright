@@ -332,6 +332,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    calls `cmd_finalize` AFTER draining and releases the session lock only
    once `cmd_finalize` confirms every unit is TERMINAL, restated to still
    guarantee release on every path (see step 4).
+
+   **Known, accepted limitation (Tier-3 review, R5b round 2):** a
+   `drain_timeout` force-transition changes this unit's RECORD, never the
+   WORKER — this framework has no way to cancel an already-spawned `Task`
+   (a limitation documented since this campaign's own first investigation
+   doc, Finding 5), so a `merging` unit's own in-flight `gh pr checks
+   --watch` / `gh pr merge` can still complete genuinely after its row is
+   force-held. See `lib.campaign_drain`'s own module docstring for the full
+   disposition (why neither cancelling nor waiting-until-confirmed-stopped
+   is implementable today, and the named reconciliation follow-up).
        → exit 0 → parse `claimed`: a JSON array, one object per unit this wave
          just claimed — `{id, spec_path, attempt, attempt_id, base_branch,
          depends_on}` — in campaign.md row order (`cmd_next_batch` preserves
@@ -1144,26 +1154,37 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            # tooling, unchanged by this sub-iterate — the SAME refresh F11
            # runs pre-merge for a standalone iterate (F11.md's own
            # `ensure_current.py` block, reused not reinvented):
-           guard=$(cd "$unit_wt" && uv run "{shared_root}/scripts/tools/ensure_current.py" \
+           if guard=$(cd "$unit_wt" && uv run "{shared_root}/scripts/tools/ensure_current.py" \
              --project-root "$unit_wt" --run-id "{run_id}" \
-             --reason "3f-bis rebase cascade (rebase_count=$rebase_count)") || {
-               echo "$guard"
-               uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-                 --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-                 --status held --force --confirm-no-task-running \
-                 --reason "ensure_current failed during the rebase cascade (real conflict — not resolvable by this loop)" \
-                 --operator "campaign-mode:3f-bis" --reason-code rebase_conflict || STRICT-STOP
-             }
-           echo "$guard"
-           # On success, bump the counter and RE-ENTER 3f-bis from its own
-           # top (the `rm -f` cleanup) for a fresh diff, fresh pin, fresh
-           # cascade, fresh currency check — staleness invalidates both the
-           # prior review pin AND the prior CI verdict, so both must be
-           # redone, never just one.
-           rebase_count=$((rebase_count + 1))
-           run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-           echo "$rebase_count" > "$run_dir/rebase_count" || STRICT-STOP
-           # -> re-enter 3f-bis for this unit.
+             --reason "3f-bis rebase cascade (rebase_count=$rebase_count)"); then
+             echo "$guard"
+             # Bump the counter and RE-ENTER 3f-bis from its own top (the
+             # `rm -f` cleanup) for a fresh diff, fresh pin, fresh cascade,
+             # fresh currency check — staleness invalidates both the prior
+             # review pin AND the prior CI verdict, so both must be redone,
+             # never just one.
+             rebase_count=$((rebase_count + 1))
+             run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+             echo "$rebase_count" > "$run_dir/rebase_count" || STRICT-STOP
+             # -> re-enter 3f-bis for this unit.
+           else
+             # Success-only steps above (counter bump, re-entry) must NEVER
+             # run on this path (Tier-3 review, R5b round 2: an earlier draft
+             # reached them unconditionally even after marking the unit
+             # `held` here, re-entering 3f-bis for a unit already demoted
+             # out of this wave). Mark `held` and fall through to 3i instead
+             # — same per-unit demotion shape as the cascade-exhausted branch
+             # above, never a re-entry.
+             echo "$guard"
+             uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+               --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+               --status held --force --confirm-no-task-running \
+               --reason "ensure_current failed during the rebase cascade (real conflict — not resolvable by this loop)" \
+               --operator "campaign-mode:3f-bis" --reason-code rebase_conflict || STRICT-STOP
+             # This unit is done for this wave (held -> pending resumes it
+             # later); continue draining the rest of the wave at the next
+             # step (3i, below) — do NOT re-enter 3f-bis for this unit.
+           fi
          fi
        **Staleness trigger, restated:** this currency check — and every
        `reviewed -> built` demotion it can cause — is triggered ONLY by an
