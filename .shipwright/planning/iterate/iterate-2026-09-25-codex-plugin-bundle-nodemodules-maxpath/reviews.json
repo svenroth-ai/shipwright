@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:53.136008+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:25.887989+00:00",
+      "disposition": "external plan review is medium+ only per SKILL.md Phase Matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:25.511608+00:00",
+      "disposition": "no risk flags at small complexity — Full Code Review cascade not triggered per SKILL.md Phase Matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:25.630378+00:00",
+      "disposition": "conditional Stage-3 reviewer, only runs after code-reviewer; code review itself not triggered at this complexity/risk profile",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:25.763256+00:00",
+      "disposition": "external LLM code review is medium+ only per SKILL.md Phase Matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:25.398924+00:00",
+      "disposition": "no risk flags at small complexity — Full Code Review cascade (spec-reviewer Stage 1) not triggered per SKILL.md Phase Matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-25T10:33:26.002164+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
