@@ -238,6 +238,21 @@ _atomic_sync_dir() {
             _CURRENT_SYNC_LOCK=""
             continue
         fi
+        # `mkdir "$lock"` also fails when "$lock" exists but is NOT a
+        # directory (a foreign plain file happening to sit at this sibling
+        # path). Without this check, `cat "$lock/pid"`/`"$lock/token"` both
+        # silently fail on a non-directory path and read back as empty —
+        # indistinguishable from a legitimate installer's pid-write gap — so
+        # after the grace period below the empty-pid reclaim path would `mv`
+        # that foreign file to "$discard", re-read it (also empty, so
+        # "matching"), and `rm -rf` it outright: deleting an unrelated file
+        # that was never a lock at all (Tier-3 review, PR #796 round 23,
+        # data-loss finding). Abort instead of guessing what it is or how it
+        # got there.
+        if [ -e "$lock" ] && [ ! -d "$lock" ]; then
+            echo "  [!!] ${label}: \"$lock\" exists but is not a directory — refusing to treat a foreign file as a stale lock" >&2
+            return 1
+        fi
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
         holder_token=$(cat "$lock/token" 2>/dev/null || echo "")
         if [ -n "$holder_pid" ]; then

@@ -138,6 +138,32 @@ def test_stale_lock_with_dead_holder_is_reclaimed(tmp_path):
     assert not lock.exists(), "the reclaimed (and then re-released) lock should not survive a clean run"
 
 
+def test_a_foreign_file_at_the_lock_path_is_never_treated_as_a_stale_lock(tmp_path):
+    """Tier-3 review, PR #796 round 23, data-loss finding: `mkdir "$lock"`
+    also fails when "$lock" exists but is NOT a directory -- a foreign plain
+    file happening to sit at this sibling path. `cat "$lock/pid"` and
+    `"$lock/token"` both silently fail on a non-directory path and read back
+    empty, indistinguishable from a legitimate installer's pid-write gap, so
+    after the grace period the empty-pid reclaim path used to `mv` that
+    foreign file to "$discard", re-read it (also empty, so "matching"), and
+    `rm -rf` it outright -- destroying a file that was never a lock at all.
+    The sync must instead abort with an error and leave the foreign file
+    completely untouched."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "a.py").write_text("a", encoding="utf-8")
+    lock = dst.parent / (dst.name + ".sync.lock")
+    lock.write_text("not a lock directory", encoding="utf-8")
+
+    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
+
+    assert res.returncode != 0, (
+        "a foreign file at the lock path must abort the sync, not be silently reclaimed")
+    assert lock.is_file(), "the foreign file was replaced or removed instead of left untouched"
+    assert lock.read_text(encoding="utf-8") == "not a lock directory", (
+        "the foreign file's content was lost")
+
+
 def test_stale_lock_is_claimed_atomically_not_deleted_by_name(tmp_path):
     """Tier-3 review, PR #796 round 3: two contenders can both read the same
     dead PID; a bare `rm -rf "$lock"` deletes by name only, so if the other
