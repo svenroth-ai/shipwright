@@ -30,7 +30,7 @@ from _campaign_prose_harness import (  # noqa: E402
 def test_head_equals_reviewed_head_is_asserted_before_the_commit():
     step = _step_3f_bis()
     assert "current_head" in step and "pinned_reviewed_head" in step
-    assert_at = step.index('"$current_head" = "$pinned_reviewed_head"')
+    assert_at = step.index('"$current_head" != "$pinned_reviewed_head"')
     commit_at = step.index('commit -m "chore(review): record the delegated cascade')
     assert assert_at < commit_at, (
         "the HEAD == reviewed_head assertion must precede the reviews.json commit"
@@ -39,11 +39,56 @@ def test_head_equals_reviewed_head_is_asserted_before_the_commit():
 
 def test_a_head_deviation_invalidates_the_pin_and_demotes_reenters():
     step = _step_3f_bis()
-    tail = step[step.index('"$current_head" = "$pinned_reviewed_head"'):]
+    tail = step[step.index('"$current_head" != "$pinned_reviewed_head"'):]
     window = tail[:900]
     assert "--mode invalidate" in window
     assert "--status built" in window
     assert "re-enter 3f-bis" in window
+
+
+def test_head_deviation_uses_a_real_if_else_not_a_fallthrough_comment():
+    """Tier-3 external review, R5b round 9, blocking: `cond || { ...; #
+    comment }` has no bash meaning past its own closing brace, so a literal
+    shell (or an agent following these steps mechanically) fell straight
+    through to the unconditional commit/push below regardless of whether the
+    assertion failed. The fix must be a genuine `if`/`else` branch, not a
+    stronger-worded comment -- assert the control-flow keywords themselves,
+    and that the commit only lives inside the `else`."""
+    step = _step_3f_bis()
+    if_at = step.index('if [ "$current_head" != "$pinned_reviewed_head" ]; then')
+    else_at = step.index("else", if_at)
+    commit_at = step.index('commit -m "chore(review): record the delegated cascade')
+    assert if_at < else_at < commit_at, (
+        "the HEAD-mismatch branch must be a real `if ... else` whose `else` "
+        "precedes the reviews.json commit, not a `||` fallthrough"
+    )
+    then_body = step[if_at:else_at]
+    assert "git add" not in then_body and "commit -m" not in then_body, (
+        "the commit sequence must not appear inside the HEAD-mismatch `if` "
+        "branch itself -- it belongs only in the `else`"
+    )
+
+
+def test_commit_parent_mismatch_also_uses_a_real_if_else_not_a_fallthrough():
+    """The second half of round 9's finding: the commit-parent fencing check
+    had the identical `cond || { ...; # skip push and below }` shape, with
+    push and the shipped_head write left as unconditional commands after it.
+    Must now nest as a real `if`/`else` too, with push only inside the
+    `else`."""
+    step = _step_3f_bis()
+    if_at = step.index('if [ "$(git -c "$unit_wt" rev-parse head^)" != "$pinned_reviewed_head" ]; then')
+    else_at = step.index("else", if_at)
+    push_at = step.index('git -c "$unit_wt" push')
+    assert if_at < else_at < push_at, (
+        "the commit-parent-mismatch branch must be a real `if ... else` "
+        "whose `else` precedes the push, not a `||` fallthrough"
+    )
+    then_body = step[if_at:else_at]
+    assert "push" not in then_body, (
+        "push must not appear inside the commit-parent-mismatch `if` branch "
+        "itself -- it belongs only in the `else`"
+    )
+    assert "reset --hard head^" in then_body
 
 
 # --- AC2/AC3: currency check in `reviewed`, rebase cascade, max_rebase_reviews ---

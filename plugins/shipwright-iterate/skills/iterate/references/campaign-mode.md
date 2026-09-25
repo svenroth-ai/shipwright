@@ -949,14 +949,26 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        must be CHECKED, not merely assumed — a concurrent stray write (a
        hook, a manual push) landing in this exact window must never let the
        review record commit onto a tree the cascade did not actually review.
-       **Any deviation: do NOT run the commit sequence below at all** — delete
-       the pin, demote `reviewed -> built`, and re-enter 3f-bis from its own
-       top (the `rm -f` cleanup) for a fresh diff/pin/cascade against the tree
-       as it now actually is:
+       **Any deviation must genuinely SKIP the commit/push sequence below —
+       an `if`/`else` branch, not a trailing comment that only says to skip
+       it** (Tier-3 external review, R5b round 9, blocking: the prior
+       `cond || { ...; # skip everything below }` shape has no bash meaning
+       past its own closing brace — a literal shell, or an agent following
+       these steps mechanically, falls straight through to the unconditional
+       commit and push that follow, shipping a review record onto a tree the
+       cascade never actually reviewed). Both this HEAD check and the
+       commit-parent check further down now nest as one `if`/`else` chain, so
+       a failed assertion's own branch is the ONLY branch that runs — there
+       is no later unconditional command left for it to fall through to:
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          pinned_reviewed_head=$(cat "$run_dir/reviewed_head" 2>/dev/null)
          current_head=$(git -C "$unit_wt" rev-parse HEAD)
-         [ "$current_head" = "$pinned_reviewed_head" ] || {
+         if [ "$current_head" != "$pinned_reviewed_head" ]; then
+           # Delete the pin, demote reviewed -> built, and re-enter 3f-bis
+           # from its own top (the `rm -f` cleanup) for a fresh diff/pin/
+           # cascade against the tree as it now actually is. The commit and
+           # push below live only in the other branch of this `if` -- the
+           # `if` itself is what skips them, not this comment.
            uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
              --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
              --project-root "{project_root}" --campaign-worktree "{project_root}" \
@@ -965,39 +977,48 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
              --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
              --status built --reason "HEAD != pinned reviewed_head at commit time; re-review required" \
              --operator "campaign-mode:3f-bis" || STRICT-STOP
-           # -> re-enter 3f-bis for this unit here; skip every command below,
-           # down through the bounded wait that ends this ship flow.
-         }
-       Every command is CHECKED: a promotion that does not reach the remote
-       must STOP the loop, not shorten it. An unchecked `git commit` that the
-       pre-commit hook blocks would otherwise leave the runner's head in
-       place, the local record saying `completed`, and main saying
-       `not_run` — the cascade silently un-shipped:
-         git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
-         git -C "$unit_wt" commit -m "chore(review): record the delegated cascade for {id}" -- ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
-       **The commit's own parent must equal the pinned `reviewed_head`**
-       (external review, code-reviewer + doubt-reviewer, medium) — the
-       pre-commit assert above only checked HEAD immediately BEFORE `git add`;
-       this closes the remaining window (a hook, or anything else that could
-       still land a commit between `add` and `commit`) by checking the commit
-       that actually resulted, not the tree state one command earlier. Never
-       push a commit whose parent is not the tree that was actually reviewed:
-         [ "$(git -C "$unit_wt" rev-parse HEAD^)" = "$pinned_reviewed_head" ] || {
-           git -C "$unit_wt" reset --hard HEAD^ || STRICT-STOP
-           uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
-             --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
-             --project-root "{project_root}" --campaign-worktree "{project_root}" \
-             --loop-id "{loop_id}" --reason "reviews.json commit's parent != pinned reviewed_head" || STRICT-STOP
-           uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-             --status built --reason "commit-parent fencing failed; re-review required" \
-             --operator "campaign-mode:3f-bis" || STRICT-STOP
-           # -> re-enter 3f-bis for this unit here too; skip push and below.
-         }
-         git -C "$unit_wt" push || STRICT-STOP
-         shipped_head=$(git -C "$unit_wt" rev-parse HEAD)
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         echo "$shipped_head" > "$run_dir/shipped_head" || STRICT-STOP
+         else
+           # Every command from here is CHECKED: a promotion that does not
+           # reach the remote must STOP the loop, not shorten it. An
+           # unchecked `git commit` that the pre-commit hook blocks would
+           # otherwise leave the runner's head in place, the local record
+           # saying `completed`, and main saying `not_run` -- the cascade
+           # silently un-shipped.
+           git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
+           git -C "$unit_wt" commit -m "chore(review): record the delegated cascade for {id}" -- ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
+           # The commit's own parent must equal the pinned reviewed_head
+           # (external review, code-reviewer + doubt-reviewer, medium) -- the
+           # check above only asserted HEAD immediately BEFORE `git add`;
+           # this closes the remaining window (a hook, or anything else that
+           # could still land a commit between `add` and `commit`) by
+           # checking the commit that actually resulted, not the tree state
+           # one command earlier. Never push a commit whose parent is not
+           # the tree that was actually reviewed.
+           if [ "$(git -C "$unit_wt" rev-parse HEAD^)" != "$pinned_reviewed_head" ]; then
+             # Nothing below this branch runs either -- the remote publish
+             # and the shipped_head write are both in the other branch of
+             # this `if`, enforced by the branch itself.
+             git -C "$unit_wt" reset --hard HEAD^ || STRICT-STOP
+             uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
+               --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+               --project-root "{project_root}" --campaign-worktree "{project_root}" \
+               --loop-id "{loop_id}" --reason "reviews.json commit's parent != pinned reviewed_head" || STRICT-STOP
+             uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+               --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+               --status built --reason "commit-parent fencing failed; re-review required" \
+               --operator "campaign-mode:3f-bis" || STRICT-STOP
+           else
+             git -C "$unit_wt" push || STRICT-STOP
+             shipped_head=$(git -C "$unit_wt" rev-parse HEAD)
+             run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+             echo "$shipped_head" > "$run_dir/shipped_head" || STRICT-STOP
+           fi
+         fi
+       On EITHER invalidation branch above (HEAD moved, or the commit's own
+       parent fenced): re-enter 3f-bis for this unit from its own top —
+       `{id}` is now `built`, not `reviewed`, so the loop's own claim/dispatch
+       logic naturally re-selects it for a fresh diff/pin/cascade rather than
+       this prose needing a separate re-entry mechanism of its own.
        `git commit` with no pathspec commits the WHOLE index, so any other
        pre-existing staged content would ride along inside the commit whose
        entire purpose is to certify that a review happened — the `add` above
