@@ -4,10 +4,11 @@ Split out of ``test_marketplace_lock_ownership.py`` (which crossed the
 300-line guideline again) along the seam the round-9/12 review findings
 drew: this file covers guarding a WRITE against an ownership mistake —
 the release-site guard (`_lock_is_owned_by`, round 9) used at both the
-normal completion path and the script-wide EXIT trap, and the noclobber
+normal completion path and the script-wide EXIT trap, the noclobber
 pid-write guard (round 12) that protects the initial claim against a
-paused installer. The ABA-claim-and-restore mismatch-handling mechanism
-(rounds 8/11/13) stays in the sibling file.
+paused installer, and the round-24 cleanup that applies that same
+release-site guard to a claim abandoned mid-write. The ABA-claim-and-restore
+mismatch-handling mechanism (rounds 8/11/13) stays in the sibling file.
 
 Extracts functions/lines out of the real script and drives them against
 fixture trees under ``bash``, rather than sourcing the whole script (which
@@ -182,3 +183,63 @@ def test_failed_pid_write_resets_current_sync_lock_and_retries():
     assert reset_idx < continue_idx, (
         "expected _CURRENT_SYNC_LOCK to be reset before retrying acquisition "
         "after losing the noclobber race")
+
+
+def test_partial_claim_with_a_failed_token_write_cleans_up_its_own_pid_stamped_lock(tmp_path):
+    """Tier-3 review, PR #796 round 24: once the pid write inside a fresh
+    claim succeeds, a failure on the very next token write used to just
+    reset `_CURRENT_SYNC_LOCK` and retry, ABANDONING "$lock" -- but it can
+    already be stamped with THIS process's own live pid by then. A THIRD
+    process can have read this same "$lock" as empty-pid BEFORE our write
+    landed, reached its own grace-period reclaim, and completed its
+    claiming `mv` -- stealing the directory, pid file and all -- before our
+    token write runs; finding our now-nonempty pid a mismatch against what
+    it originally observed, it treats ours as a live claim worth protecting
+    and restores it via a fresh `mkdir "$lock"`, which can already carry an
+    (empty) token file by the time our own noclobber token write reaches
+    it, failing it even though our pid write genuinely succeeded. Left
+    abandoned, a lock bearing our own pid reads as "live" to every future
+    check -- including this same process's own very next acquisition
+    attempt -- so nothing would recognize it as reclaimable short of the
+    full 120s timeout. Reproduced by stubbing the token generator to fail
+    on the first call only (the precise cause doesn't matter to this fix;
+    only that the pid write succeeded and the token write then failed) and
+    confirming the claim attempt cleans up its own stamped lock instead of
+    leaving it behind."""
+    lock = tmp_path / "dst.sync.lock"
+    body = _extract("_atomic_sync_dir")
+    start = body.index('if mkdir "$lock" 2>/dev/null; then')
+    end = body.index('_CURRENT_SYNC_LOCK=""\n            continue\n        fi') + len(
+        '_CURRENT_SYNC_LOCK=""\n            continue\n        fi')
+    claim_snippet = body[start:end]
+
+    call_count_file = tmp_path / "call_count"
+    # `$(_new_claim_token)` (well, its redirection form) runs inside the
+    # `(set -C; ...)` SUBSHELL the real code wraps it in — a plain variable
+    # increment inside the stub never reaches the parent script, so the
+    # counter has to live in a file instead (same trap round 16's own test
+    # hit for the same reason).
+    script = (
+        "set -uo pipefail\n"  # no -e: the snippet's bare `continue` outside
+        # a loop "fails" here on purpose, matching the sibling reclaim-path
+        # tests that extract the same kind of loop-body snippet.
+        + _extract("_lock_is_owned_by") + "\n"
+        + f'call_count_file="{_p(call_count_file)}"\n'
+        + 'echo 0 > "$call_count_file"\n'
+        + '_new_claim_token() {\n'
+        + '    local n\n'
+        + '    n=$(($(cat "$call_count_file") + 1))\n'
+        + '    echo "$n" > "$call_count_file"\n'
+        + '    [ "$n" -eq 1 ] && return 1\n'
+        + '    printf "tok-%s" "$n"\n'
+        + '}\n'
+        + f'lock="{_p(lock)}"\n'
+        + '_CURRENT_SYNC_LOCK=""\n'
+        + claim_snippet + "\n"
+        + 'echo "ABANDONED_LOCK_SURVIVED=$([ -d "$lock" ] && echo yes || echo no)"\n')
+    res = _run_script(script)
+
+    assert res.returncode == 0, res.stderr
+    assert "ABANDONED_LOCK_SURVIVED=no" in res.stdout, (
+        "a lock this process's own pid write landed in, but whose token write then failed, "
+        "was abandoned instead of cleaned up — " + res.stdout)

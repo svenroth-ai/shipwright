@@ -214,27 +214,49 @@ _atomic_sync_dir() {
             fi
             # Lost the race: this process was merely PAUSED (OS scheduling
             # under load, not a crash) between claiming the empty "$lock"
-            # directory above and writing its own pid (or, having written
-            # that, its own token — but once the pid write above succeeds
-            # this process is provably alive and non-empty, so nobody else
-            # can reclaim "$lock" out from under it before the token write
-            # right after; a failure here can only mean the PID write itself
-            # lost the race). In that gap, another contender's grace-period
-            # reclamation (`_EMPTY_LOCK_GRACE_S` below) can come and go,
-            # replacing "$lock" with its own live claim before this process
-            # resumes — a plain `echo ... > "$lock/pid"` would then silently
-            # overwrite that live claim's pid with this process's own,
-            # letting BOTH processes believe they hold the lock and sync
-            # the same $dst concurrently (Tier-3 review, PR #796 round 12).
-            # `set -C` (noclobber) turns the write itself into the
-            # ownership check: it is a shell BUILTIN redirection, not an
-            # external tool, so it is exactly as portable across
-            # GNU/BSD/Windows Git Bash as `mkdir` itself, and it fails
-            # atomically if "$lock/pid" already exists — which it never
-            # could at this point unless a replacement claim beat us to it.
-            # Nothing legitimate was ever held on this path, so there is
-            # nothing of ours to release; retry acquisition as if the
-            # `mkdir` itself had failed.
+            # directory above and writing its own pid. In that gap, another
+            # contender's grace-period reclamation (`_EMPTY_LOCK_GRACE_S`
+            # below) can come and go, replacing "$lock" with its own live
+            # claim before this process resumes — a plain `echo ... >
+            # "$lock/pid"` would then silently overwrite that live claim's
+            # pid with this process's own, letting BOTH processes believe
+            # they hold the lock and sync the same $dst concurrently
+            # (Tier-3 review, PR #796 round 12). `set -C` (noclobber) turns
+            # the write itself into the ownership check: it is a shell
+            # BUILTIN redirection, not an external tool, so it is exactly as
+            # portable across GNU/BSD/Windows Git Bash as `mkdir` itself, and
+            # it fails atomically if "$lock/pid" already exists — which it
+            # never could at this point unless a replacement claim beat us
+            # to it.
+            #
+            # The PID write can also succeed and the TOKEN write still fail
+            # — the earlier reasoning that a non-empty "$lock/pid" makes
+            # "$lock" un-reclaimable does not hold: a THIRD process can have
+            # already read this same "$lock"'s pid as EMPTY (before our
+            # write landed), reached its own grace-period reclaim, and
+            # completed `mv "$lock" "$discard"` — stealing the whole
+            # directory, pid file and all — before our own token write runs.
+            # Finding our now-nonempty pid a mismatch against what it
+            # originally observed, that reclaimer treats it as a live claim
+            # worth protecting and RESTORES it via a fresh `mkdir "$lock"`,
+            # which can already carry an (empty) token file by the time our
+            # own noclobber token write reaches it — failing it, even though
+            # our pid write genuinely succeeded (Tier-3 review, PR #796
+            # round 24). Whichever write failed, "$lock" (whatever directory
+            # instance it currently names) is safe to clean up if and only
+            # if it is still stamped with OUR OWN pid — the same guarded
+            # check the normal release site and the EXIT trap already use,
+            # never a bare `rm -rf "$lock"` by name alone. If it is not ours
+            # (the original pid-write-failure case above), there is nothing
+            # of ours to release. Cleaning up promptly here, rather than
+            # abandoning it, is what lets our own very next `mkdir "$lock"`
+            # attempt below succeed immediately instead of every future
+            # claimant — including this same process's own retry — reading
+            # a live-looking pid and waiting out the full 120s timeout for
+            # nothing.
+            if _lock_is_owned_by "$lock" "$$"; then
+                rm -rf "$lock" 2>/dev/null || true
+            fi
             _CURRENT_SYNC_LOCK=""
             continue
         fi
