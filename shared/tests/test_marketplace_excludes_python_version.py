@@ -31,29 +31,54 @@ if str(_SCRIPTS) not in sys.path:
 
 from cache_tree_compare import NOT_DISTRIBUTED, repo_tracked_files  # noqa: E402
 
-_FIND_BLOCK = re.compile(r"find \"\$(\w+)\" -type f(.*?)-print0", re.DOTALL)
-#: The shell vars naming a SOURCE tree that gets copied into the cache. The sibling
-#: blocks scan a TARGET tree to prune what source no longer has — those must NOT carry
-#: the exclusion, or a `.python-version` synced before this change would be immortal in
-#: every existing cache.
-_COPY_SOURCES = {"src_dir", "SHARED_SRC", "src"}
+_FIND_BLOCK = re.compile(r'_find0_to_file "\$\w+" "[^"]+" "\$(\w+)" -type f(.*?)\|\| return 1', re.DOTALL)
+#: iterate-2026-09-24-stop-hook-cache-race collapsed all three copy call sites (plugin,
+#: shared/, and the cross-plugin-symlink Windows fallback) into one shared
+#: `_atomic_sync_dir` helper, so there is exactly one COPY-side find block left in the
+#: source text — parameterized, not duplicated per caller. `dst` is that same helper's
+#: TARGET-side scan (walking the old tree to bulk-copy pycache/.venv/.pytest_cache and to
+#: count/reintroduce files `$src` no longer has) — it must NOT carry the exclusion, or a
+#: `.python-version` synced before this change would be immortal in every existing cache.
+#: PR #796 round 17 moved the raw `find ... -print0` call inside a shared
+#: `_find0_to_file` helper (so its exit status can be checked before trusting the
+#: enumeration) — the `-type f` block, the exclusions, and the `$src`/`$dst` distinction
+#: this test cares about now live in `_find0_to_file`'s own CALL SITES, not inline next
+#: to a literal `find`; the pattern above matches those call sites instead.
+_COPY_SOURCE = "src"
+_PRUNE_SOURCES = {"dst"}
+#: The three real call sites that must route through the shared helper — a copy loop
+#: written inline instead would bypass this test entirely.
+_SYNC_CALL_SITES = ('_atomic_sync_dir "$src_dir" "$cache_target"',
+                     '_atomic_sync_dir "$SHARED_SRC" "$SHARED_TARGET"',
+                     '_atomic_sync_dir "$1" "$2"')
 
 
-def test_every_copy_path_excludes_the_version_file():
-    """Asserted per BLOCK, not once over the file.
+def test_every_call_site_routes_through_the_shared_copy_helper():
+    """The three copy paths share one implementation, not three that must agree.
 
-    A single `".python-version" in text` check passes while one of the three copy paths
-    still ships it — which is the only way this regression can actually occur.
+    Before iterate-2026-09-24-stop-hook-cache-race this asserted the exclusion three
+    times, once per inline copy loop. Now a bypass would look like a fourth, ad-hoc
+    `find ... -print0` outside `_atomic_sync_dir` — this pins that all three call sites
+    still go through it instead.
     """
+    text = UPDATE_SH.read_text(encoding="utf-8")
+    missing = [site for site in _SYNC_CALL_SITES if site not in text]
+    assert not missing, (
+        f"expected call site(s) {missing} to route through _atomic_sync_dir — "
+        "the sync's shape changed, re-check this guard")
+
+
+def test_the_shared_copy_path_excludes_the_version_file():
+    """The one COPY-side find block left in the file must carry the exclusion."""
     blocks = _FIND_BLOCK.findall(UPDATE_SH.read_text(encoding="utf-8"))
-    assert blocks, "no `find -type f ... -print0` block found — has the sync been rewritten?"
-    copies = [(var, body) for var, body in blocks if var in _COPY_SOURCES]
-    assert len(copies) == len(_COPY_SOURCES), (
-        f"expected a copy block for each of {sorted(_COPY_SOURCES)}, found "
-        f"{sorted(v for v, _ in copies)} — the sync's shape changed, re-check this guard")
-    leaky = [var for var, body in copies if '-not -name ".python-version"' not in body]
-    assert not leaky, (
-        f"copy path(s) {leaky} would sync .python-version into the plugin cache. Skills "
+    assert blocks, "no `_find0_to_file ... -type f ... || return 1` block found — has the sync been rewritten?"
+    copies = [(var, body) for var, body in blocks if var == _COPY_SOURCE]
+    assert len(copies) == 1, (
+        f"expected exactly one copy block (var {_COPY_SOURCE!r}), found "
+        f"{sorted(v for v, _ in blocks)} — the sync's shape changed, re-check this guard")
+    _, body = copies[0]
+    assert '-not -name ".python-version"' in body, (
+        "the shared copy path would sync .python-version into the plugin cache. Skills "
         "run `uv run --project {plugin_root}`, and uv honours a version file there, so "
         "this forces the monorepo's 3.11 pin onto end users who only declared >=3.11 — "
         "and hard-fails them where uv cannot download 3.11.")
@@ -86,7 +111,7 @@ def test_the_comparator_knows_exactly_what_the_sync_refuses_to_copy():
     exactly the over-broad entry described above.
     """
     blocks = _FIND_BLOCK.findall(UPDATE_SH.read_text(encoding="utf-8"))
-    copy_bodies = [body for var, body in blocks if var in _COPY_SOURCES]
+    copy_bodies = [body for var, body in blocks if var == _COPY_SOURCE]
     assert copy_bodies, "no copy block found — the sync's shape changed, re-check this guard"
     shell_excluded = set(re.findall(r'-not -name "([^"]+)"', "\n".join(copy_bodies)))
     # Only the literal names; `*`-globs are SKIP_SUFFIXES' business (pinned below).
@@ -174,8 +199,11 @@ def test_the_prune_paths_do_not_exclude_it():
     permanently pinned, with no code path able to clean it up.
     """
     blocks = _FIND_BLOCK.findall(UPDATE_SH.read_text(encoding="utf-8"))
-    prunes = [(var, body) for var, body in blocks if var not in _COPY_SOURCES]
+    prunes = [(var, body) for var, body in blocks if var != _COPY_SOURCE]
     assert prunes, "no target-side prune block found — stale cache entries would never be removed"
+    assert {var for var, _ in prunes} == _PRUNE_SOURCES, (
+        f"expected prune blocks for {sorted(_PRUNE_SOURCES)}, found "
+        f"{sorted(var for var, _ in prunes)} — the sync's shape changed, re-check this guard")
     over_excluded = [var for var, body in prunes if '-not -name ".python-version"' in body]
     assert not over_excluded, (
         f"prune path(s) {over_excluded} skip .python-version, so a copy synced before "
