@@ -1415,21 +1415,31 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    ```bash
    uv run "{shared_root}/scripts/lib/campaign_drain.py" run --state .shipwright/loop_state.json || STRICT-STOP
    ```
-   **Reconcile `drain_timeout`-held merges before finalizing (campaign-dag-scheduler
-   R5b round 3, Tier-3 review — closes the live-reconciliation gap
-   `campaign_drain.py`'s own module docstring named as an unbuilt follow-up).**
-   A unit the drain force-transitioned `merging -> held`
-   (`reason_code: "drain_timeout"`) may have had its OWN in-flight `gh pr merge`
-   complete genuinely AFTER that forced transition — the drain changes the
-   RECORD, never the WORKER (no cancellation primitive exists for an
-   already-spawned Task). Before finalize can treat such a row as truly
-   not-merged, re-check each one against GitHub's own state and correct the
-   record if it actually landed, so the campaign never reports a unit as
+   **Reconcile `held` merges before finalizing (campaign-dag-scheduler R5b
+   round 3-4, Tier-3 review).** Two `reason_code`s can leave a unit `held`
+   while its PR is actually merged, and neither self-heals without this
+   step:
+   - `drain_timeout` — the drain force-transitioned `merging -> held`, but the
+     unit's OWN in-flight `gh pr merge` may complete genuinely AFTER that
+     forced transition. The drain changes the RECORD, never the WORKER (no
+     cancellation primitive exists for an already-spawned Task) — closes the
+     live-reconciliation gap `campaign_drain.py`'s own module docstring named
+     as an unbuilt follow-up (round 3).
+   - `merge_confirmation_timeout` — 3g's own poll already confirmed
+     `state == "MERGED"` before demoting to `held`; only `mergeCommit.oid`
+     never arrived within the bound. This row is not "maybe merged" like the
+     one above, it IS merged — round 3's reconciliation scoped to
+     `drain_timeout` alone left it with no path back to `merged`, mapping it
+     to a permanent, false `failed` at step 3h (round 4, Tier-3 review).
+
+   Both share the exact same remedy — re-check the unit's PR against GitHub's
+   own state and correct the record if it actually landed — so one pass
+   covers both `reason_code`s, so the campaign never reports a unit as
    held/unmerged while its PR sits merged on `origin/{default}`:
    ```bash
    loop_state=.shipwright/loop_state.json
-   drain_timeout_held=$(jq -r '.units[] | select(.status == "held" and .reason_code == "drain_timeout") | .id' "$loop_state")
-   for id in $drain_timeout_held; do
+   reconcilable_held=$(jq -r '.units[] | select(.status == "held" and (.reason_code == "drain_timeout" or .reason_code == "merge_confirmation_timeout")) | .id' "$loop_state")
+   for id in $reconcilable_held; do
      unit=$(jq -c --arg id "$id" '.units[] | select(.id == $id)' "$loop_state")
      branch=$(jq -r '.branch' <<<"$unit")
      unit_wt=$(jq -r '.worktree' <<<"$unit")
@@ -1445,8 +1455,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
      uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
        --state "$loop_state" --unit "$id" --status merged --force --confirm-no-task-running \
        --campaign-worktree "{project_root}" --merged-commit "$merged_sha" \
-       --reason "drain_timeout reconciliation: the worker's own merge completed after the forced held transition" \
-       --operator "campaign-mode:4-reconcile" --reason-code drain_timeout_reconciled || STRICT-STOP
+       --reason "held-merge reconciliation: GitHub reports this PR as merged although the unit was recorded held" \
+       --operator "campaign-mode:4-reconcile" --reason-code held_merge_reconciled || STRICT-STOP
    done
    ```
    `cmd_mark`'s own `--status merged` path re-fetches `origin` and verifies the

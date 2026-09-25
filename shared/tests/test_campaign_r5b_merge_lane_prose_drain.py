@@ -230,7 +230,7 @@ def test_drain_timeout_worker_continuation_limitation_is_disclosed():
 # --- Third-round external review fixes (R5b round 3, Tier-3 BLOCK) ---
 
 
-def test_drain_timeout_reconciliation_runs_between_drain_and_finalize():
+def test_held_merge_reconciliation_runs_between_drain_and_finalize():
     """Tier-3 review, R5b round 3: closes the live-reconciliation gap
     `campaign_drain.py`'s own module docstring named as an unbuilt follow-up
     — a `drain_timeout`-held unit's own in-flight merge may have completed
@@ -238,27 +238,20 @@ def test_drain_timeout_reconciliation_runs_between_drain_and_finalize():
     before this check corrects the record."""
     step = _step_4()
     drain_at = step.index("campaign_drain.py")
-    reconcile_at = step.index("drain_timeout_held")
+    reconcile_at = step.index("reconcilable_held")
     finalize_at = step.index("finalize --state")
     assert drain_at < reconcile_at < finalize_at, (
-        "the drain_timeout reconciliation must run strictly between "
+        "the held-merge reconciliation must run strictly between "
         "campaign_drain.py's own drain and cmd_finalize"
     )
 
 
-def test_drain_timeout_reconciliation_is_scoped_to_held_drain_timeout_units():
-    step = _step_4()
-    reconcile_at = step.index("drain_timeout_held")
-    window = step[reconcile_at:reconcile_at + 300]
-    assert '.status == "held" and .reason_code == "drain_timeout"' in window
-
-
-def test_drain_timeout_reconciliation_verifies_merged_state_before_correcting():
+def test_held_merge_reconciliation_verifies_merged_state_before_correcting():
     """A `gh` failure or a genuinely-still-open PR must leave the row exactly
-    as the drain recorded it -- this pass only ever corrects a stale `held`
-    into `merged`, never blocks finalize on a best-effort check."""
+    as recorded -- this pass only ever corrects a stale `held` into
+    `merged`, never blocks finalize on a best-effort check."""
     step = _step_4()
-    reconcile_at = step.index("drain_timeout_held")
+    reconcile_at = step.index("reconcilable_held")
     window = step[reconcile_at:reconcile_at + 1200]
     assert "gh pr view" in window
     assert '"merged"' in window
@@ -266,14 +259,32 @@ def test_drain_timeout_reconciliation_verifies_merged_state_before_correcting():
     assert "|| continue" in window
 
 
-def test_drain_timeout_reconciliation_marks_merged_via_forced_operator_override():
+def test_held_merge_reconciliation_marks_merged_via_forced_operator_override():
     step = _step_4()
-    reconcile_at = step.index("drain_timeout_held")
+    reconcile_at = step.index("reconcilable_held")
     window = step[reconcile_at:reconcile_at + 1600]
     mark_at = window.index('loop_claim.py" mark ')
     tail = window[mark_at:mark_at + 400]
     assert "--status merged" in tail
     assert "--campaign-worktree" in tail
     assert "--merged-commit" in tail
-    assert "drain_timeout_reconciled" in tail
+    assert "held_merge_reconciled" in tail
     assert "|| strict-stop" in tail
+
+
+# --- Fourth-round external review fixes (R5b round 4, Tier-3 BLOCK) ---
+
+
+def test_held_merge_reconciliation_covers_both_drain_timeout_and_confirmation_timeout():
+    """Tier-3 review, R5b round 4: round 3's reconciliation scoped to
+    `drain_timeout` alone left a `merge_confirmation_timeout` row -- whose PR
+    3g's own poll already confirmed MERGED, only the SHA confirmation timed
+    out -- with no path back to `merged`, mapping it to a permanent, false
+    `failed` at step 3h. Both `reason_code`s need the identical correction,
+    so one filter must cover both."""
+    step = _step_4()
+    reconcile_at = step.index("reconcilable_held")
+    window = step[reconcile_at:reconcile_at + 300]
+    assert '.status == "held"' in window
+    assert '.reason_code == "drain_timeout"' in window
+    assert '.reason_code == "merge_confirmation_timeout"' in window

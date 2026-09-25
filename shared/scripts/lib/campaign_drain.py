@@ -64,9 +64,12 @@ the first has no primitive to call, and the second would reintroduce the
 exact unbounded hang this module exists to close (a stuck-but-heartbeating
 runner would wedge the campaign forever).
 
-**R5b round 3: the live-reconciliation pass named above as a follow-up is
+**R5b round 3-4: the live-reconciliation pass named above as a follow-up is
 now built** — ``campaign-mode.md`` step 4 (Finalize) re-checks every
-`drain_timeout`-held unit's PR against GitHub's own state, between
+`held` unit whose `reason_code` is `drain_timeout` OR
+`merge_confirmation_timeout` (round 4: the latter's PR is already KNOWN
+merged — only its SHA confirmation timed out — so it needs the identical
+correction, not a separate mechanism) against GitHub's own state, between
 ``campaign_drain.py run`` and ``cmd_finalize``, and corrects the record to
 `merged` (via `loop_claim.py mark`'s audited operator-override path, which
 re-verifies the SHA's ancestry itself) when the worker's own merge landed

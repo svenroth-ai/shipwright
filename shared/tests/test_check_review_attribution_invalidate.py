@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -132,6 +133,42 @@ def test_invalidate_rejects_a_path_traversal_loop_id(git_origin_repo):
     except cra.ReviewAttributionError:
         pass
     assert canary.exists(), "a rejected loop_id must never reach unlink()"
+
+
+def test_invalidate_rejects_a_symlinked_unit_directory(git_origin_repo, tmp_path):
+    """Tier-3 review, R5b round 4, security finding: `_safe_segment` rejects
+    traversal in a segment's NAME, but a `unit_id` directory component that
+    is itself a SYMLINK pointing outside `.shipwright/runs` would still let
+    `unlink()` delete a file elsewhere. Plant exactly that and confirm
+    `invalidate()` refuses rather than following it."""
+    work, _origin = git_origin_repo
+    _git(work, "checkout", "-b", "iterate/unit-a", "main")
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "A", "branch": "iterate/unit-a", "worktree": str(work), "attempt": 0}])
+
+    # A victim directory OUTSIDE .shipwright/runs entirely, holding a canary
+    # this call must never be able to reach.
+    victim = tmp_path / "victim"
+    victim.mkdir()
+    canary = victim / "reviewed_head"
+    canary.write_text("do not delete", encoding="utf-8")
+
+    runs_dir = work / ".shipwright" / "runs" / "r5b-test"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    unit_link = runs_dir / "A"
+    try:
+        os.symlink(victim, unit_link, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+
+    try:
+        cra.invalidate(state_path, "A", project_root=str(work), campaign_worktree=str(work),
+                        loop_id="r5b-test", reason="rebase")
+        raise AssertionError("expected a rejection for a symlinked unit directory")
+    except cra.ReviewAttributionError:
+        pass
+    assert canary.exists(), "a rejected symlinked path component must never reach unlink()"
+    assert canary.read_text(encoding="utf-8") == "do not delete"
 
 
 def test_cli_invalidate_mode_end_to_end(git_origin_repo, capsys):

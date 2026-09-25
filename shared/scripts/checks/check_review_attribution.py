@@ -83,6 +83,29 @@ from lib.review_attribution import (  # noqa: E402
 _CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
+def _reject_symlink_escape(path: Path, runs_root: Path) -> None:
+    """Refuse `path` if its resolved location has escaped `runs_root` — e.g.
+    a symlinked `unit_id`/`attempt_id` path component pointing outside
+    ``.shipwright/runs`` (Tier-3 review, R5b round 4): ``_safe_segment``
+    rejects traversal in a segment's NAME, but says nothing about a
+    component that is itself a symlink. ``Path.resolve()`` follows every
+    symlink in an EXISTING ancestor and leaves a nonexistent tail alone, so
+    this is a no-op (and cheap) for the common case of a plain, never-
+    symlinked tree. Not a defense against a concurrent process swapping a
+    symlink between this check and the `unlink()` call that follows it —
+    that TOCTOU window is outside this script's threat model, which is its
+    OWN path construction, not an actively racing adversary with write
+    access to the same tree."""
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(runs_root)
+    except ValueError as exc:
+        raise ReviewAttributionError(
+            f"refusing to touch {path} — it resolves to {resolved}, outside "
+            f"the intended {runs_root} tree (a symlinked path component?)"
+        ) from exc
+
+
 def invalidate(state_path, unit_id: str, *, project_root: str, campaign_worktree: str,
                loop_id: str, reason: str) -> dict:
     """Unconditionally delete `unit_id`'s current-attempt ``review_pin.json``
@@ -100,7 +123,9 @@ def invalidate(state_path, unit_id: str, *, project_root: str, campaign_worktree
     crafted ``--loop-id ../../../whatever`` could delete a file outside the
     intended ``runs/`` tree). `resolve_unit_identity` already resolves
     `unit_id`/`attempt_id`, but does not itself validate them as safe path
-    segments — that is `_pin_dir`'s job, reproduced here."""
+    segments — that is `_pin_dir`'s job, reproduced here. Also refuses a
+    symlinked path component before unlinking (R5b round 4) — see
+    :func:`_reject_symlink_escape`."""
     if _CONTROL_CHAR_RE.search(reason):
         raise ReviewAttributionError(f"--reason {reason!r} contains a control character — rejected")
     state = json.loads(Path(state_path).read_text(encoding="utf-8"))
@@ -109,9 +134,12 @@ def invalidate(state_path, unit_id: str, *, project_root: str, campaign_worktree
     safe_loop_id = _safe_segment("loop_id", str(loop_id))
     safe_unit_id = _safe_segment("unit_id", str(canonical_id))
     safe_attempt_id = _safe_segment("attempt_id", str(attempt_id))
+    runs_root = (Path(project_root) / ".shipwright" / "runs").resolve()
     unit_dir = Path(project_root) / ".shipwright" / "runs" / safe_loop_id / safe_unit_id
     pin_path = unit_dir / safe_attempt_id / "review_pin.json"
     legacy_path = unit_dir / "reviewed_head"
+    _reject_symlink_escape(pin_path, runs_root)
+    _reject_symlink_escape(legacy_path, runs_root)
     pin_existed = pin_path.exists()
     pin_path.unlink(missing_ok=True)
     legacy_path.unlink(missing_ok=True)
