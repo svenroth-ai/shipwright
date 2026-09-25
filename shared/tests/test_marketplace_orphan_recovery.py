@@ -134,3 +134,44 @@ def test_orphan_backup_survives_when_its_pid_suffix_matches_our_own_pid(tmp_path
     assert (dst / "mirror_owned.py").exists(), (
         "the orphaned backup was destroyed instead of recovered when its PID "
         "suffix coincided with this process's own $$")
+
+
+def test_orphan_backup_is_recovered_when_its_pid_suffix_belongs_to_an_unrelated_live_process(tmp_path):
+    """Tier-3 review, PR #796 round 26, data-loss finding: PID reuse cuts the
+    other way from round 22's same-PID case too -- an orphan's PID suffix can
+    coincidentally match some OTHER, completely unrelated process that is
+    genuinely alive right now, with no connection to this sync at all.
+    `_leftover_pid_is_alive` used to read that as "still owned" and skip
+    recovering the orphan, even though holding "$lock" for this exact $dst
+    already rules out any legitimate CONCURRENT owner of its ".sync-old.*" --
+    a raw pid-liveness check can never distinguish that from an unrelated
+    coincidence, so recovery must not depend on it at all. Simulate the
+    unrelated live process with a real background `sleep` and confirm the
+    orphan is still recovered."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "keep.py").write_text("a", encoding="utf-8")
+    # No dst/ at all -- simulates dst having already been renamed away by a
+    # process that then crashed before the final `mv "$staging" "$dst"`.
+
+    script = ("set -euo pipefail\n"
+              + _extract("_pid_is_alive") + "\n"
+              + _extract("_leftover_pid_is_alive") + "\n"
+              + _extract("_lock_is_owned_by") + "\n"
+              + _extract("_new_claim_token") + "\n"
+              + _extract("_find0_to_file") + "\n"
+              + _extract("_atomic_sync_dir") + "\n" + _extract("sync_dir_from_to") + "\n"
+              + "sleep 30 & unrelated=$!\n"
+              + f'orphan="{_p(dst)}.sync-old.$unrelated"\n'
+              + 'mkdir -p "$orphan"\n'
+              + 'echo b > "$orphan/mirror_owned.py"\n'
+              + f'sync_dir_from_to "{_p(src)}" "{_p(dst)}"\n'
+              + 'kill "$unrelated" 2>/dev/null || true\n')
+    res = _run_script(script, timeout=30)
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "keep.py").exists()
+    assert (dst / "mirror_owned.py").exists(), (
+        "the orphaned backup was skipped instead of recovered because its "
+        "PID suffix coincidentally belonged to an unrelated, currently-alive "
+        "process")

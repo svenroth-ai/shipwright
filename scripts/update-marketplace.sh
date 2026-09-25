@@ -453,13 +453,25 @@ _atomic_sync_dir() {
     # MISSING with its only backup sitting in a dead process's $old — recover
     # it before the sweep just below would otherwise discard the last copy of
     # the previous destination outright (Tier-3 review, PR #796 round 2).
+    #
+    # Recover unconditionally, WITHOUT gating on whether the orphan's PID
+    # suffix is currently alive (Tier-3 review, PR #796 round 26, data-loss
+    # finding): ".sync-old.*" is only ever created by the swap further below,
+    # which itself only ever runs while holding "$lock" for this exact $dst.
+    # By the time we reach here we already hold that same lock, so no other
+    # process can be a legitimate CONCURRENT owner of this $dst's
+    # ".sync-old.*" right now — regardless of whether its PID suffix happens
+    # to have been reused by some unrelated, currently-alive process
+    # elsewhere on the system. A PID-liveness check here reads that
+    # coincidence as "still owned", skips the recovery, and silently drops
+    # noprune's mirror-owned content from that backup when $dst is
+    # republished from $src alone. Holding "$lock" is the ownership identity
+    # PID reuse cannot confuse; a raw pid check on the orphan's name is not.
     if [ ! -d "$dst" ]; then
         for orphan in "${dst}".sync-old.*; do
             [ -d "$orphan" ] || continue
-            if ! _leftover_pid_is_alive "${orphan##*.}"; then
-                mv "$orphan" "$dst"
-                break
-            fi
+            mv "$orphan" "$dst"
+            break
         done
     fi
 
