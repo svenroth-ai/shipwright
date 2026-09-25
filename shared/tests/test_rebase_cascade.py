@@ -6,7 +6,7 @@ executable (not prose-only) coverage of the conflict/rebase path.
 
 from __future__ import annotations
 
-from lib.rebase_cascade import decide_rebase_action, read_rebase_count, write_rebase_count
+from lib.rebase_cascade import decide_rebase_action, main, read_rebase_count, write_rebase_count
 
 
 class TestReadRebaseCount:
@@ -64,3 +64,34 @@ class TestDecideRebaseAction:
     def test_custom_cap_is_respected(self):
         assert decide_rebase_action(4, max_rebase_reviews=5) == "rebase"
         assert decide_rebase_action(5, max_rebase_reviews=5) == "exhausted"
+
+
+class TestCLI:
+    """`campaign-mode.md` shells out to this script's subcommands directly
+    (round 7 diff-coverage gate) — exercised here through `main(argv)`,
+    the same entrypoint `uv run rebase_cascade.py ...` invokes."""
+
+    def test_read_count_subcommand(self, tmp_path, capsys):
+        write_rebase_count(tmp_path, 1)
+        assert main(["read-count", "--run-dir", str(tmp_path)]) == 0
+        assert capsys.readouterr().out.strip() == "1"
+
+    def test_read_count_subcommand_missing_file(self, tmp_path, capsys):
+        assert main(["read-count", "--run-dir", str(tmp_path / "nope")]) == 0
+        assert capsys.readouterr().out.strip() == "0"
+
+    def test_write_count_subcommand(self, tmp_path):
+        assert main(["write-count", "--run-dir", str(tmp_path), "--count", "2"]) == 0
+        assert read_rebase_count(tmp_path) == 2
+
+    def test_decide_subcommand_exhausted(self, capsys):
+        assert main(["decide", "--rebase-count", "2"]) == 0
+        assert capsys.readouterr().out.strip() == "exhausted"
+
+    def test_decide_subcommand_rebase(self, capsys):
+        assert main(["decide", "--rebase-count", "0"]) == 0
+        assert capsys.readouterr().out.strip() == "rebase"
+
+    def test_decide_subcommand_custom_cap(self, capsys):
+        assert main(["decide", "--rebase-count", "3", "--max-rebase-reviews", "5"]) == 0
+        assert capsys.readouterr().out.strip() == "rebase"

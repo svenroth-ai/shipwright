@@ -1,7 +1,10 @@
 """Unit tests for ``lib.held_merge_reconciliation`` (campaign-dag-scheduler
 R5b round 7): the held-merge reconciliation pass extracted out of
 campaign-mode.md step 4's inline bash/jq loop, per Tier-3 review's demand for
-executable (not prose-only) coverage of this path.
+executable (not prose-only) coverage of this path. The CLI/subprocess
+boundary (`_real_gh_query`, `_real_mark_merged`, `main`) lives in the sibling
+`test_held_merge_reconciliation_cli.py`, split out when this file crossed
+the 300-line guideline.
 """
 
 from __future__ import annotations
