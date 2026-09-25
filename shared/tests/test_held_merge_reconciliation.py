@@ -79,6 +79,29 @@ class TestPollForMergedSha:
         )
         assert sha == "ghi789"
 
+    def test_merged_state_with_null_merge_commit_keeps_polling(self):
+        """GitHub returns the `mergeCommit` KEY with an explicit JSON `null`
+        (not an absent key, not `{"oid": ""}`) while MERGED but the SHA has
+        not become visible yet -- the same race `test_merged_state_with_
+        empty_sha_keeps_polling` covers for the `{"oid": ""}` shape. Tier-3
+        review, R5b round 10, blocking: `result.get("mergeCommit", {})` only
+        substitutes its default for an ABSENT key, so this shape raised
+        `AttributeError: 'NoneType' object has no attribute 'get'` instead of
+        polling through it as the docstring above promises."""
+        calls = {"n": 0}
+
+        def gh_query(branch, cwd):
+            calls["n"] += 1
+            if calls["n"] < 2:
+                return {"state": "MERGED", "mergeCommit": None}
+            return {"state": "MERGED", "mergeCommit": {"oid": "jkl012"}}
+
+        sha = poll_for_merged_sha(
+            gh_query, "iterate/A", "/wt", deadline_seconds=60,
+            poll_interval_seconds=5, sleep_fn=lambda _s: None, time_fn=_counting_clock(),
+        )
+        assert sha == "jkl012"
+
     def test_exhausting_the_window_returns_none(self):
         """A genuinely-still-open PR (or a `gh` query that never succeeds)
         must leave the row exactly as recorded, never block finalize."""

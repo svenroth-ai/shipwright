@@ -963,12 +963,18 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          pinned_reviewed_head=$(cat "$run_dir/reviewed_head" 2>/dev/null)
          current_head=$(git -C "$unit_wt" rev-parse HEAD)
+         pin_still_valid=true
          if [ "$current_head" != "$pinned_reviewed_head" ]; then
            # Delete the pin, demote reviewed -> built, and re-enter 3f-bis
            # from its own top (the `rm -f` cleanup) for a fresh diff/pin/
            # cascade against the tree as it now actually is. The commit and
            # push below live only in the other branch of this `if` -- the
-           # `if` itself is what skips them, not this comment.
+           # `if` itself is what skips them, not this comment. `pin_still_valid`
+           # (Tier-3 review, R5b round 10, blocking) also gates the built ->
+           # reviewed promotion and currency check further below, so this
+           # demotion cannot be immediately re-promoted without a fresh
+           # review cascade actually running first.
+           pin_still_valid=false
            uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
              --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
              --project-root "{project_root}" --campaign-worktree "{project_root}" \
@@ -997,7 +1003,11 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            if [ "$(git -C "$unit_wt" rev-parse HEAD^)" != "$pinned_reviewed_head" ]; then
              # Nothing below this branch runs either -- the remote publish
              # and the shipped_head write are both in the other branch of
-             # this `if`, enforced by the branch itself.
+             # this `if`, enforced by the branch itself. Same `pin_still_valid`
+             # guard as the HEAD-mismatch branch above (round 10): this
+             # demotion must not reach the reviewed/merging promotion below
+             # without a fresh review cascade either.
+             pin_still_valid=false
              git -C "$unit_wt" reset --hard HEAD^ || STRICT-STOP
              uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
                --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
@@ -1103,20 +1113,30 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        already stopped.
 
        **`built -> reviewed`, then the currency check (campaign-dag-scheduler
-       R5b).** Reached on BOTH surviving paths above — the cascade shipped, or
-       the trigger never fired (a below-threshold unit "must still deliver") —
-       never on the REJECT path, which already STRICT-STOPped. Re-derive
-       `$unit_wt` fresh (this paragraph's own opening rebuild — matching every
-       other block in this step, even though no model judgement or Agent-tool
-       spawn separates it from the block above):
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+       R5b).** Reached on ALL THREE surviving paths above — the cascade
+       shipped, the trigger never fired (a below-threshold unit "must still
+       deliver"), or the pin held for this pass — never on the REJECT path
+       (already STRICT-STOPped) and never on either review-pin mismatch above
+       (Tier-3 review, R5b round 10, blocking: a unit demoted to `built` by
+       either mismatch handler was reaching this unconditional promotion
+       straight to `reviewed`/`merging` with no fresh review cascade ever
+       running — the identical fall-through class round 9 fixed one section
+       further up). `pin_still_valid`, set at the top of the HEAD-check
+       above, is what gates it: both invalidate branches set it `false`
+       before this point, so only a genuinely fresh, un-invalidated pin
+       reaches the `if` below. Re-derive `$unit_wt` fresh (this paragraph's
+       own opening rebuild — matching every other block in this step, even
+       though no model judgement or Agent-tool spawn separates it from the
+       block above):
+         if [ "$pin_still_valid" = "true" ]; then
+           run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+           unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
        Promote the row explicitly; nothing did this before R5b, so a unit sat
        at `built` through the whole of 3f-bis/3g:
-         uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-           --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-           --status reviewed --reason "3f-bis cascade cleared (or below-threshold, review-skipped)" \
-           --operator "campaign-mode:3f-bis" || STRICT-STOP
+           uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+             --status reviewed --reason "3f-bis cascade cleared (or below-threshold, review-skipped)" \
+             --operator "campaign-mode:3f-bis" || STRICT-STOP
        **The currency check belongs HERE, while the unit is `reviewed`, not
        inside 3g's own `merging` state** — `reviewed -> merging` is taken only
        once the branch is current and the pin is fresh. `UNKNOWN` means
@@ -1128,20 +1148,20 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        BOUNDED, before falling back to treating a persistently-`UNKNOWN`
        value as current (never loop forever on a value that may never
        resolve — same shape as every other bounded wait in this step):
-         mergeable="UNKNOWN"
-         for i in $(seq 1 6); do
-           mergeable=$(cd "$unit_wt" && gh pr view "{branch}" --json mergeable -q .mergeable) || STRICT-STOP
-           [ "$mergeable" = "UNKNOWN" ] || break
-           sleep 5
-         done
+           mergeable="UNKNOWN"
+           for i in $(seq 1 6); do
+             mergeable=$(cd "$unit_wt" && gh pr view "{branch}" --json mergeable -q .mergeable) || STRICT-STOP
+             [ "$mergeable" = "UNKNOWN" ] || break
+             sleep 5
+           done
        `mergeable = "MERGEABLE"` (or still `"UNKNOWN"` after the poll above —
        treated as current rather than looping forever on a value that may
        never resolve) → the branch is current: transition
        `reviewed -> merging` and continue to 3g:
-         uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-           --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-           --status merging --reason "branch current, pin fresh" \
-           --operator "campaign-mode:3f-bis" || STRICT-STOP
+           uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+             --status merging --reason "branch current, pin fresh" \
+             --operator "campaign-mode:3f-bis" || STRICT-STOP
        `mergeable = "CONFLICTING"` → the branch needs a rebase — the
        **rebase cascade** (`max_rebase_reviews = 2`; a genuinely NEW
        `run_dir=` rebuild opens this block, since it is reached only after the
@@ -1150,74 +1170,80 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        shell block by this step's own opening-rebuild rule, and no second
        rebuild is required; one is added anyway for the NEW `$run_dir/`-scoped
        file this block introduces):
-         # `rebase_count`'s own parsing (missing/non-numeric file -> 0) and
-         # the `max_rebase_reviews = 2` exhaustion boundary are extracted
-         # into `lib.rebase_cascade` — real, directly-executable Python
-         # (round 7, Tier-3 review: "executable integration coverage for
-         # ... conflict/rebase"), not re-derived here.
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         rebase_count=$(uv run "{shared_root}/scripts/lib/rebase_cascade.py" read-count --run-dir "$run_dir") || STRICT-STOP
-         rebase_action=$(uv run "{shared_root}/scripts/lib/rebase_cascade.py" decide --rebase-count "$rebase_count") || STRICT-STOP
-         if [ "$rebase_action" = "exhausted" ]; then
-           uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-             --status held --reason "rebase cascade exhausted (max_rebase_reviews=2): livelock signal" \
-             --operator "campaign-mode:3f-bis" --reason-code staleness_cascade_exhausted || STRICT-STOP
-           # Per-unit demotion, NOT a whole-wave STRICT-STOP — this unit is
-           # done for this wave (held -> pending resumes it later); continue
-           # draining the rest of the wave at the next step (3i, below).
-         else
-           # First action of the rebase, unconditionally (R5b AC): delete the
-           # pin, demote reviewed -> built. Both `invalidate` and `mark` are
-           # idempotent/legal no-ops on a unit already at `built` with no pin,
-           # so a retried cascade never double-charges this step.
-           uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
-             --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
-             --project-root "{project_root}" --campaign-worktree "{project_root}" \
-             --loop-id "{loop_id}" --reason "rebase (currency check found CONFLICTING)" || STRICT-STOP
-           uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-             --status built --reason "branch not current; pin invalidated for re-review" \
-             --operator "campaign-mode:3f-bis" || STRICT-STOP
-           # Rebase the unit's own branch — an ACTUAL checked invocation
-           # (external review, glm + openai, high: the first draft only
-           # named this tool in a comment and never called it, so a
-           # CONFLICTING branch stayed conflicting forever). Existing shared
-           # tooling, unchanged by this sub-iterate — the SAME refresh F11
-           # runs pre-merge for a standalone iterate (F11.md's own
-           # `ensure_current.py` block, reused not reinvented):
-           if guard=$(cd "$unit_wt" && uv run "{shared_root}/scripts/tools/ensure_current.py" \
-             --project-root "$unit_wt" --run-id "{run_id}" \
-             --reason "3f-bis rebase cascade (rebase_count=$rebase_count)"); then
-             echo "$guard"
-             # Bump the counter and RE-ENTER 3f-bis from its own top (the
-             # `rm -f` cleanup) for a fresh diff, fresh pin, fresh cascade,
-             # fresh currency check — staleness invalidates both the prior
-             # review pin AND the prior CI verdict, so both must be redone,
-             # never just one.
-             rebase_count=$((rebase_count + 1))
-             run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-             uv run "{shared_root}/scripts/lib/rebase_cascade.py" write-count --run-dir "$run_dir" --count "$rebase_count" || STRICT-STOP
-             # -> re-enter 3f-bis for this unit.
-           else
-             # Success-only steps above (counter bump, re-entry) must NEVER
-             # run on this path (Tier-3 review, R5b round 2: an earlier draft
-             # reached them unconditionally even after marking the unit
-             # `held` here, re-entering 3f-bis for a unit already demoted
-             # out of this wave). Mark `held` and fall through to 3i instead
-             # — same per-unit demotion shape as the cascade-exhausted branch
-             # above, never a re-entry.
-             echo "$guard"
+           # `rebase_count`'s own parsing (missing/non-numeric file -> 0) and
+           # the `max_rebase_reviews = 2` exhaustion boundary are extracted
+           # into `lib.rebase_cascade` — real, directly-executable Python
+           # (round 7, Tier-3 review: "executable integration coverage for
+           # ... conflict/rebase"), not re-derived here.
+           run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+           rebase_count=$(uv run "{shared_root}/scripts/lib/rebase_cascade.py" read-count --run-dir "$run_dir") || STRICT-STOP
+           rebase_action=$(uv run "{shared_root}/scripts/lib/rebase_cascade.py" decide --rebase-count "$rebase_count") || STRICT-STOP
+           if [ "$rebase_action" = "exhausted" ]; then
              uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
                --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-               --status held --force --confirm-no-task-running \
-               --reason "ensure_current failed during the rebase cascade (real conflict — not resolvable by this loop)" \
-               --operator "campaign-mode:3f-bis" --reason-code rebase_conflict || STRICT-STOP
-             # This unit is done for this wave (held -> pending resumes it
-             # later); continue draining the rest of the wave at the next
-             # step (3i, below) — do NOT re-enter 3f-bis for this unit.
+               --status held --reason "rebase cascade exhausted (max_rebase_reviews=2): livelock signal" \
+               --operator "campaign-mode:3f-bis" --reason-code staleness_cascade_exhausted || STRICT-STOP
+             # Per-unit demotion, NOT a whole-wave STRICT-STOP — this unit is
+             # done for this wave (held -> pending resumes it later); continue
+             # draining the rest of the wave at the next step (3i, below).
+           else
+             # First action of the rebase, unconditionally (R5b AC): delete the
+             # pin, demote reviewed -> built. Both `invalidate` and `mark` are
+             # idempotent/legal no-ops on a unit already at `built` with no pin,
+             # so a retried cascade never double-charges this step.
+             uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
+               --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+               --project-root "{project_root}" --campaign-worktree "{project_root}" \
+               --loop-id "{loop_id}" --reason "rebase (currency check found CONFLICTING)" || STRICT-STOP
+             uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+               --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+               --status built --reason "branch not current; pin invalidated for re-review" \
+               --operator "campaign-mode:3f-bis" || STRICT-STOP
+             # Rebase the unit's own branch — an ACTUAL checked invocation
+             # (external review, glm + openai, high: the first draft only
+             # named this tool in a comment and never called it, so a
+             # CONFLICTING branch stayed conflicting forever). Existing shared
+             # tooling, unchanged by this sub-iterate — the SAME refresh F11
+             # runs pre-merge for a standalone iterate (F11.md's own
+             # `ensure_current.py` block, reused not reinvented):
+             if guard=$(cd "$unit_wt" && uv run "{shared_root}/scripts/tools/ensure_current.py" \
+               --project-root "$unit_wt" --run-id "{run_id}" \
+               --reason "3f-bis rebase cascade (rebase_count=$rebase_count)"); then
+               echo "$guard"
+               # Bump the counter and RE-ENTER 3f-bis from its own top (the
+               # `rm -f` cleanup) for a fresh diff, fresh pin, fresh cascade,
+               # fresh currency check — staleness invalidates both the prior
+               # review pin AND the prior CI verdict, so both must be redone,
+               # never just one.
+               rebase_count=$((rebase_count + 1))
+               run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+               uv run "{shared_root}/scripts/lib/rebase_cascade.py" write-count --run-dir "$run_dir" --count "$rebase_count" || STRICT-STOP
+               # -> re-enter 3f-bis for this unit.
+             else
+               # Success-only steps above (counter bump, re-entry) must NEVER
+               # run on this path (Tier-3 review, R5b round 2: an earlier draft
+               # reached them unconditionally even after marking the unit
+               # `held` here, re-entering 3f-bis for a unit already demoted
+               # out of this wave). Mark `held` and fall through to 3i instead
+               # — same per-unit demotion shape as the cascade-exhausted branch
+               # above, never a re-entry.
+               echo "$guard"
+               uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+                 --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+                 --status held --force --confirm-no-task-running \
+                 --reason "ensure_current failed during the rebase cascade (real conflict — not resolvable by this loop)" \
+                 --operator "campaign-mode:3f-bis" --reason-code rebase_conflict || STRICT-STOP
+               # This unit is done for this wave (held -> pending resumes it
+               # later); continue draining the rest of the wave at the next
+               # step (3i, below) — do NOT re-enter 3f-bis for this unit.
+             fi
            fi
          fi
+       On EITHER review-pin mismatch above, this `if [ "$pin_still_valid" =
+       "true" ]` is what actually skips the promotion, the currency check and
+       the rebase cascade — not the "re-enter 3f-bis" prose alone. The unit
+       sits at `built`, and the loop's own claim/dispatch logic at 3a
+       naturally re-selects it on a later pass for a fresh diff/pin/cascade.
        **Staleness trigger, restated:** this currency check — and every
        `reviewed -> built` demotion it can cause — is triggered ONLY by an
        actual `CONFLICTING` mergeability / an actual rebase on THIS unit's own

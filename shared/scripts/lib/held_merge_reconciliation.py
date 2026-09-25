@@ -93,7 +93,14 @@ def poll_for_merged_sha(
     while time_fn() < deadline:
         result = gh_query_fn(branch, cwd)
         if result is not None and result.get("state") == "MERGED":
-            sha = result.get("mergeCommit", {}).get("oid") or None
+            # `.get("mergeCommit", {})` only substitutes the default when the
+            # KEY is absent -- GitHub returns the key with an explicit JSON
+            # `null` while MERGED but the SHA has not become visible yet
+            # (the exact race this docstring says to keep polling through),
+            # and `None.get(...)` raises (Tier-3 review, R5b round 10,
+            # blocking). Normalize the value itself, not just the key.
+            merge_commit = result.get("mergeCommit") or {}
+            sha = merge_commit.get("oid") or None
             if sha:
                 return sha
         sleep_fn(poll_interval_seconds)

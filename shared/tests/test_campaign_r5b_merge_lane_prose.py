@@ -40,7 +40,7 @@ def test_head_equals_reviewed_head_is_asserted_before_the_commit():
 def test_a_head_deviation_invalidates_the_pin_and_demotes_reenters():
     step = _step_3f_bis()
     tail = step[step.index('"$current_head" != "$pinned_reviewed_head"'):]
-    window = tail[:900]
+    window = tail[:1400]
     assert "--mode invalidate" in window
     assert "--status built" in window
     assert "re-enter 3f-bis" in window
@@ -89,6 +89,36 @@ def test_commit_parent_mismatch_also_uses_a_real_if_else_not_a_fallthrough():
         "itself -- it belongs only in the `else`"
     )
     assert "reset --hard head^" in then_body
+
+
+def test_invalidated_pin_cannot_reach_reviewed_or_merging_without_a_fresh_cascade():
+    """Round 10 (Tier-3 external review, blocking): round 9's fix correctly
+    stopped the invalidate branches from reaching commit/push, but a demoted
+    unit still fell through into the UNCONDITIONAL `built -> reviewed`
+    promotion and currency check further down the same step -- reaching
+    `merging` without a fresh review cascade ever running. `pin_still_valid`
+    must be declared before either mismatch check, cleared by both, and gate
+    the promotion as a real `if`, not by the "re-enter 3f-bis" prose alone."""
+    step = _step_3f_bis()
+    declared_at = step.index("pin_still_valid=true")
+    head_if_at = step.index('if [ "$current_head" != "$pinned_reviewed_head" ]; then')
+    assert declared_at < head_if_at, (
+        "pin_still_valid must be initialised before the HEAD-mismatch check "
+        "can possibly clear it"
+    )
+    assert step.count("pin_still_valid=false") == 2, (
+        "both the HEAD-mismatch and commit-parent-mismatch branches must "
+        "clear pin_still_valid"
+    )
+    promote_guard_at = step.index('if [ "$pin_still_valid" = "true" ]; then')
+    promote_at = step.index("--status reviewed")
+    assert promote_guard_at < promote_at, (
+        "the built -> reviewed promotion must sit inside the pin_still_valid "
+        "guard, not run unconditionally after either invalidate branch"
+    )
+    guarded_body = step[promote_guard_at:]
+    merging_at = guarded_body.index("--status merging")
+    assert merging_at > 0, "the merging transition must also be inside the guard"
 
 
 # --- AC2/AC3: currency check in `reviewed`, rebase cascade, max_rebase_reviews ---
