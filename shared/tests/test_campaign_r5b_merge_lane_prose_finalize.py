@@ -67,6 +67,34 @@ def test_held_merge_reconciliation_is_invoked_with_state_and_roots():
     assert "|| strict-stop" in window
 
 
+def test_held_merge_reconciliation_is_invoked_with_plugin_root_and_campaign_dir():
+    """Tier-3 review, R5b round 12, blocking: this pass now also corrects
+    campaign_progress.json for a reconciled unit, which needs the plugin
+    root (where campaign_progress.py lives) and the campaign directory --
+    without both, held_merge_reconciliation.py's own argparse would refuse
+    to start at all (both are required arguments)."""
+    step = _step_4()
+    invoke_at = step.index("held_merge_reconciliation.py")
+    window = step[invoke_at:invoke_at + 400]
+    assert "--plugin-root" in window
+    assert "--campaign-dir" in window
+
+
+def test_held_merge_reconciliation_corrects_the_local_board_too():
+    """Round 12: step 3h maps a reconciled unit to `failed` on the board
+    WHILE it is still `held`, before this pass ever runs -- left alone, the
+    board would show `failed` forever. The doc must disclose that this pass
+    also corrects that board entry, not just loop_state.json."""
+    step = _step_4()
+    assert "campaign_progress.json" in step
+    assert "update-status" in step
+    assert "--status complete" in step
+    assert "local-board convenience" in step, (
+        "the correction must be framed as best-effort, matching 3h's own "
+        "established convention for this same board"
+    )
+
+
 def test_held_merge_reconciliation_covers_both_reason_codes_in_prose():
     """The doc must still name both `reason_code`s this pass corrects, even
     though the filtering logic itself now lives in

@@ -41,6 +41,17 @@ ancestry check is needed here. A unit whose PR is genuinely still unmerged
 (the common case) or whose `gh` query fails throughout the window is left
 exactly as the drain recorded it — this pass only ever CORRECTS a stale
 `held` into `merged`, never the reverse.
+
+**Also corrects the local campaign_progress.json board (round 12, Tier-3
+review).** Step 3h maps a `merge_confirmation_timeout` unit to `failed` on
+that board WHILE it is still `held` — before this pass ever runs, since 3h
+fires per-wave and this pass only runs once, at Finalize, after every wave
+completes. Left alone, that board would show `failed` forever for a unit
+`loop_state.json` now correctly records as `merged`, since 3h never
+revisits an already-cleared unit. `update_progress_fn` corrects it right
+after `mark_merged_fn` succeeds — best-effort, matching 3h's own convention
+that this board is a "LOCAL-BOARD CONVENIENCE only" (campaign-mode.md,
+step 3h) whose failures never block anything.
 """
 
 from __future__ import annotations
@@ -63,10 +74,21 @@ RECONCILABLE_REASON_CODES = ("drain_timeout", "merge_confirmation_timeout")
 DEFAULT_RECONCILE_SECONDS = 60.0
 DEFAULT_POLL_INTERVAL_SECONDS = 5.0
 
+#: Per-call bound on the `gh` subprocess itself (Tier-3 review, R5b round 12,
+#: blocking): `subprocess.run` with no `timeout=` can hang indefinitely on a
+#: wedged `gh` process (a stuck network call, an interactive auth prompt with
+#: no TTY to answer it), which defeats `DEFAULT_RECONCILE_SECONDS` entirely --
+#: the outer deadline is only checked BETWEEN calls, never while one is still
+#: running. Well under the poll interval so a single hang still leaves room
+#: to retry within the outer window rather than consuming it in one call.
+GH_QUERY_TIMEOUT_SECONDS = 20.0
+
 #: (branch, cwd) -> {"state": ..., "mergeCommit": {"oid": ...}} | None on a `gh` failure.
 GhQueryFn = Callable[[str, str], "dict | None"]
 #: (unit_id, merged_sha) -> success.
 MarkMergedFn = Callable[[str, str], bool]
+#: (unit_id, merged_sha, branch) -> success. Best-effort only -- see `reconcile`.
+UpdateProgressFn = Callable[[str, str, str], bool]
 
 
 def find_reconcilable_held(state: dict) -> list[dict]:
@@ -109,6 +131,7 @@ def poll_for_merged_sha(
 
 def reconcile(
     state: dict, *, project_root: str, gh_query_fn: GhQueryFn, mark_merged_fn: MarkMergedFn,
+    update_progress_fn: UpdateProgressFn | None = None,
     deadline_seconds: float = DEFAULT_RECONCILE_SECONDS,
     poll_interval_seconds: float = DEFAULT_POLL_INTERVAL_SECONDS,
     sleep_fn=time.sleep, time_fn=time.time,
@@ -116,7 +139,22 @@ def reconcile(
     """Returns the `{id, merged_sha}` rows this pass corrected. Never
     mutates `state` itself -- correcting the record is `mark_merged_fn`'s
     job (the real CLI shells out to `loop_claim.py mark`, which re-verifies
-    the SHA's ancestry before accepting it)."""
+    the SHA's ancestry before accepting it).
+
+    `update_progress_fn`, when given, is called after a successful
+    `mark_merged_fn` to also correct the LOCAL-BOARD campaign_progress.json
+    entry (Tier-3 review, R5b round 12, blocking): step 3h maps a `held`/
+    `merge_confirmation_timeout` unit to `failed` on that board WHILE the
+    unit is still `held`, which is BEFORE this reconciliation pass ever
+    runs (3h fires per-wave; this pass only runs once, at Finalize, after
+    every wave). Left uncorrected, the board would show `failed` forever
+    for a unit `loop_state.json` now correctly records as `merged` -- 3h
+    never revisits an already-cleared unit to fix it. Best-effort only,
+    matching 3h's own established convention (references/campaign-mode.md,
+    step 3h: "LOCAL-BOARD CONVENIENCE only ... skipping it only affects the
+    live orchestrator view") -- its return value does not gate whether this
+    unit counts as `corrected` below, since `loop_state.json` is already the
+    durable record and correcting it is this function's actual job."""
     corrected = []
     for unit in find_reconcilable_held(state):
         unit_id = unit["id"]
@@ -133,6 +171,8 @@ def reconcile(
             continue  # exhausted the window -- leave the row exactly as recorded
         if mark_merged_fn(unit_id, merged_sha):
             corrected.append({"id": unit_id, "merged_sha": merged_sha})
+            if update_progress_fn is not None:
+                update_progress_fn(unit_id, merged_sha, branch)
     return corrected
 
 
@@ -141,8 +181,9 @@ def _real_gh_query(branch: str, cwd: str) -> dict | None:
         proc = subprocess.run(
             ["gh", "pr", "view", branch, "--json", "state,mergeCommit"],
             cwd=cwd, capture_output=True, text=True, check=True,
+            timeout=GH_QUERY_TIMEOUT_SECONDS,
         )
-    except (subprocess.CalledProcessError, OSError):
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         return None
     try:
         return json.loads(proc.stdout)
@@ -162,11 +203,30 @@ def _real_mark_merged(unit_id: str, merged_sha: str, *, state_path: Path, projec
     return result.returncode == 0
 
 
+def _real_update_progress(
+    unit_id: str, merged_sha: str, branch: str, *, campaign_dir: str, plugin_root: str,
+) -> bool:
+    """Best-effort local-board correction (see `reconcile`'s own docstring).
+    A failure here is intentionally not surfaced as an error -- the same
+    convention step 3h's own call already established."""
+    try:
+        result = subprocess.run([
+            "uv", "run", str(Path(plugin_root) / "scripts" / "tools" / "campaign_progress.py"), "update-status",
+            "--campaign-dir", campaign_dir, "--sub-iterate-id", unit_id,
+            "--status", "complete", "--commit", merged_sha, "--branch", branch,
+        ])
+    except OSError:
+        return False
+    return result.returncode == 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--project-root", required=True)
     parser.add_argument("--shared-root", required=True)
+    parser.add_argument("--plugin-root", required=True)
+    parser.add_argument("--campaign-dir", required=True)
     parser.add_argument("--deadline-seconds", type=float, default=DEFAULT_RECONCILE_SECONDS)
     parser.add_argument("--poll-interval-seconds", type=float, default=DEFAULT_POLL_INTERVAL_SECONDS)
     args = parser.parse_args(argv)
@@ -177,8 +237,13 @@ def main(argv: list[str] | None = None) -> int:
         return _real_mark_merged(unit_id, merged_sha, state_path=args.state,
                                   project_root=args.project_root, shared_root=args.shared_root)
 
+    def update_progress(unit_id: str, merged_sha: str, branch: str) -> bool:
+        return _real_update_progress(unit_id, merged_sha, branch,
+                                      campaign_dir=args.campaign_dir, plugin_root=args.plugin_root)
+
     corrected = reconcile(
         state, project_root=args.project_root, gh_query_fn=_real_gh_query, mark_merged_fn=mark_merged,
+        update_progress_fn=update_progress,
         deadline_seconds=args.deadline_seconds, poll_interval_seconds=args.poll_interval_seconds,
     )
     for row in corrected:

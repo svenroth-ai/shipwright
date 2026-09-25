@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import subprocess
 
-from lib.held_merge_reconciliation import _real_gh_query, _real_mark_merged, main
+from lib.held_merge_reconciliation import _real_gh_query, _real_mark_merged, _real_update_progress, main
 
 
 class TestRealGhQuery:
@@ -21,14 +21,28 @@ class TestRealGhQuery:
     directly in the sibling file)."""
 
     def test_parses_a_successful_gh_response(self, monkeypatch):
-        def fake_run(cmd, cwd, capture_output, text, check):
+        def fake_run(cmd, cwd, capture_output, text, check, timeout):
             assert cmd[:3] == ["gh", "pr", "view"]
             assert cmd[3] == "iterate/A"
             assert cwd == "/wt"
+            assert timeout is not None and timeout > 0
             return subprocess.CompletedProcess(cmd, 0, stdout='{"state": "MERGED", "mergeCommit": {"oid": "abc"}}')
 
         monkeypatch.setattr(subprocess, "run", fake_run)
         assert _real_gh_query("iterate/A", "/wt") == {"state": "MERGED", "mergeCommit": {"oid": "abc"}}
+
+    def test_returns_none_on_a_hung_gh_process(self, monkeypatch):
+        """Tier-3 review, R5b round 12, blocking: `subprocess.run` with no
+        `timeout=` can hang indefinitely on a wedged `gh` process, defeating
+        the reconciliation window entirely (the outer deadline is only
+        checked BETWEEN calls, never while one is still running). A timed-out
+        call must be treated exactly like any other retryable query failure,
+        never propagate as an uncaught exception."""
+        def fake_run(*_a, **_k):
+            raise subprocess.TimeoutExpired(cmd=["gh", "pr", "view"], timeout=20.0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        assert _real_gh_query("iterate/A", "/wt") is None
 
     def test_returns_none_on_a_nonzero_gh_exit(self, monkeypatch):
         def fake_run(*_a, **_k):
@@ -76,6 +90,48 @@ class TestRealMarkMerged:
         assert ok is False
 
 
+class TestRealUpdateProgress:
+    """Tier-3 review, R5b round 12, blocking: corrects the campaign_progress
+    board for a unit this pass just reconciled to `merged` (see `reconcile`'s
+    own docstring for why 3h alone can never do this itself)."""
+
+    def test_builds_the_expected_campaign_progress_invocation(self, monkeypatch):
+        captured = {}
+
+        def fake_run(cmd):
+            captured["cmd"] = cmd
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        ok = _real_update_progress("A", "sha123", "iterate/A",
+                                    campaign_dir="/campaigns/my-slug", plugin_root="/plugin")
+        assert ok is True
+        cmd = captured["cmd"]
+        assert "update-status" in cmd
+        assert "--campaign-dir" in cmd and "/campaigns/my-slug" in cmd
+        assert "--sub-iterate-id" in cmd and "A" in cmd
+        assert "--status" in cmd and "complete" in cmd
+        assert "--commit" in cmd and "sha123" in cmd
+        assert "--branch" in cmd and "iterate/A" in cmd
+
+    def test_returns_false_on_a_nonzero_exit(self, monkeypatch):
+        monkeypatch.setattr(subprocess, "run", lambda cmd: subprocess.CompletedProcess(cmd, 1))
+        ok = _real_update_progress("A", "sha123", "iterate/A",
+                                    campaign_dir="/campaigns/my-slug", plugin_root="/plugin")
+        assert ok is False
+
+    def test_returns_false_instead_of_raising_on_a_launch_failure(self, monkeypatch):
+        """Best-effort per this function's own docstring: even a `uv`/`python`
+        launch failure must never propagate and abort reconciliation."""
+        def fake_run(*_a, **_k):
+            raise OSError("uv: command not found")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        ok = _real_update_progress("A", "sha123", "iterate/A",
+                                    campaign_dir="/campaigns/my-slug", plugin_root="/plugin")
+        assert ok is False
+
+
 class TestMainCLI:
     """`campaign-mode.md` shells out to this script directly -- exercised
     here through `main(argv)` with the two subprocess-facing functions
@@ -95,18 +151,28 @@ class TestMainCLI:
             "lib.held_merge_reconciliation._real_mark_merged",
             lambda unit_id, merged_sha, **_kw: True,
         )
+        updated = []
+        monkeypatch.setattr(
+            "lib.held_merge_reconciliation._real_update_progress",
+            lambda unit_id, merged_sha, branch, **kw: updated.append((unit_id, merged_sha, branch, kw)) or True,
+        )
 
         rc = main([
             "--state", str(state_path), "--project-root", "/proj", "--shared-root", "/shared",
+            "--plugin-root", "/plugin", "--campaign-dir", "/campaigns/my-slug",
             "--poll-interval-seconds", "0",
         ])
         assert rc == 0
         assert "reconciled A -> merged (sha-a)" in capsys.readouterr().out
+        assert updated == [("A", "sha-a", "iterate/A", {"campaign_dir": "/campaigns/my-slug", "plugin_root": "/plugin"})]
 
     def test_prints_nothing_when_nothing_is_reconciled(self, tmp_path, monkeypatch, capsys):
         state_path = tmp_path / "loop_state.json"
         state_path.write_text(json.dumps({"units": [{"id": "A", "status": "merged"}]}), encoding="utf-8")
 
-        rc = main(["--state", str(state_path), "--project-root", "/proj", "--shared-root", "/shared"])
+        rc = main([
+            "--state", str(state_path), "--project-root", "/proj", "--shared-root", "/shared",
+            "--plugin-root", "/plugin", "--campaign-dir", "/campaigns/my-slug",
+        ])
         assert rc == 0
         assert capsys.readouterr().out == ""

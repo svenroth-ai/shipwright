@@ -144,6 +144,61 @@ class TestReconcile:
         assert corrected == [{"id": "A", "merged_sha": "sha-a"}]
         assert marked == [("A", "sha-a")]
 
+    def test_update_progress_fn_is_called_after_a_successful_mark(self):
+        """Tier-3 review, R5b round 12, blocking: step 3h maps this unit to
+        `failed` on campaign_progress.json WHILE it is still `held`, before
+        this pass ever runs -- left uncorrected, the board would show
+        `failed` forever for a unit `loop_state.json` now records as
+        `merged`. update_progress_fn must fire with the unit's own branch,
+        so the caller can correct that board entry too."""
+        state = {"units": [_unit("A", "held", reason_code="merge_confirmation_timeout", branch="iterate/A")]}
+        updated = []
+
+        def gh_query(branch, cwd):
+            return {"state": "MERGED", "mergeCommit": {"oid": "sha-a"}}
+
+        corrected = reconcile(
+            state, project_root="/proj", gh_query_fn=gh_query, mark_merged_fn=lambda *_: True,
+            update_progress_fn=lambda unit_id, sha, branch: updated.append((unit_id, sha, branch)) or True,
+            sleep_fn=lambda _s: None, time_fn=_counting_clock(),
+        )
+        assert corrected == [{"id": "A", "merged_sha": "sha-a"}]
+        assert updated == [("A", "sha-a", "iterate/A")]
+
+    def test_update_progress_fn_is_never_called_when_mark_merged_fails(self):
+        """The board correction only makes sense once the durable record
+        (loop_state.json) actually changed -- never announce a merge that
+        loop_claim.py mark refused to record."""
+        state = {"units": [_unit("A", "held", reason_code="drain_timeout")]}
+        updated = []
+
+        def gh_query(branch, cwd):
+            return {"state": "MERGED", "mergeCommit": {"oid": "sha-a"}}
+
+        corrected = reconcile(
+            state, project_root="/proj", gh_query_fn=gh_query, mark_merged_fn=lambda *_: False,
+            update_progress_fn=lambda *a: updated.append(a) or True,
+            sleep_fn=lambda _s: None, time_fn=_counting_clock(),
+        )
+        assert corrected == []
+        assert updated == []
+
+    def test_a_failing_update_progress_fn_does_not_undo_the_correction(self):
+        """Best-effort: the local board is convenience-only (campaign-mode.md
+        step 3h's own established framing), so its own failure must never
+        make an otherwise-successful reconciliation report as uncorrected."""
+        state = {"units": [_unit("A", "held", reason_code="drain_timeout")]}
+
+        def gh_query(branch, cwd):
+            return {"state": "MERGED", "mergeCommit": {"oid": "sha-a"}}
+
+        corrected = reconcile(
+            state, project_root="/proj", gh_query_fn=gh_query, mark_merged_fn=lambda *_: True,
+            update_progress_fn=lambda *a: False,
+            sleep_fn=lambda _s: None, time_fn=_counting_clock(),
+        )
+        assert corrected == [{"id": "A", "merged_sha": "sha-a"}]
+
     def test_leaves_a_still_open_unit_untouched(self):
         state = {"units": [_unit("A", "held", reason_code="drain_timeout")]}
         marked = []

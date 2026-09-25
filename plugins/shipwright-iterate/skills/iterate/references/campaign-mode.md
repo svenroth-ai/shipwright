@@ -1499,15 +1499,28 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    window (same shape as 3g's `mergeCommit` confirmation wait) before
    accepting "still not merged" as this pass's answer. This whole pass —
    finding the `reconcilable_held` set, the bounded per-unit `gh pr view`
-   poll with `gh`-failure retry, and the `held_merge_reconciled` mark — is
-   extracted into `lib.held_merge_reconciliation` (round 7, Tier-3 review:
+   poll with `gh`-failure retry, the `held_merge_reconciled` mark, AND the
+   matching campaign_progress.json board correction (round 12 — see below) —
+   is extracted into `lib.held_merge_reconciliation` (round 7, Tier-3 review:
    "executable integration coverage for ... held-merge reconciliation"),
    real, directly-executable Python rather than inline jq/bash:
    ```bash
    uv run "{shared_root}/scripts/lib/held_merge_reconciliation.py" \
      --state .shipwright/loop_state.json --project-root "{project_root}" \
-     --shared-root "{shared_root}" || STRICT-STOP
+     --shared-root "{shared_root}" --plugin-root "{plugin_root}" \
+     --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" || STRICT-STOP
    ```
+   **A reconciled unit's local board entry is corrected too (round 12, Tier-3
+   review, blocking).** Step 3h maps a `merge_confirmation_timeout` unit to
+   `failed` on `campaign_progress.json` WHILE it is still `held` — before this
+   pass ever runs, since 3h fires per-wave and this pass runs once, at
+   Finalize, after every wave. Left alone, the board would show `failed`
+   forever for a unit `loop_state.json` now correctly records as `merged`,
+   since 3h never revisits a unit once it has cleared. Every unit this pass
+   marks `merged` also gets `campaign_progress.py update-status --status
+   complete` (same `--commit`/`--branch` shape 3h's own call above uses) —
+   best-effort, same "LOCAL-BOARD CONVENIENCE only" convention as 3h itself,
+   so its own failure does not STRICT-STOP this pass.
    **This narrows the race, it does not close it (round 6 disclosure).** The
    truly unbounded part of a stuck worker is `gh pr checks --watch` waiting
    on slow/hung CI — nothing bounds how long THAT can run, so no fixed
