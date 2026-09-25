@@ -1129,9 +1129,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        shell block by this step's own opening-rebuild rule, and no second
        rebuild is required; one is added anyway for the NEW `$run_dir/`-scoped
        file this block introduces):
+         # `rebase_count`'s own parsing (missing/non-numeric file -> 0) and
+         # the `max_rebase_reviews = 2` exhaustion boundary are extracted
+         # into `lib.rebase_cascade` — real, directly-executable Python
+         # (round 7, Tier-3 review: "executable integration coverage for
+         # ... conflict/rebase"), not re-derived here.
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         rebase_count=$(cat "$run_dir/rebase_count" 2>/dev/null); case "$rebase_count" in ''|*[!0-9]*) rebase_count=0;; esac
-         if [ "$rebase_count" -ge 2 ]; then
+         rebase_count=$(uv run "{shared_root}/scripts/lib/rebase_cascade.py" read-count --run-dir "$run_dir") || STRICT-STOP
+         rebase_action=$(uv run "{shared_root}/scripts/lib/rebase_cascade.py" decide --rebase-count "$rebase_count") || STRICT-STOP
+         if [ "$rebase_action" = "exhausted" ]; then
            uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
              --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
              --status held --reason "rebase cascade exhausted (max_rebase_reviews=2): livelock signal" \
@@ -1170,7 +1176,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
              # never just one.
              rebase_count=$((rebase_count + 1))
              run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-             echo "$rebase_count" > "$run_dir/rebase_count" || STRICT-STOP
+             uv run "{shared_root}/scripts/lib/rebase_cascade.py" write-count --run-dir "$run_dir" --count "$rebase_count" || STRICT-STOP
              # -> re-enter 3f-bis for this unit.
            else
              # Success-only steps above (counter bump, re-entry) must NEVER
@@ -1444,38 +1450,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    a single `gh pr view` immediately afterward can miss a merge that
    completes moments later. Give each unit its own short, bounded grace
    window (same shape as 3g's `mergeCommit` confirmation wait) before
-   accepting "still not merged" as this pass's answer:
+   accepting "still not merged" as this pass's answer. This whole pass —
+   finding the `reconcilable_held` set, the bounded per-unit `gh pr view`
+   poll with `gh`-failure retry, and the `held_merge_reconciled` mark — is
+   extracted into `lib.held_merge_reconciliation` (round 7, Tier-3 review:
+   "executable integration coverage for ... held-merge reconciliation"),
+   real, directly-executable Python rather than inline jq/bash:
    ```bash
-   loop_state=.shipwright/loop_state.json
-   reconcilable_held=$(jq -r '.units[] | select(.status == "held" and (.reason_code == "drain_timeout" or .reason_code == "merge_confirmation_timeout")) | .id' "$loop_state")
-   for id in $reconcilable_held; do
-     unit=$(jq -c --arg id "$id" '.units[] | select(.id == $id)' "$loop_state")
-     branch=$(jq -r '.branch' <<<"$unit")
-     unit_wt=$(jq -r '.worktree' <<<"$unit")
-     [ -d "$unit_wt" ] || unit_wt="{project_root}"
-     unset merged_sha
-     reconcile_deadline=$(( $(date +%s) + 60 ))
-     while [ "$(date +%s)" -lt "$reconcile_deadline" ]; do
-       # A `gh` failure here (network, auth) must never block finalize --
-       # retry within the same bounded window rather than treating one
-       # failed query as proof of "still not merged".
-       pr_state=$(cd "$unit_wt" && gh pr view "$branch" --json state,mergeCommit 2>/dev/null) || { sleep 5; continue; }
-       if [ "$(jq -r '.state' <<<"$pr_state")" = "MERGED" ]; then
-         merged_sha=$(jq -r '.mergeCommit.oid // empty' <<<"$pr_state")
-         [ -n "$merged_sha" ] && break
-       fi
-       sleep 5
-     done
-     # Exhausting the window leaves the row exactly as recorded -- a safe,
-     # terminal `held` state -- reconcilable on a LATER run instead of
-     # turning this best-effort correction into a new STRICT-STOP surface.
-     [ -n "${merged_sha:-}" ] || continue
-     uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-       --state "$loop_state" --unit "$id" --status merged --force --confirm-no-task-running \
-       --campaign-worktree "{project_root}" --merged-commit "$merged_sha" \
-       --reason "held-merge reconciliation: GitHub reports this PR as merged although the unit was recorded held" \
-       --operator "campaign-mode:4-reconcile" --reason-code held_merge_reconciled || STRICT-STOP
-   done
+   uv run "{shared_root}/scripts/lib/held_merge_reconciliation.py" \
+     --state .shipwright/loop_state.json --project-root "{project_root}" \
+     --shared-root "{shared_root}" || STRICT-STOP
    ```
    **This narrows the race, it does not close it (round 6 disclosure).** The
    truly unbounded part of a stuck worker is `gh pr checks --watch` waiting

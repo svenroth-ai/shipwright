@@ -72,12 +72,29 @@ def test_conflicting_mergeable_triggers_the_rebase_cascade():
 
 
 def test_max_rebase_reviews_is_two_and_exhaustion_demotes_to_held():
+    """Round 7 (Tier-3 review): the counter parse + the `>= 2` exhaustion
+    boundary itself moved into `lib.rebase_cascade` (real, executable tests:
+    `test_rebase_cascade.py::TestDecideRebaseAction`) — this doc now only
+    calls that script and branches on its answer."""
     step = _step_3f_bis()
     assert "max_rebase_reviews = 2" in step
-    exhaust_at = step.index("rebase_count\" -ge 2")
-    window = step[exhaust_at:exhaust_at + 500]
+    decide_at = step.index("rebase_cascade.py\" decide --rebase-count")
+    window = step[decide_at:decide_at + 500]
+    assert '"$rebase_action" = "exhausted"' in window
     assert "--status held" in window
     assert "staleness_cascade_exhausted" in window
+
+
+def test_rebase_counter_is_extracted_not_reinlined():
+    """Round 7 (Tier-3 review): guards against a future edit silently
+    reintroducing the inline `cat`/`case`/`-ge` counter logic this round
+    replaced with real, tested Python."""
+    step = _step_3f_bis()
+    assert "rebase_cascade.py" in step
+    assert 'case "$rebase_count" in' not in step, (
+        "the rebase_count parse must stay extracted into lib.rebase_cascade, "
+        "not re-inlined as a bash `case` guard"
+    )
 
 
 def test_staleness_trigger_is_scoped_to_this_units_own_branch():

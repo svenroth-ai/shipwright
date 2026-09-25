@@ -1,12 +1,21 @@
 """Prose guards for campaign-dag-scheduler R5b step 4 (Finalize)'s
-held-merge reconciliation pass (third- and fourth-round external-review
-fixes). Split out of `test_campaign_r5b_merge_lane_prose_drain.py` when it
-crossed the 300-line guideline (round 5) — that file keeps AC5/AC6 and the
-second-round fixes; this file covers only step 4's reconciliation, reusing
-the same harness. `_step_4` is duplicated rather than imported, matching
-this suite's own convention (e.g. `test_check_review_attribution_
+held-merge reconciliation pass (third-, fourth- and seventh-round external-
+review fixes). Split out of `test_campaign_r5b_merge_lane_prose_drain.py`
+when it crossed the 300-line guideline (round 5) — that file keeps AC5/AC6
+and the second-round fixes; this file covers only step 4's reconciliation,
+reusing the same harness. `_step_4` is duplicated rather than imported,
+matching this suite's own convention (e.g. `test_check_review_attribution_
 composition.py`'s duplicated helpers) since sharing it would need a new
 module neither sibling otherwise requires.
+
+Round 7 (Tier-3 review: "add executable integration coverage ... including
+... held-merge reconciliation") moved the actual reconciliation logic out of
+this doc's inline jq/bash and into `lib.held_merge_reconciliation` — real,
+directly-executable Python covered by `test_held_merge_reconciliation.py`.
+What remains here is narrower by design: confirming the doc invokes that
+script in the right place with the right arguments, and that the round-6
+disclosure text survives — not re-deriving the reconciliation logic itself
+by string-matching bash that no longer exists.
 """
 
 from __future__ import annotations
@@ -40,7 +49,7 @@ def test_held_merge_reconciliation_runs_between_drain_and_finalize():
     before this check corrects the record."""
     step = _step_4()
     drain_at = step.index("campaign_drain.py")
-    reconcile_at = step.index("reconcilable_held")
+    reconcile_at = step.index("held_merge_reconciliation.py")
     finalize_at = step.index("finalize --state")
     assert drain_at < reconcile_at < finalize_at, (
         "the held-merge reconciliation must run strictly between "
@@ -48,48 +57,35 @@ def test_held_merge_reconciliation_runs_between_drain_and_finalize():
     )
 
 
-def test_held_merge_reconciliation_verifies_merged_state_before_correcting():
-    """A `gh` failure or a genuinely-still-open PR must leave the row exactly
-    as recorded -- this pass only ever corrects a stale `held` into
-    `merged`, never blocks finalize on a best-effort check."""
+def test_held_merge_reconciliation_is_invoked_with_state_and_roots():
     step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 2200]
-    assert "gh pr view" in window
-    assert '"merged"' in window
-    assert "mergecommit.oid" in window
-    assert '[ -n "${merged_sha:-}" ] || continue' in window, (
-        "exhausting the bounded poll window must leave the row exactly as "
-        "recorded, never block finalize"
+    invoke_at = step.index("held_merge_reconciliation.py")
+    window = step[invoke_at:invoke_at + 400]
+    assert "--state" in window
+    assert "--project-root" in window
+    assert "--shared-root" in window
+    assert "|| strict-stop" in window
+
+
+def test_held_merge_reconciliation_covers_both_reason_codes_in_prose():
+    """The doc must still name both `reason_code`s this pass corrects, even
+    though the filtering logic itself now lives in
+    `lib.held_merge_reconciliation` (real tests: `test_held_merge_
+    reconciliation.py::TestFindReconcilableHeld`)."""
+    step = _step_4()
+    assert "drain_timeout" in step
+    assert "merge_confirmation_timeout" in step
+
+
+def test_held_merge_reconciliation_is_extracted_not_reinlined():
+    """Round 7 (Tier-3 review): guards against a future edit silently
+    reintroducing the inline jq/bash loop this round replaced."""
+    step = _step_4()
+    assert "lib.held_merge_reconciliation" in step or "held_merge_reconciliation.py" in step
+    assert "jq -r '.units[]" not in step, (
+        "the reconciliation pass must stay extracted into "
+        "lib.held_merge_reconciliation, not re-inlined as bash/jq"
     )
-
-
-def test_held_merge_reconciliation_retries_gh_failures_within_the_same_window():
-    """R5b round 6, Tier-3 review: a single `gh pr view` snapshot can miss a
-    merge that completes moments later -- a `gh` command failure inside the
-    poll must retry within the SAME bounded window, not be treated as proof
-    the unit is still unmerged."""
-    step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 2200]
-    assert "reconcile_deadline" in window
-    assert 'gh pr view "$branch"' in window
-    fail_at = window.index('gh pr view "$branch"')
-    tail = window[fail_at:fail_at + 200]
-    assert "|| { sleep 5; continue; }" in tail
-
-
-def test_held_merge_reconciliation_marks_merged_via_forced_operator_override():
-    step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 2400]
-    mark_at = window.index('loop_claim.py" mark ')
-    tail = window[mark_at:mark_at + 400]
-    assert "--status merged" in tail
-    assert "--campaign-worktree" in tail
-    assert "--merged-commit" in tail
-    assert "held_merge_reconciled" in tail
-    assert "|| strict-stop" in tail
 
 
 # --- Sixth-round external review fixes (R5b round 6, Tier-3 BLOCK) ---
@@ -105,21 +101,3 @@ def test_held_merge_reconciliation_race_narrowing_is_disclosed_not_claimed_close
     full = " ".join(CAMPAIGN_DOC.read_text(encoding="utf-8").lower().split())
     assert "narrows the race, it does not close it" in full
     assert "task-cancellation primitive this framework does not have" in full
-
-
-# --- Fourth-round external review fixes (R5b round 4, Tier-3 BLOCK) ---
-
-
-def test_held_merge_reconciliation_covers_both_drain_timeout_and_confirmation_timeout():
-    """Tier-3 review, R5b round 4: round 3's reconciliation scoped to
-    `drain_timeout` alone left a `merge_confirmation_timeout` row -- whose PR
-    3g's own poll already confirmed MERGED, only the SHA confirmation timed
-    out -- with no path back to `merged`, mapping it to a permanent, false
-    `failed` at step 3h. Both `reason_code`s need the identical correction,
-    so one filter must cover both."""
-    step = _step_4()
-    reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 300]
-    assert '.status == "held"' in window
-    assert '.reason_code == "drain_timeout"' in window
-    assert '.reason_code == "merge_confirmation_timeout"' in window
