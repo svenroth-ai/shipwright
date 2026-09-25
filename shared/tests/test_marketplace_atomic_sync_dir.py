@@ -253,3 +253,28 @@ def test_source_enumeration_failure_aborts_before_the_swap(tmp_path):
     assert "NEW_FILE_LEAKED=no" in res.stdout, (
         "the swap ran despite a failed enumeration, publishing an incomplete destination — "
         + res.stdout)
+
+
+def test_source_file_matching_the_internal_listing_name_survives_the_sync(tmp_path):
+    """Tier-3 review, PR #796 round 20: the enumeration listing used to live
+    at "$staging/.find-files" -- inside the tree being published -- so a
+    legitimate source file happening to share that exact name would collide
+    with it (lost content, or a hard failure on Windows, where overwriting a
+    file another handle still has open for reading is refused outright). The
+    listing now lives at "${dst}.find-list.$$", a sibling of $dst never
+    reachable by anything under $src, so a source file using that literal
+    old name is just an ordinary file to sync."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / ".find-files").write_text("legitimate source content", encoding="utf-8")
+    (src / "other.py").write_text("other", encoding="utf-8")
+
+    res = _run(f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label')
+
+    assert res.returncode == 0, res.stderr
+    assert (dst / "other.py").exists()
+    assert (dst / ".find-files").exists(), (
+        "a source file sharing the old internal listing name was lost")
+    assert (dst / ".find-files").read_text(encoding="utf-8") == "legitimate source content", (
+        "the source file's content was overwritten by the sync's own internal "
+        "enumeration listing")

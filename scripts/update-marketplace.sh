@@ -137,6 +137,17 @@ _atomic_sync_dir() {
     local staging="${dst}.sync-new.$$"
     local old="${dst}.sync-old.$$"
     local lock="${dst}.sync.lock"
+    # A SIBLING of $dst, like $staging/$old above — never inside $staging
+    # itself. $staging IS the tree being published: a legitimate source file
+    # or directory literally named the same as a listing (e.g. a plugin
+    # shipping its own ".find-files") would collide with it there, either
+    # losing real source content to a `find` listing overwriting it or, on
+    # Windows, hard-failing outright (NTFS generally refuses to
+    # overwrite/replace a file another handle still has open for reading —
+    # Tier-3 review, PR #796 round 20). Reused sequentially across this one
+    # invocation's several enumerations, never concurrently, so one path
+    # suffices; swept below alongside $staging/$old/$lock's own leftovers.
+    local findlist="${dst}.find-list.$$"
 
     # A first-ever sync to a not-yet-existing target (e.g. a brand new cache
     # root, or a plugin mirror directory before its first copy) has no parent
@@ -381,15 +392,18 @@ _atomic_sync_dir() {
     fi
 
     # A prior run killed mid-swap (Ctrl-C, timeout) leaves its own PID-named
-    # staging/old dirs, or an abandoned stale-lock claim (died between the
-    # claiming `mv` and its `rm -rf`), behind forever — nothing else ever
-    # matches that PID again to clean them up. `.sync.lock.*` catches the
-    # latter — the bare "$lock" itself has no trailing PID suffix, so this
-    # glob can never match a currently-installed live lock. Self-heal by
-    # sweeping DEAD-process leftovers for this $dst before starting a fresh
-    # one; the lock above already rules out a live concurrent holder, but a
-    # name-only match here would still be blind to that distinction on its own.
-    for leftover in "${dst}".sync-new.* "${dst}".sync-old.* "${dst}".sync.lock.*; do
+    # staging/old dirs, an abandoned stale-lock claim (died between the
+    # claiming `mv` and its `rm -rf`), or an un-removed enumeration listing
+    # (died between `_find0_to_file` writing it and this function's own
+    # `rm -f` right after reading it, round 20) behind forever — nothing else
+    # ever matches that PID again to clean them up. `.sync.lock.*` catches
+    # the stale-lock case — the bare "$lock" itself has no trailing PID
+    # suffix, so this glob can never match a currently-installed live lock.
+    # Self-heal by sweeping DEAD-process leftovers for this $dst before
+    # starting a fresh one; the lock above already rules out a live
+    # concurrent holder, but a name-only match here would still be blind to
+    # that distinction on its own.
+    for leftover in "${dst}".sync-new.* "${dst}".sync-old.* "${dst}".sync.lock.* "${dst}".find-list.*; do
         [ -e "$leftover" ] || continue
         if ! _pid_is_alive "${leftover##*.}"; then
             rm -rf "$leftover" 2>/dev/null || true
@@ -415,31 +429,29 @@ _atomic_sync_dir() {
     # leaves THAT one entry unstripped, mkdir'ing the whole absolute source
     # path as a bogus nested directory inside staging every run (Tier-3
     # review, PR #796 round 2).
-    local _dirlist="$staging/.find-dirs"
-    _find0_to_file "$_dirlist" "directories under $src" "$src" -mindepth 1 -type d \
+    _find0_to_file "$findlist" "directories under $src" "$src" -mindepth 1 -type d \
         -not -name "__pycache__" -not -path "*/__pycache__/*" \
         -not -name ".venv" -not -path "*/.venv/*" \
         -not -name ".pytest_cache" -not -path "*/.pytest_cache/*" \
         -not -name ".git" -not -path "*/.git/*" || return 1
     while IFS= read -r -d '' dir; do
         mkdir -p "$staging/${dir#$src/}"
-    done < "$_dirlist"
-    rm -f "$_dirlist"
+    done < "$findlist"
+    rm -f "$findlist"
 
     # __pycache__/.venv/.pytest_cache: bulk `cp -r` per matched top-level dir
     # (found via `-prune`, so a nested one under `.venv` isn't independently
     # matched and double-copied) — these can be tens of thousands of tiny
     # files, far too slow to copy one at a time on Windows.
     if [ -d "$dst" ]; then
-        local _cachelist="$staging/.find-caches"
-        _find0_to_file "$_cachelist" "cache directories under $dst" "$dst" \
+        _find0_to_file "$findlist" "cache directories under $dst" "$dst" \
             \( -name "__pycache__" -o -name ".venv" -o -name ".pytest_cache" \) -prune || return 1
         while IFS= read -r -d '' cache_dir; do
             local rel="${cache_dir#$dst/}"
             mkdir -p "$(dirname "$staging/$rel")"
             cp -r "$cache_dir" "$staging/$rel"
-        done < "$_cachelist"
-        rm -f "$_cachelist"
+        done < "$findlist"
+        rm -f "$findlist"
     fi
 
     # Single pass over $src, comparing each file directly against the LIVE
@@ -450,8 +462,7 @@ _atomic_sync_dir() {
     # linked (not copied) from $dst: content is already verified identical,
     # so `cp -l` skips the read+write I/O and just adds a directory entry.
     local added=0 changed=0 removed=0
-    local _filelist="$staging/.find-files"
-    _find0_to_file "$_filelist" "files under $src" "$src" -type f \
+    _find0_to_file "$findlist" "files under $src" "$src" -type f \
         -not -path "*/__pycache__/*" \
         -not -path "*/.venv/*" \
         -not -path "*/.pytest_cache/*" \
@@ -472,8 +483,8 @@ _atomic_sync_dir() {
         else
             cp -l "$dst_file" "$target_file" 2>/dev/null || cp "$dst_file" "$target_file"
         fi
-    done < "$_filelist"
-    rm -f "$_filelist"
+    done < "$findlist"
+    rm -f "$findlist"
 
     # Files present in the old target but absent from $src (renamed/deleted
     # upstream) were never copied into staging above, so nothing needs
@@ -489,8 +500,7 @@ _atomic_sync_dir() {
     # dropped such files even though noprune's contract has no distribution
     # policy to justify that (Tier-3 review, PR #796 round 3).
     if [ -d "$dst" ]; then
-        local _dstfilelist="$staging/.find-dst-files"
-        _find0_to_file "$_dstfilelist" "files under $dst" "$dst" -type f \
+        _find0_to_file "$findlist" "files under $dst" "$dst" -type f \
             -not -path "*/__pycache__/*" \
             -not -path "*/.venv/*" \
             -not -path "*/.pytest_cache/*" || return 1
@@ -505,8 +515,8 @@ _atomic_sync_dir() {
                 mkdir -p "$(dirname "$target")"
                 cp "$dst_file" "$target"
             fi
-        done < "$_dstfilelist"
-        rm -f "$_dstfilelist"
+        done < "$findlist"
+        rm -f "$findlist"
     fi
 
     # These two `mv`s are the swap itself, and "$dst" genuinely does not
