@@ -1435,7 +1435,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    Both share the exact same remedy — re-check the unit's PR against GitHub's
    own state and correct the record if it actually landed — so one pass
    covers both `reason_code`s, so the campaign never reports a unit as
-   held/unmerged while its PR sits merged on `origin/{default}`:
+   held/unmerged while its PR sits merged on `origin/{default}`.
+
+   **Bounded per-unit poll, not a single instant (campaign-dag-scheduler
+   R5b round 6, Tier-3 review).** A `drain_timeout` unit's own in-flight
+   worker may still be running (`gh pr checks --watch` waiting on slow CI,
+   then `gh pr merge`) at the exact moment `campaign_drain.py run` returns —
+   a single `gh pr view` immediately afterward can miss a merge that
+   completes moments later. Give each unit its own short, bounded grace
+   window (same shape as 3g's `mergeCommit` confirmation wait) before
+   accepting "still not merged" as this pass's answer:
    ```bash
    loop_state=.shipwright/loop_state.json
    reconcilable_held=$(jq -r '.units[] | select(.status == "held" and (.reason_code == "drain_timeout" or .reason_code == "merge_confirmation_timeout")) | .id' "$loop_state")
@@ -1444,14 +1453,23 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
      branch=$(jq -r '.branch' <<<"$unit")
      unit_wt=$(jq -r '.worktree' <<<"$unit")
      [ -d "$unit_wt" ] || unit_wt="{project_root}"
-     # A `gh` failure here (network, auth) must never block finalize — the
-     # row is already `held`, a safe terminal state; `continue` leaves it
-     # exactly as the drain recorded it, reconcilable on a LATER run instead
-     # of turning a best-effort correction into a new STRICT-STOP surface.
-     pr_state=$(cd "$unit_wt" && gh pr view "$branch" --json state,mergeCommit 2>/dev/null) || continue
-     [ "$(jq -r '.state' <<<"$pr_state")" = "MERGED" ] || continue
-     merged_sha=$(jq -r '.mergeCommit.oid // empty' <<<"$pr_state")
-     [ -n "$merged_sha" ] || continue
+     unset merged_sha
+     reconcile_deadline=$(( $(date +%s) + 60 ))
+     while [ "$(date +%s)" -lt "$reconcile_deadline" ]; do
+       # A `gh` failure here (network, auth) must never block finalize --
+       # retry within the same bounded window rather than treating one
+       # failed query as proof of "still not merged".
+       pr_state=$(cd "$unit_wt" && gh pr view "$branch" --json state,mergeCommit 2>/dev/null) || { sleep 5; continue; }
+       if [ "$(jq -r '.state' <<<"$pr_state")" = "MERGED" ]; then
+         merged_sha=$(jq -r '.mergeCommit.oid // empty' <<<"$pr_state")
+         [ -n "$merged_sha" ] && break
+       fi
+       sleep 5
+     done
+     # Exhausting the window leaves the row exactly as recorded -- a safe,
+     # terminal `held` state -- reconcilable on a LATER run instead of
+     # turning this best-effort correction into a new STRICT-STOP surface.
+     [ -n "${merged_sha:-}" ] || continue
      uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
        --state "$loop_state" --unit "$id" --status merged --force --confirm-no-task-running \
        --campaign-worktree "{project_root}" --merged-commit "$merged_sha" \
@@ -1459,6 +1477,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        --operator "campaign-mode:4-reconcile" --reason-code held_merge_reconciled || STRICT-STOP
    done
    ```
+   **This narrows the race, it does not close it (round 6 disclosure).** The
+   truly unbounded part of a stuck worker is `gh pr checks --watch` waiting
+   on slow/hung CI — nothing bounds how long THAT can run, so no fixed
+   reconciliation window can guarantee catching every case; a worker whose
+   CI wait outlives this 60s grace window too can still merge genuinely
+   after finalize. Closing this fully would require a Task-cancellation
+   primitive this framework does not have (see `lib.campaign_drain`'s own
+   module docstring) — this bounded retry is the best available mitigation,
+   not a claim of closure.
    `cmd_mark`'s own `--status merged` path re-fetches `origin` and verifies the
    SHA's ancestry itself (never trusts a hand-derived value blindly, since this
    is the one operator-override path), so no separate ancestry check is needed

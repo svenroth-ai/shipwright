@@ -54,17 +54,35 @@ def test_held_merge_reconciliation_verifies_merged_state_before_correcting():
     `merged`, never blocks finalize on a best-effort check."""
     step = _step_4()
     reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 1200]
+    window = step[reconcile_at:reconcile_at + 2200]
     assert "gh pr view" in window
     assert '"merged"' in window
     assert "mergecommit.oid" in window
-    assert "|| continue" in window
+    assert '[ -n "${merged_sha:-}" ] || continue' in window, (
+        "exhausting the bounded poll window must leave the row exactly as "
+        "recorded, never block finalize"
+    )
+
+
+def test_held_merge_reconciliation_retries_gh_failures_within_the_same_window():
+    """R5b round 6, Tier-3 review: a single `gh pr view` snapshot can miss a
+    merge that completes moments later -- a `gh` command failure inside the
+    poll must retry within the SAME bounded window, not be treated as proof
+    the unit is still unmerged."""
+    step = _step_4()
+    reconcile_at = step.index("reconcilable_held")
+    window = step[reconcile_at:reconcile_at + 2200]
+    assert "reconcile_deadline" in window
+    assert 'gh pr view "$branch"' in window
+    fail_at = window.index('gh pr view "$branch"')
+    tail = window[fail_at:fail_at + 200]
+    assert "|| { sleep 5; continue; }" in tail
 
 
 def test_held_merge_reconciliation_marks_merged_via_forced_operator_override():
     step = _step_4()
     reconcile_at = step.index("reconcilable_held")
-    window = step[reconcile_at:reconcile_at + 1600]
+    window = step[reconcile_at:reconcile_at + 2400]
     mark_at = window.index('loop_claim.py" mark ')
     tail = window[mark_at:mark_at + 400]
     assert "--status merged" in tail
@@ -72,6 +90,21 @@ def test_held_merge_reconciliation_marks_merged_via_forced_operator_override():
     assert "--merged-commit" in tail
     assert "held_merge_reconciled" in tail
     assert "|| strict-stop" in tail
+
+
+# --- Sixth-round external review fixes (R5b round 6, Tier-3 BLOCK) ---
+
+
+def test_held_merge_reconciliation_race_narrowing_is_disclosed_not_claimed_closed():
+    """Tier-3 review, R5b round 6: a timed-out worker's own UNBOUNDED step
+    (`gh pr checks --watch` waiting on slow CI) can outlive even the bounded
+    reconciliation poll above -- no fixed window can guarantee catching
+    every case without a Task-cancellation primitive this framework does
+    not have. This disclosure must say so plainly, not imply the race is
+    fully closed."""
+    full = " ".join(CAMPAIGN_DOC.read_text(encoding="utf-8").lower().split())
+    assert "narrows the race, it does not close it" in full
+    assert "task-cancellation primitive this framework does not have" in full
 
 
 # --- Fourth-round external review fixes (R5b round 4, Tier-3 BLOCK) ---
