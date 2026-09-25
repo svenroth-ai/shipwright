@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath",
+  "date": "2026-09-25",
+  "section": "Iterate — bug: build_codex_plugin.py bundles node_modules, breaking on Windows MAX_PATH",
+  "title": "Exclude node_modules from every Codex bundle copy",
+  "context": "build_codex_plugin.py's SOURCE_EXCLUDE_DIRS (applied to the per-origin scripts, skills, and shared/ copies) omitted node_modules. Found live while building the bundle for a Codex-CLI hook-chain probe: shipwright-test/scripts/perf's locally-installed Lighthouse dependency tree (a build/test-time-only npm project, not runtime content) got copied wholesale, and a deeply nested package path exceeded Windows' 260-char MAX_PATH, failing the build with shutil.Error.",
+  "decision": "Add \"node_modules\" to SOURCE_EXCLUDE_DIRS, the same allowlist that already excludes tests/__pycache__/.venv/etc. from all three copied trees.",
+  "consequences": "A Codex bundle never embeds any plugin's or shared's node_modules regardless of whether it happens to be installed locally, eliminating the MAX_PATH failure class entirely rather than working around one specific depth.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath-node-modules-exclusion.md"
+}

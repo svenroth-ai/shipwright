@@ -1,0 +1,62 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath",
+    "date": "2026-09-25",
+    "unit": {
+      "status": "passed",
+      "passed": 1171,
+      "total": 1171
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "build_codex_plugin's bundle copy excludes node_modules from all three copied trees (per-origin scripts, skills, shared/)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_build_codex_plugin.py::test_node_modules_is_excluded_from_every_copied_tree[origin-scripts|skills|shared] PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 1,
+        "tested": 1,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath",
+    "commit": "a8dc81432f9ea3538c7f95534e02523b9532fb70",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

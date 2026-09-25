@@ -87,8 +87,16 @@ from codex_hook_inventory import BundleCollisionError, build_hook_inventory
 # plugin's scripts/ is machine/run-local generated content, not source, and
 # its presence would otherwise make AC4's byte-identical-rebuild guarantee
 # depend on whether the last person to build had compiled bytecode lying
-# around (found building against the real 14-plugin tree).
-SOURCE_EXCLUDE_DIRS = {"tests", "__pycache__", ".venv", ".git", ".ruff_cache", ".mypy_cache", ".pytest_cache"}
+# around (found building against the real 14-plugin tree). node_modules is
+# the same class of problem plus a hard failure: a locally-installed npm
+# dependency tree (e.g. shipwright-test/scripts/perf's Lighthouse runner) is
+# never something a Codex hook needs at runtime, and a deeply nested package
+# path can exceed Windows' 260-char MAX_PATH during the copy, failing the
+# whole build with shutil.Error (found live building the bundle for a Codex
+# CLI hook-chain probe).
+SOURCE_EXCLUDE_DIRS = {
+    "tests", "__pycache__", ".venv", ".git", ".ruff_cache", ".mypy_cache", ".pytest_cache", "node_modules",
+}
 
 __all__ = [
     "BundleCollisionError",
