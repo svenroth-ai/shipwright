@@ -52,6 +52,14 @@ revisits an already-cleared unit. `update_progress_fn` corrects it right
 after `mark_merged_fn` succeeds — best-effort, matching 3h's own convention
 that this board is a "LOCAL-BOARD CONVENIENCE only" (campaign-mode.md,
 step 3h) whose failures never block anything.
+
+**Every subprocess call in this module is timeout-bounded (round 12 for
+`gh`, round 13 for `loop_claim.py mark` and `campaign_progress.py
+update-status`, both Tier-3 review, blocking).** A hang in any one of them
+would otherwise block step 4's finalize — and the session-lock release
+that follows it — indefinitely, which is exactly the failure mode this
+pass's own bounded-window design exists to rule out. A timed-out call is
+just another failed/best-effort operation, never an uncaught exception.
 """
 
 from __future__ import annotations
@@ -82,6 +90,15 @@ DEFAULT_POLL_INTERVAL_SECONDS = 5.0
 #: running. Well under the poll interval so a single hang still leaves room
 #: to retry within the outer window rather than consuming it in one call.
 GH_QUERY_TIMEOUT_SECONDS = 20.0
+
+#: Per-call bound on the mark/board-update subprocess calls (Tier-3 review,
+#: R5b round 13, blocking): the same hang risk `GH_QUERY_TIMEOUT_SECONDS`
+#: above already covers for `gh` -- a stuck `uv` launch or a wedged
+#: `loop_claim.py mark`/`campaign_progress.py update-status` had no timeout
+#: at all, so either could hang step 4's finalize (and the session-lock
+#: release that follows it) indefinitely, despite this pass documenting
+#: itself as bounded.
+SUBPROCESS_TIMEOUT_SECONDS = 30.0
 
 #: (branch, cwd) -> {"state": ..., "mergeCommit": {"oid": ...}} | None on a `gh` failure.
 GhQueryFn = Callable[[str, str], "dict | None"]
@@ -192,14 +209,17 @@ def _real_gh_query(branch: str, cwd: str) -> dict | None:
 
 
 def _real_mark_merged(unit_id: str, merged_sha: str, *, state_path: Path, project_root: str, shared_root: str) -> bool:
-    result = subprocess.run([
-        "uv", "run", str(Path(shared_root) / "scripts" / "lib" / "loop_claim.py"), "mark",
-        "--state", str(state_path), "--unit", unit_id, "--status", "merged",
-        "--force", "--confirm-no-task-running",
-        "--campaign-worktree", project_root, "--merged-commit", merged_sha,
-        "--reason", "held-merge reconciliation: GitHub reports this PR as merged although the unit was recorded held",
-        "--operator", "campaign-mode:4-reconcile", "--reason-code", "held_merge_reconciled",
-    ])
+    try:
+        result = subprocess.run([
+            "uv", "run", str(Path(shared_root) / "scripts" / "lib" / "loop_claim.py"), "mark",
+            "--state", str(state_path), "--unit", unit_id, "--status", "merged",
+            "--force", "--confirm-no-task-running",
+            "--campaign-worktree", project_root, "--merged-commit", merged_sha,
+            "--reason", "held-merge reconciliation: GitHub reports this PR as merged although the unit was recorded held",
+            "--operator", "campaign-mode:4-reconcile", "--reason-code", "held_merge_reconciled",
+        ], timeout=SUBPROCESS_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        return False
     return result.returncode == 0
 
 
@@ -214,8 +234,8 @@ def _real_update_progress(
             "uv", "run", str(Path(plugin_root) / "scripts" / "tools" / "campaign_progress.py"), "update-status",
             "--campaign-dir", campaign_dir, "--sub-iterate-id", unit_id,
             "--status", "complete", "--commit", merged_sha, "--branch", branch,
-        ])
-    except OSError:
+        ], timeout=SUBPROCESS_TIMEOUT_SECONDS)
+    except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0
 

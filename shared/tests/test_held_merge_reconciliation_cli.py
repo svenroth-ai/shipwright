@@ -68,8 +68,9 @@ class TestRealMarkMerged:
     def test_builds_the_expected_loop_claim_invocation(self, tmp_path, monkeypatch):
         captured = {}
 
-        def fake_run(cmd):
+        def fake_run(cmd, timeout=None):
             captured["cmd"] = cmd
+            assert timeout is not None and timeout > 0
             return subprocess.CompletedProcess(cmd, 0)
 
         monkeypatch.setattr(subprocess, "run", fake_run)
@@ -84,7 +85,21 @@ class TestRealMarkMerged:
         assert "--campaign-worktree" in cmd and "/proj" in cmd
 
     def test_returns_false_on_a_nonzero_exit(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(subprocess, "run", lambda cmd: subprocess.CompletedProcess(cmd, 1))
+        monkeypatch.setattr(subprocess, "run", lambda cmd, timeout=None: subprocess.CompletedProcess(cmd, 1))
+        ok = _real_mark_merged("A", "sha123", state_path=tmp_path / "loop_state.json",
+                                project_root="/proj", shared_root="/shared")
+        assert ok is False
+
+    def test_returns_false_on_a_hung_loop_claim_process(self, tmp_path, monkeypatch):
+        """Tier-3 review, R5b round 13, blocking: `subprocess.run` here had no
+        `timeout=` at all, so a stuck `uv`/`loop_claim.py mark` could hang
+        step 4's finalize -- and the session-lock release after it --
+        indefinitely, despite the reconciliation pass documenting itself as
+        bounded. A timeout must be treated like any other failed mark."""
+        def fake_run(*_a, **_k):
+            raise subprocess.TimeoutExpired(cmd=["uv", "run", "loop_claim.py"], timeout=30.0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
         ok = _real_mark_merged("A", "sha123", state_path=tmp_path / "loop_state.json",
                                 project_root="/proj", shared_root="/shared")
         assert ok is False
@@ -98,8 +113,9 @@ class TestRealUpdateProgress:
     def test_builds_the_expected_campaign_progress_invocation(self, monkeypatch):
         captured = {}
 
-        def fake_run(cmd):
+        def fake_run(cmd, timeout=None):
             captured["cmd"] = cmd
+            assert timeout is not None and timeout > 0
             return subprocess.CompletedProcess(cmd, 0)
 
         monkeypatch.setattr(subprocess, "run", fake_run)
@@ -115,7 +131,7 @@ class TestRealUpdateProgress:
         assert "--branch" in cmd and "iterate/A" in cmd
 
     def test_returns_false_on_a_nonzero_exit(self, monkeypatch):
-        monkeypatch.setattr(subprocess, "run", lambda cmd: subprocess.CompletedProcess(cmd, 1))
+        monkeypatch.setattr(subprocess, "run", lambda cmd, timeout=None: subprocess.CompletedProcess(cmd, 1))
         ok = _real_update_progress("A", "sha123", "iterate/A",
                                     campaign_dir="/campaigns/my-slug", plugin_root="/plugin")
         assert ok is False
@@ -125,6 +141,19 @@ class TestRealUpdateProgress:
         launch failure must never propagate and abort reconciliation."""
         def fake_run(*_a, **_k):
             raise OSError("uv: command not found")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        ok = _real_update_progress("A", "sha123", "iterate/A",
+                                    campaign_dir="/campaigns/my-slug", plugin_root="/plugin")
+        assert ok is False
+
+    def test_returns_false_on_a_hung_campaign_progress_process(self, monkeypatch):
+        """Tier-3 review, R5b round 13, blocking: this call also had no
+        `timeout=`, so a wedged `campaign_progress.py update-status` could
+        hang step 4 the same way an unbounded `loop_claim.py mark` would --
+        a timeout is just another best-effort failure, never a hang."""
+        def fake_run(*_a, **_k):
+            raise subprocess.TimeoutExpired(cmd=["uv", "run", "campaign_progress.py"], timeout=30.0)
 
         monkeypatch.setattr(subprocess, "run", fake_run)
         ok = _real_update_progress("A", "sha123", "iterate/A",
