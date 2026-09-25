@@ -6,9 +6,11 @@ drew: this file covers guarding a WRITE against an ownership mistake —
 the release-site guard (`_lock_is_owned_by`, round 9) used at both the
 normal completion path and the script-wide EXIT trap, the noclobber
 pid-write guard (round 12) that protects the initial claim against a
-paused installer, and the round-24 cleanup that applies that same
-release-site guard to a claim abandoned mid-write. The ABA-claim-and-restore
-mismatch-handling mechanism (rounds 8/11/13) stays in the sibling file.
+paused installer, the round-24 cleanup that applies that same
+release-site guard to a claim abandoned mid-write, and the round-25 guard
+against reclaiming a directory that does not look like a lock this script
+created. The ABA-claim-and-restore mismatch-handling mechanism (rounds
+8/11/13) stays in the sibling file.
 
 Extracts functions/lines out of the real script and drives them against
 fixture trees under ``bash``, rather than sourcing the whole script (which
@@ -243,3 +245,38 @@ def test_partial_claim_with_a_failed_token_write_cleans_up_its_own_pid_stamped_l
     assert "ABANDONED_LOCK_SURVIVED=no" in res.stdout, (
         "a lock this process's own pid write landed in, but whose token write then failed, "
         "was abandoned instead of cleaned up — " + res.stdout)
+
+
+def test_a_foreign_directory_at_the_lock_path_is_never_treated_as_a_stale_lock(tmp_path):
+    """Tier-3 review, PR #796 round 25, data-loss finding: the round-23
+    non-directory guard only protects a foreign FILE at the lock path. An
+    unrelated DIRECTORY there — with no pid file at all, or one holding
+    unrelated content — reads exactly like a real installer's pid-write gap
+    (`cat "$lock/pid"` reads back empty either way) and used to proceed
+    through the same empty-pid grace-period reclaim, ending in
+    `rm -rf "$discard"`: destroying whatever that foreign directory actually
+    held. A legitimate lock this script creates is always empty or contains
+    only "pid"/"token" plain files, nothing else — anything else must abort
+    instead of being silently reclaimed."""
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    (src / "a.py").write_text("a", encoding="utf-8")
+    lock = dst.parent / (dst.name + ".sync.lock")
+    lock.mkdir(parents=True)
+    (lock / "unrelated_data.txt").write_text("precious foreign content", encoding="utf-8")
+
+    script = (
+        "set -euo pipefail\n"
+        + _extract("_pid_is_alive") + "\n"
+        + _extract("_lock_is_owned_by") + "\n"
+        + _extract("_new_claim_token") + "\n"
+        + _extract("_find0_to_file") + "\n"
+        + _extract("_atomic_sync_dir") + "\n"
+        + f'_atomic_sync_dir "{_p(src)}" "{_p(dst)}" label\n')
+    res = _run_script(script)
+
+    assert res.returncode != 0, (
+        "a foreign directory at the lock path must abort the sync, not be silently reclaimed")
+    assert lock.is_dir(), "the foreign directory was replaced or removed instead of left untouched"
+    assert (lock / "unrelated_data.txt").exists(), "the foreign directory's content was lost"
+    assert (lock / "unrelated_data.txt").read_text(encoding="utf-8") == "precious foreign content"

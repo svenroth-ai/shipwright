@@ -204,7 +204,7 @@ _atomic_sync_dir() {
     # its `mkdir` by microseconds, so seconds of silence is already a strong
     # dead-installer signal, not a slow one.
     local _EMPTY_LOCK_GRACE_S=5
-    local waited=0 holder_pid="" holder_token="" empty_pid_waits=0
+    local waited=0 holder_pid="" holder_token="" empty_pid_waits=0 _lock_foreign_entry
     while true; do
         if mkdir "$lock" 2>/dev/null; then
             _CURRENT_SYNC_LOCK="$lock"
@@ -274,6 +274,26 @@ _atomic_sync_dir() {
         if [ -e "$lock" ] && [ ! -d "$lock" ]; then
             echo "  [!!] ${label}: \"$lock\" exists but is not a directory — refusing to treat a foreign file as a stale lock" >&2
             return 1
+        fi
+        # An unrelated DIRECTORY happening to occupy this exact sibling path
+        # is just as foreign as an unrelated file (the check above), and a
+        # bare "is it a directory" test cannot tell them apart: a legitimate
+        # lock this script created is always empty or contains only "pid"
+        # and/or "token" plain files, nothing else. Without this, a foreign
+        # directory with no readable pid (no pid file at all, or one holding
+        # unrelated content) reads exactly like a real installer's pid-write
+        # gap, proceeds through the same empty-pid grace-period reclaim, and
+        # ends in `rm -rf "$discard"` — destroying whatever that directory
+        # actually held (Tier-3 review, PR #796 round 25, data-loss
+        # finding). Reject anything with an unexpected entry the same way
+        # the non-directory case above does, rather than trying to recover
+        # arbitrary foreign content into our own lock shape.
+        if [ -d "$lock" ]; then
+            _lock_foreign_entry=$(find "$lock" -mindepth 1 -maxdepth 1 \( ! -type f -o \( ! -name pid ! -name token \) \) 2>/dev/null | head -1)
+            if [ -n "$_lock_foreign_entry" ]; then
+                echo "  [!!] ${label}: \"$lock\" exists but does not look like a lock this script created (unexpected entry: $_lock_foreign_entry) — refusing to treat it as reclaimable" >&2
+                return 1
+            fi
         fi
         holder_pid=$(cat "$lock/pid" 2>/dev/null || echo "")
         holder_token=$(cat "$lock/token" 2>/dev/null || echo "")
