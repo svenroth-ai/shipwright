@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-23-m5-agents-md-generation-drift",
+  "date": "2026-09-24",
+  "section": "Iterate — change: AGENTS.md generation for Codex CLI",
+  "title": "AGENTS.md generation, single-sourced with CLAUDE.md",
+  "context": "Codex CLI reads AGENTS.md natively; neither adopt nor project ever wrote one, so Codex sessions got zero Shipwright guidance. Root AGENTS.md also drifted: hardcoded Codex model-slug/reasoning-effort defaults.",
+  "decision": "Generate AGENTS.md via the same _render_claude_md(host_name=...) CLAUDE.md uses, plus one shared Codex-only appendix with an inert marker; reuse the existing load-bearing-preservation policy; remove the two hardcoded default bullets from root AGENTS.md.",
+  "consequences": "Every adopted/scaffolded project ships AGENTS.md; greenfield's single-source guarantee is instruction-driven, not code-enforced, same as CLAUDE.md's own greenfield path.",
+  "rationale": "One render function, one small appendix file — nothing left to duplicate or drift, unlike a second hand-maintained template.",
+  "rejected": "Independent AGENTS.md template pinned by a drift test (reintroduces split-brain); do nothing (Codex gets no guidance); heading-derived idempotency marker (collides with pre-existing sections, desyncs on reword).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-23-m5-agents-md-generation-drift-agents-md-generation.md"
+}

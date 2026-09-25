@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-23-m5-agents-md-generation-drift",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T15:55:33.249884+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T15:54:46.071133+00:00",
+      "disposition": "external LLM plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/scripts/lib/preserve_existing.py",
+          "line": 121,
+          "finding": "is_loadbearing_claude_md's docstring and the module's Policy section still enumerate only CLAUDE.md, even though agents_md_renderer.py now imports this exact function under the alias is_loadbearing_agents_md and applies the same 1KB-threshold policy to AGENTS.md. A reader of preserve_existing.py in isolation would not learn it now also gates AGENTS.md.",
+          "suggestion": "Update both docstrings to say CLAUDE.md/AGENTS.md and add an AGENTS.md bullet to the module docstring's Policy list.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
+          "line": null,
+          "finding": "The diff includes an unrelated cosmetic reformat of the prior_art_harvester import (collapsing a multi-line import into one line), alongside the new write_agents_md import line above it — technically out of the stated scope for a feature diff.",
+          "suggestion": "Revert the unrelated import reformat; keep only the new import line needed for this feature.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-24T17:59:45.207002+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-project/skills/project/SKILL.md, plugins/shipwright-project/skills/project/references/step-7-scaffolding.md, plugins/shipwright-project/skills/project/references/step-8-completion.md",
+          "line": null,
+          "finding": "Claim under doubt: greenfield /shipwright-project always writes AGENTS.md unconditionally (mini-plan decision 2) — SKILL.md Step 7/8 and two of its own reference/checkpoint files (step-7-scaffolding.md, step-8-completion.md) were not updated in the original diff and still enumerated only CLAUDE.md in their Goal line, Key sub-flows list, Checkpoint line, Verification checklist, and completion banner — an agent following those surfaces as the authoritative TODO had no textual cue that AGENTS.md needed to exist, and nothing code-level gates on its presence.",
+          "suggestion": "Add AGENTS.md to all enumerations/checkpoints/banner",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py (_append_codex_appendix, CODEX_APPENDIX_MARKER)",
+          "line": null,
+          "finding": "Claim under doubt: the Codex appendix append is idempotent — a second/third/fourth adopt run never duplicates content — The marker check is decoupled from the visible heading, but an existing AGENTS.md whose content matches the appendix bytes yet is missing the marker line (e.g. a hand-copy of the rendered view, which visually hides HTML comments, or a markdown formatter stripping comments) would receive a full duplicate append on the next adopt run.",
+          "suggestion": "A content-similarity secondary check, or an explicit written acceptance that a marker-stripped hand-copy producing a visible duplicate is an acceptable, narrow edge case",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md (step 2), shared/tests/test_claude_md_template.py",
+          "line": null,
+          "finding": "Claim under doubt: AGENTS.md's shared body cannot drift from CLAUDE.md's despite being rendered by a single shared function (the 'single-source guarantee') — This is code-enforced for the brownfield (adopt) path, but NOT for the greenfield (/shipwright-project) path: project-scaffolding.md asks the LLM agent to perform two manual find/replace substitutions inside fully-filled prose (harder than isolated-token substitution), and the only automated check verified the instruction FILE names the right appendix path, not that any scaffolded project's actual output received both substitutions correctly.",
+          "suggestion": "Either accept as a known, slightly-increased risk, or add a lightweight check that the two substitutions are mechanically well-defined",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-24T17:59:50.530921+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py:31-35` (`is_loadbearing_claude_md as is_loadbearing_agents_md`)",
+          "line": null,
+          "finding": "The spec explicitly required generalizing `is_loadbearing_claude_md` to take a filename/rel_path parameter — \"thread the filename explicitly through the whole chain rather than leaving any CLAUDE.md-specific name/key hardcoded\" (plan-review round 1, openai medium). The diff instead aliases the CLAUDE.md-named function and reuses it for AGENTS.md. Behaviorally equivalent (the function only checks byte size of the path it's given), so this is a documented-deviation issue, not a bug.",
+          "suggestion": "Either rename to `is_loadbearing_doc` with a `rel_path`-style parameter as the spec asked, or note the deviation in the preservation_log/commit message so the accepted plan-review finding is traceable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug (latent) |",
+          "file": "plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py:64-67` vs `shared/templates/codex-agents-md-appendix.md",
+          "line": 1,
+          "finding": "CODEX_APPENDIX_MARKER` is a hardcoded constant in Python and embedded as the appendix file's first line — two copies that can desync. If someone edits the appendix's first-line comment, `_append_codex_appendix` would stack a duplicate appendix on every adopt re-run. The comment claims \"reading the appendix and checking for the marker can never desync\", which is only true because the test `test_codex_appendix_marker_is_embedded_in_the_live_file` pins it — the guard is the test, not the construction.",
+          "suggestion": "Consider deriving the marker at runtime (e.g. read the appendix's first line when appending) or at least keep the test; it exists, so this is acceptable as-is.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-adopt/tests/test_agents_md_renderer.py:157-161` (`test_thin_existing_agents_md_is_overwritten_with_backup`)",
+          "line": null,
+          "finding": "assert \"demo\" in body` is a weak signal — it passes on almost any rendered content (project name \"Demo\" lowercase, profile slug, product_description) and would pass even if the overwrite wrote stale/wrong content as long as it contained \"demo\". The sibling CLAUDE.md tests presumably assert more.",
+          "suggestion": "Assert a load-bearing fragment of the rendered body (e.g. `# Demo` heading and `Codex withholds subagent spawning`) instead of a bare substring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-adopt/scripts/lib/claude_md_renderer.py:222-243` (`_append_section_if_missing`)",
+          "line": null,
+          "finding": "The heading-presence check is `^` + literal heading prefix. For the standing-request heading (`## Review subagents: standing request.`), a preserved file containing that text at a line start inside a fenced code block would still be treated as present. The docstring claims line-anchoring fixes the fenced-block false positive, but it only fixes mid-line matches, not fenced blocks. Same false-negative risk existed before, so not a regression; just overstated in the comment.",
+          "suggestion": "Either accept it (matches prior behavior for CLAUDE.md) or strip fenced blocks before the check; at minimum soften the docstring claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py` (whole file)",
+          "line": null,
+          "finding": "Spec design §2 places `write_agents_md` inside `claude_md_renderer.py`; the diff moves it to a new module citing a 300-line source cap. The hooks doc and tests are consistent with the new location, and the import wiring (`sys.path` insert + `from lib.claude_md_renderer import ...`) is correct, so this is a benign, documented deviation.",
+          "suggestion": "None needed; just confirming it isn't an orphaned file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/lib/claude_md_renderer.py",
+          "line": 225,
+          "finding": "_append_section_if_missing` treats any line-start occurrence as an existing section, including one inside a fenced Markdown code block. A preserved, load-bearing `AGENTS.md` containing an example of `<!-- shipwright:codex-agents-md-appendix -->` or the standing-request heading in a code fence will not receive the real appendix and/or standing request, violating the required preserved-file delivery behavior.",
+          "suggestion": "Detect headings/markers only outside fenced code blocks (and preferably match complete heading lines). Add preserved-AGENTS tests containing the marker and standing-request heading inside fenced code examples.  Overall assessment: ship-with-fixes. The implementation largely follows the requested shared-body and appendix design, but the idempotency check can silently omit required Codex guidance for valid existing project documentation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-09-24T17:59:56.997413+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\n### Findings\n\n- Category: spec | Severity: low\n  File: `plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py:31-35` (`is_loadbearing_claude_md as is_loadbearing_agents_md`)\n  Finding: The spec explicitly required generalizing `is_loadbearing_claude_md` to take a filename/rel_path parameter — \"thread the filename explicitly through the whole chain rather than leaving any CLAUDE.md-specific name/key hardcoded\" (plan-review round 1, openai medium). The diff instead aliases the CLAUDE.md-named function and reuses it for AGENTS.md. Behaviorally equivalent (the function only checks byte size of the path it's given), so this is a documented-deviation issue, not a bug.\n  Suggestion: Either rename to `is_loadbearing_doc` with a `rel_path`-style parameter as the spec asked, or note the deviation in the preservation_log/commit message so the accepted plan-review finding is traceable.\n\n- Category: bug (latent) | Severity: low\n  File: `plugins/shipwright-adopt/scripts/lib/agents_md_renderer.py:64-67` vs `shared/templates/codex-agents-md-appendix.md:1`\n  Finding: `CODEX_APPENDIX_MARKER` is a hardcoded constant in Python *and* embedded as the appendix file's first line — two copies that can desync. If someone edits the appendix's first-line comment, `_append_codex_appendix` would stack a duplicate appendix on every adopt re-run. The comment claims \"reading the appendix and checking for the marker can never desync\", which is only true because the test `test_codex_appendix_marker_is_embedded_in_the_live_file` pins it — the guard is the test, not the construction.\n  Suggestion: Consider deriving the marker at runtime (e.g. read the appendix's first line when appending) or at least keep the test; it exists, so this is acceptable as-is.\n\n- Category: test | Severity: low\n  File: `plugins/shipwright-adopt/tests/test_agents_md_renderer.py:157-161` (`test_thin_existing_agents_md_is_overwritten_with_backup`)\n  Finding: `assert \"demo\" in body` is a weak signal — […truncated]\n\n[openai] - Category: edge-case\n- Severity: medium\n- File: `plugins/shipwright-adopt/scripts/lib/claude_md_renderer.py:225`\n- Finding: `_append_section_if_missing` treats any line-start occurrence as an existing section, including one inside a fenced Markdown code block. A preserved, load-bearing `AGENTS.md` containing an example of `<!-- shipwright:codex-agents-md-appendix -->` or the standing-request heading in a code fence will not receive the real appendix and/or standing request, violating the required preserved-file delivery behavior.\n- Suggestion: Detect headings/markers only outside fenced code blocks (and preferably match complete heading lines). Add preserved-AGENTS tests containing the marker and standing-request heading inside fenced code examples.\n\nOverall assessment: ship-with-fixes. The implementation largely follows the requested shared-body and appendix design, but the idempotency check can silently omit required Codex guidance for valid existing project documentation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      },
+      "contradiction_resolution": "verdicts agree within one step (glm=approve, openai=revise); openai's medium fenced-code-block finding addressed via a documentation fix accepting it as a narrow, pre-existing risk shared with CLAUDE.md's own standing-request marker, not a new regression"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T17:59:45.101211+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T15:54:46.188500+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

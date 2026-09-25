@@ -171,11 +171,11 @@ Detailed file formats in
 ## Step 7: Project Scaffolding (NEW — Shipwright Enhancement)
 
 See [references/step-7-scaffolding.md](references/step-7-scaffolding.md).
-Detailed CLAUDE.md + .shipwright/agent_docs generation in
+Detailed CLAUDE.md + AGENTS.md + .shipwright/agent_docs generation in
 [references/project-scaffolding.md](references/project-scaffolding.md).
 
-**Goal:** Generate CLAUDE.md and `.shipwright/agent_docs/` for the
-target project.
+**Goal:** Generate CLAUDE.md, AGENTS.md, and `.shipwright/agent_docs/` for
+the target project.
 
 **This step only runs for Full Application scope.** Extensions already
 have these files.
@@ -186,7 +186,7 @@ templates):
 1. **Profile detection** — match interview against
    `{plugin_root}/../../shared/profiles/` JSONs; supabase-nextjs is the
    primary supported profile.
-2. **Generate** CLAUDE.md, `architecture.md`, `decision_log.md`,
+2. **Generate** CLAUDE.md, AGENTS.md, `architecture.md`, `decision_log.md`,
    `conventions.md`, and `.claude/rules/*.md`.
 3. **Phase-router hook** — `suggest_iterate` is registered in
    `shipwright-iterate`; no project-level install. Cleanup of legacy
@@ -204,8 +204,8 @@ templates):
    `uv run "{shared_root}/scripts/tools/area_catalog.py" seed-greenfield
    --project-root "$(pwd)" --source project`.
 
-**Checkpoint:** CLAUDE.md existence + `supabase/config.toml` existence
-(supabase-nextjs only).
+**Checkpoint:** CLAUDE.md existence + AGENTS.md existence +
+`supabase/config.toml` existence (supabase-nextjs only).
 
 ---
 
@@ -219,7 +219,8 @@ canon, and the final summary banner.
 
 1. All declared splits have spec.md files
 2. project-manifest.md exists and lists all splits with execution order
-3. CLAUDE.md exists (Full Application only)
+3. CLAUDE.md and AGENTS.md exist (Full Application only) — AGENTS.md is
+   code-gated (`check_agents_md_completion`), see step-8-completion.md
 4. `.shipwright/agent_docs/` directory exists with all 3 files —
    `architecture.md`, `decision_log.md`, `conventions.md` (Full Application
    only; `session_handoff.md` is written later by the Stop hook, not
@@ -271,4 +272,4 @@ the invalid-input-file and session-conflict prompts.
 - [split-heuristics.md](references/split-heuristics.md) — How to evaluate split quality
 - [project-manifest.md](references/project-manifest.md) — Manifest format with SPLIT_MANIFEST block
 - [spec-generation.md](references/spec-generation.md) — Spec file templates
-- [project-scaffolding.md](references/project-scaffolding.md) — CLAUDE.md + .shipwright/agent_docs generation
+- [project-scaffolding.md](references/project-scaffolding.md) — CLAUDE.md + AGENTS.md + .shipwright/agent_docs generation

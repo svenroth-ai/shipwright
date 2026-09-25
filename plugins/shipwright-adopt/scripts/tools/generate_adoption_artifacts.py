@@ -216,6 +216,7 @@ def generate(
 ) -> dict[str, Any]:
     _load_lib()
     from config_writer import write_all  # type: ignore
+    from agents_md_renderer import write_agents_md  # type: ignore
     from artifact_writer import _resolve_retroactive_adrs, write_agent_docs, write_claude_md, write_spec  # type: ignore
     from event_seeder import seed_adopted_event, seed_backfill_events  # type: ignore
     from fr_id_sequence import canonical_fr_id  # type: ignore
@@ -223,10 +224,7 @@ def generate(
     # plugins/shipwright-iterate/hooks/hooks.json under UserPromptSubmit);
     # no project-level installation is performed here.
     from e2e_baseline_generator import write_baseline_spec  # type: ignore
-    from enrichment_schema import (  # type: ignore
-        EnrichmentValidationError,
-        validate_enrichment_file,
-    )
+    from enrichment_schema import EnrichmentValidationError, validate_enrichment_file  # type: ignore
     from enrichment_fallback import build_fallback_enrichment  # type: ignore
     from gitignore_check import check_paths_against_gitignore  # type: ignore
     from visual_docs_generator import generate_visual_docs  # type: ignore
@@ -426,11 +424,11 @@ def generate(
     results: dict[str, Any] = {"written": []}
     retroactive_adrs = _resolve_retroactive_adrs(project_root, enrichment.get("adrs", []))  # fail closed before write_claude_md (trg-6b59524b)
     # Artifacts
-    p = write_claude_md(
-        project_root, project_name=project_name, profile=profile, stack=stack,
-        commands=commands, product_description=product_description,
-    )
-    results["written"].append(str(p))
+    for _writer in (write_claude_md, write_agents_md):
+        results["written"].append(str(_writer(
+            project_root, project_name=project_name, profile=profile,
+            stack=stack, commands=commands, product_description=product_description,
+        )))
     for p in write_agent_docs(
         project_root,
         project_name=project_name, profile=profile, scope=scope,

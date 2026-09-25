@@ -23,6 +23,8 @@ Severity strategy:
 
 - Phase-own ``project_config_status_complete`` → ERROR (blocks next phase)
 - Phase-own ``manifest_splits_match_dirs`` → WARNING (cosmetic drift)
+- Phase-own ``agents_md_completion`` → ERROR for a Full Application project
+  (skipped for extension scope, same as CLAUDE.md itself)
 - Phase-own ``check_grill_trace_completeness`` → ERROR for every hard
   STOP (severities are those ``verify_grill_trace_completeness.py``'s own
   ``CheckResult``s already carry — unchanged, not re-classified here)
@@ -38,6 +40,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import _project_gate_wiring as _gate_wiring
+from .agents_md_completion_check import check_agents_md_completion
 from .common import (
     CheckResult,
     Severity,
@@ -203,6 +206,7 @@ def run_project_checks(
     # Phase-own
     results.append(check_project_config_status_complete(project_root))
     results.append(check_manifest_splits_match_dirs(project_root))
+    results.append(check_agents_md_completion(project_root))
     results.extend(check_grill_trace_completeness(project_root))
 
     # FR-01.02 #4/#15, #5, #10, #11 (req3-06-enforcement-mono sub-iterate e2)

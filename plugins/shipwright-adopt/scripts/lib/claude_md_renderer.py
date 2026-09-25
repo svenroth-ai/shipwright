@@ -19,6 +19,7 @@ so there is still no cycle back into ``artifact_writer``.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -35,14 +36,34 @@ from lib.preserve_existing import (  # noqa: E402
     record_preservation_action,
 )
 
-#: The standing-request grant, verbatim. ONE source: the f-string below
-#: interpolates it, and ``write_claude_md`` appends it to a preserved
-#: load-bearing CLAUDE.md. Both reviewers asked for a single
-#: definition rather than three hand-mirrored copies.
+#: The standing-request grant. ONE source, parameterized on which host tool
+#: it names (the only sentence in it that's runtime-specific — R4,
+#: iterate-2026-09-23-m5-agents-md-generation-drift, plan-review round 1,
+#: glm medium: reusing this verbatim for a Codex-read AGENTS.md would ship
+#: "Claude Code withholds..." into a file Claude Code never reads under that
+#: name). The f-string below interpolates the default (``"Claude Code"``),
+#: and ``write_claude_md``/``write_agents_md`` each append their own
+#: host-flavored copy to a preserved load-bearing file. Both reviewers
+#: originally asked for a single definition rather than hand-mirrored
+#: copies — this keeps that: one function, one call site per host.
 STANDING_REQUEST_HEADING = "## Review subagents: standing request."
-STANDING_REQUEST_SECTION = """## Review subagents: standing request. Workflows: ask every time.
 
-**The review cascade is requested by default — spawn it, never pause to ask, and never record a review `not_run` citing a session policy.** That is `spec-reviewer` → `code-reviewer` → `doubt-reviewer` plus the review subagents other phase skills prescribe (build Step 6, campaign review). Claude Code withholds subagent spawning until the user asks; **this file is that request, and it stands for every session.** **The grant covers reviewers, not fan-out.** Dynamic workflows, deep-research, and parallel implementation subagents (build's `section-builder` loop) spend openly and stay the operator's call — ask explicitly, every time, and never infer them from the grant above. A project that does not want this can delete the section; it is deliberately plain and must not be compressed further, because it has to read as the user's request at runtime."""
+
+def _standing_request_section(host_name: str = "Claude Code") -> str:
+    return (
+        "## Review subagents: standing request. Workflows: ask every time.\n\n"
+        "**The review cascade is requested by default — spawn it, never pause to ask, and never record a review `not_run` citing a session policy.** "
+        "That is `spec-reviewer` → `code-reviewer` → `doubt-reviewer` plus the review subagents other phase skills prescribe (build Step 6, campaign review). "
+        f"{host_name} withholds subagent spawning until the user asks; **this file is that request, and it stands for every session.** "
+        "**The grant covers reviewers, not fan-out.** Dynamic workflows, deep-research, and parallel implementation subagents (build's `section-builder` loop) "
+        "spend openly and stay the operator's call — ask explicitly, every time, and never infer them from the grant above. A project that does not want this "
+        "can delete the section; it is deliberately plain and must not be compressed further, because it has to read as the user's request at runtime."
+    )
+
+
+#: Back-compat: existing callers (`_append_standing_request`'s default,
+#: any external import) get the exact same text as before this change.
+STANDING_REQUEST_SECTION = _standing_request_section()
 
 
 AGENT_DOCS_DIR = ".shipwright/agent_docs"
@@ -55,6 +76,7 @@ def _render_claude_md(
     stack: dict[str, Any],
     commands: dict[str, str | None],
     product_description: str,
+    host_name: str = "Claude Code",
 ) -> str:
     runtime = _fmt_stack_line(stack.get("runtime", {}))
     frontend = _fmt_stack_line(stack.get("frontend", {}))
@@ -64,6 +86,20 @@ def _render_claude_md(
     build_cmd = commands.get("build") or "—"
     test_cmd = commands.get("test") or "—"
     dev_cmd = commands.get("dev") or "—"
+    # The "Editing this file" section names the file it's actually in and the
+    # growth-gate enforcement (`check_agent_doc_budget.py`) only reads
+    # CLAUDE.md, never AGENTS.md — both must stay tied to host_name, not
+    # hardcoded, or a generated AGENTS.md misnames itself and cites an env
+    # var that does nothing for it (doubt-reviewer, R4, high-severity).
+    doc_filename = "CLAUDE.md" if host_name == "Claude Code" else "AGENTS.md"
+    growth_gate_line = (
+        "- **Growth is gated:** iterate finalization flags a change that net-grows this\n"
+        "  file by more than 30 lines (deliberate exception:\n"
+        "  `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1`)."
+        if doc_filename == "CLAUDE.md" else
+        "- **No automated growth gate for this file yet** — keep it lean by the\n"
+        "  same restraint CLAUDE.md's line-cap enforces; watch it by hand."
+    )
     return f"""# {project_name}
 
 ## WHAT
@@ -120,12 +156,12 @@ See `{AGENT_DOCS_DIR}/decision_log.md` for the adoption ADR (the topmost
 `Adopt this repository into the Shipwright SDLC` entry — its id is the
 next-free 3-digit number after any pre-existing ADRs).
 
-{STANDING_REQUEST_SECTION}
+{_standing_request_section(host_name)}
 
 
 ## Editing this file (keep it lean)
 
-CLAUDE.md is **orientation + a terse invariant index** — it is loaded into
+{doc_filename} is **orientation + a terse invariant index** — it is loaded into
 every session, so every line here costs context on every future change.
 
 - **New invariant / DO-NOT rule:** add **one line + a pointer** to the ADR or
@@ -136,9 +172,7 @@ every session, so every line here costs context on every future change.
   extra lines belong in the ADR it cites. Keep lines short — a long paragraph
   on one line is still rationale.
 - **Prefer updating an existing line** over adding a new one.
-- **Growth is gated:** iterate finalization flags a change that net-grows this
-  file by more than 30 lines (deliberate exception:
-  `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1`).
+{growth_gate_line}
 
 ## Asking the user questions (plain language)
 
@@ -163,22 +197,38 @@ This governs *phrasing only* — the rigor of the work is unchanged.
 """
 
 
-def _append_standing_request(path: Path) -> bool:
-    """Append the review-subagent standing request to a PRESERVED CLAUDE.md.
-
-    The load-bearing branch deliberately does not overwrite an existing
-    CLAUDE.md — that policy exists because adopt once destroyed a 16 KB one.
-    But writing the rendered file to a side-file the harness never loads meant
-    the standing request never reached an adopted project at all, and every
-    repo mature enough to be worth adopting has a >1 KB CLAUDE.md. Appending
-    one section is additive: nothing existing is touched, and the operator
-    keeps the backup ``preserve_if_exists`` already took.
+def _append_section_if_missing(path: Path, heading: str, section: str) -> bool:
+    """Append `section` to a PRESERVED file, unless `heading` is already
+    present in it. The load-bearing branch deliberately does not overwrite
+    an existing file — that policy exists because adopt once destroyed a
+    16 KB CLAUDE.md. But writing the rendered content to a side-file the
+    harness never loads means the section never reaches the real file at
+    all, so appending it is additive: nothing existing is touched, and the
+    operator keeps the backup `preserve_if_exists` already took.
 
     Idempotent by heading, so re-running adopt does not stack duplicates.
     Returns True when it wrote, False when the section was already present.
+
+    The presence check is anchored to a LINE START (``re.MULTILINE``), not a
+    bare substring search — a heading string could otherwise appear mid-line
+    in quoted prose and be falsely counted "already present" (external code-
+    review cascade, R4, low). It does NOT rule out a fenced-code-block false
+    positive — accepted as a narrow, pre-existing risk shared with CLAUDE.md's
+    own standing-request heading, not one this diff introduces (external
+    code-review cascade, R4, medium/low, both legs).
+
+    Reads and writes with ``newline=""`` (no universal-newline translation)
+    so a file's PRE-EXISTING line endings survive byte-for-byte — the default
+    translate-on-read/re-encode-on-write behavior would otherwise flip an
+    LF-only preserved file to CRLF on Windows, contradicting "nothing
+    existing is touched" with a full-file line-ending rewrite (doubt-
+    reviewer, R4, medium). Only the newly appended text is LF-terminated.
     """
-    body = path.read_text(encoding="utf-8")
-    if STANDING_REQUEST_HEADING in body:
+    # Path.read_text() has no `newline` parameter (unlike write_text) — only
+    # a raw file handle can disable universal-newline translation on read.
+    with path.open(encoding="utf-8", newline="") as fh:
+        body = fh.read()
+    if re.search(r"^" + re.escape(heading), body, re.MULTILINE):
         return False
     if body.endswith("\n\n"):
         separator = ""
@@ -186,10 +236,14 @@ def _append_standing_request(path: Path) -> bool:
         separator = "\n"
     else:
         separator = "\n\n"
-    path.write_text(
-        body + separator + STANDING_REQUEST_SECTION + "\n", encoding="utf-8"
-    )
+    path.write_text(body + separator + section + "\n", encoding="utf-8", newline="")
     return True
+
+
+def _append_standing_request(path: Path, host_name: str = "Claude Code") -> bool:
+    return _append_section_if_missing(
+        path, STANDING_REQUEST_HEADING, _standing_request_section(host_name),
+    )
 
 
 def write_claude_md(

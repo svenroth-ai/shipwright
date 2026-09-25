@@ -56,6 +56,16 @@ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
         "no schema/transport entry has nothing for this contract to describe"
     )
 
+#: AGENTS.md used to restate this value in prose ("Use gpt-5.6-sol with high
+#: reasoning for required review subagents"), pinned by a test reading that
+#: text. It deliberately no longer does
+#: (iterate-2026-09-23-m5-agents-md-generation-drift, round 2): the prose
+#: could only ever show a stale snapshot of what this constant, and
+#: `codex_review_model_resolution.py`'s dynamic precedence over it, already
+#: govern. `shared/tests/test_agents_md_claude_md_parity.py::
+#: test_agents_md_does_not_hardcode_codex_review_models` now guards the
+#: opposite direction — that the prose never comes back.
+#:
 #: Matches the Codex operating policy (review subagents run gpt-6-sol
 #: with high reasoning) — a policy the dispatch call never actually
 #: enforced until this iterate (no
@@ -84,7 +94,7 @@ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
 #: below: `transport_note` can claim an effort the call never actually
 #: observed (doubt-reviewer, high, 2026-09-20; both probes run 2026-09-20).
 CODEX_REVIEW_REASONING_EFFORT = "high"
-assert CODEX_REVIEW_REASONING_EFFORT == "high", "AGENTS.md's Codex operating policy pins high reasoning"
+assert CODEX_REVIEW_REASONING_EFFORT == "high", "tripwire: touching this literal must also touch this comment block"
 
 #: `codex exec`'s sandbox flag is already hardcoded read-only in
 #: `run_codex_review`'s argv (Internal Plan Review finding #2's own
