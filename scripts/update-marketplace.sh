@@ -509,6 +509,34 @@ _atomic_sync_dir() {
         rm -f "$_dstfilelist"
     fi
 
+    # These two `mv`s are the swap itself, and "$dst" genuinely does not
+    # exist on any path between them — no single rename() can atomically
+    # replace a NON-EMPTY directory (this is a kernel-level constraint, not
+    # a shell one), so a plain-directory publish is structurally a two-step
+    # rename no matter how it is written. The only way to close that gap
+    # entirely is symlink indirection (publish by atomically repointing a
+    # stable symlink at a new, versioned target) — already tried and
+    # rejected earlier in this review (round 6): `ln -s` fails outright
+    # without admin/Developer Mode on Windows, which this tool's own
+    # end-users are known to run without, so it cannot be the general
+    # mechanism here (Tier-3 review, PR #796 round 18).
+    # Accepted as a documented, bounded risk rather than fixed: the window
+    # is two back-to-back renames with no I/O or computation between them
+    # (microseconds, at most low milliseconds for the `mv` process spawns on
+    # Windows), and this script itself only runs when a developer manually
+    # triggers a sync — not on every session. A reader would have to import
+    # from "$dst" in that exact instant. Every current reader under
+    # shared/scripts/hooks/ is a best-effort Stop/SessionStart hook bound by
+    # this project's own "never blocks, always exits 0" contract (ADR-042):
+    # a transient miss surfaces at worst as one hook's traceback on stderr,
+    # self-heals on the very next hook invocation seconds later, and leaves
+    # no corrupted or lost state — the interrupted-swap recovery a few dozen
+    # lines above this function already handles the strictly worse case (a
+    # crash mid-swap, not just a reader glancing at the wrong instant).
+    # `generate_handoff_on_stop.py`'s `_import_lib_with_retry` is the pattern
+    # to copy for any NEW reader that is provably exposed to this window
+    # more than incidentally — not something to retrofit into every reader
+    # pre-emptively for a race this narrow.
     rm -rf "$old" 2>/dev/null || true
     if [ -d "$dst" ]; then
         mv "$dst" "$old"
