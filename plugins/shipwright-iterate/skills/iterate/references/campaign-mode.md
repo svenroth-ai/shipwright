@@ -1525,7 +1525,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    ever CORRECTS a stale `held` into `merged`, never the reverse.
    ```bash
    uv run ... finalize --state .shipwright/loop_state.json || STRICT-STOP
-   uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" release --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"
+   uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" release --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || STRICT-STOP
    ```
    **Ordering, revised (campaign-dag-scheduler R5b): drain, THEN finalize, THEN
    release** — every path that reaches step 4 (not the LOCK-LOST path above,
@@ -1545,11 +1545,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    campaign never blocks a later, brand-new `SHIPWRIGHT_SESSION_ID` for up to
    `stale_after_seconds` (references/campaign-worktree.md, "the release
    step"). **Both commands above are `|| STRICT-STOP`-chained (external
-   review, code-reviewer + doubt-reviewer, medium)** — matching every other
-   command in this loop rather than the three bare lines the first draft of
-   this ordering had, where a drain/finalize failure (a corrupted state file,
-   an exception `cmd_run`'s own catch-clause doesn't cover) would fall through
-   to the NEXT line instead of stopping. A genuine failure here does NOT
+   review, code-reviewer + doubt-reviewer, medium; the release line's own
+   chaining was Tier-3 review, R5b round 11, blocking — the prose already
+   claimed this, but the release command itself had none, so a failed
+   release fell through silently instead of reporting anything)** —
+   matching every other command in this loop rather than the three bare
+   lines the first draft of this ordering had, where a drain/finalize
+   failure (a corrupted state file, an exception `cmd_run`'s own
+   catch-clause doesn't cover) would fall through to the NEXT line instead
+   of stopping. A genuine failure here does NOT
    release the lock — same as any other STRICT-STOP in this loop — and
    `stale_after_seconds` (references/campaign-worktree.md) reclaims it for a
    later session exactly as it would for any other stuck lock; "release on

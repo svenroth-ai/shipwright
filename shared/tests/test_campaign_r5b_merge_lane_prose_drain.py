@@ -231,6 +231,22 @@ def test_step_4_drain_and_finalize_are_checked_not_bare():
     )
 
 
+def test_step_4_release_line_is_also_checked_not_bare():
+    """Tier-3 review, R5b round 11, blocking: the prose right after this
+    code fence already CLAIMED "both commands above are `|| STRICT-STOP`-
+    chained", but the release command itself had no chaining at all, so a
+    failed release fell through silently instead of reporting anything --
+    the round-9/round-10 fall-through class, on the one line the sibling
+    test above deliberately excludes from its own window."""
+    step = _step_4()
+    release_at = step.index('check_campaign_session_lock.py" release')
+    window = step[release_at:release_at + 300]
+    assert "|| strict-stop" in window, (
+        "the session-lock release line must be STRICT-STOP-chained too, "
+        "not just the drain and finalize lines before it"
+    )
+
+
 def test_drain_timeout_worker_continuation_limitation_is_disclosed():
     """Tier-3 review, R5b round 2, correctness finding: a `drain_timeout`
     force-transition changes the RECORD, not the WORKER — a `merging` unit's
