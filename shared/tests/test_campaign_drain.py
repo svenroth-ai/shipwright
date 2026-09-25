@@ -95,6 +95,22 @@ class TestDrainOnce:
                               max_drain_seconds=DEFAULT_MAX_DRAIN_SECONDS)
         assert actions == [{"id": "A", "from": "running", "to": "failed", "reason_code": "drain_timeout"}]
 
+    def test_claimed_unit_is_swept_to_held(self):
+        """Tier-3 review, R5b round 7: a unit claimed by a concurrent
+        `cmd_next_batch` AFTER `sweep_never_started()`'s one-shot pass must
+        still be resolved on the very next poll -- `drain_once()` had no
+        branch for `claimed` at all before this fix, so `remaining_active()`
+        would count it forever."""
+        state = _state(_unit("A", "claimed"))
+        actions = drain_once(state, elapsed_seconds=5, max_drain_seconds=DEFAULT_MAX_DRAIN_SECONDS)
+        assert actions == [{"id": "A", "from": "claimed", "to": "held", "reason_code": "swept_never_started"}]
+        assert state["units"][0]["status"] == "held"
+
+    def test_pending_unit_is_also_swept_to_held(self):
+        state = _state(_unit("A", "pending"))
+        actions = drain_once(state, elapsed_seconds=5, max_drain_seconds=DEFAULT_MAX_DRAIN_SECONDS)
+        assert actions == [{"id": "A", "from": "pending", "to": "held", "reason_code": "swept_never_started"}]
+
     def test_merging_unit_within_budget_is_left_alone(self):
         state = _state(_unit("A", "merging"))
         actions = drain_once(state, elapsed_seconds=5, max_drain_seconds=DEFAULT_MAX_DRAIN_SECONDS)
@@ -185,6 +201,60 @@ class TestRunDrain:
         final = json.loads(state_path.read_text(encoding="utf-8"))
         assert final["units"][0]["status"] == "failed"
         assert final["units"][0]["reason_code"] == "drain_timeout"
+        assert result["drained"] is True
+
+    def test_unit_claimed_after_the_initial_sweep_is_still_resolved(self, tmp_path):
+        """Tier-3 review, R5b round 7: `sweep_never_started()` runs exactly
+        ONCE, before polling begins, and `loop.lock` is held only for each
+        individual mutation -- not for the whole drain -- so a concurrent
+        `cmd_next_batch` can claim a unit in the window after that one-shot
+        sweep releases the lock. Simulates it: unit A starts `running` (so
+        the first poll has something to wait on); unit B is injected as
+        freshly `claimed` during the first sleep, standing in for the
+        concurrent claim. Without the `drain_once()` fix this unit is never
+        resolved and `run_drain()` polls forever -- bounded here by a hard
+        call-count cap so the regression fails fast instead of hanging."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        state_path.parent.mkdir(parents=True)
+        state_path.write_text(json.dumps(_state(
+            _unit("A", "running", lease_expires_at=time.time() + 3600),
+        )), encoding="utf-8")
+
+        calls = {"n": 0}
+
+        def fake_time():
+            calls["n"] += 1
+            return calls["n"] * 1.0
+
+        injected = {"done": False}
+        poll_count = {"n": 0}
+
+        def fake_sleep(_seconds):
+            poll_count["n"] += 1
+            if poll_count["n"] > 10:
+                raise AssertionError(
+                    "run_drain polled more than 10 times without draining -- a unit "
+                    "claimed after the initial one-shot sweep is never being "
+                    "resolved (the R5b round 7 regression this test guards against)"
+                )
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            if not injected["done"]:
+                state["units"].append(_unit("B", "claimed"))
+                injected["done"] = True
+            else:
+                for u in state["units"]:
+                    if u["id"] == "A":
+                        u["status"] = "built"
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+
+        result = run_drain(state_path, max_drain_seconds=DEFAULT_MAX_DRAIN_SECONDS,
+                            poll_interval_seconds=0, sleep_fn=fake_sleep, time_fn=fake_time)
+
+        final = json.loads(state_path.read_text(encoding="utf-8"))
+        by_id = {u["id"]: u for u in final["units"]}
+        assert by_id["A"]["status"] == "held" and by_id["A"]["reason_code"] == "swept_after_build"
+        assert by_id["B"]["status"] == "held" and by_id["B"]["reason_code"] == "swept_never_started"
+        assert remaining_active(final) == []
         assert result["drained"] is True
 
     def test_refuses_kind_section(self, tmp_path):

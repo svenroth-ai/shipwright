@@ -22,7 +22,9 @@ This module makes draining an explicit, BOUNDED two-phase procedure that
    edges; also reused by ``cmd_next_batch``'s exit-4 stalled case, per
    ``references/campaign-dependency-graphs.md``'s exit-code table).
 2. :func:`drain_once`, polled until nothing remains in
-   ``{claimed, running, merging}`` — a ``running`` unit that finishes its
+   ``{claimed, running, merging}`` — a ``pending``/``claimed`` unit found on
+   ANY poll (not only bullet 1's one-shot pass — see round 7 below) is swept
+   the same way; a ``running`` unit that finishes its
    build (reaches ``built``) is swept on to ``held``
    (``reason_code: "swept_after_build"``: its PR stays open, unmerged, for a
    resumed session); a ``running`` unit whose lease has gone stale is
@@ -82,6 +84,18 @@ a genuine, accepted limitation is narrower now: the state machine can be
 transiently inconsistent with GitHub between the forced `held` transition
 and step 4's next reconciliation pass — never permanently, and never
 silently past the next finalize.
+
+**R5b round 7: `drain_once` itself now also sweeps `pending`/`claimed`
+(Tier-3 review).** `sweep_never_started` runs exactly once, before polling
+begins, and `loop.lock` is held only per mutation, not for the whole drain —
+so a unit claimed by a concurrent `cmd_next_batch` in the window after that
+one-shot sweep releases the lock previously had no code path back to a
+terminal status at all: `drain_once` had no branch for `claimed`, so
+`remaining_active` counted it forever and `run_drain`'s poll loop never
+terminated, breaking this module's own "GUARANTEED to terminate" claim.
+`drain_once` now re-sweeps `_NEVER_STARTED` on every poll, closing the gap;
+the top-level one-shot sweep stays as-is, since it still resolves the common
+case one `poll_interval_seconds` sooner.
 """
 
 from __future__ import annotations
@@ -164,7 +178,21 @@ def drain_once(state: dict, *, elapsed_seconds: float, max_drain_seconds: float)
     actions: list[dict] = []
     for unit in state.get("units", []):
         status = unit.get("status")
-        if status == "running":
+        if status in _NEVER_STARTED:
+            # A concurrent `cmd_next_batch` can claim a unit AFTER
+            # `sweep_never_started()`'s one-shot pass at the top of
+            # `run_drain()` (Tier-3 review, R5b round 7) -- `loop.lock` is
+            # held only for the duration of each individual mutation, not
+            # for the whole drain, so the window between the sweep's lock
+            # release and this poll's own lock acquisition is real. Without
+            # this branch `remaining_active()` would count that unit forever
+            # (drain_once had no case for "claimed" at all), breaking the
+            # "draining is GUARANTEED to terminate" invariant. Re-sweeping
+            # here on every poll closes it; the top-level one-shot sweep
+            # stays too, since it resolves the common case a full
+            # `poll_interval_seconds` sooner.
+            _force(unit, to="held", reason_code="swept_never_started", ts=ts, actions=actions)
+        elif status == "running":
             if is_unit_lease_stale(unit):
                 _force(unit, to="failed", reason_code="lease_expired_during_drain", ts=ts, actions=actions)
             elif elapsed_seconds >= max_drain_seconds:
