@@ -1,9 +1,10 @@
 """Behavioral tests for update-marketplace.sh's ``_atomic_sync_dir`` helper.
 
 Lock acquisition and staleness reclamation live in the sibling
-``test_marketplace_sync_lock.py`` instead (split out when this file crossed
-the 300-line guideline); this file covers the general sync/swap behavior —
-pycache/venv preservation, pruning, orphan recovery.
+``test_marketplace_sync_lock.py``, and orphaned-backup recovery lives in
+``test_marketplace_orphan_recovery.py`` (split out when this file crossed the
+300-line guideline, round 22) — this file covers the general sync/swap
+behavior: pycache/venv preservation and pruning.
 
 Extracts the function (and its ``sync_dir_from_to`` wrapper) out of the real
 script and drives it against fixture trees under ``bash``, rather than
@@ -55,12 +56,14 @@ def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
-    """`_atomic_sync_dir` calls `_pid_is_alive`, `_lock_is_owned_by`,
-    `_new_claim_token`, and `_find0_to_file` (its lock's liveness, ownership,
-    per-claim-identity, and enumeration-checking helpers), separate top-level
-    functions — without extracting them too, every fixture run would fail on
-    "command not found" instead of exercising the lock."""
+    """`_atomic_sync_dir` calls `_pid_is_alive`, `_leftover_pid_is_alive`,
+    `_lock_is_owned_by`, `_new_claim_token`, and `_find0_to_file` (its lock's
+    liveness, leftover liveness, ownership, per-claim-identity, and
+    enumeration-checking helpers), separate top-level functions — without
+    extracting them too, every fixture run would fail on "command not found"
+    instead of exercising the lock."""
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
+              + _extract("_leftover_pid_is_alive") + "\n"
               + _extract("_lock_is_owned_by") + "\n"
               + _extract("_new_claim_token") + "\n"
               + _extract("_find0_to_file") + "\n"
@@ -133,27 +136,6 @@ def test_source_root_is_not_mkdirred_as_a_bogus_nested_path(tmp_path):
     assert top_level == ["sub"], (
         f"expected only 'sub' at the destination root, found {top_level} — "
         "the source root itself was likely mkdir'd as a bogus nested path")
-
-
-def test_orphaned_backup_is_recovered_before_the_sweep_would_discard_it(tmp_path):
-    """Tier-3 review, PR #796 round 2: a crash between the swap's two `mv`s
-    leaves $dst MISSING with its only backup sitting in a dead process's
-    $old. Simulate exactly that and confirm noprune's dst-only preservation
-    still sees the old content — provable only if it was recovered into
-    $dst before that step runs, not discarded by the leftover sweep."""
-    src, dst = tmp_path / "src", tmp_path / "dst"
-    src.mkdir()
-    (src / "keep.py").write_text("a", encoding="utf-8")
-    # No dst/ at all — simulates dst having already been renamed away.
-    orphan = dst.parent / (dst.name + ".sync-old.99999999")
-    orphan.mkdir()
-    (orphan / "mirror_owned.py").write_text("b", encoding="utf-8")
-
-    res = _run(f'sync_dir_from_to "{_p(src)}" "{_p(dst)}"')
-
-    assert res.returncode == 0, res.stderr
-    assert (dst / "keep.py").exists()
-    assert (dst / "mirror_owned.py").exists(), "the orphaned backup's content was lost, not recovered"
 
 
 def test_noprune_preserves_a_dst_file_the_copy_loop_excludes_by_name_even_when_src_also_has_it(tmp_path):
@@ -229,6 +211,7 @@ def test_source_enumeration_failure_aborts_before_the_swap(tmp_path):
 
     script = ("set -euo pipefail\n"
               + _extract("_pid_is_alive") + "\n"
+              + _extract("_leftover_pid_is_alive") + "\n"
               + _extract("_lock_is_owned_by") + "\n"
               + _extract("_new_claim_token") + "\n"
               + _extract("_find0_to_file") + "\n"

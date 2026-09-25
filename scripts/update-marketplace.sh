@@ -43,6 +43,21 @@ _pid_is_alive() {
     [ -n "$1" ] && kill -0 "$1" 2>/dev/null
 }
 
+# A backup/staging leftover whose PID suffix equals OUR OWN "$$" can only be
+# read as "still live" by a bare `_pid_is_alive` check -- but we are running
+# this exact function for the first time this invocation and have not yet
+# created anything at that name, so if something is already sitting there, a
+# dead process's PID has been recycled onto us. Treating that as "live"
+# skipped recovering it as the orphaned $dst backup it actually is, and the
+# later unguarded `rm -rf "$old"` right before the swap then permanently
+# destroyed it -- the only remaining copy of the previous destination
+# (Tier-3 review, PR #796 round 22, data-loss finding). Every leftover-PID
+# liveness check for OUR OWN sibling paths (staging/old/lock/find-list) must
+# go through this, never `_pid_is_alive` directly.
+_leftover_pid_is_alive() {
+    [ "$1" != "$$" ] && _pid_is_alive "$1"
+}
+
 # A random, high-entropy per-CLAIM identity — a pid alone is not one: the OS
 # recycles pid numbers, so a genuinely different, later claim can coincide
 # with an earlier one's pid by pure chance. Every "$lock/pid" write below is
@@ -281,9 +296,9 @@ _atomic_sync_dir() {
             # than trusting a single random draw — is the "ensure absent,
             # retry on collision" half of that same review. The token sits
             # BEFORE "$$", not after: the leftover sweep below
-            # (`_pid_is_alive "${leftover##*.}"`) reads the PID from the LAST
-            # dot-segment of every "*.sync.lock.*" path, and that must keep
-            # meaning "$$", never the token.
+            # (`_leftover_pid_is_alive "${leftover##*.}"`) reads the PID from
+            # the LAST dot-segment of every "*.sync.lock.*" path, and that
+            # must keep meaning "$$", never the token.
             local discard="" _discard_try _discard_candidate
             for _discard_try in 1 2 3 4 5; do
                 _discard_candidate="${lock}.stale.$(_new_claim_token).$$"
@@ -384,7 +399,7 @@ _atomic_sync_dir() {
     if [ ! -d "$dst" ]; then
         for orphan in "${dst}".sync-old.*; do
             [ -d "$orphan" ] || continue
-            if ! _pid_is_alive "${orphan##*.}"; then
+            if ! _leftover_pid_is_alive "${orphan##*.}"; then
                 mv "$orphan" "$dst"
                 break
             fi
@@ -405,7 +420,7 @@ _atomic_sync_dir() {
     # that distinction on its own.
     for leftover in "${dst}".sync-new.* "${dst}".sync-old.* "${dst}".sync.lock.* "${dst}".find-list.*; do
         [ -e "$leftover" ] || continue
-        if ! _pid_is_alive "${leftover##*.}"; then
+        if ! _leftover_pid_is_alive "${leftover##*.}"; then
             rm -rf "$leftover" 2>/dev/null || true
         fi
     done

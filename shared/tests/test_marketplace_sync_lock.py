@@ -59,17 +59,18 @@ def _run_script(script: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def _run(body: str) -> subprocess.CompletedProcess:
-    """`_atomic_sync_dir` calls `_pid_is_alive`, `_lock_is_owned_by`,
-    `_new_claim_token`, and `_find0_to_file` (its lock's liveness, ownership,
-    per-claim-identity, and enumeration-checking helpers), separate top-level
-    functions — without extracting them too, every fixture run would fail on
-    "command not found" instead of exercising the lock. A missing
-    `_new_claim_token` in particular fails silently under `set -u`/`&&` (the
-    claim's `if` condition just goes false) and self-deadlocks the whole
-    retry loop for the full 120s timeout, since the lock this process itself
-    half-claimed then looks alive and un-reclaimable to its own next
-    iteration."""
+    """`_atomic_sync_dir` calls `_pid_is_alive`, `_leftover_pid_is_alive`,
+    `_lock_is_owned_by`, `_new_claim_token`, and `_find0_to_file` (its lock's
+    liveness, leftover liveness, ownership, per-claim-identity, and
+    enumeration-checking helpers), separate top-level functions — without
+    extracting them too, every fixture run would fail on "command not found"
+    instead of exercising the lock. A missing `_new_claim_token` in
+    particular fails silently under `set -u`/`&&` (the claim's `if` condition
+    just goes false) and self-deadlocks the whole retry loop for the full
+    120s timeout, since the lock this process itself half-claimed then looks
+    alive and un-reclaimable to its own next iteration."""
     script = ("set -euo pipefail\n" + _extract("_pid_is_alive") + "\n"
+              + _extract("_leftover_pid_is_alive") + "\n"
               + _extract("_lock_is_owned_by") + "\n"
               + _extract("_new_claim_token") + "\n"
               + _extract("_find0_to_file") + "\n"
@@ -97,6 +98,7 @@ def test_live_pid_leftover_survives_the_sweep(tmp_path):
     script = (
         "set -euo pipefail\n"
         + _extract("_pid_is_alive") + "\n"
+        + _extract("_leftover_pid_is_alive") + "\n"
         + _extract("_lock_is_owned_by") + "\n"
         + _extract("_new_claim_token") + "\n"
         + _extract("_find0_to_file") + "\n"
@@ -175,6 +177,7 @@ def test_lock_with_unwritten_pid_is_not_stolen_as_stale(tmp_path):
     script = (
         "set -euo pipefail\n"
         + _extract("_pid_is_alive") + "\n"
+        + _extract("_leftover_pid_is_alive") + "\n"
         + _extract("_lock_is_owned_by") + "\n"
         + _extract("_new_claim_token") + "\n"
         + _extract("_find0_to_file") + "\n"
