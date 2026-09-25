@@ -31,7 +31,7 @@ if str(_SCRIPTS) not in sys.path:
 
 from cache_tree_compare import NOT_DISTRIBUTED, repo_tracked_files  # noqa: E402
 
-_FIND_BLOCK = re.compile(r"find \"\$(\w+)\" -type f(.*?)-print0", re.DOTALL)
+_FIND_BLOCK = re.compile(r'_find0_to_file "\$\w+" "[^"]+" "\$(\w+)" -type f(.*?)\|\| return 1', re.DOTALL)
 #: iterate-2026-09-24-stop-hook-cache-race collapsed all three copy call sites (plugin,
 #: shared/, and the cross-plugin-symlink Windows fallback) into one shared
 #: `_atomic_sync_dir` helper, so there is exactly one COPY-side find block left in the
@@ -39,6 +39,11 @@ _FIND_BLOCK = re.compile(r"find \"\$(\w+)\" -type f(.*?)-print0", re.DOTALL)
 #: TARGET-side scan (walking the old tree to bulk-copy pycache/.venv/.pytest_cache and to
 #: count/reintroduce files `$src` no longer has) — it must NOT carry the exclusion, or a
 #: `.python-version` synced before this change would be immortal in every existing cache.
+#: PR #796 round 17 moved the raw `find ... -print0` call inside a shared
+#: `_find0_to_file` helper (so its exit status can be checked before trusting the
+#: enumeration) — the `-type f` block, the exclusions, and the `$src`/`$dst` distinction
+#: this test cares about now live in `_find0_to_file`'s own CALL SITES, not inline next
+#: to a literal `find`; the pattern above matches those call sites instead.
 _COPY_SOURCE = "src"
 _PRUNE_SOURCES = {"dst"}
 #: The three real call sites that must route through the shared helper — a copy loop
@@ -66,7 +71,7 @@ def test_every_call_site_routes_through_the_shared_copy_helper():
 def test_the_shared_copy_path_excludes_the_version_file():
     """The one COPY-side find block left in the file must carry the exclusion."""
     blocks = _FIND_BLOCK.findall(UPDATE_SH.read_text(encoding="utf-8"))
-    assert blocks, "no `find -type f ... -print0` block found — has the sync been rewritten?"
+    assert blocks, "no `_find0_to_file ... -type f ... || return 1` block found — has the sync been rewritten?"
     copies = [(var, body) for var, body in blocks if var == _COPY_SOURCE]
     assert len(copies) == 1, (
         f"expected exactly one copy block (var {_COPY_SOURCE!r}), found "
