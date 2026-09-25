@@ -29,7 +29,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from branch_base import resolve_base_branch
-from file_lock import file_lock
+from file_lock import LockTimeout, file_lock
 
 # shared/scripts (the `lib.` package root) — needed ALONGSIDE the sibling
 # insert above so `lib.loop_state` resolves per this campaign's import
@@ -407,43 +407,69 @@ def cmd_record(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_finalize_strict_sub_iterate_applies(state: dict) -> bool:
+    """Whether `cmd_finalize` should dispatch into the strict
+    `sub_iterate_finalize_summary` gate rather than the legacy summary below.
+
+    Stage-3 doubt review (HIGH #1): `sub_iterate_finalize_summary` refuses
+    ANY non-TERMINAL unit with no compatibility path for a row still
+    carrying pre-R4 legacy vocabulary (`"complete"`, `"escalated"`,
+    `"in_progress"`) — a never-claimed row's own documented pass-through
+    (`resolve_record_status`, `enforce_record_fencing`). Gate the NEW,
+    strict finalize on the SAME compatibility boundary those two functions
+    already use: only dispatch into it once this campaign has actually
+    been touched by the new atomic-claim flow (some unit carries a real
+    `attempt_id` — the only thing that ever mints one is
+    `loop_claim.cmd_next_batch`). A campaign with none falls through
+    UNCHANGED to the legacy branch below, exactly as it did before this
+    `kind == "sub_iterate"` branch existed — this campaign never refused
+    finalize outright even on a genuinely incomplete run; it only reported
+    `terminal_reason` as informational text.
+
+    Scoped-review fix (medium, finding C): `any(...)` alone would trap a
+    campaign straddling the R5a flip — some units finished under the old
+    serial cmd_next/cmd_record path (legacy "complete", no attempt_id),
+    others claimed by the new cmd_next_batch flow — in the strict branch
+    forever, since nothing promotes a legacy "complete" row into the
+    9-state vocabulary post-hoc. Require the WHOLE vocabulary to be
+    9-state before trusting the strict branch; a mixed campaign falls
+    through to the legacy branch below, exactly the pre-R4 behaviour and
+    therefore never worse than today."""
+    all_new_vocabulary = all(u["status"] in STATES for u in state["units"])
+    return (
+        state.get("kind") == "sub_iterate" and all_new_vocabulary
+        and any(u.get("attempt_id") for u in state["units"])
+    )
+
+
 def cmd_finalize(args: argparse.Namespace) -> int:
     state_path = Path(args.state)
-    state = _load_state(state_path)
 
-    # Stage-3 doubt review (HIGH #1): `sub_iterate_finalize_summary` refuses
-    # ANY non-TERMINAL unit with no compatibility path for a row still
-    # carrying pre-R4 legacy vocabulary (`"complete"`, `"escalated"`,
-    # `"in_progress"`) — a never-claimed row's own documented pass-through
-    # (`resolve_record_status`, `enforce_record_fencing`). Gate the NEW,
-    # strict finalize on the SAME compatibility boundary those two functions
-    # already use: only dispatch into it once this campaign has actually
-    # been touched by the new atomic-claim flow (some unit carries a real
-    # `attempt_id` — the only thing that ever mints one is
-    # `loop_claim.cmd_next_batch`). A campaign with none falls through
-    # UNCHANGED to the legacy branch below, exactly as it did before this
-    # `kind == "sub_iterate"` branch existed — this campaign never refused
-    # finalize outright even on a genuinely incomplete run; it only reported
-    # `terminal_reason` as informational text.
-    # Scoped-review fix (medium, finding C): `any(...)` alone would trap a
-    # campaign straddling the R5a flip — some units finished under the old
-    # serial cmd_next/cmd_record path (legacy "complete", no attempt_id),
-    # others claimed by the new cmd_next_batch flow — in the strict branch
-    # forever, since nothing promotes a legacy "complete" row into the
-    # 9-state vocabulary post-hoc. Require the WHOLE vocabulary to be
-    # 9-state before trusting the strict branch; a mixed campaign falls
-    # through to the legacy branch below, exactly the pre-R4 behaviour and
-    # therefore never worse than today.
-    all_new_vocabulary = all(u["status"] in STATES for u in state["units"])
-    if state.get("kind") == "sub_iterate" and all_new_vocabulary and any(
-        u.get("attempt_id") for u in state["units"]
-    ):
-        error, summary = sub_iterate_finalize_summary(state)
-        if error:
-            print(json.dumps(error), file=sys.stderr)
-            return 1
-        print(json.dumps(summary, indent=2))
-        return 0
+    # campaign-dag-scheduler R5b round 8 (Tier-3 review): the "every unit is
+    # TERMINAL" decision below used to read `loop_state.json` unlocked --
+    # `campaign_drain.run_drain`'s own last poll releases `loop.lock` once it
+    # sees nothing left in {claimed, running, merging}, and this read could
+    # then land after ANY other loop.lock-respecting writer (cmd_next_batch,
+    # cmd_release, an operator's `loop_claim.py mark`) has landed a fresh
+    # non-terminal transition in between -- exactly the window
+    # campaign-mode.md step 4 relies on NOT existing ("draining is GUARANTEED
+    # to terminate ... so cmd_finalize can no longer legitimately refuse").
+    # Loading state and deciding the strict sub_iterate branch under the SAME
+    # lock every other writer already respects makes this atomic against all
+    # of them, not just the ones a manual audit could rule out today.
+    try:
+        with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
+            state = _load_state(state_path)
+            if _cmd_finalize_strict_sub_iterate_applies(state):
+                error, summary = sub_iterate_finalize_summary(state)
+                if error:
+                    print(json.dumps(error), file=sys.stderr)
+                    return 1
+                print(json.dumps(summary, indent=2))
+                return 0
+    except LockTimeout as exc:
+        print(json.dumps({"error": "lock_timeout", "detail": str(exc)}), file=sys.stderr)
+        return 1
 
     completed = [u for u in state["units"] if u["status"] == "complete"]
     failed = [u for u in state["units"] if u["status"] == "failed"]
