@@ -599,6 +599,54 @@ def test_step_3f_bis_ships_before_writing_the_legacy_reviewed_head_file():
     )
 
 
+def test_step_3g_is_a_no_op_for_a_unit_3f_bis_did_not_promote_to_merging():
+    """Tier-3 review, R5b round 14, blocking: 3f-bis's two review-pin-mismatch
+    handlers (round 9) and its rebase cascade's exhausted/conflict branches
+    (round 2) each demote the unit to `built`/`held` and say, in a COMMENT
+    only, to "continue draining the rest of the wave at 3i" -- but this
+    step's own governing rule (the 3f-bis..3h intro) runs 3g unconditionally
+    for every unit that reached `built` at 3f, with no skip ever written.
+    Left as prose alone, a demoted unit fell straight into 3g's unconditional
+    `reviewed_head`/`shipped_head` checks, converting a per-unit demotion
+    into a whole-wave STRICT-STOP -- the exact "comment is not control flow"
+    bug class round 9 itself fixed one section up. 3g must read the unit's
+    OWN current status fresh (shell state does not survive between steps, so
+    3f-bis's own `pin_still_valid` is already gone here) and skip its entire
+    body unless the unit was actually promoted to `merging`."""
+    step = _step_3g()
+    status_read = "unit_status=$(jq -r --arg id \"{id}\" '.units[] | select(.id == $id) | .status'"
+    assert status_read in step, (
+        "3g must read the unit's own status fresh from loop_state.json -- "
+        "not a shell variable, which does not survive from 3f-bis"
+    )
+    status_at = step.index(status_read)
+    guard = 'if [ "$unit_status" = "merging" ]; then'
+    guard_at = step.find(guard, status_at)
+    assert 0 <= guard_at - status_at < 200, (
+        "the merging-status guard must open immediately after the fresh "
+        "status read"
+    )
+    exists_at = step.index('[ -f "$run_dir/reviewed_head" ] || strict-stop')
+    assert guard_at < exists_at, (
+        "3g's unconditional reviewed_head/shipped_head checks must sit "
+        "INSIDE the merging-status guard, not run regardless of it"
+    )
+
+
+def test_step_3g_guard_closes_after_the_confirmed_sha_branch():
+    """The merging-status guard (round 14) must wrap 3g's ENTIRE body,
+    including the final `merging -> merged` completion below the PR-merge
+    wait -- not just the pin checks at the top, which would let a demoted
+    unit skip the pin check but still fall into the merge itself."""
+    step = _step_3g()
+    guard_at = step.index('if [ "$unit_status" = "merging" ]; then')
+    mark_merged_at = step.index("mark-merged")
+    assert guard_at < mark_merged_at, (
+        "the merging -> merged completion (loop_claim.py mark-merged) must "
+        "be reached only from inside the round-14 guard"
+    )
+
+
 def test_step_3g_never_merges_without_a_pin_file():
     """The spec's acceptance criterion: no PR merges unpinned. Mutation-probed
     against 3g's own text — delete the STRICT-STOP guard or the merge's use

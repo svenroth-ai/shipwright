@@ -1255,161 +1255,185 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    3g. MERGE this sub-iterate's PR — verify CI-green first, then merge, one at a
        time (no shoot-and-forget). The orchestrator owns the merge (the PR did not
        self-arm, step 1):
-         # Re-resolve from the branch: shell state does NOT survive between steps,
-         # so nothing set in 3f-bis is still in the environment here.
-         # The pin comes from 3f-bis's FILE (R3: written UNCONDITIONALLY now,
-         # by check_review_attribution.py pin — even a below-threshold unit
-         # that skipped the cascade gets one, with --review-skipped).
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         # By this point 3f-bis's post-record-commit write ("echo $shipped_head
-         # > reviewed_head") has overwritten this file with the SHIPPED head,
-         # not the original pin's reviewed_head. Its absence is no longer
-         # tolerated (R3 doubt-round, high): the unconditional pin at 3f-bis
-         # — itself STRICT-STOP-guarded — means every unit that reaches this
-         # line has one, reviewed or skipped; a missing file means an earlier
-         # guard should already have stopped the loop, so merging anyway would
-         # be the exact unpinned merge the spec's acceptance criterion forbids.
-         [ -f "$run_dir/reviewed_head" ] || STRICT-STOP
-         # File EXISTENCE alone only proves pin ran — pin writes this file
-         # UNCONDITIONALLY and BEFORE the review cascade even starts, so it
-         # holds a SHA equal to the remote tip throughout the ENTIRE cascade
-         # window, including every STRICT-STOP inside it (R3 doubt-round,
-         # round 4, medium: a human or a resumed orchestrator invoking 3g
-         # directly during/after an interrupted cascade would see this file
-         # present and a matching --match-head-commit below, and merge an
-         # unreviewed diff). verify --against shipped_head additionally
-         # BLOCKs a reviewed (non-skipped) unit whose shipped_head was never
-         # recorded — i.e. the cascade never actually shipped a record
-         # commit — which file-existence alone cannot distinguish from a
-         # genuine completed review; for a --review-skipped unit the same
-         # call checks branch-tip-equals-reviewed_head instead (its own
-         # internal branch, not a separate call here):
-         verify_json=$(uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode verify \
-           --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
-           --project-root "{project_root}" --campaign-worktree "{project_root}" \
-           --loop-id "{loop_id}" --against shipped_head --json) || STRICT-STOP
-         # Same unit-scoping as 3f-bis (R3): read $unit_wt back from the FILE
-         # 3f-bis dual-wrote there (pin never writes this one — code-review
-         # round 5) — a fresh Bash call, so nothing set in 3f-bis's own
-         # shell survives to here — falling back to {project_root} if the file
-         # is absent OR empty (a bare `2>/dev/null || echo` fallback catches
-         # only a missing file, not a present-but-empty one — code-review
-         # round 4, low).
-         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
-         # $pr_url here is a fresh `gh pr view` call, not a value read from
-         # 3f-bis's own $pr_url (R3 doubt-round, round 4, medium: unlike
-         # $shipped_head above, there is no cross-step variable to dual-write
-         # for this one — 3g always re-derives its own).
-         pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
-         # `head_pin`'s SHA is read from `verify_json`'s own `.pin.shipped_head`
-         # field DIRECTLY (campaign-dag-scheduler R5b) — never the legacy
-         # `$run_dir/reviewed_head` FILE, which R3 originally dual-wrote purely
-         # so 3g had something to read before `review_pin.json` carried a real
-         # `shipped_head` of its own. `pin()` already sets `shipped_head` equal
-         # to `reviewed_head` for a `--review-skipped` unit, and `ship()` sets
-         # it for a reviewed one — by the time `verify` above ALLOWed, this
-         # field is always populated for both cases, so the legacy file is no
-         # longer this step's SOURCE of the SHA (its bare existence, checked
-         # above, remains the fail-closed "was this unit ever pinned at all"
-         # guard).
-         head_sha=$(jq -r '.pin.shipped_head' <<<"$verify_json")
-         [ -n "$head_sha" ] && [ "$head_sha" != "null" ] || STRICT-STOP
-         head_pin="--match-head-commit $head_sha"
-       **PR-identity verification, before merge (campaign-dag-scheduler R5b,
-       AC4)** — `--match-head-commit` above proves only that the head SHA
-       matches; it does NOT prove this is still the SAME PR OBJECT that was
-       pinned (a closed-and-recreated PR, or the wrong PR entirely, could
-       coincidentally share a head SHA). `pin()` already recorded
-       `pr_node_id`/`pr_head_ref`/`pr_base_ref` at 3f-bis's own pin step
-       (R3); compare a FRESH `gh pr view` against them here, fail closed on
-       any mismatch (external review, code-reviewer + doubt-reviewer, high):
-         pr_identity=$(cd "$unit_wt" && gh pr view "$pr_url" --json id,headRefName,baseRefName) || STRICT-STOP
-         pinned_pr_node_id=$(jq -r '.pin.pr_node_id' <<<"$verify_json")
-         pinned_pr_head_ref=$(jq -r '.pin.pr_head_ref' <<<"$verify_json")
-         pinned_pr_base_ref=$(jq -r '.pin.pr_base_ref' <<<"$verify_json")
-         [ "$(jq -r .id <<<"$pr_identity")" = "$pinned_pr_node_id" ] || STRICT-STOP
-         [ "$(jq -r .headRefName <<<"$pr_identity")" = "$pinned_pr_head_ref" ] || STRICT-STOP
-         [ "$(jq -r .baseRefName <<<"$pr_identity")" = "$pinned_pr_base_ref" ] || STRICT-STOP
-         uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
-         gh pr checks "$pr_url" --watch || STRICT-STOP   # as 3f: do not merge, do not build the next; surface to the user. Merged subs stay durable.
-         gh pr merge "$pr_url" --squash --delete-branch $head_pin || STRICT-STOP
-         #   a merge refusal (e.g. $head_pin no longer matches the remote tip)
-         #   must STOP, not fall through to an unbounded wait for a state that
-         #   will never arrive (R3 doubt-round, round 2, low).
-         for i in $(seq 1 60); do
-           [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] && break
-           sleep 5
-         done
-         [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] || STRICT-STOP
-         # the loop above only ever `break`s early on MERGED; without this
-         # re-check after it, exhausting the cap falls through to 3h with the
-         # PR still open instead of stopping — a "third outcome" the loop has
-         # no name for (neither delivered nor stopped) is exactly what this
-         # bounded wait exists to rule out (Stage-3 external review, R3 PR
-         # #787: flagged as a real control-flow defect, not prose-only).
-       A merge conflict / timeout is likewise non-delivered → STRICT-STOP.
+       **This step is a genuine no-op for a unit 3f-bis did NOT promote to
+       `merging` (Tier-3 review, R5b round 14, blocking).** 3f-bis's own two
+       review-pin-mismatch handlers (round 9) and its rebase cascade's
+       exhausted/conflict branches (round 2) each demote the unit to `built`
+       or `held` and say, in a comment, to continue draining the rest of the
+       wave at 3i — but a comment is not control flow (the exact class round
+       9 itself fixed one section up), and this step's own governing rule
+       (3f-bis..3h's intro, above) runs 3g unconditionally for every unit
+       that reached `built` at 3f, with no skip written anywhere. Left as
+       prose alone, a demoted unit fell straight into the unconditional
+       checks below, which STRICT-STOPped the WHOLE wave on a
+       `reviewed_head`/`shipped_head` a demoted unit never has — turning a
+       per-unit demotion into exactly the wave-halting failure 3f-bis's own
+       demotion comments promise never happens. `unit_status` is read FRESH
+       from the durable state here (shell state does NOT survive between
+       steps, so 3f-bis's own `pin_still_valid` is already gone) and is what
+       actually gates the body below; a unit still at `built`/`held` skips
+       straight through to 3h, which already maps every one of 3f-bis's
+       demotion outcomes on its own (3h's "Status-vocabulary mapping",
+       below):
+         unit_status=$(jq -r --arg id "{id}" '.units[] | select(.id == $id) | .status' \
+           "{project_root}/.shipwright/loop_state.json") || STRICT-STOP
+         if [ "$unit_status" = "merging" ]; then
+           # Re-resolve from the branch: shell state does NOT survive between steps,
+           # so nothing set in 3f-bis is still in the environment here.
+           # The pin comes from 3f-bis's FILE (R3: written UNCONDITIONALLY now,
+           # by check_review_attribution.py pin — even a below-threshold unit
+           # that skipped the cascade gets one, with --review-skipped).
+           run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+           # By this point 3f-bis's post-record-commit write ("echo $shipped_head
+           # > reviewed_head") has overwritten this file with the SHIPPED head,
+           # not the original pin's reviewed_head. Its absence is no longer
+           # tolerated (R3 doubt-round, high): the unconditional pin at 3f-bis
+           # — itself STRICT-STOP-guarded — means every unit that reaches this
+           # line has one, reviewed or skipped; a missing file means an earlier
+           # guard should already have stopped the loop, so merging anyway would
+           # be the exact unpinned merge the spec's acceptance criterion forbids.
+           [ -f "$run_dir/reviewed_head" ] || STRICT-STOP
+           # File EXISTENCE alone only proves pin ran — pin writes this file
+           # UNCONDITIONALLY and BEFORE the review cascade even starts, so it
+           # holds a SHA equal to the remote tip throughout the ENTIRE cascade
+           # window, including every STRICT-STOP inside it (R3 doubt-round,
+           # round 4, medium: a human or a resumed orchestrator invoking 3g
+           # directly during/after an interrupted cascade would see this file
+           # present and a matching --match-head-commit below, and merge an
+           # unreviewed diff). verify --against shipped_head additionally
+           # BLOCKs a reviewed (non-skipped) unit whose shipped_head was never
+           # recorded — i.e. the cascade never actually shipped a record
+           # commit — which file-existence alone cannot distinguish from a
+           # genuine completed review; for a --review-skipped unit the same
+           # call checks branch-tip-equals-reviewed_head instead (its own
+           # internal branch, not a separate call here):
+           verify_json=$(uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode verify \
+             --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+             --project-root "{project_root}" --campaign-worktree "{project_root}" \
+             --loop-id "{loop_id}" --against shipped_head --json) || STRICT-STOP
+           # Same unit-scoping as 3f-bis (R3): read $unit_wt back from the FILE
+           # 3f-bis dual-wrote there (pin never writes this one — code-review
+           # round 5) — a fresh Bash call, so nothing set in 3f-bis's own
+           # shell survives to here — falling back to {project_root} if the file
+           # is absent OR empty (a bare `2>/dev/null || echo` fallback catches
+           # only a missing file, not a present-but-empty one — code-review
+           # round 4, low).
+           unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+           # $pr_url here is a fresh `gh pr view` call, not a value read from
+           # 3f-bis's own $pr_url (R3 doubt-round, round 4, medium: unlike
+           # $shipped_head above, there is no cross-step variable to dual-write
+           # for this one — 3g always re-derives its own).
+           pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
+           # `head_pin`'s SHA is read from `verify_json`'s own `.pin.shipped_head`
+           # field DIRECTLY (campaign-dag-scheduler R5b) — never the legacy
+           # `$run_dir/reviewed_head` FILE, which R3 originally dual-wrote purely
+           # so 3g had something to read before `review_pin.json` carried a real
+           # `shipped_head` of its own. `pin()` already sets `shipped_head` equal
+           # to `reviewed_head` for a `--review-skipped` unit, and `ship()` sets
+           # it for a reviewed one — by the time `verify` above ALLOWed, this
+           # field is always populated for both cases, so the legacy file is no
+           # longer this step's SOURCE of the SHA (its bare existence, checked
+           # above, remains the fail-closed "was this unit ever pinned at all"
+           # guard).
+           head_sha=$(jq -r '.pin.shipped_head' <<<"$verify_json")
+           [ -n "$head_sha" ] && [ "$head_sha" != "null" ] || STRICT-STOP
+           head_pin="--match-head-commit $head_sha"
+         **PR-identity verification, before merge (campaign-dag-scheduler R5b,
+         AC4)** — `--match-head-commit` above proves only that the head SHA
+         matches; it does NOT prove this is still the SAME PR OBJECT that was
+         pinned (a closed-and-recreated PR, or the wrong PR entirely, could
+         coincidentally share a head SHA). `pin()` already recorded
+         `pr_node_id`/`pr_head_ref`/`pr_base_ref` at 3f-bis's own pin step
+         (R3); compare a FRESH `gh pr view` against them here, fail closed on
+         any mismatch (external review, code-reviewer + doubt-reviewer, high):
+           pr_identity=$(cd "$unit_wt" && gh pr view "$pr_url" --json id,headRefName,baseRefName) || STRICT-STOP
+           pinned_pr_node_id=$(jq -r '.pin.pr_node_id' <<<"$verify_json")
+           pinned_pr_head_ref=$(jq -r '.pin.pr_head_ref' <<<"$verify_json")
+           pinned_pr_base_ref=$(jq -r '.pin.pr_base_ref' <<<"$verify_json")
+           [ "$(jq -r .id <<<"$pr_identity")" = "$pinned_pr_node_id" ] || STRICT-STOP
+           [ "$(jq -r .headRefName <<<"$pr_identity")" = "$pinned_pr_head_ref" ] || STRICT-STOP
+           [ "$(jq -r .baseRefName <<<"$pr_identity")" = "$pinned_pr_base_ref" ] || STRICT-STOP
+           uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
+           gh pr checks "$pr_url" --watch || STRICT-STOP   # as 3f: do not merge, do not build the next; surface to the user. Merged subs stay durable.
+           gh pr merge "$pr_url" --squash --delete-branch $head_pin || STRICT-STOP
+           #   a merge refusal (e.g. $head_pin no longer matches the remote tip)
+           #   must STOP, not fall through to an unbounded wait for a state that
+           #   will never arrive (R3 doubt-round, round 2, low).
+           for i in $(seq 1 60); do
+             [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] && break
+             sleep 5
+           done
+           [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] || STRICT-STOP
+           # the loop above only ever `break`s early on MERGED; without this
+           # re-check after it, exhausting the cap falls through to 3h with the
+           # PR still open instead of stopping — a "third outcome" the loop has
+           # no name for (neither delivered nor stopped) is exactly what this
+           # bounded wait exists to rule out (Stage-3 external review, R3 PR
+           # #787: flagged as a real control-flow defect, not prose-only).
+         A merge conflict / timeout is likewise non-delivered → STRICT-STOP.
 
-       **Confirm the real merge-commit SHA, then complete `merging -> merged`
-       (campaign-dag-scheduler R5b).** `mergeCommit` lags the merge exactly
-       like the PR-state poll above does, which is why this ALWAYS runs AFTER
-       that poll confirms `state == "MERGED"`, never before — reading it
-       earlier can return empty. Bounded the same way (a `max_drain_seconds`-
-       style deadline, not the loop's own `seq 1 60`/5s shape, since GitHub's
-       own post-merge processing is a different latency class than CI):
-         unset confirmed_sha
-         deadline=$(( $(date +%s) + 300 ))
-         gh_query_failures=0
-         while [ "$(date +%s)" -lt "$deadline" ]; do
-           if confirmed_sha=$(gh pr view "$pr_url" --json mergeCommit -q '.mergeCommit.oid // empty'); then
-             gh_query_failures=0
-             [ -n "$confirmed_sha" ] && break
+         **Confirm the real merge-commit SHA, then complete `merging -> merged`
+         (campaign-dag-scheduler R5b).** `mergeCommit` lags the merge exactly
+         like the PR-state poll above does, which is why this ALWAYS runs AFTER
+         that poll confirms `state == "MERGED"`, never before — reading it
+         earlier can return empty. Bounded the same way (a `max_drain_seconds`-
+         style deadline, not the loop's own `seq 1 60`/5s shape, since GitHub's
+         own post-merge processing is a different latency class than CI):
+           unset confirmed_sha
+           deadline=$(( $(date +%s) + 300 ))
+           gh_query_failures=0
+           while [ "$(date +%s)" -lt "$deadline" ]; do
+             if confirmed_sha=$(gh pr view "$pr_url" --json mergeCommit -q '.mergeCommit.oid // empty'); then
+               gh_query_failures=0
+               [ -n "$confirmed_sha" ] && break
+             else
+               # A `gh` command FAILURE (network, auth, rate limit) is not the
+               # same fact as "the query succeeded and mergeCommit is merely
+               # not populated yet" — conflating the two let a persistent `gh`
+               # outage silently ride out the full 300s bound below and demote
+               # the unit on the claim that its PR genuinely IS merged and
+               # only the SHA is late. That is a stronger, false claim when
+               # the truth is "we could not ask GitHub at all" (external
+               # review, R5b round 3, medium). Three consecutive failures —
+               # not the first — distinguishes a broken query from the
+               # transient blip this same loop already tolerates by retrying
+               # every 5s.
+               gh_query_failures=$((gh_query_failures + 1))
+               [ "$gh_query_failures" -lt 3 ] || STRICT-STOP
+             fi
+             sleep 5
+           done
+         Timeout (still empty after the deadline) demotes ONLY this unit — never
+         a whole-wave STRICT-STOP, since the PR genuinely IS merged; the loop
+         must not hang the merge lane indefinitely waiting on a value that may
+         never arrive:
+           if [ -z "$confirmed_sha" ]; then
+             uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
+               --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+               --status held --force --confirm-no-task-running \
+               --reason "PR merged but mergeCommit.oid never confirmed within the bound" \
+               --operator "campaign-mode:3g" --reason-code merge_confirmation_timeout || STRICT-STOP
            else
-             # A `gh` command FAILURE (network, auth, rate limit) is not the
-             # same fact as "the query succeeded and mergeCommit is merely
-             # not populated yet" — conflating the two let a persistent `gh`
-             # outage silently ride out the full 300s bound below and demote
-             # the unit on the claim that its PR genuinely IS merged and
-             # only the SHA is late. That is a stronger, false claim when
-             # the truth is "we could not ask GitHub at all" (external
-             # review, R5b round 3, medium). Three consecutive failures —
-             # not the first — distinguishes a broken query from the
-             # transient blip this same loop already tolerates by retrying
-             # every 5s.
-             gh_query_failures=$((gh_query_failures + 1))
-             [ "$gh_query_failures" -lt 3 ] || STRICT-STOP
+             # Validate against a strict 40-hex SHA pattern BEFORE it flows
+             # anywhere near a git command — the SAME guard shape
+             # `audit_compliance_lifecycle.py::_merge_sha` already applies
+             # (reused, not reinvented): `loop_claim.py mark-merged`'s own
+             # `lib.loop_state.is_valid_sha` check IS that guard, so a
+             # malformed value is rejected there rather than by a second,
+             # independent bash-level regex. NEVER `git rev-parse
+             # origin/{default}` as a fallback here — a concurrent sibling
+             # merge (this repo has run three campaigns merging 15 PRs in one
+             # window) can make the default branch's current tip a commit that
+             # is ancestrally true but semantically wrong for THIS unit, a
+             # silently-passing false proof worse than no proof at all.
+             uv run "{shared_root}/scripts/lib/loop_claim.py" mark-merged \
+               --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
+               --attempt-id "{attempt_id from 3a}" --merged-commit "$confirmed_sha" || STRICT-STOP
+             # `loop.lock` is never held across the `gh` calls above, so another
+             # wave's `cmd_next_batch` claim can legitimately interleave with
+             # this write — both are safe, since every writer takes the lock
+             # only for its own mutation.
            fi
-           sleep 5
-         done
-       Timeout (still empty after the deadline) demotes ONLY this unit — never
-       a whole-wave STRICT-STOP, since the PR genuinely IS merged; the loop
-       must not hang the merge lane indefinitely waiting on a value that may
-       never arrive:
-         if [ -z "$confirmed_sha" ]; then
-           uv run "{shared_root}/scripts/lib/loop_claim.py" mark \
-             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-             --status held --force --confirm-no-task-running \
-             --reason "PR merged but mergeCommit.oid never confirmed within the bound" \
-             --operator "campaign-mode:3g" --reason-code merge_confirmation_timeout || STRICT-STOP
-         else
-           # Validate against a strict 40-hex SHA pattern BEFORE it flows
-           # anywhere near a git command — the SAME guard shape
-           # `audit_compliance_lifecycle.py::_merge_sha` already applies
-           # (reused, not reinvented): `loop_claim.py mark-merged`'s own
-           # `lib.loop_state.is_valid_sha` check IS that guard, so a
-           # malformed value is rejected there rather than by a second,
-           # independent bash-level regex. NEVER `git rev-parse
-           # origin/{default}` as a fallback here — a concurrent sibling
-           # merge (this repo has run three campaigns merging 15 PRs in one
-           # window) can make the default branch's current tip a commit that
-           # is ancestrally true but semantically wrong for THIS unit, a
-           # silently-passing false proof worse than no proof at all.
-           uv run "{shared_root}/scripts/lib/loop_claim.py" mark-merged \
-             --state "{project_root}/.shipwright/loop_state.json" --unit "{id}" \
-             --attempt-id "{attempt_id from 3a}" --merged-commit "$confirmed_sha" || STRICT-STOP
-           # `loop.lock` is never held across the `gh` calls above, so another
-           # wave's `cmd_next_batch` claim can legitimately interleave with
-           # this write — both are safe, since every writer takes the lock
-           # only for its own mutation.
          fi
 
    3h. Update the MAIN-tree campaign status.json (LOCAL-BOARD CONVENIENCE only,
