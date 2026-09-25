@@ -1,0 +1,65 @@
+{
+  "run_id": "iterate-2026-09-23-m5-agents-md-generation-drift",
+  "date": "2026-09-24T18:39:23.413000Z",
+  "event_at": "2026-09-24T18:37:55.462310+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/m5-agents-md-generation-drift",
+  "spec": ".shipwright/planning/iterate/iterate-2026-09-23-m5-agents-md-generation-drift-MINIPLAN.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-23-m5-agents-md-generation-drift",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "brownfield adopt writes AGENTS.md via the same _render_claude_md(host_name=...) path CLAUDE.md uses, appending the shared Codex appendix idempotently",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_agents_md_renderer.py (15 tests) PASSED"
+      },
+      {
+        "behavior": "load-bearing-preservation policy (>1KB existing file preserved, suggestion side-file written) applies identically to an existing AGENTS.md, keyed by explicit filename",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_agents_md_renderer.py::test_append_preserves_original_crlf_line_endings and sibling preserve_existing cases PASSED"
+      },
+      {
+        "behavior": "greenfield project-scaffolding.md's '### 2. AGENTS.md' step points at the real appendix file and its instructed host-name/growth-gate substitutions are not stale relative to the render path",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_agents_md_greenfield_scaffolding.py (2 tests) PASSED"
+      },
+      {
+        "behavior": "CLAUDE.md's own (unrelated) generation stays untouched by this change",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_claude_md_template.py (6 tests, byte-identical to merge-base) PASSED"
+      },
+      {
+        "behavior": "root AGENTS.md no longer hardcodes a Codex model-slug/reasoning-effort default that duplicates codex_review_model_resolution.py's dynamic resolution, while the pre-existing xhigh/max cautionary line is untouched",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_agents_md_claude_md_parity.py (5 tests) PASSED"
+      },
+      {
+        "behavior": "adopt's artifacts-dict reports claude_md and agents_md absence symmetrically when neither file exists yet",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_write_project_config_artifacts.py::test_artifacts_dict_reports_agents_md_absent PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-adopt pytest plugins/shipwright-adopt/tests/test_agents_md_renderer.py -q",
+    "tests_run": 15,
+    "exit_code": 0,
+    "justification": "AGENTS.md renderer/appendix logic has no startable web/dev-server surface of its own; verified via its own focused CLI test module plus the full F0 suite."
+  },
+  "declared_removals": []
+}

@@ -1,13 +1,19 @@
 """$/MTok pricing table + cost computation for the context-cost meter.
 
 Rates: base input/output from the Anthropic Current Models table (cached
-2026-06-24); cache economics from ``shared/prompt-caching.md`` Sec Economics —
-cache-read = 0.1x base input, cache-write = 1.25x base input for the 5-minute
-TTL, 2x for the 1-hour TTL. Sonnet 5 uses its STANDARD post-intro rate here,
-not the $2/$10 introductory window that expires 2026-08-31 — a durable meter
-hardcoding an expiring rate would silently under-report from that date on;
-standard rates instead over-report for a few weeks, the safe direction for a
-tool whose purpose is flagging cost pressure.
+2026-06-24), except Opus 5.5 (operator-supplied 2026-09-24); cache economics
+from ``shared/prompt-caching.md`` Sec Economics — cache-read = 0.1x base
+input, cache-write = 1.25x base input for the 5-minute TTL, 2x for the
+1-hour TTL. Sonnet 5 uses its STANDARD post-intro rate here, not the $2/$10
+introductory window that expires 2026-08-31 — a durable meter hardcoding an
+expiring rate would silently under-report from that date on; standard rates
+instead over-report for a few weeks, the safe direction for a tool whose
+purpose is flagging cost pressure.
+
+Retired model ids stay in the table (never deleted on a bump): a
+transcript recorded under the old id must still resolve to the rate that
+was live when the call was made, not go unpriced or get priced at the
+new model's rate (code-reviewer MEDIUM, 2026-09-24).
 
 No cross-model fallback, ever (context-cost-meter design correction after
 operator review): :func:`compute_cost_usd` returns ``(None, True)`` for a
@@ -46,6 +52,7 @@ def _priced(input_rate: float, output_rate: float) -> ModelPrice:
 
 MODEL_PRICING: dict[str, ModelPrice] = {
     "claude-opus-5": _priced(5.00, 25.00),
+    "claude-opus-5-5": _priced(4.00, 20.00),
     "claude-sonnet-5": _priced(3.00, 15.00),
     "claude-haiku-4-5": _priced(1.00, 5.00),
 }

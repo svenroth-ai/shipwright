@@ -7,12 +7,13 @@ thin scaffold content. The user kept those files manually and lost
 everything else.
 
 Policy:
-- All four agent-doc-style files (CLAUDE.md, decision_log.md,
+- All agent-doc-style files (CLAUDE.md, AGENTS.md, decision_log.md,
   architecture.md, conventions.md) get backed up to
   `<root>/.shipwright/adopt/backups/<rel>.preserved` before any write.
-- CLAUDE.md ABOVE a byte threshold (1024 by default) is treated as
-  load-bearing and NOT overwritten — adopt's suggested content goes to
-  `.shipwright/adopt/CLAUDE.md.adopt-suggested` instead.
+- CLAUDE.md / AGENTS.md ABOVE a byte threshold (1024 by default) is treated
+  as load-bearing and NOT overwritten — adopt's suggested content goes to
+  `.shipwright/adopt/CLAUDE.md.adopt-suggested` (or `AGENTS.md.adopt-
+  suggested`) instead.
 - decision_log.md with any existing `## ADR-` (or `### ADR-`) heading
   triggers a merge: the new adoption ADR is prepended; the existing
   body is preserved verbatim. The adoption ADR's id is the next free
@@ -39,6 +40,10 @@ from typing import Any
 BACKUPS_REL = ".shipwright/adopt/backups"
 PRESERVATION_LOG_REL = ".shipwright/adopt/preservation_log.json"
 SUGGESTED_CLAUDE_REL = ".shipwright/adopt/CLAUDE.md.adopt-suggested"
+#: AGENTS.md's counterpart to SUGGESTED_CLAUDE_REL (R4,
+#: iterate-2026-09-23-m5-agents-md-generation-drift) — same policy, same
+#: threshold, a different file.
+SUGGESTED_AGENTS_REL = ".shipwright/adopt/AGENTS.md.adopt-suggested"
 LOADBEARING_CLAUDE_BYTE_THRESHOLD = 1024
 
 
@@ -118,8 +123,10 @@ def is_loadbearing_claude_md(
     claude_md: Path,
     byte_threshold: int = LOADBEARING_CLAUDE_BYTE_THRESHOLD,
 ) -> bool:
-    """Heuristic: a CLAUDE.md significantly larger than the adopt scaffold
-    (~600 bytes) is assumed to carry hand-written load-bearing rules."""
+    """Heuristic: a CLAUDE.md (or, via the ``is_loadbearing_agents_md`` alias,
+    an AGENTS.md) significantly larger than the adopt scaffold (~600 bytes) is
+    assumed to carry hand-written load-bearing rules — same threshold, same
+    policy, both host files."""
     if not claude_md.is_file():
         return False
     try:

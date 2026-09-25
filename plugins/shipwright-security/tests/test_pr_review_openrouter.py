@@ -31,7 +31,7 @@ FAKE_KEY = "ORTESTKEY-not-a-real-credential-0123456789"
 class TestDefaults:
 
     def test_default_model_is_luna(self):
-        assert O.DEFAULT_MODEL == O.LUNA_MODEL == "openai/gpt-5.6-luna"
+        assert O.DEFAULT_MODEL == O.LUNA_MODEL == "openai/gpt-6-luna"
 
     def test_glm_model_constant_still_exists_for_the_operator_override(self):
         assert O.GLM_MODEL == "z-ai/glm-5.3"

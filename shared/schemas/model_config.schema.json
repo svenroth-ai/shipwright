@@ -12,7 +12,7 @@
     "plan_review": { "$ref": "#/$defs/Tier" },
     "codex_review": {
       "type": "string",
-      "description": "Optional override for the model the Codex-CLI internal-review transport uses for the spec/code/doubt-reviewer roles when Codex is the driving harness. A Codex model slug (e.g. 'gpt-5.6-sol'), not one of the Claude Tier values. Not schema-validated against a closed enum — Codex's own launch is the semantic check; an unconditional syntactic allowlist (shared/scripts/lib/codex_review_transport.py) is the only shipwright-side validation. Beaten by a per-run --codex-model flag and by the session-scoped SHIPWRIGHT_CODEX_REVIEW_MODEL env var; unset (and no env var) falls back to the hardcoded default.",
+      "description": "Optional override for the model the Codex-CLI internal-review transport uses for the spec/code/doubt-reviewer roles when Codex is the driving harness. A Codex model slug (e.g. 'gpt-6-sol'), not one of the Claude Tier values. Not schema-validated against a closed enum — Codex's own launch is the semantic check; an unconditional syntactic allowlist (shared/scripts/lib/codex_review_transport.py) is the only shipwright-side validation. Beaten by a per-run --codex-model flag and by the session-scoped SHIPWRIGHT_CODEX_REVIEW_MODEL env var; unset (and no env var) falls back to the hardcoded default.",
       "minLength": 1
     },
     "codex_plan_review": {

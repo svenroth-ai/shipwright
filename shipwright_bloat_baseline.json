@@ -811,9 +811,9 @@
     {
       "path": "shared/scripts/hooks/generate_handoff_on_stop.py",
       "limit": 300,
-      "current": 420,
+      "current": 439,
       "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md; +19 lines PR #796 round 14 — factored the round-5 import-retry loop into two directly-callable helpers (a Tier-3-review-mandated fix replacing a rejected exec(compile(...)) test) instead of leaving it as bare module-top code"
     },
     {
       "path": "shared/scripts/lib/_host_resource_locking.py",

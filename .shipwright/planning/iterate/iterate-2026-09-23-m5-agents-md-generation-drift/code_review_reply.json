@@ -1,0 +1,22 @@
+{
+  "section": "R4 (codex-plugin-execution-reliability): AGENTS.md generation for /shipwright-adopt and /shipwright-project, plus root AGENTS.md model-slug/reasoning-effort drift-fix",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-adopt/scripts/lib/preserve_existing.py",
+      "line": 121,
+      "finding": "is_loadbearing_claude_md's docstring and the module's Policy section still enumerate only CLAUDE.md, even though agents_md_renderer.py now imports this exact function under the alias is_loadbearing_agents_md and applies the same 1KB-threshold policy to AGENTS.md. A reader of preserve_existing.py in isolation would not learn it now also gates AGENTS.md.",
+      "suggestion": "Update both docstrings to say CLAUDE.md/AGENTS.md and add an AGENTS.md bullet to the module docstring's Policy list."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
+      "finding": "The diff includes an unrelated cosmetic reformat of the prior_art_harvester import (collapsing a multi-line import into one line), alongside the new write_agents_md import line above it — technically out of the stated scope for a feature diff.",
+      "suggestion": "Revert the unrelated import reformat; keep only the new import line needed for this feature."
+    }
+  ],
+  "verdict": "PASS",
+  "summary": "No blocking findings. Single-source render reuse verified byte-identical via test and by hand; CRLF-preserving newline handling correct and Windows-tested; idempotency marker is an inert HTML comment decoupled from the visible heading, with a test proving a colliding unmarked heading doesn't cause a false already-present; sys.path/import hygiene mirrors the existing pattern; write-project-config.py's new agents_md flag and its regression test are correct and minimal; project-scaffolding.md's greenfield instructions quote the template's actual strings verbatim; root AGENTS.md/CLAUDE.md drift-fix is complete with no leaked model slug/reasoning-effort value remaining, guarded by a new test. Both low-severity findings above were fixed in the same pass (docstrings updated to name AGENTS.md; the unrelated import reformat reverted)."
+}

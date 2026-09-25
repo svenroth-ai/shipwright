@@ -14,12 +14,12 @@
     "_comment_opus_leg": "opus_leg.provider: which route answers the 'opus' reviewer identity (used when --driver codex selects the {glm, opus} roster). 'claude_cli' (default) = the local `claude` CLI, flat-cost under a Claude subscription; requires `claude` installed (`claude --version`) and never resolves to a `.cmd`/`.bat` shim on Windows (BatBadBut argv-injection guard — falls back instead). Falls back to 'openrouter' when the CLI is unavailable or refused, and skips the leg entirely if neither route is usable. No ZDR allowlist needed for this leg (Sven: single-provider, not GLM/DeepSeek's multi-endpoint aggregation)."
   },
   "models": {
-    "chatgpt": "gpt-5.6-terra",
+    "chatgpt": "gpt-6-sol",
     "openrouter_glm": "z-ai/glm-5.3",
-    "openrouter_chatgpt": "openai/gpt-5.6-terra",
-    "codex": "gpt-5.6-terra",
-    "claude_cli": "claude-opus-5",
-    "openrouter_opus": "anthropic/claude-opus-5",
+    "openrouter_chatgpt": "openai/gpt-6-sol",
+    "codex": "gpt-6-sol",
+    "claude_cli": "claude-opus-5-5",
+    "openrouter_opus": "anthropic/claude-opus-5-5",
     "_comment": "Identity-locked review models: GLM always uses its OpenRouter model; GPT uses its OpenRouter, direct, or Codex-CLI model — same 'openai' reviewer identity across all three, same model string, different transport. Opus uses its Claude-CLI or OpenRouter model — same 'opus' reviewer identity across both, same pinned full model id (not the floating 'opus' alias) so both legs identity-lock to the exact same string. Runtime rejects config or environment overrides that differ from these exact identifiers."
   },
   "glm_routing": {

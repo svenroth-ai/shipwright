@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Diff matches the context.md rename list exactly: opus 5->5.5, gpt-5.6-terra/sol->gpt-6-sol, gpt-5.6-luna->gpt-6-luna (CI + local fallback); no extra renames or features added."},
+{"name":"Error Handling","verdict":"pass","note":"No error-handling paths touched; only string literal values changed in existing config/routing code."},
+{"name":"Security Basics","verdict":"pass","note":"No user input, auth, or secret handling touched; model-name strings are not credentials."},
+{"name":"Test Quality","verdict":"pass","note":"Updated tests still assert real outcomes (pricing totals, identity-lock bindings, HTTP body model field) against the new literals, not tautologies."},
+{"name":"Performance Basics","verdict":"pass","note":"No loops, queries, or blocking I/O touched."},
+{"name":"Naming & Structure","verdict":"pass","note":"codex_review_transport.py kept at exactly 300 lines after its comment rewrite; no file grew past the guideline."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"external_review.json's shape is unchanged, only literal values inside existing keys were renamed; no new serialized format or producer/consumer pair introduced."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"uv run shared/scripts/tools/scan_test_hygiene.py --diff reported no findings."}
+]}

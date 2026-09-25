@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-24-model-version-bump",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-24-model-version-bump",
+    "paths_fingerprint": "287b2db909f1f22d710831f57c59d2bcc10aba82c9416e7d4e1dc0e5059386cc",
+    "consistent_with": "iterate-2026-09-03-pr-review-sonnet-default",
+    "statement": "Swaps only the literal SHIPWRIGHT_PR_REVIEW_MODEL value (openai/gpt-5.6-luna -> openai/gpt-6-luna) in .github/workflows/pr-review-run.yml, matching the retired-model rename applied to the module's own DEFAULT_MODEL fallback in plugins/shipwright-security/scripts/lib/pr_review_openrouter.py. No change to trust boundaries, permissions, checkout refs, or secrets handling -- same mechanism as the prior sonnet-default-to-luna model swap this change is consistent with.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}

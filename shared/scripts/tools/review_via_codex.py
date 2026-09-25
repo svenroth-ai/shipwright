@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     # `run_codex_review` itself -- see `lib.codex_review_model_resolution`.
     parser.add_argument("--codex-model", default=None,
                         help="per-run override for the Codex reviewer model "
-                             "(a Codex model slug, e.g. gpt-5.6-terra); for a "
+                             "(a Codex model slug, e.g. gpt-6-sol); for a "
                              "session-scoped override with no flag to thread, "
                              "set SHIPWRIGHT_CODEX_REVIEW_MODEL (spec/code/doubt) "
                              "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review)")

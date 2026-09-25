@@ -18,7 +18,7 @@ if str(_LIB_DIR) not in sys.path:
 
 import external_review_opus_leg as legs  # noqa: E402
 
-_CONFIG = {"models": {"claude_cli": "claude-opus-5"}, "claude_cli": {"max_retries": 1}}
+_CONFIG = {"models": {"claude_cli": "claude-opus-5-5"}, "claude_cli": {"max_retries": 1}}
 
 
 class _FakeCompleted:
