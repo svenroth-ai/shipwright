@@ -120,6 +120,18 @@ def test_import_retry_helper_raises_after_exhausting_attempts():
         module._import_lib_with_retry(do_import=always_fails, attempts=3, delay=0)
 
 
+def test_import_retry_helper_raises_instead_of_returning_none_on_zero_attempts():
+    """CodeQL (PR #796): the ``for`` loop's only ``return`` sits inside it, so
+    ``attempts=0`` skips the loop body entirely and the function used to fall
+    through to an implicit ``return None`` -- silently violating its own
+    ``-> tuple`` contract instead of raising. A caller checking the result
+    would see ``None`` where a tuple of imports was expected."""
+    module = _load_hook_module_in_process()
+
+    with pytest.raises(ValueError, match="attempts"):
+        module._import_lib_with_retry(do_import=module._do_lib_imports, attempts=0)
+
+
 def test_import_fails_when_lib_never_reappears(tmp_path):
     """The retry has a bound — this is not a silent infinite hang."""
     hooks_dir = _prepare_isolated_hook_tree(tmp_path)

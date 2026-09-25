@@ -48,8 +48,7 @@ def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay:
     """Retries past update-marketplace.sh's atomic-swap absence gap
     (iterate-2026-09-24-stop-hook-cache-race): ModuleNotFoundError while
     `lib` is briefly absent, or FileNotFoundError from the loader's own
-    open() losing the swap's rename race on an already-located file
-    (round 5)."""
+    open() losing the swap's rename race on an already-located file (round 5)."""
     for attempt in range(attempts):
         try:
             return do_import()
@@ -57,6 +56,7 @@ def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay:
             if attempt == attempts - 1:
                 raise
             time.sleep(delay)
+    raise ValueError(f"attempts must be >= 1, got {attempts}")
 
 
 (durable_atomic_write, write_wave_aware_handoff, parse_canon_frontmatter, LockTimeout, file_lock,
