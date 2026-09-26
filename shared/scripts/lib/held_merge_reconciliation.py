@@ -2,9 +2,6 @@
 (campaign-dag-scheduler R5b rounds 3-4 and 6, Tier-3 review; round 7:
 "add executable integration coverage for ... held-merge reconciliation").
 
-This module is exercised end-to-end by the campaign-dag-scheduler R5b serial
-merge lane (PR #799).
-
 Two `reason_code`s can leave a unit `held` while its PR is actually merged,
 and neither self-heals without this pass:
 
