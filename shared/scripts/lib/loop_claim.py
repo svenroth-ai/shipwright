@@ -8,7 +8,7 @@ NEVER touches `kind == "section"` state.
 Single CLI entry point for all five R4 commands (``next-batch``, ``release``,
 ``mark``, ``mark-running``, ``mark-merged``) — ``main()`` dispatches the last
 three into ``lib.loop_mark``, so a caller never needs to know about the
-internal module split.
+internal module split. Exercised end-to-end by R5b's serial merge lane (PR #799).
 
 - ``next-batch`` — computes the bounded ready set (reusing
   ``lib.loop_state.is_unit_ready``/``describe_blocker``) and claims
