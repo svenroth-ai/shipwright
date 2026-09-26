@@ -138,17 +138,19 @@ def test_rebase_cascade_actually_invokes_ensure_current_not_just_a_comment():
     """External review (glm + openai, high): the first draft only NAMED
     `ensure_current.py` in a comment; a CONFLICTING branch never actually
     got rebased. This asserts a real, checked invocation exists — checked
-    via `if ...; then ... else ...` (R5b round 2 replaced the earlier
-    `|| { ...; }` compound-command shape; see the next test for why)."""
+    via its own captured exit code (`ensure_current_rc=$?`, R5b round 17,
+    which replaced the bare `if ...; then ... else ...` this test used to
+    assert — R5b round 2 had itself replaced an even earlier `|| { ...; }`
+    compound-command shape; see the next test for why capturing matters)."""
     step = _step_3f_bis()
     cascade_at = step.index("max_rebase_reviews")
     ensure_at = step.index('uv run "{shared_root}/scripts/tools/ensure_current.py"', cascade_at)
     window = step[ensure_at:ensure_at + 400]
-    assert "); then" in window, "the ensure_current.py call must be CHECKED, not fire-and-forget"
-    fail_window = step[ensure_at:ensure_at + 1200]
-    assert "else" in fail_window and "held" in fail_window, (
-        "the ensure_current.py failure path must be a distinct `else` branch "
-        "that demotes the unit to held"
+    assert "ensure_current_rc=$?" in window, "the ensure_current.py call must be CHECKED, not fire-and-forget"
+    fail_window = step[ensure_at:ensure_at + 2400]
+    assert "-eq 2" in fail_window and "held" in fail_window, (
+        "the ensure_current.py exit-code-2 (confirmed conflict) path must be "
+        "a distinct branch that demotes the unit to held"
     )
 
 
@@ -160,24 +162,32 @@ def test_ensure_current_failure_does_not_fall_through_to_the_success_only_steps(
     EITHER path, including right after marking the unit `held` — silently
     re-entering 3f-bis for a unit the same block had just demoted out of
     this wave. The fix branches the success-only steps inside the `if`'s
-    own body, never reachable from the `else`."""
+    own body, never reachable from the `elif`/`else` (round 17: a THIRD,
+    operational-failure branch was added alongside the exit-code-2 `elif`;
+    the success-only steps must stay unreachable from either)."""
     step = _step_3f_bis()
     cascade_at = step.index("max_rebase_reviews")
     ensure_at = step.index('uv run "{shared_root}/scripts/tools/ensure_current.py"', cascade_at)
     then_at = step.index("; then", ensure_at)
-    else_at = step.index("else", then_at)
-    fi_at = step.index("fi", else_at)
-    success_body = step[then_at:else_at]
-    failure_body = step[else_at:fi_at]
+    elif_at = step.index("elif", then_at)
+    else_at = step.index("else", elif_at)
+    fi_at = step.index(" fi ", else_at)
+    success_body = step[then_at:elif_at]
+    conflict_body = step[elif_at:else_at]
+    operational_body = step[else_at:fi_at]
     assert "rebase_count + 1" in success_body, (
         "the counter bump must sit inside the success (`then`) branch"
     )
     assert "re-enter 3f-bis" in success_body
-    assert "rebase_count + 1" not in failure_body, (
-        "the failure (`else`) branch must never reach the counter-bump / "
-        "re-entry steps meant only for a successful rebase"
+    for failure_body in (conflict_body, operational_body):
+        assert "rebase_count + 1" not in failure_body, (
+            "no failure branch may reach the counter-bump / re-entry steps "
+            "meant only for a successful rebase"
+        )
+    assert "held" in conflict_body
+    assert "held" not in operational_body, (
+        "the operational-failure branch must STRICT-STOP, never demote to held"
     )
-    assert "held" in failure_body
 
 
 def test_unknown_mergeable_is_polled_bounded_before_treated_as_current():

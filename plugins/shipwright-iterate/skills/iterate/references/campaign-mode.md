@@ -1206,9 +1206,28 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
              # tooling, unchanged by this sub-iterate — the SAME refresh F11
              # runs pre-merge for a standalone iterate (F11.md's own
              # `ensure_current.py` block, reused not reinvented):
-             if guard=$(cd "$unit_wt" && uv run "{shared_root}/scripts/tools/ensure_current.py" \
+             guard=$(cd "$unit_wt" && uv run "{shared_root}/scripts/tools/ensure_current.py" \
                --project-root "$unit_wt" --run-id "{run_id}" \
-               --reason "3f-bis rebase cascade (rebase_count=$rebase_count)"); then
+               --reason "3f-bis rebase cascade (rebase_count=$rebase_count)")
+             ensure_current_rc=$?
+             # Tier-3 review, R5b round 17, blocking: the prior draft branched
+             # on success/failure alone, so EVERY nonzero exit — not just a
+             # genuine content conflict — fell into the `held`/`rebase_conflict`
+             # branch below. `ensure_current.py`'s own exit-code contract
+             # (shared/scripts/tools/ensure_current.py `main()`) reserves `2`
+             # for status `blocked`: a confirmed non-churn merge conflict,
+             # "resolve by hand". Every OTHER nonzero code is an OPERATIONAL
+             # failure this loop cannot resolve by holding the unit — a bad
+             # `--merge-ref` (5), the git merge itself refusing to even start,
+             # e.g. an unborn ref or a dirty tree (6), the merge COMMIT failing,
+             # e.g. a pre-commit hook rejection (7), a corrupt events/triage
+             # log (4), a follow-up or ledger-writeback commit failing (8, 9),
+             # or an unrecognised status (3) — none of these are "a real
+             # conflict, not resolvable by this loop"; recording them as
+             # `rebase_conflict` would tell 3h and the operator this needs
+             # manual conflict resolution, the wrong diagnosis for e.g. a
+             # transient git-auth failure a retry could clear.
+             if [ "$ensure_current_rc" -eq 0 ]; then
                echo "$guard"
                # Bump the counter and RE-ENTER 3f-bis from its own top (the
                # `rm -f` cleanup) for a fresh diff, fresh pin, fresh cascade,
@@ -1219,7 +1238,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
                run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
                uv run "{shared_root}/scripts/lib/rebase_cascade.py" write-count --run-dir "$run_dir" --count "$rebase_count" || STRICT-STOP
                # -> re-enter 3f-bis for this unit.
-             else
+             elif [ "$ensure_current_rc" -eq 2 ]; then
                # Success-only steps above (counter bump, re-entry) must NEVER
                # run on this path (Tier-3 review, R5b round 2: an earlier draft
                # reached them unconditionally even after marking the unit
@@ -1236,6 +1255,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
                # This unit is done for this wave (held -> pending resumes it
                # later); continue draining the rest of the wave at the next
                # step (3i, below) — do NOT re-enter 3f-bis for this unit.
+             else
+               # Operational failure (exit "$ensure_current_rc"), not a
+               # content conflict — this loop has no way to resolve it by
+               # holding the unit, so it must not be recorded as
+               # `rebase_conflict`. Whole-wave STRICT-STOP surfaces it
+               # instead, exactly like `rebase_count`/`rebase_action`'s own
+               # `|| STRICT-STOP` two steps above this one.
+               echo "$guard"
+               STRICT-STOP
              fi
            fi
          fi

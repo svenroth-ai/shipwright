@@ -461,7 +461,7 @@
     {
       "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
       "limit": 400,
-      "current": 1642,
+      "current": 1670,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-24-r5b-merge-lane-campaign-mode-bloat-exception.md"
     },
@@ -839,7 +839,7 @@
     {
       "path": "shared/scripts/lib/autonomous_loop.py",
       "limit": 300,
-      "current": 578,
+      "current": 626,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md"
     },

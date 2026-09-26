@@ -42,7 +42,7 @@ def _write_state(state_path: Path, units: list[dict]) -> None:
 
 
 class TestFinalizeBlocksOnLoopLock:
-    def test_finalize_observes_a_concurrent_writers_mutation_landed_while_it_waited(self, tmp_path, capsys):
+    def test_finalize_retries_a_drain_pass_and_resolves_a_race_landed_while_it_waited(self, tmp_path):
         state_path = tmp_path / ".shipwright" / "loop_state.json"
         _write_state(state_path, units=[
             {"id": "A", "status": "held", "attempt": 0, "attempt_id": "a0-A",
@@ -84,15 +84,50 @@ class TestFinalizeBlocksOnLoopLock:
         holder.join(timeout=10)
         finalizer.join(timeout=10)
 
-        assert result["rc"] == 1, (
-            "cmd_finalize must refuse once it observes unit B, added while it "
-            "was genuinely blocked waiting for loop.lock -- proving the read "
-            "happens AFTER the concurrent writer's mutation landed, not "
-            "before it (the pre-fix unlocked read would have returned 0 here, "
-            "having already read the state before B was ever written)"
+        # Tier-3 review, R5b round 17, blocking: this used to assert rc == 1
+        # here -- proof that the locked read correctly OBSERVED unit B rather
+        # than missing it via a stale unlocked read (the pre-fix bug: an
+        # unlocked read would have returned 0 here, having already read the
+        # state before B was ever written). Observing the race and refusing
+        # was safe but incomplete: cmd_finalize now retries with an instant
+        # `sweep_never_started` pass on exactly this refusal (never the full
+        # bounded poll-drain -- that would risk blocking THIS call on a
+        # genuinely live running/merging unit, which is never this race), so
+        # the race-landed claimed unit gets swept to held and finalize
+        # succeeds instead of forcing the caller's `|| STRICT-STOP` to fire.
+        assert result["rc"] == 0, (
+            "cmd_finalize must retry a sweep pass and succeed once the "
+            "race-landed unit B is swept to a terminal status, not concede "
+            "refusal on a race it can resolve itself"
         )
-        payload = json.loads(capsys.readouterr().err)
-        assert payload["non_terminal_ids"] == ["B"]
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        unit_b = next(u for u in state["units"] if u["id"] == "B")
+        assert unit_b["status"] == "held", "the retry's sweep pass must sweep the race-landed unit to held"
+        assert state["finalized"] is True
+
+    def test_finalize_still_refuses_fast_on_a_genuinely_live_unit_not_just_a_race(self, tmp_path):
+        """Tier-3 review, R5b round 17: the retry above must be a
+        `sweep_never_started` pass -- INSTANT, and scoped to `pending`/
+        `claimed` only -- never the full bounded poll-drain. A unit
+        genuinely `running` (no `lease_expires_at` at all, i.e. never
+        reconciled stale) is real live work, not the race the retry exists
+        for; the retry must leave it alone and finalize must still refuse,
+        promptly, rather than risk blocking this call for up to
+        `max_drain_seconds` waiting on it."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        _write_state(state_path, units=[
+            {"id": "A", "status": "held", "attempt": 0, "attempt_id": "a0-A",
+             "reason_code": "swept_never_started"},
+            {"id": "B", "status": "running", "attempt": 0, "attempt_id": "a0-B"},
+        ])
+        rc = cmd_finalize(argparse.Namespace(state=str(state_path)))
+        assert rc == 1, "a genuinely live running unit must still make finalize refuse"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        unit_b = next(u for u in state["units"] if u["id"] == "B")
+        assert unit_b["status"] == "running", (
+            "the sweep-only retry must never force-transition a live running unit"
+        )
+        assert "finalized" not in state
 
     def test_finalize_succeeds_once_the_concurrent_writer_never_lands(self, tmp_path):
         """Control case: no concurrent mutation at all -- finalize succeeds
