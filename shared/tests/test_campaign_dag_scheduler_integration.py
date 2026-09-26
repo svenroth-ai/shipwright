@@ -17,14 +17,13 @@ merge steps are real subprocess/filesystem operations.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import io
 import json
 import subprocess
 from contextlib import redirect_stdout
 from pathlib import Path
-
-import hashlib
 
 from lib import campaign_session_lock as csl
 from lib.autonomous_loop import cmd_finalize, cmd_record
@@ -234,6 +233,17 @@ class TestCampaignDagSchedulerCapstoneIntegration:
         u3 = _unit_row(state_path, "U3")
         assert is_unit_ready(u3, _load_units(state_path)) is False
         assert "U2" in describe_blocker(u3, _load_units(state_path))
+
+        # Scheduler ENTRY POINT itself refuses U3 here (not just the helpers
+        # above) -- only U1 has merged, U2 is still `built`.
+        buf_mid = io.StringIO()
+        with redirect_stdout(buf_mid):
+            rc = cmd_next_batch(argparse.Namespace(state=str(state_path), max_parallel=5,
+                                                     campaign_worktree=str(work)))
+        assert rc == 4, buf_mid.getvalue()
+        mid_wave = json.loads(buf_mid.getvalue())
+        assert mid_wave["claimed"] == []
+        assert _unit_row(state_path, "U3")["status"] == "pending"
 
         _merge_and_mark_merged(state_path, work, "U2", f"iterate/{LOOP_ID}--U2", attempts["U2"])
         # Another fresh reload -- now ready, deps' ancestry both verified.

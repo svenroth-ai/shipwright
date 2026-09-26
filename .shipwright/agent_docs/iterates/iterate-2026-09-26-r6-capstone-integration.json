@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-26-r6-capstone-integration",
-  "date": "2026-09-26T13:39:31.708618Z",
+  "date": "2026-09-26T13:51:24.014966Z",
   "event_at": "2026-09-26T13:38:51.263776+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -19,9 +19,9 @@
         "category": "integration"
       },
       {
-        "behavior": "Dependent unit blocked until BOTH deps verified-merged; blocker message names the outstanding dep",
+        "behavior": "Dependent unit blocked until BOTH deps verified-merged; blocker message names the outstanding dep; the scheduler entry point itself (not just readiness helpers) refuses to claim it with only one dep merged",
         "disposition": "tested",
-        "evidence": "same test, Assertions 2+3 block, is_unit_ready/describe_blocker calls PASSED",
+        "evidence": "same test, Assertions 2+3 block, is_unit_ready/describe_blocker calls PASSED; mid-wave cmd_next_batch call (rc=4, claimed=[]) after only U1 merges PASSED",
         "category": "integration"
       },
       {
@@ -64,5 +64,13 @@
       "acs": 7,
       "covered_acs": 7
     }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_campaign_dag_scheduler_integration.py -v",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-26-r6-capstone-integration/surface_verification.log",
+    "timestamp": "2026-09-26T13:49:48.976Z"
   }
 }
