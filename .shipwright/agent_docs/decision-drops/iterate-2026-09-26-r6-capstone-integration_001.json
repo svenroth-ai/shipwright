@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-26-r6-capstone-integration",
+  "date": "2026-09-26",
+  "section": "Iterate -- feature: R6 capstone integration proof",
+  "title": "Capstone proof for campaign-dag-scheduler R1-R5b composition",
+  "context": "R1-R5b (dependency gating, worktrees, review-attribution, state machine, wave concurrency, serial merge lane) each had unit tests but no test proved they compose together end to end.",
+  "decision": "Add one real-git integration test exercising all 6 subsystems' real cmd_* entry points in one continuous 5-unit DAG scenario against a bare-origin fixture; gh pr merge is simulated via a real git merge feeding a real SHA to cmd_mark_merged.",
+  "consequences": "campaign-dag-scheduler campaign (R1-R6) is now fully built; no production code changed, only shared/tests/test_campaign_dag_scheduler_integration.py added.",
+  "rationale": "A single continuous scenario keeps the composition proof owned and reviewable on its own, per the sub-iterate spec's explicit rejection of splitting it across other sub-iterates' suites.",
+  "rejected": "Splitting the proof across R1-R5b's own test files (rejected by spec: would make composition implicit, not owned); mocking gh pr merge with a fake Python wrapper (none exists; real git merge chosen instead).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

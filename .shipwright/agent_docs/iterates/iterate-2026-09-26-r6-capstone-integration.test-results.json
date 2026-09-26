@@ -1,0 +1,106 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-26-r6-capstone-integration",
+    "date": "2026-09-26",
+    "unit": {
+      "status": "passed",
+      "passed": 11946,
+      "total": 11946
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Two independent units build concurrently in one wave (worktrees coexist, both reach built pre-merge)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_dag_scheduler_integration.py::TestCampaignDagSchedulerCapstoneIntegration::test_full_five_unit_dag_wave_dependency_review_and_drain, Assertion 1 block PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Dependent unit blocked until BOTH deps verified-merged; blocker message names the outstanding dep; the scheduler entry point itself (not just readiness helpers) refuses to claim it with only one dep merged",
+          "disposition": "tested",
+          "evidence": "same test, Assertions 2+3 block, is_unit_ready/describe_blocker calls PASSED; mid-wave cmd_next_batch call (rc=4, claimed=[]) after only U1 merges PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Readiness state survives a fresh disk reload between waves (no in-memory reuse, no lost/duplicated readiness)",
+          "disposition": "tested",
+          "evidence": "same test -- _load_units re-parses the state file fresh at every check; wave2 claim is a genuinely separate cmd_next_batch call PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Review-diff attribution resolves to the unit's own worktree, never the shared (contaminated) one, for both built units",
+          "disposition": "tested",
+          "evidence": "same test, Assertion 4 block -- independently recomputed diffs proven to differ for both U1 and U2 PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "STRICT-STOP mid-wave sweep demotes still-claimed units to held/swept_never_started, leaves terminal units untouched; lock release gated on cmd_finalize accepting the drained state",
+          "disposition": "tested",
+          "evidence": "same test, Assertion 5 block PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Campaign session lock genuinely releases after drain (a second session can acquire)",
+          "disposition": "tested",
+          "evidence": "same test -- csl.release then a second csl.acquire succeeds without raising PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Full shared/tests suite has no regression from this addition",
+          "disposition": "tested",
+          "evidence": "uv run pytest shared/tests/ -x -q: 11946 passed, 45 skipped, 20 deselected in 1704.96s; F0 canonical suite run (run_test_suite.py, 18 units) GREEN in 34.4 min"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_campaign_dag_scheduler_integration.py -v",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-26-r6-capstone-integration/surface_verification.log",
+      "timestamp": "2026-09-26T13:49:48.976Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-26-r6-capstone-integration",
+    "commit": "0ff8243bdfb989821398b4a94e2031360d2cedda",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

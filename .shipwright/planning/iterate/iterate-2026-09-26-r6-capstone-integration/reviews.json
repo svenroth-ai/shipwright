@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-26-r6-capstone-integration",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-26T11:44:55.811134+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-26T11:45:18.513354+00:00",
+      "disposition": "R6's mini-plan equivalent (work breakdown, assertions, cross-cutting constraints) pre-existed as the campaign's own sub-iterate spec and plan section before this run started; no separate interview/mini-plan step was run per the explicit operator authorization to build R6 directly from that pre-specified design authority",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+          "line": 263,
+          "finding": "assert result is not None after run_drain(...) was vacuous -- run_drain always returns a dict on the success path.",
+          "suggestion": "Replaced with assert result[\"drained\"] is True and assert {s[\"id\"] for s in result[\"swept\"]} == {\"U3\", \"U4\", \"U5\"}, using the real swept/drained fields from campaign_drain.run_drain's actual return shape. Fixed and re-verified (1 passed, ruff clean, 235 lines).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-26T11:48:23.394063+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+          "line": null,
+          "finding": "Claim under doubt: diff_sha256 is checked against an INDEPENDENTLY recomputed hash — The test's _diff_sha256 reuses the exact same git diff + raw-bytes sha256 steps review_attribution.py::pin itself takes -- it can only catch a payload-field mismatch, never a bug shared by both sides of the same computation.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+          "line": null,
+          "finding": "Claim under doubt: _merge_to_origin_default faithfully plays gh pr merge --squash for cmd_mark_merged's ancestry check — A --no-ff merge produces a 2-parent commit a real squash never would. Today's ancestry check is insensitive to this (it checks the post-merge SHA itself, not branch-tip ancestry), but a future parent-shape-sensitive check would silently pass here where a real squash would fail.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+          "line": null,
+          "finding": "Claim under doubt: genuine wave concurrency, not a call-order artifact — Both worktrees are created/committed sequentially in one process; this proves isolation under sequential composition, not contention-safety under true concurrent runners racing loop.lock.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "coverage",
+          "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+          "line": null,
+          "finding": "Claim under doubt: STRICT-STOP mid-wave drains correctly — All three units are claimed, so only the one-shot swept_never_started path is exercised; the timeout/lease-stale/built-not-merged drain_once branches are untested by this capstone.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+          "line": null,
+          "finding": "Claim under doubt: R5b's lock-release-after-cmd_finalize policy is verified — cmd_finalize and campaign_session_lock never reference each other in code; the ordering is orchestrator prose (campaign-mode.md), not code-enforced.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-26T11:55:36.480216+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-26T11:56:07.179025+00:00",
+      "disposition": "missing_keys: no OPENROUTER_API_KEY/OPENAI_API_KEY in .env.local; internal cascade (spec/code/doubt) already completed and satisfies the F11 code-review floor; run authorized to proceed autonomously with no operator present to ask (Option 2 of Branch B)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-26T11:44:23.472720+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-26T11:45:18.624502+00:00",
+      "disposition": "no separate mini-plan step ran (see plan row); the internal plan-review arm only fires behind that step",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

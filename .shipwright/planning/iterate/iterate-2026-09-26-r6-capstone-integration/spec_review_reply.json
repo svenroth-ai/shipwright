@@ -1,0 +1,8 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "PASS. All 3 divergences from the earlier REJECT are fixed and independently re-verified against the production code they rely on (cmd_finalize gating lock release, dual-unit diff_sha256 pin verification, max_parallel=5 duplicate-claim check with rc==4). No new divergence found.",
+  "recorded_by": "spec-reviewer",
+  "model_tier": "opus"
+}
