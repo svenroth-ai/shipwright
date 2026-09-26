@@ -126,6 +126,33 @@ def test_the_head_pin_crosses_steps_in_a_file_not_a_shell_variable():
     )
 
 
+def test_pin_still_valid_is_persisted_to_a_file_not_a_bare_shell_variable():
+    """Tier-3 review, R5b round 18, blocking: `pin_still_valid` was set at
+    the top of the HEAD-check block and read again at the `built ->
+    reviewed` promotion gate ~35 lines of prose later, as a bare shell
+    variable -- unlike every other value that crosses a comparable distance
+    in this step (`shipped_head`, `diff_head`, `fires`, `unit_wt`), it had
+    never been given the `$run_dir`-backed dual-write treatment, so it was
+    not provably same-call over that gap. Every write must also persist to
+    `$run_dir/pin_still_valid`, and the gate must re-read from that file."""
+    step = _step_3f_bis()
+    assert step.count('echo true > "$run_dir/pin_still_valid"') == 1, (
+        "the initial pin_still_valid=true assignment must also be persisted "
+        "to $run_dir/pin_still_valid"
+    )
+    assert step.count('echo false > "$run_dir/pin_still_valid"') == 2, (
+        "BOTH invalidate branches (HEAD-mismatch and commit-parent-mismatch) "
+        "must persist pin_still_valid=false to $run_dir/pin_still_valid"
+    )
+    gate_at = step.index('pin_still_valid=$(cat "$run_dir/pin_still_valid"')
+    if_at = step.index('if [ "$pin_still_valid" = "true" ]; then', gate_at)
+    assert gate_at < if_at, (
+        "the built -> reviewed promotion gate must re-read pin_still_valid "
+        "from its file immediately before branching on it, not trust a bare "
+        "shell variable carried from the earlier block"
+    )
+
+
 def test_step_3f_bis_fails_closed_when_the_promotion_does_not_ship():
     """An unchecked `git commit` that the pre-commit hook blocks leaves the
     local record saying `completed` while main still says `not_run` — the
@@ -882,14 +909,17 @@ def test_step_3f_bis_clears_all_handoff_files_on_reentry():
     `shipped_head`/`diff_lines` (code-review round 11, medium: the D4 fix's
     own test omitted the two files the round-11 fix itself added — reverting
     either from the `rm -f` line left this test green) share the same
-    no-downstream-cross-check exposure as `fires` and must be cleared too."""
+    no-downstream-cross-check exposure as `fires` and must be cleared too.
+    `pin_still_valid` (Tier-3 review, R5b round 18) joins the list for the
+    identical reason once it moved from a bare shell variable to a
+    `$run_dir`-backed file."""
     step = _step_3f_bis()
     rm_at = step.index("rm -f")
     line_end = step.find("\n", rm_at)
-    rm_line = step[rm_at:line_end if line_end >= 0 else rm_at + 300]
+    rm_line = step[rm_at:line_end if line_end >= 0 else rm_at + 350]
     for name in (
         "reviewed_head", "unit_worktree", "diff_head", "fires", "diff_lines",
-        "pr_json", "shipped_head",
+        "pr_json", "shipped_head", "pin_still_valid",
     ):
         assert f'"$run_dir/{name}"' in rm_line, (
             f"the re-entry cleanup must clear $run_dir/{name}, not just "

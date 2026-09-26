@@ -622,7 +622,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `test_campaign_step_3f_bis.py`, which scans every double-quoted
        `$run_dir/`-prefixed occurrence in both 3f-bis and 3g generically,
        not one enumerated site at a time, and does not exempt either step).
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head" "$run_dir/unit_worktree" "$run_dir/diff_head" "$run_dir/fires" "$run_dir/diff_lines" "$run_dir/pr_json" "$run_dir/shipped_head"
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head" "$run_dir/unit_worktree" "$run_dir/diff_head" "$run_dir/fires" "$run_dir/diff_lines" "$run_dir/pr_json" "$run_dir/shipped_head" "$run_dir/pin_still_valid"
        Clears EVERY handoff file this step writes, not `reviewed_head` alone
        (R3 doubt-round, round 4, medium: `diff_head`/`unit_worktree` are
        cross-checked downstream against the live diff/pin, so a stale value
@@ -630,10 +630,17 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        such cross-check, only the fail-closed shape guard below, so a stale
        `fires=0`/`diff_lines` surviving a re-entry after new commits enlarged
        the diff would silently skip the cascade on a NEW, now-large diff
-       using an OLD, no-longer-applicable verdict). All seven are re-derived
-       or rewritten later in this same step on the path that uses them
-       (`shipped_head` only on the `fires=1` path, which is the only path
-       that reads it), so clearing them up front costs nothing.
+       using an OLD, no-longer-applicable verdict; `pin_still_valid` joins
+       this list for the identical reason — Tier-3 review, R5b round 18,
+       blocking: it is a bare shell variable set at the top of the HEAD-check
+       block below and read again ~35 lines of prose later at the
+       `built -> reviewed` promotion gate — the doc's own rule above is that
+       a `$run_dir/`-backed dual-write is how a value crosses a possible
+       shell-call boundary, and this value never got that treatment despite
+       spanning the longest gap of any variable in this step). All EIGHT are
+       re-derived or rewritten later in this same step on the path that uses
+       them (`shipped_head` only on the `fires=1` path, which is the only
+       path that reads it), so clearing them up front costs nothing.
        `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
        wait for pin's own answer, because `worktree` is independently readable
        from `loop_state.json`'s row for this unit (the exact field
@@ -964,6 +971,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          pinned_reviewed_head=$(cat "$run_dir/reviewed_head" 2>/dev/null)
          current_head=$(git -C "$unit_wt" rev-parse HEAD)
          pin_still_valid=true
+         echo true > "$run_dir/pin_still_valid" || STRICT-STOP
          if [ "$current_head" != "$pinned_reviewed_head" ]; then
            # Delete the pin, demote reviewed -> built, and re-enter 3f-bis
            # from its own top (the `rm -f` cleanup) for a fresh diff/pin/
@@ -973,8 +981,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            # (Tier-3 review, R5b round 10, blocking) also gates the built ->
            # reviewed promotion and currency check further below, so this
            # demotion cannot be immediately re-promoted without a fresh
-           # review cascade actually running first.
+           # review cascade actually running first. Persisted to
+           # `$run_dir/pin_still_valid` (Tier-3 review, R5b round 18,
+           # blocking), not trusted as a bare shell variable across the ~35
+           # lines of prose to its own read site below — re-read fresh
+           # there, exactly like `shipped_head`/`diff_head`/`fires` already
+           # are.
            pin_still_valid=false
+           run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+           echo false > "$run_dir/pin_still_valid" || STRICT-STOP
            uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
              --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
              --project-root "{project_root}" --campaign-worktree "{project_root}" \
@@ -1004,10 +1019,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
              # Nothing below this branch runs either -- the remote publish
              # and the shipped_head write are both in the other branch of
              # this `if`, enforced by the branch itself. Same `pin_still_valid`
-             # guard as the HEAD-mismatch branch above (round 10): this
-             # demotion must not reach the reviewed/merging promotion below
-             # without a fresh review cascade either.
+             # guard as the HEAD-mismatch branch above (round 10), same
+             # persisted-not-bare treatment (round 18): this demotion must
+             # not reach the reviewed/merging promotion below without a
+             # fresh review cascade either.
              pin_still_valid=false
+             run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+             echo false > "$run_dir/pin_still_valid" || STRICT-STOP
              git -C "$unit_wt" reset --hard HEAD^ || STRICT-STOP
              uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode invalidate \
                --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
@@ -1124,12 +1142,21 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        further up). `pin_still_valid`, set at the top of the HEAD-check
        above, is what gates it: both invalidate branches set it `false`
        before this point, so only a genuinely fresh, un-invalidated pin
-       reaches the `if` below. Re-derive `$unit_wt` fresh (this paragraph's
-       own opening rebuild — matching every other block in this step, even
-       though no model judgement or Agent-tool spawn separates it from the
-       block above):
+       reaches the `if` below. **Re-read from `$run_dir/pin_still_valid`
+       here, not the bare shell variable (Tier-3 review, R5b round 18,
+       blocking):** this gate sits ~35 lines of prose after the assignment
+       above, and unlike `$run_dir`-prefixed values this variable had never
+       been given the same dual-write treatment despite spanning the
+       longest gap of any value in this step — a plain shell variable is
+       not provably same-call over that distance, exactly the reasoning
+       that drove `shipped_head`/`diff_head`/`fires`/`unit_wt` to the
+       identical file-backed pattern above. Re-derive `$unit_wt` fresh too
+       (this paragraph's own opening rebuild — matching every other block
+       in this step, even though no model judgement or Agent-tool spawn
+       separates it from the block above):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         pin_still_valid=$(cat "$run_dir/pin_still_valid" 2>/dev/null)
          if [ "$pin_still_valid" = "true" ]; then
-           run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
            unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
        Promote the row explicitly; nothing did this before R5b, so a unit sat
        at `built` through the whole of 3f-bis/3g:

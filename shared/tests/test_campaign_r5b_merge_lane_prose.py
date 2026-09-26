@@ -40,7 +40,7 @@ def test_head_equals_reviewed_head_is_asserted_before_the_commit():
 def test_a_head_deviation_invalidates_the_pin_and_demotes_reenters():
     step = _step_3f_bis()
     tail = step[step.index('"$current_head" != "$pinned_reviewed_head"'):]
-    window = tail[:1400]
+    window = tail[:1700]
     assert "--mode invalidate" in window
     assert "--status built" in window
     assert "re-enter 3f-bis" in window
