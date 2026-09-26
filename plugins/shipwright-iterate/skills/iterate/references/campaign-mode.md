@@ -1355,6 +1355,21 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            [ "$(jq -r .baseRefName <<<"$pr_identity")" = "$pinned_pr_base_ref" ] || STRICT-STOP
            uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
            gh pr checks "$pr_url" --watch || STRICT-STOP   # as 3f: do not merge, do not build the next; surface to the user. Merged subs stay durable.
+           # Re-check this unit's own status FRESH, right before merging
+           # (Tier-3 review, R5b round 15, blocking): the watch above is
+           # UNBOUNDED — campaign_drain.py's own bounded drain can force
+           # THIS unit merging -> held while this worker is still stuck
+           # waiting on slow/hung CI (the exact race
+           # `lib.held_merge_reconciliation`'s own docstring already
+           # discloses: "narrows the race, it does not close it" — this is
+           # that same narrowing, applied at the highest-risk window, not a
+           # claim of closure; a TOCTOU gap remains between this check and
+           # the merge call itself). A worker whose watch outlives a
+           # concurrent drain must not merge into a campaign that has
+           # already force-terminaled this unit.
+           unit_status_at_merge=$(jq -r --arg id "{id}" '.units[] | select(.id == $id) | .status' \
+             "{project_root}/.shipwright/loop_state.json") || STRICT-STOP
+           [ "$unit_status_at_merge" = "merging" ] || STRICT-STOP
            gh pr merge "$pr_url" --squash --delete-branch $head_pin || STRICT-STOP
            #   a merge refusal (e.g. $head_pin no longer matches the remote tip)
            #   must STOP, not fall through to an unbounded wait for a state that

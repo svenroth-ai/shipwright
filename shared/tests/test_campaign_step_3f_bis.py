@@ -647,6 +647,36 @@ def test_step_3g_guard_closes_after_the_confirmed_sha_branch():
     )
 
 
+def test_step_3g_rechecks_unit_status_immediately_before_merging():
+    """Tier-3 review, R5b round 15, blocking: `gh pr checks --watch` is
+    UNBOUNDED -- campaign_drain.py's own bounded drain can force THIS unit
+    `merging -> held` while a worker is still stuck waiting on slow/hung CI
+    (the exact race this module's own accepted-risk disclosure already
+    names, in `held_merge_reconciliation.py`'s own docstring: "narrows the
+    race, it does not close it"). Without a fresh status re-check right
+    before the merge itself, a worker whose watch outlives the drain would
+    merge into a campaign that already force-terminaled this unit -- this
+    does not close the race either (a TOCTOU gap remains between this check
+    and the merge call itself), but it narrows the highest-risk window --
+    the unbounded watch -- which had NO guard at all before this round."""
+    step = _step_3g()
+    watch_at = step.index('gh pr checks "$pr_url" --watch')
+    merge_at = step.index("gh pr merge")
+    assert watch_at < merge_at, "3g must check CI before merging"
+    between = step[watch_at:merge_at]
+    recheck_marker = 'unit_status_at_merge=$(jq -r --arg id "{id}"'
+    assert recheck_marker in between, (
+        "3g must re-read the unit's own status FRESH between the unbounded "
+        "watch and the merge itself -- a concurrent drain can force this "
+        "unit merging -> held while this worker is still watching CI"
+    )
+    assert '[ "$unit_status_at_merge" = "merging" ] || strict-stop' in between, (
+        "a unit no longer at merging immediately before the merge call must "
+        "STRICT-STOP, not merge into a campaign state a concurrent drain "
+        "has already force-terminaled"
+    )
+
+
 def test_step_3g_never_merges_without_a_pin_file():
     """The spec's acceptance criterion: no PR merges unpinned. Mutation-probed
     against 3g's own text — delete the STRICT-STOP guard or the merge's use
