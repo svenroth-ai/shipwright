@@ -104,6 +104,20 @@ class TestRealMarkMerged:
                                 project_root="/proj", shared_root="/shared")
         assert ok is False
 
+    def test_returns_false_instead_of_raising_on_a_launch_failure(self, tmp_path, monkeypatch):
+        """Tier-3 review, R5b round 16, blocking: this function caught
+        `subprocess.TimeoutExpired` (round 13) but not `OSError` -- a genuine
+        `uv`/`python` launch failure (missing interpreter, PATH issue) would
+        propagate uncaught and abort reconciliation, unlike the sibling
+        `_real_gh_query`/`_real_update_progress`, which already catch both."""
+        def fake_run(*_a, **_k):
+            raise OSError("uv: command not found")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        ok = _real_mark_merged("A", "sha123", state_path=tmp_path / "loop_state.json",
+                                project_root="/proj", shared_root="/shared")
+        assert ok is False
+
 
 class TestRealUpdateProgress:
     """Tier-3 review, R5b round 12, blocking: corrects the campaign_progress

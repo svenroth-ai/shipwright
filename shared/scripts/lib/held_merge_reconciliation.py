@@ -218,7 +218,7 @@ def _real_mark_merged(unit_id: str, merged_sha: str, *, state_path: Path, projec
             "--reason", "held-merge reconciliation: GitHub reports this PR as merged although the unit was recorded held",
             "--operator", "campaign-mode:4-reconcile", "--reason-code", "held_merge_reconciled",
         ], timeout=SUBPROCESS_TIMEOUT_SECONDS)
-    except subprocess.TimeoutExpired:
+    except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0
 

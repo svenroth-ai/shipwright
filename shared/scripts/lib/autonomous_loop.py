@@ -465,6 +465,19 @@ def cmd_finalize(args: argparse.Namespace) -> int:
                 if error:
                     print(json.dumps(error), file=sys.stderr)
                     return 1
+                # Tier-3 review, R5b round 16, blocking: the terminal-state
+                # check above ran under loop.lock, but nothing was ever
+                # PERSISTED to record that this campaign is now closed --
+                # releasing the lock with no durable marker left a window
+                # where a concurrent `cmd_next_batch` could claim a unit that
+                # became `pending` again (an operator override, or a future
+                # reopen path) and leave the campaign active despite a
+                # successful finalize. Written under the SAME lock the
+                # terminal-check ran under, so `cmd_next_batch`'s own locked
+                # reload (its `kind`/`branch_strategy` re-checks, rounds
+                # 10/20) can observe it atomically.
+                state["finalized"] = True
+                _save_state(state_path, state)
                 print(json.dumps(summary, indent=2))
                 return 0
     except LockTimeout as exc:

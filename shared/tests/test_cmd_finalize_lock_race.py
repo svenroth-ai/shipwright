@@ -105,6 +105,33 @@ class TestFinalizeBlocksOnLoopLock:
         rc = cmd_finalize(argparse.Namespace(state=str(state_path)))
         assert rc == 0
 
+    def test_finalize_persists_a_finalized_marker_before_releasing_the_lock(self, tmp_path):
+        """Tier-3 review, R5b round 16, blocking: a successful strict
+        finalize checked every unit was TERMINAL under `loop.lock`, then
+        released the lock with no durable record that this campaign is now
+        closed -- nothing stopped a concurrent `cmd_next_batch` from later
+        claiming a unit that became `pending` again (an operator override,
+        or a future reopen path) and leaving the campaign active despite a
+        successful finalize. The success path must now persist
+        `state["finalized"] = True` to `loop_state.json` itself, under the
+        SAME lock the terminal-check ran under -- not merely print it in the
+        summary -- so `cmd_next_batch`'s own locked reload
+        (`test_loop_claim_next_batch.py::test_recheck_finalized_after_lock_
+        prevents_a_claim_on_a_closed_campaign`) can observe it."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        _write_state(state_path, units=[
+            {"id": "A", "status": "held", "attempt": 0, "attempt_id": "a0-A",
+             "reason_code": "swept_never_started"},
+        ])
+        rc = cmd_finalize(argparse.Namespace(state=str(state_path)))
+        assert rc == 0
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        assert state["finalized"] is True, (
+            "a successful strict finalize must persist finalized=true to "
+            "loop_state.json itself, not just report it in the printed "
+            "summary"
+        )
+
     def test_finalize_reports_a_structured_error_on_lock_timeout(self, tmp_path, capsys):
         """A lock genuinely held past the bound must fail closed with a
         structured JSON error, never an uncaught traceback (matching this

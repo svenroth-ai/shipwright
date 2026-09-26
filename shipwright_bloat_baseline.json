@@ -839,7 +839,7 @@
     {
       "path": "shared/scripts/lib/autonomous_loop.py",
       "limit": 300,
-      "current": 565,
+      "current": 578,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md"
     },
@@ -853,7 +853,7 @@
     {
       "path": "shared/scripts/lib/loop_claim.py",
       "limit": 300,
-      "current": 527,
+      "current": 540,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md"
     },
