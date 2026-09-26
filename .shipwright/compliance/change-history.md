@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-09-22T11:29:50.160035+00:00
-Source-State: run=iterate-2026-09-22-r1b-codex-hooks-config-layer-shim base=42e45008dbd9
-Consistency-audit: last run 2026-07-28 (56 days earlier) — FAIL
-Total commits: 1565
+Generated: 2026-09-24T06:44:57.450745+00:00
+Source-State: run=iterate-2026-09-24-r5b-merge-lane
+Consistency-audit: last run 2026-07-28 (58 days earlier) — FAIL
+Total commits: 1572
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 536
-    "feat" : 418
-    "chore" : 273
+    "fix" : 538
+    "feat" : 422
+    "chore" : 274
     "docs" : 165
     "refactor" : 93
     "test" : 50
@@ -23,10 +23,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 536 commits
+### Fixes (fix) — 538 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-23 | tests | split two test files that crossed the 300-line bloat gate (#793) | 2ecf06f1df79 |
+| 2026-09-23 | iterate | unit-scoped review-attribution pin for campaign 3f-bis/3g (campaign-dag-scheduler R3) (#787) | b844a0ad8de7 |
 | 2026-09-22 | iterate | correct wrong campaign slug in R1/R2 work_completed events (#785) | 7dad240e2bd2 |
 | 2026-09-20 | security | suppress CodeQL non-literal-import false positive in fr_table_reader (#777) | 25504bef7578 |
 | 2026-09-20 | test | require per-journey E2E coverage (#775) | 374522776110 |
@@ -564,10 +566,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 418 commits
+### Features (feat) — 422 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-24 | iterate | campaign-mode wave-based concurrent sub-iterate build (campaign-dag-scheduler R5a) (#794) | 032d1ebbf0ef |
+| 2026-09-23 | iterate | concurrent state mechanics — state machine, fencing, atomic claim (campaign-dag-scheduler R4) (#790) | ba65b33b4842 |
+| 2026-09-23 | iterate | Codex first-eligible-call PreToolUse gate (M3, R2) (#792) | 8adb23ec1a7d |
+| 2026-09-23 | review | route external-review driver selection through Codextender mode (#791) | 46d43188273d |
 | 2026-09-22 | codex | config-layer Codex hooks sync via launcher scripts (R1b) (#786) | 42e45008dbd9 |
 | 2026-09-22 | iterate | per-unit campaign worktree identity, path-safety, and lease heartbeat (campaign-dag-scheduler R2) (#784) | 777bfbe5e6c9 |
 | 2026-09-22 | iterate | add depends_on dependency-graph schema for campaign sub-iterates (#783) | b826c7d1ae93 |
@@ -987,10 +993,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 273 commits
+### Chores (chore) — 274 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-22 | compliance | refresh evidence documents as of 42e45008dbd9 (#789) | cf28f55b443b |
 | 2026-09-21 | iterate | sweep pre-fix orphaned iterate test-results evidence (#780) | 82e01e49d94c |
 | 2026-09-12 | triage | close trg-5ae23b62, resolved by the PR-review filter fix (#737) | ccdfa14c3d3a |
 | 2026-09-12 | iterate | prune the iterate entry backlog on main from 53 to 32 (#736) | 89c4a39a9f66 |
@@ -1642,7 +1649,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1565 |
+| Total commits | 1572 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1565 |
+| Human-authored commits | 1572 |
 

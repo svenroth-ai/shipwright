@@ -94,6 +94,32 @@ class TestCmdNextBatch:
         state = json.loads(state_path.read_text(encoding="utf-8"))
         assert state["units"][0]["status"] == "pending"
 
+    def test_recheck_finalized_after_lock_prevents_a_claim_on_a_closed_campaign(self, tmp_path, capsys):
+        """Tier-3 review, R5b round 16, blocking: `cmd_finalize` checks that
+        every unit is TERMINAL under `loop.lock`, then releases the lock with
+        no persisted record that this campaign is now closed — nothing
+        stopped a concurrent `cmd_next_batch` from claiming a unit that
+        became `pending` again just after (an operator override, or a
+        future reopen path), leaving the campaign active despite a
+        successful finalize. `cmd_finalize` now writes `state["finalized"]
+        = True` under the same lock (see `test_cmd_finalize_lock_race.py`);
+        `cmd_next_batch` must refuse once it observes that flag on the
+        locked reload, exactly like the `kind`/`branch_strategy` races
+        above, rather than claiming into a closed campaign."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "A", "status": "pending", "attempt": 0},
+        ])
+        peeked_state = json.loads(state_path.read_text(encoding="utf-8"))
+        locked_state = json.loads(json.dumps(peeked_state))
+        locked_state["finalized"] = True  # cmd_finalize landed while the lock was being acquired
+
+        with patch.object(loop_claim, "_load_state", side_effect=[peeked_state, locked_state]):
+            rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
+        assert rc == 1
+        assert "finalized" in capsys.readouterr().err
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        assert state["units"][0]["status"] == "pending"
+
     def test_rejects_stacked_strategy_before_claiming_instead_of_null_base(self, tmp_path, capsys):
         """External Tier-3 PR review (GPT, round 6): `"stacked"` (and any
         other strategy `_resolve_batch_base` can't resolve) must never reach

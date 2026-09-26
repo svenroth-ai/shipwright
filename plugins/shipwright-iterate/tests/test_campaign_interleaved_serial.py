@@ -15,6 +15,7 @@ implementation (mirrors test_f11_automerge_arm).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 CAMPAIGN_MODE = (
@@ -76,16 +77,37 @@ def test_merge_is_inside_the_loop_and_ci_green_gated() -> None:
 
 def test_no_end_stage_drain() -> None:
     """The build-all-then-drain model is RETIRED: no 'Serial Merge Drain' stage and
-    no per-PR ensure_current regenerate-at-merge in the campaign loop."""
+    no BULK end-of-wave `ensure_current` regenerate-at-merge in the campaign loop.
+
+    Since campaign-dag-scheduler R5b, `ensure_current.py` legitimately appears
+    once, scoped to step 3f-bis's own per-unit rebase-staleness cascade —
+    refreshing ONE unit's branch when review finds it stale, not a bulk
+    end-of-wave regenerate across every already-merged unit. A blanket
+    "ensure_current not in text" ban is therefore no longer the right check;
+    this instead confirms every occurrence stays inside that one scoped step
+    (mirrors `shared/tests/test_campaign_r5b_merge_lane_prose.py`'s own
+    `step_3f_bis` extraction, reimplemented here since plugin and shared test
+    roots cannot share modules — ADR-044)."""
     text = _text()
     assert "Serial Merge Drain" not in text, (
         "campaign-mode.md must NOT keep the end-stage 'Serial Merge Drain' — "
         "interleaved-serial merges each PR in turn inside the loop."
     )
-    assert "ensure_current" not in text, (
-        "the campaign loop must not run ensure_current regenerate-at-merge — the "
-        "merge lane is serial, so the next wave composes on main after the prior "
-        "wave's own merges."
+    start = re.search(r"(?m)^\s*3f-bis\.", text)
+    assert start, "campaign-mode.md must define loop step `3f-bis.`"
+    body = text[start.start():]
+    end = re.search(r"(?m)^\s*3g\.", body)
+    step_3f_bis = body[:end.start()] if end else body
+    outside = text[:start.start()] + (body[end.start():] if end else "")
+    assert "ensure_current" not in outside, (
+        "the campaign loop must not run ensure_current regenerate-at-merge "
+        "OUTSIDE the scoped per-unit rebase cascade at 3f-bis — the merge lane "
+        "is serial, so the next wave composes on main after the prior wave's "
+        "own merges, with no bulk end-of-wave regenerate."
+    )
+    assert "ensure_current" in step_3f_bis, (
+        "campaign-dag-scheduler R5b's per-unit staleness cascade must actually "
+        "invoke ensure_current.py at 3f-bis, not just describe it in prose."
     )
 
 

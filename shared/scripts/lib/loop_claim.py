@@ -302,6 +302,19 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
                 print("ERROR: branch_strategy changed while lock was being acquired "
                       "(state changed under next-batch's outside-lock preflight)", file=sys.stderr)
                 return 1
+            # Tier-3 review, R5b round 16, blocking: `cmd_finalize` persists
+            # `finalized: true` under this SAME lock once every unit is
+            # confirmed TERMINAL (autonomous_loop.py). A campaign already
+            # finalized must never claim a new unit — an operator override
+            # or a future reopen path that puts a unit back to `pending`
+            # must not silently reactivate a campaign that has already been
+            # reported closed, the same "re-check what the lock was
+            # acquired for" discipline as the kind/branch_strategy checks
+            # above.
+            if state.get("finalized"):
+                print("ERROR: campaign already finalized (state changed under "
+                      "next-batch's outside-lock preflight)", file=sys.stderr)
+                return 1
             units = state["units"]
             loop_id = state["loop_id"]
             fresh_snapshot = _snapshot_merged_commits(units)

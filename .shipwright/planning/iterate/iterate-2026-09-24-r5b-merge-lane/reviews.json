@@ -1,0 +1,397 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-24-r5b-merge-lane",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:26:13.505962+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 16,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Direct contradiction between the spec and the mini-plan on `cmd_mark_merged`. The spec says \"Record the verified SHA via a new fencing-validated `loop_claim.py::cmd_mark_merged`\"; the mini-plan asserts \"`cmd_mark_merged` and the 9-state edge table were already built by R4 and are reused as-is (no new tests needed there).\" One of these is wrong. If the mutator is genuinely new in R5b, the \"no new tests\" claim is false and the new command's lines will fail the 80% diff-coverage gate outright; if R4 built it, the spec's \"new\" is a drafting artifact but should be confirmed against R4's actual deliverable before Build starts.",
+          "suggestion": "Verify against the merged R4 code. If `cmd_mark_merged` exists, update the spec wording and cite R4's test file in the mini-plan. If it doesn't exist, this unit must build it and test it (fencing, happy-path transition, rejected stale token) — remove the \"no new tests needed\" claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Drain termination is not actually guaranteed for a stuck `merging` unit. The spec's `max_drain_seconds` force-transition is specified only as `running -> failed` (`drain_timeout`), and `gh pr checks --watch` (3g) is not stated to be bounded. A unit in `merging` whose CI watch never completes would never leave the `{claimed, running, merging}` wait-out set, contradicting the stated guarantee that draining \"is guaranteed to terminate.\" The mini-plan's point 5 says \"forcing terminal transitions\" broadly, but names no transition or reason code for the `merging` state.",
+          "suggestion": "Extend the drain bound explicitly to `merging` units (e.g., `merging -> held`, `reason_code: \"drain_timeout\"`, PR left open — consistent with `swept_after_build` semantics), and state it in both the spec's drain section and the drain test variant.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "swept_after_build` maps to `pending` and resumes via `held -> pending`, but the unit already has a completed build, an open PR, and possibly a live worktree. Re-entering from `pending` re-runs the full 3b-3f pipeline: does the resume path detect the existing PR and worktree, or does it rebuild and open a second PR / fail on worktree conflicts? Neither the spec nor the mini-plan addresses idempotent resume for this state.",
+          "suggestion": "Specify the resume entry point for `swept_after_build` units — the cheapest correct option is re-entering at 3f-bis (review pinning) rather than 3b, since the build artifact already exists; add an assertion to the STRICT-STOP test that a resumed `swept_after_build` unit does not create a duplicate PR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `shipped_head` read path has an ordering ambiguity. The spec says `shipped_head` is written to the pin at pin time only for the review-skipped path; for the reviewed path it is recorded post-push as the post-commit branch tip (a different SHA than `reviewed_head`, since the reviews.json commit advances HEAD). The mini-plan says \"head_pin is now constructed from verify's own `.pin.shipped_head` field\" — which is only correct if the pin is rewritten post-push on the reviewed path. As written, the mini-plan could read a stale or absent `shipped_head` at 3g's PR-identity check.",
+          "suggestion": "State explicitly in the mini-plan that the reviewed path updates `review_pin.json`'s `shipped_head` after the push and before any 3g read, and that `verify` fails closed if the field is absent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Lock release guaranteed on every path\" is asserted but not mechanized. If the draining process itself crashes or is killed mid-drain (before `cmd_finalize`), the session lock is never released and the campaign wedges — the sequencing-only guarantee (\"release after finalize confirms drained\") makes release strictly less robust than a `finally`-style release if the drain can die. The mini-plan's `run_drain` doesn't describe a crash-safe release.",
+          "suggestion": "Add an explicit mechanism: a `finally`/signal-handler release in the drain entry point, or a stale-lock takeover check. At minimum, document that the pre-existing crash behavior is unchanged so the \"every path\" claim is scoped honestly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "TOCTOU between the `pending`/`claimed -> held` sweep and a runner's `cmd_mark_running`. Fencing will reject the late `mark_running`, which is correct, but the runner must treat that rejection as a clean abort (no PR, no worktree left behind, no crash-loop retry). The spec's sweep test covers a `claimed` unit \"never promoted\" but not the race where promotion is attempted after the sweep lands.",
+          "suggestion": "Add a test or explicit note that a runner whose `cmd_mark_running` is rejected during draining exits without side effects.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan's test strategy omits the spec's first required integration test — \"a real-git composition test across two sequential merges, asserting `shipped_head`/PR-identity checks at merge time\" — and with it, the required in-process unit-coverage pairing for any subprocess-level lines it exercises (the 80% diff-coverage gate applies to whatever functions orchestrate the two-merge sequence).",
+          "suggestion": "Add the composition test to the mini-plan, name its file, and identify the in-process unit tests that cover the same functions. Also reconcile the filename `test_check_review_attribution_invalidate.py` (which will contain the staleness-cascade git tests, not just invalidate-mode tests) — a minor naming mismatch, but it will confuse future archaeology.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits required review-commit fencing: explicit staging of only `reviews.json`, exact `HEAD == reviewed_head` before commit, and verification that the resulting commit’s parent is `reviewed_head`.",
+          "suggestion": "Specify all three checks and the recovery sequence: no commit, delete/invalidate pin, transition `reviewed -> built`, then restart 3f-bis.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "It does not explicitly cover pinning before every reviewer spawn, unconditional pinning for review-skipped units, post-push `shipped_head` recording for reviewed units, or pre-merge PR identity checks plus `--match-head-commit`.",
+          "suggestion": "Add these as concrete command-level steps, including comparison of `headRefOid`, PR node ID, head ref, and base ref against the pin.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The merge-confirmation proposal bounds only a follow-up `mergeCommit.oid` poll. The required state poll must itself be bounded and require both `MERGED` and a nonempty merge SHA; timeout must specifically demote the unit to `held` with `merge_confirmation_timeout`.",
+          "suggestion": "Define one deadline-governed confirmation loop and explicit timeout transition, rather than generic “force terminal transitions.”",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The staleness rule is described as branch-tip change after rebase, but the specification requires pin invalidation as the first action of any rebase, `ensure_current`, or `integrate_main`, even before the operation’s outcome is known.",
+          "suggestion": "Make invalidation unconditional before each of those actions, then persist/count the cascade attempt under fencing protection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "campaign_drain.py` is proposed without explaining how it prevents a race with the live ready-set scheduler. A sweep can hold `pending`/`claimed` units while another process concurrently claims or launches new work unless the drain flag and claim eligibility are coordinated under the same state lock.",
+          "suggestion": "Add a persisted `draining` gate checked atomically by `cmd_next_batch`/claim mutation, before any unit can be claimed or promoted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan proposes programmatic use of `cmd_mark` for staleness and drain demotions, despite the specification defining it as the audited operator-override path rather than the normal workflow transition mechanism.",
+          "suggestion": "Use an existing purpose-built fenced transition if available, or add narrowly scoped fenced lifecycle operations with machine reason codes; reserve `cmd_mark` for genuine manual intervention.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes `cmd_mark_merged`, its legal transition edge, pin-schema fields, and `max_rebase_reviews` persistence already exist in R4, while the stated scope describes `cmd_mark_merged` as new and R5b only depends on R5a.",
+          "suggestion": "Verify these are present before implementation; otherwise include their schema, transition-table, fencing, and unit-test changes in this iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Only the returned merge SHA is described as validated. `shipped_head` and pinned PR fields also flow into GitHub/Git commands and should not be trusted merely because they came from `review_pin.json`.",
+          "suggestion": "Have verification enforce strict SHA/ref/PR-ID formats and pass values as argument arrays, never shell-evaluated strings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed tests do not clearly cover the new command contracts: commit-parent fencing, explicit-path staging, pre-merge identity/head-match validation, bounded merge confirmation, and drain-versus-claim concurrency. Prose tests cannot establish these behaviors.",
+          "suggestion": "Add focused in-process tests for each mutator/command construction alongside subprocess integration coverage, per the diff-coverage constraint.  The core direction is sound, but several mandatory safety fences and the scheduler/drain race are underspecified. Revise the mini-plan before implementation so the lifecycle transitions are deterministic and testable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-24T06:25:12.135067+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: dependency — Severity: high**\n**Finding:** Direct contradiction between the spec and the mini-plan on `cmd_mark_merged`. The spec says \"Record the verified SHA via a **new** fencing-validated `loop_claim.py::cmd_mark_merged`\"; the mini-plan asserts \"`cmd_mark_merged` and the 9-state edge table were **already built by R4** and are reused as-is (no new tests needed there).\" One of these is wrong. If the mutator is genuinely new in R5b, the \"no new tests\" claim is false and the new command's lines will fail the 80% diff-coverage gate outright; if R4 built it, the spec's \"new\" is a drafting artifact but should be confirmed against R4's actual deliverable before Build starts.\n**Suggestion:** Verify against the merged R4 code. If `cmd_mark_merged` exists, update the spec wording and cite R4's test file in the mini-plan. If it doesn't exist, this unit must build it *and* test it (fencing, happy-path transition, rejected stale token) — remove the \"no new tests needed\" claim.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Drain termination is not actually guaranteed for a stuck `merging` unit. The spec's `max_drain_seconds` force-transition is specified only as `running -> failed` (`drain_timeout`), and `gh pr checks --watch` (3g) is not stated to be bounded. A unit in `merging` whose CI watch never completes would never leave the `{claimed, running, merging}` wait-out set, contradicting the stated guarantee that draining \"is guaranteed to terminate.\" The mini-plan's point 5 says \"forcing terminal transitions\" broadly, but names no transition or reason code for the `merging` state.\n**Suggestion:** Extend the drain bound explicitly to `merging` units (e.g., `merging -> held`, `reason_code: \"drain_timeout\"`, PR left open — consistent with `swept_after_build` semantics), and state it in both the spec's drain section and the drain test variant.\n\n**Category: edge-case — Severity: medium**\n**Finding:** `swept_after_build` maps […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The plan omits required review-commit fencing: explicit staging of only `reviews.json`, exact `HEAD == reviewed_head` before commit, and verification that the resulting commit’s parent is `reviewed_head`.  \n   **Suggestion:** Specify all three checks and the recovery sequence: no commit, delete/invalidate pin, transition `reviewed -> built`, then restart 3f-bis.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** It does not explicitly cover pinning before every reviewer spawn, unconditional pinning for review-skipped units, post-push `shipped_head` recording for reviewed units, or pre-merge PR identity checks plus `--match-head-commit`.  \n   **Suggestion:** Add these as concrete command-level steps, including comparison of `headRefOid`, PR node ID, head ref, and base ref against the pin.\n\n3. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The merge-confirmation proposal bounds only a follow-up `mergeCommit.oid` poll. The required state poll must itself be bounded and require both `MERGED` and a nonempty merge SHA; timeout must specifically demote the unit to `held` with `merge_confirmation_timeout`.  \n   **Suggestion:** Define one deadline-governed confirmation loop and explicit timeout transition, rather than generic “force terminal transitions.”\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The staleness rule is described as branch-tip change after rebase, but the specification requires pin invalidation as the first action of any rebase, `ensure_current`, or `integrate_main`, even before the operation’s outcome is known.  \n   **Suggestion:** Make invalidation unconditional before each of those actions, then persist/count the cascade attempt under fencing protection.\n\n5. **Category:** risk  \n   **Severity:** high  \n   **Finding:** `campaign_drain.py` is proposed without explaining how it prevents a race with the live ready-se […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:26:21.979588+00:00",
+      "disposition": "delegated_to_orchestrator: this subagent runner has no Agent tool and cannot spawn spec-reviewer/code-reviewer/doubt-reviewer; the orchestrator runs the cascade at campaign-mode.md 3f-bis before merge, per the runner contract's Step 3.7 item 1.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:26:22.093459+00:00",
+      "disposition": "delegated_to_orchestrator: same as 'code' — the conditional doubt-reviewer is also part of the orchestrator's 3f-bis cascade, not the runner's own responsibility.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 17,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md (3g merge block, ~line 1163 region of the diff)",
+          "line": null,
+          "finding": "The spec's AC point 4 requires, before `gh pr merge`, a PR-identity verification: assert `gh pr view --json headRefOid,id,headRefName,baseRefName` matches the pinned `shipped_head` / `pr_node_id` / `pr_head_ref` / `pr_base_ref`. The diff only re-reads `.pin.shipped_head` for `--match-head-commit` — no comparison of `headRefOid`/node ID/head ref/base ref against the pin's PR fields. `--match-head-commit` covers only the head SHA, not the PR-identity confusion (wrong PR, rebased-and-force-pushed PR object) the spec explicitly calls out.",
+          "suggestion": "Add the four-field `gh pr view` identity assertion against `verify_json`'s pin fields immediately before the merge call.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "campaign-mode.md (3f-bis block added at ~line 916)",
+          "line": null,
+          "finding": "Two AC sub-bullets of point 2 are not implemented in the visible diff: (a) assert the reviews.json commit's parent equals `reviewed_head` after committing; (b) explicit-path staging (\"stage ONLY reviews.json by explicit path, never `git add -A`\"). The new block covers only the pre-commit `HEAD == reviewed_head` assert. Also point 1 (`--mode pin` before spec-reviewer spawn, unconditional for review-skipped) is not shown — if pre-existing it's fine, but the diff gives no evidence it exists.",
+          "suggestion": "Add the post-commit parent-assert and confirm the commit sequence stages `reviews.json` by explicit path in the same checked block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "campaign-mode.md (3g, MERGED poll region) + shared/tests/test_campaign_r5b_merge_lane_prose.py:test_merge_commit_confirmation_is_bounded_and_checked_after_the_merged_poll",
+          "line": null,
+          "finding": "The spec says the existing MERGED state poll must itself be bounded and its condition extended to also require non-empty `mergeCommit.oid` — then read it. The diff instead adds a separate bounded mergeCommit poll while the pre-existing state poll presumably remains unbounded/unchanged. The prose test only checks that a `deadline` appears somewhere in 3g, so it would pass with the state poll still unbounded.",
+          "suggestion": "Bound the existing MERGED poll (deadline-governed, demote to `held`/`merge_confirmation_timeout` on timeout) and require non-empty `mergeCommit.oid` in its exit condition; strengthen the test to assert the state poll itself is bounded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug / edge-case",
+          "file": "campaign-mode.md (rebase-cascade block, `rebase_count` file)",
+          "line": null,
+          "finding": "rebase_count` is persisted at `$run_dir/rebase_count` keyed by `{loop_id}/{id}` with no reset path — not on successful merge, not on `held -> pending` resume, not on a new attempt. A unit that exhausted one wave's rebases and later resumes (or re-enters via `held -> pending`) starts pre-charged and can be sent straight to `held` on its first `CONFLICTING` in a genuinely new situation.",
+          "suggestion": "Reset `rebase_count` when the unit's attempt is re-armed (e.g. on `held -> pending` / new attempt_id), or key the file by attempt_id like the pin dir.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "campaign-mode.md (currency-check block, `mergeable` handling)",
+          "line": null,
+          "finding": "\"UNKNOWN\"` mergeability is treated as current and promotes `reviewed -> merging`. GitHub returns `UNKNOWN` precisely when it hasn't finished computing conflict status — after the unit was just rebased onto new main, UNKNOWN can precede a CONFLICTING result, so the lane can enter `merging` with a stale branch and only fail later at merge time (mid-`merging` staleness) — burning a cycle the currency check exists to avoid. Spec says promotion happens \"only once the branch is current and the pin is fresh\"; UNKNOWN is neither confirmed.",
+          "suggestion": "On UNKNOWN, poll briefly (bounded retries) until it resolves to MERGEABLE/CONFLICTING; only promote on MERGEABLE. `--match-head-commit` catches a head change but not a base conflict.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_check_review_attribution_invalidate.py (whole file)",
+          "line": null,
+          "finding": "The spec's first required integration test — \"a real-git composition test across two sequential merges, asserting shipped_head/PR-identity checks at merge time\" — is missing entirely; the staleness-cascade pair tests pin/verify/invalidate but never exercise the merge lane or `shipped_head` post-push flow. Also several prose tests are near-tautological (e.g. `test_step_3h_maps_merged_to_complete_failed_to_failed` only asserts the substrings \"merged\", \"complete\", \"failed\" exist in the step; `test_staleness_trigger_is_scoped_to_this_units_own_branch` asserts \"unrelated sibling\" appears) — a wrong mapping or a trigger keyed off base-sha drift could pass them.",
+          "suggestion": "Add the two-sequential-merges composition test with its in-process unit pairing (per the diff-coverage constraint), and tighten the 3h prose test to assert the mapping-table rows themselves.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression / dependency",
+          "file": "campaign-mode.md (mark-merged call) + mini-plan",
+          "line": null,
+          "finding": "loop_claim.py mark-merged --attempt-id --merged-commit` is invoked as if it exists, and the mini-plan asserts R4 built it — but the spec says R5b must build it \"new\", and R5b's dependency line says only \"Depends on R5a\". The diff contains no `loop_claim.py` changes. If `cmd_mark_merged` does not exist, 3g's happy-path completion is a hard failure on every merged unit.",
+          "suggestion": "Confirm `cmd_mark_merged` exists in merged R4 code; if not, this unit must implement it (fencing, happy-path `merging -> merged`, stale-token rejection) with its own tests, and remove the mini-plan's \"no new tests needed\" claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/campaign_drain.py:run_drain",
+          "line": null,
+          "finding": "run_drain` is guaranteed to terminate only against unit state; but if the state file is corrupted or `resolve` of leases raises, `_with_lock` propagates a raw `json.JSONDecodeError`/KeyError to the CLI's uncaught path (cmd_run catches only ValueError/TimeoutError), so STRICT-STOP would exit non-zero with a traceback and step 4's lock release is skipped on a path the spec says must always release. The \"release on every path\" argument in campaign-mode.md step 4 assumes `campaign_drain.py run` always exits (it does exit, but non-zero with no drain performed, and step 4's bash then proceeds only if the doc's `|| STRICT-STOP` chain doesn't fire — the snippet shows no error handling on the drain call in step 4).",
+          "suggestion": "In step 4, run the drain with `|| true`-style unconditional continuation (release must still run), and catch broader exceptions in `cmd_run` with a clear exit code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "campaign-mode.md (step 4 ordering)",
+          "line": null,
+          "finding": "The revised step 4 (drain → finalize → release) makes lock release conditional on `cmd_finalize` succeeding, but no error path is shown if `finalize` still refuses (e.g. a unit mid-flight was mutated to an illegal state by a buggy writer). The old text guaranteed release FIRST on every path; the new text's guarantee holds only under the drain's own correctness. A `finalize` failure before release would wedge the session lock for `stale_after_seconds`.",
+          "suggestion": "Make the release unconditional at the end of the step-4 block regardless of finalize's exit status (release is already documented as a no-op for non-holders).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "hygiene",
+          "file": "err.log (new empty file)",
+          "line": null,
+          "finding": "A stray empty `err.log` is committed at repo root — accidental build artifact.",
+          "suggestion": "Delete it from the diff and add to .gitignore if it's a recurring byproduct.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:1100)",
+          "line": null,
+          "finding": "The rebase cascade never actually invokes `ensure_current`, `integrate_main`, or a rebase command. It only describes the action in a comment, increments `rebase_count`, and re-enters review, so a conflicting branch remains conflicting and is eventually held without attempting the required rebase.",
+          "suggestion": "Add checked, concrete invocation(s) of the existing rebase/integration tooling after invalidation and before incrementing the counter/re-entering 3f-bis.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:1163)",
+          "line": null,
+          "finding": "The pre-merge flow does not query or compare `headRefOid`, PR node `id`, `headRefName`, and `baseRefName` against the pin. It only reads the PR URL and passes `--match-head-commit`, which does not establish that the PR being merged is the pinned PR identity.",
+          "suggestion": "Before checks/merge, fetch `gh pr view --json headRefOid,id,headRefName,baseRefName` and fail closed unless every field matches the pinned values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:916)",
+          "line": null,
+          "finding": "The new review-commit fence checks the pre-commit HEAD but never verifies that the resulting commit’s parent equals `reviewed_head`. A commit hook or concurrent change can therefore produce a reviews commit with an unexpected parent while the flow proceeds.",
+          "suggestion": "Immediately after committing, compare `git rev-parse HEAD^` with `reviewed_head`; on mismatch, do not push, invalidate the pin, demote to `built`, and restart 3f-bis.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:1051)",
+          "line": null,
+          "finding": "mergeable == \"UNKNOWN\"` is treated as proof that the branch is current and promotes the unit to `merging`. `UNKNOWN` means GitHub has not determined mergeability, so this can bypass the required “branch current and pin fresh” gate.",
+          "suggestion": "Poll/retry `UNKNOWN` within a bounded deadline, or hold/demote on timeout; only promote after a positive current/mergeable result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:1298)",
+          "line": null,
+          "finding": "Step 4 lists drain, finalize, and release as independent shell commands. If draining or `finalize` fails, execution can still reach lock release, violating the requirement to release only after `cmd_finalize` confirms all units are terminal.",
+          "suggestion": "Gate the sequence explicitly (`drain && finalize && release`) with a failure handler that preserves/reconciles the lock according to the documented recovery path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_check_review_attribution_invalidate.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/shared/tests/test_check_review_attribution_invalidate.py:137)",
+          "line": null,
+          "finding": "The claimed staleness-cascade coverage only tests local pin verification and a manual invalidate call. It does not test the required rebase workflow: fresh review, fresh CI, rebase-count persistence, or the third forced cycle transitioning to `held`.",
+          "suggestion": "Add a workflow-level test that exercises the actual cascade entry point across three cycles and asserts review/CI are rerun only after a real branch rebase.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_campaign_r5b_merge_lane_prose.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/shared/tests/test_campaign_r5b_merge_lane_prose.py:105)",
+          "line": null,
+          "finding": "PR pinning, PR identity verification, commit-parent fencing, and merge confirmation are tested only by searching documentation text. The required real-git composition test for two sequential merges and its paired in-process coverage are absent, so broken command construction or ordering would still pass.",
+          "suggestion": "Add executable integration and unit tests for the two-merge lane, including mismatched PR identity, changed head SHA, confirmation timeout, and successful `mark-merged`.  Overall assessment: ship-with-fixes. The core drain implementation is directionally sound, but mandatory merge identity/fencing and the actual rebase cascade are incomplete. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-24T06:37:20.121958+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: high\n  File: plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md (3g merge block, ~line 1163 region of the diff)\n  Finding: The spec's AC point 4 requires, before `gh pr merge`, a PR-identity verification: assert `gh pr view --json headRefOid,id,headRefName,baseRefName` matches the pinned `shipped_head` / `pr_node_id` / `pr_head_ref` / `pr_base_ref`. The diff only re-reads `.pin.shipped_head` for `--match-head-commit` — no comparison of `headRefOid`/node ID/head ref/base ref against the pin's PR fields. `--match-head-commit` covers only the head SHA, not the PR-identity confusion (wrong PR, rebased-and-force-pushed PR object) the spec explicitly calls out.\n  Suggestion: Add the four-field `gh pr view` identity assertion against `verify_json`'s pin fields immediately before the merge call.\n\n- Category: spec\n  Severity: medium\n  File: campaign-mode.md (3f-bis block added at ~line 916)\n  Finding: Two AC sub-bullets of point 2 are not implemented in the visible diff: (a) assert the reviews.json commit's parent equals `reviewed_head` after committing; (b) explicit-path staging (\"stage ONLY reviews.json by explicit path, never `git add -A`\"). The new block covers only the pre-commit `HEAD == reviewed_head` assert. Also point 1 (`--mode pin` before spec-reviewer spawn, unconditional for review-skipped) is not shown — if pre-existing it's fine, but the diff gives no evidence it exists.\n  Suggestion: Add the post-commit parent-assert and confirm the commit sequence stages `reviews.json` by explicit path in the same checked block.\n\n- Category: spec\n  Severity: medium\n  File: campaign-mode.md (3g, MERGED poll region) + shared/tests/test_campaign_r5b_merge_lane_prose.py:test_merge_commit_confirmation_is_bounded_and_checked_after_the_merged_poll\n  Finding: The spec says the *existing* MERGED state poll must itself be bounded and its condition extended to also require non-empty `mergeCommit.oid` — then read  […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: [campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:1100)\n- Finding: The rebase cascade never actually invokes `ensure_current`, `integrate_main`, or a rebase command. It only describes the action in a comment, increments `rebase_count`, and re-enters review, so a conflicting branch remains conflicting and is eventually held without attempting the required rebase.\n- Suggestion: Add checked, concrete invocation(s) of the existing rebase/integration tooling after invalidation and before incrementing the counter/re-entering 3f-bis.\n\n- Category: spec\n- Severity: high\n- File: [campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:1163)\n- Finding: The pre-merge flow does not query or compare `headRefOid`, PR node `id`, `headRefName`, and `baseRefName` against the pin. It only reads the PR URL and passes `--match-head-commit`, which does not establish that the PR being merged is the pinned PR identity.\n- Suggestion: Before checks/merge, fetch `gh pr view --json headRefOid,id,headRefName,baseRefName` and fail closed unless every field matches the pinned values.\n\n- Category: spec\n- Severity: medium\n- File: [campaign-mode.md](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-34829ial/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:916)\n- Finding: The new review-commit fence checks the pre-commit HEAD but never verifies that the resulting commit’s parent equals `reviewed_head`. A commit hook or concurrent change can therefore produce a reviews commit with an unexpected parent while the flow proceeds.\n- Suggestion: Immediately after committing, compare `git rev-parse HEAD^` with `reviewed_head`; on mismatch, do not push, invalidate the pin, demote to `built`, and restart 3f-bis.\n\n- […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-24T06:26:22.209551+00:00",
+      "disposition": "delegated_to_orchestrator: Stage 1's spec-reviewer HARD-GATE runs as part of the orchestrator's 3f-bis cascade before merge, never inside the sub-iterate runner.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "null",
+      "completed_at": "2026-09-24T06:25:27.992155+00:00",
+      "disposition": "Campaign sub-iterate runner has no internal-arm spawn site (project_plan_review_has_no_internal_arm.md); the internal Opus plan-review pass is permanently not_run for campaign sub-iterates, never promoted.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

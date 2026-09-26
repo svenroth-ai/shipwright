@@ -126,6 +126,33 @@ def test_the_head_pin_crosses_steps_in_a_file_not_a_shell_variable():
     )
 
 
+def test_pin_still_valid_is_persisted_to_a_file_not_a_bare_shell_variable():
+    """Tier-3 review, R5b round 18, blocking: `pin_still_valid` was set at
+    the top of the HEAD-check block and read again at the `built ->
+    reviewed` promotion gate ~35 lines of prose later, as a bare shell
+    variable -- unlike every other value that crosses a comparable distance
+    in this step (`shipped_head`, `diff_head`, `fires`, `unit_wt`), it had
+    never been given the `$run_dir`-backed dual-write treatment, so it was
+    not provably same-call over that gap. Every write must also persist to
+    `$run_dir/pin_still_valid`, and the gate must re-read from that file."""
+    step = _step_3f_bis()
+    assert step.count('echo true > "$run_dir/pin_still_valid"') == 1, (
+        "the initial pin_still_valid=true assignment must also be persisted "
+        "to $run_dir/pin_still_valid"
+    )
+    assert step.count('echo false > "$run_dir/pin_still_valid"') == 2, (
+        "BOTH invalidate branches (HEAD-mismatch and commit-parent-mismatch) "
+        "must persist pin_still_valid=false to $run_dir/pin_still_valid"
+    )
+    gate_at = step.index('pin_still_valid=$(cat "$run_dir/pin_still_valid"')
+    if_at = step.index('if [ "$pin_still_valid" = "true" ]; then', gate_at)
+    assert gate_at < if_at, (
+        "the built -> reviewed promotion gate must re-read pin_still_valid "
+        "from its file immediately before branching on it, not trust a bare "
+        "shell variable carried from the earlier block"
+    )
+
+
 def test_step_3f_bis_fails_closed_when_the_promotion_does_not_ship():
     """An unchecked `git commit` that the pre-commit hook blocks leaves the
     local record saying `completed` while main still says `not_run` — the
@@ -494,10 +521,10 @@ def test_step_3f_bis_every_run_dir_use_opens_within_its_own_block():
     # case where an author does add the second rebuild.
     step_3g = _step_3g()
     positions_3g = [m.start() for m in usage.finditer(step_3g)]
-    assert len(positions_3g) >= 3, (
-        f"expected at least 3 $run_dir/-prefixed usages in 3g — got "
-        f"{len(positions_3g)}, which means the scan itself is broken, not "
-        "that the step shrank"
+    # R5b: floor 3 -> 2 (head_pin now reads verify's `.pin.shipped_head`).
+    assert len(positions_3g) >= 2, (
+        f"expected at least 2 $run_dir/-prefixed usages in 3g — got {len(positions_3g)}, "
+        "which means the scan itself is broken, not that the step shrank"
     )
     rebuild_count = step_3g.count(rederive)
     assert rebuild_count == 1, (
@@ -596,6 +623,84 @@ def test_step_3f_bis_ships_before_writing_the_legacy_reviewed_head_file():
     assert step.index(invocation) < step.index(legacy_write), (
         "the --mode ship call must run BEFORE the legacy reviewed_head file "
         "is written"
+    )
+
+
+def test_step_3g_is_a_no_op_for_a_unit_3f_bis_did_not_promote_to_merging():
+    """Tier-3 review, R5b round 14, blocking: 3f-bis's two review-pin-mismatch
+    handlers (round 9) and its rebase cascade's exhausted/conflict branches
+    (round 2) each demote the unit to `built`/`held` and say, in a COMMENT
+    only, to "continue draining the rest of the wave at 3i" -- but this
+    step's own governing rule (the 3f-bis..3h intro) runs 3g unconditionally
+    for every unit that reached `built` at 3f, with no skip ever written.
+    Left as prose alone, a demoted unit fell straight into 3g's unconditional
+    `reviewed_head`/`shipped_head` checks, converting a per-unit demotion
+    into a whole-wave STRICT-STOP -- the exact "comment is not control flow"
+    bug class round 9 itself fixed one section up. 3g must read the unit's
+    OWN current status fresh (shell state does not survive between steps, so
+    3f-bis's own `pin_still_valid` is already gone here) and skip its entire
+    body unless the unit was actually promoted to `merging`."""
+    step = _step_3g()
+    status_read = "unit_status=$(jq -r --arg id \"{id}\" '.units[] | select(.id == $id) | .status'"
+    assert status_read in step, (
+        "3g must read the unit's own status fresh from loop_state.json -- "
+        "not a shell variable, which does not survive from 3f-bis"
+    )
+    status_at = step.index(status_read)
+    guard = 'if [ "$unit_status" = "merging" ]; then'
+    guard_at = step.find(guard, status_at)
+    assert 0 <= guard_at - status_at < 200, (
+        "the merging-status guard must open immediately after the fresh "
+        "status read"
+    )
+    exists_at = step.index('[ -f "$run_dir/reviewed_head" ] || strict-stop')
+    assert guard_at < exists_at, (
+        "3g's unconditional reviewed_head/shipped_head checks must sit "
+        "INSIDE the merging-status guard, not run regardless of it"
+    )
+
+
+def test_step_3g_guard_closes_after_the_confirmed_sha_branch():
+    """The merging-status guard (round 14) must wrap 3g's ENTIRE body,
+    including the final `merging -> merged` completion below the PR-merge
+    wait -- not just the pin checks at the top, which would let a demoted
+    unit skip the pin check but still fall into the merge itself."""
+    step = _step_3g()
+    guard_at = step.index('if [ "$unit_status" = "merging" ]; then')
+    mark_merged_at = step.index("mark-merged")
+    assert guard_at < mark_merged_at, (
+        "the merging -> merged completion (loop_claim.py mark-merged) must "
+        "be reached only from inside the round-14 guard"
+    )
+
+
+def test_step_3g_rechecks_unit_status_immediately_before_merging():
+    """Tier-3 review, R5b round 15, blocking: `gh pr checks --watch` is
+    UNBOUNDED -- campaign_drain.py's own bounded drain can force THIS unit
+    `merging -> held` while a worker is still stuck waiting on slow/hung CI
+    (the exact race this module's own accepted-risk disclosure already
+    names, in `held_merge_reconciliation.py`'s own docstring: "narrows the
+    race, it does not close it"). Without a fresh status re-check right
+    before the merge itself, a worker whose watch outlives the drain would
+    merge into a campaign that already force-terminaled this unit -- this
+    does not close the race either (a TOCTOU gap remains between this check
+    and the merge call itself), but it narrows the highest-risk window --
+    the unbounded watch -- which had NO guard at all before this round."""
+    step = _step_3g()
+    watch_at = step.index('gh pr checks "$pr_url" --watch')
+    merge_at = step.index("gh pr merge")
+    assert watch_at < merge_at, "3g must check CI before merging"
+    between = step[watch_at:merge_at]
+    recheck_marker = 'unit_status_at_merge=$(jq -r --arg id "{id}"'
+    assert recheck_marker in between, (
+        "3g must re-read the unit's own status FRESH between the unbounded "
+        "watch and the merge itself -- a concurrent drain can force this "
+        "unit merging -> held while this worker is still watching CI"
+    )
+    assert '[ "$unit_status_at_merge" = "merging" ] || strict-stop' in between, (
+        "a unit no longer at merging immediately before the merge call must "
+        "STRICT-STOP, not merge into a campaign state a concurrent drain "
+        "has already force-terminaled"
     )
 
 
@@ -804,14 +909,17 @@ def test_step_3f_bis_clears_all_handoff_files_on_reentry():
     `shipped_head`/`diff_lines` (code-review round 11, medium: the D4 fix's
     own test omitted the two files the round-11 fix itself added — reverting
     either from the `rm -f` line left this test green) share the same
-    no-downstream-cross-check exposure as `fires` and must be cleared too."""
+    no-downstream-cross-check exposure as `fires` and must be cleared too.
+    `pin_still_valid` (Tier-3 review, R5b round 18) joins the list for the
+    identical reason once it moved from a bare shell variable to a
+    `$run_dir`-backed file."""
     step = _step_3f_bis()
     rm_at = step.index("rm -f")
     line_end = step.find("\n", rm_at)
-    rm_line = step[rm_at:line_end if line_end >= 0 else rm_at + 300]
+    rm_line = step[rm_at:line_end if line_end >= 0 else rm_at + 350]
     for name in (
         "reviewed_head", "unit_worktree", "diff_head", "fires", "diff_lines",
-        "pr_json", "shipped_head",
+        "pr_json", "shipped_head", "pin_still_valid",
     ):
         assert f'"$run_dir/{name}"' in rm_line, (
             f"the re-entry cleanup must clear $run_dir/{name}, not just "

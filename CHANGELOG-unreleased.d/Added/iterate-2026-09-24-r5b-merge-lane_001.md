@@ -1,0 +1,1 @@
+campaign-mode serial merge lane: PR-identity + commit-parent + bounded merge-SHA verification before merge, a rebase-triggered staleness cascade, and STRICT-STOP drain/finalize via campaign_drain.py (campaign-dag-scheduler R5b)

@@ -11,10 +11,23 @@ See ``lib/review_attribution.py`` for the full mechanism. Three commands:
   needed for a ``--review-skipped`` unit.
 - ``verify`` — call before merging (3g) with ``--against shipped_head``, or
   right after pinning / independently with ``--against reviewed_head``.
+- ``invalidate`` — call as the FIRST action of any rebase / ``ensure_current``
+  / ``integrate_main`` on a unit's own branch (campaign-dag-scheduler R5b):
+  unconditionally deletes the unit's current-attempt ``review_pin.json`` and
+  the legacy ``reviewed_head`` file, so a stale pin can never be verified
+  against a rebased tree. Deliberately narrow: it does NOT touch
+  ``loop_state.json`` — the caller (``campaign-mode.md``'s currency check)
+  demotes the unit's status (``reviewed -> built``) separately, via
+  ``loop_claim.py mark`` (the existing audited-override command; this
+  demotion is not a fencing-sensitive happy-path write, so the operator
+  override is the right tool, not a new mutator). Never fatal to a missing
+  pin (``pin_existed: false`` — invalidating an already-invalidated or
+  never-pinned unit is a legal no-op, since the rebase cascade may re-enter
+  this call more than once).
 
 Exit codes:
-- 0 — ``pin``/``ship`` succeeded, or ``verify`` found the field still
-  matches (ALLOW)
+- 0 — ``pin``/``ship``/``invalidate`` succeeded, or ``verify`` found the
+  field still matches (ALLOW)
 - 1 — ``verify`` found a mismatch (BLOCK — do not merge) or any command hit
   a structural failure (unknown unit, missing pin file, git failure)
 
@@ -35,12 +48,18 @@ CLI:
         --project-root "{project_root}" --campaign-worktree "{campaign_worktree}" \\
         --loop-id "{loop_id}" --against {reviewed_head|shipped_head} \\
         [--expect-file review_pin.json] [--json]
+
+    uv run shared/scripts/checks/check_review_attribution.py --mode invalidate \\
+        --state "{state_path}" --unit-id "{sub_iterate_id}" \\
+        --project-root "{project_root}" --campaign-worktree "{campaign_worktree}" \\
+        --loop-id "{loop_id}" --reason "rebase" [--json]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -48,7 +67,84 @@ _SHARED_LIB = Path(__file__).resolve().parents[1]
 if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
-from lib.review_attribution import ReviewAttributionError, pin, ship, verify  # noqa: E402
+from lib.review_attribution import (  # noqa: E402
+    ReviewAttributionError,
+    _safe_segment,
+    pin,
+    resolve_unit_identity,
+    ship,
+    verify,
+)
+
+#: Reject a control character in `--reason` — free text that lands in a JSON
+#: payload only, never a shell/argv boundary, but the same defensive posture
+#: `lib.loop_mark._sanitize_text` applies to every other operator-supplied
+#: reason string in this codebase.
+_CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _reject_symlink_escape(path: Path, runs_root: Path) -> None:
+    """Refuse `path` if its resolved location has escaped `runs_root` — e.g.
+    a symlinked `unit_id`/`attempt_id` path component pointing outside
+    ``.shipwright/runs`` (Tier-3 review, R5b round 4): ``_safe_segment``
+    rejects traversal in a segment's NAME, but says nothing about a
+    component that is itself a symlink. ``Path.resolve()`` follows every
+    symlink in an EXISTING ancestor and leaves a nonexistent tail alone, so
+    this is a no-op (and cheap) for the common case of a plain, never-
+    symlinked tree. Not a defense against a concurrent process swapping a
+    symlink between this check and the `unlink()` call that follows it —
+    that TOCTOU window is outside this script's threat model, which is its
+    OWN path construction, not an actively racing adversary with write
+    access to the same tree."""
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(runs_root)
+    except ValueError as exc:
+        raise ReviewAttributionError(
+            f"refusing to touch {path} — it resolves to {resolved}, outside "
+            f"the intended {runs_root} tree (a symlinked path component?)"
+        ) from exc
+
+
+def invalidate(state_path, unit_id: str, *, project_root: str, campaign_worktree: str,
+               loop_id: str, reason: str) -> dict:
+    """Unconditionally delete `unit_id`'s current-attempt ``review_pin.json``
+    and legacy ``reviewed_head`` file — the first action of any rebase /
+    ``ensure_current`` / ``integrate_main`` on its branch (R5b). Deliberately
+    reimplements the pin-directory path shape here rather than importing
+    ``lib.review_attribution``'s private ``_pin_dir``/``_legacy_reviewed_
+    head_path`` (that module is bloat-baseline-pinned with zero headroom) —
+    the two path-construction lines are the whole surface, kept in lockstep
+    with :func:`lib.review_attribution.pin`'s own by actually calling the
+    SAME ``_safe_segment`` guard those two path-builders apply (Tier-3
+    review, R5b round 2: an earlier draft's docstring claimed this parity
+    without the code enforcing it — ``loop_id``, a raw unvalidated CLI
+    argument, joined straight into a path later passed to ``unlink``, so a
+    crafted ``--loop-id ../../../whatever`` could delete a file outside the
+    intended ``runs/`` tree). `resolve_unit_identity` already resolves
+    `unit_id`/`attempt_id`, but does not itself validate them as safe path
+    segments — that is `_pin_dir`'s job, reproduced here. Also refuses a
+    symlinked path component before unlinking (R5b round 4) — see
+    :func:`_reject_symlink_escape`."""
+    if _CONTROL_CHAR_RE.search(reason):
+        raise ReviewAttributionError(f"--reason {reason!r} contains a control character — rejected")
+    state = json.loads(Path(state_path).read_text(encoding="utf-8"))
+    identity = resolve_unit_identity(state, unit_id, campaign_worktree=campaign_worktree)
+    canonical_id, attempt_id = identity["unit_id"], identity["attempt_id"]
+    safe_loop_id = _safe_segment("loop_id", str(loop_id))
+    safe_unit_id = _safe_segment("unit_id", str(canonical_id))
+    safe_attempt_id = _safe_segment("attempt_id", str(attempt_id))
+    runs_root = (Path(project_root) / ".shipwright" / "runs").resolve()
+    unit_dir = Path(project_root) / ".shipwright" / "runs" / safe_loop_id / safe_unit_id
+    pin_path = unit_dir / safe_attempt_id / "review_pin.json"
+    legacy_path = unit_dir / "reviewed_head"
+    _reject_symlink_escape(pin_path, runs_root)
+    _reject_symlink_escape(legacy_path, runs_root)
+    pin_existed = pin_path.exists()
+    pin_path.unlink(missing_ok=True)
+    legacy_path.unlink(missing_ok=True)
+    return {"unit_id": canonical_id, "invalidated": True, "pin_existed": pin_existed, "reason": reason}
+
 
 # Which flags are meaningful under which --mode. A flag left out of a mode's
 # set parses cleanly (argparse has no "only valid with X" primitive) but
@@ -58,12 +154,13 @@ _MODE_ONLY_FLAGS = {
     "pin": {"default_branch", "review_skipped", "pr_node_id", "pr_head_ref", "pr_base_ref"},
     "ship": {"shipped_head"},
     "verify": {"against", "expect_file"},
+    "invalidate": {"reason"},
 }
 _FLAG_CLI_NAMES = {
     "default_branch": "--default-branch", "review_skipped": "--review-skipped",
     "pr_node_id": "--pr-node-id", "pr_head_ref": "--pr-head-ref",
     "pr_base_ref": "--pr-base-ref", "shipped_head": "--shipped-head",
-    "against": "--against", "expect_file": "--expect-file",
+    "against": "--against", "expect_file": "--expect-file", "reason": "--reason",
 }
 
 
@@ -71,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Per-unit review-diff attribution guard.",
     )
-    parser.add_argument("--mode", required=True, choices=["pin", "ship", "verify"])
+    parser.add_argument("--mode", required=True, choices=["pin", "ship", "verify", "invalidate"])
     parser.add_argument("--state", required=True, help="Path to loop_state.json")
     parser.add_argument("--unit-id", required=True)
     parser.add_argument("--project-root", required=True,
@@ -94,6 +191,9 @@ def main(argv: list[str] | None = None) -> int:
     # --mode verify only
     parser.add_argument("--against", choices=["reviewed_head", "shipped_head"], default=None)
     parser.add_argument("--expect-file", default="review_pin.json")
+
+    # --mode invalidate only
+    parser.add_argument("--reason", default="rebase")
 
     args = parser.parse_args(argv)
     if args.mode == "verify" and args.against is None:
@@ -143,6 +243,19 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"check_review_attribution ship: ALLOW "
                       f"({result['unit_id']} @ {result['shipped_head']})")
+            return 0
+
+        if args.mode == "invalidate":
+            result = invalidate(
+                args.state, args.unit_id,
+                project_root=args.project_root, campaign_worktree=args.campaign_worktree,
+                loop_id=args.loop_id, reason=args.reason,
+            )
+            if args.json:
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+            else:
+                print(f"check_review_attribution invalidate: ALLOW "
+                      f"({result['unit_id']}, pin_existed={result['pin_existed']})")
             return 0
 
         result = verify(

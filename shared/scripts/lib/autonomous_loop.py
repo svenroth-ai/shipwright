@@ -29,7 +29,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from branch_base import resolve_base_branch
-from file_lock import file_lock
+from file_lock import LockTimeout, file_lock
 
 # shared/scripts (the `lib.` package root) — needed ALONGSIDE the sibling
 # insert above so `lib.loop_state` resolves per this campaign's import
@@ -38,6 +38,7 @@ from file_lock import file_lock
 # `file_lock` stay bare-imported above, unchanged — loop_state.py imports
 # `branch_base` the same bare way, so it is never loaded under two names.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.campaign_drain import sweep_never_started  # noqa: E402
 from lib.loop_state import (  # noqa: E402
     STATES,
     _load_units_from,
@@ -407,38 +408,124 @@ def cmd_record(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_finalize_strict_sub_iterate_applies(state: dict) -> bool:
+    """Whether `cmd_finalize` should dispatch into the strict
+    `sub_iterate_finalize_summary` gate rather than the legacy summary below.
+
+    Stage-3 doubt review (HIGH #1): `sub_iterate_finalize_summary` refuses
+    ANY non-TERMINAL unit with no compatibility path for a row still
+    carrying pre-R4 legacy vocabulary (`"complete"`, `"escalated"`,
+    `"in_progress"`) — a never-claimed row's own documented pass-through
+    (`resolve_record_status`, `enforce_record_fencing`). Gate the NEW,
+    strict finalize on the SAME compatibility boundary those two functions
+    already use: only dispatch into it once this campaign has actually
+    been touched by the new atomic-claim flow (some unit carries a real
+    `attempt_id` — the only thing that ever mints one is
+    `loop_claim.cmd_next_batch`). A campaign with none falls through
+    UNCHANGED to the legacy branch below, exactly as it did before this
+    `kind == "sub_iterate"` branch existed — this campaign never refused
+    finalize outright even on a genuinely incomplete run; it only reported
+    `terminal_reason` as informational text.
+
+    Scoped-review fix (medium, finding C): `any(...)` alone would trap a
+    campaign straddling the R5a flip — some units finished under the old
+    serial cmd_next/cmd_record path (legacy "complete", no attempt_id),
+    others claimed by the new cmd_next_batch flow — in the strict branch
+    forever, since nothing promotes a legacy "complete" row into the
+    9-state vocabulary post-hoc. Require the WHOLE vocabulary to be
+    9-state before trusting the strict branch; a mixed campaign falls
+    through to the legacy branch below, exactly the pre-R4 behaviour and
+    therefore never worse than today."""
+    all_new_vocabulary = all(u["status"] in STATES for u in state["units"])
+    return (
+        state.get("kind") == "sub_iterate" and all_new_vocabulary
+        and any(u.get("attempt_id") for u in state["units"])
+    )
+
+
+def _load_and_check_strict_finalize(
+    state_path: Path, *, sweep_first: bool = False,
+) -> tuple[dict, bool, dict | None, dict | None]:
+    """One locked read-decide-(write) pass for the strict `sub_iterate`
+    finalize gate. Returns ``(state, applies, error, summary)``: `applies`
+    is False for a legacy campaign (falls through to `cmd_finalize`'s
+    branch below); when it is True, exactly one of `error`/`summary` is set.
+
+    campaign-dag-scheduler R5b round 8 (Tier-3 review): the "every unit is
+    TERMINAL" decision below used to read `loop_state.json` unlocked --
+    `campaign_drain.run_drain`'s own last poll releases `loop.lock` once it
+    sees nothing left in {claimed, running, merging}, and this read could
+    then land after ANY other loop.lock-respecting writer (cmd_next_batch,
+    cmd_release, an operator's `loop_claim.py mark`) has landed a fresh
+    non-terminal transition in between -- exactly the window
+    campaign-mode.md step 4 relies on NOT existing ("draining is GUARANTEED
+    to terminate ... so cmd_finalize can no longer legitimately refuse").
+    Loading state and deciding the strict sub_iterate branch under the SAME
+    lock every other writer already respects makes this atomic against all
+    of them, not just the ones a manual audit could rule out today.
+
+    `sweep_first` (R5b round 17): see `cmd_finalize`'s own retry comment --
+    an in-place, INSTANT `sweep_never_started` pass, never the full bounded
+    poll-drain, so this never blocks on a genuinely live `running`/`merging`
+    unit."""
+    with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
+        state = _load_state(state_path)
+        if sweep_first:
+            sweep_never_started(state)
+        if not _cmd_finalize_strict_sub_iterate_applies(state):
+            return state, False, None, None
+        error, summary = sub_iterate_finalize_summary(state)
+        if error:
+            if sweep_first:
+                _save_state(state_path, state)
+            return state, True, error, None
+        # Tier-3 review, R5b round 16, blocking: the terminal-state check
+        # above ran under loop.lock, but nothing was ever PERSISTED to
+        # record that this campaign is now closed -- releasing the lock
+        # with no durable marker left a window where a concurrent
+        # `cmd_next_batch` could claim a unit that became `pending` again
+        # (an operator override, or a future reopen path) and leave the
+        # campaign active despite a successful finalize. Written under the
+        # SAME lock the terminal-check ran under, so `cmd_next_batch`'s own
+        # locked reload (its `kind`/`branch_strategy` re-checks, rounds
+        # 10/20) can observe it atomically.
+        state["finalized"] = True
+        _save_state(state_path, state)
+        return state, True, None, summary
+
+
 def cmd_finalize(args: argparse.Namespace) -> int:
     state_path = Path(args.state)
-    state = _load_state(state_path)
 
-    # Stage-3 doubt review (HIGH #1): `sub_iterate_finalize_summary` refuses
-    # ANY non-TERMINAL unit with no compatibility path for a row still
-    # carrying pre-R4 legacy vocabulary (`"complete"`, `"escalated"`,
-    # `"in_progress"`) — a never-claimed row's own documented pass-through
-    # (`resolve_record_status`, `enforce_record_fencing`). Gate the NEW,
-    # strict finalize on the SAME compatibility boundary those two functions
-    # already use: only dispatch into it once this campaign has actually
-    # been touched by the new atomic-claim flow (some unit carries a real
-    # `attempt_id` — the only thing that ever mints one is
-    # `loop_claim.cmd_next_batch`). A campaign with none falls through
-    # UNCHANGED to the legacy branch below, exactly as it did before this
-    # `kind == "sub_iterate"` branch existed — this campaign never refused
-    # finalize outright even on a genuinely incomplete run; it only reported
-    # `terminal_reason` as informational text.
-    # Scoped-review fix (medium, finding C): `any(...)` alone would trap a
-    # campaign straddling the R5a flip — some units finished under the old
-    # serial cmd_next/cmd_record path (legacy "complete", no attempt_id),
-    # others claimed by the new cmd_next_batch flow — in the strict branch
-    # forever, since nothing promotes a legacy "complete" row into the
-    # 9-state vocabulary post-hoc. Require the WHOLE vocabulary to be
-    # 9-state before trusting the strict branch; a mixed campaign falls
-    # through to the legacy branch below, exactly the pre-R4 behaviour and
-    # therefore never worse than today.
-    all_new_vocabulary = all(u["status"] in STATES for u in state["units"])
-    if state.get("kind") == "sub_iterate" and all_new_vocabulary and any(
-        u.get("attempt_id") for u in state["units"]
-    ):
-        error, summary = sub_iterate_finalize_summary(state)
+    try:
+        state, applies, error, summary = _load_and_check_strict_finalize(state_path)
+    except LockTimeout as exc:
+        print(json.dumps({"error": "lock_timeout", "detail": str(exc)}), file=sys.stderr)
+        return 1
+
+    if applies and error:
+        # Tier-3 review, R5b round 17, blocking: a refusal here can be
+        # exactly the race window described above -- campaign-mode.md's own
+        # STRICT-STOP drain (`campaign_drain.run_drain`) already ran and
+        # released `loop.lock` before this function ever acquired it, so a
+        # concurrent claim could have landed a fresh `pending`/`claimed`
+        # unit in that specific gap. Retry ONCE with a `sweep_never_started`
+        # pass (INSTANT, never the full bounded poll-drain -- that call
+        # already ran, separately, before this step; re-running it here
+        # would risk blocking THIS call for up to its own max_drain_seconds
+        # on a genuinely live running/merging unit, which is never this
+        # race) before conceding refusal, so a unit that snuck into that gap
+        # gets swept here rather than forcing the caller's `|| STRICT-STOP`
+        # to fire on a refusal this function could resolve itself. A unit
+        # that is STILL non-terminal after the sweep is running/merging/
+        # built/reviewed -- a genuine refusal, not this race.
+        try:
+            state, applies, error, summary = _load_and_check_strict_finalize(state_path, sweep_first=True)
+        except LockTimeout as exc:
+            print(json.dumps({"error": "lock_timeout", "detail": str(exc)}), file=sys.stderr)
+            return 1
+
+    if applies:
         if error:
             print(json.dumps(error), file=sys.stderr)
             return 1
