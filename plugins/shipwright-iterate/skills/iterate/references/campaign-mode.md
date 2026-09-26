@@ -284,19 +284,30 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
 
    **STRICT-STOP, defined once for the whole loop (campaign-dag-scheduler
    R5b).** Every bare `STRICT-STOP` anywhere in this loop — 3a, 3c, 3e, 3f,
-   3f-bis, 3g — now means this full procedure, not merely "go to step 4":
-   (1) stop spawning new waves immediately; (2) drain every unit this
-   campaign has claimed to a TERMINAL status
+   3f-bis, 3g — means this full procedure, not merely "go to step 4", and
+   this is a LOOP-WIDE, WHOLE-WAVE halt with NO per-unit exception anywhere
+   in this loop: (1) stop spawning new waves immediately; (2) drain every
+   unit this campaign has claimed to a TERMINAL status
    (`uv run "{shared_root}/scripts/lib/campaign_drain.py" run --state
    .shipwright/loop_state.json`) — this single call performs BOTH the
    `pending`/`claimed -> held` sweep (`reason_code: "swept_never_started"`)
    AND the bounded wait for `{running, merging}` described in "STRICT-STOP /
-   Draining" below; (3) THEN proceed to step 4 (Finalize). A STRICT-STOP
-   inside 3f-bis/3g for the unit currently mid-drain is narrower still (see
-   the `reviewed -> held` / `merging -> held` per-unit demotions below) —
-   those do NOT stop the whole wave; they demote ONE unit and let 3i continue
-   draining the rest of the wave, exactly like the mid-`merging` staleness
-   case already does.
+   Draining" below; (3) THEN proceed to step 4 (Finalize).
+
+   **Tier-3 review, R5b round 19, blocking: per-unit HOLD demotions are a
+   different, narrower outcome and must never be called a STRICT-STOP.**
+   3f-bis's `reviewed -> held` (staleness cascade exhausted / real rebase
+   conflict, below) and 3g's mid-`merging` staleness demotion each mark ONE
+   unit `held` via a successful `loop_claim.py mark` call, then let 3i
+   continue draining the REST of the wave — the wave and loop keep running,
+   which is the opposite of a STRICT-STOP. The `|| STRICT-STOP` chained
+   after each of those `mark` calls guards the `mark` INVOCATION itself
+   (a real STRICT-STOP, if recording the demotion fails) — it is never
+   triggered by the demotion succeeding. Reading rule: a STRICT-STOP is
+   either the bare word `STRICT-STOP` used as the action, or the `||
+   STRICT-STOP` failure arm of a command; a per-unit HOLD is a successful
+   `loop_claim.py mark --status held` call, called out as such in its own
+   comment, and the wave keeps going past it.
 
    **STRICT-STOP / Draining (campaign-dag-scheduler R5b).** Before this
    sub-iterate, a STRICT-STOP went straight to step 4, leaving
