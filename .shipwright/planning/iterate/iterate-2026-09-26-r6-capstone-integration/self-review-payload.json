@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Test matches every AC in the iterate spec verbatim; independently re-verified by spec-reviewer (PASS, 0 findings) after 3 earlier divergences were fixed."},
+    {"name": "Error Handling", "verdict": "n/a", "note": "Test-only file, no production error-handling paths added; the test calls real cmd_* functions and asserts their own return-code contracts."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input, no secrets; hashlib.sha256 is used only to compare local diff bytes, never for anything security-sensitive."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Every assertion checks a real production return code, on-disk state, or independently recomputed hash -- never a bare 'it did not crash'."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "Single test, no list endpoints or DB loops; git subprocess calls are the intended real I/O this integration test exists to exercise."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "File is 234 lines (under the 300 limit) after trimming comment verbosity post-fix; single pytest root (shared/tests), matches test_wave_launch_failure_and_reconcile.py conventions."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No new serialized format; the test drives loop_state.json exclusively through existing production cmd_* functions, never hand-writing/parsing a new on-disk shape."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: 'no findings'."}
+  ]
+}

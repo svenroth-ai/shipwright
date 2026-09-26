@@ -1,0 +1,15 @@
+{
+  "section": "R6 capstone integration test",
+  "review": [
+    {
+      "finding": "assert result is not None after run_drain(...) was vacuous -- run_drain always returns a dict on the success path.",
+      "severity": "low",
+      "category": "test-quality",
+      "file": "shared/tests/test_campaign_dag_scheduler_integration.py",
+      "line": 263,
+      "suggestion": "Replaced with assert result[\"drained\"] is True and assert {s[\"id\"] for s in result[\"swept\"]} == {\"U3\", \"U4\", \"U5\"}, using the real swept/drained fields from campaign_drain.run_drain's actual return shape. Fixed and re-verified (1 passed, ruff clean, 235 lines)."
+    }
+  ],
+  "verdict": "PASS",
+  "summary": "Single new integration test file, no production code touched (Stage 1 spec-reviewer already passed). Verified every production entry point call signature and return/exit-code contract. tmp_path-backed fixture confirmed to clean up all worktrees. Style follows test_wave_launch_failure_and_reconcile.py precedent. The one finding was fixed and re-verified."
+}
