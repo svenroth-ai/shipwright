@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath",
+  "date": "2026-09-25T10:32:43.340697Z",
+  "event_at": "2026-09-24T18:46:29.336234+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/codex-plugin-bundle-nodemodules-maxpath",
+  "spec": "n/a (bug fix, no iterate spec at small complexity)",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath"
+}

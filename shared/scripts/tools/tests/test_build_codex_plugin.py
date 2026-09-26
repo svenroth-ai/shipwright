@@ -144,6 +144,44 @@ def test_pycache_is_excluded_from_every_copied_tree(tmp_path, pycache_src, pycac
     assert not (out_dir / pycache_dst).exists()
 
 
+@pytest.mark.parametrize(
+    "node_modules_src,node_modules_dst",
+    [
+        (
+            "plugins/shipwright-alpha/scripts/hooks/node_modules",
+            "origin/shipwright-alpha/scripts/hooks/node_modules",
+        ),
+        (
+            "plugins/shipwright-alpha/skills/alpha/node_modules",
+            "skills/alpha/node_modules",
+        ),
+        (
+            "shared/scripts/hooks/node_modules",
+            "shared/scripts/hooks/node_modules",
+        ),
+    ],
+    ids=["origin-scripts", "skills", "shared"],
+)
+def test_node_modules_is_excluded_from_every_copied_tree(tmp_path, node_modules_src, node_modules_dst):
+    """Real-repo bug: a locally-installed npm dependency tree (e.g.
+    ``shipwright-test/scripts/perf``'s Lighthouse runner) must not be bundled
+    from ANY of the three copied trees — it is build/test-time-only JS
+    tooling, never something a Codex hook needs at runtime, and a deeply
+    nested package (``@scope/pkg/.../file.js``) can exceed Windows' 260-char
+    MAX_PATH during the copy, failing the whole build with ``shutil.Error``."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha", own_script="alpha_hook.py")
+
+    node_modules_dir = tmp_path / node_modules_src / "some-pkg"
+    node_modules_dir.mkdir(parents=True, exist_ok=True)
+    (node_modules_dir / "index.js").write_text("", encoding="utf-8")
+
+    out_dir = tmp_path / "dist"
+    build_bundle(project_root=tmp_path, out_dir=out_dir)
+
+    assert not (out_dir / node_modules_dst).exists()
+
+
 @pytest.mark.covers("FR-01.21/AC03")
 def test_clean_rebuild_is_byte_identical(tmp_path):
     write_shared(tmp_path)
