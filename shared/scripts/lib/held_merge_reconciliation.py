@@ -2,6 +2,9 @@
 (campaign-dag-scheduler R5b rounds 3-4 and 6, Tier-3 review; round 7:
 "add executable integration coverage for ... held-merge reconciliation").
 
+R5b smoke-test conflict probe (throwaway): deliberately touches the same
+docstring line as the sibling unit's change to exercise the rebase cascade.
+
 Two `reason_code`s can leave a unit `held` while its PR is actually merged,
 and neither self-heals without this pass:
 
