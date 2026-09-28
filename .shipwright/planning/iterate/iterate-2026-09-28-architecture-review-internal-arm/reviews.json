@@ -251,63 +251,90 @@
     "external_code": {
       "review_type": "external_code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 8,
       "findings": [
         {
-          "severity": "low",
-          "category": "security |",
-          "file": null,
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_architecture_internal_review_contract_prose.py (entire file)",
           "line": null,
-          "finding": "open the output relative to a dir-fd (`os.open(\"architecture-internal-spec.md\", flags, dir_fd=runs_dir_fd)`) with the dir-fd obtained via `O_DIRECTORY|O_NOFOLLOW` per component, or accept and document the residual alongside the existing Windows TOCTOU disclosure.",
-          "suggestion": null,
+          "finding": "AC1–AC4 are \"verified\" almost exclusively by prose-anchor assertions (does the skill markdown contain certain sentences). A completely non-functional runtime path — e.g. a spawn instruction that names the agent but a skill model that never executes it, or a `prepare_architecture_internal_spec.py` invocation the model skips — passes all of these tests. The spec's own D5 scope caveat admits this (\"prose and wiring … the agent's live JSON-reply shape and the skill's parse/degraded path … remain unexercised\"), yet the Test Completeness Ledger still marks every AC `tested` with `untestable: 0`, which overstates coverage to any downstream gate reading that ledger.",
+          "suggestion": "Downgrade AC1–AC4 ledger rows to reflect prose/wiring-only verification, or run one out-of-band smoke spawn of `architecture-internal-reviewer` (recorded as advisory, not `completed`) to exercise the reply-parse path at least once.",
           "source": "external-review"
         },
         {
           "severity": "low",
-          "category": "test |",
-          "file": null,
+          "category": "edge-case",
+          "file": "shared/scripts/lib/external_review_modes.py — `_PRIOR_REVIEW_SECTION_RE` (new, ~line 85)",
           "line": null,
-          "finding": "assert the complete disposition string from `iteration-reviews.md` in the contract-prose test, or add a direct equality check between the test constant and the doc text.",
-          "suggestion": null,
+          "finding": "The strip applies to both plan-side and iterate-side `--mode architecture` calls, but the pattern also matches `## Architecture Review` and `## Self-Review`. A plan-side `spec.md` that legitimately contains a `## Self-Review` or `## Architecture Review` heading (e.g. a spec authored from an adopted template that carried one) would have genuine spec content silently deleted from the reviewer's input on the plan side, where the iterate-side leak justification doesn't apply. The ADR asserts the plan side is \"clean by construction\" but the strip runs there anyway with no test pinning plan-side behavior beyond the iterate-mode negative control.",
+          "suggestion": "Either gate the strip to specs known to be iterate specs, or add a test documenting that plan-side specs with such headings are intentionally stripped too — right now the plan-side effect is untested and unreasoned-about.",
           "source": "external-review"
         },
         {
           "severity": "low",
-          "category": "edge-case |",
-          "file": null,
+          "category": "security",
+          "file": "shared/scripts/tools/prepare_architecture_internal_spec.py — `_write_refusing_symlinks` (Windows branch) and ancestor `is_symlink()` checks",
           "line": null,
-          "finding": "add a test for a spec whose only fence is an orphan closer followed by a genuine `## Internal Plan Review` section; if it leaks, either strip sections found in the unmasked tail or track that a closer with no opener should not start a fence.",
-          "suggestion": null,
+          "finding": "On Windows there is no `O_NOFOLLOW`, so the fallback is a check-then-write TOCTOU, and `is_symlink()` does not detect NTFS junctions at `.shipwright`, `runs`, or `runs/{run_id}` — a junction redirects the write outside the project, bypassing every containment check. Both are disclosed in the docstring and the ADR, and the CI gate runs on POSIX, so this is a documented residual rather than an untracked hole; flagging only for the record.",
+          "suggestion": "None required now; if a `Path.is_junction`-equivalent lands in a supported Python version, wire it into the ancestor loop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/external_review_modes.py — `strip_prior_review_sections` unterminated-tail check",
+          "line": null,
+          "finding": "The `UnstrippableSpecError` probe searches the original text of the masked tail, so a quoted (fenced) heading-look-alike sitting after an unrelated unterminated fence — content that was never a real section — also triggers a hard refusal of the whole pass (both the external CLI call and the internal prep tool exit nonzero). Since the masker's stated contract is \"err toward over-masking,\" refusing on over-masked-but-benign content is the one direction that converts a cosmetic spec blemish (a stray ``` line) into a failed review pass. The run discloses the inverse risk but not this false-positive cost.",
+          "suggestion": "Acceptable as fail-closed, but consider narrowing the tail check to headings not preceded by fence-masked content, or at minimum document in the skill prose that a stray fence marker in a spec will fail the architecture pass so operators recognize the error.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_architecture_internal_review_contract_prose.py — `_section()` helper",
+          "line": null,
+          "finding": "text.index(heading)` raises `ValueError` (not an assertion) if the heading anchor ever drifts, and `stop=\"\\n1. \"` / `\"\\n3. \"` for the iterate sections depend on the next numbered step's exact formatting — a renumbering of iteration-planning.md steps silently truncates or widens the extracted section, so assertions can pass against text from the wrong step. The run's own line-wrap probe shows these anchors are fragile against harmless markdown reflow.",
+          "suggestion": "Wrap `index` in an `assert heading in text` with a message, and anchor section boundaries on headings rather than `---`/numbered-step prefixes where possible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/external_review_modes.py",
+          "line": 96,
+          "finding": "The section matcher stops only at a heading beginning exactly `## `. A valid Markdown heading such as `   ## Acceptance Criteria` or `##\tVerification` after an Internal Plan Review section is removed along with that review, depriving the architecture reviewer of real spec content.",
+          "suggestion": "Recognize valid level-two heading indentation and spacing when finding section boundaries, and test that the following spec section survives.",
           "source": "external-review"
         },
         {
           "severity": "medium",
           "category": "security",
           "file": "shared/scripts/tools/prepare_architecture_internal_spec.py",
-          "line": 101,
-          "finding": "The ancestor check rejects symlinks but accepts Windows directory junctions. A junction at `.shipwright`, `runs`, or the run directory can redirect the sanitized-spec write outside the project; the later containment check compares paths after following that junction.",
-          "suggestion": "Reject junctions and other directory reparse points before writing, and verify the resolved runs root remains inside the resolved project root.",
+          "line": 107,
+          "finding": "On Windows, `is_symlink()` does not reject directory junctions. A junction at `.shipwright`, `runs`, or the run directory redirects the write outside the project; the later containment check resolves against the redirected runs root and still passes.",
+          "suggestion": "Reject junctions or other reparse points before creating the output, and check the resolved runs root against the resolved project root.",
           "source": "external-review"
         },
         {
-          "severity": "medium",
-          "category": "edge-case",
-          "file": "shared/scripts/tools/prepare_architecture_internal_spec.py",
-          "line": 119,
-          "finding": "A permission error or a non-directory at the run path raises an uncaught exception. Step 0b defines `Ran: no` degradation for agent and reply failures, but gives no path for this preparation failure, so it can stop the iterate before external review.",
-          "suggestion": "Handle directory and write failures with a clean nonzero result, and instruct Step 0b to record `Ran: no` and continue when preparation fails.  The review flow largely matches the specification, but these input-path failures need fixes before shipping. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_architecture_review_anchoring_defense.py",
+          "line": 86,
+          "finding": "The test observes the sanitizer’s return value through a spy, but never checks the prompt sent for review. It would pass if `external_review.py` called the sanitizer and then used the original spec.",
+          "suggestion": "Capture the rendered architecture prompt and assert that it contains the retained spec content but none of the prior-review rationale.  The new pass covers the main flow, but the sanitizer can remove valid spec content and the Windows output guard has a concrete escape path. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
           "source": "external-review"
         }
       ],
-      "provider": "openrouter",
-      "completed_at": "2026-09-28T16:37:47.443675+00:00",
+      "provider": null,
+      "completed_at": "2026-09-28T17:01:44.545284+00:00",
       "disposition": null,
       "recorded_by": "external-review-json",
       "parse_status": "structured",
-      "raw_excerpt": "[glm] I reviewed the full diff against the eight ACs and the changed executable code (`external_review_modes.py`, `external_review.py`, `prepare_architecture_internal_spec.py`).\n\n**Findings**\n\n- Category: security | Severity: low\n  `shared/scripts/tools/prepare_architecture_internal_spec.py` (ancestor-symlink check → `resolve()` → `mkdir(parents=True)` → `_write_refusing_symlinks`)\n  The ancestor `is_symlink()` checks and the later `mkdir`/write are separate filesystem operations, so a symlink planted at `.shipwright`, `runs`, or `runs/{run_id}` *after* the check but before the write still redirects the write. `O_NOFOLLOW` guards only the final filename, not the directory walk. Realistically requires a local racing attacker; the tool runs in the developer's own repo, so low.\n  Suggestion: open the output relative to a dir-fd (`os.open(\"architecture-internal-spec.md\", flags, dir_fd=runs_dir_fd)`) with the dir-fd obtained via `O_DIRECTORY|O_NOFOLLOW` per component, or accept and document the residual alongside the existing Windows TOCTOU disclosure.\n\n- Category: test | Severity: low\n  `shared/tests/test_review_record_campaign_shape.py` (`_INTERNAL_ARM_DISPOSITIONS`) vs `plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md` (Campaign sub-iterate rows) and `test_campaign_cascade_record_roundtrip.py` (`_DELEGATED`)\n  The disposition strings for `architecture_internal` were deliberately *shortened* in `_INTERNAL_ARM_DISPOSITIONS` (\"…not delegated\") relative to the actual command text the skill instructs the runner to write (\"…not delegated to the orchestrator like the other three\"). Nothing compares the two sets, so a future edit to the skill's disposition wording (which F11's bare-\"skipped\" rejection makes load-bearing) will not be caught by either test. The ADR notes this drift and declines to fix it; I'd at least tighten the prose assertion in `test_campaign_review_contract_prose.py` to the full sentence.\n  Suggestion: assert the complete di […truncated]\n\n[openai] - Category: security\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:101`\n  Finding: The ancestor check rejects symlinks but accepts Windows directory junctions. A junction at `.shipwright`, `runs`, or the run directory can redirect the sanitized-spec write outside the project; the later containment check compares paths after following that junction.\n  Suggestion: Reject junctions and other directory reparse points before writing, and verify the resolved runs root remains inside the resolved project root.\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:119`\n  Finding: A permission error or a non-directory at the run path raises an uncaught exception. Step 0b defines `Ran: no` degradation for agent and reply failures, but gives no path for this preparation failure, so it can stop the iterate before external review.\n  Suggestion: Handle directory and write failures with a clean nonzero result, and instruct Step 0b to record `Ran: no` and continue when preparation fails.\n\nThe review flow largely matches the specification, but these input-path failures need fixes before shipping. **Ship with fixes.**\n\nSHIPWRIGHT_VERDICT: revise",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_architecture_internal_review_contract_prose.py (entire file)\n  Finding: AC1–AC4 are \"verified\" almost exclusively by prose-anchor assertions (does the skill markdown contain certain sentences). A completely non-functional runtime path — e.g. a spawn instruction that names the agent but a skill model that never executes it, or a `prepare_architecture_internal_spec.py` invocation the model skips — passes all of these tests. The spec's own D5 scope caveat admits this (\"prose and wiring … the agent's live JSON-reply shape and the skill's parse/degraded path … remain unexercised\"), yet the Test Completeness Ledger still marks every AC `tested` with `untestable: 0`, which overstates coverage to any downstream gate reading that ledger.\n  Suggestion: Downgrade AC1–AC4 ledger rows to reflect prose/wiring-only verification, or run one out-of-band smoke spawn of `architecture-internal-reviewer` (recorded as advisory, not `completed`) to exercise the reply-parse path at least once.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/external_review_modes.py — `_PRIOR_REVIEW_SECTION_RE` (new, ~line 85)\n  Finding: The strip applies to **both** plan-side and iterate-side `--mode architecture` calls, but the pattern also matches `## Architecture Review` and `## Self-Review`. A plan-side `spec.md` that legitimately contains a `## Self-Review` or `## Architecture Review` heading (e.g. a spec authored from an adopted template that carried one) would have genuine spec content silently deleted from the reviewer's input on the plan side, where the iterate-side leak justification doesn't apply. The ADR asserts the plan side is \"clean by construction\" but the strip runs there anyway with no test pinning plan-side behavior beyond the iterate-mode negative control.\n  Suggestion: Either gate the strip to specs known to be iterate specs, or add a test documenting that plan-side specs with such […truncated]\n\n[openai] - Category: bug\n  Severity: medium\n  File: `shared/scripts/lib/external_review_modes.py:96`\n  Finding: The section matcher stops only at a heading beginning exactly `## `. A valid Markdown heading such as `   ## Acceptance Criteria` or `##\tVerification` after an Internal Plan Review section is removed along with that review, depriving the architecture reviewer of real spec content.\n  Suggestion: Recognize valid level-two heading indentation and spacing when finding section boundaries, and test that the following spec section survives.\n\n- Category: security\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:107`\n  Finding: On Windows, `is_symlink()` does not reject directory junctions. A junction at `.shipwright`, `runs`, or the run directory redirects the write outside the project; the later containment check resolves against the redirected runs root and still passes.\n  Suggestion: Reject junctions or other reparse points before creating the output, and check the resolved runs root against the resolved project root.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_architecture_review_anchoring_defense.py:86`\n  Finding: The test observes the sanitizer’s return value through a spy, but never checks the prompt sent for review. It would pass if `external_review.py` called the sanitizer and then used the original spec.\n  Suggestion: Capture the rendered architecture prompt and assert that it contains the retained spec content but none of the prior-review rationale.\n\nThe new pass covers the main flow, but the sanitizer can remove valid spec content and the Windows output guard has a concrete escape path. Ship with fixes.\n\nSHIPWRIGHT_VERDICT: revise",
       "verdicts": {
-        "glm": "approve",
-        "openai": "revise"
+        "openai": "revise",
+        "glm": "approve"
       }
     },
     "spec": {
