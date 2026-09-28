@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-28-phase-quality-newest-run-per-phase",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T20:43:11.259088+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T20:47:41.092966+00:00",
+      "disposition": "external plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py",
+          "line": 210,
+          "finding": "Filter compared run ids, but one run audited in two sessions yields two digest blocks with identical (phase, run_id); a FAIL only in the older block would still be announced. [FIXED: blocks now identified by position; _collect_tier1_fails stamps additive 'block' key; tests test_same_run_id_audited_twice_only_newest_block_counts + test_missing_audited_at_sorts_oldest added]",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py",
+          "line": 119,
+          "finding": "Docstring wrongly claimed missing audited_at falls back to file order; empty sorts oldest. [FIXED]",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py",
+          "line": 209,
+          "finding": "Redundant sentinel clause after newest-block filter. [FIXED: removed, comment explains]",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py",
+          "line": 112,
+          "finding": "eligible param single-caller; audited_at re-sort duplicates writer ordering. [REJECTED: kept as guard for hand-edited digests; eligible required (no default lambda)]",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_phase_quality_newest_run_per_phase.py",
+          "line": 99,
+          "finding": "Test gaps: duplicate run id, missing audited_at. [FIXED]",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T20:45:53.351300+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T20:45:53.485522+00:00",
+      "disposition": "diff touches no migration, async/concurrency, cross-plugin import or irreversible op; the doubt pass is conditional per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py (in `_newest_block_per_phase`, the `(audited_at, -index) > ...` comparison)",
+          "line": null,
+          "finding": "audited_at` timestamps are compared as raw strings. Lexicographic comparison is only correct if every timestamp uses the identical format and UTC offset. If the digest ever contains mixed offsets (e.g. `2026-09-26T12:00:00+02:00` vs `2026-09-26T11:30:00+00:00` — the earlier instant sorts \"newer\"), or different precision/format (`2026-09-26 10:00` vs ISO-T), the wrong block is chosen and a genuine current FAIL is silently suppressed or a stale one replayed — the exact bug this change exists to fix.",
+          "suggestion": "Parse timestamps (e.g. `datetime.fromisoformat`, falling back to the empty-string-oldest rule on parse failure) and compare the parsed instants; keep the tie-break on the earlier block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py (`_AUDITED_AT_RE` application)",
+          "line": null,
+          "finding": "The `audited_at` regex is applied to every stripped line after a header, and the \"first wins\" guard (`not blocks[-1][2]`) only protects against a second `audited_at:` in the same block. A line inside a FAIL evidence list that happens to read `- audited_at: <something>` would be captured as the block's timestamp. Low likelihood, but the parse is unscoped.",
+          "suggestion": "Only accept `audited_at` lines while not inside an `open FAILs:` section, mirroring `_collect_tier1_fails`'s section tracking.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/hooks/session_start_phase_quality.py",
+          "line": 142,
+          "finding": "The code compares `audited_at` as text. Valid timestamps with different UTC offsets can sort in the wrong order: `2026-09-26T12:00:00+02:00` is earlier than `2026-09-26T11:00:00+00:00`, but this comparison selects the former. That can keep reporting a superseded FAIL.",
+          "suggestion": "Parse timestamps as timezone-aware datetimes and compare their instants. Add a regression test using two valid offsets.  The change covers the specified superseded-run behavior for the timestamp format used in its tests, but this ordering bug needs a fix before shipping. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-28T20:47:33.035573+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/hooks/session_start_phase_quality.py (in `_newest_block_per_phase`, the `(audited_at, -index) > ...` comparison)\n  Finding: `audited_at` timestamps are compared as raw strings. Lexicographic comparison is only correct if every timestamp uses the identical format and UTC offset. If the digest ever contains mixed offsets (e.g. `2026-09-26T12:00:00+02:00` vs `2026-09-26T11:30:00+00:00` — the earlier instant sorts \"newer\"), or different precision/format (`2026-09-26 10:00` vs ISO-T), the wrong block is chosen and a genuine current FAIL is silently suppressed or a stale one replayed — the exact bug this change exists to fix.\n  Suggestion: Parse timestamps (e.g. `datetime.fromisoformat`, falling back to the empty-string-oldest rule on parse failure) and compare the parsed instants; keep the tie-break on the earlier block.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/hooks/session_start_phase_quality.py (`_AUDITED_AT_RE` application)\n  Finding: The `audited_at` regex is applied to every stripped line after a header, and the \"first wins\" guard (`not blocks[-1][2]`) only protects against a second `audited_at:` in the same block. A line inside a FAIL evidence list that happens to read `- audited_at: <something>` would be captured as the block's timestamp. Low likelihood, but the parse is unscoped.\n  Suggestion: Only accept `audited_at` lines while not inside an `open FAILs:` section, mirroring `_collect_tier1_fails`'s section tracking.\n\n## Notes on the positive side\n\n- Spec compliance is good: newest-eligible-block selection, sentinel filtering folded into `eligible` (sentinel FAILs can never match since only eligible blocks enter `newest`), additive `block` key, and the required regression test (`test_superseded_fail_not_reported_once_newer_run_passes`) directly validates the acceptance criterion — it would fail against the old implementation.\n- Block indices stay aligned bet […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: `shared/scripts/hooks/session_start_phase_quality.py:142`\n- Finding: The code compares `audited_at` as text. Valid timestamps with different UTC offsets can sort in the wrong order: `2026-09-26T12:00:00+02:00` is earlier than `2026-09-26T11:00:00+00:00`, but this comparison selects the former. That can keep reporting a superseded FAIL.\n- Suggestion: Parse timestamps as timezone-aware datetimes and compare their instants. Add a regression test using two valid offsets.\n\nThe change covers the specified superseded-run behavior for the timestamp format used in its tests, but this ordering bug needs a fix before shipping. **Ship with fixes.**\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T20:43:51.010973+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T20:47:41.553966+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

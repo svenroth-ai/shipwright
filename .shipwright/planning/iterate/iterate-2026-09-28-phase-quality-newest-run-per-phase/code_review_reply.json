@@ -1,0 +1,7 @@
+{"verdict":"PASS_WITH_FINDINGS","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/hooks/session_start_phase_quality.py","line":210,"finding":"Filter compared run ids, but one run audited in two sessions yields two digest blocks with identical (phase, run_id); a FAIL only in the older block would still be announced. [FIXED: blocks now identified by position; _collect_tier1_fails stamps additive 'block' key; tests test_same_run_id_audited_twice_only_newest_block_counts + test_missing_audited_at_sorts_oldest added]"},
+{"severity":"low","category":"readability","file":"shared/scripts/hooks/session_start_phase_quality.py","line":119,"finding":"Docstring wrongly claimed missing audited_at falls back to file order; empty sorts oldest. [FIXED]"},
+{"severity":"low","category":"readability","file":"shared/scripts/hooks/session_start_phase_quality.py","line":209,"finding":"Redundant sentinel clause after newest-block filter. [FIXED: removed, comment explains]"},
+{"severity":"low","category":"readability","file":"shared/scripts/hooks/session_start_phase_quality.py","line":112,"finding":"eligible param single-caller; audited_at re-sort duplicates writer ordering. [REJECTED: kept as guard for hand-edited digests; eligible required (no default lambda)]"},
+{"severity":"low","category":"correctness","file":"shared/tests/test_phase_quality_newest_run_per_phase.py","line":99,"finding":"Test gaps: duplicate run id, missing audited_at. [FIXED]"}
+]}

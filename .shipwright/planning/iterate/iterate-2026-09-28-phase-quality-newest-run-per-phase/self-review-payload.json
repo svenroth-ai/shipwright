@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Only newest run per phase is announced; regression test proves a superseded FAIL retires. No extra features."},
+{"name":"Error Handling","verdict":"pass","note":"Missing/absent audited_at falls back to file order; no new I/O."},
+{"name":"Security Basics","verdict":"pass","note":"Pure text parse of a local digest; no user input reaches shell/SQL. touches_auth flag is a keyword false positive."},
+{"name":"Test Quality","verdict":"pass","note":"7 tests assert outputs incl. subprocess SessionStart hook end-to-end; happy + retire paths."},
+{"name":"Performance Basics","verdict":"pass","note":"Single extra linear pass over a <=5-run digest."},
+{"name":"Naming & Structure","verdict":"pass","note":"Follows module conventions; file 210 LOC, raw parser left untouched."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Consumer of _findings.md digest (writer rewrite_session_findings_summary); real digest shape exercised through the hook subprocess."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}
