@@ -1,0 +1,72 @@
+{
+  "run_id": "iterate-2026-09-28-phase-quality-newest-run-per-phase",
+  "date": "2026-09-28T21:11:16.384315Z",
+  "event_at": "2026-09-28T12:35:57.758063+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/phase-quality-newest-run",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-28-phase-quality-newest-run-per-phase",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A FAIL from a superseded run stops being reported once a newer run of that phase passes",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_phase_quality_newest_run_per_phase.py::test_superseded_fail_not_reported_once_newer_run_passes PASSED"
+      },
+      {
+        "behavior": "The newest run's own FAIL is still reported",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_phase_quality_newest_run_per_phase.py::test_fail_of_newest_run_is_still_reported PASSED"
+      },
+      {
+        "behavior": "Newest is chosen by audited_at instant (across UTC offsets, missing = oldest), not file order or text",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_phase_quality_newest_run_per_phase.py::test_newest_chosen_by_audited_at_not_file_order, ::test_newest_compared_as_instant_across_utc_offsets, ::test_missing_audited_at_sorts_oldest PASSED"
+      },
+      {
+        "behavior": "Two digest blocks with the same phase+run id: only the newest block counts",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_phase_quality_newest_run_per_phase.py::test_same_run_id_audited_twice_only_newest_block_counts PASSED"
+      },
+      {
+        "behavior": "Other phases are unaffected; a FAIL repeated in every run collapses to one line; sentinel newest run does not retire a real FAIL; audited_at lookalike inside a FAIL list is ignored",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_phase_quality_newest_run_per_phase.py::test_other_phase_fail_unaffected_by_newer_run_of_different_phase, ::test_repeated_fail_in_every_run_collapses_to_one_line, ::test_sentinel_newest_run_does_not_retire_real_run_fail, ::test_audited_at_lookalike_inside_fail_list_is_ignored PASSED"
+      },
+      {
+        "behavior": "Real SessionStart hook (capture_session_id.py subprocess) announces the current FAIL and not the superseded one",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_phase_quality_newest_run_per_phase.py::test_session_start_hook_end_to_end_retires_superseded_fail PASSED"
+      },
+      {
+        "behavior": "Raw parser _collect_tier1_fails stays unfiltered (existing contract)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_phase_quality_rollout.py + test_capture_session_id_sentinel_filter.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_phase_quality_newest_run_per_phase.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 11,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\phase-quality-newest-run\\.shipwright\\runs\\iterate-2026-09-28-phase-quality-newest-run-per-phase\\surface_verification.log",
+    "timestamp": "2026-09-28T21:10:40.286Z",
+    "attempts": 1
+  }
+}

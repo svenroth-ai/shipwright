@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `shared/scripts/hooks/session_start_phase_quality.py:142`\n- Finding: The code compares `audited_at` as text. Valid timestamps with different UTC offsets can sort in the wrong order: `2026-09-26T12:00:00+02:00` is earlier than `2026-09-26T11:00:00+00:00`, but this comparison selects the former. That can keep reporting a superseded FAIL.\n- Suggestion: Parse timestamps as timezone-aware datetimes and compare their instants. Add a regression test using two valid offsets.\n\nThe change covers the specified superseded-run behavior for the timestamp format used in its tests, but this ordering bug needs a fix before shipping. **Ship with fixes.**\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/hooks/session_start_phase_quality.py (in `_newest_block_per_phase`, the `(audited_at, -index) > ...` comparison)\n  Finding: `audited_at` timestamps are compared as raw strings. Lexicographic comparison is only correct if every timestamp uses the identical format and UTC offset. If the digest ever contains mixed offsets (e.g. `2026-09-26T12:00:00+02:00` vs `2026-09-26T11:30:00+00:00` \u2014 the earlier instant sorts \"newer\"), or different precision/format (`2026-09-26 10:00` vs ISO-T), the wrong block is chosen and a genuine current FAIL is silently suppressed or a stale one replayed \u2014 the exact bug this change exists to fix.\n  Suggestion: Parse timestamps (e.g. `datetime.fromisoformat`, falling back to the empty-string-oldest rule on parse failure) and compare the parsed instants; keep the tie-break on the earlier block.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/hooks/session_start_phase_quality.py (`_AUDITED_AT_RE` application)\n  Finding: The `audited_at` regex is applied to every stripped line after a header, and the \"first wins\" guard (`not blocks[-1][2]`) only protects against a second `audited_at:` in the same block. A line inside a FAIL evidence list that happens to read `- audited_at: <something>` would be captured as the block's timestamp. Low likelihood, but the parse is unscoped.\n  Suggestion: Only accept `audited_at` lines while not inside an `open FAILs:` section, mirroring `_collect_tier1_fails`'s section tracking.\n\n## Notes on the positive side\n\n- Spec compliance is good: newest-eligible-block selection, sentinel filtering folded into `eligible` (sentinel FAILs can never match since only eligible blocks enter `newest`), additive `block` key, and the required regression test (`test_superseded_fail_not_reported_once_newer_run_passes`) directly validates the acceptance criterion \u2014 it would fail against the old implementation.\n- Block indices stay aligned between `_collect_tier1_fails` and `_newest_block_per_phase` because both count every `_RUN_HEADER_RE` match in file order \u2014 a subtle invariant that holds here but is worth a comment.\n- Tests cover both file orders, same-run-id re-audits, missing `audited_at`, cross-phase independence, sentinel-as-newest, the collapse-to-one-line case, and an end-to-end hook subprocess run. Good coverage of happy and edge paths.\n\nOverall assessment: the change correctly implements the spec with strong tests; the string-compared timestamps are the one real correctness risk worth fixing before or shortly after ship.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
