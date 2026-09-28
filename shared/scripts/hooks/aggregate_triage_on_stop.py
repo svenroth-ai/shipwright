@@ -25,7 +25,7 @@ Contract:
 
 Usage (from `hooks.json`):
 
-    uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/aggregate_triage_on_stop.py"
+    uv run --no-project "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/aggregate_triage_on_stop.py"
 """
 
 from __future__ import annotations

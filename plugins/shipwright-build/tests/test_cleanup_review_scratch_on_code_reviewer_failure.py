@@ -91,7 +91,7 @@ def test_cleans_up_when_reviewer_reply_is_not_parseable(tmp_path, monkeypatch):
     assert rc == 0
     called.assert_called_once()
     args = called.call_args.args[0]
-    assert args[:2] == ["uv", "run"]
+    assert args[:3] == ["uv", "run", "--no-project"]
     assert "cleanup" in args
     assert "--run-id" in args
     assert args[args.index("--run-id") + 1] == SESSION_ID

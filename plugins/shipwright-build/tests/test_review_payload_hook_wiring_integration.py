@@ -64,6 +64,10 @@ def _run_wired_command(command: str, tmp_path: Path, run_id: str) -> subprocess.
     resolved = command.replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN_ROOT))
     assert resolved.startswith("uv run ")
     parts = resolved[len("uv run ") :].split()
+    # Skip leading `uv run` flags (e.g. --no-project) to find the quoted
+    # script path — the first token that isn't itself a bare `--flag`.
+    while parts and parts[0].startswith("--"):
+        parts = parts[1:]
     script_path = parts[0].strip('"')
     extra_args = parts[1:]
 

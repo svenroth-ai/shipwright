@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T10:52:37.355115+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Change the regex to match `uv run` occurrences anywhere in the command and assert `--no-project` follows each. Cheap change to the new test, closes the gap.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Resolve `uv` via `shutil.which` with a clear skip/fail message, and verify `uv --version` floor in the test setup rather than assuming presence.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Add the concrete resync commands (one line each for marketplace update and codex sync) to `docs/hooks-and-pipeline.md` so the disclosure is actionable, not just theoretical.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Assert on exit code plus a broad, stable signal (e.g. \"resolution\" / \"failed\" appearing in stderr) rather than an exact message; document the uv version the test was validated against.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A one-line comment in `run_if_cache_ready.py` noting that isolation depends on the top-level `uv run --no-project` would prevent a future refactor from accidentally reintroducing the bug through the chain.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan’s integration test still uses a package name that may require a network lookup and a hand-written command. That does not establish the deterministic, shipped-command test described in the spec.",
+          "suggestion": "Update the mini-plan to use the offline `file://` poison, derive the invocation from a real `hooks.json` entry, and assert that the negative case fails because uv tries to resolve the poisoned project.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The work breakdown calls for only `shared/tests/`, while the spec reports a real regression in a plugin test that parses hook commands. The plan also omits the reported fix to that test and the hook-authoring guidance update.",
+          "suggestion": "Put those changes and the affected plugin and Codex hook test suites explicitly in the work breakdown and final verification step.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The proposed static test glob covers `plugins//hooks/hooks.json`, while the acceptance criterion says every `hooks.json` in the repo. A new file outside that layout could escape the check.",
+          "suggestion": "Discover all repository `hooks.json` files, recursively inspect their `command` fields, and retain the minimum-file-count assertion.  The `--no-project` fix is sound for the demonstrated sync failure. Revise the mini-plan so its tests and verification match the stronger implementation already described in the spec.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-28T10:50:42.217690+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n1. **Category: edge-case — Severity: low**\n   The meta-test only asserts on `\"command\"` values that *start with* `uv run`. If a future hook author wraps the invocation (e.g. `bash -lc \"uv run ...\"` or `cd \"$CLAUDE_PLUGIN_ROOT\" && uv run ...`), the check silently skips it. Consider also scanning for `uv run` anywhere within the command string, not just as a prefix.\n   **Suggestion:** Change the regex to match `uv run` occurrences anywhere in the command and assert `--no-project` follows each. Cheap change to the new test, closes the gap.\n\n2. **Category: dependency — Severity: low**\n   The integration test shells out to a real `uv` binary. If CI runners don't have `uv` on PATH (or have an old version predating `--no-project`'s current semantics), the test fails for environmental rather than regression reasons. The spec scrubs `VIRTUAL_ENV`/`UV_*` but doesn't say how `uv` itself is located/pinned.\n   **Suggestion:** Resolve `uv` via `shutil.which` with a clear skip/fail message, and verify `uv --version` floor in the test setup rather than assuming presence.\n\n3. **Category: risk — Severity: low**\n   The fix lands in the repo's `hooks.json`, but the live Claude Code plugin cache (populated via `update-marketplace.sh`) and `~/.codex/hooks.json` (via `codex_hooks_sync.py`) only pick it up after per-machine rebuild/resync steps that are explicitly out of scope. The spec discloses this, but there's no operator-facing checklist of *which* steps an operator must run post-merge to stop the live `os error 32` on their machine.\n   **Suggestion:** Add the concrete resync commands (one line each for marketplace update and codex sync) to `docs/hooks-and-pipeline.md` so the disclosure is actionable, not just theoretical.\n\n4. **Category: edge-case — Severity: low**\n   The negative-control integration test asserts plain `uv run` fails against a poisoned `pyproject.toml`. On a machine with `UV_OFFLINE=1` or a heavily cached environment, uv's failure mode could […truncated]\n\n[openai] 1. **Category: edge-case · Severity: medium**  \n   **Finding:** The mini-plan’s integration test still uses a package name that may require a network lookup and a hand-written command. That does not establish the deterministic, shipped-command test described in the spec.  \n   **Suggestion:** Update the mini-plan to use the offline `file://` poison, derive the invocation from a real `hooks.json` entry, and assert that the negative case fails because uv tries to resolve the poisoned project.\n\n2. **Category: risk · Severity: medium**  \n   **Finding:** The work breakdown calls for only `shared/tests/`, while the spec reports a real regression in a plugin test that parses hook commands. The plan also omits the reported fix to that test and the hook-authoring guidance update.  \n   **Suggestion:** Put those changes and the affected plugin and Codex hook test suites explicitly in the work breakdown and final verification step.\n\n3. **Category: approach · Severity: low**  \n   **Finding:** The proposed static test glob covers `plugins/*/hooks*/hooks.json`, while the acceptance criterion says every `hooks.json` in the repo. A new file outside that layout could escape the check.  \n   **Suggestion:** Discover all repository `hooks.json` files, recursively inspect their `command` fields, and retain the minimum-file-count assertion.\n\nThe `--no-project` fix is sound for the demonstrated sync failure. Revise the mini-plan so its tests and verification match the stronger implementation already described in the spec.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/tests/test_ensure_shared_cache_vendored.py",
+          "line": 96,
+          "finding": "_is_cache_guarded assumed the old uv run \"<guard>\" shape (tokens[:3]); every SessionStart command now tokenizes as uv run --no-project \"<guard>\" ..., so test_forward_registered_as_one_consolidated_session_start_command failed for all 12 hook-bearing plugins.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+          "line": 112,
+          "finding": "The integration test claimed to derive its command from the real shipped hooks.json entry, but discarded the resolved path and ran a hand-written argv, only asserting prefix equality.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+          "line": 75,
+          "finding": "The fixture's regex only matched an already-pinned uv run --no-project \"...\" command, so a future regression (flag dropped) would raise a misleading 'fixture broken' error instead of a flag-missing assertion.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+          "line": 86,
+          "finding": "_collect_command_strings is duplicated from test_hooks_uv_run_pinned.py instead of shared/imported.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/track_tool_calls.py",
+          "line": 10,
+          "finding": "Six hook scripts' module docstrings still showed the old unpinned uv run \"...\" invocation example, contradicting the now-mandatory writing-plugin.md convention.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/2026-09-28-hooks-uv-run-project-pin-miniplan.md",
+          "line": 21,
+          "finding": "The mini-plan wrongly said plugins/shipwright-iterate/hooks-codex/hooks.json needed editing ('remaining lines get the flag'); that file's only 2 commands were already fully pinned pre-diff. This stale sentence caused both external code-review passes (glm + openai) to independently raise a false HIGH 'file missing from diff' finding.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T11:04:28.540207+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/automerge_readiness.py:30 (reached via plugins/*/scripts/hooks/run_if_cache_ready.py:110 -> shared/scripts/hooks/check_required_checks_hook.py:162 -> shared/scripts/tools/check_required_checks.py:220)",
+          "line": null,
+          "finding": "Claim under doubt: Hook scripts are stdlib-only apart from pyyaml in audit_compliance_on_stop.py, so --no-project changes nothing about how they behave (spec probe #5). — The audit in probe #5 only looked at each hook script's own top-level imports. It did not follow code that runs in a child process. That child process now runs without pyyaml. Concrete failing chain: plugins/shipwright-iterate/hooks/hooks.json SessionStart runs `uv run --no-project run_if_cache_ready.py ... check_required_checks_hook.py ...`. run_if_cache_ready.py:110 starts each target with `[sys.executable, target]`. check_required_checks_hook.py:162 starts the producer with `[sys.executable, tools/check_required_checks.py, ...]`. check_required_checks.py:220 calls `all_workflow_check_names()`, which imports `lib.automerge_readiness` inside the function (shared/scripts/lib/required_checks_drift.py:48). That module does a plain `import yaml` at line 30. Before this change, a session in the Shipwright repo (root pyproject.toml declares pyyaml, jsonschema and openai) made `uv run` sync the root project, so sys.executable was the project venv and had yaml. Now the interpreter is a bare one and the import raises ModuleNotFoundError. The producer exits 1, which is not in `_EXPECTED_EXITS = (0, 2)`. The hook then prints `producer exited 1, which it does not document` once per throttle window, never records a success, and the required-checks drift check stops working in the repo that uses it most. No test catches this. The meta-test only reads hooks.json, and the integration test only runs write_terminal_marker.py, which has no dependencies.",
+          "suggestion": "Any one of these. (a) Add `--with pyyaml` to the SessionStart run_if_cache_ready command. It must be added in ALL plugins, not only iterate: codex_hook_inventory keys run_if_cache_ready by the same relative path everywhere, so a different prefix in one plugin raises BundleCollisionError. (b) Have the producer or the hook treat ImportError as a documented exit 2 or a skip. (c) Repeat the dependency audit through the whole child-process and import chain, not just top-level imports, and show that no hook-reachable path imports yaml, jsonschema or openai. Then correct the spec's 'exactly one third-party dependency' claim.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/hooks/audit_compliance_on_stop.py (callers: plugins/shipwright-changelog/hooks/hooks.json, plugins/shipwright-iterate/hooks/hooks.json)",
+          "line": null,
+          "finding": "Claim under doubt: `uv run --no-project --with pyyaml audit_compliance_on_stop.py` behaves the same as before (probe #5 checked only that it exits 0). — audit_compliance_on_stop.py runs the full A-I compliance audit in the same process. Group D's manifest loader (plugins/shipwright-compliance/scripts/audit/_group_d_manifest.py:39) imports jsonschema inside a function and fails closed, returning None, when it is missing. In the Shipwright repo, jsonschema used to come from the synced root project. Now only pyyaml is available, so `traceability_findings` (_group_d_traceability.py:275-279) quietly downgrades D-orphan and D-layer from evaluated to SKIP 'manifest ... schema-invalid'. The hook still exits 0, so the probe #5 check passes while local diagnostics lose coverage. The on-stop docstring's claim that the audit chain is 'first-party + stdlib' is already wrong for this path.",
+          "suggestion": "Add `--with jsonschema` to both audit_compliance_on_stop callers with an identical prefix (the prefix-consistency test enforces that). Or accept the D-layer SKIP deliberately and record it as a known residual next to the .venv/.python-version one.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py:232",
+          "line": null,
+          "finding": "Claim under doubt: After this change, hook execution never tries to find, resolve or sync the project in the session's working directory. — One hook script starts its own `uv run` child without the flag. plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py:232 runs `subprocess.run([\"uv\", \"run\", str(script), \"cleanup\", ...], cwd=str(resolve_project_root()))`. That working directory is the user's project, which is exactly the directory this iterate is about. If it is an unrelated uv-managed project, that SubagentStop path still syncs it (the os error 32 exposure). It then runs review_scratch.py under that project's interpreter. The hook fails open, so the scratch diff is quietly left behind. The meta-test cannot see this because it only reads hooks.json. The same unpinned pattern exists outside hooks in shared/scripts/lib/held_merge_reconciliation.py:214/234. Several SKILL.md and reference files also tell the agent to run `uv run \"${CLAUDE_PLUGIN_ROOT}/...\"` from the target project's directory (for example plugins/shipwright-adopt/skills/adopt/SKILL.md:64+ and plugins/*/skills/*/references/step-0-*.md). They have the same failure mode, but the agent runs them, not the hooks.",
+          "suggestion": "Insert `--no-project` into that argv; test_cleanup_review_scratch_on_code_reviewer_failure.py:94 only checks args[:2], so it stays green. Either extend the scope statement to name the skill-instruction and non-hook call sites as a known follow-up, or explain why they are unaffected.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/tests/test_hooks_uv_run_pinned.py:66",
+          "line": null,
+          "finding": "Claim under doubt: The static meta-test fails whenever any hooks.json `uv run` command is missing --no-project. — `_UV_RUN_PREFIX = r'uv run((?:(?!uv run)[^\"])*)\"'` only matches when a double quote follows the flags. A command like `uv run \"${CLAUDE_PLUGIN_ROOT}/x.py\"` is caught. `uv run scripts/x.py` or `bash -c 'uv run x.py'` (no double quote) produces no match, so it adds no offender and the test passes. The external openai code review raised this (medium). code_review_reply.json has no disposition for it; only the hooks-codex false positive was dispositioned.",
+          "suggestion": "Also assert that every command containing the token sequence `uv run` produces at least one prefix match (or tokenise with shlex), so an unquoted or single-quoted command becomes an offender instead of being skipped. Or record a reasoned decline, for example by pointing to test_hooks_json_quoting.py already forcing quoted placeholders.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T11:21:39.963759+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/hooks-codex/hooks.json (missing from diff)",
+          "line": null,
+          "finding": "AC-1 and the mini-plan both explicitly require `plugins/shipwright-iterate/hooks-codex/hooks.json` to be edited (\"2 lines already correct, remaining lines get the flag\"), and `_MIN_EXPECTED_FILES = 13` in the new meta-test counts it. The diff contains no change to that file. If its remaining `uv run` entries are unpinned, AC-1 is unmet and `test_every_uv_run_hook_command_has_no_project` will fail against `shipwright-iterate/hooks-codex` on the very next CI run — the change is self-inconsistent with its own new guard.",
+          "suggestion": "Apply the same `--no-project` insertion to every remaining `uv run` entry in `hooks-codex/hooks.json` (and re-run the meta-test).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py:131–143 (`test_no_project_ignores_poisoned_cwd`)",
+          "line": null,
+          "finding": "The test's premise — \"derives its command from the actual shipped hooks.json entry\" — is only cosmetic. `_find_real_uv_run_command` locates the real entry, but the subprocess is then launched with a hardcoded `[\"uv\", \"run\", \"--no-project\", str(script_path)]` and a separately reconstructed script path (`REPO_ROOT / \"shared\" / \"scripts\" / \"hooks\" / _TARGET_SCRIPT_NAME`). The fixture's `prefix` is only used for an equality assert, and the raw hooks.json path is discarded, so if hooks.json pointed the entry at a different script (or a plugin-local copy), the test would still run its own reconstruction and pass. The docstring overstates what's proven.",
+          "suggestion": "Either build the subprocess argv from the fixture's `prefix` and the path resolved from the hooks.json entry (substituting `${CLAUDE_PLUGIN_ROOT}`), or soften the docstring; the current form would pass against a hooks.json entry that doesn't actually exist in the shipped shape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py:72–86 (`_find_real_uv_run_command`)",
+          "line": null,
+          "finding": "Missing return type annotation for a function returning a `tuple` (docstring says \"Pull the exact … command\", implying a string) — and more substantively, the regex `r'(uv run --no-project)\\s+\"([^\"]' + re.escape(script_name) + r')\"'` only ever matches commands that already carry `--no-project`, so the fixture cannot detect a regression back to unpinned form in a useful error message; it raises a confusing \"fixture broken\" assertion instead of \"the flag was removed\". Minor, but the failure mode is misleading.",
+          "suggestion": "Match `uv run(?: --no-project)?` and assert on the presence of the flag separately, so a real regression surfaces as such.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "plugins/shipwright-build/tests/test_review_payload_hook_wiring_integration.py:67–70",
+          "line": null,
+          "finding": "The flag-skipping loop `while parts[0].startswith(\"--\")` assumes all pre-script flags are bare (valueless) tokens. If a future `uv run --project foo \"script\"` or any flag-with-value were added before the script, the value token (`foo`) would be misread as the script path. Not broken for the current `--no-project`-only shape, but the guard is narrower than the comment implies.",
+          "suggestion": "Acceptable as-is for today; if touched again, parse up to the first quoted token rather than filtering on `--` prefixes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md:1518–1526",
+          "line": null,
+          "finding": "The operator resync instructions themselves invoke `uv run shared/scripts/tools/build_codex_plugin.py …` and `uv run shared/scripts/tools/codex_hooks_sync.py …` without `--no-project` — the very pattern this iterate establishes as the repo convention and which `test_hooks_uv_run_pinned.py`/`writing-plugin.md` now mandate for hooks. These are docs, not hooks.json, so the meta-test doesn't catch them, but an operator following the doc from an unrelated uv-managed CWD would hit the exact bug this PR fixes while applying the fix.",
+          "suggestion": "Add `--no-project` to those two documented commands.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-28T11:04:39.780161+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: spec**\n  **Severity: high**\n  **File: plugins/shipwright-iterate/hooks-codex/hooks.json (missing from diff)**\n  **Finding:** AC-1 and the mini-plan both explicitly require `plugins/shipwright-iterate/hooks-codex/hooks.json` to be edited (\"2 lines already correct, remaining lines get the flag\"), and `_MIN_EXPECTED_FILES = 13` in the new meta-test counts it. The diff contains no change to that file. If its remaining `uv run` entries are unpinned, AC-1 is unmet and `test_every_uv_run_hook_command_has_no_project` will fail against `shipwright-iterate/hooks-codex` on the very next CI run — the change is self-inconsistent with its own new guard.\n  **Suggestion:** Apply the same `--no-project` insertion to every remaining `uv run` entry in `hooks-codex/hooks.json` (and re-run the meta-test).\n\n- **Category: test**\n  **Severity: medium**\n  **File: shared/tests/test_hooks_uv_run_project_isolation.py:131–143 (`test_no_project_ignores_poisoned_cwd`)**\n  **Finding:** The test's premise — \"derives its command from the actual shipped hooks.json entry\" — is only cosmetic. `_find_real_uv_run_command` locates the real entry, but the subprocess is then launched with a hardcoded `[\"uv\", \"run\", \"--no-project\", str(script_path)]` and a separately reconstructed script path (`REPO_ROOT / \"shared\" / \"scripts\" / \"hooks\" / _TARGET_SCRIPT_NAME`). The fixture's `prefix` is only used for an equality assert, and the raw hooks.json path is discarded, so if hooks.json pointed the entry at a different script (or a plugin-local copy), the test would still run its own reconstruction and pass. The docstring overstates what's proven.\n  **Suggestion:** Either build the subprocess argv from the fixture's `prefix` and the path resolved *from* the hooks.json entry (substituting `${CLAUDE_PLUGIN_ROOT}`), or soften the docstring; the current form would pass against a hooks.json entry that doesn't actually exist in the shipped shape.\n\n- **Category: test**\n  **Severity: l […truncated]\n\n[openai] - **Category: spec · Severity: high · File: `.shipwright/planning/iterate/2026-09-28-hooks-uv-run-project-pin-miniplan.md:15`** — The plan identifies `plugins/shipwright-iterate/hooks-codex/hooks.json` as needing edits, but that file is absent from the diff. Its remaining unpinned commands leave the Codex path exposed to the original failure and should fail the new static test. **Suggestion:** Add `--no-project` immediately after `uv run` in every remaining command in that file, then run the meta-test.\n\n- **Category: test · Severity: medium · File: `shared/tests/test_hooks_uv_run_pinned.py:68`** — The regex only recognizes a `uv run` invocation when a double-quoted argument follows it. A future command such as `uv run scripts/hook.py` would be skipped, so the test does not enforce the stated criterion for every command starting with `uv run`. **Suggestion:** Check the command prefix directly, independently of how the script path is quoted.\n\n**Overall assessment:** Ship with fixes. The flag change is sound, but the omitted Codex hooks file leaves an acceptance criterion unmet.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T10:54:34.437590+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T10:47:06.318991+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

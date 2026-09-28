@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PLUGINS_GLOB = "plugins/*/hooks/hooks.json"
+PLUGINS_GLOB = "plugins/*/hooks*/hooks.json"  # also covers shipwright-iterate's hooks-codex sibling
 
 
 def _collect_command_strings(node: object) -> list[str]:
