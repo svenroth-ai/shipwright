@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Root cause, not symptom","verdict":"pass","note":"Test raced a 0.5s wall-clock ceiling against a real-time joiner thread; production max fan-out is 1.36s under load. All three wall-clock exits now patched out of reach; verified failing old test vs passing new test with a 0.8s-starved joiner."},
+{"name":"No production code change","verdict":"pass","note":"Only shared/tests/test_ensure_shared_cache_fanout_join.py changed."},
+{"name":"Test still detects an early-return bug","verdict":"pass","note":"Joiner sets the event only after sleep(0.02)+observations; a barrier that returned immediately would leave joined unset."},
+{"name":"No retry/timeout bump","verdict":"pass","note":"Ceilings are removed from the assertion's path rather than tuned."},
+{"name":"Lint","verdict":"pass","note":"ruff 0.15.15 clean."},
+{"name":"Docs/hooks impact","verdict":"n/a","note":"Test-only, no hook or phase change."},
+{"name":"Affected boundaries","verdict":"n/a","note":"No IO boundary touched."}
+]}

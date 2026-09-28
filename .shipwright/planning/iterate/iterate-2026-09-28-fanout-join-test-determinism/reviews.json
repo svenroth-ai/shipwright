@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-28-fanout-join-test-determinism",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:57:50.268132+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:57:42.706151+00:00",
+      "disposition": "external plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_join.py",
+          "line": null,
+          "finding": "Comments referenced deleted identifier joined.set() and issue/run IDs (history belongs in commit body).",
+          "suggestion": "Present-tense comments; history to commit message. ADDRESSED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_join.py",
+          "line": null,
+          "finding": "60s ceilings mean a barrier that waits out the ceiling instead of returning once peers joined would pass, only 60s later.",
+          "suggestion": "Assert elapsed < 30 around the barrier call. ADDRESSED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_ensure_shared_cache_fanout_join.py",
+          "line": null,
+          "finding": "Only a 20ms head start separated a correct barrier from a no-wait mutant.",
+          "suggestion": "Order the joiner on a threading.Event set by the barrier's first poll. ADDRESSED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Dropping the trailing all(... is True) loses no coverage; `is False` is the correct missing-marker check. No action.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T22:02:20.201030+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Joiner writing markers only after the barrier's first poll guarantees a no-wait barrier finds them absent. — Not a flake, a regression-detection gap: the joiner could write during the barrier's first pass (os.open releases the GIL), so a single-pass barrier could pass.",
+          "suggestion": "Gate the joiner on the barrier's second pass (call count > len(participants)). ADDRESSED and verified: no-barrier mutant and single-pass mutant both fail deterministically; 6/6 x3 pass; ruff clean.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T22:04:35.290340+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T22:04:36.602863+00:00",
+      "disposition": "external code review is medium+ only and this run is small: a 66-line test-only diff with no production change",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T22:00:07.836344+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:57:42.404398+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:57:42.545227+00:00",
+      "disposition": "internal architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-28-fanout-join-test-determinism",
+    "date": "2026-09-29",
+    "unit": {
+      "status": "passed",
+      "passed": 20702,
+      "total": 20784
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 564,
+      "total": 564
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [
+      "F0: shared/tests red in parallel (5 unrelated tests, worktree/path-length/environment), green in authoritative serial retry; tracked as trg-f64d1c27"
+    ],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "barrier returns only once every installed peer has observed (no false 'returned before every active peer joined' under a starved joiner)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_shared_cache_fanout_join.py::test_detected_fanout_waits_for_all_installed_hook_participants PASSED (also with joiner delayed 0.8s and 0.5s after each observation)"
+        },
+        {
+          "behavior": "a barrier that returns without waiting, or after a single pass, is still detected",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_shared_cache_fanout_join.py::test_detected_fanout_waits_for_all_installed_hook_participants FAILS under the no-barrier and single-pass mutants (deterministic: joiner is gated on the barrier's second pass)"
+        },
+        {
+          "behavior": "a barrier that sits out the ceiling instead of returning once all peers joined is detected",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_shared_cache_fanout_join.py::test_detected_fanout_waits_for_all_installed_hook_participants asserts elapsed < 30s against 60s ceilings; PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Test-only change to shared/tests/test_ensure_shared_cache_fanout_join.py; no production code, route, UI or CLI surface touched; verified by the full F0 suite and forced-starvation and mutation runs."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-28-fanout-join-test-determinism",
+    "commit": "a434c57208f4f45fe8da928f162b4a3ac5aa2918",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
