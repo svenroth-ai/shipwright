@@ -311,6 +311,46 @@ across both legs — fixed, not disclosed:
   nothing currently compares the two strings against each other — noted,
   not fixed, to avoid widening this already-large diff into an unrelated
   test file.
+- **Uncaught mkdir/write failure (medium, fixed, a sixth external
+  code-review round).** `openai`: a permission error or a non-directory
+  already sitting at the run path made `runs_dir.mkdir(...)` raise
+  uncaught, and the iterate skill's degraded-handling prose named only
+  agent/reply failures, giving this preparation failure no path to
+  `Ran: no` — it could stop the iterate outright instead. Fixed both
+  sides: wrapped `mkdir` in `try/except OSError` (clean `error:` + exit 1,
+  matching every other failure path in this tool), and added "a nonzero
+  exit from `prepare_architecture_internal_spec.py`" to
+  `iteration-planning.md` step 0b's degraded-handling list. Covered by
+  `test_a_file_blocking_the_run_directory_fails_cleanly_not_with_a_traceback`
+  and `test_iterate_step_0b_degrades_on_a_prep_tool_failure`.
+- **Orphan-closer fence masking (low, disclosed with reason, same
+  round).** `glm`: a standalone fence-marker line with no true preceding
+  opener is itself treated as an opener (this IS correct CommonMark
+  parsing — an unpaired fence marker really does open an unterminated
+  code block for a real renderer too), masking everything after it to
+  EOF. If a genuine `## Internal Plan Review` section happened to follow
+  such a stray marker elsewhere in the same spec, it would be masked
+  (hidden from the section-finder) and therefore NOT stripped — the one
+  direction this masker's own "never toward leaving a real boundary
+  hidden" contract is meant to forbid. Accepted rather than fixed: this
+  is inherent to CommonMark's actual fence semantics, not an
+  implementation defect (any compliant parser produces the same masking
+  for the same input), and the precondition requires the SAME spec
+  document to independently carry a malformed/unpaired fence elsewhere —
+  the real `## Internal Plan Review` section is always authored
+  mechanically by our own tooling as unfenced top-level markdown, so
+  triggering this needs a hand-edited spec with unrelated broken
+  markdown. A CommonMark-deviating two-pass fix risks reintroducing one
+  of the four failure modes the last three rounds already fixed and
+  tested; not attempted given the precondition's low likelihood.
+- **Windows junction (medium) — same finding, second round, already
+  disclosed.** `openai` raised this again; no new information, no
+  further action beyond the round-5 disclosure above.
+- **Disposition-string wording drift — same finding, confirmed present,
+  no new action.** `glm` re-confirmed the pre-existing drift between
+  `_INTERNAL_ARM_DISPOSITIONS` and `_DELEGATED` already disclosed above;
+  declined for the same reason (pre-existing test-suite structure this
+  iterate did not introduce, unrelated file).
 - **Two low-severity items, declined with reason.** The Windows symlink
   fallback's check-then-write race was independently reflagged by `glm`; it
   is the same disclosed residual the earlier F11 preflight round already

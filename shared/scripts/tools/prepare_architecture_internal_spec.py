@@ -116,7 +116,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    runs_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        runs_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(f"error: could not create {runs_dir}: {exc}", file=sys.stderr)
+        return 1
     out_path = runs_dir / "architecture-internal-spec.md"
     try:
         _write_refusing_symlinks(out_path, sanitized)

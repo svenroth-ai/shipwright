@@ -178,6 +178,23 @@ def test_a_missing_spec_file_fails_cleanly_not_with_a_traceback(tmp_path: Path, 
     assert "error:" in capsys.readouterr().err.lower()
 
 
+def test_a_file_blocking_the_run_directory_fails_cleanly_not_with_a_traceback(
+    tmp_path: Path, capsys
+) -> None:
+    """External code review round 6 (medium, `openai`): a filesystem failure
+    creating the run directory (e.g. a plain FILE already sitting at that
+    path) must report a clean `error:` message and exit 1, not an unhandled
+    traceback — the iterate skill's degraded-handling path depends on a
+    nonzero exit it can act on, not a crash."""
+    runs_root = tmp_path / ".shipwright" / "runs"
+    runs_root.mkdir(parents=True)
+    (runs_root / _RUN_ID).write_text("not a directory", encoding="utf-8")
+
+    rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW)
+    assert rc != 0
+    assert "error:" in capsys.readouterr().err.lower()
+
+
 def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:
     """Only /shipwright-iterate calls this tool (iteration-planning.md, step
     0b) with its own run_id, so the strict iterate-YYYY-MM-DD-slug format is

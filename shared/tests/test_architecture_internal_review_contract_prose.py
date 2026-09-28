@@ -248,6 +248,16 @@ def test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy() -> None:
     assert "never the real iterate spec" in body
 
 
+def test_iterate_step_0b_degrades_on_a_prep_tool_failure() -> None:
+    """External code review (medium, `openai`): the prose's degraded-handling
+    list named agent/reply failures but not a nonzero exit from
+    `prepare_architecture_internal_spec.py` itself (a refused run-id,
+    symlink, or filesystem failure) — an unhandled gap that could stop the
+    iterate at this step instead of recording `Ran: no` and continuing."""
+    body = _iterate_step_0b()
+    assert "nonzero exit from" in body and "prepare_architecture_internal_spec.py" in body
+
+
 def test_iterate_step_0b_never_writes_decision_log_directly() -> None:
     """Iterate defers all decision logging to F3's decision-drop mechanism —
     unlike the plan side, step 0b must not name a direct decision_log.md

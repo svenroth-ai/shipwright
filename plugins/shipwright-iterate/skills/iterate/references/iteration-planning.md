@@ -386,10 +386,13 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    when non-null.
 
    **Degraded handling.** Same rule as step 0 — unreachable subagent,
-   unparseable reply, or a JSON missing `findings`/`summary`: record `Ran: no`
-   (reason as applicable) and **continue to step 1** without blocking. Do not
-   record the review-record row here — SKILL.md Step 7's mandatory sweep
-   closes it with a matching `--disposition`.
+   unparseable reply, a JSON missing `findings`/`summary`, **or a nonzero
+   exit from `prepare_architecture_internal_spec.py`** (a refused run-id,
+   symlink, or filesystem failure preparing the sanitized copy — the tool's
+   stderr names which): record `Ran: no` (reason as applicable) and
+   **continue to step 1** without blocking. Do not record the review-record
+   row here — SKILL.md Step 7's mandatory sweep closes it with a matching
+   `--disposition`.
 
    **Triage every finding** — fix (integrate into mini-plan/spec now),
    disclose (known limitation, recorded below), or decline (with a reason;
