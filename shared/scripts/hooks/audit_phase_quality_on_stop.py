@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: consolidated phase-quality audit entry point.
 
 Runs all 6 Phase-Quality categories (canon, workflow, infrastructure,
@@ -14,10 +18,6 @@ Contract (plan § 5):
 - **Greenfield-safe.** Silent no-op when ``project_root`` isn't a
   Shipwright-managed project.
 - **Disabled when** ``SHIPWRIGHT_PHASE_QUALITY=0``.
-
-Usage (from a plugin's ``hooks.json``):
-
-    uv run --no-project "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py"
 """
 
 from __future__ import annotations

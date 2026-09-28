@@ -173,8 +173,21 @@ def test_no_project_ignores_poisoned_cwd(
     )
 
 
+@pytest.fixture
+def headerless_probe(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A do-nothing script WITHOUT PEP 723 metadata, outside the poisoned CWD.
+
+    Every real hook now carries a `# /// script` header (see
+    test_hooks_pep723_isolation.py), which makes uv skip the CWD project on
+    its own — so a real hook can no longer show what `--no-project` does on
+    its own. This probe keeps the negative control on the flag layer."""
+    probe = tmp_path_factory.mktemp("headerless_probe") / "probe.py"
+    probe.write_text("pass\n", encoding="utf-8")
+    return probe
+
+
 def test_without_no_project_is_poisoned_by_cwd(
-    poisoned_cwd: Path, real_hook_command: tuple[str, Path]
+    poisoned_cwd: Path, real_hook_command: tuple[str, Path], headerless_probe: Path
 ) -> None:
     """The same invocation WITHOUT --no-project must never actually run
     against the poisoned CWD project — whether that shows up as a clean
@@ -187,7 +200,7 @@ def test_without_no_project_is_poisoned_by_cwd(
     opens and rejects it (failure naming project/resolution/interpreter),
     so either branch proves the poisoned project never influenced what
     actually ran."""
-    prefix, script_path = real_hook_command
+    prefix, _script_path = real_hook_command
     assert "--no-project" in shlex.split(prefix), (
         f"hooks.json's real command for {_TARGET_SCRIPT_NAME} no longer ships "
         f"--no-project (got prefix {prefix!r}) — this test's whole premise is "
@@ -203,7 +216,7 @@ def test_without_no_project_is_poisoned_by_cwd(
     )
 
     result = subprocess.run(
-        [*unpinned_prefix, str(script_path)],
+        [*unpinned_prefix, str(headerless_probe)],
         cwd=poisoned_cwd,
         input="{}",
         capture_output=True,

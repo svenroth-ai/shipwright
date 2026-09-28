@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """PostToolUse hook (SP4): mark plugin-side edits for the Stop reminder.
 
 When a Write/Edit touches a plugin-side file, record its repo-relative path in a

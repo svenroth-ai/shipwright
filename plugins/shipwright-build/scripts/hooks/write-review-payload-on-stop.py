@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Best-effort FALLBACK: salvage a review subagent's raw reply if the
 orchestrator has not recorded it yet.
 
