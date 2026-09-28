@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "AC-1..AC-7 built; ledger test derives the header list from hooks.json"},
+  {"name": "Error Handling", "verdict": "pass", "note": "control test skips visibly where uv ignores the CWD pin; uv missing hard-fails in CI"},
+  {"name": "Security Basics", "verdict": "pass", "note": "no secrets; probe env strips CLAUDE*/SHIPWRIGHT_*/UV_* so probes cannot touch a real session"},
+  {"name": "Test Quality", "verdict": "pass", "note": "probes use real uv against a poisoned CWD; negative controls prove the header (and --no-project) are what isolate"},
+  {"name": "Performance Basics", "verdict": "pass", "note": "warm 0.13 s vs 0.17 s; cold 12-way start 2.3 s, inside the repair windows"},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "two hook files trimmed to stay at the 300-line limit; vendored copies byte-identical to the template"},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "hooks.json -> uv -> header; run_if_cache_ready sys.executable chain; codex dedup keys on unchanged command strings"},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "no skipped-without-reason tests; the one conditional skip states its reason"}
+]}

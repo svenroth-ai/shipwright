@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook for the Master /shipwright-run session.
 
 Observational only — never sets run.status. Final-status responsibility belongs to

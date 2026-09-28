@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """PostToolUse hook: nudge + write marker when an edit crosses the size limit.
 
 Per Campaign A.foundation (bloat cleanup): per-filetype limits (300 source/

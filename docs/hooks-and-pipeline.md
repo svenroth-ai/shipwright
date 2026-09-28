@@ -1537,7 +1537,7 @@ with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
 > absent). Both now carry `--with pyyaml --with jsonschema` on every
 > plugin that invokes them, kept in lockstep across plugins by the same
 > prefix-consistency test below. The `.venv`/`.python-version` interpreter
-> residual itself (next paragraph) is unchanged and still open. Enforced by
+> residual is closed by the PEP 723 headers (next paragraph). Enforced by
 > `shared/tests/test_hooks_uv_run_pinned.py` (every `uv run` command must
 > start with `--no-project`; the same script invoked from more than one
 > plugin must use an identical flag prefix everywhere, since
@@ -1553,6 +1553,33 @@ with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
 > and re-sync the Codex bundle: `uv run shared/scripts/tools/build_codex_plugin.py
 > --project-root . --out dist/codex-plugin` then `uv run
 > shared/scripts/tools/codex_hooks_sync.py --bundle-root dist/codex-plugin`.
+
+> **Every `uv run` hook entry point also carries PEP 723 inline script metadata**
+> (`iterate-2026-09-28-pep723-hook-isolation-pilot`): a `# /// script` header
+> with `requires-python = ">=3.11"` and `dependencies` mirroring the `--with`
+> flags its hooks.json entry passes. A script with that header never consults
+> an ambient project, `.venv` or `.python-version`, on any uv version — measured
+> on uv 0.11: a hook *without* it, run with `--no-project` from a CWD holding
+> `.python-version=3.9`, tried to download Python 3.9. On uv >= 0.12 project
+> discovery is script-relative anyway (astral-sh/uv#14585), so `--no-project`
+> alone became a version-dependent guarantee; the header is the version-
+> independent one. **Both layers stay**: `--no-project` is not removed. Warm
+> per-call cost is unchanged (~0.13 s with vs ~0.17 s without, 5-run mean).
+> **Adding a hook:** put the header on any script a hooks.json runs via `uv run`
+> (`shared/tests/test_hooks_pep723_isolation.py` derives that list from
+> hooks.json and fails otherwise); the vendored `run_if_cache_ready.py` copies
+> must stay byte-identical to `shared/templates/hooks/run_if_cache_ready.py`.
+> Chain-run scripts (reached via `sys.executable`) inherit the entry point's
+> environment and need no header of their own. **Verified** on uv 0.11.9 and
+> 0.12.19: a headed hook run from a CWD with an unsatisfiable `pyproject.toml`
+> and a `.python-version` of `3.99` exits 0 with empty stderr on a warm cache (no `--no-project`
+> warning), while a headerless script fails on 0.11 and is unaffected on 0.12
+> (the control test skips there). A cold uv cache with 12 plugins starting at
+> once costs ~2.3 s wall vs ~0.5 s for the old command, all exit 0. **Not
+> covered:** the three bash hooks (`validate_command.sh`, `check_secrets.sh`,
+> `check_destructive_migration.sh`) look up `python3` on PATH and can still be
+> affected by a CWD `.python-version`. `audit_compliance_on_stop` declares `packaging`, so its SBOM version
+> sort keeps the exact comparison it used to get from the ambient environment.
 
 ### Fan-out consolidation (once-per-event guard)
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: measure this session's actual API cost from its own transcript.
 
 Additive — registered alongside the existing ``track_tool_calls.py`` /

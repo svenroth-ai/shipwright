@@ -1,0 +1,1 @@
+Every hook entry point that hooks.json runs via `uv run` now carries PEP 723 inline script metadata, so hooks ignore the session CWD's project, .venv and .python-version on any uv version; `--no-project` stays as a second layer.

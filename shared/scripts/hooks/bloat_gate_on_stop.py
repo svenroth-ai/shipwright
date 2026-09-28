@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: block when bloat markers indicate anti-ratchet or new crossing.
 
 Reads the current session's marker (.shipwright/locks/bloat_pending.<sid>.json),
-re-measures each entry's file, consults shipwright_bloat_baseline.json, and
-emits top-level ``{"decision": "block", "reason": "..."}`` for anti-ratchet
-entries or crossings outside the baseline. Stop schema (Claude Code current,
-refreshed 2026-05-25) permits NO ``hookSpecificOutput`` wrapper — pass-path
-emits empty stdout, block-path emits top-level decision/reason only.
-Diagnostics route to stderr.
+re-measures each entry's file, consults shipwright_bloat_baseline.json, and emits
+top-level ``{"decision": "block", "reason": "..."}`` for anti-ratchet entries or
+crossings outside the baseline. Stop schema (Claude Code, refreshed 2026-05-25)
+permits NO ``hookSpecificOutput`` wrapper — pass-path emits empty stdout,
+block-path top-level decision/reason only. Diagnostics route to stderr.
 
-Iron-Law / Red-Flags / Rationalization-Prevention block-body adapted from
-``obra/superpowers`` verification-before-completion (MIT, © Jesse Vincent).
+Iron-Law / Red-Flags / Rationalization-Prevention block-body adapted from ``obra/superpowers`` verification-before-completion (MIT, © Jesse Vincent).
 
-Registered on ``Stop`` only, never ``SubagentStop`` — so a subagent's OWN
-oversize edit is not interactively gated here (by design: its own F0/F11
-finalization is the real backstop); this hook only stops a sibling
-subagent's in-flight marker from blocking the SPAWNING session's own Stop
-(see ``bloat_baseline.marker_key``; external review, 2026-09-07).
+Registered on ``Stop`` only, never ``SubagentStop`` — a subagent's OWN oversize
+edit is not gated here (its own F0/F11 finalization is the real backstop); this
+hook only stops a sibling subagent's in-flight marker from blocking the SPAWNING
+session's own Stop (see ``bloat_baseline.marker_key``; external review, 2026-09-07).
 """
 
 from __future__ import annotations

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: Check documentation completeness before session ends.
 
 Verifies that decision_log.md and session_handoff.md are up to date.

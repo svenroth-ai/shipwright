@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-28-pep723-hook-isolation-pilot",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:26:21.157073+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:26:28.919124+00:00",
+      "disposition": "external plan review is Advisory (Override Classes): the approach was agreed with the operator in conversation before the build, and the diff is covered by the code-level external review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shared/scripts/hooks/audit_phase_quality_on_stop.py",
+          "line": 304,
+          "finding": "RESOLVED: the 4-line header pushed audit_phase_quality_on_stop.py (300->304) and bloat_gate_on_stop.py (299->303) over the 300-line source limit with no baseline entry (new crossing, Group H1, Stop-hook bloat gate blocks on touch).",
+          "suggestion": "Trim docstring lines the way generate_handoff_on_stop.py was; do not add baseline entries. Done: both files are back at 300.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+          "line": 180,
+          "finding": "RESOLVED: the target script write_terminal_marker.py now carries a header, so the negative control could no longer show what --no-project does on its own and its failure branch could never run.",
+          "suggestion": "Point the control at a headerless probe. Done: the #814 test is unchanged except that it runs a headerless probe script.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+          "line": 243,
+          "finding": "RESOLVED: stderr.startswith(warning) accepted any trailing diagnostics.",
+          "suggestion": "Moot after reverting the relaxation to the #814 assertions.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_hooks_pep723_isolation.py",
+          "line": 158,
+          "finding": "RESOLVED: the header probe test had no negative control, so it could pass with the headers deleted.",
+          "suggestion": "Add a headerless control that skips visibly. Done: test_control_headerless_script_is_affected_by_cwd_python_pin.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_hooks_pep723_isolation.py",
+          "line": 37,
+          "finding": "RESOLVED: headers on capture_session_id.py and check_required_checks_hook.py never take effect (chain-run via sys.executable).",
+          "suggestion": "Remove them and the extra ledger. Done.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/tests/test_hooks_pep723_isolation.py",
+          "line": 158,
+          "finding": "RESOLVED: 10 real uv runs with a 180 s timeout each.",
+          "suggestion": "Cut to one probe per dependency shape. Done: 2 probes x 2 flag sets.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/triage.jsonl",
+          "line": 2312,
+          "finding": "Nine unrelated triage events ride the diff. They are the worktree-setup outbox sweep, not authored by this iterate.",
+          "suggestion": "Confirm intended. Confirmed: setup_iterate_worktree adopts undelivered main-tree drift appends into the branch.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T21:26:16.460930+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_hooks_pep723_isolation.py",
+          "line": 133,
+          "finding": "Claim under doubt: the header means uv never consults a CWD .python-version, on any uv version — Only pins that requires-python >=3.11 rejects were tested (2.6, 3.9); a compatible pin might still be honoured.",
+          "suggestion": "Poisoned-CWD case with a compatible-but-uninstallable pin. RESOLVED: probed 3.99 with UV_PYTHON_DOWNLOADS=never on uv 0.11.9 and 0.12.19: the headed hook exits 0 silently; the headerless control errors on 0.11.9. Test pin changed to 3.99.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_hooks_pep723_isolation.py",
+          "line": 158,
+          "finding": "Claim under doubt: no behavioural change; both layers stay — uv might warn that --no-project is ignored for a script with inline metadata, adding stderr noise to every hook and to exit-2 block reasons.",
+          "suggestion": "Capture stderr on CI's uv and 0.11. RESOLVED: stderr is empty on 0.11.9 and 0.12.19; measured and recorded in docs/hooks-and-pipeline.md.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/templates/hooks/run_if_cache_ready.py",
+          "line": 1,
+          "finding": "Claim under doubt: cost is unchanged — Only warm runs were measured; 12 plugins start run_if_cache_ready at once on a cold cache.",
+          "suggestion": "Cold-cache 12-way measurement. RESOLVED: 2.3 s wall vs 0.5 s for the old command, all 12 exit 0, inside the 5 s / 10 s repair windows; recorded in the docs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_hooks_pep723_isolation.py",
+          "line": 150,
+          "finding": "Claim under doubt: the real-uv probe test has no side effects — CLAUDE_* and SHIPWRIGHT_* pass through to hooks that write CLAUDE_ENV_FILE / resolve SHIPWRIGHT_PROJECT_ROOT.",
+          "suggestion": "Strip them. RESOLVED: the probe env strips UV_*, CLAUDE*, SHIPWRIGHT_* and VIRTUAL_ENV, and sets UV_PYTHON_DOWNLOADS=never.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 1546,
+          "finding": "Claim under doubt: every hook entry point is isolated — Three bash hooks never go through uv and look up python3 on PATH.",
+          "suggestion": "Reword to uv-run entry points. RESOLVED in the docs, and recorded as out of scope in the spec.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+          "line": 176,
+          "finding": "Claim under doubt: the relaxed negative control still guards the --no-project layer — The control's script has a header, so the flag is no longer tested alone.",
+          "suggestion": "Headerless probe. RESOLVED: #814 test restored, now runs a headerless probe.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T21:26:16.692062+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/hooks/audit_compliance_on_stop.py:1-4` / `docs/hooks-and-pipeline.md:1571-1573",
+          "line": null,
+          "finding": "The doc admits the SBOM version sort \"loses its optional `packaging` import under the isolated env and falls back to a cruder sort.\" This is not an uncovered pre-existing gap (like the bash hooks) — it is a behavior regression caused by this change: previously `packaging` was picked up from the ambient environment, and the new header cuts that off. The spec claims \"Spec Impact: NONE,\" so accepting a silently degraded sort contradicts that claim, and it's fixed trivially.",
+          "suggestion": "Add `\"packaging\"` to the header's `dependencies` for `audit_compliance_on_stop.py` (and mirror it in `--with` if you want the codex-bundle dedup shape unchanged — the superset test tolerates extra header deps). Remove the \"falls back to a cruder sort\" sentence.  2. Category: test | Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_hooks_pep723_isolation.py:34` (`_UV_RUN_TARGET`)",
+          "line": null,
+          "finding": "The ledger regex only matches `uv run <flags> \"quoted-target\"` — a hooks.json entry written as `uv run --no-project ${CLAUDE_PLUGIN_ROOT}/.../hook.py` (unquoted), `uv run ... python script.py`, or using `$CLAUDE_PLUGIN_ROOT` without braces is silently dropped from `_entry_points()`, so a new headerless hook of that shape would pass CI. The `>= 30` floor only detects catastrophic regex breakage, not single-entry drift, and `${CLAUDE_PLUGIN_ROOT}` handling is additionally hardcoded to the braced form (an unbraced path resolves to a nonexistent file and fails at collection, not as a clean test failure).",
+          "suggestion": "Also parse the unquoted form (e.g. fall back to splitting the command and taking the first token ending in `.py` after `uv run`), and make path resolution assert on unresolved variables rather than silently producing a bad Path.  3. Category: test | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_hooks_pep723_isolation.py:47-48`, `:122-123",
+          "line": null,
+          "finding": "Module-level `assert len(_ENTRY_POINTS) >= 30` and the `_PROBED` name assertion turn fixture drift into collection errors for the whole module — all tests report as errors, and on some CI setups a collection error in one file can obscure results in others. Also the doc claims \"empty stderr\" was verified, but the test only asserts `\"error:\" not in proc.stderr`, which is weaker than the documented claim (a hook emitting noise on stderr would pass).",
+          "suggestion": "Move both into real tests (or a session-scoped fixture raising `pytest.fail`), and assert `proc.stderr.strip() == \"\"` if the empty-stderr claim is meant to be load-bearing.  4. Category: test | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_hooks_pep723_isolation.py:132-133",
+          "line": null,
+          "finding": "The poisoned-CWD behavioral test probes only 2 of ~35 entry points (`suggest_iterate.py`, `audit_compliance_on_stop.py`). Static header-shape tests cover all 35, but a malformed-but-parseable header on any of the other 33 (e.g. a dependency typo like `yaml` instead of `pyyaml` that still parses as a name) is only caught by the `--with` superset test, not by an actual run. This matches the review record's deliberate probe cut, so it's a calibration note, not a blocker.",
+          "suggestion": "Optionally rotate one more `pyyaml`-dependent entry point into `_PROBED_NAMES`, or leave as-is given the documented concurrency cost.  5. Category: bug | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_hooks_pep723_isolation.py:38-40",
+          "line": null,
+          "finding": "_hook_commands` glob is `plugins//hooks/hooks.json` — it matches any `hooks.json` (e.g. a `hooks.dev.json` or `hooks.codex.json` if one exists), and the resolve-relative-to-plugin-root assumption (`hooks_path.parent.parent`) only holds if hooks.json sits exactly two levels below the plugin root. If the codex bundle sync produces a differently-nested hooks file, the ledger's path resolution silently produces wrong Paths. Low because the current tree presumably matches.",
+          "suggestion": "Assert the resolved path exists before use so drift fails loudly instead of producing `FileNotFoundError` at parametrize time.  Spec compliance check: AC-1 through AC-7 are all implemented. AC-6 is verifiable from the diff: all 12 vendored `run_if_cache_ready.py` copies plus the template share the same before/after blob hashes, so they remain byte-identical. AC-5's rewrite of the #814 negative control to a headerless probe is done as described. The `--no-project` layer is asserted twice (old test file and new `test_no_project_still_present_alongside_headers`). No security issues found.  Overall: ship-with-fixes — the approach is sound and well-tested, but the `packaging` regression in `audit_compliance_on_stop` should be fixed rather than documented, and the ledger regex's unquoted-command blind spot slightly undermines the \"a new hook without a header fails CI\" guarantee.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_hooks_pep723_isolation.py:36` — Finding: The hook ledger recognizes only `uv run` targets in double quotes. A new command such as `uv run --no-project ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/new.py` would be omitted, so it could lack a PEP 723 header while the tests still pass. This breaks AC-3’s requirement that a new headerless hook fail CI.",
+          "line": null,
+          "finding": "Parse every `uv run` command shape accepted in `hooks.json`, and fail explicitly when a command cannot be mapped to a script.  The runtime changes shown are otherwise consistent with the specification. Ship with this test fix so the ledger enforces the stated coverage guarantee.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T21:54:17.540655+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: regression | Severity: medium**\n- File: `shared/scripts/hooks/audit_compliance_on_stop.py:1-4` / `docs/hooks-and-pipeline.md:1571-1573`\n- Finding: The doc admits the SBOM version sort \"loses its optional `packaging` import under the isolated env and falls back to a cruder sort.\" This is not an uncovered pre-existing gap (like the bash hooks) — it is a *behavior regression caused by this change*: previously `packaging` was picked up from the ambient environment, and the new header cuts that off. The spec claims \"Spec Impact: NONE,\" so accepting a silently degraded sort contradicts that claim, and it's fixed trivially.\n- Suggestion: Add `\"packaging\"` to the header's `dependencies` for `audit_compliance_on_stop.py` (and mirror it in `--with` if you want the codex-bundle dedup shape unchanged — the superset test tolerates extra header deps). Remove the \"falls back to a cruder sort\" sentence.\n\n**2. Category: test | Severity: medium**\n- File: `shared/tests/test_hooks_pep723_isolation.py:34` (`_UV_RUN_TARGET`)\n- Finding: The ledger regex only matches `uv run <flags> \"quoted-target\"` — a hooks.json entry written as `uv run --no-project ${CLAUDE_PLUGIN_ROOT}/.../hook.py` (unquoted), `uv run ... python script.py`, or using `$CLAUDE_PLUGIN_ROOT` without braces is silently dropped from `_entry_points()`, so a new headerless hook of that shape would pass CI. The `>= 30` floor only detects catastrophic regex breakage, not single-entry drift, and `${CLAUDE_PLUGIN_ROOT}` handling is additionally hardcoded to the braced form (an unbraced path resolves to a nonexistent file and fails at *collection*, not as a clean test failure).\n- Suggestion: Also parse the unquoted form (e.g. fall back to splitting the command and taking the first token ending in `.py` after `uv run`), and make path resolution assert on unresolved variables rather than silently producing a bad Path.\n\n**3. Category: test | Severity: low**\n- File: `shared/tests/test_hooks_pep7 […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/tests/test_hooks_pep723_isolation.py:36` — Finding: The hook ledger recognizes only `uv run` targets in double quotes. A new command such as `uv run --no-project ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/new.py` would be omitted, so it could lack a PEP 723 header while the tests still pass. This breaks AC-3’s requirement that a new headerless hook fail CI.\n- Suggestion: Parse every `uv run` command shape accepted in `hooks.json`, and fail explicitly when a command cannot be mapped to a script.\n\nThe runtime changes shown are otherwise consistent with the specification. Ship with this test fix so the ledger enforces the stated coverage guarantee.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "opus-spec-reviewer",
+      "completed_at": "2026-09-28T21:26:16.924801+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:26:29.113135+00:00",
+      "disposition": "internal plan review is a plan-phase pass; no mini-plan was authored (approach agreed in conversation, pilot-first), the built diff got code + doubt + spec review instead",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:59:56.752116+00:00",
+      "disposition": "architecture review asks whether the change should be built at all; it is a plan-phase pass, and the approach (PEP 723 headers plus keeping --no-project) was decided with the operator in conversation before the build; no mini-plan was authored",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

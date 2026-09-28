@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """PreToolUse hook: Soft-block deploy when critical security findings exist.
 
 Reads the committed CI-security summary

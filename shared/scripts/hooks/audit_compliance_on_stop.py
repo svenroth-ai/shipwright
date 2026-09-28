@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml", "jsonschema", "packaging"]
+# ///
 """Stop hook: branch-local compliance detective-audit diagnostics.
 
 The hook runs the full A-I audit on the resolved active worktree and reports findings
