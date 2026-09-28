@@ -329,9 +329,14 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    is a second call rather than a reuse of the plan-review call. Mirrors
    `/shipwright-plan` Step 5-int-arch. Runs exactly once per run — if
    `## Internal Architecture Review` already exists in the iterate spec
-   **and records `Ran: yes`**, skip straight to step 1; a recorded `Ran: no`
-   is not a completed pass — retry it, **overwriting the existing section in
-   place** (never append a second heading).
+   **and records `Ran: yes`**: **reconcile the review-record row FIRST, before
+   skipping anywhere.** If `architecture_internal` is still `pending` (a crash
+   between writing the spec section and recording the row is exactly this
+   case), record it now from the existing section's content — do not
+   re-spawn. Only once the row is no longer `pending` does "already ran"
+   mean skip straight to step 1. A recorded `Ran: no` is not a completed
+   pass — retry it, **overwriting the existing section in place** (never
+   append a second heading).
 
    **Write the brief first.** `mkdir -p
    ".shipwright/planning/iterate/{run_id}"` — do not rely on step 0's
@@ -354,11 +359,6 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    `Ran: no (no Codex transport for architecture_internal yet)` and continue
    to step 1 — a full Codex-side role is an explicit follow-up, out of this
    run's scope.
-
-   **Resume reconciliation.** Same shape as step 0: if the spec section
-   already records `Ran: yes` but `architecture_internal` is still `pending`
-   on resume, **record the row from the existing section's content, do not
-   re-spawn.**
 
    **Sanitize the spec before spawning.** By this point the iterate spec
    already carries step 0's `## Internal Plan Review` section (and, at

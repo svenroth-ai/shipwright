@@ -146,6 +146,18 @@ Two findings, both about `prepare_architecture_internal_spec.py` /
   already settled in an earlier pass of this same spec; reworded to
   neutral, non-directive language so text a contributor wrote cannot read
   as an instruction to a reviewer.
+- **Resume-path gap (medium, fixed, a third F11 preflight pass).**
+  `iteration-planning.md` step 0b stated the early "spec already says
+  `Ran: yes` -> skip straight to step 1" rule BEFORE the separate
+  paragraph reconciling a still-`pending` `architecture_internal` row on
+  resume. A crash between writing the spec section and recording the row
+  left the early rule reachable without ever reaching the reconciliation
+  paragraph, so a resumed run could skip past step 1 with the row
+  permanently `pending` — the exact case `check_review_record` (F11)
+  fails closed on. Fixed by folding reconciliation into the same rule,
+  ordered before the skip, so it cannot be structurally bypassed. Covered
+  by a new ordering-sensitive test,
+  `test_iterate_step_0b_reconciles_the_pending_row_before_skipping`.
 
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate

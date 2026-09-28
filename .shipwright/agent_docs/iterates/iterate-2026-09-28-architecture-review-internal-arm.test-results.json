@@ -29,7 +29,7 @@
       "surface": "cli",
       "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
       "exit_code": 0,
-      "tests_run": 69,
+      "tests_run": 70,
       "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
       "timestamp": "2026-09-28T00:00:00Z"
     },
@@ -47,9 +47,9 @@
           "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_internal_architecture_review_section_shape, ::test_plan_internal_architecture_review_triage_and_gate, ::test_plan_internal_architecture_review_logs_its_own_decision_log_section PASSED; shared/tests/test_plan_gate_extras.py::test_an_internal_architecture_review_decision_satisfies_the_gate PASSED"
         },
         {
-          "behavior": "AC3: the iterate side runs the same pass as a new step immediately after the Internal Plan Review sub-step, gated at medium+ only, writes the brief + a spec section, and notes the outcome in the iterate ADR (never decision_log.md directly)",
+          "behavior": "AC3: the iterate side runs the same pass as a new step immediately after the Internal Plan Review sub-step, gated at medium+ only, writes the brief + a spec section, and notes the outcome in the iterate ADR (never decision_log.md directly). A resume must reconcile a still-pending architecture_internal row BEFORE the early 'already ran' skip, never after",
           "disposition": "tested",
-          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_runs_right_after_the_plan_review_substep_medium_plus, ::test_iterate_step_0b_writes_the_brief_and_the_spec_section, ::test_iterate_step_0b_never_writes_decision_log_directly PASSED; integration-tests/test_model_tier_spawn_instructions_present.py (ITERATION_PLANNING_MD spawn anchor) PASSED"
+          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_runs_right_after_the_plan_review_substep_medium_plus, ::test_iterate_step_0b_writes_the_brief_and_the_spec_section, ::test_iterate_step_0b_never_writes_decision_log_directly, ::test_iterate_step_0b_reconciles_the_pending_row_before_skipping PASSED; integration-tests/test_model_tier_spawn_instructions_present.py (ITERATION_PLANNING_MD spawn anchor) PASSED"
         },
         {
           "behavior": "AC4: Step 5a (plan) and step 2a (iterate) read the already-authored brief instead of re-writing it; the CLI's existing --plan-file refusal is untouched",

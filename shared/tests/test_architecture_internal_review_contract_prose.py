@@ -201,6 +201,28 @@ def test_iterate_step_0b_writes_the_brief_and_the_spec_section() -> None:
     assert "iterate adr" in body
 
 
+def test_iterate_step_0b_reconciles_the_pending_row_before_skipping(
+) -> None:
+    """F11 local PR-review preflight BLOCK: a crash between writing the
+    spec section (`Ran: yes`) and recording the architecture_internal row
+    left an early 'skip straight to step 1' rule reachable BEFORE a
+    separately-stated resume-reconciliation rule, so a resumed run could
+    skip past step 1 with the row still pending -- and check_review_record
+    (F11) fails closed on that. The reconciliation must be stated as part
+    of the same rule, ordered before the skip, not as a later paragraph a
+    model already committed to skipping might never reach."""
+    body = _iterate_step_0b()
+    reconcile_idx = body.index("reconcile the review-record row first")
+    skip_idx = body.index("skip straight to step 1")
+    assert reconcile_idx < skip_idx, (
+        "reconciling the pending row must be ordered BEFORE the skip "
+        "instruction, not stated afterward where a model already "
+        "following the skip could miss it"
+    )
+    assert "crash between writing the spec section" in body
+    assert "do not re-spawn" in body
+
+
 def test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy() -> None:
     """The iterate spec is the ONE document that carries `## Internal Plan
     Review` by the time this step runs (unlike the plan side, where that
