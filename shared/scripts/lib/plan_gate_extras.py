@@ -81,12 +81,14 @@ def review_key_honesty(marker: dict[str, Any] | None, computed_status: str) -> G
 
 _SECTION_LINE_RE = re.compile(r"-\s*\*\*Section:\*\*\s*(.+)$", re.MULTILINE)
 
-#: Section-tag prefixes Step 2 / Step 5 / Step 5a / Self-Review write, per
-#: `step-5-external-review.md` and SKILL.md Step 2. A planning session that
-#: never wrote any of these logged no decision at all.
+#: Section-tag prefixes Step 2 / Step 5 / Step 5-int-arch / Step 5a /
+#: Self-Review write, per `step-5-external-review.md`, `step-5-int-arch.md`
+#: and SKILL.md Step 2. A planning session that never wrote any of these
+#: logged no decision at all.
 _PLAN_DECISION_PREFIXES = (
     "Plan Interview",
     "Internal Plan Review",
+    "Internal Architecture Review",
     "External Review",
     "Architecture Review",
     "Self-Review",

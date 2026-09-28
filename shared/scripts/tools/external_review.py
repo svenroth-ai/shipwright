@@ -96,9 +96,8 @@ from external_review_degraded import (  # noqa: E402
 from external_review_modes import (  # noqa: E402
     MODE_INPUT,
     ModeInputError,
-    is_blank,
-    render_user_prompt,
-    select_mode_input,
+    is_blank, render_user_prompt,
+    select_mode_input, strip_prior_review_sections,
 )
 from external_review_prompts import (  # noqa: E402
     default_review_prompts,
@@ -323,7 +322,8 @@ def main() -> int:
 
     primary_text = primary_path.read_text(encoding="utf-8")
     spec = spec_path.read_text(encoding="utf-8")
-
+    if args.mode == "architecture":  # keep the anchoring defense real, see lib
+        spec = strip_prior_review_sections(spec)
     # `.strip()` alone is not enough: a BOM is not whitespace to Python
     # (`'﻿'.isspace()` is False), and PowerShell 5.1's `Set-Content -Encoding
     # UTF8 ""` writes exactly BOM+CRLF — which would have read as a non-empty

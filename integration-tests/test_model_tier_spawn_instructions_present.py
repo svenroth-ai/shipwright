@@ -36,6 +36,10 @@ STEP_5_EXTERNAL_REVIEW_MD = (
     REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
     / "step-5-external-review.md"
 )
+STEP_5_INT_ARCH_MD = (
+    REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
+    / "step-5-int-arch.md"
+)
 
 # (skill file, flag anchors expected in the banner usage line)
 FLAG_ANCHORS = (
@@ -58,6 +62,31 @@ SPAWN_ANCHORS = (
     # leaves the full suite green (a silent no-op regression).
     (ITERATION_PLANNING_MD, "Agent tool's `model=`"),
     (STEP_5_EXTERNAL_REVIEW_MD, "Agent tool's `model=`"),
+    # The two `architecture-internal-reviewer` spawn sites the internal
+    # architecture-review arm adds: /shipwright-plan Step 5-int-arch and
+    # /shipwright-iterate's own Internal Architecture Review sub-step (0b).
+    # Both spawn a SEPARATE fresh-context agent from opus-plan-reviewer over
+    # the brief + spec — without this anchor, deleting either spawn line
+    # leaves the "Agent tool's `model=`" anchor above still satisfied by the
+    # sibling plan-reviewer spawn, hiding a silent no-op regression here.
+    (ITERATION_PLANNING_MD, "shipwright-plan:architecture-internal-reviewer"),
+    # step-5-external-review.md only POINTS at step-5-int-arch.md now (the
+    # 400-LOC runtime-prompt budget forced the full Step 5-int-arch procedure
+    # into its own reference file, same split pattern as build's SKILL.md) —
+    # the real spawn line lives there.
+    (STEP_5_INT_ARCH_MD, "architecture-internal-reviewer` (Read/Grep/Glob only)"),
+    # The two anchors above only check the agent NAME appears somewhere in
+    # the file — deleting just the "Pass ... as the Agent tool's `model=`
+    # parameter" sentence that actually wires the resolved tier into the
+    # spawn would leave both of them (and the generic "Agent tool's `model=`"
+    # anchor above, satisfied by the sibling opus-plan-reviewer spawn) still
+    # green. These two anchor on each file's own architecture-internal-
+    # reviewer model= sentence specifically, so deleting it is caught here.
+    (
+        ITERATION_PLANNING_MD,
+        "this pass is not a fifth role) as the Agent tool's `model=`",
+    ),
+    (STEP_5_INT_ARCH_MD, "`agent_param` as the Agent tool's `model=`"),
 )
 
 

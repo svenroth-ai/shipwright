@@ -33,6 +33,7 @@ EXPECTED_STEP_REFERENCES = {
     "first-actions.md",
     "step-0-context-recovery.md",
     "step-5-external-review.md",
+    "step-5-int-arch.md",
     "step-9-completion.md",
     "error-handling.md",
 }

@@ -127,7 +127,8 @@ def test_review_cascade_complete_when_self_terminal_and_nothing_pending(tmp_proj
     _write_reviews_json(
         tmp_project, run_id="iterate-2026-08-09-done",
         statuses={t: "completed" for t in
-                  ("self", "plan", "plan_internal", "code", "doubt", "external_code", "spec")},
+                  ("self", "plan", "plan_internal", "architecture_internal", "code",
+                   "doubt", "external_code", "spec")},
     )
 
     lines = render_iterate_progress(tmp_project, {"branch": "iterate/done"})

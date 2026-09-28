@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All 8 ACs implemented per the Confidence Calibration Test Completeness Ledger; Codex transport for architecture_internal deliberately NOT built, correctly disclosed as out-of-scope rather than silently added."},
+    {"name": "Error Handling", "verdict": "pass", "note": "No new runtime I/O surface introduced (docs/skill-prose/config/schema/agent-prompt changes); the new agent is Read/Grep/Glob only, no external calls to guard; record_review_pass.py's new choice validates through existing argparse machinery."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input handling, no secrets introduced; the new agent's read-only tool grant plus explicit plan.md prohibition is itself the anchoring-defense/security property this change adds."},
+    {"name": "Test Quality", "verdict": "pass", "note": "New prose-contract tests assert on actual rendered file content (outcomes), not internal state; extended fixtures (review_record_campaign_shape, review_cascade_handoff) exercise real behavior, not tautologies."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "No DB queries, list endpoints, or async handlers touched — markdown/schema/test changes only."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "New files land in existing conventions (agents/, skills/*/references/); all new files well under the 300/400 LOC caps; the two grandfathered files brought exactly to their caps (300, 400) rather than over."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "3 producer/consumer pairs listed in the iterate spec's Affected Boundaries table. Real round-trip probes run against the reviews.json JSON boundary (record+show, plus model-tier-floor positive/negative controls) this session; the architecture_brief.md handoff is covered by AC4's re-read-not-reauthor prose-contract tests."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'test_hygiene: no findings'."}
+  ]
+}

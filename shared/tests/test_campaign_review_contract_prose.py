@@ -89,6 +89,11 @@ def test_the_campaign_recording_commands_exist_where_the_runner_is_sent():
         "disposition naming the documented gap — it is never promoted at "
         "3f-bis, unlike spec/code/doubt above"
     )
+    assert "--review-type architecture_internal --status not_run" in norm, (
+        "the internal architecture-review arm must be recorded not_run with "
+        "a disposition naming the documented gap, same treatment as "
+        "plan_internal above — no campaign-level spawn site exists yet"
+    )
 
 
 def test_runner_carries_a_status_transition_table():

@@ -32,6 +32,7 @@ __all__ = [
     "render_user_prompt",
     "render_user_prompt_as_stdin_refs",
     "select_mode_input",
+    "strip_prior_review_sections",
 ]
 
 #: Mode → (input flag, dest attribute, human label). One row per mode, so a new
@@ -72,6 +73,26 @@ class ModeInputError(ValueError):
 def is_blank(text: str) -> bool:
     """True when ``text`` holds nothing a reviewer could read."""
     return not text.strip(BLANK_CHARS)
+
+
+#: Headings the architecture pass must never see (Stage-3 doubt review, high).
+#: On the plan side the anchoring defense holds by construction — the internal
+#: passes write to `plan.md`, never `spec.md`. On the iterate side there is no
+#: second document: these same headings land in the ONE spec file this mode is
+#: handed as `--spec-file`, each carrying exactly the rejection rationale the
+#: brief was built to withhold.
+_PRIOR_REVIEW_SECTION_RE = re.compile(
+    r"^## (?:Internal Plan Review|Internal Architecture Review|Self-Review|"
+    r"Architecture Review)\b.*?(?=\n## |\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+def strip_prior_review_sections(spec_text: str) -> str:
+    """Remove sections that would leak a prior reviewer's verdict/rationale
+    into the architecture pass's `{SPEC}` input — a code-level backstop for
+    the anchoring defense prose already asks the iterate skill to honor."""
+    return _PRIOR_REVIEW_SECTION_RE.sub("", spec_text)
 
 
 def select_mode_input(mode: str, args: Any) -> tuple[str, str]:

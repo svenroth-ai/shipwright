@@ -18,7 +18,8 @@ PATH = f".shipwright/planning/iterate/{RUN}/reviews.json"
 
 def completed_record():
     record = new_record(RUN)
-    for review_type in ("self", "spec", "code", "doubt", "plan", "external_code", "plan_internal"):
+    for review_type in ("self", "spec", "code", "doubt", "plan", "external_code",
+                        "plan_internal", "architecture_internal"):
         record = upsert_review(record, make_entry(
             review_type, "completed", recorded_by="reviewer",
         ))

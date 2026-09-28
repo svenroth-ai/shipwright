@@ -42,9 +42,13 @@ def _load_hook():
 
 
 def test_every_recordable_type_except_plan_internal_has_a_canonical_basename():
-    """`plan_internal` is metadata-only (no payload file); every other
-    recordable type must have exactly one canonical name to close."""
-    assert set(CANONICAL_PAYLOAD_BASENAMES) == set(RECORDABLE_TYPES) - {"plan_internal"}
+    """`plan_internal` and `architecture_internal` are metadata-only (no
+    payload file); every other recordable type must have exactly one
+    canonical name to close."""
+    assert set(CANONICAL_PAYLOAD_BASENAMES) == set(RECORDABLE_TYPES) - {
+        "plan_internal",
+        "architecture_internal",
+    }
 
 
 def test_the_reply_family_matches_what_the_pr_review_classifier_already_anchors_to():
@@ -71,9 +75,11 @@ def test_a_non_canonical_basename_is_rejected_with_the_expected_name():
 
 
 def test_a_type_with_no_payload_file_kind_is_never_rejected():
-    """`plan_internal` records no payload file; an unexpected one is not this
-    validator's problem — the adapter layer handles that."""
+    """`plan_internal`/`architecture_internal` record no payload file; an
+    unexpected one is not this validator's problem — the adapter layer
+    handles that."""
     assert canonical_basename_error("plan_internal", "/run-dir/whatever.json") is None
+    assert canonical_basename_error("architecture_internal", "/run-dir/whatever.json") is None
 
 
 def test_the_salvage_hooks_own_mirror_dict_matches_the_shared_registry():

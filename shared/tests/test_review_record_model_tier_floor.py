@@ -245,6 +245,76 @@ def test_plan_review_floor_does_not_read_external_plan_row(tmp_path: Path) -> No
     assert "floor" not in result.detail.lower()
 
 
+def _record_architecture_internal(
+    root: Path, model_tier: str | None, transport: str | None = None,
+) -> None:
+    """Mirrors `_record_plan_internal` exactly, for the `architecture_internal`
+    row — same `plan_review`-role floor, a separate `REVIEW_TYPES` member."""
+    record = new_record(RUN)
+    for review_type in REVIEW_TYPES:
+        if review_type not in ("code", "spec", "architecture_internal"):
+            record = upsert_review(record, make_entry(
+                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+    record = upsert_review(record, make_entry(
+        "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
+    record = upsert_review(record, make_entry(
+        "code", STATUS_COMPLETED, recorded_by="code-reviewer", model_tier="opus"))
+    kwargs = {"recorded_by": "architecture-internal-reviewer"}
+    if model_tier is not None:
+        kwargs["model_tier"] = model_tier
+    if transport is not None:
+        kwargs["transport"] = transport
+    record = upsert_review(record, make_entry("architecture_internal", STATUS_COMPLETED, **kwargs))
+    write_record(root, RUN, record)
+
+
+def test_architecture_internal_floor_is_independent_of_review_floor(tmp_path: Path) -> None:
+    """A `review: opus` floor must not apply to `architecture_internal` —
+    only a configured `plan_review` floor does, exactly like `plan_internal`."""
+    _entry(tmp_path)
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"review": "opus"}}), encoding="utf-8",
+    )
+    _record_architecture_internal(tmp_path, model_tier="haiku")
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "architecture_internal" not in result.detail, (
+        "a `review`-role floor must not judge the architecture_internal row")
+
+
+def test_architecture_internal_below_floor_is_flagged_but_still_passes(tmp_path: Path) -> None:
+    _entry(tmp_path)
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"plan_review": "opus"}}), encoding="utf-8",
+    )
+    _record_architecture_internal(tmp_path, model_tier="sonnet")
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "architecture_internal" in result.detail
+    assert "sonnet" in result.detail and "opus" in result.detail
+
+
+def test_architecture_internal_codex_transport_produces_no_floor_note(tmp_path: Path) -> None:
+    """Negative control: `architecture_internal` has no Codex transport yet
+    (deferred follow-up) — a Codex-answered row carries no legal Claude
+    `model_tier`, so it must be silently skipped by the floor, exactly like
+    any other Codex-answered row (`transport == "codex"`)."""
+    _entry(tmp_path)
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"floors": {"plan_review": "opus"}}), encoding="utf-8",
+    )
+    _record_architecture_internal(tmp_path, model_tier=None, transport="codex")
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "architecture_internal" not in result.detail
+
+
 def test_floor_read_from_main_repo_root_not_worktree(tmp_path: Path) -> None:
     """F11 runs from a linked worktree (every iterate does — B1a). The floor
     config lives at the MAIN repo root, resolved via the same

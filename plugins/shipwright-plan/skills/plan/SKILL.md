@@ -67,8 +67,7 @@ See [research-protocol.md](references/research-protocol.md) for detailed guidanc
 
 **Goal:** Understand the codebase, existing patterns, and technical landscape.
 Read the spec thoroughly; explore an existing codebase's structure and
-patterns, or review comparable ones for a new project; web-search unfamiliar
-technologies.
+patterns, or review comparable ones for a new project; web-search unfamiliar technologies.
 
 **Checkpoint:** Mental model formed. No file written — research informs all subsequent steps.
 
@@ -81,8 +80,7 @@ See [interview-protocol.md](references/interview-protocol.md) for detailed guida
 **Goal:** Surface design decisions, constraints and preferences — adaptive
 questions on architecture / data model / UX; clarify ambiguities; find risks.
 
-**Checkpoint:** Write `{planning_dir}/shipwright_plan_interview.md`
-with full transcript.
+**Checkpoint:** Write `{planning_dir}/shipwright_plan_interview.md` with full transcript.
 
 **Write interview decisions to decision_log.md** for every
 architecture/design decision that goes beyond what the profile or
@@ -108,8 +106,7 @@ See [context-check.md](references/context-check.md) for detailed guidance.
 uv run --project {plugin_root} {plugin_root}/scripts/checks/check-context-decision.py
 ```
 
-If context is large: summarize research findings first; or write a brief
-outline for user approval before continuing.
+If context is large: summarize research findings first; or write a brief outline for user approval before continuing.
 
 ---
 
@@ -122,8 +119,8 @@ See [plan-writing.md](references/plan-writing.md) and
 
 **Plan structure:** overview of approach; section breakdown with
 SECTION_MANIFEST; per section goals, implementation steps and test strategy;
-cross-cutting concerns. Manifest format — including how a section declares
-what it presupposes — in [section-index.md](references/section-index.md).
+cross-cutting concerns. Manifest format — incl. how a section declares what
+it presupposes — in [section-index.md](references/section-index.md).
 
 **Checkpoint:** Write `{planning_dir}/plan.md` with SECTION_MANIFEST block.
 
@@ -131,26 +128,34 @@ what it presupposes — in [section-index.md](references/section-index.md).
 
 ## Step 5: External LLM Review (Default + Fallback)
 
-Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
+Full branch logic: [step-5-external-review.md](references/step-5-external-review.md)
+(Step 5-int-arch procedure: [step-5-int-arch.md](references/step-5-int-arch.md));
 underlying protocol: [external-review.md](references/external-review.md).
 
-**This step is NOT optional.** An internal review always runs first
-(Step 5-int); then one of three branches must run to completion, and
-`{planning_dir}/external_review_state.json` must be written. Step 6 is
-gated on both.
+**This step is NOT optional.** Two internal reviews always run first, in order
+(Step 5-int, then Step 5-int-arch); then one of three branches must run to
+completion, and `{planning_dir}/external_review_state.json` must be written.
+Step 6 is gated on both.
 
-**Step 5-int (always, first, incl. its Codex-driver "Dispatch rule" —** see
-[step-5-external-review.md](references/step-5-external-review.md)**):** spawn
+**Step 5-int (always, first, incl. its Codex-driver "Dispatch rule"):** spawn
 `shipwright-plan:opus-plan-reviewer` over `plan.md` + `spec.md`; triage every
-finding fix/disclose/decline
-(reason required; scope-ratchet guard) — a declined/disclosed
-`severity: high` finding STOPs and asks the user before Step 6, per
-`gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`
-(`Ran: yes|no`; replace in place on retry), log to `decision_log.md`. No
-marker of its own — on failure record `Ran: no` and continue to the branch
-below; the **Pre-5b Checkpoint** decides whether the Self-Review Fallback
-runs. Then read `external_review_status` from the session report (First
-Actions > F) and branch on its value:
+finding fix/disclose/decline (reason required; scope-ratchet guard) — a
+declined/disclosed `severity: high` finding STOPs and asks the user before
+Step 6, per `gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`
+(`Ran: yes|no`; replace in place on retry), log to `decision_log.md`. On
+failure record `Ran: no` and continue; the **Pre-5b Checkpoint** decides
+whether the Self-Review Fallback runs.
+
+**Step 5-int-arch (always, right after 5-int; no Codex transport yet):** a
+separate fresh-context agent, spawn
+`shipwright-plan:architecture-internal-reviewer` over a freshly-authored
+architecture brief + `spec.md` — **never `plan.md`**, to escape the plan's
+own reasoning frame. Same triage rule as Step 5-int, own gate id
+(`plan.architecture-internal-review-high-severity-declined`). Write `##
+Internal Architecture Review` to `plan.md`, log to `decision_log.md`. **Does
+not carry the Pre-5b gate** — only Step 5-int or a completed Branch A review
+count there. Then read `external_review_status` from the session report
+(First Actions > F) and branch on its value:
 
 - **Branch A — `available`:** run `external_review.py --mode plan --driver <claude|codex> ...`
   (resolved per `CODEXTENDER_ACTIVE`, never hardcoded — see `external-review.md`;
@@ -211,8 +216,7 @@ Each section file is written **by the `shipwright-plan:section-writer` subagent
 itself** (it has a Write tool); `write-section-on-stop.py` is a non-blocking
 salvage fallback, and Step 7 is the gate. Every section needs a
 `Requirements:` line, `## Overview`, ≥2 `## Implementation Steps` and
-`## Tests First` — Step 9 fails without them.
-Details: [section-splitting.md](references/section-splitting.md).
+`## Tests First` — Step 9 fails without them. Details: [section-splitting.md](references/section-splitting.md).
 
 **Checkpoint:** All section files exist in `{planning_dir}/sections/`.
 
@@ -228,8 +232,7 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-sections.py \
 Verifies two things: every section declared in SECTION_MANIFEST has a file,
 and the numbering agrees with the dependencies each section declares
 (`03-api: 01-auth, 02-database`). A prerequisite numbered after the section
-that needs it lands in `order_errors` and exits non-zero. Format:
-[section-index.md](references/section-index.md).
+that needs it lands in `order_errors` and exits non-zero. Format: [section-index.md](references/section-index.md).
 
 ---
 
@@ -241,8 +244,7 @@ See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 project has a UI (HTML mockups under `.shipwright/designs/screens/`, or
 `component_library` set in the profile — default on for UI projects).
 
-**Goal:** Generate a Playwright E2E test plan — user-facing flows (login,
-CRUD, navigation), scenarios with expected outcomes, POM suggestions.
+**Goal:** Generate a Playwright E2E test plan — user-facing flows (login, CRUD, navigation), scenarios with expected outcomes, POM suggestions.
 
 **Checkpoint:** Write `{planning_dir}/claude-plan-e2e.md`.
 
@@ -251,8 +253,7 @@ CRUD, navigation), scenarios with expected outcomes, POM suggestions.
 ## Step 9: Completion
 
 See [step-9-completion.md](references/step-9-completion.md) for the full procedure; after section validation and before completion, refresh planned paths via `uv run "{shared_root}/scripts/tools/area_catalog.py" seed-greenfield --project-root "$(pwd)" --source plan`. The
-checklist and the C1+C2+C3+C4 + `phase_history` canon block (C5 skipped by
-policy: plan is internal decomposition, not user-facing).
+checklist and the C1+C2+C3+C4 + `phase_history` canon block (C5 skipped by policy: plan is internal decomposition, not user-facing).
 
 **Verification gates (all must pass) — 11 gates + a boundary check, full
 list and commands in [step-9-completion.md](references/step-9-completion.md):**
@@ -267,15 +268,13 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
 Non-zero exit on either = STOP. `_validate_plan` re-runs gates #5-8 above
 leniently (warns, doesn't block, on pre-existing splits) but never #9-11 or
 the boundary check — details in step-9-completion.md. This is the only
-strict, complete run; fix what it names now rather than counting on that
-backstop.
+strict, complete run; fix what it names now rather than counting on that backstop.
 
 **Phase complete:** set `SHIPWRIGHT_RUN_ID`, then run
 `write-plan-config.py --status complete`, `record_event.py`,
 `update_build_dashboard.py`, `generate_session_handoff.py --canon-marker`,
 `append_phase_history.py`, `orchestrator.py update-step --step plan --status
-complete` — exact commands in
-[step-9-completion.md](references/step-9-completion.md).
+complete` — exact commands in [step-9-completion.md](references/step-9-completion.md).
 
 ---
 
@@ -294,6 +293,7 @@ Per-step refs:
 - [first-actions.md](references/first-actions.md)
 - [step-0-context-recovery.md](references/step-0-context-recovery.md)
 - [step-5-external-review.md](references/step-5-external-review.md)
+- [step-5-int-arch.md](references/step-5-int-arch.md)
 - [step-9-completion.md](references/step-9-completion.md)
 - [error-handling.md](references/error-handling.md)
 

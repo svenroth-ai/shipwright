@@ -459,12 +459,14 @@ Every review pass writes its result to the run's review record:
 .shipwright/planning/iterate/{run_id}/reviews.json
 ```
 
-Seven types under `reviews`, all materialized up front, each closed by the
-pass that owns it: `self` · `plan` · `plan_internal` · `code` · `doubt` ·
-`external_code` · `spec`. `plan_internal` is the newest — added alongside the
-medium+ Internal Plan Review sub-step (`iteration-planning.md`); below
-medium+ it closes `not_applicable` (the arm doesn't run there), same pattern
-every complexity-gated type already follows.
+Eight types under `reviews`, all materialized up front, each closed by the
+pass that owns it: `self` · `plan` · `plan_internal` · `architecture_internal` ·
+`code` · `doubt` · `external_code` · `spec`. `architecture_internal` is the
+newest — added alongside the medium+ Internal Architecture Review sub-step
+(`iteration-planning.md`), a fresh-context arm separate from `plan_internal`
+so it escapes the plan's own reasoning frame; below medium+ it closes
+`not_applicable` (the arm doesn't run there), same pattern every
+complexity-gated type already follows.
 
 **`spec` used to live in a sibling `gates` object, and no longer does.** The
 `reviews` object is a CROSS-REPO contract, and the webui consumer
@@ -582,13 +584,13 @@ or the whole message with its ```json block; both are accepted) and hand it over
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" \
-  --review-type {self|plan|spec|code|doubt|external_code|plan_internal} --status completed \
+  --review-type {self|plan|spec|code|doubt|external_code|plan_internal|architecture_internal} --status completed \
   --from {self-review|spec-reviewer|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
   --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/{canonical basename for this --review-type — table below}" \
   [--model-tier {resolved review tier}] [--provider openrouter] [--marker-status completed]
 ```
 
-`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`, the `review` tier) and for `plan_internal` (the `plan_review` tier) — the value resolved in §F, same one passed at the spawn (see "Model tier" above; `plan_internal`'s own invocation shape is the table row below, not this template). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns — and for a row recorded with **`--transport codex`** (the driving harness could not spawn an independent Agent-tool subagent; see `shared/prompts/codex_review_dispatch.md`), which also omits `--model-tier`: the row carries no legal Claude tier, and the floor verifier already exempts a `codex`-transport row rather than reading one.
+`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`, the `review` tier) and for `plan_internal`/`architecture_internal` (both the `plan_review` tier) — the value resolved in §F, same one passed at the spawn (see "Model tier" above; each internal-arm pass's own invocation shape is the table row below, not this template). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns — and for a row recorded with **`--transport codex`** (the driving harness could not spawn an independent Agent-tool subagent; see `shared/prompts/codex_review_dispatch.md`), which also omits `--model-tier`: the row carries no legal Claude tier, and the floor verifier already exempts a `codex`-transport row rather than reading one.
 
 For `external-review-json`, the recorder reads the payload once, then derives
 both findings and each reviewer verdict from that in-memory snapshot. It stores
@@ -611,6 +613,7 @@ a completed marker, while a skipped marker cannot carry reviewer evidence.
 | `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | `doubt_review_reply.json` | the subagent's reply |
 | External code cascade | `external_code` | `external-review-json` | `external-code-review-raw.json` | `external_review.py` stdout. Add `--marker-status` |
 | Internal Plan Review (medium+, before Branch A/B/C) | `plan_internal` | `none` (no adapter matches `opus-plan-reviewer`'s shape) | — (no payload file) | metadata-only — `--recorded-by opus-plan-reviewer --model-tier {resolved}`, no `--payload-file`. Findings live in the iterate spec's `## Internal Plan Review` section, not this row |
+| Internal Architecture Review (medium+, always-and-first, before Branch A/B/C) | `architecture_internal` | `none` (no adapter matches `architecture-internal-reviewer`'s shape) | — (no payload file) | metadata-only — `--recorded-by architecture-internal-reviewer --model-tier {resolved}`, no `--payload-file`. A separate fresh-context agent, not `opus-plan-reviewer` — spawned over the architecture brief + spec, never the plan, to escape the plan's own reasoning frame. Findings live in the iterate spec's `## Internal Architecture Review` section, not this row |
 
 **The basename column is enforced, not advisory** — `lib.review_payloads.CANONICAL_PAYLOAD_BASENAMES`
 is the single source of truth `record_review_pass.py record` validates
@@ -639,8 +642,9 @@ missing keys, degraded provider).
 ### Campaign sub-iterate rows
 
 The sub-iterate-runner subagent has no `Agent` tool, so it performs `self`,
-`plan` and `external_code` and performs neither internal stage — nor the
-internal plan-review arm (`plan_internal`), for the same reason. It records
+`plan` and `external_code` and performs neither internal stage — nor either
+internal-arm review (`plan_internal`, `architecture_internal`), for the same
+reason. It records
 exactly this — **who did the work decides the name** (`agents/sub-iterate-runner.md`
 Step 3.7 carries the actor table). Each `…` below stands for the invocation
 prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
@@ -682,6 +686,11 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 # for the life of the sub-iterate.
 … --review-type plan_internal --status not_run \
   --disposition "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three"
+
+# the internal architecture-review arm — same treatment, same reason: no
+# campaign-level spawn site exists yet for a fresh-context architecture pass.
+… --review-type architecture_internal --status not_run \
+  --disposition "campaign sub-iterates have no internal architecture-review arm yet — a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three"
 ```
 
 A bare `--disposition "delegated"` is **rejected** (a disposition must name a

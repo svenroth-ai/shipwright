@@ -10,6 +10,23 @@ orchestrator exactly as they do today; this is for an orchestrator's own
 spawn site only (`shipwright-build` Step 6, `shipwright-plan` Step 5-int,
 `shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis).
 
+**`architecture-internal-reviewer` has no Codex transport yet, deliberately.**
+Unlike the four roles above, a Codex-driven run (`--driver codex` or
+`CODEXTENDER_ACTIVE`) does NOT dispatch this one through
+`review_via_codex.py` — there is no `architecture_internal` (or
+`architecture_review`) value for `--role` below. Reusing `role=plan_review`'s
+Codex leg was considered and rejected: it would collide on the same fixed
+canonical basename `plan_review_reply.json` the real Internal Plan Review
+pass already writes, and `plan_review`'s shape requires `--plan-file`, which
+this pass structurally never has (brief + spec only). Plan Step 5-int-arch and
+iterate's Internal Architecture Review sub-step both record
+`Ran: no (no Codex transport for architecture_internal yet)` under a
+Codex-driven run and continue — a dedicated Codex role for this pass is an
+explicit follow-up, not in scope here (tracked: trg-2b46f709 — filed after
+Stage-3 doubt review flagged that this degrades every Codex-driven run,
+with no aggregate signal distinguishing "always degraded" from "ran once,
+degraded").
+
 If not — Codex CLI itself is driving, or a Claude Code session has been
 redirected to a non-Anthropic backend — run:
 

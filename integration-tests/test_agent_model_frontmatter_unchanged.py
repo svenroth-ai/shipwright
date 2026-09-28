@@ -63,6 +63,7 @@ EXPECTED_MODEL: dict[str, str] = {
     "plugins/shipwright-security/agents/security-fixer.md": "inherit",
     "plugins/shipwright-plan/agents/section-writer.md": "inherit",
     "plugins/shipwright-plan/agents/opus-plan-reviewer.md": "inherit",
+    "plugins/shipwright-plan/agents/architecture-internal-reviewer.md": "inherit",
     "plugins/shipwright-run/agents/phase-runner.md": "inherit",
     **_PINNED_BY_DECISION,
 }
