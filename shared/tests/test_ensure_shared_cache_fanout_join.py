@@ -75,39 +75,83 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
     done = cache / ".sessionstart-claims" / "generation.done"
     done.parent.mkdir()
     assert lock_helper.observe_completion(done, participants[0]) is True
-    # Only the ceiling is patched. _FANOUT_PROBE_SECONDS no longer bounds the
-    # wait loop — it survives solely for the un-enumerable early return, and
-    # this test asserts just below that the peer set IS enumerable, so patching
-    # it here would describe a mechanism that no longer exists.
-    monkeypatch.setattr(lock_helper, "_FANOUT_WAIT_SECONDS", 0.5)
+    # This test asserts JOIN semantics (the barrier returns only once every peer
+    # has observed), not timing, so every wall-clock exit is pushed out of reach:
+    # a joiner thread starved past a sub-second ceiling must not fail the test.
+    # The barrier returns the instant all peers are present, so the large values
+    # cost nothing on success. _FANOUT_PROBE_SECONDS is not patched: it bounds
+    # only the un-enumerable early return, and the peer set IS enumerable here
+    # (asserted below).
+    for ceiling in (
+        "_FANOUT_WAIT_SECONDS",
+        "_FANOUT_ARRIVAL_GRACE_SECONDS",
+        "_FANOUT_IDLE_SECONDS",
+    ):
+        monkeypatch.setattr(lock_helper, ceiling, 60.0)
     assert lock_helper._installed_fanout_participants(
         cache, participants[0],
     ) == participants
-    joined = threading.Event()
+
+    # Order the peers' arrival on the barrier itself, not on a sleep: the joiner
+    # writes its markers only once the barrier has started a SECOND pass over
+    # the peers. Pass one therefore sees them absent for certain, and a barrier
+    # that returned after a single pass (or without waiting) always finds them
+    # absent. A correct barrier always reaches pass two, since nobody has joined.
+    polling = threading.Event()
+    real_observation = lock_helper.has_completion_observation
+    calls = 0
+
+    def observed_by_barrier(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls > len(participants):
+            polling.set()
+        return real_observation(*args, **kwargs)
+
+    monkeypatch.setattr(
+        lock_helper, "has_completion_observation", observed_by_barrier,
+    )
     errors: list[Exception] = []
 
     def join_fanout() -> None:
         try:
-            time.sleep(0.02)
+            # Bounded only so a barrier that never re-polls cannot hang the test;
+            # the markers then land early and the barrier assertion still fires.
+            polling.wait(timeout=10)
             for participant in participants[1:]:
                 if lock_helper.observe_completion(done, participant) is not True:
                     raise AssertionError(f"observation failed for {participant}")
-            joined.set()
         except Exception as exc:
             errors.append(exc)
 
     joiner = threading.Thread(target=join_fanout)
     joiner.start()
+    started = time.monotonic()
     lock_helper.await_fanout_observers(cache, done, participants[0])
-    assert joined.is_set(), "barrier returned before every active peer joined"
-    joiner.join(timeout=1)
+    elapsed = time.monotonic() - started
+    monkeypatch.setattr(
+        lock_helper, "has_completion_observation", real_observation,
+    )
+    # Check the markers the instant the barrier returns: the contract is about
+    # the markers, and a thread-side flag would lag the marker the barrier polls.
+    # `is False`, not `is not True`: None is an unreadable marker (a transient
+    # Windows sharing violation) that the barrier itself treats as "cannot tell
+    # yet"; only a definitively absent marker proves an early return.
+    missing = [
+        participant for participant in participants
+        if lock_helper.has_completion_observation(done, participant) is False
+    ]
+    assert not missing, (
+        f"barrier returned before every active peer joined: {missing}"
+    )
+    # Half the ceiling: no host load reaches it, yet a barrier that sat out the
+    # ceiling instead of returning once everyone joined is caught.
+    assert elapsed < 30, f"barrier held for {elapsed:.1f}s after all peers joined"
+    # Generous: this only reaps the thread, it must not be able to fail the test.
+    joiner.join(timeout=30)
 
     assert not errors
     assert not joiner.is_alive()
-    assert all(
-        lock_helper.has_completion_observation(done, participant) is True
-        for participant in participants
-    )
 
 
 @pytest.mark.parametrize("payload", [None, [], 42, "plugins"])
