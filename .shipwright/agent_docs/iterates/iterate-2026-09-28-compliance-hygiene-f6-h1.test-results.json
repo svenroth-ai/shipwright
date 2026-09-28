@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-28-compliance-hygiene-f6-h1",
+    "date": "2026-09-28",
+    "unit": {
+      "status": "passed",
+      "passed": 126,
+      "total": 126
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "justification": "docs/config-only compliance hygiene fix (CLAUDE.md trim + bloat-baseline sync); no UI, API, or CLI surface changed"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "CLAUDE.md line count \u2264 200-line hygiene cap (F6)",
+          "disposition": "tested",
+          "evidence": "group_f.py::_check_f6 re-run directly \u2192 status=pass, 193 lines"
+        },
+        {
+          "behavior": "26 of 28 previously-undetected oversize files added to shipwright_bloat_baseline.json (H1, ordinary drift)",
+          "disposition": "tested",
+          "evidence": "group_h.py H1 check re-run directly \u2192 the only 2 remaining failures are exactly the 2 deliberately-deferred outliers, confirming none of the other 26 were missed"
+        },
+        {
+          "behavior": "the 2 extreme outliers (assertion_weakening.py + its test, 5-5.6x the limit) are deliberately NOT baselined, so H1 correctly stays open for them pending a real split-or-ADR decision",
+          "disposition": "tested",
+          "evidence": "group_h.py H1 check re-run directly \u2192 fails naming exactly these 2 paths, matching the scope recorded in .shipwright/planning/adr/iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md"
+        },
+        {
+          "behavior": "existing baseline entries (state/adr/plan_ref/note) are preserved unmutated by the merge",
+          "disposition": "tested",
+          "evidence": "diff script comparing HEAD vs working-tree shipwright_bloat_baseline.json by path \u2192 0 of 250 pre-existing entries changed or removed, 26 net-new added"
+        },
+        {
+          "behavior": "shipwright_bloat_baseline.json stays valid JSON after the merge",
+          "disposition": "tested",
+          "evidence": "json.load() round-trip succeeded after the edit"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-28-compliance-hygiene-f6-h1",
+    "commit": "bc6a630a19d83601238589033c8857739eec1286",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
