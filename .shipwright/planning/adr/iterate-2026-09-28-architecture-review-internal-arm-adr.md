@@ -451,6 +451,17 @@ across both legs — fixed, not disclosed:
   materially larger test-infrastructure change to guard a gap the
   straight-line variable flow already closes.
 
+## F11 local PR-review preflight, round 9 (post-round-7, convergence check)
+Re-ran after the round-7 external-code-review fixes landed. Same BLOCK as
+before, same underlying concern as D5 above and the "run a real smoke-spawn"
+rejected alternative below: the new agent's JSON reply contract and the
+caller's malformed/missing-field handling through the `Ran: no` degraded
+path have never been exercised, only prose-tested. No new information —
+this preflight is advisory-only and cannot satisfy the required CI gate;
+recording as converged (a precedented repeat, not a fresh finding) rather
+than looping further on a residual this run has already reasoned through
+and declined to close with a fabricated throwaway spawn.
+
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
   fresh-context agent. Rejected: `opus-plan-reviewer` is defined by
