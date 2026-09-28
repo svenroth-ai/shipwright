@@ -1,32 +1,55 @@
 # Commit Change Log
 
-Generated: 2026-09-24T06:44:57.450745+00:00
-Source-State: run=iterate-2026-09-24-r5b-merge-lane
-Consistency-audit: last run 2026-07-28 (58 days earlier) — FAIL
-Total commits: 1572
+Generated: 2026-09-28T12:35:47.613231+00:00
+Source-State: run=iterate-2026-09-28-hooks-uv-run-project-pin
+Consistency-audit: last run 2026-07-28 (62 days earlier) — FAIL
+Total commits: 1614
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 538
-    "feat" : 422
-    "chore" : 274
-    "docs" : 165
-    "refactor" : 93
-    "test" : 50
-    "ci" : 18
-    "other" : 10
+    "fix" : 561
+    "feat" : 426
+    "chore" : 282
+    "docs" : 167
+    "refactor" : 94
+    "test" : 51
+    "ci" : 20
+    "other" : 11
     "perf" : 1
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 538 commits
+### Fixes (fix) — 561 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-28 | security | restrict architecture-internal-spec scratch file to owner-only | 643235498a02 |
+| 2026-09-28 | main | use malformed TOML for the uv-project-isolation negative control (#814) | 4bfad84b703e |
+| 2026-09-28 | iterate | fix boundary-regex indentation gap, document plan-side strip scope (external code review round 7) | 4ec7d904a033 |
+| 2026-09-28 | iterate | fail closed when an unterminated fence hides a prior-review section (external code review + F11 preflight round 8) | 2aaf595aa41b |
+| 2026-09-28 | iterate | catch mkdir failure, wire it into step 0b degraded handling (external code review round 6) | b8a265aff427 |
+| 2026-09-28 | iterate | clean error on unreadable spec-file, disclose Windows junction gap (external code review round 5) | dfeea9ca2348 |
+| 2026-09-28 | iterate | remove duplicate regex, guard run-dir symlink (external code review round 4) | ae13a8a382cb |
+| 2026-09-28 | iterate | rewrite fence masker as a line-scanner (external code review round 3) | c83623064654 |
+| 2026-09-28 | iterate | drop the fence-closer backreference (external code review round 2) | e61fa86b2a97 |
+| 2026-09-28 | iterate | fence-aware section strip + symlinked-runs-dir refusal (external code review) | 0deddedf4d74 |
+| 2026-09-28 | iterate | record external_code as not_run (missing API keys, F11) | 50a208104197 |
+| 2026-09-28 | iterate | refuse to follow a symlink at the spec sanitizer's output path (F11) | 9c62407d43ff |
+| 2026-09-28 | iterate | add prompt-injection defense to architecture-internal-reviewer (F11) | 3bc864a89a6a |
+| 2026-09-28 | iterate | reconcile pending architecture_internal row before resume skip (F11) | 73fe22af88db |
+| 2026-09-28 | iterate | remove anchoring-guarantee overclaim, neutral mini-plan wording (F11) | 29da64015442 |
+| 2026-09-28 | iterate | close path-traversal gap in architecture-internal spec sanitizer (F11) | ecdcdafc5c9f |
+| 2026-09-28 | iterate | close architecture-internal-reviewer anchoring gap (D2) | 9220cc183e89 |
+| 2026-09-28 | hooks | pin every hooks.json uv run invocation with --no-project (#810) | a6bb2537457f |
+| 2026-09-28 | compliance | trim CLAUDE.md under 200-line cap, sync bloat baseline (F6, H1) (#806) | f3dc44fd90fa |
+| 2026-09-28 | hooks | walk up to the git root when resolving project_root (#807) | 8f6859351021 |
+| 2026-09-25 | shared | exclude node_modules from the Codex plugin bundle copy (#800) | 88351a4ac3d7 |
+| 2026-09-25 | scripts | make marketplace cache sync an atomic directory swap (#796) | 3e7e95fccc62 |
+| 2026-09-24 | events | correct R5a's mis-stamped campaign field in the events log (#797) | 6bbc4f747610 |
 | 2026-09-23 | tests | split two test files that crossed the 300-line bloat gate (#793) | 2ecf06f1df79 |
 | 2026-09-23 | iterate | unit-scoped review-attribution pin for campaign 3f-bis/3g (campaign-dag-scheduler R3) (#787) | b844a0ad8de7 |
 | 2026-09-22 | iterate | correct wrong campaign slug in R1/R2 work_completed events (#785) | 7dad240e2bd2 |
@@ -566,10 +589,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 422 commits
+### Features (feat) — 426 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-28 | iterate | internal architecture-review arm for plan and iterate | 5985f987e1db |
+| 2026-09-26 | iterate | R6 capstone integration test for campaign-dag-scheduler (#805) | ec10ab456716 |
+| 2026-09-26 | iterate | campaign-dag-scheduler R5b serial merge lane hardening (#799) | 2d45a8949e2e |
+| 2026-09-25 | adopt,project | generate AGENTS.md for Codex CLI alongside CLAUDE.md (#798) | ba72bd8dd484 |
 | 2026-09-24 | iterate | campaign-mode wave-based concurrent sub-iterate build (campaign-dag-scheduler R5a) (#794) | 032d1ebbf0ef |
 | 2026-09-23 | iterate | concurrent state mechanics — state machine, fencing, atomic claim (campaign-dag-scheduler R4) (#790) | ba65b33b4842 |
 | 2026-09-23 | iterate | Codex first-eligible-call PreToolUse gate (M3, R2) (#792) | 8adb23ec1a7d |
@@ -993,10 +1020,18 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 274 commits
+### Chores (chore) — 282 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-28 | iterate | restore derived snapshots to fork-point content (F11) | bf4f9a44a938 |
+| 2026-09-28 | iterate | regenerate session handoff (F11) | 6f073a0b4ead |
+| 2026-09-28 | iterate | record round-7 external code review (F5c) | 2fefb424f4b1 |
+| 2026-09-28 | iterate | regenerate F5c evidence, record final external code review (F5c) | dc9ebff92288 |
+| 2026-09-28 | iterate | regenerate F5c evidence after external-code-review fixes (F5c) | 698c53723f8b |
+| 2026-09-28 | churn | regenerate derived snapshots after main merge | 13bcb2faaf5b |
+| 2026-09-28 | triage | sweep 2 outbox append(s) into branch | de5ed12ad6d2 |
+| 2026-09-26 | triage | sweep 16 outbox append(s) into branch (#804) | 3b484e2039d2 |
 | 2026-09-22 | compliance | refresh evidence documents as of 42e45008dbd9 (#789) | cf28f55b443b |
 | 2026-09-21 | iterate | sweep pre-fix orphaned iterate test-results evidence (#780) | 82e01e49d94c |
 | 2026-09-12 | triage | close trg-5ae23b62, resolved by the PR-review filter fix (#737) | ccdfa14c3d3a |
@@ -1272,10 +1307,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 165 commits
+### Documentation (docs) — 167 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-28 | iterate | record F11 local preflight round 9 as converged (F5c) | f48ef6d158b9 |
+| 2026-09-26 | shared | note held_merge_reconciliation.py is exercised by the R5b merge lane (#801) | 01077b4cc9ee |
 | 2026-09-21 | iterate | investigate dependency-aware parallel campaign scheduling (#782) | 526f347f9002 |
 | 2026-09-20 | iterate | resolve Codex activation-envelope delivery design (R0, codex-plugin-execution-reliability) (#776) | 0e519f715610 |
 | 2026-09-12 | shipwright-project | fix Step 8 agent_docs file count (5 -> 3) (#751) | 67239669466d |
@@ -1442,10 +1479,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 93 commits
+### Refactoring (refactor) — 94 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-24 | review | rename retired/bumped model identifiers (#795) | d8793b446cbf |
 | 2026-09-21 | shared | pin Codex review dispatch reasoning effort, cut TOML generator (M4) (#779) | 25020f59df64 |
 | 2026-09-20 | verifiers | extract shared rollout-transition commit resolver (#778) | ae515b6d09ee |
 | 2026-09-12 | iterate | raise ITERATE_RETENTION from 50 to 200 for branch-concurrency headroom (#738) | 90f43f3ce22a |
@@ -1540,10 +1578,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 50 commits
+### Tests (test) — 51 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-28 | iterate | split fence-masking unit tests out of the anchoring-defense file (bloat gate) | 068579b4b6a9 |
 | 2026-09-16 | iterate | backfill AC-proving tests for FR-01.15/17/19/20 (req3-05 t9, final unit) (#760) | 49a7bd998f8b |
 | 2026-09-16 | compliance | drift tests for the 19 judgement-line AC-evidence rows (req3-06 e6) (#763) | 0e2a57ee7cd3 |
 | 2026-09-16 | triage | AST meta-test gate closes FR-01.14 row #1's producer contract gap (req3-06 e5) (#762) | b8f4a18c9d3b |
@@ -1595,10 +1634,12 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 18 commits
+### CI/CD (ci) — 20 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-28 | — | remove temporary Ubuntu 26 runner validation workflow (#809) | ae2f2baabb24 |
+| 2026-09-28 | — | add temporary Ubuntu 26 runner validation workflow (#808) | eaaf04685a83 |
 | 2026-07-30 | probe | a deploy key can write to main; probe removes itself | 86a948ac4add |
 | 2026-07-30 | probe | can a deploy key write to protected main? | 97c9eb93d7cc |
 | 2026-07-29 | probe | remove the Actions-bypass probe | 8f28d73b0c06 |
@@ -1618,10 +1659,11 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 10 commits
+### Other (other) — 11 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-26 | — | Revert "docs(shared): note held_merge_reconciliation.py is exercised by the R5b merge lane (#801)" (#803) | 2397f8c08e78 |
 | 2026-09-16 | — | iterate/codex light shipwright (#759) | 168a40c79606 |
 | 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
 | 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
@@ -1649,7 +1691,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1572 |
+| Total commits | 1614 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1572 |
+| Human-authored commits | 1614 |
 

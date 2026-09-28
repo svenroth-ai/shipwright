@@ -21,6 +21,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 PLAN_STEP5_DOC = (
@@ -99,6 +101,7 @@ def test_plan_step_5_external_review_points_at_the_int_arch_reference() -> None:
     assert PLAN_STEP5_INT_ARCH_DOC.is_file()
 
 
+@pytest.mark.covers("FR-01.03/AC22")
 def test_plan_step_5_int_arch_runs_always_right_after_5_int() -> None:
     body = _plan_step_5_int_arch()
     assert "runs exactly once, before branch a/b/c" in body
@@ -198,6 +201,7 @@ def test_plan_internal_architecture_review_logs_its_own_decision_log_section() -
 # --- AC3: iterate's mirror sub-step, medium+ gated ----------------------------
 
 
+@pytest.mark.covers("FR-01.11/AC38")
 def test_iterate_step_0b_runs_right_after_the_plan_review_substep_medium_plus() -> None:
     body = _iterate_step_0b()
     assert "medium+ only" in body
