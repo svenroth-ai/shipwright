@@ -59,7 +59,7 @@ def _write_refusing_symlinks(out_path: Path, content: str) -> None:
         flags |= os.O_NOFOLLOW
     elif out_path.is_symlink():
         raise OSError(f"refusing to write through an existing symlink: {out_path}")
-    fd = os.open(out_path, flags, 0o644)
+    fd = os.open(out_path, flags, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as handle:
         handle.write(content)
 
