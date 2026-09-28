@@ -106,6 +106,37 @@ degraded); this run's own `architecture_internal` review is itself
 recorded `not_run` — a bootstrap gap, not a skip: the type did not exist
 when this run's own iteration-planning phase executed.
 
+## F11 local PR-review preflight (Stage-3 CI gate, run independently of doubt review)
+Two findings, both about `prepare_architecture_internal_spec.py` /
+`architecture-internal-reviewer.md`:
+- **Path traversal (high, fixed).** `--run-id` was joined unchecked into
+  the output path, so a value like `../../somewhere` could redirect the
+  write outside `.shipwright/runs/`. Fixed: the tool now refuses any
+  `--run-id` that does not match `iterate_entry.RUN_ID_STRICT` (the same
+  `iterate-YYYY-MM-DD-slug` format every caller of this tool already
+  produces — only `iteration-planning.md` step 0b calls it, with the
+  iterate's own run_id) and additionally verifies the resolved output
+  directory stays under the intended runs root before writing, so a
+  second bug in the format check can't reopen the same hole. Covered by
+  two new tests in `test_prepare_architecture_internal_spec.py`.
+- **Tool-access residual (declined, with reason).** The reviewer's
+  broader point — the agent's own `Read`/`Grep`/`Glob` grant means a
+  prose instruction not to seek out the original spec "does not enforce"
+  the guarantee, and the agent's live behavior here is untested — is
+  real but not new: it is D5 above, reached independently. No Shipwright
+  or Claude Code primitive scopes a subagent's `Read`/`Grep`/`Glob` to a
+  single file; every fresh-context reviewer in this codebase (including
+  `opus-plan-reviewer`, `code-reviewer`, `doubt-reviewer`) already
+  operates on the same trust model — a cooperative agent following its
+  brief, not an adversarial sandbox. The D2 fix's actual guarantee is
+  behavioral, not absolute: handing the agent the file it needs removes
+  any task-motivated reason to look elsewhere, it does not make looking
+  elsewhere impossible. Declining a fix that does not exist to write
+  rather than disclosing this as new: D5's ledger caveat already states
+  the agent's live JSON-reply/degraded-path behavior — which includes
+  whether it in fact stays inside its given inputs — is unexercised. No
+  further action beyond what D5 already tracks.
+
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
   fresh-context agent. Rejected: `opus-plan-reviewer` is defined by

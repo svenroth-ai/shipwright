@@ -1,9 +1,10 @@
 {
   "run_id": "iterate-2026-09-28-architecture-review-internal-arm",
-  "date": "2026-09-28T14:20:58.725785Z",
-  "event_at": "2026-09-28T11:56:26.239708+00:00",
+  "date": "2026-09-28T15:32:11.517372Z",
+  "event_at": "2026-09-28T12:35:57.758063+00:00",
   "type": "feature",
   "complexity": "medium",
+  "prior_source": "history",
   "branch": "iterate/architecture-review-internal-arm",
   "spec": ".shipwright/planning/iterate/2026-09-28-architecture-review-internal-arm.md",
   "tests_passed": true,
@@ -58,9 +59,9 @@
         "category": "integration"
       },
       {
-        "behavior": "D2 fix (Stage-3 doubt review, escalated to a hard BLOCK by the F11 local PR-review preflight): the architecture-internal-reviewer agent's own Read/Grep/Glob access makes a prose-only 'ignore prior sections' instruction unenforceable on the iterate side, where the spec it is handed already carries the Internal Plan Review section. prepare_architecture_internal_spec.py writes a sanitized copy (reusing strip_prior_review_sections) and the iterate skill spawns the agent over that copy's path, never the real iterate spec",
+        "behavior": "D2 fix (Stage-3 doubt review, escalated to a hard BLOCK by the F11 local PR-review preflight): the architecture-internal-reviewer agent's own Read/Grep/Glob access makes a prose-only 'ignore prior sections' instruction unenforceable on the iterate side, where the spec it is handed already carries the Internal Plan Review section. prepare_architecture_internal_spec.py writes a sanitized copy (reusing strip_prior_review_sections) and the iterate skill spawns the agent over that copy's path, never the real iterate spec. A second F11 preflight BLOCK on the same tool found --run-id joined unchecked into the output path (path traversal); fixed by requiring the iterate RUN_ID_STRICT format and verifying the resolved output directory stays under the intended runs root",
         "disposition": "tested",
-        "evidence": "shared/tests/test_prepare_architecture_internal_spec.py::test_writes_a_sanitized_copy_stripped_of_the_prior_review_section, ::test_output_location_is_the_ephemeral_gitignored_runs_dir, ::test_a_clean_spec_with_no_prior_review_section_passes_through_unchanged PASSED; shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy PASSED",
+        "evidence": "shared/tests/test_prepare_architecture_internal_spec.py::test_writes_a_sanitized_copy_stripped_of_the_prior_review_section, ::test_output_location_is_the_ephemeral_gitignored_runs_dir, ::test_a_clean_spec_with_no_prior_review_section_passes_through_unchanged, ::test_a_run_id_with_path_traversal_is_refused, ::test_a_run_id_that_is_not_an_iterate_run_id_is_refused PASSED; shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy PASSED",
         "category": "integration"
       }
     ],
@@ -79,7 +80,7 @@
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
     "exit_code": 0,
-    "tests_run": 67,
+    "tests_run": 69,
     "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
     "timestamp": "2026-09-28T00:00:00Z"
   },

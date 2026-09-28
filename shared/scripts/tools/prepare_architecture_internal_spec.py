@@ -30,6 +30,7 @@ if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
 from external_review_modes import strip_prior_review_sections  # noqa: E402
+from iterate_entry import RUN_ID_STRICT  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -39,11 +40,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--spec-file", required=True)
     args = parser.parse_args(argv)
 
+    if RUN_ID_STRICT.fullmatch(args.run_id) is None:
+        print(
+            f"error: --run-id {args.run_id!r} does not match the iterate "
+            f"run-id format ({RUN_ID_STRICT.pattern}) — refusing to build a "
+            f"filesystem path from it",
+            file=sys.stderr,
+        )
+        return 1
+
     spec_path = Path(args.spec_file)
     spec_text = spec_path.read_text(encoding="utf-8")
     sanitized = strip_prior_review_sections(spec_text)
 
-    runs_dir = Path(args.project_root) / ".shipwright" / "runs" / args.run_id
+    runs_root = (Path(args.project_root) / ".shipwright" / "runs").resolve()
+    runs_dir = (runs_root / args.run_id).resolve()
+    if runs_dir != runs_root and runs_root not in runs_dir.parents:
+        print(
+            f"error: resolved output directory {runs_dir} escapes the "
+            f"intended {runs_root} — refusing to write",
+            file=sys.stderr,
+        )
+        return 1
+
     runs_dir.mkdir(parents=True, exist_ok=True)
     out_path = runs_dir / "architecture-internal-spec.md"
     out_path.write_text(sanitized, encoding="utf-8")

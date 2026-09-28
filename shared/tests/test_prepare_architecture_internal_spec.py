@@ -41,12 +41,15 @@ Do the thing.
 """
 
 
-def _run(tmp_path: Path, spec_text: str) -> int:
+_RUN_ID = "iterate-2026-01-01-test-run"
+
+
+def _run(tmp_path: Path, spec_text: str, run_id: str = _RUN_ID) -> int:
     spec_path = tmp_path / "spec.md"
     spec_path.write_text(spec_text, encoding="utf-8")
     return pais.main([
         "--project-root", str(tmp_path),
-        "--run-id", "test-run",
+        "--run-id", run_id,
         "--spec-file", str(spec_path),
     ])
 
@@ -55,7 +58,7 @@ def test_writes_a_sanitized_copy_stripped_of_the_prior_review_section(tmp_path: 
     rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW)
     assert rc == 0
 
-    out_path = tmp_path / ".shipwright" / "runs" / "test-run" / "architecture-internal-spec.md"
+    out_path = tmp_path / ".shipwright" / "runs" / _RUN_ID / "architecture-internal-spec.md"
     assert out_path.is_file()
     assert capsys.readouterr().out.strip() == str(out_path)
 
@@ -70,12 +73,37 @@ def test_output_location_is_the_ephemeral_gitignored_runs_dir(tmp_path: Path) ->
     evidence — this copy carries nothing the committed spec.md doesn't
     already have, so it must never be a candidate for commit."""
     _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW)
-    assert (tmp_path / ".shipwright" / "runs" / "test-run").is_dir()
+    assert (tmp_path / ".shipwright" / "runs" / _RUN_ID).is_dir()
 
 
 def test_a_clean_spec_with_no_prior_review_section_passes_through_unchanged(tmp_path: Path) -> None:
     clean = "# Some Spec\n\n## Acceptance Criteria\n- AC1: it works.\n"
     rc = _run(tmp_path, clean)
     assert rc == 0
-    out_path = tmp_path / ".shipwright" / "runs" / "test-run" / "architecture-internal-spec.md"
+    out_path = tmp_path / ".shipwright" / "runs" / _RUN_ID / "architecture-internal-spec.md"
     assert out_path.read_text(encoding="utf-8") == clean
+
+
+def test_a_run_id_with_path_traversal_is_refused(tmp_path: Path) -> None:
+    """Stage-3 PR-review BLOCK: --run-id was joined unchecked into a
+    filesystem path, so '../../somewhere' could redirect the write outside
+    the intended .shipwright/runs directory."""
+    rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW, run_id="../../escaped")
+    assert rc != 0
+    assert not (tmp_path / ".shipwright").exists(), (
+        "a rejected run-id must never create so much as the .shipwright dir"
+    )
+    assert not (tmp_path.parent / "escaped").exists(), (
+        "the traversal must not have escaped to a sibling directory either"
+    )
+
+
+def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:
+    """Only /shipwright-iterate calls this tool (iteration-planning.md, step
+    0b) with its own run_id, so the strict iterate-YYYY-MM-DD-slug format is
+    the whole allowed universe — anything else is refused outright rather
+    than merely path-cleaned, closing the class rather than one example."""
+    rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW, run_id="not-an-iterate-run-id")
+    assert rc != 0
+    assert "run-id" in capsys.readouterr().err.lower()
+    assert not (tmp_path / ".shipwright").exists()
