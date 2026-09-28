@@ -60,6 +60,28 @@ def _has_config_marker(path: Path) -> bool:
     return any((path / marker).exists() for marker in CONFIG_MARKERS)
 
 
+def _git_root(start: Path) -> Path | None:
+    """Return the nearest ancestor (inclusive) of *start* carrying a ``.git``
+    entry — a directory for a normal clone, a file for a worktree (this
+    resolver only needs its *presence*, never its contents) — or ``None`` if
+    *start* is not inside a git working tree.
+
+    This is the boundary for :func:`resolve_project_root`'s upward walk: a
+    producer invoked from a subdirectory of a repo (e.g. an npm workspace
+    such as ``server/``) must still find that repo's own Shipwright project,
+    but must never wander past the repo boundary into an unrelated ancestor
+    directory that happens to carry Shipwright markers of its own.
+    """
+    current = start
+    while True:
+        if (current / ".git").exists():
+            return current
+        parent = current.parent
+        if parent == current:
+            return None
+        current = parent
+
+
 def resolve_project_root(*, allow_env: bool = True) -> Path:
     """Resolve Shipwright project root with deterministic fallback chain.
 
@@ -72,7 +94,15 @@ def resolve_project_root(*, allow_env: bool = True) -> Path:
          ``.shipwright/agent_docs/`` — so a stray agent_docs directory beside a
          real configured project cannot turn a clean resolution into a
          multi-candidate ``ValueError``.
-      4. cwd fallback (standalone / not-yet-initialized project)
+      4. The nearest ancestor of cwd that is a Shipwright project, bounded by
+         (and including) cwd's git repository root — handles a producer
+         invoked with cwd set to a subdirectory of the managed project (e.g.
+         a workspace like ``server/`` or ``client/`` in a multi-workspace
+         repo) instead of the repo root itself. Never crosses the git
+         boundary, so an unrelated ancestor directory outside the repo can't
+         be mistaken for the project.
+      5. cwd fallback (standalone / not-yet-initialized project, or no git
+         repository found)
 
     Raises :class:`ValueError` when step 3 finds multiple candidates of the
     same tier — better to fail loudly than silently pick the wrong project.
@@ -109,5 +139,13 @@ def resolve_project_root(*, allow_env: bool = True) -> Path:
             f"Multiple Shipwright projects found under {cwd}: {names}. "
             f"Set SHIPWRIGHT_PROJECT_ROOT to disambiguate."
         )
+
+    git_root = _git_root(cwd)
+    if git_root is not None:
+        for ancestor in cwd.parents:
+            if is_shipwright_project(ancestor):
+                return ancestor
+            if ancestor == git_root:
+                break
 
     return cwd
