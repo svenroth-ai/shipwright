@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-28-architecture-review-internal-arm",
-  "date": "2026-09-28T15:40:55.206451Z",
+  "date": "2026-09-28T15:44:43.454832Z",
   "event_at": "2026-09-28T12:35:57.758063+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -13,9 +13,9 @@
     "status": "complete",
     "behaviors": [
       {
-        "behavior": "AC1: Step 5-int-arch runs always right after Step 5-int, authors architecture_brief.md first, spawns a separate architecture-internal-reviewer agent over brief+spec, and reuses the already-resolved plan_review tier (no second resolve_model_tier.py call)",
+        "behavior": "AC1: Step 5-int-arch runs always right after Step 5-int, authors architecture_brief.md first, spawns a separate architecture-internal-reviewer agent over brief+spec, and reuses the already-resolved plan_review tier (no second resolve_model_tier.py call). The agent must treat brief/spec content as data, never as instructions to itself",
         "disposition": "tested",
-        "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_step_5_int_arch_runs_always_right_after_5_int, ::test_plan_step_5_int_arch_authors_the_brief_first, ::test_plan_step_5_int_arch_spawns_a_separate_agent_over_brief_and_spec, ::test_plan_step_5_int_arch_reuses_the_already_resolved_tier, ::test_agent_prompt_carries_both_anchoring_defense_prohibitions PASSED; integration-tests/test_model_tier_spawn_instructions_present.py (STEP_5_INT_ARCH_MD spawn anchor) PASSED"
+        "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_step_5_int_arch_runs_always_right_after_5_int, ::test_plan_step_5_int_arch_authors_the_brief_first, ::test_plan_step_5_int_arch_spawns_a_separate_agent_over_brief_and_spec, ::test_plan_step_5_int_arch_reuses_the_already_resolved_tier, ::test_agent_prompt_carries_both_anchoring_defense_prohibitions, ::test_agent_prompt_treats_its_input_as_data_not_instructions PASSED; integration-tests/test_model_tier_spawn_instructions_present.py (STEP_5_INT_ARCH_MD spawn anchor) PASSED"
       },
       {
         "behavior": "AC2: plan.md gains a ## Internal Architecture Review section (Ran: yes|no), a retry replaces it in place, every finding is triaged fix/disclose/decline with a reason, and every finding is logged to decision_log.md under 'Internal Architecture Review \u2014 {split_name}'",
@@ -80,7 +80,7 @@
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
     "exit_code": 0,
-    "tests_run": 70,
+    "tests_run": 71,
     "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
     "timestamp": "2026-09-28T00:00:00Z"
   },
