@@ -229,7 +229,7 @@ def main(argv: Optional[list[str]] = None) -> int:  # noqa: ARG001 — no CLI ar
         # hook before it ever reports the outcome — the exact never-block
         # guarantee this hook exists to uphold (PR #676 round-7 finding).
         result = subprocess.run(
-            ["uv", "run", str(script), "cleanup", "--run-id", session_id],
+            ["uv", "run", "--no-project", str(script), "cleanup", "--run-id", session_id],
             cwd=str(resolve_project_root()),
             check=False,
             capture_output=True,

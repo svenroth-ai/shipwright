@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: spec**\n  **Severity: high**\n  **File: plugins/shipwright-iterate/hooks-codex/hooks.json (missing from diff)**\n  **Finding:** AC-1 and the mini-plan both explicitly require `plugins/shipwright-iterate/hooks-codex/hooks.json` to be edited (\"2 lines already correct, remaining lines get the flag\"), and `_MIN_EXPECTED_FILES = 13` in the new meta-test counts it. The diff contains no change to that file. If its remaining `uv run` entries are unpinned, AC-1 is unmet and `test_every_uv_run_hook_command_has_no_project` will fail against `shipwright-iterate/hooks-codex` on the very next CI run \u2014 the change is self-inconsistent with its own new guard.\n  **Suggestion:** Apply the same `--no-project` insertion to every remaining `uv run` entry in `hooks-codex/hooks.json` (and re-run the meta-test).\n\n- **Category: test**\n  **Severity: medium**\n  **File: shared/tests/test_hooks_uv_run_project_isolation.py:131\u2013143 (`test_no_project_ignores_poisoned_cwd`)**\n  **Finding:** The test's premise \u2014 \"derives its command from the actual shipped hooks.json entry\" \u2014 is only cosmetic. `_find_real_uv_run_command` locates the real entry, but the subprocess is then launched with a hardcoded `[\"uv\", \"run\", \"--no-project\", str(script_path)]` and a separately reconstructed script path (`REPO_ROOT / \"shared\" / \"scripts\" / \"hooks\" / _TARGET_SCRIPT_NAME`). The fixture's `prefix` is only used for an equality assert, and the raw hooks.json path is discarded, so if hooks.json pointed the entry at a different script (or a plugin-local copy), the test would still run its own reconstruction and pass. The docstring overstates what's proven.\n  **Suggestion:** Either build the subprocess argv from the fixture's `prefix` and the path resolved *from* the hooks.json entry (substituting `${CLAUDE_PLUGIN_ROOT}`), or soften the docstring; the current form would pass against a hooks.json entry that doesn't actually exist in the shipped shape.\n\n- **Category: test**\n  **Severity: low**\n  **File: shared/tests/test_hooks_uv_run_project_isolation.py:72\u201386 (`_find_real_uv_run_command`)**\n  **Finding:** Missing return type annotation for a function returning a `tuple` (docstring says \"Pull the exact \u2026 command\", implying a string) \u2014 and more substantively, the regex `r'(uv run --no-project)\\s+\"([^\"]*' + re.escape(script_name) + r')\"'` only ever matches commands that already carry `--no-project`, so the fixture cannot detect a *regression* back to unpinned form in a useful error message; it raises a confusing \"fixture broken\" assertion instead of \"the flag was removed\". Minor, but the failure mode is misleading.\n  **Suggestion:** Match `uv run(?: --no-project)?` and assert on the presence of the flag separately, so a real regression surfaces as such.\n\n- **Category: regression**\n  **Severity: low**\n  **File: plugins/shipwright-build/tests/test_review_payload_hook_wiring_integration.py:67\u201370**\n  **Finding:** The flag-skipping loop `while parts[0].startswith(\"--\")` assumes all pre-script flags are bare (valueless) tokens. If a future `uv run --project foo \"script\"` or any flag-with-value were added before the script, the value token (`foo`) would be misread as the script path. Not broken for the current `--no-project`-only shape, but the guard is narrower than the comment implies.\n  **Suggestion:** Acceptable as-is for today; if touched again, parse up to the first quoted token rather than filtering on `--` prefixes.\n\n- **Category: spec**\n  **Severity: low**\n  **File: docs/hooks-and-pipeline.md:1518\u20131526**\n  **Finding:** The operator resync instructions themselves invoke `uv run shared/scripts/tools/build_codex_plugin.py \u2026` and `uv run shared/scripts/tools/codex_hooks_sync.py \u2026` *without* `--no-project` \u2014 the very pattern this iterate establishes as the repo convention and which `test_hooks_uv_run_pinned.py`/`writing-plugin.md` now mandate for hooks. These are docs, not hooks.json, so the meta-test doesn't catch them, but an operator following the doc from an unrelated uv-managed CWD would hit the exact bug this PR fixes while applying the fix.\n  **Suggestion:** Add `--no-project` to those two documented commands.\n\n## Overall assessment\n\nThe mechanical fix, meta-test, integration test (positive + genuine negative control), and doc updates are solid and match the spec \u2014 but the diff omits `plugins/shipwright-iterate/hooks-codex/hooks.json`, which AC-1, the mini-plan, and the new meta-test's own file-count all treat as in-scope; that omission means the change is not spec-complete and the new test would fail against that file. Ship-with-fixes: add the hooks-codex edits and re-run the meta-test.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category: spec \u00b7 Severity: high \u00b7 File: `.shipwright/planning/iterate/2026-09-28-hooks-uv-run-project-pin-miniplan.md:15`** \u2014 The plan identifies `plugins/shipwright-iterate/hooks-codex/hooks.json` as needing edits, but that file is absent from the diff. Its remaining unpinned commands leave the Codex path exposed to the original failure and should fail the new static test. **Suggestion:** Add `--no-project` immediately after `uv run` in every remaining command in that file, then run the meta-test.\n\n- **Category: test \u00b7 Severity: medium \u00b7 File: `shared/tests/test_hooks_uv_run_pinned.py:68`** \u2014 The regex only recognizes a `uv run` invocation when a double-quoted argument follows it. A future command such as `uv run scripts/hook.py` would be skipped, so the test does not enforce the stated criterion for every command starting with `uv run`. **Suggestion:** Check the command prefix directly, independently of how the script path is quoted.\n\n**Overall assessment:** Ship with fixes. The flag change is sound, but the omitted Codex hooks file leaves an acceptance criterion unmet.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

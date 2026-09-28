@@ -1505,6 +1505,55 @@ with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
 > `ensure_shared_cache` and then runs `capture_session_id` →
 > `check_artifact_drift` → `session_start_using_shipwright` on `SessionStart`.
 
+> **Every hook's `uv run` invocation is pinned `--no-project`
+> (`iterate-2026-09-28-hooks-uv-run-project-pin`).** Without it, `uv run`
+> resolves its target project by walking up from the session's *current
+> working directory* — not from the hook script's own path — so a Claude
+> Code session whose CWD happens to be an unrelated uv-managed Python
+> project makes every hook silently bind to and try to sync/reinstall THAT
+> project instead of running standalone; on Windows this can hard-fail with
+> a file-lock error (`os error 32`) if that project has a running process
+> holding an entry-point `.exe` open, breaking every hook for the whole
+> session. This generalizes the fix already applied narrowly to the two
+> fail-open Bash gates below (`check_rtm_coverage.py` /
+> `check_security_scan.py`, `iterate-2026-06-27`) to every `uv run` hook
+> invocation in every plugin. **Known residual:** `--no-project` stops
+> project discovery/sync, not interpreter selection — an ambient `.venv` or
+> `.python-version` found in/above the CWD is still honored, so a broken or
+> pre-3.11 ambient venv could still misbehave a hook (just not via the
+> sync-and-lock failure this fixes). **Second-order residual, found by
+> Doubt Review and fixed in the same iterate:** removing project
+> resolution also removes whatever third-party packages a hook used to
+> receive *for free* whenever the CWD happened to have an ambient `.venv`
+> with them installed (e.g. this monorepo's own root `pyproject.toml`
+> declaring `pyyaml`/`jsonschema`) — a real gap for any *other* project
+> running these hooks, since `sys.executable` propagates down every
+> `subprocess.run([sys.executable, ...])` hop a hook's own fan-out makes.
+> Two chains needed an explicit `--with`: `run_if_cache_ready.py`'s
+> SessionStart fan-out (→ `check_required_checks_hook.py` →
+> `check_required_checks.py` → `lib.required_checks_drift`'s `import
+> yaml`) and `audit_compliance_on_stop.py`'s Group D manifest validation
+> (`jsonschema`, lazily imported, fail-closed to a silent SKIP when
+> absent). Both now carry `--with pyyaml --with jsonschema` on every
+> plugin that invokes them, kept in lockstep across plugins by the same
+> prefix-consistency test below. The `.venv`/`.python-version` interpreter
+> residual itself (next paragraph) is unchanged and still open. Enforced by
+> `shared/tests/test_hooks_uv_run_pinned.py` (every `uv run` command must
+> start with `--no-project`; the same script invoked from more than one
+> plugin must use an identical flag prefix everywhere, since
+> `codex_hooks_sync.py`'s bundle merge — see "Codex Hooks Config-Layer
+> Shim" below — dedups by exact command shape and hard-fails on a
+> mismatch). A Codex session only sees this fix once its plugin bundle is
+> rebuilt and re-synced (`build_codex_plugin.py` + `codex_hooks_sync.py`),
+> same as any other plugin-side change reaching that config-layer file. An
+> operator who already has an `os error 32`-style hook failure on their
+> machine must, after pulling this fix: (1) `bash scripts/update-marketplace.sh`
+> to refresh the Claude-Code plugin cache Claude Code actually runs hooks
+> from, and (2), only if they use Codex CLI ("Codex Light"), also rebuild
+> and re-sync the Codex bundle: `uv run shared/scripts/tools/build_codex_plugin.py
+> --project-root . --out dist/codex-plugin` then `uv run
+> shared/scripts/tools/codex_hooks_sync.py --bundle-root dist/codex-plugin`.
+
 ### Fan-out consolidation (once-per-event guard)
 
 Claude Code fires every *enabled* plugin's hooks with **no active-plugin
@@ -1999,9 +2048,10 @@ item per Tier-1 FAIL across every audited phase; iterate-2026-05-31
 `run_id=unknown` spec-check guard — see the producer side-effect note on the
 iterate Stop row below.)
 
-**Invocation carries its own deps (C2, iterate-2026-06-02-compliance-detective-realign):**
-both Stop-chain registrations invoke the hook as
-`uv run --with pyyaml "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py"`
+**Invocation carries its own deps (C2, iterate-2026-06-02-compliance-detective-realign;
+extended iterate-2026-09-28-hooks-uv-run-project-pin):** both Stop-chain
+registrations invoke the hook as
+`uv run --no-project --with pyyaml --with jsonschema "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py"`
 (`plugins/shipwright-iterate/hooks/hooks.json`,
 `plugins/shipwright-changelog/hooks/hooks.json`). The audit imports `group_a5`,
 whose A5.2+ workflow checks need PyYAML. A non-Python adopt repo (e.g. the
@@ -2015,6 +2065,14 @@ the check side: if `import yaml` still fails, `group_a5.run` emits a single
 `uv run --with pyyaml`" reason, so a missing dependency never poisons `any_fail`
 or lands in the triage backlog. A *real* A5 violation in a project that does
 have yaml is unaffected — only the missing-dependency setup path degrades.
+`--with jsonschema` covers the same class of gap for Group D's manifest
+schema validation (`_group_d_manifest.py::_schema_valid`, lazily imported,
+fail-closed to a silent SKIP when `jsonschema` is unavailable) — before
+`--no-project` pinning, this repo's own root `pyproject.toml` declaring
+`jsonschema` supplied it ambiently whenever the session's CWD happened to be
+this monorepo; `--no-project` removed that ambient supply (Doubt Review,
+`iterate-2026-09-28-hooks-uv-run-project-pin`), so it is now requested
+explicitly like `pyyaml`.
 
 **A5.8 behavioral gate probe (iterate-2026-06-05-a5-gate-behavioral-probe):**
 A5.4 confirms the deployed `.github/workflows/security.yml` carries a step with

@@ -60,7 +60,22 @@ build/merge/verify design.
 
 - **Hooks** resolve paths via `${CLAUDE_PLUGIN_ROOT}` and reach shared scripts
   as `${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/...`. Quote the placeholder.
-  Python hooks run via `uv run`; shell hooks via `bash`.
+  Python hooks run via `uv run --no-project`; shell hooks via `bash`.
+  `--no-project` is mandatory (`test_hooks_uv_run_pinned.py` enforces it):
+  without it, `uv run` resolves its target project from the session's CWD,
+  not from the script's own path, so a session whose CWD happens to be an
+  unrelated uv-managed project makes every hook try to sync/reinstall THAT
+  project instead of running standalone (iterate-2026-09-28-hooks-uv-run-project-pin).
+  `--no-project` also means a hook can no longer count on ambiently receiving
+  a third-party dependency from the CWD project's pyproject.toml (this
+  monorepo's own root pyproject.toml being the common case) — audit each
+  script's own imports AND every `sys.executable`-propagated subprocess it
+  spawns (a hook's fan-out chain shares the same interpreter as its parent),
+  and add `--with <pkg>` explicitly for anything beyond the stdlib. If the
+  same script is invoked from more than one plugin, the `--with` list must be
+  identical everywhere (`test_hooks_uv_run_pinned.py`'s cross-plugin
+  prefix-consistency check enforces it; `codex_hooks_sync.py`'s bundle merge
+  hard-fails on a mismatch).
 - **A hook registered in one plugin must usually be registered in all 12** so it
   fires regardless of which plugin is active. Hooks that emit context/blocks fire
   N times per event — make them **idempotent** (atomic O_EXCL session sentinel,

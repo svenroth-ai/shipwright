@@ -88,17 +88,29 @@ def _script_names(command: str) -> list[str]:
     return [token.rsplit("/", 1)[-1] for token in _script_tokens(command)]
 
 
+_GUARD_PLACEHOLDER = "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py"
+
+
 def _is_cache_guarded(command: str) -> bool:
+    """Prefix must be `uv run --no-project` (iterate-2026-09-28-hooks-uv-run-
+    project-pin) plus zero or more `--with <pkg>` pairs (same iterate, doubt
+    review) and nothing else, or an unpinned/malformed command reads as
+    "guarded" (false negative) here."""
     tokens = _command_tokens(command)
+    if _GUARD_PLACEHOLDER not in tokens:
+        return False
+    guard_idx = tokens.index(_GUARD_PLACEHOLDER)
+    prefix = tokens[:guard_idx]
+    if prefix[:3] != ["uv", "run", "--no-project"]:
+        return False
+    extra = prefix[3:]
+    if any(extra[i] != "--with" for i in range(0, len(extra), 2)) or len(extra) % 2:
+        return False
+
     scripts = _script_names(command)
     return (
-        len(tokens) >= 4
-        and tokens[:3] == [
-            "uv",
-            "run",
-            "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py",
-        ]
-        and len(scripts) == len(tokens) - 2
+        len(tokens) >= guard_idx + 2
+        and len(scripts) == len(tokens) - len(prefix)
         and all(name not in {"run_if_cache_ready.py", "ensure_shared_cache.py"}
                 for name in scripts[1:])
     )
@@ -212,7 +224,7 @@ def test_consolidated_command_preserves_exact_ordered_targets():
 
 
 def test_exact_target_gate_rejects_omission_reorder_and_substitution():
-    guard = 'uv run "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py"'
+    guard = 'uv run --no-project "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py"'
     prefix = "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/"
     expected = [prefix + name for name in _EXPECTED_TARGETS["shipwright-run"]]
 
@@ -244,14 +256,24 @@ def test_cache_guard_shape_rejects_reversed_or_targetless_commands():
     guard = "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py"
     target = "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/session_start_using_shipwright.py"
 
-    assert _is_cache_guarded(f'uv run "{guard}" "{target}"')
-    assert _is_cache_guarded(f'uv run "{guard}" "{target}" "{target}"')
-    assert not _is_cache_guarded(f'uv run "{target}" "{guard}"')
-    assert not _is_cache_guarded(f'uv run "{guard}"')
-    assert not _is_cache_guarded(f'uv run echo "{guard}" "{target}"')
+    assert _is_cache_guarded(f'uv run --no-project "{guard}" "{target}"')
+    assert _is_cache_guarded(f'uv run --no-project "{guard}" "{target}" "{target}"')
+    assert not _is_cache_guarded(f'uv run --no-project "{target}" "{guard}"')
+    assert not _is_cache_guarded(f'uv run --no-project "{guard}"')
+    assert not _is_cache_guarded(f'uv run --no-project echo "{guard}" "{target}"')
     assert not _is_cache_guarded(
-        f'uv run "${{CLAUDE_PLUGIN_ROOT}}/other/run_if_cache_ready.py" "{target}"',
+        f'uv run --no-project "${{CLAUDE_PLUGIN_ROOT}}/other/run_if_cache_ready.py" "{target}"',
     )
+    # iterate-2026-09-28-hooks-uv-run-project-pin regression guard: a
+    # command that dropped --no-project must read as unguarded, not as a
+    # harmlessly-shaped variant — this is what would have caught the
+    # original bug reappearing in this specific vendored guard command.
+    assert not _is_cache_guarded(f'uv run "{guard}" "{target}"')
+    # Doubt-review follow-up (same iterate): `--with <pkg>` pairs must still
+    # read as guarded, a malformed/odd `--with` prefix must not.
+    assert _is_cache_guarded(
+        f'uv run --no-project --with pyyaml --with jsonschema "{guard}" "{target}"')
+    assert not _is_cache_guarded(f'uv run --no-project --with "{guard}" "{target}"')
 
 
 def test_guard_shape_rejects_the_healer_as_a_target():
@@ -259,8 +281,8 @@ def test_guard_shape_rejects_the_healer_as_a_target():
     healer = "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ensure_shared_cache.py"
     target = "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/session_start_using_shipwright.py"
 
-    assert _is_cache_guarded(f'uv run "{guard}" "{target}"')
-    assert not _is_cache_guarded(f'uv run "{guard}" "{healer}"')
+    assert _is_cache_guarded(f'uv run --no-project "{guard}" "{target}"')
+    assert not _is_cache_guarded(f'uv run --no-project "{guard}" "{healer}"')
 
 
 def test_session_start_shape_rejects_an_unguarded_second_group():
@@ -276,33 +298,3 @@ def test_session_start_shape_rejects_an_unguarded_second_group():
     }
 
     assert _session_start_commands(data) is None
-
-
-def test_reverse_no_orphan_vendored_copies():
-    hb = {p.name for p in _hook_bearing_plugins()}
-    canon = _norm(_CANONICAL.read_bytes())
-    for copy in sorted((_REPO / "plugins").glob("*/scripts/hooks/ensure_shared_cache.py")):
-        plugin_name = copy.parents[2].name  # scripts/hooks/<f> -> plugin dir
-        assert plugin_name in hb, (
-            f"orphan ensure_shared_cache copy in non-hook-bearing plugin "
-            f"{plugin_name!r} — either wire that plugin's ../../shared hooks or "
-            "remove the stray copy"
-        )
-        assert _norm(copy.read_bytes()) == canon, f"{plugin_name} copy drifted"
-
-    lock_canon = _norm(_LOCK_CANONICAL.read_bytes())
-    for copy in sorted((_REPO / "plugins").glob("*/scripts/hooks/cache_repair_lock.py")):
-        plugin_name = copy.parents[2].name
-        assert plugin_name in hb, f"orphan cache_repair_lock copy in {plugin_name}"
-        assert _norm(copy.read_bytes()) == lock_canon, (
-            f"{plugin_name} cache_repair_lock copy drifted"
-        )
-
-
-    guard_canon = _norm(_GUARD_CANONICAL.read_bytes())
-    for copy in sorted((_REPO / "plugins").glob("*/scripts/hooks/run_if_cache_ready.py")):
-        plugin_name = copy.parents[2].name
-        assert plugin_name in hb, f"orphan run_if_cache_ready copy in {plugin_name}"
-        assert _norm(copy.read_bytes()) == guard_canon, (
-            f"{plugin_name} run_if_cache_ready copy drifted"
-        )

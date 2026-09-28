@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
+  "date": "2026-09-28",
+  "section": "Iterate — bug: hooks-uv-run-project-pin",
+  "title": "Pin every hooks.json uv run invocation with --no-project",
+  "context": "Every hooks.json invokes hook scripts as uv run \"<script>\", no --no-project. uv resolves its target project from the session CWD, not the scripts own path, so a CWD that is an unrelated uv-managed project makes every hook try to sync it -- on Windows this can hard-fail (os error 32) when a running process holds that projects console-script .exe open.",
+  "decision": "Pin every hooks.json uv run invocation with --no-project so hooks never discover/resolve/sync whatever project the CWD happens to be. Doubt review found this also drops ambient third-party deps a hooks subprocess chain relied on; restored explicitly via --with pyyaml/jsonschema where needed.",
+  "consequences": "Hooks never touch or wait on an unrelated CWD project again; per-hook overhead drops. Known residual: an ambient .venv/.python-version above CWD is still honored (interpreter selection, not sync) -- disclosed, not fixed. A nested build-hook uv run and codex bundle-merge prefixes also needed matching updates.",
+  "rationale": "5 of ~41 hook scripts already used --no-project, proving the pattern; --isolated/--project were tested live and rejected (still sync a project). Doubt reviews live-reproduced regression (uv run --no-project python -c \"import yaml\" fails with no ambient venv) showed the flag alone silently breaks two dependency chains.",
+  "rejected": "--isolated (still resolves+syncs the host project into a throwaway venv); --project <dir> (still syncs, recouples hooks to a plugins own venv cost); pinning --python 3.11 everywhere (closes the unrelated ambient-interpreter residual, out of scope, no existing precedent pins it).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-28-hooks-uv-run-project-pin.md"
+}
