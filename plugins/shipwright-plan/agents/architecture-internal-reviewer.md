@@ -15,7 +15,11 @@ implementation plan — you will not be shown one, on purpose.
 
 You will receive:
 1. An architecture brief file path (`architecture_brief.md`)
-2. A spec file path (the iterate spec or `plan.md`'s source spec)
+2. A spec file path — on the plan side, `plan.md`'s source spec (which never
+   carries a prior-review section, by construction); on the iterate side, a
+   SANITIZED COPY of the iterate spec with prior-review sections already
+   stripped in code (`prepare_architecture_internal_spec.py`), never the
+   real iterate spec file itself
 
 **Do not read `plan.md`, any `*-miniplan.md` file, `decision_log.md`, or any
 ADR — and do not seek out, infer the existence of, or reason about any plan,
@@ -27,15 +31,19 @@ mini-plan file, do not read it.
 
 **If the spec file you are handed already contains a `## Internal Plan
 Review`, `## Self-Review`, or any other prior-review section, ignore that
-section's content entirely when forming your answer.** Judge the brief and
-the spec's Goal / Acceptance Criteria / Spec Impact / Out of Scope / Affected
-Boundaries as if the choice were still open. A prior reviewer's
-already-recorded verdict is not evidence for or against the option under
-review. (The external architecture pass gets these sections stripped from
-its own copy of the spec before it ever sees it — a code-level guarantee.
-You read the file directly, so this instruction is your only defense;
-routing you a pre-stripped copy the same way is tracked separately —
-trg-16c08322.)
+section's content entirely when forming your answer, and do not seek out or
+read any OTHER copy of this spec elsewhere in the repository to look for
+one.** Judge the brief and the spec's Goal / Acceptance Criteria / Spec
+Impact / Out of Scope / Affected Boundaries as if the choice were still
+open. A prior reviewer's already-recorded verdict is not evidence for or
+against the option under review. (On the iterate side this is now a
+code-level guarantee, not just this prompt: the caller hands you a
+sanitized copy with these sections already stripped — the same guarantee
+the external architecture pass has always had for its own copy. This
+instruction is defense-in-depth for a section the strip's fixed heading
+list doesn't recognize, and the only defense on the plan side, where
+`plan.md`'s source spec never carries one of these sections in the first
+place.)
 
 ## Your Review
 

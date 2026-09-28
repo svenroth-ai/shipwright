@@ -360,12 +360,30 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    on resume, **record the row from the existing section's content, do not
    re-spawn.**
 
+   **Sanitize the spec before spawning.** By this point the iterate spec
+   already carries step 0's `## Internal Plan Review` section (and, at
+   medium+, `## Self-Review`) — handing the agent that file's path directly
+   would leak the very rationale its fresh-context design exists to
+   withhold; an agent with its own Read/Grep/Glob access can simply re-read
+   the original, so a prose "ignore this section" instruction alone is not a
+   real defense — the external architecture pass already closes this exact
+   gap in code. Run:
+   ```bash
+   uv run "{shared_root}/scripts/tools/prepare_architecture_internal_spec.py" \
+     --project-root "{project_root}" --run-id "{run_id}" \
+     --spec-file "{iterate_spec_path}"
+   ```
+   which writes the stripped copy to
+   `{project_root}/.shipwright/runs/{run_id}/architecture-internal-spec.md`
+   (same ephemeral, gitignored location `surface_verification.py` uses for
+   per-run scratch evidence — never committed) and prints that path.
+
    Spawn `shipwright-plan:architecture-internal-reviewer` (Read/Grep/Glob
-   only) over the architecture brief + the spec — **never the plan or
-   mini-plan**, preserving the same anchoring defense the brief already gives
-   the external pass. Pass `plan_review.agent_param` (from §F above — the SAME
-   role step 0 resolved; this pass is not a fifth role) as the Agent tool's `model=`
-   parameter when non-null.
+   only) over the architecture brief + **that sanitized copy — never the
+   real iterate spec, the plan, or the mini-plan**. Pass
+   `plan_review.agent_param` (from §F above — the SAME role step 0 resolved;
+   this pass is not a fifth role) as the Agent tool's `model=` parameter
+   when non-null.
 
    **Degraded handling.** Same rule as step 0 — unreachable subagent,
    unparseable reply, or a JSON missing `findings`/`summary`: record `Ran: no`

@@ -201,6 +201,20 @@ def test_iterate_step_0b_writes_the_brief_and_the_spec_section() -> None:
     assert "iterate adr" in body
 
 
+def test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy() -> None:
+    """The iterate spec is the ONE document that carries `## Internal Plan
+    Review` by the time this step runs (unlike the plan side, where that
+    section only ever lands in plan.md) — handing the agent that raw path
+    would leak the rationale its fresh-context design exists to withhold.
+    The fix is code, not prose: `prepare_architecture_internal_spec.py`
+    must run before the spawn, and the spawn must name its output, never
+    `{iterate_spec_path}`, as the agent's input."""
+    body = _iterate_step_0b()
+    assert "prepare_architecture_internal_spec.py" in body
+    assert "over the architecture brief + that sanitized copy" in body
+    assert "never the real iterate spec" in body
+
+
 def test_iterate_step_0b_never_writes_decision_log_directly() -> None:
     """Iterate defers all decision logging to F3's decision-drop mechanism —
     unlike the plan side, step 0b must not name a direct decision_log.md

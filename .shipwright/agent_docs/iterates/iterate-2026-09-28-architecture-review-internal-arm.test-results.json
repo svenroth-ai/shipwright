@@ -27,9 +27,9 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py -v",
+      "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
       "exit_code": 0,
-      "tests_run": 63,
+      "tests_run": 67,
       "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
       "timestamp": "2026-09-28T00:00:00Z"
     },
@@ -81,11 +81,17 @@
           "disposition": "tested",
           "evidence": "shared/tests/test_architecture_review_anchoring_defense.py::test_architecture_mode_strips_prior_review_sections_before_use, ::test_iterate_mode_does_not_strip_prior_review_sections PASSED",
           "category": "integration"
+        },
+        {
+          "behavior": "D2 fix (Stage-3 doubt review, escalated to a hard BLOCK by the F11 local PR-review preflight): the architecture-internal-reviewer agent's own Read/Grep/Glob access makes a prose-only 'ignore prior sections' instruction unenforceable on the iterate side, where the spec it is handed already carries the Internal Plan Review section. prepare_architecture_internal_spec.py writes a sanitized copy (reusing strip_prior_review_sections) and the iterate skill spawns the agent over that copy's path, never the real iterate spec",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_prepare_architecture_internal_spec.py::test_writes_a_sanitized_copy_stripped_of_the_prior_review_section, ::test_output_location_is_the_ephemeral_gitignored_runs_dir, ::test_a_clean_spec_with_no_prior_review_section_passes_through_unchanged PASSED; shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy PASSED",
+          "category": "integration"
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
+        "testable": 10,
+        "tested": 10,
         "untestable": 0,
         "untested_testable": 0
       },

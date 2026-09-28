@@ -42,14 +42,21 @@ both that the strip fires for architecture mode and does NOT fire for
 iterate mode).
 
 ## Other doubt-review objections (D2-D8), disposition
-- **D2** (medium): the new agent's own anchoring defense is prose-only
-  (Read/Grep/Glob over the whole repo, no code enforcement), and its
-  agent file inaccurately claimed parity with the external pass's own
-  instruction (the external prompts have no such ignore-prior-review
-  clause). Fixed the inaccurate cross-reference in
-  `architecture-internal-reviewer.md`. The harder structural fix — routing
-  the agent a pre-stripped spec copy the same way `external_review.py`
-  now does — is tracked separately: **trg-16c08322**.
+- **D2** (medium, fixed — escalated to a hard BLOCK by the F11 local
+  PR-review preflight, run independently of this doubt review, before this
+  fix landed): the new agent's own anchoring defense was prose-only
+  (Read/Grep/Glob over the whole repo, no code enforcement), and its agent
+  file inaccurately claimed parity with the external pass's own instruction
+  (the external prompts have no such ignore-prior-review clause). Fixed the
+  inaccurate cross-reference in `architecture-internal-reviewer.md`, AND —
+  closing the harder structural gap the doubt review had deferred as
+  **trg-16c08322** — added `shared/scripts/tools/
+  prepare_architecture_internal_spec.py` (reuses `strip_prior_review_sections`)
+  and wired it into `iteration-planning.md` step 0b: the agent is now handed
+  a sanitized spec copy's path, never the real iterate spec, on the side
+  that actually carries a prior-review section. Covered by
+  `shared/tests/test_prepare_architecture_internal_spec.py` and a new
+  contract-prose assertion. `trg-16c08322` dismissed as fixed, not deferred.
 - **D3** (medium): the iterate spec's Reconciliation paragraph overstated
   GLM's agreement with the separate-agent decision as independent/
   unprompted, when GLM was handed a spec whose AC1 already stated that
