@@ -16,6 +16,16 @@ per-run scratch evidence — this file carries no information the committed
 spec.md doesn't already have, so it is never committed itself).
 
 Prints the output path on success (exit 0).
+
+Two disclosed, accepted residuals (external review, both Windows-only /
+low-impact): the ``is_symlink()`` ancestor checks below do not detect an
+NTFS directory junction — no stdlib primitive detects one across the
+Python versions this repo supports, and the CI gate that matters runs on
+POSIX, where junctions do not exist. And ``--spec-file`` itself carries no
+containment check against ``--project-root`` (unlike the output path,
+which gets the full strict-run-id + symlink + containment treatment) —
+it is read-only and its content only ever lands in the gitignored runs
+directory, so the asymmetry has no write-side consequence.
 """
 
 from __future__ import annotations
@@ -68,7 +78,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     spec_path = Path(args.spec_file)
-    spec_text = spec_path.read_text(encoding="utf-8")
+    try:
+        spec_text = spec_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"error: could not read --spec-file {spec_path}: {exc}", file=sys.stderr)
+        return 1
     sanitized = strip_prior_review_sections(spec_text)
 
     # Check for a symlinked ancestor BEFORE resolving — resolving first would

@@ -279,6 +279,38 @@ across both legs — fixed, not disclosed:
   while explaining that it is NOT called a second time, so the suggested
   assertion fails against correct prose. Reverted to the original assertion,
   which is the one that actually holds.
+- **Unhandled read exception (low, fixed, a fifth external code-review
+  round).** `--spec-file` read failures (missing file, permission error, bad
+  encoding) raised an unhandled traceback instead of the tool's own
+  established `error:` + exit-1 contract every other failure path uses
+  (`glm`). Wrapped in `try/except (OSError, UnicodeDecodeError)`. Covered
+  by `test_a_missing_spec_file_fails_cleanly_not_with_a_traceback`.
+- **Windows directory-junction bypass (medium, disclosed with reason,
+  same round).** `openai`: `is_symlink()` does not detect an NTFS junction,
+  so a junction at `.shipwright`, `runs`, or the run directory bypasses
+  every ancestor check added across the last three rounds. Confirmed no
+  stdlib primitive (`Path.is_junction()` or equivalent) exists across the
+  Python versions this repo supports (absent even on this dev machine's
+  3.13). Same precedent as the file-level Windows TOCTOU already disclosed:
+  the CI gate that matters runs on POSIX, where junctions do not exist —
+  documented in the tool's own docstring rather than chased with a
+  version-gated, partial-coverage detection shim.
+- **`--spec-file` containment asymmetry (low, disclosed with reason, same
+  round).** `glm`: unlike the output path, `--spec-file` carries no
+  containment check against `--project-root`. Accepted: it is read-only and
+  its content only ever lands in the already-hardened, gitignored runs
+  directory — the asymmetry has no write-side consequence. Documented in
+  the docstring.
+- **Two further low-severity items, declined with reason (same round).**
+  Tab-as-indent and non-info-string fence openers in `_FENCE_OPEN_RE` both
+  err toward over-masking, which the masker's own contract already declares
+  safe — `glm`'s own review names this "not a defect by the code's own
+  stated contract." A disposition-string wording drift between two test
+  files (`_INTERNAL_ARM_DISPOSITIONS` vs. `_DELEGATED`) is real but
+  pre-existing test-suite structure this iterate did not introduce and
+  nothing currently compares the two strings against each other — noted,
+  not fixed, to avoid widening this already-large diff into an unrelated
+  test file.
 - **Two low-severity items, declined with reason.** The Windows symlink
   fallback's check-then-write race was independently reflagged by `glm`; it
   is the same disclosed residual the earlier F11 preflight round already

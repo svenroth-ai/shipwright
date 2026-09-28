@@ -164,6 +164,20 @@ def test_a_symlinked_run_directory_is_refused(tmp_path: Path) -> None:
     assert victim.read_text(encoding="utf-8") == "do not touch"
 
 
+def test_a_missing_spec_file_fails_cleanly_not_with_a_traceback(tmp_path: Path, capsys) -> None:
+    """External code review round 5 (low, `glm`): an unreadable --spec-file
+    (missing, permission error, bad encoding) must report a clean `error:`
+    message and exit 1, matching every other failure path in this tool,
+    rather than an unhandled traceback."""
+    rc = pais.main([
+        "--project-root", str(tmp_path),
+        "--run-id", _RUN_ID,
+        "--spec-file", str(tmp_path / "does-not-exist.md"),
+    ])
+    assert rc != 0
+    assert "error:" in capsys.readouterr().err.lower()
+
+
 def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:
     """Only /shipwright-iterate calls this tool (iteration-planning.md, step
     0b) with its own run_id, so the strict iterate-YYYY-MM-DD-slug format is
