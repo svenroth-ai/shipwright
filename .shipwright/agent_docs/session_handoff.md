@@ -1,41 +1,45 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-24-r5b-merge-lane"
+run_id: "iterate-2026-09-28-architecture-review-internal-arm"
 phase: "iterate"
-reason: "iterate: campaign-dag-scheduler R5b serial merge lane"
-timestamp: "2026-09-24T06:44:57.450745+00:00"
+reason: "iterate: internal architecture-review arm (D2 anchoring fix + self-caught regressions)"
+timestamp: "2026-09-28T11:56:26.239708+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-24 06:44:57 UTC
+> Auto-generated 2026-09-28 12:35:57 UTC
 
 ## Session Info
 
-- **Session ID**: ccb8f881-5a1a-4d9e-ae92-2cdb5ae55623
-- **Timestamp**: 2026-09-24 06:44:57 UTC
-- **Reason**: iterate: campaign-dag-scheduler R5b serial merge lane
+- **Session ID**: 6ba1190f-4f2e-465c-add2-ae45d2cc230e
+- **Timestamp**: 2026-09-28 12:35:57 UTC
+- **Reason**: iterate completion: iterate-2026-09-28-architecture-review-internal-arm
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-23-r5a-wave-build-flip
-- **Date**: 2026-09-23T16:44:27.584176Z
+- **Run ID**: iterate-2026-09-28-architecture-review-internal-arm
+- **Date**: 2026-09-28T17:00:47.337947Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/campaign-r5a-wave-build-flip
-- **ADR**: iterate-2026-09-23-r5a-wave-build-flip
+- **Branch**: iterate/architecture-review-internal-arm
+- **ADR**: iterate-2026-09-28-architecture-review-internal-arm
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R5a-wave-build-flip.md
+- **Spec**: .shipwright/planning/iterate/2026-09-28-architecture-review-internal-arm.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-r5b-merge-lane
-- **External Review Marker**: completed (external_review_state.json @ 2026-09-24T06:25:12)
-- **Review Cascade**: no run_id resolved
+- **Branch**: iterate/architecture-review-internal-arm
+- **Run ID**: iterate-2026-09-28-architecture-review-internal-arm
+- **Spec**: .shipwright/planning/iterate/2026-09-28-architecture-review-internal-arm.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-09-28T07:35:35))
+- **Review Cascade**: complete
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Pipeline Phases
@@ -66,8 +70,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/campaign-r5b-merge-lane
-- **Last Commit**: 032d1ebbf feat(iterate): campaign-mode wave-based concurrent sub-iterate build (campaign-dag-scheduler R5a) (#794)
+- **Branch**: iterate/architecture-review-internal-arm
+- **Last Commit**: f48ef6d15 docs(iterate): record F11 local preflight round 9 as converged (F5c)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -83,17 +87,17 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f7cfa441 | work_completed | iterate (campaign-mode serial merge lane: review pinning exactness, PR-identity + merge-SHA verification, rebase-triggered staleness cascade, STRICT-STOP drain) | 2026-09-24 |
-| evt-0f53d04c | grade_snapshot | — | 2026-09-23 |
-| evt-0233ea5a | work_completed | iterate (Flip campaign-mode.md's Loop from single-unit-at-a-time to wave-based concurrent sub-iterate build, wiring R1-R4's dependency-graph/worktree/state-machine primitives live) | 2026-09-23 |
-| evt-e91ce306 | event_amended | — | 2026-09-23 |
-| evt-6a59c108 | work_completed | None (—) | 2026-09-23 |
+| evt-53c66cd8 | grade_snapshot | — | 2026-09-28 |
+| evt-7cb25d06 | work_completed | iterate (Pin every hooks.json uv run invocation with --no-project so hook execution never resolves/syncs the session's CWD project) | 2026-09-28 |
+| evt-b8906b6d | work_completed | iterate (Trim CLAUDE.md under the 200-line hygiene cap and re-sync shipwright_bloat_baseline.json with 26 of 28 files that had drifted out of tracking; 2 extreme outliers stay open (H1) pending a real split-or-ADR decision.) | 2026-09-28 |
+| evt-59f17491 | grade_snapshot | — | 2026-09-28 |
+| evt-990d13d9 | work_completed | iterate (Internal architecture-review arm for /shipwright-plan and /shipwright-iterate) | 2026-09-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 668
-- **Last iterate**: change — campaign-mode serial merge lane: review pinning exactness, PR-identity + merge-SHA verification, rebase-triggered staleness cascade, STRICT-STOP drain (2026-09-24)
+- **Total work events**: 675
+- **Last iterate**: bug — Pin every hooks.json uv run invocation with --no-project so hook execution never resolves/syncs the session's CWD project (2026-09-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
