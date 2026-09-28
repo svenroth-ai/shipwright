@@ -14,17 +14,23 @@ sync an unrelated CWD project instead of running standalone).
 
 Both subprocess calls run with `VIRTUAL_ENV`/`UV_*` stripped from the
 environment, so a venv this test happens to run under cannot mask (or
-fake) either result. The poisoned project declares an impossible
-`requires-python` (`==99.99.99`) rather than an unresolvable dependency
-URL — no interpreter anywhere can ever satisfy it, so the negative
-control fails deterministically offline, with no network/registry
-dependency AND no platform-specific `file://` URI parsing involved. An
-earlier version poisoned via a nonexistent `file://` dependency path;
-that failed as expected with uv 0.11.9 on Windows but silently
-succeeded on Linux CI (uv resolves/parses that URI form differently
-there), so the negative control wasn't actually discriminating on every
-platform CI runs on (iterate-2026-09-28-hooks-uv-run-project-pin, F11
-CI run 36423886194).
+fake) either result. The poisoned project is a syntactically INVALID
+`pyproject.toml` — `uv run` (project mode) always parses that file
+during settings discovery, before any interpreter/dependency check runs,
+so this fails at the earliest possible step and cannot depend on a uv
+version's interpreter-resolution behavior. `uv run --no-project` skips
+project discovery entirely (that flag's whole contract), so it still
+succeeds even though the same broken file is on disk. Two earlier
+poisoning mechanisms were each version/platform-dependent instead: a
+nonexistent `file://` dependency path failed as expected with uv 0.11.9
+on Windows but silently succeeded on Linux CI, since uv resolves/parses
+that URI form differently there; an impossible `requires-python`
+(`==99.99.99`) failed locally but silently succeeded on CI's newer uv,
+which apparently does not re-validate `requires-python` against a
+project with zero dependencies before running (main-repair for
+iterate/fix-main-a6bb2537457f, CI run 36432205060). A malformed TOML
+file has no such escape hatch: parsing it is unconditional and has no
+version-dependent branch to skip through.
 
 This is the `category:"integration"` Test Completeness Ledger behavior
 required by the `cross_component` risk flag for hooks.json changes.
@@ -46,17 +52,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _TARGET_SCRIPT_NAME = "write_terminal_marker.py"
 _PLACEHOLDER = "${CLAUDE_PLUGIN_ROOT}"
 
-# A pyproject.toml declaring a `requires-python` no interpreter can ever
-# satisfy — offline-deterministic and platform-independent (no network,
-# registry, or `file://` URI parsing involved). If `uv run` attempts to
-# discover and sync THIS project, the interpreter check fails before the
-# target script ever executes.
+# Syntactically invalid TOML — unconditional and version-independent.
+# `uv run` (project mode) parses pyproject.toml during settings discovery
+# before any interpreter/dependency logic runs at all, so this fails at
+# the earliest possible step regardless of uv version or platform.
+# `--no-project` never reaches this parse, by that flag's own contract.
 _POISONED_PYPROJECT = """\
-[project]
-name = "poisoned-cwd-project"
-version = "0.0.0"
-requires-python = "==99.99.99"
-dependencies = []
+[project
+this is not valid toml
 """
 
 
