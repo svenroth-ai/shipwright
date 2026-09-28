@@ -173,7 +173,7 @@ def test_no_project_ignores_poisoned_cwd(
     )
 
 
-def test_without_no_project_never_uses_the_poisoned_cwd_project(
+def test_without_no_project_is_poisoned_by_cwd(
     poisoned_cwd: Path, real_hook_command: tuple[str, Path]
 ) -> None:
     """The same invocation WITHOUT --no-project must never actually run
@@ -204,8 +204,8 @@ def test_without_no_project_never_uses_the_poisoned_cwd_project(
         timeout=60,
         env=_scrubbed_env(),
     )
+    combined = (result.stdout + result.stderr).lower()
     if result.returncode != 0:
-        combined = (result.stdout + result.stderr).lower()
         assert any(
             term in combined
             for term in ("resolve", "resolution", "project", "dependenc", "interpreter", "python")
@@ -215,6 +215,19 @@ def test_without_no_project_never_uses_the_poisoned_cwd_project(
             "either a clean success (modern uv skips CWD discovery for "
             "this shape) or a failure naming project resolution (older "
             f"uv, still discovering from the CWD), got:\n{result.stderr}"
+        )
+    else:
+        # On the success branch (modern uv, target-workspace-discovery
+        # never opens the poisoned pyproject.toml at all) the run must be
+        # unremarkable — no stray warning about the malformed file it
+        # skipped. A quiet success is what "never opened it" actually
+        # looks like; noisy output here would mean something DID touch
+        # the poisoned project and merely failed to treat that as fatal.
+        assert result.stdout == "" and result.stderr == "", (
+            "uv run without --no-project succeeded but produced unexpected "
+            f"output — expected total silence for a run that never touched "
+            f"the poisoned CWD project:\nstdout: {result.stdout}\n"
+            f"stderr: {result.stderr}"
         )
 
 
