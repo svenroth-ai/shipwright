@@ -19,6 +19,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _SHARED = Path(__file__).resolve().parents[1]
 _TOOLS_DIR = _SHARED / "scripts" / "tools"
 if str(_TOOLS_DIR) not in sys.path:
@@ -96,6 +98,27 @@ def test_a_run_id_with_path_traversal_is_refused(tmp_path: Path) -> None:
     assert not (tmp_path.parent / "escaped").exists(), (
         "the traversal must not have escaped to a sibling directory either"
     )
+
+
+def test_a_preexisting_symlink_at_the_output_path_is_refused(tmp_path: Path) -> None:
+    """Stage-3 PR-review BLOCK: a fixed, predictable output filename plus a
+    plain write() follows a pre-existing symlink there, letting repository
+    contents redirect the write outside .shipwright/runs. Pre-plant a
+    symlink at the exact output path pointing at a victim file elsewhere,
+    and confirm the victim is left untouched."""
+    victim = tmp_path / "victim.txt"
+    victim.write_text("do not touch", encoding="utf-8")
+
+    runs_dir = tmp_path / ".shipwright" / "runs" / _RUN_ID
+    runs_dir.mkdir(parents=True)
+    try:
+        (runs_dir / "architecture-internal-spec.md").symlink_to(victim)
+    except OSError:
+        pytest.skip("symlink creation unavailable on this host")
+
+    rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW)
+    assert rc != 0
+    assert victim.read_text(encoding="utf-8") == "do not touch"
 
 
 def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:

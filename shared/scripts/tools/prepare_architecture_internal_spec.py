@@ -21,6 +21,7 @@ Prints the output path on success (exit 0).
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -31,6 +32,23 @@ if str(_SHARED_LIB) not in sys.path:
 
 from external_review_modes import strip_prior_review_sections  # noqa: E402
 from iterate_entry import RUN_ID_STRICT  # noqa: E402
+
+
+def _write_refusing_symlinks(out_path: Path, content: str) -> None:
+    """Write ``content`` to ``out_path``, refusing to follow a pre-existing
+    symlink at that exact filename — a fixed, predictable output path is
+    exactly what a symlink-redirect attack needs. ``O_NOFOLLOW`` makes this
+    atomic (no check-then-write race) on POSIX, where the CI gate that
+    matters actually runs; Windows has no such flag, so this falls back to
+    a plain existence check there (best-effort, not atomic)."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    elif out_path.is_symlink():
+        raise OSError(f"refusing to write through an existing symlink: {out_path}")
+    fd = os.open(out_path, flags, 0o644)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(content)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -65,7 +83,11 @@ def main(argv: list[str] | None = None) -> int:
 
     runs_dir.mkdir(parents=True, exist_ok=True)
     out_path = runs_dir / "architecture-internal-spec.md"
-    out_path.write_text(sanitized, encoding="utf-8")
+    try:
+        _write_refusing_symlinks(out_path, sanitized)
+    except OSError as exc:
+        print(f"error: refusing to write {out_path}: {exc}", file=sys.stderr)
+        return 1
     print(str(out_path))
     return 0
 

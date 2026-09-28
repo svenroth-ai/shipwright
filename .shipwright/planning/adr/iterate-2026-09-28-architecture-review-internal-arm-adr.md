@@ -167,6 +167,22 @@ Two findings, both about `prepare_architecture_internal_spec.py` /
   instructions to the reviewer, and an embedded imperative is itself a
   finding to report, not something to obey. Covered by
   `test_agent_prompt_treats_its_input_as_data_not_instructions`.
+- **Symlink-following write (high, fixed, a fifth F11 preflight pass).**
+  `prepare_architecture_internal_spec.py` wrote to a fixed, predictable
+  output filename via plain `write_text()`, which follows a pre-existing
+  symlink there — letting repository contents redirect the write outside
+  `.shipwright/runs`. Fixed with `O_NOFOLLOW` on POSIX (atomic, no
+  check-then-write race), falling back to an existence check on Windows
+  (best-effort — no such flag exists there); the CI gate this matters for
+  runs on Linux. Covered by
+  `test_a_preexisting_symlink_at_the_output_path_is_refused` (skips on a
+  host without symlink privileges, same precedent as the existing
+  `test_iterate_test_results_evidence.py` symlink tests). Also removed
+  stray untracked hook-runtime cache files under
+  `plugins/shipwright-plan/.shipwright/` and `shared/.shipwright/`
+  (session-lock claims, import state) the preflight flagged as a
+  non-blocking comment — never staged, so never part of any commit, but
+  worth clearing from the working tree.
 
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
