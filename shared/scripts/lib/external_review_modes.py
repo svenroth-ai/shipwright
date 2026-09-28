@@ -28,10 +28,12 @@ __all__ = [
     "KNOWN_PLACEHOLDERS",
     "MODE_INPUT",
     "ModeInputError",
+    "UnstrippableSpecError",
     "is_blank",
     "render_user_prompt",
     "render_user_prompt_as_stdin_refs",
     "select_mode_input",
+    "strip_prior_review_sections",
 ]
 
 #: Mode → (input flag, dest attribute, human label). One row per mode, so a new
@@ -69,9 +71,149 @@ class ModeInputError(ValueError):
     """The mode's input flags are wrong. Carries the operator-facing message."""
 
 
+class UnstrippableSpecError(ValueError):
+    """An unterminated fence masks the rest of the document, and a real
+    prior-review heading appears to sit inside that masked tail — stripping
+    cannot safely proceed without risking a rationale leak (external review
+    + local PR-review preflight, both converged on this independently:
+    "fail closed... refuse to prepare the sanitized input")."""
+
+
 def is_blank(text: str) -> bool:
     """True when ``text`` holds nothing a reviewer could read."""
     return not text.strip(BLANK_CHARS)
+
+
+#: A fence opener: up to 3 spaces/tabs of indent (CommonMark allows this;
+#: a masker that only recognizes column-0 fences leaves an indented quote
+#: unmasked — external review round 3, low, `glm`), then 3+ of the same
+#: fence character. Group 1 is the run of fence characters, so its own
+#: length is the opener's length for the same-char/length>=-close rule below.
+_FENCE_OPEN_RE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
+
+#: Headings the architecture pass must never see (Stage-3 doubt review, high).
+#: On the plan side the anchoring defense holds by construction — the internal
+#: passes write to `plan.md`, never `spec.md`. On the iterate side there is no
+#: second document: these same headings land in the ONE spec file this mode is
+#: handed as `--spec-file`, each carrying exactly the rejection rationale the
+#: brief was built to withhold. This same pattern also runs against plan-side
+#: specs (where these headings normally never appear by construction); an
+#: adopted-template spec that happens to carry a real, unrelated
+#: `## Self-Review`/`## Architecture Review` section there is stripped too,
+#: intentionally, on the "err toward removing more, never toward leaking a
+#: real section" contract this whole module follows (external code review,
+#: low, `glm` — see `test_strip_also_applies_on_the_plan_side_by_design`).
+#:
+#: The closing lookahead tolerates 0-3 leading spaces/tabs (CommonMark's own
+#: indentation allowance, already used by `_FENCE_OPEN_RE` above) and either a
+#: space or a tab after `##` — a stricter `\n## ` missed a legitimately
+#: indented or tab-separated FOLLOWING heading, silently pulling that
+#: section's real content into the stripped span (external code review,
+#: medium, `openai`).
+_PRIOR_REVIEW_SECTION_RE = re.compile(
+    r"^## (?:Internal Plan Review|Internal Architecture Review|Self-Review|"
+    r"Architecture Review)\b.*?(?=\n[ \t]{0,3}##[ \t]|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+def _mask_fenced_blocks(text: str) -> tuple[str, int | None]:
+    """Replace every character inside a fenced code block with a space,
+    preserving line structure so match offsets computed on the masked text
+    still index correctly into the original — a spec that quotes a template
+    or skill excerpt containing a line like "## Internal Plan Review" must
+    not have that quoted line mistaken for a real section boundary.
+
+    Line-by-line rather than one regex: a single-pattern attempt here has
+    twice been wrong in opposite directions (external review, both rounds
+    medium, both legs converging each time) — first a backreference-exact
+    closer missed CommonMark's "closer may be LONGER than the opener" rule
+    (a longer closer left the whole block unmasked), then loosening that to
+    "any 3+ marker closes any opener" over-corrected (a same-or-shorter
+    marker of the WRONG type, or a short one nested inside a longer block,
+    closed it too early). Explicit state — the opener's exact character and
+    length — is what both single-regex attempts lacked. A fence with no
+    closer at all masks to end-of-document, the same direction every other
+    correction here has erred: leaving a boundary live is the failure mode,
+    never masking a little extra quoted text.
+
+    Returns ``(masked_text, unterminated_from)`` — the second element is the
+    character offset where the LAST still-open fence began, or ``None`` if
+    every fence closed. A caller uses this to check whether that masked-to-
+    EOF tail hid a real section boundary (external review + local PR-review
+    preflight, both converged: an unmatched fence earlier in the document can
+    mask an actual prior-review section, so it is never stripped)."""
+    lines = text.split("\n")
+    out: list[str] = []
+    fence_char: str | None = None
+    fence_len = 0
+    fence_open_at: int | None = None
+    cursor = 0
+    for line in lines:
+        line_start = cursor
+        cursor += len(line) + 1
+        if fence_char is None:
+            match = _FENCE_OPEN_RE.match(line)
+            if match:
+                fence_char, fence_len = match.group(1)[0], len(match.group(1))
+                fence_open_at = line_start
+                out.append(re.sub(r"[^\n]", " ", line))
+                continue
+            out.append(line)
+            continue
+        stripped = line.lstrip(" \t")
+        run = len(stripped) - len(stripped.lstrip(fence_char))
+        if (
+            len(line) - len(stripped) <= 3
+            and run >= fence_len
+            and stripped[run:].strip(" \t") == ""
+        ):
+            fence_char, fence_len, fence_open_at = None, 0, None
+        out.append(re.sub(r"[^\n]", " ", line))
+    return "\n".join(out), (fence_open_at if fence_char is not None else None)
+
+
+def strip_prior_review_sections(spec_text: str) -> str:
+    """Remove sections that would leak a prior reviewer's verdict/rationale
+    into the architecture pass's `{SPEC}` input — a code-level backstop for
+    the anchoring defense prose already asks the iterate skill to honor.
+
+    Section boundaries are located against a fence-masked copy of the text
+    (see `_mask_fenced_blocks`) so a fenced quote of a heading-shaped line
+    can never be read as a real section start or end; the located spans are
+    then removed from the original, unmasked text.
+
+    Raises `UnstrippableSpecError` when an unterminated fence masks the rest
+    of the document AND a real prior-review heading sits in that masked
+    tail: proceeding would silently emit a "sanitized" copy that still
+    carries the rationale this function exists to remove.
+
+    This check reads the masked tail's ORIGINAL (unmasked) text, so a
+    heading-shaped line that is itself just quoted content sitting after the
+    same unterminated fence also raises — there is no way to tell "real
+    heading" from "quoted look-alike" once a fence never closes, since
+    CommonMark treats everything after it as one open block either way.
+    Accepted false-positive cost of failing closed (external code review,
+    low, `glm`): a spec with a stray, unrelated unterminated fence anywhere
+    before a real-looking prior-review heading refuses the whole review
+    pass, even when nothing was actually leaking."""
+    masked, unterminated_from = _mask_fenced_blocks(spec_text)
+    if unterminated_from is not None and _PRIOR_REVIEW_SECTION_RE.search(
+        spec_text[unterminated_from:]
+    ):
+        raise UnstrippableSpecError(
+            "an unterminated fenced code block masks the rest of this "
+            "document, and a prior-review heading appears inside that "
+            "masked tail — refusing to strip, since doing so could leave "
+            "that section's rationale in the output unremoved"
+        )
+    kept: list[str] = []
+    cursor = 0
+    for match in _PRIOR_REVIEW_SECTION_RE.finditer(masked):
+        kept.append(spec_text[cursor:match.start()])
+        cursor = match.end()
+    kept.append(spec_text[cursor:])
+    return "".join(kept)
 
 
 def select_mode_input(mode: str, args: Any) -> tuple[str, str]:

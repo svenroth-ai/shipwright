@@ -1,0 +1,22 @@
+{
+  "section": "iterate-2026-09-28-architecture-review-internal-arm",
+  "verdict": "PASS",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+      "line": 339,
+      "finding": "NEW (introduced by the mkdir fix): rationale says 'same reason step 2 above needs its own mkdir -p', but step 2 (line 420) comes after step 0b (line 323).",
+      "suggestion": "Change 'step 2 above' to 'step 2 below'."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+      "line": 336,
+      "finding": "Step 0b's mkdir -p and brief path are relative, while step 2's mkdir -p (line 422) uses '{project_root}/...'. Minor inconsistency, harmless in practice.",
+      "suggestion": "Optional: prefix with '{project_root}/' to match step 2."
+    }
+  ]
+}

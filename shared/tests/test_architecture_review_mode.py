@@ -253,3 +253,8 @@ def test_architecture_mode_emits_the_standard_envelope(
     assert set(payload["reviews"]) == {"glm", "openai"}
     for key in ("verdicts", "statuses", "contradiction", "review_schema"):
         assert key in payload, f"envelope is missing {key}"
+
+# AC5 (the anchoring-defense strip actually running, not just being described in
+# prose) lives in test_architecture_review_anchoring_defense.py — a distinct
+# concern from this file's CLI-behavior tests, split out to stay under the
+# 300-line cap.

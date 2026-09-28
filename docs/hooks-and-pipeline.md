@@ -948,22 +948,33 @@ P3.6's keystone gate, both of which this mechanism precedes.
 
 **Architecture brief (iterate + plan).** A third file joins that run-scoped
 directory: `.shipwright/planning/iterate/<run_id>/architecture_brief.md` (plan
-side: `{planning_dir}/architecture_brief.md`), written pre-build by Step 3.5's
-second external call (`external_review.py --mode architecture`) and staged by
-the same directory-level add. It exists as a separate file rather than a section
-of the mini-plan for a substantive reason: the mini-plan carries `Alternative
+side: `{planning_dir}/architecture_brief.md`). **Authoring order changed**
+when the internal architecture-review arm landed: the brief is now written
+FIRST, by the internal pass (iterate Step 0b / plan Step 5-int-arch, before
+Branch A/B/C) — the external second call (iterate Step 3.5/2a, plan Step 5a;
+`external_review.py --mode architecture`) re-reads/refreshes the same file
+instead of authoring it fresh, and staging still happens by the same
+directory-level add. It exists as a separate file rather than a section of
+the mini-plan for a substantive reason: the mini-plan carries `Alternative
 approach — rejected because X`, and a reviewer handed that document has been
 handed the answer. The brief lists the same options **without** the rejection
 rationale (`shared/templates/architecture_brief.md`) — the difference that
-produced opposite verdicts from the same two models on the same change. The CLI
-enforces the separation structurally: `--mode architecture` reads `--brief-file`
-and rejects `--plan-file` as a usage error, because a silently accepted plan
-would restore the anchoring while every field of the emitted envelope stayed
-identical. The pass adds **no review-record row and no marker**: `record_review_pass`
-takes one `--payload-file` per row and a completed row is immutable, so the first
-call's envelope fills `plan` and the second has no slot there. Its verdicts and
-findings land in the iterate spec's `## Architecture Review` section (plan side:
-`plan.md`'s), which ships in the same commit.
+produced opposite verdicts from the same two models on the same change; this
+is the same anchoring defense the internal pass relies on by reading the
+brief + spec but never the plan/mini-plan — prose-only, same softness as the
+external pass's own reliance on the brief omitting the rationale. The
+external CLI enforces its half of the separation structurally: `--mode
+architecture` reads `--brief-file` and rejects `--plan-file` as a usage
+error, because a silently accepted plan would restore the anchoring while
+every field of the emitted envelope stayed identical. Neither architecture
+pass — internal or external — adds a review-record row to the `plan` type:
+`record_review_pass` takes one `--payload-file` per row and a completed row
+is immutable, so the plan-review call's envelope fills `plan` and neither
+architecture call has a slot there. The **internal** pass instead records its
+own `architecture_internal` row (metadata-only, iterate side only — plan has
+no run_id). Both passes' verdicts and findings land in the iterate spec's
+`## Architecture Review` / `## Internal Architecture Review` sections (plan
+side: `plan.md`'s), which ship in the same commit.
 
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
@@ -3645,6 +3656,77 @@ iterate SKILL
     operator-configured `floors.plan_review` judges
 ```
 
+### architecture-internal-reviewer (Plan Phase, Step 5-int-arch)
+
+```
+Step 5, immediately after Step 5-int, before Branch A/B/C — no dispatch
+token, no hook. A SEPARATE fresh-context agent from opus-plan-reviewer, not
+an extension of it — the point is escaping the plan's own reasoning frame:
+  the skill reuses `plan_review` (already resolved at Step 5-int — SAME role,
+  no fifth role minted, no second resolve_model_tier.py call), authors
+  {planning_dir}/architecture_brief.md
+  from the template FIRST (Step 5a downstream re-reads/refreshes this same
+  file, it no longer authors it), then spawns
+  architecture-internal-reviewer directly via the Agent tool
+architecture-internal-reviewer subagent (Read/Grep/Glob only, model: inherit)
+  → reads the architecture brief + {spec_file} — NEVER plan.md, so it cannot
+    read the plan's own rejection rationale (the anchoring defense; prose-only,
+    same softness as the external architecture-review brief's own defense)
+  → returns findings (JSON) to the skill, does not write files itself
+plan SKILL
+  → triages each finding fix/disclose/decline, appends
+    `## Internal Architecture Review` (with `Ran: yes|no`) to plan.md
+  → logs every finding to decision_log.md
+  → declined/disclosed severity:high STOPs per gate_catalog.json's
+    `plan.architecture-internal-review-high-severity-declined` (its own id,
+    not Step 5-int's)
+  → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C
+  → under a Codex-driven run (`--driver codex` or `CODEXTENDER_ACTIVE`): does
+    NOT spawn — reusing
+    `plan_review`'s Codex leg would collide on the fixed canonical basename
+    Step 5-int's real pass already writes; records
+    `Ran: no (no Codex transport for architecture_internal yet)` — a full
+    Codex-side role is an explicit follow-up, out of this change's scope
+  → writes NO review-record row and NO marker of its own — same as Step
+    5-int, this phase has no run_id to record against; does NOT carry the
+    Pre-5b gate (only Step 5-int or a completed Branch A review count there)
+```
+
+### architecture-internal-reviewer (Iterate Phase, Internal Architecture Review sub-step)
+
+```
+Medium+ complexity, immediately after the Internal Plan Review sub-step,
+before Branch A/B/C — the iterate's own arm (mirrors Step 5-int-arch above,
+over the iterate spec instead of plan.md; never the mini-plan, same
+anchoring defense):
+  the skill reuses `plan_review` (already resolved at §F for the Internal
+  Plan Review sub-step — SAME role, no second resolve_model_tier.py call),
+  authors .shipwright/planning/iterate/{run_id}/architecture_brief.md from the
+  template FIRST (step 2a downstream re-reads/refreshes this same file, it
+  no longer authors it), then spawns
+  shipwright-plan:architecture-internal-reviewer (cross-plugin Agent spawn)
+architecture-internal-reviewer subagent
+  → reads the architecture brief + the iterate spec — NEVER the plan or
+    mini-plan
+  → returns findings (JSON) to the iterate skill
+iterate SKILL
+  → triages each finding fix/disclose/decline, appends
+    `## Internal Architecture Review` to the iterate spec, notes
+    `Ran:`/`Status:` in the iterate ADR
+  → on spawn/parse failure (incl. shipwright-plan not installed): records
+    `Ran: no`, continues to Branch A/B/C
+  → under a Codex-driven run (`--driver codex` or `CODEXTENDER_ACTIVE`):
+    does NOT spawn, records
+    `Ran: no (no Codex transport for architecture_internal yet)`
+  → when `Ran: yes`: records an `architecture_internal` review-record row via
+    record_review_pass.py (metadata-only, same shape as `plan_internal`) —
+    the row `floors.plan_review` also judges
+  → NOT run for campaign sub-iterates: `sub-iterate-runner` has no `Agent`
+    tool and no spawn site for either internal arm yet — records
+    `architecture_internal` permanently `not_run` with a documented-gap
+    disposition, same treatment as `plan_internal`
+```
+
 ### section-writer (Plan Phase)
 
 ```
@@ -3692,7 +3774,7 @@ orchestrator (mandate, not a guarantee): writes the reply to its payload
 | `.shipwright/agent_docs/iterates/<run_id>.test-results.json` | iterate F5c (`append_iterate_entry.py`): validates `iterate_latest.run_id`, then atomically installs the exact root-snapshot bytes once | F11 immutable-evidence gate; future per-run evidence consumers. Tracked and never summary-retention-pruned; root `shipwright_test_results.json` remains excluded from iterate commits. |
 | `shipwright_compliance_config.json` | update_compliance.py, run_audit.py (`last_audit` / `last_full_audit`) | Compliance (phases_covered; the audit record → the `Consistency-audit:` provenance line in every evidence document) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
-| `shipwright_model_config.json` (optional; schema `shared/schemas/model_config.schema.json`) | Operator, hand-authored at the MAIN repo root | `/shipwright-iterate` and `/shipwright-build` at their Planned Run Summary / Session Report step, via `resolve_model_tier.py` (`lib.model_tier_config`) — resolves the per-role (`review`/`finalization`/`execution`/`plan_review`) Claude model tier for that run's Agent-tool spawns. `/shipwright-plan` Step 5-int and `/shipwright-iterate`'s own Internal Plan Review sub-step (medium+, before Branch A/B/C) both resolve `plan_review` before spawning `shipwright-plan:opus-plan-reviewer` — a cross-plugin `Agent` spawn, so a consumer with only `shipwright-iterate` installed degrades to `Ran: no (shipwright-plan not installed)` there. Absent file = today's behavior (`inherit` for every role, bit-identical). An optional `floors` block is read at F11 by `review_record_model_tier`'s advisory (never blocking) `model_tier_note()`, keyed per role (`review` judges `spec`/`code`/`doubt`; `plan_review` judges `plan_internal` only — never the external `plan` row). Two further optional keys, `codex_review`/`codex_plan_review` (a Codex model slug, e.g. `gpt-6-sol`) — a separate, non-Claude axis for the Codex-CLI internal-review transport (`lib.codex_review_transport.run_codex_review`), resolved by `lib.codex_review_model_resolution.resolve_codex_review_model` in this precedence: `tools/review_via_codex.py`'s `--codex-model` (per-run) beats that role's `SHIPWRIGHT_CODEX_REVIEW_MODEL` (spec/code/doubt) or `SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL` (plan_review) session env var beats this config key beats the hardcoded `CODEX_REVIEW_MODEL` (`gpt-6-sol`) default. Validated only by an unconditional syntactic allowlist, never a live Codex catalog call — iterate-2026-09-18-codex-review-tier-config, session env var added iterate-2026-09-19-codex-reviewer-session-override. |
+| `shipwright_model_config.json` (optional; schema `shared/schemas/model_config.schema.json`) | Operator, hand-authored at the MAIN repo root | `/shipwright-iterate` and `/shipwright-build` at their Planned Run Summary / Session Report step, via `resolve_model_tier.py` (`lib.model_tier_config`) — resolves the per-role (`review`/`finalization`/`execution`/`plan_review`) Claude model tier for that run's Agent-tool spawns. `/shipwright-plan` Step 5-int/Step 5-int-arch and `/shipwright-iterate`'s own Internal Plan Review / Internal Architecture Review sub-steps (medium+, before Branch A/B/C) all resolve `plan_review` before spawning `shipwright-plan:opus-plan-reviewer` or `shipwright-plan:architecture-internal-reviewer` — a cross-plugin `Agent` spawn either way, so a consumer with only `shipwright-iterate` installed degrades to `Ran: no (shipwright-plan not installed)` there. Absent file = today's behavior (`inherit` for every role, bit-identical). An optional `floors` block is read at F11 by `review_record_model_tier`'s advisory (never blocking) `model_tier_note()`, keyed per role (`review` judges `spec`/`code`/`doubt`; `plan_review` judges `plan_internal` AND `architecture_internal` — never the external `plan` row). Two further optional keys, `codex_review`/`codex_plan_review` (a Codex model slug, e.g. `gpt-6-sol`) — a separate, non-Claude axis for the Codex-CLI internal-review transport (`lib.codex_review_transport.run_codex_review`), resolved by `lib.codex_review_model_resolution.resolve_codex_review_model` in this precedence: `tools/review_via_codex.py`'s `--codex-model` (per-run) beats that role's `SHIPWRIGHT_CODEX_REVIEW_MODEL` (spec/code/doubt) or `SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL` (plan_review) session env var beats this config key beats the hardcoded `CODEX_REVIEW_MODEL` (`gpt-6-sol`) default. Validated only by an unconditional syntactic allowlist, never a live Codex catalog call — iterate-2026-09-18-codex-review-tier-config, session env var added iterate-2026-09-19-codex-reviewer-session-override. |
 | `CODEXTENDER_ACTIVE` (env var, not a config file — listed here alongside `shipwright_model_config.json` because it feeds the same review-driver-selection decision) | Whatever process actually launches the `claude` binary under Codextender mode — a manual operator `export`/`set`, or (once built) the WebUI's Codextender launcher module | Every `--driver claude\|codex` selection site across `/shipwright-plan`, `/shipwright-build` and `/shipwright-iterate` (both the hardcoded-`claude` sites and the sites that resolve a `{driver}` template placeholder, per `iteration-planning.md`'s Resolution rule): `codex` roster (`{glm, opus}`) when set, even though the driving harness is still `claude` — because the diff was actually authored by a Codex-backed model (Codextender routes the session's own `ANTHROPIC_*` env vars at a local Codex-backed proxy), so reviewing it with the `claude`-roster's OpenAI-family leg would not be independent. Any non-empty value counts as active (the shipped launcher only ever emits `1`) — to disable, unset the variable, not set it to `0`. **A separate axis from `shared/scripts/lib/codex_runtime.py`'s `is_codex_runtime()`** (added R1b/#786) — that function answers a different question (is the resolved plugin root a genuine on-disk Codex-bundle shape?) and correctly returns `False` under Codextender, since the plugin root is an ordinary Claude plugin cache and Claude Code genuinely is the driving harness. Do not fold the two together. |
 | `shipwright_iterate_config.json` | /shipwright-project or /shipwright-adopt; operator overrides | /shipwright-iterate (`events_context.mode`, external plan/code-review gates). `events_context.mode` defaults to `compact`; `shadow` keeps the compact prompt bundle while measuring full cost; `full` is explicit rollback/forensics only. `external_review.gpt_leg.provider` (`"api"` default \| `"codex"`) picks which transport answers the "openai" reviewer identity — OpenRouter/direct (metered) or the Codex CLI (flat-cost under a ChatGPT/Codex subscription), read via `external_review_config.gpt_leg_provider()`; falls back to `"api"` when codex is unavailable for the operator. Same deep-merge as every other field here — shared/config/external_review.json's shipped default, overridable per project. |
 | `shipwright_changelog_config.json` (optional; project-authored) | Operator, hand-authored at the project root | `/shipwright-changelog` Step 5.4 (`sync_release_manifests.py`) — the `published_manifests` list of project-published package manifests (e.g. `bootstrapper/package.json`) to keep in lock-step with the release version, and `changelog_checks.check_manifest_version_matches_tag` (Step 7 standing check). Absent file or empty `published_manifests` = no-op, exactly today's behavior. Full contract: `plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md`. |

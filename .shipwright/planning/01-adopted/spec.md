@@ -265,6 +265,14 @@ _Where the work detail lives_ at the end of this document.
   available, that reviewer is reported unavailable and the route is not widened
   to another provider, region, retention policy, or to Gemini.
   (iterate-2026-08-03-p2-33-deepseek-zdr-review)
+- (E) [AC22] Given the outside reviewers cannot be reached, have been switched
+  off, or have not yet answered, when the plan's review step asks whether the
+  work should be built at all, then an independent internal reviewer has
+  already asked and answered that same question first, before the outside
+  reviewers — on a Claude model configurable per project, defaulting to the
+  session's own model when unset — so that question is never left unasked
+  merely because no outside model was available.
+  (iterate-2026-09-28-architecture-review-internal-arm)
 
 <a id="fr-0104"></a>
 ### FR-01.04 — /shipwright-design
@@ -922,6 +930,12 @@ _Where the work detail lives_ at the end of this document.
   all three review stages have answered, then what is recorded shows three
   separate answers, not the same one written down three times.
   (iterate-2026-09-20-m4-codex-subagent-dispatch)
+- (E) [AC38] Given a feature or change of the depth that gets a written
+  iterate spec, when the question of whether the work should be built at all
+  is asked, then an independent internal reviewer asks and answers it first —
+  the same way `/shipwright-plan`'s internal architecture review does — before
+  any outside second opinion, and never at trivial or small complexity.
+  (iterate-2026-09-28-architecture-review-internal-arm)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

@@ -27,7 +27,6 @@ import sys
 from pathlib import Path
 
 
-
 # Resolve the verifier path relative to this test file. The script is at
 # shared/scripts/tools/verify_iterate_finalization.py, two levels up.
 VERIFIER = (
@@ -124,7 +123,8 @@ def _seed(
         "schema_version": 1,
         "run_id": run_id,
         "reviews": {t: _row(t) for t in
-                    ("self", "plan", "code", "doubt", "external_code", "plan_internal")},
+                    ("self", "plan", "code", "doubt", "external_code", "plan_internal",
+                     "architecture_internal")},
         "gates": {"spec": _row("spec")},
     }, indent=2), encoding="utf-8")
 
