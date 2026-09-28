@@ -462,6 +462,31 @@ recording as converged (a precedented repeat, not a fresh finding) rather
 than looping further on a residual this run has already reasoned through
 and declined to close with a fabricated throwaway spawn.
 
+## Bloat gate split (Stop hook, post-round-7)
+`test_architecture_review_anchoring_defense.py` crossed the 300-line source
+cap after round 7's two new tests (330 lines). Split rather than exempted:
+moved the eleven pure unit tests of `strip_prior_review_sections`/
+`_mask_fenced_blocks` (no CLI/mode dispatch, no `monkeypatch`) into a new
+sibling file, `test_architecture_review_fence_masking.py`; kept the two
+CLI-level mode-dispatch tests and their `_run_main_capturing_strip_calls`
+helper in the original file. Both land well under the cap (103 and 253
+lines). No test was changed, only relocated; the same 88-collected/85-passed/
+3-skipped count holds. Also discovered and fixed while regenerating evidence
+for this split: the per-run F5c pattern this run had used in every prior
+round — updating the project-root `shipwright_test_results.json` and then
+regenerating `.test-results.json` from it via `append_iterate_entry.py` —
+was itself wrong. `verify_iterate_finalization.py` (run once, properly, at
+the actual F11 step) caught that `shipwright_test_results.json` and
+`session_handoff.md` are project-global derived snapshots every iterate
+regenerates outside its own branch; committing this run's edits to them
+would collide with any other iterate branch open at the same time. Both
+were restored to their fork-point content, and this split's runner-string
+update was made by hand-editing the per-run
+`.shipwright/agent_docs/iterates/<run_id>.json` /
+`.test-results.json` pair directly — never by re-invoking
+`append_iterate_entry.py` against the now-reset (and thus wrong-run)
+`shipwright_test_results.json`.
+
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
   fresh-context agent. Rejected: `opus-plan-reviewer` is defined by

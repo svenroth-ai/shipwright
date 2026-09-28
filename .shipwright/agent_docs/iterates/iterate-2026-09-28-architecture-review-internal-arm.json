@@ -78,7 +78,7 @@
   },
   "surface_verification": {
     "surface": "cli",
-    "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
+    "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_review_fence_masking.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
     "exit_code": 0,
     "tests_run": 88,
     "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
