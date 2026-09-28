@@ -188,6 +188,13 @@ def test_without_no_project_is_poisoned_by_cwd(
     so either branch proves the poisoned project never influenced what
     actually ran."""
     prefix, script_path = real_hook_command
+    assert "--no-project" in shlex.split(prefix), (
+        f"hooks.json's real command for {_TARGET_SCRIPT_NAME} no longer ships "
+        f"--no-project (got prefix {prefix!r}) — this test's whole premise is "
+        f"stripping a flag that must actually be there to strip; without this "
+        f"check it would keep passing even if the flag were silently dropped "
+        f"from hooks.json, since removing an absent token is a no-op"
+    )
     unpinned_prefix = [tok for tok in shlex.split(prefix) if tok != "--no-project"]
     assert unpinned_prefix == ["uv", "run"], (
         f"expected the real prefix minus --no-project to be exactly 'uv run', "
