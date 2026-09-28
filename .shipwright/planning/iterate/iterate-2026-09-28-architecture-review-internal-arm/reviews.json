@@ -250,13 +250,13 @@
     },
     "external_code": {
       "review_type": "external_code",
-      "status": "pending",
+      "status": "not_run",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
-      "disposition": null,
-      "recorded_by": null,
+      "completed_at": "2026-09-28T15:55:59.913455+00:00",
+      "disposition": "missing_keys: no OPENROUTER_API_KEY/OPENAI_API_KEY in .env.local; internal cascade (spec/code/doubt) already completed and satisfies the F11 code-review floor; run authorized to proceed autonomously with no operator present to ask (Option 2 of Branch B)",
+      "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
     },
