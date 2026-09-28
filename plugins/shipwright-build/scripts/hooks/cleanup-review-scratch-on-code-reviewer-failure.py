@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Failure-path safety net for the Step 6b/6c review-scratch diff file.
 
 Fires on SubagentStop for shipwright-build:code-reviewer, alongside

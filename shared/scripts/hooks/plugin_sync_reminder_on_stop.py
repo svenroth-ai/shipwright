@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook (SP4): remind to re-sync the plugin cache after plugin-side edits.
 
 Reads the session marker written by ``mark_plugin_edit.py``. If plugin-side files

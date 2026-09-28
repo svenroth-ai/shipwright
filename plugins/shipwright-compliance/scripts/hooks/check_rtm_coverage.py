@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """PreToolUse hook: Soft-block git commit when RTM coverage is below threshold.
 
 Reads the compliance traceability matrix from .shipwright/compliance/traceability-matrix.md,

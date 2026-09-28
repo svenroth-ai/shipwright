@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """``UserPromptSubmit`` hook: mints the Codex activation record (R2 — AC1a).
 
 Codex-only; a documented no-op under Claude Code (``is_codex_runtime()`` is

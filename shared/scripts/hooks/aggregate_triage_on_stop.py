@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: regenerate `.shipwright/agent_docs/triage_inbox.md`.
 
 AC-3 of iterate-2026-05-11-triage-inbox-1a. Wraps

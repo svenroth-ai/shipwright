@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: Generate session_handoff.md + update dashboard + fallback phase-completion.
 
 Automatically generates .shipwright/agent_docs/session_handoff.md from current
 project state (configs, git, decision log). Non-blocking (exit 0).
-
-Also detects if a phase completed but wasn't marked in the orchestrator
-config (e.g., standalone /shipwright-build without /shipwright-run), and
-triggers the compliance update as a fallback.
-
-Usage (from hooks.json):
-    uv run --no-project "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+Also detects a phase that completed but wasn't marked in the orchestrator config
+(e.g., standalone /shipwright-build without /shipwright-run) and triggers the
+compliance update as a fallback. Invoked from hooks.json.
 """
 
 from __future__ import annotations

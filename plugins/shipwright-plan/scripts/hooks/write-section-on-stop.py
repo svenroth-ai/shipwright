@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Best-effort FALLBACK: persist section-writer output if it wasn't written directly.
 
 Fires on SubagentStop for shipwright-plan:section-writer. The section-writer now

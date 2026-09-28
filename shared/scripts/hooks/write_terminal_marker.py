@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Stop hook: write terminal marker for autonomous loop synchronization.
 
 When SHIPWRIGHT_LOOP_ID and SHIPWRIGHT_LOOP_UNIT_ID are set, writes a

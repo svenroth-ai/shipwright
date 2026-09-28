@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """PostToolUse hook: best-effort auto-capture of the 'implementation' span.
 
 Root cause (trg-e6d1cc5e, follow-up to TC5.1 / PR #617): SKILL.md's

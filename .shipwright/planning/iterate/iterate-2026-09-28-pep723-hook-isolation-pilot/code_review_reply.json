@@ -1,0 +1,26 @@
+{
+  "section": "iterate-2026-09-28-pep723-hook-isolation-pilot",
+  "review": [
+    {"severity": "high", "category": "architecture", "file": "shared/scripts/hooks/audit_phase_quality_on_stop.py", "line": 304,
+     "finding": "RESOLVED: the 4-line header pushed audit_phase_quality_on_stop.py (300->304) and bloat_gate_on_stop.py (299->303) over the 300-line source limit with no baseline entry (new crossing, Group H1, Stop-hook bloat gate blocks on touch).",
+     "suggestion": "Trim docstring lines the way generate_handoff_on_stop.py was; do not add baseline entries. Done: both files are back at 300."},
+    {"severity": "medium", "category": "correctness", "file": "shared/tests/test_hooks_uv_run_project_isolation.py", "line": 180,
+     "finding": "RESOLVED: the target script write_terminal_marker.py now carries a header, so the negative control could no longer show what --no-project does on its own and its failure branch could never run.",
+     "suggestion": "Point the control at a headerless probe. Done: the #814 test is unchanged except that it runs a headerless probe script."},
+    {"severity": "medium", "category": "correctness", "file": "shared/tests/test_hooks_uv_run_project_isolation.py", "line": 243,
+     "finding": "RESOLVED: stderr.startswith(warning) accepted any trailing diagnostics.",
+     "suggestion": "Moot after reverting the relaxation to the #814 assertions."},
+    {"severity": "medium", "category": "correctness", "file": "shared/tests/test_hooks_pep723_isolation.py", "line": 158,
+     "finding": "RESOLVED: the header probe test had no negative control, so it could pass with the headers deleted.",
+     "suggestion": "Add a headerless control that skips visibly. Done: test_control_headerless_script_is_affected_by_cwd_python_pin."},
+    {"severity": "low", "category": "readability", "file": "shared/tests/test_hooks_pep723_isolation.py", "line": 37,
+     "finding": "RESOLVED: headers on capture_session_id.py and check_required_checks_hook.py never take effect (chain-run via sys.executable).",
+     "suggestion": "Remove them and the extra ledger. Done."},
+    {"severity": "low", "category": "performance", "file": "shared/tests/test_hooks_pep723_isolation.py", "line": 158,
+     "finding": "RESOLVED: 10 real uv runs with a 180 s timeout each.",
+     "suggestion": "Cut to one probe per dependency shape. Done: 2 probes x 2 flag sets."},
+    {"severity": "low", "category": "architecture", "file": ".shipwright/triage.jsonl", "line": 2312,
+     "finding": "Nine unrelated triage events ride the diff. They are the worktree-setup outbox sweep, not authored by this iterate.",
+     "suggestion": "Confirm intended. Confirmed: setup_iterate_worktree adopts undelivered main-tree drift appends into the branch."}
+  ]
+}

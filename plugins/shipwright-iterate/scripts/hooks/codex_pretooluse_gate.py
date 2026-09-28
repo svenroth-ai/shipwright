@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """``PreToolUse`` hook: gates a Codex-driven iterate session's first eligible
 tool call against the activation record (R2 — AC1a).
 

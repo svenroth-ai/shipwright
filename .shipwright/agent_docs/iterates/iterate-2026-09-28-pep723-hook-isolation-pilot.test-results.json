@@ -1,0 +1,119 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-28-pep723-hook-isolation-pilot",
+    "date": "2026-09-28",
+    "unit": {
+      "status": "passed",
+      "passed": 20168,
+      "total": 20168
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 558,
+      "total": 558
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests passed only on the suite's serial retry: 5 git-heavy tests failed under parallel load and pass alone (37/37); unit total aggregated from per-root runs"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_hooks_pep723_isolation.py shared/tests/test_hooks_uv_run_project_isolation.py shared/tests/test_hooks_uv_run_pinned.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 93,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-28-pep723-hook-isolation-pilot/surface_verification.log",
+      "timestamp": "2026-09-28T21:26:40.808Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "every uv-run hook entry point carries a well-formed PEP 723 header (requires-python >=3.11, dependencies list)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_hook_has_wellformed_header[35 entry points] PASSED"
+        },
+        {
+          "behavior": "header dependencies cover the --with flags hooks.json passes for the same script",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_header_deps_cover_hooks_json_with_flags[35] PASSED"
+        },
+        {
+          "behavior": "a new uv-run hook without a header, an unmappable uv-run command, or a missing target fails CI",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_ledger_reads_every_uv_run_hook_command PASSED (ledger derived from hooks.json)"
+        },
+        {
+          "behavior": "--no-project stays in every hooks.json uv run entry (second layer)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_no_project_still_present_alongside_headers + test_hooks_uv_run_pinned.py (15) PASSED"
+        },
+        {
+          "behavior": "headed hooks run clean from a poisoned CWD (unsatisfiable pyproject + .python-version 3.99), with and without --no-project, on real uv",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_header_hook_ignores_poisoned_cwd_on_any_uv[2 hooks x 2 flag sets] PASSED on uv 0.11.9; probed by hand on 0.12.19"
+        },
+        {
+          "behavior": "a headerless script IS affected by the CWD python pin (the header is what isolates)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_control_headerless_script_is_affected_by_cwd_python_pin PASSED on 0.11.9 (skips visibly on 0.12.19, verified by hand)"
+        },
+        {
+          "behavior": "the #814 negative control still exercises --no-project alone (headerless probe)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_uv_run_project_isolation.py::test_without_no_project_is_poisoned_by_cwd PASSED"
+        },
+        {
+          "behavior": "vendored run_if_cache_ready copies stay byte-identical to the canonical template",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_every_hook_bearing_plugin_has_identical_ready_guard PASSED"
+        },
+        {
+          "behavior": "audit_compliance_on_stop keeps its SBOM version sort (packaging declared in the header)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pep723_isolation.py::test_audit_compliance_header_declares_packaging PASSED"
+        },
+        {
+          "behavior": "no touched hook file crosses the 300-line bloat limit",
+          "disposition": "tested",
+          "evidence": "anti-ratchet pre-commit hook passed on the commit; wc -l = 300 for audit_phase_quality_on_stop.py and bloat_gate_on_stop.py"
+        }
+      ],
+      "counts": {
+        "behaviors": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

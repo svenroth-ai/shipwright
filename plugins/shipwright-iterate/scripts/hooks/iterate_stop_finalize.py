@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """Iterate Stop hook — runs shared handoff + finalize_iterate as fallback.
 
 Delegates to the shared generate_handoff_on_stop first (preserving
