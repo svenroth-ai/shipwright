@@ -14,10 +14,17 @@ sync an unrelated CWD project instead of running standalone).
 
 Both subprocess calls run with `VIRTUAL_ENV`/`UV_*` stripped from the
 environment, so a venv this test happens to run under cannot mask (or
-fake) either result. The poisoned project's unresolvable dependency
-points at a nonexistent local path (`file://`), not a plausible-but-fake
-PyPI name — so the negative control fails deterministically offline
-instead of depending on network/registry behavior.
+fake) either result. The poisoned project declares an impossible
+`requires-python` (`==99.99.99`) rather than an unresolvable dependency
+URL — no interpreter anywhere can ever satisfy it, so the negative
+control fails deterministically offline, with no network/registry
+dependency AND no platform-specific `file://` URI parsing involved. An
+earlier version poisoned via a nonexistent `file://` dependency path;
+that failed as expected with uv 0.11.9 on Windows but silently
+succeeded on Linux CI (uv resolves/parses that URI form differently
+there), so the negative control wasn't actually discriminating on every
+platform CI runs on (iterate-2026-09-28-hooks-uv-run-project-pin, F11
+CI run 36423886194).
 
 This is the `category:"integration"` Test Completeness Ledger behavior
 required by the `cross_component` risk flag for hooks.json changes.
@@ -39,16 +46,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _TARGET_SCRIPT_NAME = "write_terminal_marker.py"
 _PLACEHOLDER = "${CLAUDE_PLUGIN_ROOT}"
 
-# A pyproject.toml whose only dependency resolves to a local path that does
-# not exist — offline-deterministic (no registry/network involved), unlike
-# an unregistered PyPI name. If `uv run` attempts to discover and sync
-# THIS project, the sync step fails before the target script ever executes.
+# A pyproject.toml declaring a `requires-python` no interpreter can ever
+# satisfy — offline-deterministic and platform-independent (no network,
+# registry, or `file://` URI parsing involved). If `uv run` attempts to
+# discover and sync THIS project, the interpreter check fails before the
+# target script ever executes.
 _POISONED_PYPROJECT = """\
 [project]
 name = "poisoned-cwd-project"
 version = "0.0.0"
-requires-python = ">=3.11"
-dependencies = ["nope @ file:///this/path/does/not/exist/on/any/machine"]
+requires-python = "==99.99.99"
+dependencies = []
 """
 
 
@@ -154,10 +162,10 @@ def test_without_no_project_is_poisoned_by_cwd(
     poisoned_cwd: Path, real_hook_command: tuple[str, Path]
 ) -> None:
     """Negative control: the same invocation WITHOUT --no-project resolves
-    the poisoned CWD project and fails trying to sync its unresolvable
-    dependency — proving this pair of tests would have caught the
-    original bug, and that the failure is specifically about project
-    resolution (not some unrelated error)."""
+    the poisoned CWD project and fails its impossible interpreter check —
+    proving this pair of tests would have caught the original bug, and
+    that the failure is specifically about project resolution (not some
+    unrelated error)."""
     prefix, script_path = real_hook_command
     unpinned_prefix = [tok for tok in shlex.split(prefix) if tok != "--no-project"]
     assert unpinned_prefix == ["uv", "run"], (
@@ -177,13 +185,16 @@ def test_without_no_project_is_poisoned_by_cwd(
     )
     assert result.returncode != 0, (
         "uv run without --no-project was expected to fail against a "
-        "poisoned CWD project (unresolvable dependency), but it "
+        "poisoned CWD project (impossible requires-python), but it "
         f"succeeded — the negative control is not discriminating.\n"
         f"stdout: {result.stdout}\nstderr: {result.stderr}"
     )
     combined = (result.stdout + result.stderr).lower()
-    assert any(term in combined for term in ("resolve", "resolution", "project", "dependenc")), (
-        "expected the failure to mention project/dependency resolution "
+    assert any(
+        term in combined
+        for term in ("resolve", "resolution", "project", "dependenc", "interpreter", "python")
+    ), (
+        "expected the failure to mention project/interpreter resolution "
         f"(proving it failed for the right reason), got:\n{result.stderr}"
     )
 
