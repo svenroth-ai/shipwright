@@ -36,14 +36,17 @@ read any OTHER copy of this spec elsewhere in the repository to look for
 one.** Judge the brief and the spec's Goal / Acceptance Criteria / Spec
 Impact / Out of Scope / Affected Boundaries as if the choice were still
 open. A prior reviewer's already-recorded verdict is not evidence for or
-against the option under review. (On the iterate side this is now a
-code-level guarantee, not just this prompt: the caller hands you a
-sanitized copy with these sections already stripped — the same guarantee
-the external architecture pass has always had for its own copy. This
-instruction is defense-in-depth for a section the strip's fixed heading
-list doesn't recognize, and the only defense on the plan side, where
-`plan.md`'s source spec never carries one of these sections in the first
-place.)
+against the option under review. (On the iterate side, the caller hands
+you a sanitized copy with these sections already stripped in code before
+you ever see a path — the same risk-reduction the external architecture
+pass has always had for its own copy. This is not an enforced sandbox:
+your `Read`/`Grep`/`Glob` grant is the same broad, whole-repository access
+every fresh-context reviewer in this codebase has, so nothing stops you
+from searching for the original file if you chose to — the sanitized copy
+removes the reason to, it does not remove the capability. This instruction
+is the only defense against actually doing so, and the only defense at
+all on the plan side, where `plan.md`'s source spec never carries one of
+these sections in the first place.)
 
 ## Your Review
 

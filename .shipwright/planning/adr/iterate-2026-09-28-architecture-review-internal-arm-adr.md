@@ -135,7 +135,17 @@ Two findings, both about `prepare_architecture_internal_spec.py` /
   rather than disclosing this as new: D5's ledger caveat already states
   the agent's live JSON-reply/degraded-path behavior — which includes
   whether it in fact stays inside its given inputs — is unexercised. No
-  further action beyond what D5 already tracks.
+  further action beyond what D5 already tracks. Reworded
+  `architecture-internal-reviewer.md`'s parenthetical from "this is now a
+  code-level guarantee" to explicitly name the tool-access residual and
+  call the sanitized copy risk-reduction, not enforcement — the finding's
+  own fallback ask ("otherwise remove the claim") for the part that has
+  no code fix.
+- **Contributor-authored "DO NOT RE-OPEN" language (low, fixed).** The
+  mini-plan's Alternative B rejection used that phrase for a decision
+  already settled in an earlier pass of this same spec; reworded to
+  neutral, non-directive language so text a contributor wrote cannot read
+  as an instruction to a reviewer.
 
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate

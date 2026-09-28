@@ -263,7 +263,8 @@ family, same kind of agent as the internal plan review, so it takes the same
 dial; minting a fifth role when `ROLES` is a flat set with no inheritance
 would mean tracking two dials that should move together, and the card
 explicitly names the silent-divergence risk of not doing this. Re-deriving
-this from scratch was explicitly out of scope ("DO NOT RE-OPEN").
+this from scratch was already decided against in an earlier pass of this
+same spec (see section 6 above) and is out of scope for this iterate.
 
 ## 7. Internal Plan Review disposition (this run)
 
