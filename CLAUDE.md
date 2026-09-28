@@ -50,24 +50,14 @@ uvx ruff@0.15.15 check .              # Bug-focused lint — GATING in CI (ci.ym
 uv run scripts/verify_local.py        # The CI merge guards that run nowhere else
 ```
 
-**Run `verify_local.py` before pushing.** `ci.yml`'s required job carries three
-bespoke guards — the CI-gate guard and the two surface verifiers — that no local
-step runs, so they are learned about from a red CI run *after* the iterate
-reports done. Measured at 4-6 s from a worktree (Windows); expect longer from a
-clone whose `.worktrees/` holds other checkouts, which `grade.py` also walks. It
-reports all three in one pass (never short-circuiting, so one push fixes
-everything CI would reject) and names what would block.
-
-It is a pre-flight, not a substitute: CI checks a clean checkout on a pinned
-interpreter, and its `Repair-PR safety (gate)` reads the PR's *base* revision so
-a branch cannot vouch for itself. Note also that it vets your **working tree**
-while CI vets the commit you **push** — it prints which, and warns when the tree
-is dirty. **F0 and F11 both run it for you** inside an iterate — F0 after the
-leak-guard, before the suite; F11 again as a late STOP before every push,
-since F6 has already committed by then. Both are guarded on the
-`SHIPWRIGHT_MIRRORED_MERGE_GATES` identity marker inside the file, not merely
-on the file existing at that path. Typing it yourself is still how you check
-a tree outside a run.
+**Run `verify_local.py` before pushing.** It mirrors `ci.yml`'s required job —
+the CI-gate guard plus two surface verifiers that no other local step runs —
+so skipping it means learning about a break from a red CI run *after* the
+iterate reports done. It vets your **working tree**; CI vets the **commit**
+you push. **F0 and F11 both run it for you** inside an iterate (F0 early,
+F11 again as a late STOP after F6 commits); typing it yourself is how you
+check a tree outside a run. Full rationale, timing, and the
+`SHIPWRIGHT_MIRRORED_MERGE_GATES` guard: `docs/hooks-and-pipeline.md`.
 
 **Lint is a hard CI gate.** `.github/workflows/ci.yml` runs `uvx ruff@0.15.15
 check .` with no `|| true` / `continue-on-error`, so a lint failure blocks merge.
@@ -105,22 +95,15 @@ update it in the same diff.
 
 ### When editing plugin-side files
 
-Changes under `plugins/*`, `shared/scripts/`, or any `SKILL.md` file do
-NOT auto-sync to the plugin cache at `~/.claude/plugins/cache/shipwright/`
-that Claude Code uses at runtime. After `git push`, run:
-
-```bash
-bash scripts/update-marketplace.sh
-```
-
-Then verify with `uv run scripts/check_plugin_cache_sync.py --strict`.
-Without the sync, plugin-side fixes land in the dev repo but never reach
-runtime — that silently cost iterates 7-11 their fixes.
-
-**Scope:** monorepo-only. End-users consuming the plugins on their own
-projects run the installed versions and never need this.
-
-**Full procedure + rationale:** `shared/prompts/writing-plugin.md`.
+Changes under `plugins/*`, `shared/scripts/`, or any `SKILL.md` file do NOT
+auto-sync to the plugin cache at `~/.claude/plugins/cache/shipwright/` that
+Claude Code uses at runtime. After `git push`, run `bash
+scripts/update-marketplace.sh`, then verify with `uv run
+scripts/check_plugin_cache_sync.py --strict` — without the sync, plugin-side
+fixes land in the dev repo but never reach runtime (this silently cost
+iterates 7-11 their fixes). **Scope:** monorepo-only — end-users running the
+installed plugins never need this. **Full procedure + rationale:**
+`shared/prompts/writing-plugin.md`.
 
 ### Documentation Guide
 `docs/guide.md` is the primary user-facing documentation (README.md is a
@@ -132,27 +115,18 @@ reference) are the sections that go stale.
 
 ### Where documents live
 
-**`docs/` holds hand-written instructions** — for users and for developers
-alike. The test is not who reads it, but that someone *wrote* it and someone
-*reads* it. `guide.md` and `hooks-and-pipeline.md` sit there as equals.
-
-**`.shipwright/` holds the artifacts Shipwright itself keeps** — specs under
-`.shipwright/planning/`, evidence under `.shipwright/compliance/`, architecture
-and decision memory under `.shipwright/agent_docs/`. They come out of runs;
-they are not composed by hand.
-
-**A file that is neither belongs nowhere:**
-
-- A **record of finished work** is deleted. Git history keeps it.
-- A **generated file** is not filed among the hand-written ones. If it is
-  committed at all, it lives **next to the source it is generated from**, so
-  source and render are read together and the drift test has an obvious
-  subject. `shared/config/gate_catalog.json` + `gate_catalog.md` is the shape.
-
-For neither case is the answer "then put it under `.shipwright/`". The
-`agent_docs`, `planning` and `compliance` trees are read as well — they are not
-a parking lot for files nobody reads. Relocating an unread file into a read
-directory is filing, not deciding.
+**`docs/`** holds hand-written instructions for users and developers alike —
+the test is who *wrote* it, not who reads it; `guide.md` and
+`hooks-and-pipeline.md` sit there as equals. **`.shipwright/`** holds the
+artifacts Shipwright itself produces — specs under `.shipwright/planning/`,
+evidence under `.shipwright/compliance/`, architecture/decision memory under
+`.shipwright/agent_docs/` — and is never hand-composed. A file that is neither belongs nowhere: a **record of
+finished work** is deleted (git history keeps it); a **generated** file is
+never filed among the hand-written ones — it lives **next to the source it is
+generated from**, so source and render are read together (`gate_catalog.json`
++ `gate_catalog.md` is the shape). `.shipwright/`'s trees are read too, not a
+parking lot — relocating an unread file into a read directory is filing, not
+deciding.
 
 ### Testing
 ```bash
