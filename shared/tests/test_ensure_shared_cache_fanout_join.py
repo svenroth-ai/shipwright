@@ -115,16 +115,18 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
 
     def join_fanout() -> None:
         try:
-            # Bounded only so a barrier that never re-polls cannot hang the test;
-            # the markers then land early and the barrier assertion still fires.
-            polling.wait(timeout=10)
+            # Bounded only so a barrier that never re-polls cannot hang the test.
+            # On expiry write NOTHING: markers that appear late must never be
+            # able to satisfy the post-return check on a barrier that did not wait.
+            if not polling.wait(timeout=30):
+                raise AssertionError("barrier never began a second pass")
             for participant in participants[1:]:
                 if lock_helper.observe_completion(done, participant) is not True:
                     raise AssertionError(f"observation failed for {participant}")
         except Exception as exc:
             errors.append(exc)
 
-    joiner = threading.Thread(target=join_fanout)
+    joiner = threading.Thread(target=join_fanout, daemon=True)
     joiner.start()
     started = time.monotonic()
     lock_helper.await_fanout_observers(cache, done, participants[0])
@@ -132,15 +134,28 @@ def test_detected_fanout_waits_for_all_installed_hook_participants(
     monkeypatch.setattr(
         lock_helper, "has_completion_observation", real_observation,
     )
-    # Check the markers the instant the barrier returns: the contract is about
-    # the markers, and a thread-side flag would lag the marker the barrier polls.
-    # `is False`, not `is not True`: None is an unreadable marker (a transient
-    # Windows sharing violation) that the barrier itself treats as "cannot tell
-    # yet"; only a definitively absent marker proves an early return.
-    missing = [
-        participant for participant in participants
-        if lock_helper.has_completion_observation(done, participant) is False
-    ]
+    # Check the markers as the barrier returns: the contract is about the
+    # markers, and a thread-side flag would lag the marker the barrier polls.
+    # Every marker must read True. A marker that reads False is definitively
+    # absent (an early return) and fails at once. One that reads None is
+    # unreadable (a transient Windows sharing violation, which the barrier itself
+    # treats as "cannot tell yet") and is re-read for a bounded time, since the
+    # barrier had already read it as True.
+    settle_deadline = time.monotonic() + 10
+    while True:
+        states = {
+            participant: lock_helper.has_completion_observation(done, participant)
+            for participant in participants
+        }
+        if all(state is True for state in states.values()):
+            break
+        if (
+            any(state is False for state in states.values())
+            or time.monotonic() >= settle_deadline
+        ):
+            break
+        time.sleep(0.01)
+    missing = [p for p, state in states.items() if state is not True]
     assert not missing, (
         f"barrier returned before every active peer joined: {missing}"
     )
