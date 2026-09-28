@@ -223,6 +223,27 @@ across both legs — fixed, not disclosed:
   boundary hidden in unmasked "quoted" text; exact CommonMark fence-matching
   is not its job. Covered by
   `test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer`.
+- **Fence masker rewritten as a line-scanner (medium×1 + low×1, fixed, a
+  third external code-review round).** The round-2 regex fix ("any 3+
+  fence-marker line closes any opener") over-corrected in the opposite
+  direction: a 4-backtick block containing an inner 3-backtick line closed
+  early, leaving the rest of the still-open block unmasked (`openai`,
+  medium). Separately, an opener with no matching closer at all was never
+  recognized as fenced, so everything to end-of-document went unmasked —
+  the exact failure direction every fence fix here must avoid: a hidden
+  section boundary, not a little extra masked text (`glm`, medium). `glm`
+  also flagged (low) that CommonMark permits a fence indented up to 3
+  spaces, which a column-0-only opener check misses. Two single-regex
+  attempts in a row got this wrong in opposite directions, so the third
+  fix drops the single-regex approach for an explicit line-by-line scanner
+  that tracks the opener's exact character and length and closes only on a
+  same-character run of at least that length — closing "too early" and
+  "never closing" are now the same code path (both require finding a
+  genuine same-char, sufficient-length run), and an unclosed fence masks to
+  EOF by construction rather than as a special case. Covered by
+  `test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker`,
+  `test_strip_masks_to_end_of_document_when_a_fence_is_never_closed`, and
+  `test_strip_masks_a_three_space_indented_fence`.
 - **Two low-severity items, declined with reason.** The Windows symlink
   fallback's check-then-write race was independently reflagged by `glm`; it
   is the same disclosed residual the earlier F11 preflight round already

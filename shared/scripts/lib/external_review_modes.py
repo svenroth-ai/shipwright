@@ -87,34 +87,68 @@ _PRIOR_REVIEW_SECTION_RE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
-#: A fenced code block (``` or ~~~, either length) start-to-end. Matched only
-#: to MASK its interior before the section regex runs — a spec that quotes a
-#: template or a skill excerpt containing a line like "## Internal Plan
-#: Review" must not have that quoted line mistaken for a real section
-#: boundary (external review, medium — both `glm` and `openai` legs raised
-#: this independently against this exact regex).
-#:
-#: Deliberately NOT a backreference (`^\1\s*$`) on the closer: CommonMark
-#: allows a closing fence at least as long as the opener (` ``` ` opened,
-#: `` ```` `` closed is valid), and a backreference demands an exact-length
-#: match — the opener's own capture, followed by a stray extra backtick that
-#: `\s*$` then rejects — so a longer closer is never recognized as a close at
-#: all and the whole block goes unmasked (external review round 2, medium,
-#: both legs converged on the same regex again). Any 3+-backtick-or-tilde
-#: line closes any 3+-backtick-or-tilde opener: type/length-exact matching
-#: is CommonMark's job, not this masker's — treating a not-quite-matching
-#: pair as fenced errs toward over-masking, never toward leaving a real
-#: section boundary hidden inside unmasked "quoted" text.
-_FENCE_RE = re.compile(
-    r"^(?:`{3,}|~{3,}).*?^(?:`{3,}|~{3,})[ \t]*$", re.MULTILINE | re.DOTALL
+#: A fence opener: up to 3 spaces/tabs of indent (CommonMark allows this;
+#: a masker that only recognizes column-0 fences leaves an indented quote
+#: unmasked — external review round 3, low, `glm`), then 3+ of the same
+#: fence character. Group 1 is the run of fence characters, so its own
+#: length is the opener's length for the same-char/length>=-close rule below.
+_FENCE_OPEN_RE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
+
+#: Headings the architecture pass must never see (Stage-3 doubt review, high).
+#: On the plan side the anchoring defense holds by construction — the internal
+#: passes write to `plan.md`, never `spec.md`. On the iterate side there is no
+#: second document: these same headings land in the ONE spec file this mode is
+#: handed as `--spec-file`, each carrying exactly the rejection rationale the
+#: brief was built to withhold.
+_PRIOR_REVIEW_SECTION_RE = re.compile(
+    r"^## (?:Internal Plan Review|Internal Architecture Review|Self-Review|"
+    r"Architecture Review)\b.*?(?=\n## |\Z)",
+    re.MULTILINE | re.DOTALL,
 )
 
 
 def _mask_fenced_blocks(text: str) -> str:
     """Replace every character inside a fenced code block with a space,
-    preserving newlines and overall length so match offsets computed on the
-    masked text still index correctly into the original."""
-    return _FENCE_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+    preserving line structure so match offsets computed on the masked text
+    still index correctly into the original — a spec that quotes a template
+    or skill excerpt containing a line like "## Internal Plan Review" must
+    not have that quoted line mistaken for a real section boundary.
+
+    Line-by-line rather than one regex: a single-pattern attempt here has
+    twice been wrong in opposite directions (external review, both rounds
+    medium, both legs converging each time) — first a backreference-exact
+    closer missed CommonMark's "closer may be LONGER than the opener" rule
+    (a longer closer left the whole block unmasked), then loosening that to
+    "any 3+ marker closes any opener" over-corrected (a same-or-shorter
+    marker of the WRONG type, or a short one nested inside a longer block,
+    closed it too early). Explicit state — the opener's exact character and
+    length — is what both single-regex attempts lacked. A fence with no
+    closer at all masks to end-of-document, the same direction every other
+    correction here has erred: leaving a boundary live is the failure mode,
+    never masking a little extra quoted text."""
+    lines = text.split("\n")
+    out: list[str] = []
+    fence_char: str | None = None
+    fence_len = 0
+    for line in lines:
+        if fence_char is None:
+            match = _FENCE_OPEN_RE.match(line)
+            if match:
+                fence_char, fence_len = match.group(1)[0], len(match.group(1))
+                out.append(re.sub(r"[^\n]", " ", line))
+                continue
+            out.append(line)
+            continue
+        stripped = line.lstrip(" \t")
+        run = len(stripped) - len(stripped.lstrip(fence_char))
+        if (
+            len(line) - len(stripped) <= 3
+            and run >= fence_len
+            and stripped[run:].strip(" \t") == ""
+        ):
+            fence_char, fence_len = None, 0
+        out.append(re.sub(r"[^\n]", " ", line))
+    return "\n".join(out)
 
 
 def strip_prior_review_sections(spec_text: str) -> str:

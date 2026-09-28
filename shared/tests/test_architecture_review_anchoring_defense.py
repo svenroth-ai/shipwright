@@ -131,6 +131,78 @@ def test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer(
     assert "## Acceptance Criteria" in result and "AC1: it works." in result
 
 
+def test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker():
+    """External code review, round 3 (medium, `openai`): the prior fix's
+    "any 3+ marker closes any opener" over-corrected — a 4-backtick block
+    containing an inner 3-backtick line was closed early by that inner line,
+    leaving the rest of the (still-open) block unmasked."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Verification (medium+)\n"
+        "````\n"
+        "some example fenced text\n"
+        "```\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** this is example template text, not a real review\n"
+        "````\n"
+        "Run tests after the quoted block above.\n\n"
+        "## Acceptance Criteria\n- AC1: it works.\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert "Run tests after the quoted block above." in result
+    assert "## Acceptance Criteria" in result and "AC1: it works." in result
+
+
+def test_strip_masks_to_end_of_document_when_a_fence_is_never_closed():
+    """External code review, round 3 (medium, `glm`): an opener with no
+    matching closer must mask to end-of-document. Unmasked, the quoted
+    heading-look-alike would be read by `_PRIOR_REVIEW_SECTION_RE` as a REAL
+    section start and everything from it to EOF would be stripped out as
+    if it were genuine rejection rationale. Masked, the section-finder never
+    sees it, so nothing is stripped and the document passes through whole —
+    the failure direction every fence fix here must avoid is a hidden
+    section boundary, never a little extra masked (but preserved) text."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Verification (medium+)\n"
+        "```\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** this is example template text, never closed\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert result == spec_text, (
+        "an unclosed fence must mask its heading-look-alike from the "
+        "section-finder, not have it mistaken for a real section and "
+        "stripped along with everything after it"
+    )
+
+
+def test_strip_masks_a_three_space_indented_fence():
+    """External code review, round 3 (low, `glm`): CommonMark allows a fence
+    opener indented up to 3 spaces; a column-0-only masker leaves an indented
+    quote (e.g. inside a list item) unmasked."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Verification (medium+)\n"
+        "1. Example item:\n"
+        "   ```\n"
+        "   ## Internal Plan Review (opus-plan-reviewer)\n"
+        "   - **Findings:** example template text under a list item\n"
+        "   ```\n"
+        "Run tests after the indented block above.\n\n"
+        "## Acceptance Criteria\n- AC1: it works.\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert "Run tests after the indented block above." in result
+    assert "## Acceptance Criteria" in result and "AC1: it works." in result
+
+
 def test_strip_still_removes_a_real_prior_review_section_after_a_fence():
     """The fence-masking must not blind the strip to a REAL section that
     follows a fenced block earlier in the document."""
