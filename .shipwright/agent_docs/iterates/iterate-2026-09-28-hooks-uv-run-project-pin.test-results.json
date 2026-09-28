@@ -79,11 +79,16 @@
           "behavior": "--with pyyaml/--with jsonschema additions keep every run_if_cache_ready.py/audit_compliance_on_stop.py invocation's flag prefix identical across all plugins that share the target script (codex bundle-merge dedup requirement)",
           "disposition": "tested",
           "evidence": "shared/tests/test_hooks_uv_run_pinned.py::test_shared_uv_run_scripts_use_identical_flag_prefix_across_plugins PASSED; shared/scripts/tools/tests (codex_hook_merge/inventory/sync, 1171 tests) PASSED"
+        },
+        {
+          "behavior": "run_if_cache_ready.py/audit_compliance_on_stop.py retain the specific --with pyyaml/--with jsonschema packages (not just a consistent prefix)",
+          "disposition": "tested",
+          "evidence": "Found via the required CI PR-review gate (Tier-3, openai/gpt-6-luna, run 36427748135). Added shared/tests/test_hooks_uv_run_pinned.py::test_dependency_carrying_scripts_retain_required_with_flags PASSED; fixing it also surfaced and fixed a real, previously-vacuous bug in the reused _UV_RUN_PREFIX/_target_script helpers (opening-quote off-by-one meant the cross-plugin consistency test never actually compared anything) \u2014 15/15 in the file PASSED post-fix, full shared/tests re-run green (11970 passed)"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 7,
+        "testable": 9,
+        "tested": 8,
         "untestable": 1,
         "untested_testable": 0
       },
@@ -101,7 +106,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
-    "commit": "dde420fd7232454ca716d5c49067ca07384a83a4",
+    "commit": "1c955621e00c2eb23a2a0e0ae41080e663fe3e84",
     "dirty": true,
     "base": null,
     "release": null

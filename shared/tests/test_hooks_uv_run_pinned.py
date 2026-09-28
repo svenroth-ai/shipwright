@@ -62,8 +62,17 @@ def _hook_files() -> list[Path]:
 # up to (not including) its first quoted argument — the quoted argument is
 # the target script path, everything before it is the flag prefix. A
 # single "command" value can chain more than one `uv run` (rare, but the
-# pattern must not assume exactly one per string).
-_UV_RUN_PREFIX = re.compile(r'uv run((?:(?!uv run)[^"])*)"')
+# pattern must not assume exactly one per string). The opening quote is a
+# lookahead, not part of the match, so `match.end()` lands ON that quote —
+# `_target_script` below matches starting there. Consuming the quote inside
+# the match instead (an earlier version of this pattern did) leaves
+# `match.end()` one character too far in, so `_target_script` never finds
+# its leading `"` and silently returns None for every call — caught only
+# because `test_dependency_carrying_scripts_retain_required_with_flags`
+# below asserts the scripts it looks for are actually seen at all; the
+# cross-plugin consistency test alone stayed green either way, since an
+# always-empty per-script map can never disagree with itself.
+_UV_RUN_PREFIX = re.compile(r'uv run((?:(?!uv run)[^"])*)(?=")')
 
 
 def _uv_run_prefixes(cmd: str) -> list[str]:
@@ -141,4 +150,58 @@ def test_shared_uv_run_scripts_use_identical_flag_prefix_across_plugins() -> Non
         "prefix across plugins — this would break codex_hooks_sync's "
         "bundle merge (which dedups by exact command shape) and means the "
         "fix wasn't applied uniformly:\n" + "\n".join(f"    {o}" for o in offenders)
+    )
+
+
+# Scripts whose sys.executable-propagated subprocess chain needs a
+# third-party dependency the session's CWD project used to supply for free
+# before --no-project (doubt review, iterate-2026-09-28-hooks-uv-run-project-
+# pin) — kept in one place so a rename/removal here fails loudly instead of
+# this test's coverage silently shrinking.
+_REQUIRED_WITH_FLAGS: dict[str, tuple[str, ...]] = {
+    "run_if_cache_ready.py": ("pyyaml", "jsonschema"),
+    "audit_compliance_on_stop.py": ("pyyaml", "jsonschema"),
+}
+
+
+def test_dependency_carrying_scripts_retain_required_with_flags() -> None:
+    """`run_if_cache_ready.py` and `audit_compliance_on_stop.py` each need
+    pyyaml/jsonschema deep in their subprocess chain. Neither the
+    `--no-project`-prefix check above nor the cross-plugin consistency check
+    inspects flag CONTENT beyond that, so dropping `--with pyyaml --with
+    jsonschema` from every plugin's copy at once would pass both of them
+    while silently breaking those scripts at runtime."""
+    seen_scripts: set[str] = set()
+    offenders: list[str] = []
+
+    for hooks_path in _hook_files():
+        config = json.loads(hooks_path.read_text(encoding="utf-8"))
+        for cmd in _collect_command_strings(config):
+            for match in _UV_RUN_PREFIX.finditer(cmd):
+                prefix = match.group(1).strip()
+                script = _target_script(cmd, match.end())
+                if script is None:
+                    continue
+                script_name = Path(script).name
+                required = _REQUIRED_WITH_FLAGS.get(script_name)
+                if required is None:
+                    continue
+                seen_scripts.add(script_name)
+                missing = [pkg for pkg in required if f"--with {pkg}" not in prefix]
+                if missing:
+                    offenders.append(
+                        f"{hooks_path.relative_to(REPO_ROOT)}: {script_name} is missing "
+                        f"--with {{{', '.join(missing)}}} (prefix: 'uv run {prefix}')"
+                    )
+
+    assert not offenders, (
+        "the following `uv run` invocations dropped a required --with "
+        "dependency flag:\n" + "\n".join(f"    {o}" for o in offenders)
+    )
+    missing_scripts = set(_REQUIRED_WITH_FLAGS) - seen_scripts
+    assert not missing_scripts, (
+        f"expected to find at least one `uv run` invocation of each of "
+        f"{sorted(_REQUIRED_WITH_FLAGS)} across {PLUGINS_GLOB}, but never "
+        f"saw {sorted(missing_scripts)} — script renamed/removed, or the "
+        f"fixture no longer matches hooks.json's shape"
     )

@@ -312,6 +312,7 @@ Action: All clear, proceed to commit.
   | 6 | Existing repo tooling that parses/hardcodes the pre-fix `uv run "<script>"` command shape must still recognize the post-fix shape | tested | Found via `code-reviewer` (Stage 2): `shared/tests/test_ensure_shared_cache_vendored.py::_is_cache_guarded` assumed `tokens[:3] == [uv, run, guard]`, broke on the new `--no-project` token at index 2. Fixed (shifted to `tokens[:4]`, updated 2 synthetic-command tests, added a regression-guard negative case), plus the earlier-caught `plugins/shipwright-build/tests/test_review_payload_hook_wiring_integration.py` regression (row already implied by the mini-plan's work breakdown §6). Both files re-run green. |
   | 7 | The nested, hooks.json-invisible `uv run` in `cleanup-review-scratch-on-code-reviewer-failure.py` (spawned from `cwd=resolve_project_root()`) is also pinned | tested | Found via `doubt-reviewer` (Stage 3, reversibility lens). Fixed: added `--no-project`; `test_cleanup_review_scratch_on_code_reviewer_failure.py`'s `args[:2]==["uv","run"]` assertion widened to `args[:3]==["uv","run","--no-project"]`. 15/15 passed. |
   | 8 | `--with pyyaml`/`--with jsonschema` additions keep every `run_if_cache_ready.py`/`audit_compliance_on_stop.py` invocation's flag prefix identical across all plugins that share the target script (codex bundle-merge dedup requirement) | tested | `test_hooks_uv_run_pinned.py::test_shared_uv_run_scripts_use_identical_flag_prefix_across_plugins` PASSED post-fix; `shared/scripts/tools/tests` (codex_hook_merge/inventory/sync, 1171 tests) re-run green. |
+  | 9 | `run_if_cache_ready.py`/`audit_compliance_on_stop.py` retain the *specific* `--with pyyaml`/`--with jsonschema` packages (not just *a* consistent prefix) | tested | Found via the required CI PR-review gate (Tier-3, `openai/gpt-6-luna`, run 36427748135): rows #6/#8 check prefix shape/consistency only, never flag content, so dropping `--with pyyaml --with jsonschema` from every plugin uniformly would pass both. Added `test_hooks_uv_run_pinned.py::test_dependency_carrying_scripts_retain_required_with_flags`. |
 
 - **Confidence-pattern check:** asymptote — this is the first "are you
   confident?" pass on this change, no prior finding to chase. Coverage —
@@ -396,3 +397,42 @@ Action: All clear, proceed to commit.
   assertions covering both. 13/13 in that file + its reverse-direction
   sibling green; full `shared/tests` re-run green (13 tests were the sole
   failure on the first full re-run; this row records that finding + fix).
+
+## Post-push CI findings (F11, two rounds)
+
+- **Round 1 — required "Python (lint + test)" CI job failed, local suite had
+  passed.** `test_hooks_uv_run_project_isolation.py::test_without_no_project_is_poisoned_by_cwd`
+  (Test Completeness Ledger row 4) is a platform-dependent negative control:
+  the "poisoned" CWD project declared an unresolvable `file:///this/path/...`
+  dependency, which `uv` 0.11.9 fails to parse/resolve on Windows (confirmed
+  locally: "Failed to parse metadata from built wheel... relative path
+  without a working directory") but apparently resolves/parses without
+  erroring on Linux CI (GitHub Actions run 36423886194: `uv run` without
+  `--no-project` exited 0 against the same poisoned project) — so the
+  negative control wasn't discriminating on every platform CI runs on.
+  **Fixed:** switched the poison to `requires-python = "==99.99.99"` — no
+  interpreter anywhere can ever satisfy an exact, absurd version pin, so the
+  failure is deterministic offline and platform-independent by construction,
+  not dependent on any OS's `file://` URI parsing. Verified locally:
+  `--no-project` still bypasses it (exit 0), the unpinned invocation still
+  fails (exit 2, "No interpreter found for Python 99.99.99...").
+- **Round 2 — required "PR Review" Tier-3 gate (`openai/gpt-6-luna`) BLOCKed**
+  (run 36427748135): "the new tests do not verify the explicit
+  `pyyaml`/`jsonschema` dependencies added to preserve downstream hook
+  behavior, so removing those dependencies everywhere could silently regress
+  required-checks or Group D validation while the suite still passes" —
+  ledger row 9 above. Fixing it surfaced a second, unrelated latent bug in
+  the SAME test file: `test_shared_uv_run_scripts_use_identical_flag_prefix_across_plugins`'s
+  helper `_target_script` had always returned `None` for every real command
+  (the shared `_UV_RUN_PREFIX` regex consumed the opening `"` as part of its
+  own match instead of stopping before it, so `_target_script`'s own
+  `re.match(r'"...', rest)` never found a leading quote to anchor on) — so
+  that "cross-plugin consistency" test had been vacuously green since it was
+  authored: an always-empty per-script map can never disagree with itself.
+  Only surfaced now because the new content-assertion test reuses the same
+  helper and asserts the scripts are actually *seen*, not just that no
+  offender was reported. **Fixed:** `_UV_RUN_PREFIX` changed to a lookahead
+  for the closing quote (`(?=")`) instead of consuming it, so `match.end()`
+  lands exactly on the quote `_target_script` expects. Re-verified: all 15
+  tests in the file pass, including the cross-plugin consistency test now
+  doing real (non-vacuous) comparisons.
