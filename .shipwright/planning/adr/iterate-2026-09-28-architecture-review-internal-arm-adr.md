@@ -209,6 +209,20 @@ across both legs — fixed, not disclosed:
   `is_symlink()` on both ancestor path components *before* resolving either.
   Covered by `test_a_symlinked_runs_directory_is_refused` (skips on a host
   without symlink privileges, same precedent as the file-level test).
+- **Fence-masker backreference bug (medium, fixed, a second external
+  code-review round on the same file).** The fix above used `^\1\s*$` to
+  require the closing fence to exactly match the opener's captured text, but
+  CommonMark allows a closer at least as long as the opener (` ``` ` opened,
+  `` ```` `` closed is valid) — a backreference rejects the extra character,
+  so the block is never recognized as closed at all and goes completely
+  unmasked, reopening the exact heading-look-alike hole the first fix closed.
+  Both `glm` and `openai` converged on this independently, again. Fixed by
+  dropping the backreference: any 3+-backtick-or-tilde line now closes any
+  3+-backtick-or-tilde opener, regardless of exact type/length match — this
+  masker only needs to err toward over-masking, never toward leaving a real
+  boundary hidden in unmasked "quoted" text; exact CommonMark fence-matching
+  is not its job. Covered by
+  `test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer`.
 - **Two low-severity items, declined with reason.** The Windows symlink
   fallback's check-then-write race was independently reflagged by `glm`; it
   is the same disclosed residual the earlier F11 preflight round already

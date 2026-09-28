@@ -93,7 +93,21 @@ _PRIOR_REVIEW_SECTION_RE = re.compile(
 #: Review" must not have that quoted line mistaken for a real section
 #: boundary (external review, medium — both `glm` and `openai` legs raised
 #: this independently against this exact regex).
-_FENCE_RE = re.compile(r"^(`{3,}|~{3,}).*?^\1\s*$", re.MULTILINE | re.DOTALL)
+#:
+#: Deliberately NOT a backreference (`^\1\s*$`) on the closer: CommonMark
+#: allows a closing fence at least as long as the opener (` ``` ` opened,
+#: `` ```` `` closed is valid), and a backreference demands an exact-length
+#: match — the opener's own capture, followed by a stray extra backtick that
+#: `\s*$` then rejects — so a longer closer is never recognized as a close at
+#: all and the whole block goes unmasked (external review round 2, medium,
+#: both legs converged on the same regex again). Any 3+-backtick-or-tilde
+#: line closes any 3+-backtick-or-tilde opener: type/length-exact matching
+#: is CommonMark's job, not this masker's — treating a not-quite-matching
+#: pair as fenced errs toward over-masking, never toward leaving a real
+#: section boundary hidden inside unmasked "quoted" text.
+_FENCE_RE = re.compile(
+    r"^(?:`{3,}|~{3,}).*?^(?:`{3,}|~{3,})[ \t]*$", re.MULTILINE | re.DOTALL
+)
 
 
 def _mask_fenced_blocks(text: str) -> str:

@@ -107,6 +107,30 @@ def test_strip_ignores_a_heading_look_alike_inside_a_fenced_code_block():
     assert "```markdown" in result, "the fence itself is untouched, only real sections strip"
 
 
+def test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer():
+    """External code review, round 2 (medium, both `glm` and `openai` legs
+    converged again): CommonMark allows a closing fence LONGER than the
+    opener (``` opened, ```` closed is valid). A backreference-based masker
+    demands an exact-length match, so a longer closer is never recognized —
+    the whole block then goes unmasked and a heading-shaped line inside it
+    is read as a real section boundary."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Verification (medium+)\n"
+        "```\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** this is example template text, not a real review\n"
+        "````\n"
+        "Run tests after the quoted block above.\n\n"
+        "## Acceptance Criteria\n- AC1: it works.\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert "Run tests after the quoted block above." in result
+    assert "## Acceptance Criteria" in result and "AC1: it works." in result
+
+
 def test_strip_still_removes_a_real_prior_review_section_after_a_fence():
     """The fence-masking must not blind the strip to a REAL section that
     follows a fenced block earlier in the document."""
