@@ -29,7 +29,7 @@
       "surface": "cli",
       "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
       "exit_code": 0,
-      "tests_run": 86,
+      "tests_run": 88,
       "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
       "timestamp": "2026-09-28T00:00:00Z"
     },
@@ -79,7 +79,7 @@
         {
           "behavior": "the architecture-review anchoring defense holds in code (not just prose) on the iterate side: strip_prior_review_sections() removes a prior ## Internal Plan Review / ## Internal Architecture Review / ## Self-Review section from the spec before it reaches the external architecture pass, and does NOT strip for --mode iterate. The strip must not mistake a fenced-code-block quote of a heading-shaped line for a real section boundary",
           "disposition": "tested",
-          "evidence": "shared/tests/test_architecture_review_anchoring_defense.py::test_architecture_mode_strips_prior_review_sections_before_use, ::test_iterate_mode_does_not_strip_prior_review_sections, ::test_strip_ignores_a_heading_look_alike_inside_a_fenced_code_block, ::test_strip_still_removes_a_real_prior_review_section_after_a_fence, ::test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer, ::test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker, ::test_strip_masks_to_end_of_document_when_a_fence_is_never_closed, ::test_strip_masks_a_three_space_indented_fence, ::test_strip_raises_when_an_unterminated_fence_hides_a_real_heading, ::test_strip_does_not_raise_when_an_unterminated_fence_hides_nothing_sensitive PASSED",
+          "evidence": "shared/tests/test_architecture_review_anchoring_defense.py::test_architecture_mode_strips_prior_review_sections_before_use, ::test_iterate_mode_does_not_strip_prior_review_sections, ::test_strip_ignores_a_heading_look_alike_inside_a_fenced_code_block, ::test_strip_still_removes_a_real_prior_review_section_after_a_fence, ::test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer, ::test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker, ::test_strip_masks_to_end_of_document_when_a_fence_is_never_closed, ::test_strip_masks_a_three_space_indented_fence, ::test_strip_raises_when_an_unterminated_fence_hides_a_real_heading, ::test_strip_does_not_raise_when_an_unterminated_fence_hides_nothing_sensitive, ::test_strip_terminates_the_stripped_section_at_an_indented_or_tab_separated_heading, ::test_strip_also_applies_on_the_plan_side_by_design PASSED",
           "category": "integration"
         },
         {
@@ -109,7 +109,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-28-architecture-review-internal-arm",
-    "commit": "dc9ebff922884925c098b60a2df5743a59422826",
+    "commit": "2aaf595aa41be9e801cab5771784eae47ea53fd0",
     "dirty": true,
     "base": null,
     "release": null

@@ -96,10 +96,23 @@ _FENCE_OPEN_RE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
 #: passes write to `plan.md`, never `spec.md`. On the iterate side there is no
 #: second document: these same headings land in the ONE spec file this mode is
 #: handed as `--spec-file`, each carrying exactly the rejection rationale the
-#: brief was built to withhold.
+#: brief was built to withhold. This same pattern also runs against plan-side
+#: specs (where these headings normally never appear by construction); an
+#: adopted-template spec that happens to carry a real, unrelated
+#: `## Self-Review`/`## Architecture Review` section there is stripped too,
+#: intentionally, on the "err toward removing more, never toward leaking a
+#: real section" contract this whole module follows (external code review,
+#: low, `glm` — see `test_strip_also_applies_on_the_plan_side_by_design`).
+#:
+#: The closing lookahead tolerates 0-3 leading spaces/tabs (CommonMark's own
+#: indentation allowance, already used by `_FENCE_OPEN_RE` above) and either a
+#: space or a tab after `##` — a stricter `\n## ` missed a legitimately
+#: indented or tab-separated FOLLOWING heading, silently pulling that
+#: section's real content into the stripped span (external code review,
+#: medium, `openai`).
 _PRIOR_REVIEW_SECTION_RE = re.compile(
     r"^## (?:Internal Plan Review|Internal Architecture Review|Self-Review|"
-    r"Architecture Review)\b.*?(?=\n## |\Z)",
+    r"Architecture Review)\b.*?(?=\n[ \t]{0,3}##[ \t]|\Z)",
     re.MULTILINE | re.DOTALL,
 )
 
@@ -173,7 +186,17 @@ def strip_prior_review_sections(spec_text: str) -> str:
     Raises `UnstrippableSpecError` when an unterminated fence masks the rest
     of the document AND a real prior-review heading sits in that masked
     tail: proceeding would silently emit a "sanitized" copy that still
-    carries the rationale this function exists to remove."""
+    carries the rationale this function exists to remove.
+
+    This check reads the masked tail's ORIGINAL (unmasked) text, so a
+    heading-shaped line that is itself just quoted content sitting after the
+    same unterminated fence also raises — there is no way to tell "real
+    heading" from "quoted look-alike" once a fence never closes, since
+    CommonMark treats everything after it as one open block either way.
+    Accepted false-positive cost of failing closed (external code review,
+    low, `glm`): a spec with a stray, unrelated unterminated fence anywhere
+    before a real-looking prior-review heading refuses the whole review
+    pass, even when nothing was actually leaking."""
     masked, unterminated_from = _mask_fenced_blocks(spec_text)
     if unterminated_from is not None and _PRIOR_REVIEW_SECTION_RE.search(
         spec_text[unterminated_from:]

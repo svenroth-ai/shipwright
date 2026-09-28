@@ -263,6 +263,57 @@ def test_strip_still_removes_a_real_prior_review_section_after_a_fence():
     assert "some unrelated quoted snippet" in result
 
 
+def test_strip_terminates_the_stripped_section_at_an_indented_or_tab_separated_heading():
+    """External code review round 7 (medium, `openai`): the closing lookahead
+    required an exact '\\n## ' (column 0, single space), so a legitimately
+    indented following heading (a CommonMark ATX heading may carry up to 3
+    spaces of indent) or one using a tab instead of a space after '##' was
+    never recognized as the boundary — the real content of that FOLLOWING
+    section was silently pulled into the deleted span along with the prior
+    review."""
+    from external_review_modes import strip_prior_review_sections
+
+    indented = (
+        "# Spec\n\n## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** rejected option B because Y\n\n"
+        "   ## Acceptance Criteria\n- AC1: it works.\n"
+    )
+    result = strip_prior_review_sections(indented)
+    assert "rejected option B because Y" not in result
+    assert "## Acceptance Criteria" in result and "AC1: it works." in result
+
+    tab_separated = (
+        "# Spec\n\n## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** rejected option B because Y\n\n"
+        "##\tVerification\nRun tests.\n"
+    )
+    result = strip_prior_review_sections(tab_separated)
+    assert "rejected option B because Y" not in result
+    assert "Verification" in result and "Run tests." in result
+
+
+def test_strip_also_applies_on_the_plan_side_by_design():
+    """External code review round 7 (low, `glm`): the strip runs on BOTH
+    plan-side and iterate-side --mode architecture calls, and the plan side
+    is only 'clean by construction' because the internal passes write to
+    plan.md, never spec.md — nothing stops a hand-authored or adopted-
+    template spec.md from carrying one of these headings for unrelated
+    reasons. This documents that the strip removes it there too,
+    intentionally, on this module's own 'err toward removing more, never
+    toward leaking a real section' contract, rather than leaving that
+    behavior untested and unreasoned-about."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Self-Review\nUnrelated content a template happened to carry.\n\n"
+        "## Acceptance Criteria\n- AC1: it works.\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert "Unrelated content a template happened to carry." not in result
+    assert "## Acceptance Criteria" in result and "AC1: it works." in result
+
+
 def test_iterate_mode_does_not_strip_prior_review_sections(monkeypatch, tmp_path):
     """Iterate mode intentionally shows the mini-plan's own rejection rationale
     — only architecture mode's anchoring defense needs the strip."""

@@ -397,6 +397,60 @@ across both legs — fixed, not disclosed:
   helper, landing the file 5 lines under baseline instead of over it — a
   net-negative diff for a file this fix touched anyway, not scope creep.
 
+- **Boundary regex missed an indented or tab-separated following heading
+  (medium, fixed, a seventh external code-review round).** `openai`:
+  `_PRIOR_REVIEW_SECTION_RE`'s closing lookahead required an exact
+  `\n## ` — column 0, single space — so a legitimately indented ATX
+  heading (CommonMark allows up to 3 spaces) or one using a tab after
+  `##` was never recognized as the section boundary, silently pulling
+  that FOLLOWING section's real content into the deleted span along
+  with the prior review. Fixed by widening the lookahead to
+  `\n[ \t]{0,3}##[ \t]` (the same indentation tolerance `_FENCE_OPEN_RE`
+  already uses). Covered by
+  `test_strip_terminates_the_stripped_section_at_an_indented_or_tab_separated_heading`.
+- **Plan-side strip scope, documented (low, fixed with a test, same
+  round).** `glm`: the strip runs on both plan-side and iterate-side
+  `--mode architecture` calls; the plan side is "clean by construction"
+  only because the internal passes write to `plan.md`, never `spec.md`
+  — an adopted-template `spec.md` carrying an unrelated `## Self-Review`
+  heading would still be stripped there, untested and unreasoned-about.
+  Added `test_strip_also_applies_on_the_plan_side_by_design` documenting
+  this is the intended behavior under this module's own "err toward
+  removing more, never toward leaking a real section" contract, rather
+  than gating the strip to iterate specs only (which would need a signal
+  this module has no way to receive — mode alone does not distinguish
+  a plan-side call from an iterate-side one).
+- **`UnstrippableSpecError` false-positive cost, documented (low,
+  disclosed with reason, same round).** `glm`: the check reads the
+  unterminated tail's ORIGINAL text, so a heading-shaped line that is
+  itself just quoted content after the same unmatched fence also raises
+  — there is no way to distinguish "real heading" from "quoted
+  look-alike" once a fence never closes, since CommonMark treats
+  everything after it as one open block either way. Accepted as the
+  correct cost of failing closed (the same trade this whole fix exists
+  to make) and documented directly in `strip_prior_review_sections`'s
+  docstring; the practical operator-facing effect is already the
+  existing `Ran: no` degraded path (round 6), not a stuck iterate.
+- **Three further items, declined with reason (same round).**
+  `openai`/`glm` both re-raised the disclosed Windows-junction bypass —
+  no new information, no further action. `glm` re-raised the D5
+  test-coverage-overstatement concern against
+  `test_architecture_internal_review_contract_prose.py` — same finding,
+  same disposition as D5 above. `openai` flagged that
+  `test_architecture_mode_strips_prior_review_sections_before_use`
+  spies on `strip_prior_review_sections`'s return value rather than the
+  final rendered provider prompt, so it wouldn't catch the stripped
+  value being computed and then discarded. Traced the actual data flow
+  to check this concretely rather than only citing the test's own
+  documented keyless-test-env rationale: `spec` is reassigned exactly
+  once (`spec = strip_prior_review_sections(spec)`) and that same local
+  variable is passed straight through, unshadowed, to every provider
+  call a few lines later — there is no code path where the spied return
+  value could diverge from what reaches the prompt. Closing this
+  properly would need a fake API key plus mocking the `OpenAI` client, a
+  materially larger test-infrastructure change to guard a gap the
+  straight-line variable flow already closes.
+
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
   fresh-context agent. Rejected: `opus-plan-reviewer` is defined by
