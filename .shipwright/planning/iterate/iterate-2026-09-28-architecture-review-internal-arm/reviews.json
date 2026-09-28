@@ -251,69 +251,60 @@
     "external_code": {
       "review_type": "external_code",
       "status": "completed",
-      "findings_count": 6,
+      "findings_count": 5,
       "findings": [
         {
-          "severity": "medium",
-          "category": "edge-case",
-          "file": "shared/scripts/lib/external_review_modes.py` (the `_PRIOR_REVIEW_SECTION_RE` regex)",
+          "severity": "low",
+          "category": "security |",
+          "file": null,
           "line": null,
-          "finding": "The regex `^## (Internal Plan Review|...)\\b.?(?=\\n## |\\Z)` with `MULTILINE|DOTALL` has no awareness of fenced code blocks. If a spec's legitimate content (e.g. a \"Verification\" or \"Confidence Calibration\" section, or a quoted skill/template excerpt) contains a fenced markdown block with a line starting `## Internal Plan Review`, `## Self-Review`, etc., the regex will match inside the fence and delete everything from that line to the next real `## ` heading — silently removing genuine spec content from what the external architecture pass (and the internal reviewer's sanitized copy) sees. Specs in this repo routinely embed fenced markdown.",
-          "suggestion": "Skip fenced regions while scanning (track ``` toggles), or anchor section starts to headings outside fences before applying the strip.",
+          "finding": "open the output relative to a dir-fd (`os.open(\"architecture-internal-spec.md\", flags, dir_fd=runs_dir_fd)`) with the dir-fd obtained via `O_DIRECTORY|O_NOFOLLOW` per component, or accept and document the residual alongside the existing Windows TOCTOU disclosure.",
+          "suggestion": null,
           "source": "external-review"
         },
         {
           "severity": "low",
-          "category": "edge-case",
-          "file": "shared/scripts/tools/prepare_architecture_internal_spec.py` (`_write_refusing_symlinks`)",
+          "category": "test |",
+          "file": null,
           "line": null,
-          "finding": "On Windows the fallback is `is_symlink()` then `os.open` — a check-then-write TOCTOU. The code discloses this as best-effort and notes the CI gate runs on POSIX, so this is a documented residual, not a hidden defect; flagging only so it stays on record.",
-          "suggestion": "None required beyond the existing disclosure; optionally open the parent dir with `O_NOFAMILY`-style dir-fd-relative open if a stronger guarantee is ever needed.",
+          "finding": "assert the complete disposition string from `iteration-reviews.md` in the contract-prose test, or add a direct equality check between the test constant and the doc text.",
+          "suggestion": null,
           "source": "external-review"
         },
         {
           "severity": "low",
-          "category": "test",
-          "file": "shared/tests/test_architecture_internal_review_contract_prose.py` (`_section` / `test_plan_step_5a_re_reads_the_brief_instead_of_authoring_it`)",
+          "category": "edge-case |",
+          "file": null,
           "line": null,
-          "finding": "test_plan_step_5a_...` asserts `\"--plan-file\" in body and \"usage error\" in body` for the Step 5a section — but those tokens appear in `step-5-external-review.md` generally, and `_section` slices only from the heading to the next `---`; if the `--plan-file` refusal sentence lives outside that slice the test would fail loudly (ValueError/AssertionError), so it is not silently green — but the anchor is weak evidence for \"the CLI's existing `--plan-file` refusal is untouched\" (AC4's second half), which is really a property of `external_review_modes.py`, not the prose. A direct assertion against `select_mode_input`/`ModeInputError` behavior would be the stronger guard.",
-          "suggestion": "Add (or note) a behavioral test that `--mode architecture` still rejects `--plan-file`; the prose anchor alone doesn't pin the CLI.",
-          "source": "external-review"
-        },
-        {
-          "severity": "low",
-          "category": "regression",
-          "file": "shared/scripts/lib/external_review_modes.py` (regex includes `Architecture Review`)",
-          "line": null,
-          "finding": "The strip list includes `## Architecture Review` — this is intentional (a prior external run's verdict must not re-anchor), but note it also means a resumed run's external architecture pass no longer sees its own prior section. That is the designed behavior per the ADR (D1); no action needed, just confirming it isn't accidental scope creep.",
-          "suggestion": "None.  No correctness bugs found in `review_record_schema.py`, `review_record_model_tier.py`, `plan_gate_extras.py`, or the CLI wiring; the strip is correctly gated to `--mode architecture` only, and `prepare_architecture_internal_spec.py` validates before any filesystem mutation (the \"no `.shipwright` dir created on refusal\" test confirms ordering).  Overall assessment: ship-with-fixes — the work is sound and thoroughly self-reviewed; only the fenced-code-block over-strip in the section-stripping regex is worth fixing before this runs against real specs that quote markdown templates.  SHIPWRIGHT_VERDICT: approve",
+          "finding": "add a test for a spec whose only fence is an orphan closer followed by a genuine `## Internal Plan Review` section; if it leaks, either strip sections found in the unmasked tail or track that a closer with no opener should not start a fence.",
+          "suggestion": null,
           "source": "external-review"
         },
         {
           "severity": "medium",
           "category": "security",
           "file": "shared/scripts/tools/prepare_architecture_internal_spec.py",
-          "line": 75,
-          "finding": "Resolving `.shipwright/runs` before the containment check makes that check accept a symlinked runs directory outside the project. The tool then creates the run directory and writes the sanitized spec outside the project.",
-          "suggestion": "Verify the resolved runs directory remains under the resolved project root, and reject symlinked path components used for the output.",
+          "line": 101,
+          "finding": "The ancestor check rejects symlinks but accepts Windows directory junctions. A junction at `.shipwright`, `runs`, or the run directory can redirect the sanitized-spec write outside the project; the later containment check compares paths after following that junction.",
+          "suggestion": "Reject junctions and other directory reparse points before writing, and verify the resolved runs root remains inside the resolved project root.",
           "source": "external-review"
         },
         {
           "severity": "medium",
           "category": "edge-case",
-          "file": "shared/scripts/lib/external_review_modes.py",
-          "line": 84,
-          "finding": "The section stripper stops at the next `##` line even when that line is inside a fenced code block in a prior-review section. Text after that line, including findings and rejection reasons, can remain in the spec sent to both architecture reviewers.",
-          "suggestion": "Make section detection aware of fenced blocks, and test a review section containing a fenced `##` heading followed by a disposition.  The review flow is broadly wired as specified, but these two input-boundary defects need fixes before shipping. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
+          "file": "shared/scripts/tools/prepare_architecture_internal_spec.py",
+          "line": 119,
+          "finding": "A permission error or a non-directory at the run path raises an uncaught exception. Step 0b defines `Ran: no` degradation for agent and reply failures, but gives no path for this preparation failure, so it can stop the iterate before external review.",
+          "suggestion": "Handle directory and write failures with a clean nonzero result, and instruct Step 0b to record `Ran: no` and continue when preparation fails.  The review flow largely matches the specification, but these input-path failures need fixes before shipping. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
           "source": "external-review"
         }
       ],
       "provider": "openrouter",
-      "completed_at": "2026-09-28T16:08:29.923591+00:00",
+      "completed_at": "2026-09-28T16:37:47.443675+00:00",
       "disposition": null,
       "recorded_by": "external-review-json",
       "parse_status": "structured",
-      "raw_excerpt": "[glm] I reviewed the diff against the eight acceptance criteria and the supporting prose/contract tests.\n\n**AC coverage:** AC1–AC8 are all implemented and each has a mechanical assertion: the two spawn sites (plan `step-5-int-arch.md`, iterate `iteration-planning.md` step 0b), brief re-read (not re-author) at Step 5a/step 2a, `REVIEW_TYPES`/`OPTIONAL_PRESENCE_TYPES`/`_ROLE_REVIEW_TYPES` growth, gate-catalog sibling entry, campaign `not_run` row, and docs. The security hardening of `prepare_architecture_internal_spec.py` (run-id strict match, resolved-path containment, `O_NOFOLLOW`) is real and tested.\n\nFindings:\n\n- **Category: edge-case**\n  **Severity: medium**\n  File: `shared/scripts/lib/external_review_modes.py` (the `_PRIOR_REVIEW_SECTION_RE` regex)\n  Finding: The regex `^## (Internal Plan Review|...)\\b.*?(?=\\n## |\\Z)` with `MULTILINE|DOTALL` has no awareness of fenced code blocks. If a spec's legitimate content (e.g. a \"Verification\" or \"Confidence Calibration\" section, or a quoted skill/template excerpt) contains a fenced markdown block with a line starting `## Internal Plan Review`, `## Self-Review`, etc., the regex will match *inside the fence* and delete everything from that line to the next real `## ` heading — silently removing genuine spec content from what the external architecture pass (and the internal reviewer's sanitized copy) sees. Specs in this repo routinely embed fenced markdown.\n  Suggestion: Skip fenced regions while scanning (track ``` toggles), or anchor section starts to headings outside fences before applying the strip.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py` (`_write_refusing_symlinks`)\n  Finding: On Windows the fallback is `is_symlink()` then `os.open` — a check-then-write TOCTOU. The code discloses this as best-effort and notes the CI gate runs on POSIX, so this is a documented residual, not a hidden defect; flagging only so it stays on record.\n  Suggestio […truncated]\n\n[openai] - Category: security\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:75`\n  Finding: Resolving `.shipwright/runs` before the containment check makes that check accept a symlinked runs directory outside the project. The tool then creates the run directory and writes the sanitized spec outside the project.\n  Suggestion: Verify the resolved runs directory remains under the resolved project root, and reject symlinked path components used for the output.\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/lib/external_review_modes.py:84`\n  Finding: The section stripper stops at the next `##` line even when that line is inside a fenced code block in a prior-review section. Text after that line, including findings and rejection reasons, can remain in the spec sent to both architecture reviewers.\n  Suggestion: Make section detection aware of fenced blocks, and test a review section containing a fenced `##` heading followed by a disposition.\n\nThe review flow is broadly wired as specified, but these two input-boundary defects need fixes before shipping. Ship with fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "raw_excerpt": "[glm] I reviewed the full diff against the eight ACs and the changed executable code (`external_review_modes.py`, `external_review.py`, `prepare_architecture_internal_spec.py`).\n\n**Findings**\n\n- Category: security | Severity: low\n  `shared/scripts/tools/prepare_architecture_internal_spec.py` (ancestor-symlink check → `resolve()` → `mkdir(parents=True)` → `_write_refusing_symlinks`)\n  The ancestor `is_symlink()` checks and the later `mkdir`/write are separate filesystem operations, so a symlink planted at `.shipwright`, `runs`, or `runs/{run_id}` *after* the check but before the write still redirects the write. `O_NOFOLLOW` guards only the final filename, not the directory walk. Realistically requires a local racing attacker; the tool runs in the developer's own repo, so low.\n  Suggestion: open the output relative to a dir-fd (`os.open(\"architecture-internal-spec.md\", flags, dir_fd=runs_dir_fd)`) with the dir-fd obtained via `O_DIRECTORY|O_NOFOLLOW` per component, or accept and document the residual alongside the existing Windows TOCTOU disclosure.\n\n- Category: test | Severity: low\n  `shared/tests/test_review_record_campaign_shape.py` (`_INTERNAL_ARM_DISPOSITIONS`) vs `plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md` (Campaign sub-iterate rows) and `test_campaign_cascade_record_roundtrip.py` (`_DELEGATED`)\n  The disposition strings for `architecture_internal` were deliberately *shortened* in `_INTERNAL_ARM_DISPOSITIONS` (\"…not delegated\") relative to the actual command text the skill instructs the runner to write (\"…not delegated to the orchestrator like the other three\"). Nothing compares the two sets, so a future edit to the skill's disposition wording (which F11's bare-\"skipped\" rejection makes load-bearing) will not be caught by either test. The ADR notes this drift and declines to fix it; I'd at least tighten the prose assertion in `test_campaign_review_contract_prose.py` to the full sentence.\n  Suggestion: assert the complete di […truncated]\n\n[openai] - Category: security\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:101`\n  Finding: The ancestor check rejects symlinks but accepts Windows directory junctions. A junction at `.shipwright`, `runs`, or the run directory can redirect the sanitized-spec write outside the project; the later containment check compares paths after following that junction.\n  Suggestion: Reject junctions and other directory reparse points before writing, and verify the resolved runs root remains inside the resolved project root.\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:119`\n  Finding: A permission error or a non-directory at the run path raises an uncaught exception. Step 0b defines `Ran: no` degradation for agent and reply failures, but gives no path for this preparation failure, so it can stop the iterate before external review.\n  Suggestion: Handle directory and write failures with a clean nonzero result, and instruct Step 0b to record `Ran: no` and continue when preparation fails.\n\nThe review flow largely matches the specification, but these input-path failures need fixes before shipping. **Ship with fixes.**\n\nSHIPWRIGHT_VERDICT: revise",
       "verdicts": {
         "glm": "approve",
         "openai": "revise"
