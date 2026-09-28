@@ -15,6 +15,8 @@ rejection rationale is intentionally shown (Stage-3 doubt review, high, D1).
 import sys
 from pathlib import Path
 
+import pytest
+
 _SHARED = Path(__file__).resolve().parents[1]
 _TOOLS_DIR = _SHARED / "scripts" / "tools"
 if str(_TOOLS_DIR) not in sys.path:
@@ -157,14 +159,18 @@ def test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker():
 
 def test_strip_masks_to_end_of_document_when_a_fence_is_never_closed():
     """External code review, round 3 (medium, `glm`): an opener with no
-    matching closer must mask to end-of-document. Unmasked, the quoted
-    heading-look-alike would be read by `_PRIOR_REVIEW_SECTION_RE` as a REAL
-    section start and everything from it to EOF would be stripped out as
-    if it were genuine rejection rationale. Masked, the section-finder never
-    sees it, so nothing is stripped and the document passes through whole —
-    the failure direction every fence fix here must avoid is a hidden
-    section boundary, never a little extra masked (but preserved) text."""
-    from external_review_modes import strip_prior_review_sections
+    matching closer must mask to end-of-document rather than leave its
+    contents live for the section-finder to (wrongly) treat as a real
+    section start. But masking to EOF has its own failure direction, caught
+    by round 6 (`glm` + the local PR-review preflight, converging
+    independently): if a heading-shaped line sits in that masked-to-EOF
+    tail, nobody can tell from the text alone whether it is a harmless quote
+    or a genuine prior-review section that needed stripping — silently
+    passing it through either way risks a real rationale leak. `strip_prior_
+    review_sections` now fails closed in that specific case instead of
+    guessing (see `test_strip_raises_when_an_unterminated_fence_hides_a_real_
+    heading`)."""
+    from external_review_modes import UnstrippableSpecError, strip_prior_review_sections
 
     spec_text = (
         "# Spec\n\n## Goal\nDo X.\n\n"
@@ -173,12 +179,47 @@ def test_strip_masks_to_end_of_document_when_a_fence_is_never_closed():
         "## Internal Plan Review (opus-plan-reviewer)\n"
         "- **Findings:** this is example template text, never closed\n"
     )
-    result = strip_prior_review_sections(spec_text)
-    assert result == spec_text, (
-        "an unclosed fence must mask its heading-look-alike from the "
-        "section-finder, not have it mistaken for a real section and "
-        "stripped along with everything after it"
+    with pytest.raises(UnstrippableSpecError):
+        strip_prior_review_sections(spec_text)
+
+
+def test_strip_raises_when_an_unterminated_fence_hides_a_real_heading():
+    """External code review round 6 (medium, `glm`) + local PR-review
+    preflight (BLOCK, same round): an unmatched fence opener earlier in a
+    spec can mask a GENUINE, later `## Internal Plan Review` section from
+    the section-finder — the section then survives unstripped, leaking its
+    rationale into the architecture pass's input, the exact failure this
+    whole module exists to prevent. Must fail closed rather than silently
+    emit a spec that still carries it."""
+    from external_review_modes import UnstrippableSpecError, strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Notes\n"
+        "An accidental stray fence marker below (e.g. a copy-paste artifact):\n"
+        "```\n"
+        "some unrelated prose that was never meant to be a code block\n\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** rejected option B because Y — this is REAL rationale\n"
     )
+    with pytest.raises(UnstrippableSpecError):
+        strip_prior_review_sections(spec_text)
+
+
+def test_strip_does_not_raise_when_an_unterminated_fence_hides_nothing_sensitive():
+    """A legitimately unclosed fence with no heading-shaped line anywhere in
+    its masked-to-EOF tail is not a risk — must pass through unchanged, not
+    be refused defensively for content that was never in question."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Verification (medium+)\n"
+        "```\n"
+        "some ordinary example command that was never closed\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert result == spec_text
 
 
 def test_strip_masks_a_three_space_indented_fence():

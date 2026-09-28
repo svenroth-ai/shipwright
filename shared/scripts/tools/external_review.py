@@ -96,6 +96,7 @@ from external_review_degraded import (  # noqa: E402
 from external_review_modes import (  # noqa: E402
     MODE_INPUT,
     ModeInputError,
+    UnstrippableSpecError,
     is_blank, render_user_prompt,
     select_mode_input, strip_prior_review_sections,
 )
@@ -215,6 +216,17 @@ def detect_provider() -> str:
     )
 
 
+def _fail_envelope(error: str) -> int:
+    """Print the standard failure envelope and return the shell exit code
+    every early-exit path in ``main()`` uses — one shape regardless of
+    which check failed."""
+    print(json.dumps(
+        {"review_schema": REVIEW_ENVELOPE_SCHEMA, "success": False, "error": error},
+        indent=2,
+    ))
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="External LLM plan / iterate / code / architecture review",
@@ -300,30 +312,18 @@ def main() -> int:
     spec_path = Path(args.spec_file)
 
     if not primary_path.exists():
-        print(
-            json.dumps(
-                {
-                    "review_schema": REVIEW_ENVELOPE_SCHEMA,
-                    "success": False,
-                    "error": f"{primary_label} not found: {primary_path}",
-                },
-                indent=2,
-            )
-        )
-        return 1
+        return _fail_envelope(f"{primary_label} not found: {primary_path}")
 
     if not spec_path.exists():
-        print(json.dumps({
-            "review_schema": REVIEW_ENVELOPE_SCHEMA,
-            "success": False,
-            "error": f"Spec not found: {spec_path}",
-        }, indent=2))
-        return 1
+        return _fail_envelope(f"Spec not found: {spec_path}")
 
     primary_text = primary_path.read_text(encoding="utf-8")
     spec = spec_path.read_text(encoding="utf-8")
     if args.mode == "architecture":  # keep the anchoring defense real, see lib
-        spec = strip_prior_review_sections(spec)
+        try:
+            spec = strip_prior_review_sections(spec)
+        except UnstrippableSpecError as exc:
+            return _fail_envelope(f"cannot sanitize spec: {exc}")
     # `.strip()` alone is not enough: a BOM is not whitespace to Python
     # (`'﻿'.isspace()` is False), and PowerShell 5.1's `Set-Content -Encoding
     # UTF8 ""` writes exactly BOM+CRLF — which would have read as a non-empty
@@ -335,17 +335,12 @@ def main() -> int:
     # a plausible `approve` over nothing, recorded as a completed review.
     # `is_blank` (not `.strip()`) because a BOM is not whitespace.
     if args.mode == "architecture" and is_blank(primary_text):
-        print(json.dumps({
-            "review_schema": REVIEW_ENVELOPE_SCHEMA,
-            "success": False,
-            "error": (
-                f"Brief is empty: {primary_path} — the architecture review has "
-                "nothing to reason over, and reviewing nothing is not a pass. "
-                "Write it from shared/templates/architecture_brief.md; when the "
-                "change adds nothing permanent that is three lines."
-            ),
-        }, indent=2))
-        return 1
+        return _fail_envelope(
+            f"Brief is empty: {primary_path} — the architecture review has "
+            "nothing to reason over, and reviewing nothing is not a pass. "
+            "Write it from shared/templates/architecture_brief.md; when the "
+            "change adds nothing permanent that is three lines."
+        )
 
     # Code-mode short-circuit: empty diff → no provider call. The LLM cannot
     # review what isn't there, and many providers reject empty inputs. Built

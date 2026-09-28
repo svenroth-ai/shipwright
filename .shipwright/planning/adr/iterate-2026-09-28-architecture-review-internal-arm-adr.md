@@ -364,6 +364,39 @@ across both legs — fixed, not disclosed:
   in `test_architecture_review_mode.py`, so the gap is in the *anchor*, not
   in actual coverage.
 
+- **Orphan-closer fail-open, reconsidered and fixed (converged with the F11
+  local PR-review preflight, round 8).** The orphan-closer disclosure above
+  was initially accepted as a residual. The F11 local preflight then
+  independently raised the identical concern as a hard BLOCK — same
+  mechanism, same precondition, unprompted by the external review's own
+  finding — and named a concrete fix: fail closed rather than silently
+  emit a sanitized copy that might still carry the rationale. Two
+  independent reviewers converging on the same gap reversed the earlier
+  "disclose" call. Fixed: `_mask_fenced_blocks` now also returns the
+  character offset of any still-unterminated fence at EOF;
+  `strip_prior_review_sections` raises a new `UnstrippableSpecError` when
+  a real prior-review heading appears in that unterminated tail, rather
+  than silently returning a copy that may still carry it. Both call sites
+  (`prepare_architecture_internal_spec.py`, `external_review.py --mode
+  architecture`) catch it and report their own established `error:` +
+  exit-1 / JSON-envelope-failure contract, matching every other failure
+  path already in each tool. This required revising
+  `test_strip_masks_to_end_of_document_when_a_fence_is_never_closed`'s
+  expectation (previously "passes through unchanged", now "raises") since
+  the stricter contract legitimately supersedes the old one — not a
+  regression, an intentional behavior-contract change. Covered by that
+  revised test plus two new ones,
+  `test_strip_raises_when_an_unterminated_fence_hides_a_real_heading`,
+  `test_strip_does_not_raise_when_an_unterminated_fence_hides_nothing_sensitive`,
+  and a CLI-level test,
+  `test_a_spec_hiding_a_real_section_behind_an_unterminated_fence_is_refused`.
+  This fix's `try/except` pushed `external_review.py` 9 lines past its bloat
+  baseline; rather than take a bloat-exception ADR, extracted the four
+  early-exit "print a failure envelope, return 1" call sites (already
+  repeated near-verbatim before this fix) into one `_fail_envelope()`
+  helper, landing the file 5 lines under baseline instead of over it — a
+  net-negative diff for a file this fix touched anyway, not scope creep.
+
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
   fresh-context agent. Rejected: `opus-plan-reviewer` is defined by

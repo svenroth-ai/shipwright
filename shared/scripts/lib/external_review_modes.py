@@ -28,6 +28,7 @@ __all__ = [
     "KNOWN_PLACEHOLDERS",
     "MODE_INPUT",
     "ModeInputError",
+    "UnstrippableSpecError",
     "is_blank",
     "render_user_prompt",
     "render_user_prompt_as_stdin_refs",
@@ -70,6 +71,14 @@ class ModeInputError(ValueError):
     """The mode's input flags are wrong. Carries the operator-facing message."""
 
 
+class UnstrippableSpecError(ValueError):
+    """An unterminated fence masks the rest of the document, and a real
+    prior-review heading appears to sit inside that masked tail — stripping
+    cannot safely proceed without risking a rationale leak (external review
+    + local PR-review preflight, both converged on this independently:
+    "fail closed... refuse to prepare the sanitized input")."""
+
+
 def is_blank(text: str) -> bool:
     """True when ``text`` holds nothing a reviewer could read."""
     return not text.strip(BLANK_CHARS)
@@ -95,7 +104,7 @@ _PRIOR_REVIEW_SECTION_RE = re.compile(
 )
 
 
-def _mask_fenced_blocks(text: str) -> str:
+def _mask_fenced_blocks(text: str) -> tuple[str, int | None]:
     """Replace every character inside a fenced code block with a space,
     preserving line structure so match offsets computed on the masked text
     still index correctly into the original — a spec that quotes a template
@@ -113,16 +122,28 @@ def _mask_fenced_blocks(text: str) -> str:
     length — is what both single-regex attempts lacked. A fence with no
     closer at all masks to end-of-document, the same direction every other
     correction here has erred: leaving a boundary live is the failure mode,
-    never masking a little extra quoted text."""
+    never masking a little extra quoted text.
+
+    Returns ``(masked_text, unterminated_from)`` — the second element is the
+    character offset where the LAST still-open fence began, or ``None`` if
+    every fence closed. A caller uses this to check whether that masked-to-
+    EOF tail hid a real section boundary (external review + local PR-review
+    preflight, both converged: an unmatched fence earlier in the document can
+    mask an actual prior-review section, so it is never stripped)."""
     lines = text.split("\n")
     out: list[str] = []
     fence_char: str | None = None
     fence_len = 0
+    fence_open_at: int | None = None
+    cursor = 0
     for line in lines:
+        line_start = cursor
+        cursor += len(line) + 1
         if fence_char is None:
             match = _FENCE_OPEN_RE.match(line)
             if match:
                 fence_char, fence_len = match.group(1)[0], len(match.group(1))
+                fence_open_at = line_start
                 out.append(re.sub(r"[^\n]", " ", line))
                 continue
             out.append(line)
@@ -134,9 +155,9 @@ def _mask_fenced_blocks(text: str) -> str:
             and run >= fence_len
             and stripped[run:].strip(" \t") == ""
         ):
-            fence_char, fence_len = None, 0
+            fence_char, fence_len, fence_open_at = None, 0, None
         out.append(re.sub(r"[^\n]", " ", line))
-    return "\n".join(out)
+    return "\n".join(out), (fence_open_at if fence_char is not None else None)
 
 
 def strip_prior_review_sections(spec_text: str) -> str:
@@ -147,8 +168,22 @@ def strip_prior_review_sections(spec_text: str) -> str:
     Section boundaries are located against a fence-masked copy of the text
     (see `_mask_fenced_blocks`) so a fenced quote of a heading-shaped line
     can never be read as a real section start or end; the located spans are
-    then removed from the original, unmasked text."""
-    masked = _mask_fenced_blocks(spec_text)
+    then removed from the original, unmasked text.
+
+    Raises `UnstrippableSpecError` when an unterminated fence masks the rest
+    of the document AND a real prior-review heading sits in that masked
+    tail: proceeding would silently emit a "sanitized" copy that still
+    carries the rationale this function exists to remove."""
+    masked, unterminated_from = _mask_fenced_blocks(spec_text)
+    if unterminated_from is not None and _PRIOR_REVIEW_SECTION_RE.search(
+        spec_text[unterminated_from:]
+    ):
+        raise UnstrippableSpecError(
+            "an unterminated fenced code block masks the rest of this "
+            "document, and a prior-review heading appears inside that "
+            "masked tail — refusing to strip, since doing so could leave "
+            "that section's rationale in the output unremoved"
+        )
     kept: list[str] = []
     cursor = 0
     for match in _PRIOR_REVIEW_SECTION_RE.finditer(masked):

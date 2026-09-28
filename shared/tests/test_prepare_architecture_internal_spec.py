@@ -195,6 +195,28 @@ def test_a_file_blocking_the_run_directory_fails_cleanly_not_with_a_traceback(
     assert "error:" in capsys.readouterr().err.lower()
 
 
+def test_a_spec_hiding_a_real_section_behind_an_unterminated_fence_is_refused(
+    tmp_path: Path, capsys
+) -> None:
+    """External code review round 6 + local PR-review preflight (both
+    converged): if strip_prior_review_sections() can't safely tell whether a
+    heading behind an unterminated fence is a real prior-review section, the
+    CLI must refuse cleanly (exit 1, no output file) rather than silently
+    hand the agent a spec that might still carry the rationale."""
+    unsafe_spec = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Notes\nAn accidental stray fence marker:\n"
+        "```\n"
+        "some unrelated prose\n\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** rejected option B because Y — real rationale\n"
+    )
+    rc = _run(tmp_path, unsafe_spec)
+    assert rc != 0
+    assert "error:" in capsys.readouterr().err.lower()
+    assert not (tmp_path / ".shipwright" / "runs" / _RUN_ID / "architecture-internal-spec.md").exists()
+
+
 def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:
     """Only /shipwright-iterate calls this tool (iteration-planning.md, step
     0b) with its own run_id, so the strict iterate-YYYY-MM-DD-slug format is

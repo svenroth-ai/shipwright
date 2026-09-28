@@ -40,7 +40,10 @@ _SHARED_LIB = Path(__file__).resolve().parents[1] / "lib"
 if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
-from external_review_modes import strip_prior_review_sections  # noqa: E402
+from external_review_modes import (  # noqa: E402
+    UnstrippableSpecError,
+    strip_prior_review_sections,
+)
 from iterate_entry import RUN_ID_STRICT  # noqa: E402
 
 
@@ -83,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, UnicodeDecodeError) as exc:
         print(f"error: could not read --spec-file {spec_path}: {exc}", file=sys.stderr)
         return 1
-    sanitized = strip_prior_review_sections(spec_text)
+    try:
+        sanitized = strip_prior_review_sections(spec_text)
+    except UnstrippableSpecError as exc:
+        print(f"error: refusing to sanitize {spec_path}: {exc}", file=sys.stderr)
+        return 1
 
     # Check for a symlinked ancestor BEFORE resolving — resolving first would
     # silently follow it, so the containment check below would only ever
