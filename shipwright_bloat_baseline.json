@@ -459,13 +459,6 @@
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-sub-iterate-runner-bloat-exception.md"
     },
     {
-      "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "limit": 400,
-      "current": 1708,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-24-r5b-merge-lane-campaign-mode-bloat-exception.md"
-    },
-    {
       "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
       "limit": 300,
       "current": 457,
@@ -487,11 +480,25 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+      "limit": 300,
+      "current": 305,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "plugins/shipwright-iterate/scripts/tools/campaign_init.py",
       "limit": 300,
       "current": 416,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md"
+    },
+    {
+      "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "limit": 400,
+      "current": 1708,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-24-r5b-merge-lane-campaign-mode-bloat-exception.md"
     },
     {
       "path": "plugins/shipwright-iterate/tests/test_classify_complexity.py",
@@ -795,6 +802,13 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/ci_execution_evidence.py",
+      "limit": 300,
+      "current": 427,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/github_api.py",
       "limit": 300,
       "current": 321,
@@ -813,7 +827,7 @@
       "limit": 300,
       "current": 439,
       "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md; +19 lines PR #796 round 14 — factored the round-5 import-retry loop into two directly-callable helpers (a Tier-3-review-mandated fix replacing a rejected exec(compile(...)) test) instead of leaving it as bare module-top code"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md; +19 lines PR #796 round 14 \u2014 factored the round-5 import-retry loop into two directly-callable helpers (a Tier-3-review-mandated fix replacing a rejected exec(compile(...)) test) instead of leaving it as bare module-top code"
     },
     {
       "path": "shared/scripts/lib/_host_resource_locking.py",
@@ -830,6 +844,14 @@
       "adr": "ADR-091"
     },
     {
+      "path": "shared/scripts/lib/assertion_weakening.py",
+      "limit": 300,
+      "current": 1676,
+      "state": "grandfathered",
+      "adr": null,
+      "note": "5.6x the limit, the outlier of the H1 2026-09-25 drift sweep. Grandfathered here to close H1 (stop further undetected growth); a real split-or-ADR-exception decision is still owed and is deliberately NOT made in this pass — see .shipwright/planning/adr/iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md."
+    },
+    {
       "path": "shared/scripts/lib/atomic_write.py",
       "limit": 300,
       "current": 324,
@@ -844,25 +866,11 @@
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md"
     },
     {
-      "path": "shared/scripts/lib/loop_state.py",
+      "path": "shared/scripts/lib/campaign_drain.py",
       "limit": 300,
-      "current": 968,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md"
-    },
-    {
-      "path": "shared/scripts/lib/loop_claim.py",
-      "limit": 300,
-      "current": 540,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md"
-    },
-    {
-      "path": "shared/scripts/lib/unit_lease.py",
-      "limit": 300,
-      "current": 323,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-unit-lease-bloat.md"
+      "current": 321,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/scripts/lib/campaign_graph.py",
@@ -882,6 +890,13 @@
       "path": "shared/scripts/lib/drift_parsers.py",
       "limit": 300,
       "current": 383,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/fr_layer_cell_writer.py",
+      "limit": 300,
+      "current": 359,
       "state": "grandfathered",
       "adr": null
     },
@@ -914,11 +929,53 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/lib/layer_promotion.py",
+      "limit": 300,
+      "current": 364,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/layer_promotion_ledger.py",
+      "limit": 300,
+      "current": 365,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/loop_claim.py",
+      "limit": 300,
+      "current": 540,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md"
+    },
+    {
+      "path": "shared/scripts/lib/loop_state.py",
+      "limit": 300,
+      "current": 968,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md"
+    },
+    {
+      "path": "shared/scripts/lib/plan_section_quality.py",
+      "limit": 300,
+      "current": 311,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/lib/promotion_evidence_staleness.py",
       "limit": 300,
       "current": 309,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md"
+    },
+    {
+      "path": "shared/scripts/lib/review_attribution.py",
+      "limit": 300,
+      "current": 522,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-review-attribution-bloat-exception.md"
     },
     {
       "path": "shared/scripts/lib/review_record_schema.py",
@@ -940,6 +997,13 @@
       "current": 324,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/unit_lease.py",
+      "limit": 300,
+      "current": 323,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-unit-lease-bloat.md"
     },
     {
       "path": "shared/scripts/lib/worktree_isolation.py",
@@ -1012,6 +1076,13 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/codex_hooks_sync.py",
+      "limit": 300,
+      "current": 366,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/deliver_pr.py",
       "limit": 300,
       "current": 340,
@@ -1061,6 +1132,13 @@
       "adr": "ADR-111"
     },
     {
+      "path": "shared/scripts/tools/record_layer_promotion_decision.py",
+      "limit": 300,
+      "current": 413,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/record_requirement_impact.py",
       "limit": 300,
       "current": 330,
@@ -1089,6 +1167,20 @@
       "adr": "ADR-123"
     },
     {
+      "path": "shared/scripts/tools/tests/test_codex_completion_oracle.py",
+      "limit": 300,
+      "current": 387,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_codex_hooks_sync.py",
+      "limit": 300,
+      "current": 323,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/tests/test_host_resource_lease_process.py",
       "limit": 300,
       "current": 333,
@@ -1108,6 +1200,13 @@
       "current": 972,
       "state": "exception",
       "adr": "ADR-092"
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py",
+      "limit": 300,
+      "current": 460,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/scripts/tools/tests/test_suite_coverage_gate.py",
@@ -1143,6 +1242,13 @@
       "current": 461,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-15-codex-light-shipwright-bloat-exception.md"
+    },
+    {
+      "path": "shared/scripts/tools/verifiers/ci_supplychain.py",
+      "limit": 300,
+      "current": 348,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/scripts/tools/verifiers/common.py",
@@ -1236,27 +1342,6 @@
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-conftest-bloat-exception.md"
     },
     {
-      "path": "shared/tests/test_campaign_step_3f_bis.py",
-      "limit": 300,
-      "current": 1079,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md"
-    },
-    {
-      "path": "shared/scripts/lib/review_attribution.py",
-      "limit": 300,
-      "current": 522,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-review-attribution-bloat-exception.md"
-    },
-    {
-      "path": "shared/tests/test_review_attribution.py",
-      "limit": 300,
-      "current": 640,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md"
-    },
-    {
       "path": "shared/tests/test_append_iterate_entry.py",
       "limit": 300,
       "current": 546,
@@ -1269,6 +1354,14 @@
       "current": 300,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/tests/test_assertion_weakening.py",
+      "limit": 300,
+      "current": 1509,
+      "state": "grandfathered",
+      "adr": null,
+      "note": "5x the limit; mirrors shared/scripts/lib/assertion_weakening.py's outlier status — same deferred split-or-ADR decision."
     },
     {
       "path": "shared/tests/test_audit_e2e_integration.py",
@@ -1306,9 +1399,30 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_campaign_step_3f_bis.py",
+      "limit": 300,
+      "current": 1079,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md"
+    },
+    {
       "path": "shared/tests/test_changelog_aggregation.py",
       "limit": 300,
       "current": 406,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_ci_execution_evidence.py",
+      "limit": 300,
+      "current": 492,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_ci_supplychain_ack_per_run_home.py",
+      "limit": 300,
+      "current": 345,
       "state": "grandfathered",
       "adr": null
     },
@@ -1395,6 +1509,13 @@
       "current": 445,
       "state": "exception",
       "adr": "ADR-096"
+    },
+    {
+      "path": "shared/tests/test_fr_layer_cell_writer.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/tests/test_generate_handoff_on_stop.py",
@@ -1509,6 +1630,20 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_layer_promotion.py",
+      "limit": 300,
+      "current": 644,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_layer_promotion_ledger.py",
+      "limit": 300,
+      "current": 382,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_list_iterate_branches.py",
       "limit": 300,
       "current": 757,
@@ -1544,6 +1679,20 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_project_gate_extras_rollout.py",
+      "limit": 300,
+      "current": 306,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_project_gate_rollout_snapshot.py",
+      "limit": 300,
+      "current": 302,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_promotion_evidence_staleness.py",
       "limit": 300,
       "current": 365,
@@ -1566,9 +1715,23 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_review_attribution.py",
+      "limit": 300,
+      "current": 640,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md"
+    },
+    {
       "path": "shared/tests/test_review_findings.py",
       "limit": 300,
       "current": 403,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_review_marker_companion_verdicts.py",
+      "limit": 300,
+      "current": 311,
       "state": "grandfathered",
       "adr": null
     },
@@ -1622,9 +1785,23 @@
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md"
     },
     {
+      "path": "shared/tests/test_suggest_iterate.py",
+      "limit": 300,
+      "current": 464,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_surface_verification.py",
       "limit": 300,
       "current": 486,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_test_gate_e2e_specs_generated.py",
+      "limit": 300,
+      "current": 340,
       "state": "grandfathered",
       "adr": null
     },
@@ -1657,11 +1834,25 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_triage_cli.py",
+      "limit": 300,
+      "current": 301,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_triage_defer.py",
       "limit": 300,
       "current": 366,
       "state": "exception",
       "adr": "ADR-121"
+    },
+    {
+      "path": "shared/tests/test_triage_gc.py",
+      "limit": 300,
+      "current": 301,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/tests/test_triage_outbox.py",
@@ -1718,6 +1909,13 @@
       "current": 498,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md"
+    },
+    {
+      "path": "shared/tests/test_verifiers_plan_gates.py",
+      "limit": 300,
+      "current": 307,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",

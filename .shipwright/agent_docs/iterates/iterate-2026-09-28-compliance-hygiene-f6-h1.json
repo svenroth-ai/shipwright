@@ -1,0 +1,51 @@
+{
+  "run_id": "iterate-2026-09-28-compliance-hygiene-f6-h1",
+  "date": "2026-09-28T06:39:36.127123Z",
+  "event_at": "2026-09-26T13:38:51.263776+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/compliance-hygiene-f6-h1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-28-compliance-hygiene-f6-h1",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "CLAUDE.md line count \u2264 200-line hygiene cap (F6)",
+        "disposition": "tested",
+        "evidence": "group_f.py::_check_f6 re-run directly \u2192 status=pass, 193 lines"
+      },
+      {
+        "behavior": "every oversize (>300 LOC) file is present in shipwright_bloat_baseline.json (H1)",
+        "disposition": "tested",
+        "evidence": "group_h.py H1 check re-run directly \u2192 status=pass, 266/266 oversize files listed"
+      },
+      {
+        "behavior": "existing baseline entries (state/adr/plan_ref/note) are preserved unmutated by the merge",
+        "disposition": "tested",
+        "evidence": "diff script comparing HEAD vs working-tree baseline by path \u2192 0 of 250 pre-existing entries changed or removed, 28 net-new added"
+      },
+      {
+        "behavior": "shipwright_bloat_baseline.json stays valid JSON after the merge",
+        "disposition": "tested",
+        "evidence": "json.load() round-trip succeeded after the edit"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "docs/config-only compliance hygiene fix; no UI, API, or CLI surface changed"
+  }
+}

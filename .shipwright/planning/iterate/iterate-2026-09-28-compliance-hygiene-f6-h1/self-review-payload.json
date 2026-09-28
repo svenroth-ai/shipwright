@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "correctness", "verdict": "pass", "note": "F6/H1 detectors re-run directly against group_f.py/group_h.py and both pass"},
+    {"name": "unintended side effects", "verdict": "pass", "note": "only CLAUDE.md and shipwright_bloat_baseline.json changed; diagnostic audit-run side effects on shipwright_compliance_config.json reverted"},
+    {"name": "no regressions", "verdict": "pass", "note": "baseline diff verified additive-only: 28 new entries added, 0 existing entries mutated or lost; JSON re-validated; F7,H0,H2-H6 still pass"},
+    {"name": "style/consistency", "verdict": "pass", "note": "CLAUDE.md edits keep existing markdown heading/prose conventions"},
+    {"name": "security", "verdict": "pass", "note": "no security-sensitive files touched"},
+    {"name": "documentation", "verdict": "pass", "note": "added baseline note fields on the two 1000+ line outliers flagging the deferred split/ADR decision so it is not silently lost"},
+    {"name": "affected boundaries", "verdict": "n/a", "note": "docs/config-only hygiene change; no code boundaries touched"}
+  ]
+}
