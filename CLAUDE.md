@@ -118,9 +118,9 @@ reference) are the sections that go stale.
 **`docs/`** holds hand-written instructions for users and developers alike —
 the test is who *wrote* it, not who reads it; `guide.md` and
 `hooks-and-pipeline.md` sit there as equals. **`.shipwright/`** holds the
-artifacts Shipwright itself produces — specs under `planning/`, evidence
-under `compliance/`, architecture/decision memory under `agent_docs/` — and
-is never hand-composed. A file that is neither belongs nowhere: a **record of
+artifacts Shipwright itself produces — specs under `.shipwright/planning/`,
+evidence under `.shipwright/compliance/`, architecture/decision memory under
+`.shipwright/agent_docs/` — and is never hand-composed. A file that is neither belongs nowhere: a **record of
 finished work** is deleted (git history keeps it); a **generated** file is
 never filed among the hand-written ones — it lives **next to the source it is
 generated from**, so source and render are read together (`gate_catalog.json`
