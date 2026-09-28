@@ -244,6 +244,41 @@ across both legs — fixed, not disclosed:
   `test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker`,
   `test_strip_masks_to_end_of_document_when_a_fence_is_never_closed`, and
   `test_strip_masks_a_three_space_indented_fence`.
+- **Duplicate regex definition (medium, fixed, a fourth external code-review
+  round).** The round-2 edit left `_PRIOR_REVIEW_SECTION_RE` (regex + its
+  explanatory comment) defined TWICE, verbatim, back-to-back — Python
+  silently keeps the second and the duplication was purely leftover editing
+  debris, not a functional difference today, but a real drift risk (a future
+  edit to one copy without the other). Deleted the redundant first copy.
+- **Run-directory symlink (medium, fixed, same round).** The ancestor-symlink
+  check added for the D2/tool-access-residual fix above covered `.shipwright`
+  and `.shipwright/runs`, but not the run-id-specific directory itself
+  (`runs/{run_id}`). A symlink planted there, pointing at a DIFFERENT run's
+  directory, resolves to somewhere under the legitimate runs root either
+  way — containment alone never catches it — and would silently overwrite
+  that other run's sanitized spec. Added `runs/{run_id}` to the same
+  pre-resolve `is_symlink()` check. Covered by
+  `test_a_symlinked_run_directory_is_refused`.
+- **Brief-mutation staleness (medium, disclosed, same round).** `openai`
+  noted Step 5a/step 2a can update the brief's chosen option after the
+  internal review already answered (the existing "update it in place... —
+  never re-author" prose already covers refreshing the brief's CONTENT, so
+  the external pass always reads the current option); what it does not do
+  is re-run the internal pass so its recorded verdict matches. Accepted as a
+  disclosed residual rather than fixed: the internal pass's core guarantee —
+  judging the options fresh, before Branch A/B/C — is unaffected by a later
+  content edit that happens deeper in the same step sequence, and mandating
+  an automatic re-spawn on every triage-driven brief edit is a real design
+  question (what counts as "material"?) outside this iterate's scope. No
+  AC in this iterate's own spec claims the internal verdict tracks a later
+  brief edit.
+- **Weak test-anchor suggestion, verified and declined (round 4).** `glm`
+  suggested tightening `test_plan_step_5_int_arch_reuses_the_already_resolved_tier`
+  from `"uv run" not in body_raw` to `"resolve_model_tier" not in body_raw`.
+  Tried it: the prose legitimately contains the string "resolve_model_tier.py"
+  while explaining that it is NOT called a second time, so the suggested
+  assertion fails against correct prose. Reverted to the original assertion,
+  which is the one that actually holds.
 - **Two low-severity items, declined with reason.** The Windows symlink
   fallback's check-then-write race was independently reflagged by `glm`; it
   is the same disclosed residual the earlier F11 preflight round already

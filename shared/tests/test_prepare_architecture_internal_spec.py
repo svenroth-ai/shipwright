@@ -141,6 +141,29 @@ def test_a_symlinked_runs_directory_is_refused(tmp_path: Path) -> None:
     assert list(outside.iterdir()) == [], "nothing must be written through the symlinked runs dir"
 
 
+def test_a_symlinked_run_directory_is_refused(tmp_path: Path) -> None:
+    """External code review round 4 (medium, `openai`): a symlink at the
+    run-id-specific directory itself (`runs/{run_id}`) resolves to somewhere
+    UNDER the legitimate runs root either way, so the containment check
+    alone never catches it — it would silently overwrite a DIFFERENT run's
+    sanitized spec. Pre-plant `runs/{run_id}` as a symlink to another run's
+    directory and confirm that other run's file is untouched."""
+    runs_root = tmp_path / ".shipwright" / "runs"
+    other_run_dir = runs_root / "iterate-2026-01-01-other-run"
+    other_run_dir.mkdir(parents=True)
+    victim = other_run_dir / "architecture-internal-spec.md"
+    victim.write_text("do not touch", encoding="utf-8")
+
+    try:
+        (runs_root / _RUN_ID).symlink_to(other_run_dir, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlink creation unavailable on this host")
+
+    rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW)
+    assert rc != 0
+    assert victim.read_text(encoding="utf-8") == "do not touch"
+
+
 def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:
     """Only /shipwright-iterate calls this tool (iteration-planning.md, step
     0b) with its own run_id, so the strict iterate-YYYY-MM-DD-slug format is

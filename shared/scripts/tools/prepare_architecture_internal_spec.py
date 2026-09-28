@@ -75,10 +75,16 @@ def main(argv: list[str] | None = None) -> int:
     # silently follow it, so the containment check below would only ever
     # compare a symlink-escaped path against itself (external review,
     # medium): a `.shipwright` or `.shipwright/runs` planted as a symlink to
-    # outside the project would pass containment trivially post-resolve.
+    # outside the project would pass containment trivially post-resolve. The
+    # run-id directory itself needs the same check (external review, medium,
+    # a second round on this file): a symlink at `runs/{run_id}` pointing at
+    # a DIFFERENT run's directory would still resolve to somewhere under the
+    # (legitimate) runs root, so containment alone would not catch it —
+    # it would silently overwrite that other run's sanitized spec.
     shipwright_dir = Path(args.project_root) / ".shipwright"
     runs_root_unresolved = shipwright_dir / "runs"
-    for ancestor in (shipwright_dir, runs_root_unresolved):
+    run_dir_unresolved = runs_root_unresolved / args.run_id
+    for ancestor in (shipwright_dir, runs_root_unresolved, run_dir_unresolved):
         if ancestor.is_symlink():
             print(
                 f"error: refusing to write through a symlinked directory: {ancestor}",

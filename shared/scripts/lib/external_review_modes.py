@@ -75,18 +75,6 @@ def is_blank(text: str) -> bool:
     return not text.strip(BLANK_CHARS)
 
 
-#: Headings the architecture pass must never see (Stage-3 doubt review, high).
-#: On the plan side the anchoring defense holds by construction — the internal
-#: passes write to `plan.md`, never `spec.md`. On the iterate side there is no
-#: second document: these same headings land in the ONE spec file this mode is
-#: handed as `--spec-file`, each carrying exactly the rejection rationale the
-#: brief was built to withhold.
-_PRIOR_REVIEW_SECTION_RE = re.compile(
-    r"^## (?:Internal Plan Review|Internal Architecture Review|Self-Review|"
-    r"Architecture Review)\b.*?(?=\n## |\Z)",
-    re.MULTILINE | re.DOTALL,
-)
-
 #: A fence opener: up to 3 spaces/tabs of indent (CommonMark allows this;
 #: a masker that only recognizes column-0 fences leaves an indented quote
 #: unmasked — external review round 3, low, `glm`), then 3+ of the same
