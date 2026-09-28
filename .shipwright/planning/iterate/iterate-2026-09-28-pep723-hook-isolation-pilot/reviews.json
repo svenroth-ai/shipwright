@@ -269,6 +269,18 @@
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T21:59:56.752116+00:00",
+      "disposition": "architecture review asks whether the change should be built at all; it is a plan-phase pass, and the approach (PEP 723 headers plus keeping --no-project) was decided with the operator in conversation before the build; no mini-plan was authored",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
     }
   }
 }
