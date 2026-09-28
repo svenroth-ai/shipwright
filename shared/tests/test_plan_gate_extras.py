@@ -156,6 +156,21 @@ def test_internal_review_carrying_the_gate_counts_too():
     assert result.ok is True
 
 
+LOG_WITH_ARCH_REVIEW_DECISION = LOG_WITH_INTERVIEW_DECISION.replace(
+    "Plan Interview", "Internal Architecture Review"
+)
+
+
+def test_an_internal_architecture_review_decision_satisfies_the_gate():
+    """Stage-3 doubt review (iterate-2026-09-28-architecture-review-internal-
+    arm, D8): Step 5-int-arch logs its own decisions under `"Internal
+    Architecture Review — {split}"` (step-5-int-arch.md), a tag
+    `_PLAN_DECISION_PREFIXES` did not carry — gate #8 silently ignored every
+    entry that pass ever logs, even though it always logs one."""
+    result = decisions_recorded(LOG_WITH_ARCH_REVIEW_DECISION, "01-auth")
+    assert result.ok is True
+
+
 # --------------------------------------------------------------------------- #
 # #11 — e2e_journeys_named
 # --------------------------------------------------------------------------- #

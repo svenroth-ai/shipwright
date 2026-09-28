@@ -249,6 +249,15 @@
       "summary": "A severity:high finding from opus-plan-reviewer was declined or disclosed rather than fixed — either `/shipwright-plan` Step 5-int, or `/shipwright-iterate`'s own internal-review sub-step (`iteration-planning.md` step 0, medium+), which reuses this gate rather than minting an `iterate.*` id. Interactive runs STOP and ask (mirrors Step 5a's reject prompt); single_session auto-answers with a recorded reason."
     },
     {
+      "id": "plan.architecture-internal-review-high-severity-declined",
+      "phase": "plan",
+      "policy": "auto-default",
+      "default_answer": "Autonomously decline or disclose only with a specific, falsifiable reason tied to project context; if none exists, integrate the finding instead. Surface the finding + reason so it stays auditable even though no human was asked: in `/shipwright-plan`'s plan.md Internal Architecture Review section and decision_log.md, or in `/shipwright-iterate`'s iterate spec Internal Architecture Review section and iterate ADR when this same gate fires from that consumer's own internal-architecture-review sub-step.",
+      "constitution": false,
+      "fires": "conditional",
+      "summary": "A severity:high finding from architecture-internal-reviewer was declined or disclosed rather than fixed — either `/shipwright-plan` Step 5-int-arch, or `/shipwright-iterate`'s own internal-architecture-review sub-step (`iteration-planning.md` step 0b, medium+), which reuses `plan.internal-review-high-severity-declined`'s pattern under its own id rather than sharing one row with the plan reviewer. Interactive runs STOP and ask (mirrors Step 5a's reject prompt); single_session auto-answers with a recorded reason."
+    },
+    {
       "id": "build.section-file-required",
       "phase": "build",
       "policy": "orchestrator-approve",

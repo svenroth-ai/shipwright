@@ -320,6 +320,117 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    No marker of its own (same precedent as Architecture Review) — provenance
    is the iterate spec + the iterate ADR.
 
+0b. **Internal Architecture Review (medium+ only — always before Branch
+   A/B/C, immediately after step 0; never runs for trivial/small, which
+   close `architecture_internal` as `not_applicable` per Step 7 instead).** A
+   separate fresh-context pass from step 0 above, not an extension of
+   `opus-plan-reviewer` — the whole point is escaping the plan's own
+   reasoning frame, the same reason step 2a's *external* architecture review
+   is a second call rather than a reuse of the plan-review call. Mirrors
+   `/shipwright-plan` Step 5-int-arch. Runs exactly once per run — if
+   `## Internal Architecture Review` already exists in the iterate spec
+   **and records `Ran: yes`**: **reconcile the review-record row FIRST, before
+   skipping anywhere.** If `architecture_internal` is still `pending` (a crash
+   between writing the spec section and recording the row is exactly this
+   case), record it now from the existing section's content — do not
+   re-spawn. Only once the row is no longer `pending` does "already ran"
+   mean skip straight to step 1. A recorded `Ran: no` is not a completed
+   pass — retry it, **overwriting the existing section in place** (never
+   append a second heading).
+
+   **Write the brief first.** `mkdir -p
+   ".shipwright/planning/iterate/{run_id}"` — do not rely on step 0's
+   `record` call to have created it, since that call is skipped under
+   degraded handling (same reason step 2 below needs its own `mkdir -p`).
+   Then author `.shipwright/planning/iterate/{run_id}/architecture_brief.md`
+   from `shared/templates/architecture_brief.md` NOW — this pass runs before
+   step 2a, which used to author the brief and now re-reads/refreshes this
+   same file instead. List the options **without** the reasons any were
+   rejected; do not copy the mini-plan's rejection rationale into it (the
+   rule step 2a's brief has always followed). **Do this before the Codex
+   check below** — a Codex-driven run still needs the brief on disk for
+   step 2a to re-read.
+
+   **No Codex transport yet.** Under `--driver codex` (or `CODEXTENDER_ACTIVE`
+   set), do NOT spawn — `shipwright-plan:architecture-internal-reviewer` is a
+   Claude-Agent-tool subagent only; reusing `role=plan_review`'s Codex leg
+   would collide on the fixed canonical basename `plan_review_reply.json`
+   step 0's real Internal Plan Review already writes there. Record
+   `Ran: no (no Codex transport for architecture_internal yet)` and continue
+   to step 1 — a full Codex-side role is an explicit follow-up, out of this
+   run's scope.
+
+   **Sanitize the spec before spawning.** By this point the iterate spec
+   already carries step 0's `## Internal Plan Review` section (and, at
+   medium+, `## Self-Review`) — handing the agent that file's path directly
+   would leak the very rationale its fresh-context design exists to
+   withhold; an agent with its own Read/Grep/Glob access can simply re-read
+   the original, so a prose "ignore this section" instruction alone is not a
+   real defense — the external architecture pass already closes this exact
+   gap in code. Run:
+   ```bash
+   uv run "{shared_root}/scripts/tools/prepare_architecture_internal_spec.py" \
+     --project-root "{project_root}" --run-id "{run_id}" \
+     --spec-file "{iterate_spec_path}"
+   ```
+   which writes the stripped copy to
+   `{project_root}/.shipwright/runs/{run_id}/architecture-internal-spec.md`
+   (same ephemeral, gitignored location `surface_verification.py` uses for
+   per-run scratch evidence — never committed) and prints that path.
+
+   Spawn `shipwright-plan:architecture-internal-reviewer` (Read/Grep/Glob
+   only) over the architecture brief + **that sanitized copy — never the
+   real iterate spec, the plan, or the mini-plan**. Pass
+   `plan_review.agent_param` (from §F above — the SAME role step 0 resolved;
+   this pass is not a fifth role) as the Agent tool's `model=` parameter
+   when non-null.
+
+   **Degraded handling.** Same rule as step 0 — unreachable subagent,
+   unparseable reply, a JSON missing `findings`/`summary`, **or a nonzero
+   exit from `prepare_architecture_internal_spec.py`** (a refused run-id,
+   symlink, or filesystem failure preparing the sanitized copy — the tool's
+   stderr names which): record `Ran: no` (reason as applicable) and
+   **continue to step 1** without blocking. Do not record the review-record
+   row here — SKILL.md Step 7's mandatory sweep closes it with a matching
+   `--disposition`.
+
+   **Triage every finding** — fix (integrate into mini-plan/spec now),
+   disclose (known limitation, recorded below), or decline (with a reason;
+   **scope-ratchet guard**: a finding that would add out-of-scope work per the
+   iterate spec must be declined, not integrated). A declined or disclosed
+   `severity: high` finding **STOPs and asks the user** before Step 6, same
+   shape as step 0. Under `single_session`,
+   `plan.architecture-internal-review-high-severity-declined` carries the
+   auto-default — its own gate id, not step 0's.
+
+   **Write, always**, into the iterate spec:
+
+   ```markdown
+   ## Internal Architecture Review (architecture-internal-reviewer)
+   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (no Codex transport for architecture_internal yet)}
+   - **Severity:** {low|medium|high, or n/a if Ran: no}
+   - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+   - **Findings:** {one line per finding: category, severity, disposition, one-line reason}
+   - **Known limitations:** {each disclosed finding, one line, or `none`}
+   - **Status:** {clean | N fixed | N fixed, M disclosed, K declined | not_run}
+   ```
+
+   Note the outcome in the iterate ADR too (one line: `Ran: yes|no` +
+   `Status:`), same as step 0 and the Architecture Review pass.
+
+   When `Ran: yes`, record a metadata-only row (no `--from` adapter matches
+   this reviewer's shape, same accepted trade-off as step 0/`plan`/
+   Architecture Review — `findings_count` is structurally always `0`; the
+   actual count lives in the spec section above):
+   ```bash
+   uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+     --project-root "{project_root}" --run-id "{run_id}" \
+     --review-type architecture_internal --status completed \
+     --recorded-by architecture-internal-reviewer \
+     --model-tier "{plan_review.resolved from §F}"
+   ```
+   No marker of its own — provenance is the iterate spec + the iterate ADR.
+
 1. Compute `external_review_status` via the shared helper (same detector
    used by /shipwright-plan, behavior is identical):
    ```bash
@@ -401,9 +512,11 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    (`iterate-2026-07-28-derived-snapshots-refresh`, and again on PR #498).
 
    ```bash
-   # 1. Write the brief. If this change adds nothing permanent, that is THREE
-   #    LINES — see the template. Do not copy the mini-plan's rejection
-   #    rationale into it.
+   # 1. Re-read the brief step 0b already wrote (medium+ always runs step 0b
+   #    first, so this file already exists). Update it in place if step 0b's
+   #    own triage OR step 2's integration (above) changed the chosen option
+   #    or the permanent additions — never re-author it from scratch, and
+   #    never copy the mini-plan's rejection rationale into it.
    #    → .shipwright/planning/iterate/{run_id}/architecture_brief.md
 
    # 2. Ask the same two models.

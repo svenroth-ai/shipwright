@@ -89,7 +89,7 @@ SCHEMA_VERSION = 1
 #: consumer lifted that pin in ``shipwright-webui`` ``ce21323e`` (PR #339): a
 #: key it does not recognise is now mapped and RENDERED as an extra row. It
 #: still requires the five it knows to be present, so growth is additive only.
-REVIEW_TYPES = ("self", "plan", "code", "doubt", "external_code", "spec", "plan_internal")
+REVIEW_TYPES = ("self", "plan", "code", "doubt", "external_code", "spec", "plan_internal", "architecture_internal")
 
 #: Types a record may carry under the retired ``gates`` sibling — a READ
 #: vocabulary, never a write destination.
@@ -101,7 +101,7 @@ REVIEW_TYPES = ("self", "plan", "code", "doubt", "external_code", "spec", "plan_
 #: extension point. What must survive is READING it: 12 git-tracked,
 #: never-evicted records carry ``gates.spec`` and are immutable by design.
 LEGACY_GATE_TYPES = ("spec",)
-OPTIONAL_PRESENCE_TYPES = frozenset({"plan_internal"})  # tolerated absent: history predates it (unlike LEGACY_GATE_TYPES's retired seam); pending_types still counts it unanswered.
+OPTIONAL_PRESENCE_TYPES = frozenset({"plan_internal", "architecture_internal"})  # tolerated absent: history predates them (unlike LEGACY_GATE_TYPES's retired seam); pending_types still counts each unanswered.
 
 #: Everything ``record_review_pass.py`` will accept for ``--review-type``.
 #: Identical to :data:`REVIEW_TYPES` now that the gate seam is retired; kept as

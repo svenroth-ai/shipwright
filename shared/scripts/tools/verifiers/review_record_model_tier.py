@@ -24,12 +24,13 @@ from lib.review_record_core import entry_for  # noqa: E402
 #: Per role, the review-record types a floor can meaningfully judge.
 #: `external_code` is excluded from `review` — it is a non-Claude LLM call,
 #: not an Agent-tool spawn, so it carries no `model_tier` in the same sense.
-#: `plan_review` maps to `plan_internal` only, never `plan` — `plan` is the
-#: EXTERNAL plan/iterate review's own row (`MARKER_TYPES` in
-#: `review_companion.py`), which never carries a Claude `model_tier`.
+#: `plan_review` maps to `plan_internal` and `architecture_internal` only,
+#: never `plan` — `plan` is the EXTERNAL plan/iterate review's own row
+#: (`MARKER_TYPES` in `review_companion.py`), which never carries a Claude
+#: `model_tier`.
 _ROLE_REVIEW_TYPES = {
     "review": ("spec", "code", "doubt"),
-    "plan_review": ("plan_internal",),
+    "plan_review": ("plan_internal", "architecture_internal"),
 }
 
 

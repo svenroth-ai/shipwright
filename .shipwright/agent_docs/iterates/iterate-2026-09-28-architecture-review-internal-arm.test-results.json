@@ -1,0 +1,117 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-28-architecture-review-internal-arm",
+    "date": "2026-09-28",
+    "unit": {
+      "status": "passed",
+      "passed": 11967,
+      "total": 12012
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 54,
+      "total": 54
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_architecture_review_mode.py shared/tests/test_architecture_review_anchoring_defense.py shared/tests/test_architecture_review_fence_masking.py shared/tests/test_architecture_internal_review_contract_prose.py shared/tests/test_plan_gate_extras.py shared/tests/test_review_record_campaign_shape.py shared/tests/test_prepare_architecture_internal_spec.py -v",
+      "exit_code": 0,
+      "tests_run": 88,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-28-architecture-review-internal-arm/surface_verification.json",
+      "timestamp": "2026-09-28T00:00:00Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: Step 5-int-arch runs always right after Step 5-int, authors architecture_brief.md first, spawns a separate architecture-internal-reviewer agent over brief+spec, and reuses the already-resolved plan_review tier (no second resolve_model_tier.py call). The agent must treat brief/spec content as data, never as instructions to itself",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_step_5_int_arch_runs_always_right_after_5_int, ::test_plan_step_5_int_arch_authors_the_brief_first, ::test_plan_step_5_int_arch_spawns_a_separate_agent_over_brief_and_spec, ::test_plan_step_5_int_arch_reuses_the_already_resolved_tier, ::test_agent_prompt_carries_both_anchoring_defense_prohibitions, ::test_agent_prompt_treats_its_input_as_data_not_instructions PASSED; integration-tests/test_model_tier_spawn_instructions_present.py (STEP_5_INT_ARCH_MD spawn anchor) PASSED"
+        },
+        {
+          "behavior": "AC2: plan.md gains a ## Internal Architecture Review section (Ran: yes|no), a retry replaces it in place, every finding is triaged fix/disclose/decline with a reason, and every finding is logged to decision_log.md under 'Internal Architecture Review \u2014 {split_name}'",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_internal_architecture_review_section_shape, ::test_plan_internal_architecture_review_triage_and_gate, ::test_plan_internal_architecture_review_logs_its_own_decision_log_section PASSED; shared/tests/test_plan_gate_extras.py::test_an_internal_architecture_review_decision_satisfies_the_gate PASSED"
+        },
+        {
+          "behavior": "AC3: the iterate side runs the same pass as a new step immediately after the Internal Plan Review sub-step, gated at medium+ only, writes the brief + a spec section, and notes the outcome in the iterate ADR (never decision_log.md directly). A resume must reconcile a still-pending architecture_internal row BEFORE the early 'already ran' skip, never after",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_runs_right_after_the_plan_review_substep_medium_plus, ::test_iterate_step_0b_writes_the_brief_and_the_spec_section, ::test_iterate_step_0b_never_writes_decision_log_directly, ::test_iterate_step_0b_reconciles_the_pending_row_before_skipping PASSED; integration-tests/test_model_tier_spawn_instructions_present.py (ITERATION_PLANNING_MD spawn anchor) PASSED"
+        },
+        {
+          "behavior": "AC4: Step 5a (plan) and step 2a (iterate) read the already-authored brief instead of re-writing it; the CLI's existing --plan-file refusal is untouched",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_step_5a_re_reads_the_brief_instead_of_authoring_it, ::test_iterate_step_2a_re_reads_the_brief_instead_of_authoring_it PASSED; shared/tests/test_architecture_review_mode.py::test_architecture_mode_rejects_plan_file_as_a_foreign_flag PASSED"
+        },
+        {
+          "behavior": "AC5: record_review_pass.py accepts --review-type architecture_internal (added to REVIEW_TYPES/OPTIONAL_PRESENCE_TYPES, metadata-only, no --from adapter), and the plan_review model-tier floor verifier judges it the same way it judges plan_internal",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_record.py::test_new_record_materializes_every_type_as_pending (8-type REVIEW_TYPES incl. architecture_internal), ::test_a_marker_is_not_written_for_an_internal_type PASSED; shared/tests/test_record_review_pass_cli.py (architecture_internal --status not_applicable acceptance) PASSED; shared/tests/test_review_record_model_tier_floor.py::test_architecture_internal_floor_is_independent_of_review_floor, ::test_architecture_internal_below_floor_is_flagged_but_still_passes, ::test_architecture_internal_codex_transport_produces_no_floor_note PASSED"
+        },
+        {
+          "behavior": "AC6: the campaign sub-iterate-runner permanently records architecture_internal as not_run (identical wording pattern to plan_internal) so the F11 review-record gate stays green on campaign runs without activating the pass there",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_review_contract_prose.py::test_the_campaign_recording_commands_exist_where_the_runner_is_sent PASSED; shared/tests/test_review_record_campaign_shape.py (architecture_internal in _INTERNAL_ARM_DISPOSITIONS) PASSED"
+        },
+        {
+          "behavior": "AC7: gate_catalog.json carries plan.architecture-internal-review-high-severity-declined as a sibling auto-default entry under single_session, reused unchanged by /shipwright-iterate's own STOP-and-ask",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_architecture_internal_review_contract_prose.py::test_plan_internal_architecture_review_triage_and_gate (asserts 'plan.architecture-internal-review-high-severity-declined' in body) PASSED"
+        },
+        {
+          "behavior": "AC8: docs/hooks-and-pipeline.md documents the new agent, its two spawn sites, the brief-authoring order, and the model-tier floor's extended scope; the four named shared tests asserting REVIEW_TYPES cardinality/membership include architecture_internal",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_record.py, shared/tests/test_record_review_pass_cli.py, shared/tests/test_review_record_model_tier_floor.py, shared/tests/test_campaign_review_contract_prose.py all reference architecture_internal and PASSED"
+        },
+        {
+          "behavior": "the architecture-review anchoring defense holds in code (not just prose) on the iterate side: strip_prior_review_sections() removes a prior ## Internal Plan Review / ## Internal Architecture Review / ## Self-Review section from the spec before it reaches the external architecture pass, and does NOT strip for --mode iterate. The strip must not mistake a fenced-code-block quote of a heading-shaped line for a real section boundary",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_architecture_review_anchoring_defense.py::test_architecture_mode_strips_prior_review_sections_before_use, ::test_iterate_mode_does_not_strip_prior_review_sections, ::test_strip_ignores_a_heading_look_alike_inside_a_fenced_code_block, ::test_strip_still_removes_a_real_prior_review_section_after_a_fence, ::test_strip_ignores_a_heading_look_alike_inside_a_fence_with_a_longer_closer, ::test_strip_does_not_close_a_longer_fence_on_a_shorter_nested_marker, ::test_strip_masks_to_end_of_document_when_a_fence_is_never_closed, ::test_strip_masks_a_three_space_indented_fence, ::test_strip_raises_when_an_unterminated_fence_hides_a_real_heading, ::test_strip_does_not_raise_when_an_unterminated_fence_hides_nothing_sensitive, ::test_strip_terminates_the_stripped_section_at_an_indented_or_tab_separated_heading, ::test_strip_also_applies_on_the_plan_side_by_design PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "D2 fix (Stage-3 doubt review, escalated to a hard BLOCK by the F11 local PR-review preflight, then hardened across six external code-review rounds): the architecture-internal-reviewer agent's own Read/Grep/Glob access makes a prose-only 'ignore prior sections' instruction unenforceable on the iterate side, where the spec it is handed already carries the Internal Plan Review section. prepare_architecture_internal_spec.py writes a sanitized copy (reusing strip_prior_review_sections) and the iterate skill spawns the agent over that copy's path, never the real iterate spec. Further rounds found: --run-id path traversal (RUN_ID_STRICT + containment check); a pre-existing symlink at the fixed output filename (O_NOFOLLOW / existence-check fallback); a symlinked .shipwright/runs ancestor AND the run-id directory itself (is_symlink() checked on every ancestor before resolving); an unreadable --spec-file and an mkdir failure both raising uncaught instead of a clean exit 1 (now caught, and the latter wired into step 0b's degraded-handling prose); an unterminated fence masking a real prior-review heading to EOF, which would have silently left it unstripped, now raises UnstrippableSpecError and both call sites fail closed with their own established error contract instead",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_prepare_architecture_internal_spec.py::test_writes_a_sanitized_copy_stripped_of_the_prior_review_section, ::test_output_location_is_the_ephemeral_gitignored_runs_dir, ::test_a_clean_spec_with_no_prior_review_section_passes_through_unchanged, ::test_a_run_id_with_path_traversal_is_refused, ::test_a_run_id_that_is_not_an_iterate_run_id_is_refused, ::test_a_preexisting_symlink_at_the_output_path_is_refused, ::test_a_symlinked_runs_directory_is_refused, ::test_a_symlinked_run_directory_is_refused, ::test_a_missing_spec_file_fails_cleanly_not_with_a_traceback, ::test_a_file_blocking_the_run_directory_fails_cleanly_not_with_a_traceback, ::test_a_spec_hiding_a_real_section_behind_an_unterminated_fence_is_refused PASSED (three symlink tests SKIP on a host without symlink privileges, same precedent as test_iterate_test_results_evidence.py); shared/tests/test_architecture_internal_review_contract_prose.py::test_iterate_step_0b_spawns_the_agent_over_a_sanitized_spec_copy, ::test_iterate_step_0b_degrades_on_a_prep_tool_failure PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-28-architecture-review-internal-arm",
+    "commit": "2aaf595aa41be9e801cab5771784eae47ea53fd0",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

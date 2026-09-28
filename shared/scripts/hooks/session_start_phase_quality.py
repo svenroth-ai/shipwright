@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Default ON: injection is enabled unless the user explicitly opts out
@@ -46,6 +48,7 @@ _FAIL_BULLET_RE = re.compile(
     r"^\s{2,}- \*\*(?P<id>[A-Za-z][A-Za-z0-9]*\d+)\*\* (?P<evidence>.+)$"
 )
 _RUN_HEADER_RE = re.compile(r"^##\s+(?P<phase>[A-Za-z]+) — (?P<run>\S+)\s*$")
+_AUDITED_AT_RE = re.compile(r"^-\s+audited_at:\s*(?P<ts>\S+)\s*$")
 
 
 def phase_quality_inject_enabled() -> bool:
@@ -73,6 +76,7 @@ def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
     fails: list[dict[str, str]] = []
     current_phase = ""
     current_run = ""
+    block = -1
     in_fails_section = False
 
     for raw in summary_text.splitlines():
@@ -80,6 +84,7 @@ def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
         if header:
             current_phase = header.group("phase")
             current_run = header.group("run")
+            block += 1
             in_fails_section = False
             continue
         stripped = raw.strip()
@@ -102,9 +107,65 @@ def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
             "id": check_id,
             "phase": current_phase,
             "run": current_run,
+            "block": block,
             "evidence": m.group("evidence").strip(),
         })
     return fails
+
+
+_OLDEST = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _instant(audited_at: str) -> datetime:
+    """Parse an ``audited_at`` stamp to an aware instant; unparseable/empty = oldest.
+
+    Compared as instants, not strings: two valid stamps with different UTC
+    offsets do not sort lexicographically by time.
+    """
+    try:
+        parsed = datetime.fromisoformat(audited_at)
+    except ValueError:
+        return _OLDEST
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _newest_block_per_phase(
+    summary_text: str, *, eligible: Callable[[str], bool],
+) -> dict[str, int]:
+    """Map each phase to the block index of its newest ``eligible`` run.
+
+    The digest is a retained HISTORY (last N runs), not a list of current
+    problems: a FAIL from a superseded block must not outlive the newer block
+    that re-audited that phase. Blocks are identified by position (the same
+    counter ``_collect_tier1_fails`` stamps as ``block``), not by run id — one
+    run audited in two sessions yields two blocks with the same header.
+    Newest = latest ``audited_at`` instant (missing/unparseable sorts oldest);
+    ties go to the earlier block, since the writer sorts newest-first.
+    """
+    blocks: list[list[str]] = []  # [phase, run, audited_at] in file order
+    in_fails = False
+    for raw in summary_text.splitlines():
+        header = _RUN_HEADER_RE.match(raw)
+        if header:
+            blocks.append([header.group("phase"), header.group("run"), ""])
+            in_fails = False
+            continue
+        stripped = raw.strip()
+        if stripped.startswith("- open FAILs:"):
+            in_fails = True  # audited_at is block metadata, never FAIL evidence
+            continue
+        ts = _AUDITED_AT_RE.match(stripped)
+        if ts and blocks and not in_fails and not blocks[-1][2]:
+            blocks[-1][2] = ts.group("ts")
+    newest: dict[str, tuple[datetime, int]] = {}
+    for index, (phase, run, audited_at) in enumerate(blocks):
+        if not eligible(run):
+            continue
+        instant = _instant(audited_at)
+        current = newest.get(phase)
+        if current is None or (instant, -index) > (current[0], -current[1]):
+            newest[phase] = (instant, index)
+    return {phase: index for phase, (_ts, index) in newest.items()}
 
 
 def _format_injection(fails: list[dict[str, str]]) -> str:
@@ -166,8 +227,16 @@ def build_phase_quality_injection(project_root: str) -> str:
     # sentinel-run snapshots so a stale on-Stop-only digest can't cry wolf at
     # SessionStart, THEN cap — so sentinels can't starve real FAILs out of the
     # budget (iterate-2026-06-15-sessionstart-sentinel-filter).
+    # Then keep only the newest run of each phase: the digest is retained
+    # history, so an older run's FAIL is superseded once a newer run for that
+    # phase exists (a FAIL still true there is repeated by that run itself).
+    newest = _newest_block_per_phase(
+        text, eligible=lambda run: not is_sentinel_run(run),
+    )
+    # A sentinel FAIL can never match: only eligible blocks enter ``newest``.
     fails = [
-        f for f in _collect_tier1_fails(text) if not is_sentinel_run(f.get("run"))
+        f for f in _collect_tier1_fails(text)
+        if newest.get(f["phase"]) == f["block"]
     ][:_MAX_INJECTED_FAILS]
     if not fails:
         return ""

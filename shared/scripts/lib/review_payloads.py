@@ -66,8 +66,10 @@ ADAPTERS = (
 #: existing name rather than adopting the `_reply` suffix). `plan` and
 #: `external_code` are new: chosen to match the `external-*review*-raw.json`
 #: shape `pr_review_generated.py`'s own comments already cite as the running
-#: example (`external-code-review-raw.json`). `plan_internal` has no payload
-#: file (a metadata-only row) and is deliberately absent from this dict.
+#: example (`external-code-review-raw.json`). `plan_internal` and
+#: `architecture_internal` have no payload file (metadata-only rows — their
+#: findings live in `plan.md`/the iterate spec sections instead) and are
+#: deliberately absent from this dict.
 #:
 #: `canonical_basename_error` (below) checks the BASENAME only, not the parent
 #: directory — a payload correctly named but written outside

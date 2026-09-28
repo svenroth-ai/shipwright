@@ -44,10 +44,10 @@ def project(tmp_path):
 def test_new_record_materializes_every_type_as_pending():
     rec = new_record(RUN_ID)
     assert set(rec["reviews"]) == set(REVIEW_TYPES)
-    # Seven since `plan_internal` joined `spec` in growing past the original
-    # five. Asserted as a literal so growth is a decision someone makes here,
-    # not a side effect.
-    assert len(REVIEW_TYPES) == 7
+    # Eight since `plan_internal` and `architecture_internal` joined `spec`
+    # in growing past the original five. Asserted as a literal so growth is
+    # a decision someone makes here, not a side effect.
+    assert len(REVIEW_TYPES) == 8
     for review_type in REVIEW_TYPES:
         entry = rec["reviews"][review_type]
         assert entry["status"] == "pending"

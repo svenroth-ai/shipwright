@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-28-architecture-review-internal-arm",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T09:45:06.244517+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Alternative A's own rejection text admits the 8th `REVIEW_TYPES` member ripples into \"the webui consumer,\" but no webui file or test appears in the Files table or work breakdown.",
+          "suggestion": "Confirm whether the webui hand-enumerates review types (renders, filters, or validates `reviews.json`). If it does, add the file(s) and their tests to the Files table; if it reads the schema generically, record that confirmation in the Confidence Calibration ledger so it isn't re-litigated at build time.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Item 5 gives the iterate step full degraded-handling and resume-reconciliation machinery, but item 4 (plan-side Step 5-int-arch) says nothing about what happens when the agent spawn fails, the reply is unparseable, or the session is resumed mid-Step-5. AC2's `Ran: no` retry/replacement implies a degraded path exists, but it's unspecified — exactly the class of gap the Internal Plan Review caught six times on the iterate side.",
+          "suggestion": "Specify the plan-side degraded-handling reasons and resume reconciliation explicitly in item 4 (mirror item 5's wording, minus the `mkdir` nuance). It's a few sentences, not new machinery.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new gate_catalog entry is named `plan.architecture-internal-review-high-severity-declined` (`plan.` prefix, `single_session`), but AC3 runs this pass on `/shipwright-iterate` too, and AC2's STOP-and-ask applies to plan. If a declined/disclosed high-severity finding occurs during an iterate run, either the gate fires (with a plan-prefixed name in an iterate context — misleading provenance) or there is no gate at all for the iterate STOP, and the spec never states whether the iterate pass STOPs on high findings.",
+          "suggestion": "State explicitly in AC3/item 5 whether the iterate pass carries the STOP-and-ask, and if yes, whether the `plan.`-prefixed auto-default is intended to cover it (or whether an iterate sibling entry is needed). Silence here is the same hole the change exists to close.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The verification command records `--model-tier inherit` against a scratch project seeded with `floors: {plan_review: opus}` — \"inherit\" likely resolves below the floor, so the round-trip may produce a floor-violation note rather than the \"floor reads it and names it\" success the item describes. Item 11's \"confirm during build and mirror exactly\" hedge suggests the author isn't sure what the existing `plan_internal` case actually asserts.",
+          "suggestion": "Before writing the probe, run the existing `plan_internal` floor test locally and mirror its exact `--model-tier` value; don't ship a verification command whose expected outcome is guessed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The anchoring defense is prose-only: the agent has Read/Grep/Glob and an instruction not to read `plan.md`/ADRs, with a prose test asserting the sentence exists. A fresh-context reviewer that Greps the repo can still surface rejection rationale from other files, and nothing mechanically prevents drift if the agent prompt is later edited.",
+          "suggestion": "Acceptable for this change (mirrors the external pass's own soft defense), but note it as a disclosed limitation in `docs/hooks-and-pipeline.md` so the softness is on record rather than implicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The prose-contract test asserting \"exactly one `resolve_model_tier.py` invocation\" in `step-5-external-review.md` is brittle — any future legitimate second call in that file breaks the test for reasons unrelated to this change's contract.",
+          "suggestion": "Weaken to \"no second `resolve_model_tier.py` call between Step 5-int and Branch A\" (scoped assertion), or keep the count but add a comment in the test naming the AC it enforces.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Iterate gates this pass at medium+ only, so on trivial/small iterates the \"should this be built at all\" question is still never asked — a narrower version of the exact gap the change's Goal paragraph says it closes. This mirrors `plan_internal` deliberately, so it's a consistent choice, but the Goal's framing overpromises.",
+          "suggestion": "Reword the Goal (or note in the spec) that the closure is \"mirroring `plan_internal`'s gating,\" so the trivial/small exclusion is a named, intended boundary rather than an apparent contradiction with the stated goal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The Codex path records `Ran: no`, so the architecture question still goes unasked in those sessions. That conflicts with the change’s “always-first” goal and AC1.",
+          "suggestion": "Add a distinct Codex transport for this review in this change, or explicitly narrow the acceptance criteria and goal to the supported transport.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Branch A can change the brief before external review, leaving the internal architecture verdict tied to an earlier version.",
+          "suggestion": "If the brief’s options or proposed additions change materially, rerun the internal review and replace its section and record before calling external review.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The fresh reviewer receives the full iterate spec, which already contains the Internal Plan Review section it is told to ignore. That rationale is still in its context and can anchor its judgment.",
+          "suggestion": "Supply a review input containing the change specification without prior review sections.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The iterate path defines resume and retry reconciliation, but the plan path does not. An interrupted plan run could retain `Ran: yes` with a pending record, or append a second section on retry.",
+          "suggestion": "Specify the same record reconciliation and in-place section replacement for Step 5-int-arch.  The approach fits the existing review framework, but the unsupported Codex path leaves its central guarantee unmet. The brief and retry handling also need tightening before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-28T07:35:35.939694+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: dependency — Severity: medium**\n  **Finding:** Alternative A's own rejection text admits the 8th `REVIEW_TYPES` member ripples into \"the webui consumer,\" but no webui file or test appears in the Files table or work breakdown.\n  **Suggestion:** Confirm whether the webui hand-enumerates review types (renders, filters, or validates `reviews.json`). If it does, add the file(s) and their tests to the Files table; if it reads the schema generically, record that confirmation in the Confidence Calibration ledger so it isn't re-litigated at build time.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** Item 5 gives the iterate step full degraded-handling and resume-reconciliation machinery, but item 4 (plan-side Step 5-int-arch) says nothing about what happens when the agent spawn fails, the reply is unparseable, or the session is resumed mid-Step-5. AC2's `Ran: no` retry/replacement implies a degraded path exists, but it's unspecified — exactly the class of gap the Internal Plan Review caught six times on the iterate side.\n  **Suggestion:** Specify the plan-side degraded-handling reasons and resume reconciliation explicitly in item 4 (mirror item 5's wording, minus the `mkdir` nuance). It's a few sentences, not new machinery.\n\n- **Category: risk — Severity: medium**\n  **Finding:** The new gate_catalog entry is named `plan.architecture-internal-review-high-severity-declined` (`plan.` prefix, `single_session`), but AC3 runs this pass on `/shipwright-iterate` too, and AC2's STOP-and-ask applies to plan. If a declined/disclosed high-severity finding occurs during an iterate run, either the gate fires (with a plan-prefixed name in an iterate context — misleading provenance) or there is no gate at all for the iterate STOP, and the spec never states whether the iterate pass STOPs on high findings.\n  **Suggestion:** State explicitly in AC3/item 5 whether the iterate pass carries the STOP-and-ask, and if yes, whether the `plan.`-pref […truncated]\n\n[openai] 1. **Category: approach · Severity: high**  \n   **Finding:** The Codex path records `Ran: no`, so the architecture question still goes unasked in those sessions. That conflicts with the change’s “always-first” goal and AC1.  \n   **Suggestion:** Add a distinct Codex transport for this review in this change, or explicitly narrow the acceptance criteria and goal to the supported transport.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** Branch A can change the brief before external review, leaving the internal architecture verdict tied to an earlier version.  \n   **Suggestion:** If the brief’s options or proposed additions change materially, rerun the internal review and replace its section and record before calling external review.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** The fresh reviewer receives the full iterate spec, which already contains the Internal Plan Review section it is told to ignore. That rationale is still in its context and can anchor its judgment.  \n   **Suggestion:** Supply a review input containing the change specification without prior review sections.\n\n4. **Category: edge-case · Severity: medium**  \n   **Finding:** The iterate path defines resume and retry reconciliation, but the plan path does not. An interrupted plan run could retain `Ran: yes` with a pending record, or append a second section on retry.  \n   **Suggestion:** Specify the same record reconciliation and in-place section replacement for Step 5-int-arch.\n\nThe approach fits the existing review framework, but the unsupported Codex path leaves its central guarantee unmet. The brief and retry handling also need tightening before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+          "line": 339,
+          "finding": "NEW (introduced by the mkdir fix): rationale says 'same reason step 2 above needs its own mkdir -p', but step 2 (line 420) comes after step 0b (line 323).",
+          "suggestion": "Change 'step 2 above' to 'step 2 below'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+          "line": 336,
+          "finding": "Step 0b's mkdir -p and brief path are relative, while step 2's mkdir -p (line 422) uses '{project_root}/...'. Minor inconsistency, harmless in practice.",
+          "suggestion": "Optional: prefix with '{project_root}/' to match step 2.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T10:42:24.804407+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract / hidden coupling",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md (step 0b 'Write, always' -> step 2a --spec-file); shared/scripts/tools/external_review.py:325",
+          "line": null,
+          "finding": "Claim under doubt: The external architecture pass (iterate step 2a) still judges the options 'as if the choice were open', without the author's rejection reasons — Step 0b now writes `## Internal Architecture Review` into the iterate spec before step 2a runs. That section holds the internal reviewer's recommended option plus the author's fix/decline dispositions and their reasons. Step 2a passes that same spec as `--spec-file`. `external_review.py` reads it verbatim (line 325, `spec = spec_path.read_text(...)`) and strips no sections. It is substituted into `{SPEC}` of `shared/prompts/architecture_reviewer/user`. So the system prompt's claim that the brief 'deliberately does NOT tell you which ones the author rejected, or why' (system, line 13) is now false on the iterate side. The pass that exists only to escape anchoring is fed the most on-topic anchor there is. The `## Internal Plan Review` section already leaked this way before, but this change adds a section about exactly the architecture question. The plan side is clean, because its section goes to plan.md and spec.md is never touched. So the leak is iterate-only, and the two sides are no longer at parity.",
+          "suggestion": "A code-level backstop: in `--mode architecture`, strip `## Internal * Review` / `## Architecture Review` / `## Self-Review` sections from the spec text before substitution. Alternatives: keep step 0b's section in the run dir until after step 2a, or hand both architecture passes a sanitized spec copy. Or give a rebuttal showing the leak is harmless.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-plan/agents/architecture-internal-reviewer.md (lines ~1192-1198 in the patch)",
+          "line": null,
+          "finding": "Claim under doubt: The new reviewer's anchoring defense holds ('never plan/mini-plan; ignore prior-review sections') — Nothing in code enforces it. The agent has Read/Grep/Glob over the whole repo, and the only safeguard is a prose instruction (docs/hooks-and-pipeline.md:3615 admits 'prose-only'). At step 0b the spec it reads already contains `## Internal Plan Review` with dispositions. This run's own spec shows the result. Its Internal Plan Review holds the finding 'the real alternative (section-only, no REVIEW_TYPES row) — declined: the operator's card explicitly decided a REVIEW_TYPES row is required'. That is rejection rationale for an architecture option, sitting in the reviewer's input. The Goal/AC text also carries decisions: AC1 says '(a separate fresh-context agent, not `opus-plan-reviewer`)' and the Goal says 'by deliberate precedent, not an oversight'. So even a reviewer that obeys the 'ignore sections' rule gets plan-shaped conclusions through the AC prose. Separately, the agent file says the rule is 'exactly like the external architecture pass's own instruction'. The external prompts (`shared/prompts/architecture_reviewer/system|user`) contain no ignore-prior-review-sections instruction, so that cross-reference is inaccurate.",
+          "suggestion": "Same sanitized-spec backstop as D1, applied to the Agent spawn input (a stripped copy in the run dir). Fix or remove the 'exactly like the external pass' claim. In the spec template guidance, note that AC prose should state required behavior, not the rationale for the chosen option.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling (evidence integrity)",
+          "file": ".shipwright/planning/iterate/2026-09-28-architecture-review-internal-arm.md (## Architecture Review -> Reconciliation)",
+          "line": null,
+          "finding": "Claim under doubt: The reconciliation that overruled OpenAI's `reject` is backed by GLM reaching 'the identical conclusion unprompted' — GLM read this run's iterate spec, which states the separate-agent decision in AC1 and has an Internal Plan Review section that discusses the anchoring rationale ('its reviewer must not read the rationale-bearing plan documents'). GLM's quoted wording tracks that text closely. So GLM was prompted, by the very D1 leak. The decision itself stands on operator confirmation, but the written record overstates GLM's agreement as independent corroboration.",
+          "suggestion": "Reword so the reconciliation rests on the operator's decision, and note that GLM saw the AC1 wording. Or rebut by showing the spec GLM received lacked that text.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility / blast radius (silent degradation)",
+          "file": ".shipwright/planning/iterate/2026-09-28-architecture-review-internal-arm-miniplan.md item 9; shared/prompts/codex_review_dispatch.md",
+          "line": null,
+          "finding": "Claim under doubt: Graceful degradation ('record Ran: no, continue') keeps the feature's value visible — Under a Codex-driven run, both sides structurally always record `Ran: no`. Project memory says the operator runs iterates under Codex CLI today, so in the operator's main harness the feature currently delivers nothing on 100% of runs. On the plan side there is no review-record row at all, so nothing can count it. On the iterate side, Step 7's sweep closes the row `not_run` and F11 goes green. No aggregate signal ever shows 'this arm has never run'. The promised follow-up also does not exist as a tracked item. Mini-plan item 9 and the spec say 'follow-up card' with no trg id, and `.shipwright/triage.jsonl` has only the original requirement card (trg-a0d8c2cb), with no Codex-transport card.",
+          "suggestion": "File the Codex-transport follow-up as a real triage card and cite its trg id in the `Ran: no (no Codex transport ...)` wording and the dispatch doc. Optionally give that `not_run` disposition a stable reason string so the throughput report can count how often the arm is degraded.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility (untested behavior shipped)",
+          "file": ".shipwright/planning/iterate/2026-09-28-architecture-review-internal-arm.md (Test Completeness Ledger; ## Internal Architecture Review)",
+          "line": null,
+          "finding": "Claim under doubt: The bootstrap `not_run` is sound, and 'every AC has a direct mechanical assertion' (Test Completeness Ledger) — On the escape hatch: F11 has no mechanism specific to 'feature didn't exist yet'. `review_record_check.py` (docstring lines 13-17) accepts any `not_run` with a rule-naming disposition. After merge, though, the skill text makes step 0b mandatory at medium+, so a future 'didn't exist' claim can be checked against git history. That is the same residual honesty gap the gate already admits, not a new permanent hatch. I consider that part rebutted. The larger issue: the new agent has never been executed once. The AC1-AC4 'tested' rows are prose-anchor tests (`test_architecture_internal_review_contract_prose.py`). The live probes exercised only `record_review_pass.py` and the tier floor, never the agent's JSON output shape or the skill's parse / degraded path. 'No untestable rows' overstates what was proven.",
+          "suggestion": "Either run one out-of-band advisory smoke spawn (the agent prompt over the brief plus a sanitized spec; check that the reply parses to {reviewer, severity, findings, summary}; do NOT record it as `completed`), or change the AC1-AC4 ledger rows to say that prose presence is tested and live agent behavior is not.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering (in-flight runs)",
+          "file": "shared/scripts/lib/review_record_schema.py:104; shared/scripts/lib/review_record_core.py:247",
+          "line": null,
+          "finding": "Claim under doubt: The additive REVIEW_TYPES growth is invisible to runs already in progress — `validate_record` tolerates the missing key, so reading old records is fine. I verified forward compatibility too: unknown keys are accepted (schema lines 281-289), `_REVIEW_KEY_RE` matches the new key, `SCHEMA_VERSION` is unchanged, and security's `INTERNAL_REVIEW_TYPES` is unaffected. But `pending_types` counts an absent row as pending (review_record_core.py:247-259). So any medium+ iterate, or campaign sub-iterate, whose reviews.json was initialized before the plugin-cache sync will STOP at F11 on `architecture_internal` after the sync. For a campaign, the runner prompt in the old cache never writes the row. `close-missing` fixes it, same as the plan_internal precedent.",
+          "suggestion": "Accept as precedent-equivalent. Optionally add one line to the changelog drop naming the `close-missing --only architecture_internal` remediation for in-flight runs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling (Pre-5b asymmetry legibility)",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md (Branch B prompt ~line 279; Pre-5b Checkpoint ~line 313)",
+          "line": null,
+          "finding": "Claim under doubt: Nobody will read architecture_internal as gate-carrying — The exclusion is stated in four places: SKILL.md, the step-5-external-review.md Goal, step-5-int-arch.md, and hooks-and-pipeline.md:3633. But the Pre-5b Checkpoint section, which calls itself 'the single place that decides it', only lists what counts, without naming the exclusion. Branch B's user-facing Option 2 text still says 'The internal review already checked the plan and carries the gate', and with two internal reviews 'the internal review' is now ambiguous. The iterate side has no Pre-5b equivalent (self-review always runs), so it has no exposure.",
+          "suggestion": "Change Branch B's prompt to 'The Internal Plan Review (Step 5-int) ...', and add a parenthetical to Pre-5b: '(Step 5-int-arch does not count)'.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/plan_gate_extras.py:87",
+          "line": null,
+          "finding": "Claim under doubt: Plan-side decision-log gates know about the new section tag — `shared/scripts/lib/plan_gate_extras.py` `_PLAN_DECISION_PREFIXES` (line 87) does not include 'Internal Architecture Review', and none of the listed prefixes matches it. Gate #8 therefore ignores those entries. This is harmless in practice because Step 5-int always logs too, and gate #10's count correctly excludes them. The plan side also has no mechanical check at all that Step 5-int-arch ran, which matches Step 5-int.",
+          "suggestion": "Add the prefix, or write a one-line rebuttal that the exclusion is intentional.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T11:12:25.173661+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_architecture_internal_review_contract_prose.py (entire file)",
+          "line": null,
+          "finding": "AC1–AC4 are \"verified\" almost exclusively by prose-anchor assertions (does the skill markdown contain certain sentences). A completely non-functional runtime path — e.g. a spawn instruction that names the agent but a skill model that never executes it, or a `prepare_architecture_internal_spec.py` invocation the model skips — passes all of these tests. The spec's own D5 scope caveat admits this (\"prose and wiring … the agent's live JSON-reply shape and the skill's parse/degraded path … remain unexercised\"), yet the Test Completeness Ledger still marks every AC `tested` with `untestable: 0`, which overstates coverage to any downstream gate reading that ledger.",
+          "suggestion": "Downgrade AC1–AC4 ledger rows to reflect prose/wiring-only verification, or run one out-of-band smoke spawn of `architecture-internal-reviewer` (recorded as advisory, not `completed`) to exercise the reply-parse path at least once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/external_review_modes.py — `_PRIOR_REVIEW_SECTION_RE` (new, ~line 85)",
+          "line": null,
+          "finding": "The strip applies to both plan-side and iterate-side `--mode architecture` calls, but the pattern also matches `## Architecture Review` and `## Self-Review`. A plan-side `spec.md` that legitimately contains a `## Self-Review` or `## Architecture Review` heading (e.g. a spec authored from an adopted template that carried one) would have genuine spec content silently deleted from the reviewer's input on the plan side, where the iterate-side leak justification doesn't apply. The ADR asserts the plan side is \"clean by construction\" but the strip runs there anyway with no test pinning plan-side behavior beyond the iterate-mode negative control.",
+          "suggestion": "Either gate the strip to specs known to be iterate specs, or add a test documenting that plan-side specs with such headings are intentionally stripped too — right now the plan-side effect is untested and unreasoned-about.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/prepare_architecture_internal_spec.py — `_write_refusing_symlinks` (Windows branch) and ancestor `is_symlink()` checks",
+          "line": null,
+          "finding": "On Windows there is no `O_NOFOLLOW`, so the fallback is a check-then-write TOCTOU, and `is_symlink()` does not detect NTFS junctions at `.shipwright`, `runs`, or `runs/{run_id}` — a junction redirects the write outside the project, bypassing every containment check. Both are disclosed in the docstring and the ADR, and the CI gate runs on POSIX, so this is a documented residual rather than an untracked hole; flagging only for the record.",
+          "suggestion": "None required now; if a `Path.is_junction`-equivalent lands in a supported Python version, wire it into the ancestor loop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/external_review_modes.py — `strip_prior_review_sections` unterminated-tail check",
+          "line": null,
+          "finding": "The `UnstrippableSpecError` probe searches the original text of the masked tail, so a quoted (fenced) heading-look-alike sitting after an unrelated unterminated fence — content that was never a real section — also triggers a hard refusal of the whole pass (both the external CLI call and the internal prep tool exit nonzero). Since the masker's stated contract is \"err toward over-masking,\" refusing on over-masked-but-benign content is the one direction that converts a cosmetic spec blemish (a stray ``` line) into a failed review pass. The run discloses the inverse risk but not this false-positive cost.",
+          "suggestion": "Acceptable as fail-closed, but consider narrowing the tail check to headings not preceded by fence-masked content, or at minimum document in the skill prose that a stray fence marker in a spec will fail the architecture pass so operators recognize the error.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_architecture_internal_review_contract_prose.py — `_section()` helper",
+          "line": null,
+          "finding": "text.index(heading)` raises `ValueError` (not an assertion) if the heading anchor ever drifts, and `stop=\"\\n1. \"` / `\"\\n3. \"` for the iterate sections depend on the next numbered step's exact formatting — a renumbering of iteration-planning.md steps silently truncates or widens the extracted section, so assertions can pass against text from the wrong step. The run's own line-wrap probe shows these anchors are fragile against harmless markdown reflow.",
+          "suggestion": "Wrap `index` in an `assert heading in text` with a message, and anchor section boundaries on headings rather than `---`/numbered-step prefixes where possible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/external_review_modes.py",
+          "line": 96,
+          "finding": "The section matcher stops only at a heading beginning exactly `## `. A valid Markdown heading such as `   ## Acceptance Criteria` or `##\tVerification` after an Internal Plan Review section is removed along with that review, depriving the architecture reviewer of real spec content.",
+          "suggestion": "Recognize valid level-two heading indentation and spacing when finding section boundaries, and test that the following spec section survives.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/prepare_architecture_internal_spec.py",
+          "line": 107,
+          "finding": "On Windows, `is_symlink()` does not reject directory junctions. A junction at `.shipwright`, `runs`, or the run directory redirects the write outside the project; the later containment check resolves against the redirected runs root and still passes.",
+          "suggestion": "Reject junctions or other reparse points before creating the output, and check the resolved runs root against the resolved project root.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_architecture_review_anchoring_defense.py",
+          "line": 86,
+          "finding": "The test observes the sanitizer’s return value through a spy, but never checks the prompt sent for review. It would pass if `external_review.py` called the sanitizer and then used the original spec.",
+          "suggestion": "Capture the rendered architecture prompt and assert that it contains the retained spec content but none of the prior-review rationale.  The new pass covers the main flow, but the sanitizer can remove valid spec content and the Windows output guard has a concrete escape path. Ship with fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-28T17:01:44.545284+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_architecture_internal_review_contract_prose.py (entire file)\n  Finding: AC1–AC4 are \"verified\" almost exclusively by prose-anchor assertions (does the skill markdown contain certain sentences). A completely non-functional runtime path — e.g. a spawn instruction that names the agent but a skill model that never executes it, or a `prepare_architecture_internal_spec.py` invocation the model skips — passes all of these tests. The spec's own D5 scope caveat admits this (\"prose and wiring … the agent's live JSON-reply shape and the skill's parse/degraded path … remain unexercised\"), yet the Test Completeness Ledger still marks every AC `tested` with `untestable: 0`, which overstates coverage to any downstream gate reading that ledger.\n  Suggestion: Downgrade AC1–AC4 ledger rows to reflect prose/wiring-only verification, or run one out-of-band smoke spawn of `architecture-internal-reviewer` (recorded as advisory, not `completed`) to exercise the reply-parse path at least once.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/external_review_modes.py — `_PRIOR_REVIEW_SECTION_RE` (new, ~line 85)\n  Finding: The strip applies to **both** plan-side and iterate-side `--mode architecture` calls, but the pattern also matches `## Architecture Review` and `## Self-Review`. A plan-side `spec.md` that legitimately contains a `## Self-Review` or `## Architecture Review` heading (e.g. a spec authored from an adopted template that carried one) would have genuine spec content silently deleted from the reviewer's input on the plan side, where the iterate-side leak justification doesn't apply. The ADR asserts the plan side is \"clean by construction\" but the strip runs there anyway with no test pinning plan-side behavior beyond the iterate-mode negative control.\n  Suggestion: Either gate the strip to specs known to be iterate specs, or add a test documenting that plan-side specs with such […truncated]\n\n[openai] - Category: bug\n  Severity: medium\n  File: `shared/scripts/lib/external_review_modes.py:96`\n  Finding: The section matcher stops only at a heading beginning exactly `## `. A valid Markdown heading such as `   ## Acceptance Criteria` or `##\tVerification` after an Internal Plan Review section is removed along with that review, depriving the architecture reviewer of real spec content.\n  Suggestion: Recognize valid level-two heading indentation and spacing when finding section boundaries, and test that the following spec section survives.\n\n- Category: security\n  Severity: medium\n  File: `shared/scripts/tools/prepare_architecture_internal_spec.py:107`\n  Finding: On Windows, `is_symlink()` does not reject directory junctions. A junction at `.shipwright`, `runs`, or the run directory redirects the write outside the project; the later containment check resolves against the redirected runs root and still passes.\n  Suggestion: Reject junctions or other reparse points before creating the output, and check the resolved runs root against the resolved project root.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_architecture_review_anchoring_defense.py:86`\n  Finding: The test observes the sanitizer’s return value through a spy, but never checks the prompt sent for review. It would pass if `external_review.py` called the sanitizer and then used the original spec.\n  Suggestion: Capture the rendered architecture prompt and assert that it contains the retained spec content but none of the prior-review rationale.\n\nThe new pass covers the main flow, but the sanitizer can remove valid spec content and the Windows output guard has a concrete escape path. Ship with fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T09:55:53.317867+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T07:02:09.397664+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-28T09:45:35.786044+00:00",
+      "disposition": "bootstrap gap, not a skip: architecture_internal did not exist as a review type when this run's own iteration-planning phase (step 0/0b) executed -- this very iterate is what builds the type, the agent, and the wiring. Retroactively spawning it after Branch A/B/C already completed would violate the pass's own always-and-first ordering contract (it must see the brief before any external verdict). Closed not_run, medium complexity notwithstanding -- the gap is temporal, not a medium+ exemption.",
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
