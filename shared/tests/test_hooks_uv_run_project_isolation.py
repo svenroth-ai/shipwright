@@ -1,0 +1,192 @@
+"""Integration test for iterate-2026-09-28-hooks-uv-run-project-pin.
+
+Proves the *mechanism* behind the `--no-project` fix, not just that the
+flag string is present in a JSON file: a hook script invoked via the
+EXACT `uv run --no-project "<script>"` command shape shipped in a real
+hooks.json must succeed even when the session's current working
+directory is an unrelated, uv-managed Python project whose dependency
+cannot be resolved (a "poisoned" project) — because `--no-project` skips
+project discovery/resolution entirely. A paired negative control, the
+same invocation WITHOUT `--no-project`, must fail against that same
+poisoned CWD, proving this test would have caught the original bug (a
+real hook script hard-failing because `uv run` resolved and tried to
+sync an unrelated CWD project instead of running standalone).
+
+Both subprocess calls run with `VIRTUAL_ENV`/`UV_*` stripped from the
+environment, so a venv this test happens to run under cannot mask (or
+fake) either result. The poisoned project's unresolvable dependency
+points at a nonexistent local path (`file://`), not a plausible-but-fake
+PyPI name — so the negative control fails deterministically offline
+instead of depending on network/registry behavior.
+
+This is the `category:"integration"` Test Completeness Ledger behavior
+required by the `cross_component` risk flag for hooks.json changes.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+_TARGET_SCRIPT_NAME = "write_terminal_marker.py"
+_PLACEHOLDER = "${CLAUDE_PLUGIN_ROOT}"
+
+# A pyproject.toml whose only dependency resolves to a local path that does
+# not exist — offline-deterministic (no registry/network involved), unlike
+# an unregistered PyPI name. If `uv run` attempts to discover and sync
+# THIS project, the sync step fails before the target script ever executes.
+_POISONED_PYPROJECT = """\
+[project]
+name = "poisoned-cwd-project"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = ["nope @ file:///this/path/does/not/exist/on/any/machine"]
+"""
+
+
+def _scrubbed_env() -> dict[str, str]:
+    """Drop every uv/venv-identifying variable so this test's own
+    interpreter/venv can't leak into, or be mistaken for, the child
+    processes' project resolution."""
+    return {
+        k: v
+        for k, v in os.environ.items()
+        if k != "VIRTUAL_ENV" and not k.startswith("UV_")
+    }
+
+
+def _find_real_uv_run_command(script_name: str) -> tuple[str, Path]:
+    """Pull the exact `uv run --no-project "..."` prefix Shipwright ships
+    for *script_name* out of a real hooks.json, plus the resolved absolute
+    path that command's ``${CLAUDE_PLUGIN_ROOT}`` placeholder points at, so
+    this test builds its subprocess argv from the literal shape hooks fire —
+    not a hand-written approximation of it. Fails loudly if no hooks.json
+    invokes the script (fixture broken). Matches `uv run` regardless of
+    whether `--no-project` is present, so a future regression (the flag
+    silently dropped) surfaces as "prefix != 'uv run --no-project'" rather
+    than this fixture's own "not found"."""
+    for hooks_path in sorted(REPO_ROOT.glob("plugins/*/hooks*/hooks.json")):
+        plugin_root = hooks_path.parent.parent
+        config = json.loads(hooks_path.read_text(encoding="utf-8"))
+        for cmd in _collect_command_strings(config):
+            if script_name not in cmd or "uv run" not in cmd:
+                continue
+            match = re.search(
+                r'(uv run(?:\s+--\S+)*)\s+"([^"]*' + re.escape(script_name) + r')"',
+                cmd,
+            )
+            if match:
+                prefix = match.group(1)
+                raw_path = match.group(2).replace(_PLACEHOLDER, str(plugin_root))
+                return prefix, Path(raw_path).resolve()
+    raise AssertionError(
+        f"no hooks.json command found invoking {script_name} via `uv run` — "
+        f"fixture broken, or the script was renamed/moved"
+    )
+
+
+def _collect_command_strings(node: object) -> list[str]:
+    found: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "command" and isinstance(value, str):
+                found.append(value)
+            else:
+                found.extend(_collect_command_strings(value))
+    elif isinstance(node, list):
+        for item in node:
+            found.extend(_collect_command_strings(item))
+    return found
+
+
+@pytest.fixture
+def poisoned_cwd(tmp_path: Path) -> Path:
+    (tmp_path / "pyproject.toml").write_text(_POISONED_PYPROJECT, encoding="utf-8")
+    return tmp_path
+
+
+@pytest.fixture
+def real_hook_command() -> tuple[str, Path]:
+    """(flag_prefix, resolved_script_path) for a real, currently-shipped
+    hooks.json entry invoking a stdlib-only, side-effect-free hook —
+    resolved from the actual command string, not reconstructed
+    independently, so the subprocess calls below exercise the literal
+    shape hooks fire."""
+    prefix, script_path = _find_real_uv_run_command(_TARGET_SCRIPT_NAME)
+    assert script_path.name == _TARGET_SCRIPT_NAME
+    assert script_path.is_file(), f"resolved hook script missing: {script_path}"
+    return prefix, script_path
+
+
+def test_no_project_ignores_poisoned_cwd(
+    poisoned_cwd: Path, real_hook_command: tuple[str, Path]
+) -> None:
+    """The real `uv run --no-project` prefix hooks.json ships must succeed
+    regardless of the CWD project."""
+    prefix, script_path = real_hook_command
+    assert prefix == "uv run --no-project"
+
+    result = subprocess.run(
+        [*shlex.split(prefix), str(script_path)],
+        cwd=poisoned_cwd,
+        input="{}",
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=_scrubbed_env(),
+    )
+    assert result.returncode == 0, (
+        f"uv run --no-project should ignore the poisoned CWD project and "
+        f"succeed; got exit {result.returncode}\nstdout: {result.stdout}\n"
+        f"stderr: {result.stderr}"
+    )
+
+
+def test_without_no_project_is_poisoned_by_cwd(
+    poisoned_cwd: Path, real_hook_command: tuple[str, Path]
+) -> None:
+    """Negative control: the same invocation WITHOUT --no-project resolves
+    the poisoned CWD project and fails trying to sync its unresolvable
+    dependency — proving this pair of tests would have caught the
+    original bug, and that the failure is specifically about project
+    resolution (not some unrelated error)."""
+    prefix, script_path = real_hook_command
+    unpinned_prefix = [tok for tok in shlex.split(prefix) if tok != "--no-project"]
+    assert unpinned_prefix == ["uv", "run"], (
+        f"expected the real prefix minus --no-project to be exactly 'uv run', "
+        f"got {unpinned_prefix} — this negative control must strip ONLY the "
+        f"flag under test, not approximate the command"
+    )
+
+    result = subprocess.run(
+        [*unpinned_prefix, str(script_path)],
+        cwd=poisoned_cwd,
+        input="{}",
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=_scrubbed_env(),
+    )
+    assert result.returncode != 0, (
+        "uv run without --no-project was expected to fail against a "
+        "poisoned CWD project (unresolvable dependency), but it "
+        f"succeeded — the negative control is not discriminating.\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    combined = (result.stdout + result.stderr).lower()
+    assert any(term in combined for term in ("resolve", "resolution", "project", "dependenc")), (
+        "expected the failure to mention project/dependency resolution "
+        f"(proving it failed for the right reason), got:\n{result.stderr}"
+    )
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(pytest.main([__file__, "-v"]))

@@ -1,0 +1,43 @@
+{
+  "section": "iterate-2026-09-28-hooks-uv-run-project-pin",
+  "review": [
+    {
+      "severity": "high",
+      "category": "hidden-coupling",
+      "file": "shared/scripts/lib/automerge_readiness.py",
+      "line": 30,
+      "finding": "--no-project removes the ambient project resolution that used to supply pyyaml (and any other CWD-project dependency) to sys.executable for every subprocess spawned downstream of a hooks.json `uv run` command. Concretely: run_if_cache_ready.py -> check_required_checks_hook.py -> check_required_checks.py -> lib.required_checks_drift.all_workflow_check_names() does a module-level `import yaml`, which now raises ModuleNotFoundError whenever no ambient .venv happens to be present at or above the session's CWD (confirmed live: `uv run --no-project python -c \"import yaml\"` fails in a directory with no ambient venv, succeeds only because THIS repo's own worktree happens to already have a synced .venv). The producer wrapper's own fail-open design (always returns 0, `_warn`s once per throttle window) keeps this from crashing a session, but the required-checks drift feature silently stops recording success.",
+      "disposition": "fixed",
+      "fix": "Added `--with pyyaml --with jsonschema` to the SessionStart `run_if_cache_ready.py` prefix in ALL 12 plugins' hooks.json (uniformly, not just shipwright-iterate) — codex_hook_merge.py's cross-plugin dedup keys run_if_cache_ready.py by its pre-rewrite relative path, which is identical across every plugin, so a non-uniform prefix would raise BundleCollisionError at codex bundle-build time. jsonschema is included pre-emptively for the same interpreter-propagation reason as the medium finding below. Verified: shared/tests/test_hooks_uv_run_pinned.py::test_shared_uv_run_scripts_use_identical_flag_prefix_across_plugins still passes (12/12 identical prefix)."
+    },
+    {
+      "severity": "medium",
+      "category": "hidden-coupling",
+      "file": "plugins/shipwright-compliance/scripts/audit/_group_d_manifest.py",
+      "line": 39,
+      "finding": "audit_compliance_on_stop.py already carried `--with pyyaml` pre-diff (it never relied on ambient resolution for yaml), but Group D's manifest schema validation lazily imports jsonschema and was relying on the CWD project's ambient dependency resolution (present pre-diff because `uv run` without `--no-project` synced the root project, which declares jsonschema) — `--no-project` removes that ambient supply. The loader is deliberately fail-closed (`except Exception: return False`), so the effect is a silent D-orphan/D-layer SKIP rather than a crash, but it is a real loss of local diagnostic coverage introduced by this change, not a pre-existing residual.",
+      "disposition": "fixed",
+      "fix": "Added `--with jsonschema` (alongside the existing `--with pyyaml`) to both audit_compliance_on_stop.py callers (plugins/shipwright-changelog/hooks/hooks.json, plugins/shipwright-iterate/hooks/hooks.json) — identical prefix on both, since they share the same rel_key in codex_hook_merge's dedup."
+    },
+    {
+      "severity": "medium",
+      "category": "reversibility",
+      "file": "plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py",
+      "line": 232,
+      "finding": "This SubagentStop hook spawns its OWN nested `uv run` (not read from hooks.json, so the static meta-tests never see it) with `cwd=str(resolve_project_root())` — the target project's directory. This is the exact same bug class the whole iterate exists to fix: if that project is an unrelated uv-managed project, `uv run` resolves and tries to sync IT before running review_scratch.py cleanup, reproducing the original os-error-32 exposure inside a hook the meta-tests cannot see.",
+      "disposition": "fixed",
+      "fix": "Added `--no-project` to this hook's own subprocess argv (review_scratch.py is first-party/stdlib-only, confirmed by reading its imports). Updated plugins/shipwright-build/tests/test_cleanup_review_scratch_on_code_reviewer_failure.py's args[:2]==['uv','run'] assertion to args[:3]==['uv','run','--no-project']. Verified: 15/15 passed in that test file."
+    },
+    {
+      "severity": "low",
+      "category": "boundary-contract",
+      "file": "shared/tests/test_hooks_uv_run_pinned.py",
+      "line": 66,
+      "finding": "`_UV_RUN_PREFIX` only matches a `uv run` invocation immediately followed by a double-quoted argument; an unquoted or single-quoted command would silently produce no offender rather than being flagged, so a future hooks.json entry that dropped both `--no-project` AND quoting would slip past this meta-test undetected.",
+      "disposition": "fixed",
+      "fix": "Widened test_hooks_json_quoting.py's PLUGINS_GLOB from `plugins/*/hooks/hooks.json` to `plugins/*/hooks*/hooks.json` (matching test_hooks_uv_run_pinned.py's own glob) so ADR-022's quoting enforcement now also covers shipwright-iterate's hooks-codex sibling — the one file this repo actually has that the narrower glob missed. This closes the gap by construction: every command string this repo's hooks.json files can contain is now provably quoted when it references ${CLAUDE_PLUGIN_ROOT}, which is what the pinned-test's regex depends on. A rewrite of the regex itself to a shlex-based tokenizer was considered and declined as unnecessary scope for a low-severity, already-structurally-closed gap."
+    }
+  ],
+  "summary": "All 4 doubts addressed. The high-severity finding was a real, live-reproduced regression: --no-project strips the ambient CWD-project dependency resolution that hooks previously relied on for pyyaml/jsonschema in a multi-hop sys.executable subprocess chain (verified with `uv run --no-project python -c \"import yaml\"` failing in a directory with no ambient .venv). Fixed by adding --with pyyaml --with jsonschema to the affected hooks.json entries, applied uniformly across all plugins that share the same target script to satisfy codex_hook_merge's cross-plugin prefix-consistency requirement (itself covered by an existing test). The reversibility finding (nested unpinned uv run in a build hook, invisible to the static meta-tests because it isn't in hooks.json) was fixed the same way as the core bug. The boundary-contract gap was closed by widening an existing quoting-enforcement test's glob rather than rewriting the regex.",
+  "verdict": "PASS"
+}

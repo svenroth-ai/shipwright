@@ -1,0 +1,61 @@
+{
+  "section": "iterate-2026-09-28-hooks-uv-run-project-pin",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "shared/tests/test_ensure_shared_cache_vendored.py",
+      "line": 96,
+      "finding": "_is_cache_guarded assumed the old uv run \"<guard>\" shape (tokens[:3]); every SessionStart command now tokenizes as uv run --no-project \"<guard>\" ..., so test_forward_registered_as_one_consolidated_session_start_command failed for all 12 hook-bearing plugins.",
+      "disposition": "fixed",
+      "fix": "Updated _is_cache_guarded to expect tokens[:4] == [uv, run, --no-project, guard]; updated the two synthetic-command tests (test_cache_guard_shape_rejects_reversed_or_targetless_commands, test_guard_shape_rejects_the_healer_as_a_target) to the new shape and added a regression-guard negative case (dropped --no-project must read as unguarded); updated test_exact_target_gate_rejects_omission_reorder_and_substitution's guard string for consistency. Full file re-run: 13 passed."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+      "line": 112,
+      "finding": "The integration test claimed to derive its command from the real shipped hooks.json entry, but discarded the resolved path and ran a hand-written argv, only asserting prefix equality.",
+      "disposition": "fixed",
+      "fix": "_find_real_uv_run_command now returns the resolved absolute script Path directly (placeholder-substituted against the owning plugin root); both tests build their subprocess argv from shlex.split(prefix) + [script_path] instead of a hand-written list — the negative control asserts the derived unpinned-prefix equals exactly ['uv','run'] before using it, so it strips only the flag under test."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+      "line": 75,
+      "finding": "The fixture's regex only matched an already-pinned uv run --no-project \"...\" command, so a future regression (flag dropped) would raise a misleading 'fixture broken' error instead of a flag-missing assertion.",
+      "disposition": "fixed",
+      "fix": "Regex now matches uv run followed by any --flag tokens, returning whatever prefix is actually present; the caller's own `assert prefix == \"uv run --no-project\"` now reports a real regression as such."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_hooks_uv_run_project_isolation.py",
+      "line": 86,
+      "finding": "_collect_command_strings is duplicated from test_hooks_uv_run_pinned.py instead of shared/imported.",
+      "disposition": "declined",
+      "reason": "Both files are pure, ~10-line, stable helpers local to their own test file — cross-test-file imports for a helper this small would add coupling between otherwise-independent test files for a marginal (~13 LOC) saving; not worth it under the Surgical Changes principle for a non-blocking finding."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/hooks/track_tool_calls.py",
+      "line": 10,
+      "finding": "Six hook scripts' module docstrings still showed the old unpinned uv run \"...\" invocation example, contradicting the now-mandatory writing-plugin.md convention.",
+      "disposition": "fixed",
+      "fix": "Added --no-project to the docstring example in track_tool_calls.py, track_context_cost.py, generate_handoff_on_stop.py, audit_phase_quality_on_stop.py, audit_compliance_on_stop.py, aggregate_triage_on_stop.py."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": ".shipwright/planning/iterate/2026-09-28-hooks-uv-run-project-pin-miniplan.md",
+      "line": 21,
+      "finding": "The mini-plan wrongly said plugins/shipwright-iterate/hooks-codex/hooks.json needed editing ('remaining lines get the flag'); that file's only 2 commands were already fully pinned pre-diff. This stale sentence caused both external code-review passes (glm + openai) to independently raise a false HIGH 'file missing from diff' finding.",
+      "disposition": "fixed",
+      "fix": "Mini-plan corrected to state the file needs no edit and is already fully compliant; verified via test_every_uv_run_hook_command_has_no_project[shipwright-iterate/hooks-codex] passing unmodified. The external HIGH finding is recorded here as a verified false positive, not acted on beyond the mini-plan text fix."
+    }
+  ],
+  "summary": "One HIGH regression found and fixed (cache-guard shape test), plus five lower-severity findings — two fixed (test derivation honesty, docstring drift), one declined with reason (helper duplication), one already-correct (regex robustness — fixed for defense in depth), and one documentation-only correction that also explains a false-positive HIGH finding raised independently by both external code reviewers. Full re-run of every affected test file (109 tests across test_hooks_uv_run_pinned.py, test_hooks_uv_run_project_isolation.py, test_ensure_shared_cache_vendored.py, test_hooks_json_quoting.py, test_hooks_json_wrapper.py, test_hooks.py) plus the Codex hook merge/sync/launcher suite (72 tests) all green.",
+  "verdict": "PASS"
+}

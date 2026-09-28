@@ -20,7 +20,7 @@ it is never a backlog write.
 
 Wire AFTER finalize + phase_quality and BEFORE `aggregate_triage_on_stop`:
 
-    uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py"
+    uv run --no-project "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py"
 """
 
 from __future__ import annotations

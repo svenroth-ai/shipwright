@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/session_start_using_shipwright.py\""
+            "command": "uv run --no-project --with pyyaml --with jsonschema \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run_if_cache_ready.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\" \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/session_start_using_shipwright.py\""
           }
         ]
       }
@@ -15,19 +15,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py\""
           },
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py\""
           },
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/bloat_gate_on_stop.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/bloat_gate_on_stop.py\""
           },
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/plugin_sync_reminder_on_stop.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/plugin_sync_reminder_on_stop.py\""
           }
         ]
       }
@@ -38,11 +38,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_file_size.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_file_size.py\""
           },
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/mark_plugin_edit.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/mark_plugin_edit.py\""
           }
         ]
       }

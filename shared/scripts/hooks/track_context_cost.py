@@ -16,7 +16,7 @@ one JSON file per session, so concurrent sessions/worktrees never contend on
 the same file.
 
 Usage (from hooks.json):
-    uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_context_cost.py"
+    uv run --no-project "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_context_cost.py"
 
 Never blocks session shutdown: every failure is caught, logged to stderr,
 and the hook still returns 0 — matching ``generate_handoff_on_stop.py``'s

@@ -1,0 +1,10 @@
+{"items":[
+  {"name":"Spec Compliance","verdict":"pass","note":"All 13 hooks.json files pinned with --no-project (AC-1/2), meta-test + integration test added (AC-3/4), docs updated (AC-5); --python pinning explicitly declined as out of scope."},
+  {"name":"Error Handling","verdict":"n/a","note":"No new system boundary; the change is a flag string in an existing command."},
+  {"name":"Security Basics","verdict":"pass","note":"No user input, SQL, HTML, or secrets touched."},
+  {"name":"Test Quality","verdict":"pass","note":"Meta-test asserts command-string outcome; integration test has a positive case and a negative control that proves the pair would have caught the original bug."},
+  {"name":"Performance Basics","verdict":"n/a","note":"No DB/list endpoints; the fix reduces per-hook work by skipping an unneeded project sync."},
+  {"name":"Naming & Structure","verdict":"pass","note":"New test files follow existing shared/tests/test_hooks_*.py naming/style; all files under 300 LOC."},
+  {"name":"Affected Boundaries","verdict":"pass","note":"Producer/consumer identified; the integration test is the round-trip probe (real hooks.json command run through a real subprocess, fixed and unfixed)."},
+  {"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

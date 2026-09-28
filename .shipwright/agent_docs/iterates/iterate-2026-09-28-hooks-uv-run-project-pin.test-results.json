@@ -1,0 +1,100 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
+    "date": "2026-09-28",
+    "unit": {
+      "status": "passed",
+      "passed": 20640,
+      "total": 20720
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 558,
+      "total": 558
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Every hooks.json uv run command includes --no-project",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_uv_run_pinned.py::test_every_uv_run_hook_command_has_no_project PASSED"
+        },
+        {
+          "behavior": "The --with pyyaml hook command also carries --no-project",
+          "disposition": "tested",
+          "evidence": "same test, asserted per-command (one parametrized assertion covers both flags on the same command string)"
+        },
+        {
+          "behavior": "A representative hook script invoked via uv run --no-project from a CWD with an unsatisfiable host pyproject.toml still succeeds",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_uv_run_project_isolation.py::test_no_project_ignores_poisoned_cwd PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "The same invocation WITHOUT --no-project fails against that poisoned CWD (negative control proving the test would have caught the original bug)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_uv_run_project_isolation.py::test_without_no_project_is_poisoned_by_cwd PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "The Windows file-lock race itself (a running process holding a console-script .exe open while uv attempts to resync a different, unrelated host project)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "reproducing this OS-level timing race deterministically in CI would require spawning a real long-running subprocess and racing a real uv resync against it; the mechanism it depends on (uv resolving/syncing the host CWD project at all) is what the two tests above prove is now structurally impossible, which is the actual fix"
+        },
+        {
+          "behavior": "Existing repo tooling that parses/hardcodes the pre-fix uv run \"<script>\" command shape must still recognize the post-fix shape, including after the --with pyyaml/jsonschema tokens were added",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::_is_cache_guarded fixed twice (once for --no-project at a fixed offset, again for --with pairs shifting that offset) \u2014 now locates the guard by content via tokens.index(). 13/13 in that file + its reverse-direction sibling PASSED; plugins/shipwright-build/tests/test_review_payload_hook_wiring_integration.py PASSED"
+        },
+        {
+          "behavior": "The nested, hooks.json-invisible uv run in cleanup-review-scratch-on-code-reviewer-failure.py (spawned from cwd=resolve_project_root()) is also pinned",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_cleanup_review_scratch_on_code_reviewer_failure.py \u2014 args[:3]==['uv','run','--no-project'] PASSED (15/15 in file)"
+        },
+        {
+          "behavior": "--with pyyaml/--with jsonschema additions keep every run_if_cache_ready.py/audit_compliance_on_stop.py invocation's flag prefix identical across all plugins that share the target script (codex bundle-merge dedup requirement)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_uv_run_pinned.py::test_shared_uv_run_scripts_use_identical_flag_prefix_across_plugins PASSED; shared/scripts/tools/tests (codex_hook_merge/inventory/sync, 1171 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
+    "commit": "a629ff60b5eddd3b16de618ae2eaa87c67f8f4b3",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
