@@ -844,14 +844,6 @@
       "adr": "ADR-091"
     },
     {
-      "path": "shared/scripts/lib/assertion_weakening.py",
-      "limit": 300,
-      "current": 1676,
-      "state": "grandfathered",
-      "adr": null,
-      "note": "5.6x the limit, the outlier of the H1 2026-09-25 drift sweep. Grandfathered here to close H1 (stop further undetected growth); a real split-or-ADR-exception decision is still owed and is deliberately NOT made in this pass — see .shipwright/planning/adr/iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md."
-    },
-    {
       "path": "shared/scripts/lib/atomic_write.py",
       "limit": 300,
       "current": 324,
@@ -1354,14 +1346,6 @@
       "current": 300,
       "state": "grandfathered",
       "adr": null
-    },
-    {
-      "path": "shared/tests/test_assertion_weakening.py",
-      "limit": 300,
-      "current": 1509,
-      "state": "grandfathered",
-      "adr": null,
-      "note": "5x the limit; mirrors shared/scripts/lib/assertion_weakening.py's outlier status — same deferred split-or-ADR decision."
     },
     {
       "path": "shared/tests/test_audit_e2e_integration.py",

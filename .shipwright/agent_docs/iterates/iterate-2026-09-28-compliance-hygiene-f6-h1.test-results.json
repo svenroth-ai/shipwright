@@ -33,17 +33,22 @@
         {
           "behavior": "CLAUDE.md line count \u2264 200-line hygiene cap (F6)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/scripts/audit/group_f.py::_check_f6 re-run directly \u2192 status=pass, 193 lines"
+          "evidence": "group_f.py::_check_f6 re-run directly \u2192 status=pass, 193 lines"
         },
         {
-          "behavior": "every oversize (>300 LOC) file is present in shipwright_bloat_baseline.json (H1)",
+          "behavior": "26 of 28 previously-undetected oversize files added to shipwright_bloat_baseline.json (H1, ordinary drift)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/scripts/audit/group_h.py H1 check re-run directly \u2192 status=pass, 266/266 oversize files listed"
+          "evidence": "group_h.py H1 check re-run directly \u2192 the only 2 remaining failures are exactly the 2 deliberately-deferred outliers, confirming none of the other 26 were missed"
+        },
+        {
+          "behavior": "the 2 extreme outliers (assertion_weakening.py + its test, 5-5.6x the limit) are deliberately NOT baselined, so H1 correctly stays open for them pending a real split-or-ADR decision",
+          "disposition": "tested",
+          "evidence": "group_h.py H1 check re-run directly \u2192 fails naming exactly these 2 paths, matching the scope recorded in .shipwright/planning/adr/iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md"
         },
         {
           "behavior": "existing baseline entries (state/adr/plan_ref/note) are preserved unmutated by the merge",
           "disposition": "tested",
-          "evidence": "one-off diff script comparing HEAD vs working-tree shipwright_bloat_baseline.json by path \u2192 0 of 250 pre-existing entries changed or removed, 28 net-new added"
+          "evidence": "diff script comparing HEAD vs working-tree shipwright_bloat_baseline.json by path \u2192 0 of 250 pre-existing entries changed or removed, 26 net-new added"
         },
         {
           "behavior": "shipwright_bloat_baseline.json stays valid JSON after the merge",
@@ -52,8 +57,8 @@
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
