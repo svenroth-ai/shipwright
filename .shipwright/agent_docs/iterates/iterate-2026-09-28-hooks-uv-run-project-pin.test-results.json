@@ -25,6 +25,15 @@
       "status": "not_run"
     },
     "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-09-28T12:43:01.864Z",
+      "justification": "Pure hook-invocation/CLI-launch-mechanics fix (uv run flags in hooks.json + a nested subprocess call); no web UI, API route, or startable dev server surface is touched or affected \u2014 verified entirely via the unit/integration test suite (shared/tests/test_hooks_uv_run_pinned.py, test_hooks_uv_run_project_isolation.py) plus the F0/F11 mirrored CI-gate runs."
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
@@ -92,7 +101,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
-    "commit": "a629ff60b5eddd3b16de618ae2eaa87c67f8f4b3",
+    "commit": "dde420fd7232454ca716d5c49067ca07384a83a4",
     "dirty": true,
     "base": null,
     "release": null

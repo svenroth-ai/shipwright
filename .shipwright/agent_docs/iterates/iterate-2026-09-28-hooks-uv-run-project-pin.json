@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-09-28-hooks-uv-run-project-pin",
-  "date": "2026-09-28T12:35:47.424891Z",
-  "event_at": "2026-09-28T06:39:36.350887+00:00",
+  "date": "2026-09-28T12:44:46.150586Z",
+  "event_at": "2026-09-28T12:35:57.758063+00:00",
   "type": "bug",
   "complexity": "medium",
   "prior_source": "keyword",
@@ -66,6 +66,15 @@
       "acs": 6,
       "covered_acs": 6
     }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-09-28T12:43:01.864Z",
+    "justification": "Pure hook-invocation/CLI-launch-mechanics fix (uv run flags in hooks.json + a nested subprocess call); no web UI, API route, or startable dev server surface is touched or affected \u2014 verified entirely via the unit/integration test suite (shared/tests/test_hooks_uv_run_pinned.py, test_hooks_uv_run_project_isolation.py) plus the F0/F11 mirrored CI-gate runs."
   },
   "declared_removals": []
 }
