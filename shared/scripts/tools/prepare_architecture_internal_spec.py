@@ -71,7 +71,22 @@ def main(argv: list[str] | None = None) -> int:
     spec_text = spec_path.read_text(encoding="utf-8")
     sanitized = strip_prior_review_sections(spec_text)
 
-    runs_root = (Path(args.project_root) / ".shipwright" / "runs").resolve()
+    # Check for a symlinked ancestor BEFORE resolving — resolving first would
+    # silently follow it, so the containment check below would only ever
+    # compare a symlink-escaped path against itself (external review,
+    # medium): a `.shipwright` or `.shipwright/runs` planted as a symlink to
+    # outside the project would pass containment trivially post-resolve.
+    shipwright_dir = Path(args.project_root) / ".shipwright"
+    runs_root_unresolved = shipwright_dir / "runs"
+    for ancestor in (shipwright_dir, runs_root_unresolved):
+        if ancestor.is_symlink():
+            print(
+                f"error: refusing to write through a symlinked directory: {ancestor}",
+                file=sys.stderr,
+            )
+            return 1
+
+    runs_root = runs_root_unresolved.resolve()
     runs_dir = (runs_root / args.run_id).resolve()
     if runs_dir != runs_root and runs_root not in runs_dir.parents:
         print(

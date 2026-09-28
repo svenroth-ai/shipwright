@@ -87,12 +87,39 @@ _PRIOR_REVIEW_SECTION_RE = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
+#: A fenced code block (``` or ~~~, either length) start-to-end. Matched only
+#: to MASK its interior before the section regex runs — a spec that quotes a
+#: template or a skill excerpt containing a line like "## Internal Plan
+#: Review" must not have that quoted line mistaken for a real section
+#: boundary (external review, medium — both `glm` and `openai` legs raised
+#: this independently against this exact regex).
+_FENCE_RE = re.compile(r"^(`{3,}|~{3,}).*?^\1\s*$", re.MULTILINE | re.DOTALL)
+
+
+def _mask_fenced_blocks(text: str) -> str:
+    """Replace every character inside a fenced code block with a space,
+    preserving newlines and overall length so match offsets computed on the
+    masked text still index correctly into the original."""
+    return _FENCE_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+
 
 def strip_prior_review_sections(spec_text: str) -> str:
     """Remove sections that would leak a prior reviewer's verdict/rationale
     into the architecture pass's `{SPEC}` input — a code-level backstop for
-    the anchoring defense prose already asks the iterate skill to honor."""
-    return _PRIOR_REVIEW_SECTION_RE.sub("", spec_text)
+    the anchoring defense prose already asks the iterate skill to honor.
+
+    Section boundaries are located against a fence-masked copy of the text
+    (see `_mask_fenced_blocks`) so a fenced quote of a heading-shaped line
+    can never be read as a real section start or end; the located spans are
+    then removed from the original, unmasked text."""
+    masked = _mask_fenced_blocks(spec_text)
+    kept: list[str] = []
+    cursor = 0
+    for match in _PRIOR_REVIEW_SECTION_RE.finditer(masked):
+        kept.append(spec_text[cursor:match.start()])
+        cursor = match.end()
+    kept.append(spec_text[cursor:])
+    return "".join(kept)
 
 
 def select_mode_input(mode: str, args: Any) -> tuple[str, str]:

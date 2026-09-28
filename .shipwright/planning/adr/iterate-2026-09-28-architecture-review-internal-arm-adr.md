@@ -184,6 +184,44 @@ Two findings, both about `prepare_architecture_internal_spec.py` /
   non-blocking comment — never staged, so never part of any commit, but
   worth clearing from the working tree.
 
+## External code review (Tier-3, `glm` + `openai`, required gate)
+Ran against the full merge-base diff (this iterate's entire change set) after
+the local preflight rounds above. Two findings converged independently
+across both legs — fixed, not disclosed:
+- **Fenced-block-blind section strip (medium, fixed).**
+  `_PRIOR_REVIEW_SECTION_RE` in `external_review_modes.py` had no awareness
+  of fenced code blocks: a spec quoting a template or skill excerpt whose
+  fenced content contains a line shaped like `## Internal Plan Review` would
+  have that line read as a real section boundary, silently deleting genuine
+  spec content up to the next real heading. Fixed by masking fenced regions
+  (```` ``` ```` / `~~~`) with same-length whitespace before locating section
+  spans, then removing those spans from the original, unmasked text — a
+  fenced quote can no longer be mistaken for a section start or end. Covered
+  by `test_strip_ignores_a_heading_look_alike_inside_a_fenced_code_block` and
+  `test_strip_still_removes_a_real_prior_review_section_after_a_fence`.
+- **Symlinked runs-directory escape (medium, fixed).** `openai`'s leg:
+  `prepare_architecture_internal_spec.py` resolved `.shipwright/runs` before
+  checking containment, so a `.shipwright` or `.shipwright/runs` planted as a
+  symlink to outside the project would pass the containment check trivially
+  — both sides of the comparison follow the same symlink post-resolve. This
+  is a different surface than the earlier symlink fix (which only guards the
+  exact output *filename*, not an ancestor directory). Fixed by checking
+  `is_symlink()` on both ancestor path components *before* resolving either.
+  Covered by `test_a_symlinked_runs_directory_is_refused` (skips on a host
+  without symlink privileges, same precedent as the file-level test).
+- **Two low-severity items, declined with reason.** The Windows symlink
+  fallback's check-then-write race was independently reflagged by `glm`; it
+  is the same disclosed residual the earlier F11 preflight round already
+  named (best-effort on Windows, the CI gate that matters runs on POSIX) —
+  no new action. `glm` also flagged `test_plan_step_5a_...`'s `--plan-file`
+  assertion as weak evidence for AC4's second half (a property of
+  `external_review_modes.py`, not the prose it anchors on); accurate but
+  advisory-severity and out of scope for this already-large fix set — the
+  underlying behavior (`--mode architecture` rejects `--plan-file`) is
+  independently covered by `test_architecture_mode_rejects_plan_file_as_a_foreign_flag`
+  in `test_architecture_review_mode.py`, so the gap is in the *anchor*, not
+  in actual coverage.
+
 ## Rejected alternatives
 - **Merge the new agent into `opus-plan-reviewer`** instead of a separate
   fresh-context agent. Rejected: `opus-plan-reviewer` is defined by

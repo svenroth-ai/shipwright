@@ -82,6 +82,50 @@ def test_architecture_mode_strips_prior_review_sections_before_use(monkeypatch, 
     assert "## Goal" in seen[-1] and "Do X." in seen[-1], "unrelated sections must survive"
 
 
+def test_strip_ignores_a_heading_look_alike_inside_a_fenced_code_block():
+    """External code review (medium, both `glm` and `openai` legs, converging):
+    the section regex has no fence awareness, so a spec quoting a template or
+    skill excerpt that itself contains a fenced `## Internal Plan Review`-shaped
+    line would have that line mistaken for a real section boundary, silently
+    deleting genuine spec content up to the next real heading."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "## Verification (medium+)\n"
+        "Quoted template excerpt:\n"
+        "```markdown\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** this is example template text, not a real review\n"
+        "```\n"
+        "Run tests after the quoted block above.\n\n"
+        "## Acceptance Criteria\n- AC1: it works.\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert "Run tests after the quoted block above." in result
+    assert "## Acceptance Criteria" in result and "AC1: it works." in result
+    assert "```markdown" in result, "the fence itself is untouched, only real sections strip"
+
+
+def test_strip_still_removes_a_real_prior_review_section_after_a_fence():
+    """The fence-masking must not blind the strip to a REAL section that
+    follows a fenced block earlier in the document."""
+    from external_review_modes import strip_prior_review_sections
+
+    spec_text = (
+        "# Spec\n\n## Goal\nDo X.\n\n"
+        "```markdown\nsome unrelated quoted snippet\n```\n\n"
+        "## Internal Plan Review (opus-plan-reviewer)\n"
+        "- **Findings:** rejected option B because Y\n\n"
+        "## Verification (medium+)\nRun tests.\n"
+    )
+    result = strip_prior_review_sections(spec_text)
+    assert "rejected option B because Y" not in result
+    assert "## Internal Plan Review" not in result
+    assert "## Verification" in result and "Run tests." in result
+    assert "some unrelated quoted snippet" in result
+
+
 def test_iterate_mode_does_not_strip_prior_review_sections(monkeypatch, tmp_path):
     """Iterate mode intentionally shows the mini-plan's own rejection rationale
     — only architecture mode's anchoring defense needs the strip."""

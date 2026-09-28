@@ -121,6 +121,26 @@ def test_a_preexisting_symlink_at_the_output_path_is_refused(tmp_path: Path) -> 
     assert victim.read_text(encoding="utf-8") == "do not touch"
 
 
+def test_a_symlinked_runs_directory_is_refused(tmp_path: Path) -> None:
+    """External code review BLOCK: resolving `.shipwright/runs` before checking
+    containment means a symlinked runs directory (or `.shipwright` itself)
+    passes the containment check trivially post-resolve — both sides of the
+    comparison follow the same symlink. Pre-plant `.shipwright/runs` as a
+    symlink to an outside directory and confirm nothing is written there."""
+    outside = tmp_path.parent / f"outside-{tmp_path.name}"
+    outside.mkdir()
+    shipwright_dir = tmp_path / ".shipwright"
+    shipwright_dir.mkdir()
+    try:
+        (shipwright_dir / "runs").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlink creation unavailable on this host")
+
+    rc = _run(tmp_path, _SPEC_WITH_PRIOR_REVIEW)
+    assert rc != 0
+    assert list(outside.iterdir()) == [], "nothing must be written through the symlinked runs dir"
+
+
 def test_a_run_id_that_is_not_an_iterate_run_id_is_refused(tmp_path: Path, capsys) -> None:
     """Only /shipwright-iterate calls this tool (iteration-planning.md, step
     0b) with its own run_id, so the strict iterate-YYYY-MM-DD-slug format is
