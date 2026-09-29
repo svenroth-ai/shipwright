@@ -174,9 +174,9 @@ def test_required_check_names_match_deployed_workflows(
 
 def test_required_checks_exclude_if_gated_deploy_jobs(tmp_path: Path) -> None:
     """H1 regression: the supabase-nextjs CI template carries `if:`-gated
-    deploy-dev / deploy-prod jobs that are SKIPPED on feature-branch PRs (they
-    never report). They MUST NOT appear as requireable checks (requiring one
-    blocks every PR), but they MUST be surfaced as conditional in the report."""
+    deploy-dev / deploy-prod jobs that are SKIPPED on feature-branch PRs. A
+    skipped job reports Success, so requiring one does not gate deployment;
+    these MUST NOT appear as requireable but MUST be surfaced as conditional."""
     _build_sample_repo(tmp_path, "supabase-nextjs")
 
     derived = ar.required_check_names(tmp_path)
@@ -190,6 +190,24 @@ def test_required_checks_exclude_if_gated_deploy_jobs(tmp_path: Path) -> None:
     assert {"deploy-dev", "deploy-prod"} <= conditional_names
     # `Tests (...)` jobs are unconditional → requireable.
     assert any(n.startswith("Tests (") for n in ci_report["checks"])
+
+
+def test_yaml_scalar_if_values_are_classified_in_report(tmp_path: Path) -> None:
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "ci.yml").write_text(
+        "on:\n  pull_request:\njobs:\n"
+        "  true_job:\n    name: Always true\n    if: true\n"
+        "  false_job:\n    name: Always false\n    if: false\n"
+        "  zero_job:\n    name: Numeric false\n    if: 0\n",
+        encoding="utf-8",
+    )
+    report = ar.workflow_report(tmp_path, "ci.yml")
+    assert report is not None
+    assert report["checks"] == ["Always true"]
+    assert report["conditional"] == [
+        ("Always false", "false"), ("Numeric false", "0")
+    ]
 
 
 @pytest.mark.parametrize("profile", sorted(CODEQL_LANGUAGES_BY_PROFILE))
@@ -223,6 +241,7 @@ def test_render_warns_about_conditional_deploy_jobs(tmp_path: Path) -> None:
     doc = ar.render_automerge_setup(tmp_path, "supabase-nextjs")
 
     assert "Conditional jobs" in doc
+    assert "skipped job reports a successful check" in doc
     assert "deploy-prod" in doc
     assert "deploy-dev" in doc
     # And the requireable table row for ci.yml must NOT advertise deploy-* as a

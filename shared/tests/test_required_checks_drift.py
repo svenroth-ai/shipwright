@@ -39,6 +39,7 @@ from lib.required_checks_drift import (  # noqa: E402
     compare_required_checks,
     dedup_key,
     render_drift,
+    workflow_check_sets,
 )
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -109,6 +110,8 @@ def test_enumeration_covers_every_workflow_not_just_adopts_five() -> None:
         "pr-review-run.yml posts the `PR Review` status; it must be derived, or "
         "this repo's own required check reads as configured-but-nonexistent"
     )
+    # Posted statuses stay every-PR candidates, unanalysed (documented limit).
+    assert "PR Review" in workflow_check_sets(_ROOT, branch="main")[1]
 
 
 def test_a_workflow_that_cannot_run_on_a_pr_is_not_derived(tmp_path: Path) -> None:
@@ -132,6 +135,106 @@ def test_a_workflow_that_cannot_run_on_a_pr_is_not_derived(tmp_path: Path) -> No
         encoding="utf-8",
     )
     assert all_workflow_check_names(tmp_path) == ["On every PR"]
+
+
+def _write_ci(tmp_path: Path, on: str, jobs: str) -> None:
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "ci.yml").write_text(
+        f"name: CI\non:\n{on}\njobs:\n{jobs}", encoding="utf-8"
+    )
+
+
+@pytest.mark.covers("FR-01.17/AC06")
+def test_configured_pr_conditional_job_is_not_a_phantom(tmp_path: Path) -> None:
+    _write_ci(
+        tmp_path, "  pull_request:",
+        "  client:\n    name: Client (type + lint + test)\n"
+        "    if: github.event_name != 'schedule'\n    runs-on: ubuntu-latest\n",
+    )
+    configured = ["Client (type + lint + test)"]
+    possible, candidates = workflow_check_sets(tmp_path)
+    assert possible == configured and candidates == configured
+    result = compare_required_checks(possible, configured, unenforced_candidates=candidates)
+    assert result["in_sync"]
+    # Provably true on every PR, so a missing requirement is still unenforced.
+    missing = compare_required_checks(possible, [], unenforced_candidates=candidates)
+    assert missing["unenforced"] == configured
+
+
+@pytest.mark.parametrize("condition, candidate", [
+    ("${{ github.event_name == 'pull_request' }}", True),
+    ("github.event_name != 'schedule'", True),
+    ("true", True),
+    ("github.event_name == 'push'", False),
+    ("github.event_name != 'pull_request'", False),
+    ("github.event_name != 'Pull_Request'", False),  # GitHub compares case-insensitively
+    ("false", False),
+    ("github.ref == 'refs/heads/main'", False),  # unknown: possible-only
+    ("github.event_name == 'pull_request' && github.base_ref == 'main'", False),
+])
+def test_job_condition_is_possible_but_candidate_only_when_proved(
+    tmp_path: Path, condition: str, candidate: bool
+) -> None:
+    _write_ci(
+        tmp_path, "  pull_request:",
+        f"  gate:\n    name: Gate\n    if: {condition}\n    runs-on: ubuntu-latest\n",
+    )
+    possible, candidates = workflow_check_sets(tmp_path)
+    assert possible == ["Gate"]  # a skipped job still reports Success
+    assert (candidates == ["Gate"]) is candidate
+
+
+def test_yaml_boolean_false_if_is_conditional_not_unconditional(tmp_path: Path) -> None:
+    _write_ci(
+        tmp_path, "  pull_request:",
+        "  disabled:\n    name: Disabled\n    if: false\n    runs-on: ubuntu-latest\n",
+    )
+    assert workflow_check_sets(tmp_path) == (["Disabled"], [])
+
+
+@pytest.mark.parametrize("on, expected", [
+    ("  [push, pull_request]", (["A"], ["A"])),
+    ("  pull_request", (["A"], ["A"])),
+    ("  push", ([], [])),
+])
+def test_list_and_string_pull_request_triggers_are_not_dormant(
+    tmp_path: Path, on: str, expected: tuple
+) -> None:
+    _write_ci(tmp_path, on, "  a:\n    name: A\n    runs-on: x\n")
+    assert workflow_check_sets(tmp_path) == expected
+
+
+@pytest.mark.covers("FR-01.17/AC06")
+@pytest.mark.parametrize("filters, branch, candidate", [
+    ("branches: [main]", "main", True),
+    ("branches: [main]", "develop", False),
+    ("branches-ignore: [release]", "main", True),
+    ("branches-ignore: [main]", "main", False),
+    ("branches: ['release/**']", "release/v1", False),  # glob: not proved
+    ("branches: [main]", None, False),
+    ("paths: ['src/**']", "main", False),
+    ("types: [opened]", "main", False),
+    ("types: [opened, synchronize, reopened, labeled]", "main", True),
+])
+def test_pr_filters_make_a_check_possible_only_unless_proved(
+    tmp_path: Path, filters: str, branch: str | None, candidate: bool
+) -> None:
+    _write_ci(
+        tmp_path, "  pull_request:\n    " + filters,
+        "  gate:\n    name: Gate\n    runs-on: ubuntu-latest\n",
+    )
+    possible, candidates = workflow_check_sets(tmp_path, branch=branch)
+    assert possible == ["Gate"]  # never a phantom because of a filter we cannot prove
+    assert (candidates == ["Gate"]) is candidate
+
+
+def test_jobs_with_needs_remain_unenforced_candidates(tmp_path: Path) -> None:
+    _write_ci(
+        tmp_path, "  pull_request:",
+        "  a:\n    name: A\n    runs-on: x\n  b:\n    name: B\n    needs: a\n    runs-on: x\n",
+    )
+    assert workflow_check_sets(tmp_path)[1] == ["A", "B"]
 
 
 def test_the_monorepos_manual_launch_gate_is_not_reported_as_drift() -> None:

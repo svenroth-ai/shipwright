@@ -24,6 +24,7 @@ FR-01.17 (E)6.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Iterable
 
@@ -34,37 +35,89 @@ from typing import Iterable
 ADVISORY_CONTEXTS: frozenset[str] = frozenset()
 
 
-def all_workflow_check_names(project_root: Path | str) -> list[str]:
-    """Check names EVERY workflow in this repo produces, not just adopt's five.
+_PR_DEFAULT_TYPES = {"opened", "synchronize", "reopened"}
+_GLOB_CHARS = set("*?[]!+")
 
-    ``automerge_readiness.KNOWN_WORKFLOWS`` is deliberately the set
-    ``/shipwright-adopt`` scaffolds into a target repo — it is the right scope
-    for the AUTOMERGE_SETUP table and the wrong one here. Policing a repo's own
-    configuration with it under-derives and reports honest checks as phantoms:
-    run against this monorepo it missed `bloat-check.yml` and `pr-review-run.yml`
-    and called both configured contexts non-existent. A wrong answer from a
-    drift producer is worse than silence, so this enumerates the directory.
+
+def _job_runs_on_pr(condition: str) -> bool:
+    """True only for a job `if:` provably true on a pull_request run.
+
+    Deliberately tiny: `github.event_name ==/!= '<literal>'` and literal
+    true. Anything else is unknown and stays possible-only.
+    """
+    expr = condition.strip()
+    if expr.startswith("${{") and expr.endswith("}}"):
+        expr = expr[3:-2].strip()
+    if expr == "true":
+        return True
+    match = re.fullmatch(r"github\.event_name\s*(==|!=)\s*(['\"])([\w-]+)\2", expr)
+    if not match:
+        return False
+    is_pr = match.group(3).casefold() == "pull_request"
+    return is_pr if match.group(1) == "==" else not is_pr
+
+
+def _pr_trigger_unfiltered(trigger: object, branch: str | None) -> bool:
+    """True when the `pull_request` trigger provably fires for every PR into
+    ``branch``. No glob matching: a glob, path filter or partial `types` list
+    is not proved, so the workflow stays possible-only.
+    """
+    if trigger is None:
+        return True
+    if not isinstance(trigger, dict) or "paths" in trigger or "paths-ignore" in trigger:
+        return False
+    types = trigger.get("types")
+    if types is not None and not (
+        isinstance(types, list) and _PR_DEFAULT_TYPES <= {str(t).casefold() for t in types}
+    ):
+        return False
+    include, ignore = trigger.get("branches"), trigger.get("branches-ignore")
+    if include is None and ignore is None:
+        return True
+    patterns = include if ignore is None else ignore if include is None else None
+    if branch is None or not isinstance(patterns, list) or not all(
+        isinstance(p, str) and not (_GLOB_CHARS & set(p)) for p in patterns
+    ):
+        return False
+    return (branch in patterns) if include is not None else (branch not in patterns)
+
+
+def workflow_check_sets(
+    project_root: Path | str, *, branch: str | None = None
+) -> tuple[list[str], list[str]]:
+    """Return ``(possible, candidates)`` check names for pull requests.
+
+    ``possible`` — every check a non-dormant workflow can report, including
+    job-`if:`-gated ones (GitHub reports a skipped job as Success): it
+    disproves a phantom. ``candidates`` — checks that run on every PR into
+    ``branch``: the only ones that can be called unenforced. Posted statuses
+    (`POSTED_STATUS_CONTEXTS`) are candidates unproved: whether the stage-2
+    script really posts the status is not analysed.
     """
     from lib.automerge_readiness import workflow_report  # local: avoids a cycle
 
     root = Path(project_root)
-    names: list[str] = []
+    possible: list[str] = []
+    candidates: list[str] = []
     wf_dir = root / ".github" / "workflows"
     for path in sorted(wf_dir.glob("*.y*ml")) if wf_dir.is_dir() else []:
         report = workflow_report(root, path.name)
-        if not report or report.get("parse_error"):
-            continue
         # A workflow that cannot fire on a pull request never reports a check, so
-        # it cannot be "unenforced" — and REQUIRING it would block every PR
-        # forever waiting on a result that never arrives (the dormant trap the
-        # automerge guide warns about). `workflow_report` already decides this
-        # and the first draft discarded it: run against this repo it called the
-        # manual-only `grade-empirical.yml` drift. Over-derivation muted the
-        # producer just as surely as the under-derivation it replaced.
-        if report.get("dormant"):
+        # it can be neither "unenforced" nor a reason to call a name real.
+        if not report or report.get("parse_error") or report.get("dormant"):
             continue
-        names.extend(report["checks"])
-    return names
+        possible.extend(report["checks"])
+        possible.extend(name for name, _cond in report["conditional"])
+        if "pr_trigger" in report and not _pr_trigger_unfiltered(report["pr_trigger"], branch):
+            continue
+        candidates.extend(report["checks"])
+        candidates.extend(name for name, cond in report["conditional"] if _job_runs_on_pr(cond))
+    return possible, candidates
+
+
+def all_workflow_check_names(project_root: Path | str) -> list[str]:
+    """Every check name this repo can produce on PRs (the ``possible`` set)."""
+    return workflow_check_sets(project_root)[0]
 
 
 def compare_required_checks(
@@ -72,24 +125,24 @@ def compare_required_checks(
     configured: Iterable[str],
     *,
     advisory: Iterable[str] = (),
+    unenforced_candidates: Iterable[str] | None = None,
 ) -> dict:
-    """Compare declared-in-repo check names against host-configured ones.
+    """Compare possible PR checks with the host's must-pass contexts.
 
-    ``derived`` — names the repo's workflows actually produce (from
-    ``automerge_readiness.required_check_names``, which matrix-expands job names
-    and knows that a `workflow_run` stage contributes a POSTED STATUS rather
-    than a job name).
-
-    ``configured`` — contexts the host will actually block on.
-
-    Returns ``{in_sync, unenforced, phantom, derived, configured}`` with both
-    lists sorted, so the output is stable enough to dedup a triage item on.
+    ``derived`` includes conditional jobs even when skipped (their check reports
+    Success); ``unenforced_candidates`` limits the opposite direction to
+    checks provably run on every PR (defaults to ``derived`` for
+    one-set callers). Job names are matrix-expanded; posted statuses use their
+    actual context names.
     """
     d = {str(x).strip() for x in derived if str(x).strip()}
     c = {str(x).strip() for x in configured if str(x).strip()}
     adv = {str(x).strip() for x in advisory if str(x).strip()} | ADVISORY_CONTEXTS
+    candidates = d if unenforced_candidates is None else {
+        str(x).strip() for x in unenforced_candidates if str(x).strip()
+    }
 
-    unenforced = sorted(d - c - adv)
+    unenforced = sorted(candidates - c - adv)
     phantom = sorted(c - d - adv)
     return {
         "in_sync": not unenforced and not phantom,
