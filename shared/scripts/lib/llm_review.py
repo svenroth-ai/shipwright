@@ -1,6 +1,9 @@
-"""External LLM review client — GLM + OpenAI, plus an operator-owned gateway.
+"""External LLM review client — GLM + a driver-selected second leg, plus an operator-owned gateway.
 
 Shared by plan and build plugins for external code/plan review.
+
+Second leg: OpenAI under ``driver="claude"`` (default), the cross-vendor Opus
+reviewer (local claude CLI, else OpenRouter) under ``driver="codex"``.
 
 Supports four routes:
 1. Gateway (operator-owned, exclusive when configured — see
@@ -66,6 +69,11 @@ try:  # bare: this directory is on sys.path
         redact_all_configured_secrets,
         review_gateway as _review_gateway,
     )
+    from external_review_opus_leg import (
+        resolve_opus_route,
+        review_claude_cli as _review_claude_cli,
+    )
+    from external_review_routing import DRIVER_ROSTERS
 except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
     if exc.name != "external_review_degraded":
         raise
@@ -82,14 +90,18 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
         redact_all_configured_secrets,
         review_gateway as _review_gateway,
     )
+    from lib.external_review_opus_leg import (  # type: ignore[no-redef]
+        resolve_opus_route,
+        review_claude_cli as _review_claude_cli,
+    )
+    from lib.external_review_routing import DRIVER_ROSTERS  # type: ignore[no-redef]
 
 
 # Identity-locked model bindings. The shipping config must match exactly.
-# claude_cli/openrouter_opus are never looked up by this module's own
-# {glm, openai} roster loop (run_review()) — kept here only so
-# test_default_models_match_shipping_config's drift-guard invariant (this
-# dict vs. the shipping config's `models` block, in full) keeps holding after
-# external_review.py grew the --driver-selected 'opus' identity.
+# claude_cli/openrouter_opus are looked up only by run_review()'s
+# ``driver="codex"`` roster; test_default_models_match_shipping_config's
+# drift-guard invariant (this dict vs. the shipping config's `models` block,
+# in full) holds across both rosters.
 DEFAULT_MODELS = {
     "openrouter_glm": "z-ai/glm-5.3",
     "openrouter_chatgpt": "openai/gpt-6-sol",
@@ -123,8 +135,17 @@ def run_review(
     models: dict | None = None,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     project_root: Path | str | None = None,
+    driver: str = "claude",
 ) -> dict:
-    """Run external LLM review with GLM + OpenAI in parallel.
+    """Run external LLM review with GLM + a driver-dependent second leg in parallel.
+
+    ``driver`` mirrors ``external_review.py --driver`` and
+    ``external_review_routing.DRIVER_ROSTERS``: ``claude`` keeps the
+    {glm, openai} roster; ``codex`` swaps the OpenAI-family ``openai`` leg
+    for the cross-vendor ``opus`` leg, so a Codex-driven run is not reviewed
+    by its own vendor. The result's ``reviews`` key for that leg is
+    ``openai`` or ``opus`` accordingly. The gateway route is operator-owned
+    and unaffected by ``driver``.
 
     Args:
         content: The code diff, plan, or text to review.
@@ -148,6 +169,8 @@ def run_review(
     Returns usable ``success`` plus ``partial`` / ``warnings``: one complete
     leg remains usable without representing a degraded peer as a clean pass.
     """
+    if driver not in DRIVER_ROSTERS:
+        raise ValueError(f"unknown driver {driver!r}; expected one of {sorted(DRIVER_ROSTERS)}")
     if not system_prompt:
         system_prompt = "You are a senior software engineer reviewing code for quality, security, and correctness."
     if not user_prompt:
@@ -188,15 +211,25 @@ def run_review(
     else:
         has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
         has_openai = bool(os.environ.get("OPENAI_API_KEY"))
-        openai_route, openai_route_note = resolve_openai_route(
-            config, has_openrouter_key=has_openrouter, has_openai_key=has_openai,
-        )
-        if openai_route == "codex":
-            # `detect_provider()` above predates the codex route and cannot
-            # name it; the envelope must name the route that actually
-            # answered, not the stale pre-codex chain result — a stale
-            # value would misreport a codex pass as "none"/"openrouter".
-            provider = "codex"
+        _glm_id, second_id = DRIVER_ROSTERS[driver]
+        # Branches entirely on ``driver`` with no fallthrough to the other
+        # identity's resolver, exactly as external_review.py does: under
+        # codex resolve_openai_route is never called, so an 'openai' leg
+        # cannot leak into the roster.
+        if driver == "codex":
+            second_route, second_route_note = resolve_opus_route(
+                config, has_openrouter_key=has_openrouter,
+            )
+        else:
+            second_route, second_route_note = resolve_openai_route(
+                config, has_openrouter_key=has_openrouter, has_openai_key=has_openai,
+            )
+        if second_route in ("codex", "claude_cli"):
+            # `detect_provider()` above predates these routes and cannot name
+            # them; the envelope must name the route that actually answered,
+            # not the stale chain result — a stale value would misreport the
+            # pass as "none"/"openrouter".
+            provider = second_route
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {}
             if has_openrouter:
@@ -207,18 +240,30 @@ def run_review(
                 reason = "No OPENROUTER_API_KEY set" if not has_openai else "GLM requires an approved OpenRouter ZDR endpoint"
                 reviews["glm"] = {"status": "skipped", "reason": reason}
 
-            if openai_route == "codex":
-                rendered = user_prompt.replace("{CONTENT}", content).replace("{CONTEXT}", context)
-                futures[executor.submit(_review_codex, rendered, system_prompt, config)] = "openai"
-            elif openai_route == "openrouter":
+            if second_route == "claude_cli":
+                # The claude CLI leg renders its prompt through
+                # render_user_prompt_as_stdin_refs, which knows {DIFF}/{SPEC}
+                # rather than this module's {CONTENT}/{CONTEXT}; translate so
+                # the instructions do not carry unfilled placeholders.
+                cli_prompt = user_prompt.replace("{CONTENT}", "{DIFF}").replace("{CONTEXT}", "{SPEC}")
                 futures[executor.submit(
-                    _review_openrouter, content, context, system_prompt, user_prompt, config, "openai", timeout
-                )] = "openai"
-            elif openai_route == "direct":
-                futures[executor.submit(_review_openai, content, context, system_prompt, user_prompt, config, timeout)] = "openai"
+                    _review_claude_cli, content, context, system_prompt, cli_prompt, config
+                )] = second_id
+            elif second_route == "codex":
+                rendered = user_prompt.replace("{CONTENT}", content).replace("{CONTEXT}", context)
+                futures[executor.submit(_review_codex, rendered, system_prompt, config)] = second_id
+            elif second_route == "openrouter":
+                futures[executor.submit(
+                    _review_openrouter, content, context, system_prompt, user_prompt, config, second_id, timeout
+                )] = second_id
+            elif second_route == "direct":
+                futures[executor.submit(_review_openai, content, context, system_prompt, user_prompt, config, timeout)] = second_id
             else:
-                default_reason = "No API keys configured" if not has_openai and not has_openrouter else "No OPENAI_API_KEY set"
-                reviews["openai"] = {"status": "skipped", "reason": openai_route_note or default_reason}
+                if driver == "codex":
+                    default_reason = "No claude CLI or OPENROUTER_API_KEY available"
+                else:
+                    default_reason = "No API keys configured" if not has_openai and not has_openrouter else "No OPENAI_API_KEY set"
+                reviews[second_id] = {"status": "skipped", "reason": second_route_note or default_reason}
 
             for future in as_completed(futures):
                 name = futures[future]
@@ -226,8 +271,8 @@ def run_review(
                     reviews[name] = future.result()
                 except Exception as e:
                     reviews[name] = {"status": "error", "reason": str(e)}
-            if openai_route_note and "openai" in reviews and openai_route != "none":
-                reviews["openai"]["fallback_reason"] = openai_route_note  # WHY even on success, not only on skip
+            if second_route_note and second_id in reviews and second_route != "none":
+                reviews[second_id]["fallback_reason"] = second_route_note  # WHY even on success, not only on skip
 
     success = any(r.get("status") == "success" for r in reviews.values())
     warnings = [

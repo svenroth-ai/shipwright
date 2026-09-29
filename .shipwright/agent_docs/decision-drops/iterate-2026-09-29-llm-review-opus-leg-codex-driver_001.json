@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-29-llm-review-opus-leg-codex-driver",
+  "date": "2026-09-29",
+  "section": "Iterate — change: driver-aware roster in shared llm_review",
+  "title": "llm_review.run_review takes driver and swaps openai for opus under codex",
+  "context": "external_review.py gained --driver codex ({glm, opus}) but llm_review.run_review (adopt Layer-3 review) kept {glm, openai}, leaving same-vendor self-review when Codex drives adopt.",
+  "decision": "run_review(driver='claude'|'codex') mirrors DRIVER_ROSTERS; codex uses resolve_opus_route (claude_cli, else OpenRouter opus). Adopt review_runner passes driver=codex only when CODEXTENDER_ACTIVE is set; gateway route unchanged.",
+  "consequences": "Codex-driven adopt reviews are cross-vendor. Adopt's API-key pre-gate still skips keyless sessions (claude CLI leg unreachable there) — known limitation.",
+  "rationale": "Same roster rule as external_review.py, one resolver per driver with no fallthrough; default driver keeps today's behavior for every other caller.",
+  "rejected": "Refactoring both copies onto one shared roster function: wider blast radius than this gap warrants.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
