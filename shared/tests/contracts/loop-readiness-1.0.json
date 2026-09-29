@@ -1,0 +1,42 @@
+{
+  "consumer": "shipwright-webui - Command Center DAG view + per-unit launch (card 10)",
+  "contract": {
+    "enums": {
+      "blocked_by.reason": [
+        "campaign_finalized",
+        "commit_missing",
+        "commit_not_on_base",
+        "dependency_missing",
+        "not_merged",
+        "unsupported_strategy"
+      ]
+    },
+    "producer": "shared/scripts/lib/loop_claim.py readiness",
+    "skeleton": {
+      "base_branch": "string|null",
+      "branch_strategy": "string",
+      "finalized": "boolean",
+      "loop_id": "string",
+      "ready_ids": [
+        "string"
+      ],
+      "schema_version": "string",
+      "supported": "boolean",
+      "units": [
+        {
+          "blocked_by": [
+            {
+              "detail": "string",
+              "id": "string|null",
+              "reason": "string"
+            }
+          ],
+          "id": "string",
+          "ready": "boolean",
+          "state": "string"
+        }
+      ]
+    }
+  },
+  "version": "1.0"
+}

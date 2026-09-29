@@ -1,0 +1,75 @@
+{
+  "run_id": "iterate-2026-09-29-llm-review-opus-leg-codex-driver",
+  "date": "2026-09-29T07:06:02.778904Z",
+  "event_at": "2026-09-28T22:42:19.885904+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/llm-review-opus-leg-codex-driver",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-29-llm-review-opus-leg-codex-driver",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "run_review(driver='codex') runs the {glm, opus} roster via claude_cli and never calls resolve_openai_route",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_codex_driver_roster_is_glm_and_opus_via_claude_cli PASSED"
+      },
+      {
+        "behavior": "codex driver's opus leg falls back to OpenRouter with the opus identity and records fallback_reason",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_codex_driver_opus_falls_back_to_openrouter_with_opus_identity PASSED"
+      },
+      {
+        "behavior": "codex driver with no claude CLI / OpenRouter key skips the opus leg and is unsuccessful",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_codex_driver_without_any_route_skips_opus_and_is_unsuccessful PASSED"
+      },
+      {
+        "behavior": "default driver keeps the {glm, openai} roster and never calls resolve_opus_route",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_default_driver_keeps_the_openai_roster PASSED"
+      },
+      {
+        "behavior": "unknown driver is rejected before any leg runs",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_unknown_driver_is_rejected_before_any_leg_runs PASSED"
+      },
+      {
+        "behavior": "operator-owned gateway route is unaffected by driver",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_gateway_route_is_unaffected_by_driver PASSED"
+      },
+      {
+        "behavior": "claude_cli leg's prompt carries no unfilled {CONTENT}/{CONTEXT} placeholders",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_llm_review_driver_codex.py::test_codex_driver_roster_is_glm_and_opus_via_claude_cli PASSED (asserts rendered prompt has no '{')"
+      },
+      {
+        "behavior": "adopt review_runner passes driver=codex only under CODEXTENDER_ACTIVE",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_review_runner_driver.py (2 tests) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_llm_review_driver_codex.py -q",
+    "exit_code": 0,
+    "tests_run": 6,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\llm-review-opus-leg-codex-driver\\.shipwright\\runs\\iterate-2026-09-29-llm-review-opus-leg-codex-driver\\surface_verification.log",
+    "timestamp": "2026-09-29T07:05:38.153Z"
+  }
+}

@@ -13,12 +13,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from lib import loop_claim
-from lib.loop_claim import (
-    _ancestry_ok,
-    _claim_unit,
-    _resolve_batch_base,
-)
+from lib import loop_ready_set
+from lib.loop_claim import _claim_unit
+from lib.loop_ready_set import _ancestry_ok, resolve_batch_base
 
 _FAKE_SHA = "deadbeef" * 5
 
@@ -53,15 +50,15 @@ class TestClaimUnit:
 
 class TestResolveBatchBase:
     def test_serial_uses_fresh_remote_default_ref(self, monkeypatch):
-        monkeypatch.setattr(loop_claim, "fresh_remote_default_ref", lambda cwd=None: "origin/main")
-        assert _resolve_batch_base("serial", cwd="/x") == "origin/main"
+        monkeypatch.setattr(loop_ready_set, "fresh_remote_default_ref", lambda cwd=None: "origin/main")
+        assert resolve_batch_base("serial", cwd="/x") == "origin/main"
 
     def test_independent_is_main(self):
-        assert _resolve_batch_base("independent", cwd="/x") == "main"
+        assert resolve_batch_base("independent", cwd="/x") == "main"
 
     def test_stacked_and_unknown_resolve_to_none(self):
-        assert _resolve_batch_base("stacked", cwd="/x") is None
-        assert _resolve_batch_base("bogus", cwd="/x") is None
+        assert resolve_batch_base("stacked", cwd="/x") is None
+        assert resolve_batch_base("bogus", cwd="/x") is None
 
 
 class TestAncestryOk:
@@ -82,21 +79,21 @@ class TestAncestryOk:
 
     def test_ancestor_confirmed_without_fetch(self):
         all_units = [{"id": "A", "merged_commit": _FAKE_SHA}]
-        with patch.object(loop_claim, "_is_ancestor", return_value=True) as mocked:
+        with patch.object(loop_ready_set, "_is_ancestor", return_value=True) as mocked:
             assert _ancestry_ok({"depends_on": ["A"]}, all_units, "main") is True
         mocked.assert_called_once()
 
     def test_ancestor_confirmed_after_one_fetch_retry(self):
         all_units = [{"id": "A", "merged_commit": _FAKE_SHA}]
-        with patch.object(loop_claim, "_is_ancestor", side_effect=[False, True]), \
-                patch.object(loop_claim.subprocess, "run") as mocked_fetch:
+        with patch.object(loop_ready_set, "_is_ancestor", side_effect=[False, True]), \
+                patch.object(loop_ready_set.subprocess, "run") as mocked_fetch:
             assert _ancestry_ok({"depends_on": ["A"]}, all_units, "main") is True
         mocked_fetch.assert_called_once()
 
     def test_still_absent_after_fetch_leaves_unit_pending_for_next_round(self):
         all_units = [{"id": "A", "merged_commit": _FAKE_SHA}]
-        with patch.object(loop_claim, "_is_ancestor", return_value=False), \
-                patch.object(loop_claim.subprocess, "run"):
+        with patch.object(loop_ready_set, "_is_ancestor", return_value=False), \
+                patch.object(loop_ready_set.subprocess, "run"):
             assert _ancestry_ok({"depends_on": ["A"]}, all_units, "main") is False
 
 
