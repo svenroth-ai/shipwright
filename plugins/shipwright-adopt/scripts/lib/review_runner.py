@@ -158,7 +158,12 @@ def run_review(
     )
 
     try:
-        result = llm_review.run_review(content, context)
+        # Under Codextender the session is Codex-driven, so the shared
+        # review swaps its OpenAI-family leg for the cross-vendor 'opus' leg
+        # (same rule as external_review.py --driver). The kwarg is passed only
+        # then, keeping the default call shape for every other caller/stub.
+        review_kwargs = {"driver": "codex"} if os.environ.get("CODEXTENDER_ACTIVE") else {}
+        result = llm_review.run_review(content, context, **review_kwargs)
     except Exception as e:  # pragma: no cover
         review_path.write_text(
             f"# Adopt Review — ERROR\n\nllm_review raised: {e!r}\n",
