@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-28-fix-required-check-conditional-pr",
+  "date": "2026-09-29",
+  "section": "Iterate — bug: conditional PR required-check drift",
+  "title": "Required-check presence and PR execution",
+  "context": "Conditional PR jobs were omitted from reporting names, so configured checks were mislabeled phantom although skipped jobs report Success.",
+  "decision": "Derive possible PR check names separately from every-PR execution candidates; a small classifier proves candidates, everything else is possible-only; posted-status scripts are not analysed.",
+  "consequences": "False phantom cards for conditional jobs are avoided while genuinely missing and unenforced names remain visible. Name parity is not a policy-effectiveness audit.",
+  "rationale": "A shell/payload parser for status-posting scripts was built and removed: unbounded scope, never provable for arbitrary scripts. Weaker analysis can only miss a phantom, never invent one.",
+  "rejected": "Ignoring all conditional jobs misses real checks; a status-script shell parser cannot be made complete.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-28-fix-required-check-conditional-pr-required-check-drift.md"
+}

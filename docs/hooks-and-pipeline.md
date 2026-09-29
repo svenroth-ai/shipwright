@@ -4396,8 +4396,8 @@ does not re-file every run. The comparison itself is pure
 and mean opposite things:
 
 - A repo that requires **nothing** is read successfully and compared against an
-  empty set, so every check it runs is reported `unenforced`. That is the loudest
-  finding this tool can produce, and the first draft raised an error on it —
+  empty set, so every check expected on every PR is reported `unenforced`.
+  That is the loudest finding this tool can produce, and the first draft raised an error on it —
   blind exactly where it mattered most.
 - Only a branch on which **neither** mechanism (ruleset or classic branch
   protection) could be consulted exits **2**. "I could not look" must never read
@@ -4425,6 +4425,25 @@ Two derivation landmines it is built around:
   producer missed this repo's `bloat-check.yml` and `pr-review-run.yml` and
   reported both correctly-configured contexts as phantoms. A drift producer that
   cries wolf gets muted.
+- `workflow_check_sets` derives two sets in one pass. **possible** = every job
+  of a non-dormant workflow, including job-`if:`-gated ones: a skipped **job**
+  still reports a successful check ([GitHub docs](https://docs.github.com/en/actions/using-jobs/using-conditions-to-control-job-execution)),
+  so it disproves `phantom`. **candidates** (the only names that can be
+  `unenforced`) = checks provably run on every PR into the target branch: no
+  job `if:` or one of `github.event_name ==/!= '<literal>'` / `true`, and a
+  `pull_request` trigger with no `paths`, no partial `types`, and only literal
+  `branches` (must list the target) or `branches-ignore` (must not).
+  Everything else (globs, other expressions) is possible-only. Dormant
+  workflows are in neither set. The classifier is deliberately small: it can
+  miss a phantom but never invents one.
+- **Not provable:** posted statuses (`POSTED_STATUS_CONTEXTS`) stay candidates
+  as before, without inspecting the stage-2 script — whether it really posts
+  the status is not analysed, nor is stage 1's branch filter (so `--branch <non-main>`
+  can report a posted status as unenforced). Filters that do fire on every PR
+  but cannot be proved (globs such as `**`, `types` missing a default) stay
+  silent. Name parity is not policy effectiveness: a
+  required `if: false` job reports Success without running, and a path-filtered
+  workflow may leave a required context pending. Audit those separately.
 - `ADVISORY_CONTEXTS` is deliberately **empty**. Pre-silencing a check on day one
   is precisely how a gate becomes decorative.
 

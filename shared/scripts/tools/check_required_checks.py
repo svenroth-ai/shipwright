@@ -14,8 +14,8 @@ does not re-file every run.
     uv run shared/scripts/tools/check_required_checks.py --project-root .
 
 **An empty must-pass set is a finding, not an error.** A repo that requires
-nothing is the loudest case this tool has to report — every check it runs gates
-nothing — so "no policy exists" is READ successfully and compared against, and
+nothing is the loudest case this tool has to report — every check expected
+on every PR gates nothing — so "no policy exists" is READ and compared against, and
 only "the policy could not be consulted" exits non-zero. Conflating the two
 would blind the producer exactly where it matters most.
 
@@ -35,10 +35,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from lib.required_checks_drift import (  # noqa: E402
-    all_workflow_check_names,
+    all_workflow_check_names as all_workflow_check_names,  # existing CLI module API
     compare_required_checks,
     dedup_key,
     render_drift,
+    workflow_check_sets,
 )
 from triage import append_triage_item_idempotent, should_route_to_outbox  # noqa: E402
 
@@ -217,7 +218,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     target = f"{repo}@{branch}"
-    result = compare_required_checks(all_workflow_check_names(root), configured)
+    possible, guaranteed = workflow_check_sets(root, branch=branch)
+    result = compare_required_checks(
+        possible, configured, unenforced_candidates=guaranteed,
+    )
     if args.json:
         print(json.dumps({"repo": repo, "branch": branch, **result}, indent=2))
     else:

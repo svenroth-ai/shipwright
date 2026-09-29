@@ -2,16 +2,9 @@
 
 A freshly adopted repo carries dormant `ci.yml` / `security.yml` / `codeql.yml`
 workflows plus an active `claude-review.yml`. To turn on B4.5-style automerge,
-the adopter must configure GitHub branch protection to require the *exact*
-GitHub check names those workflows produce — and a wrong name silently never
-matches (branch protection waits forever, the "armed but waiting" automerge
-killer). So this module derives the Required-Check names from the **actually
-deployed** workflow files (matrix-expanded), rather than guessing.
-
-`required_check_names` is the defensive core: it parses each present workflow,
-reads each job's `name:` (or job id when absent), and expands single- and
-multi-dim `strategy.matrix` interpolations the way GitHub renders check names.
-The AUTOMERGE_SETUP.md template is filled with that derived table.
+the adopter must require the *exact* GitHub check names or branch protection
+waits forever. This module derives them from **deployed** workflow files
+(matrix-expanded), rather than guessing.
 
 Self-contained on purpose: this module imports only stdlib + PyYAML and holds
 its own ``KNOWN_WORKFLOWS`` list (relative paths under `.github/workflows/`),
@@ -123,12 +116,10 @@ def _job_check_names(job_id: str, job: dict) -> list[str]:
 
 
 def _expand_jobs(parsed: dict) -> list[tuple[str, str | None]]:
-    """Return ``(check_name, if_condition)`` for every job, matrix-expanded.
+    """Return matrix-expanded ``(check_name, if_condition)`` pairs.
 
-    ``if_condition`` is the job-level ``if:`` string (None when unconditional).
-    A job-level ``if:`` means the job may be skipped on a given PR (e.g. a
-    deploy job gated on a branch ref) — such a check never reports and must NOT
-    be blindly required, so callers separate conditional from requireable.
+    A skipped job reports Success but does not gate work; callers distinguish
+    job-level conditions (including YAML booleans) from unconditional jobs.
     """
     jobs = parsed.get("jobs") or {}
     if not isinstance(jobs, dict):
@@ -138,6 +129,10 @@ def _expand_jobs(parsed: dict) -> list[tuple[str, str | None]]:
         if not isinstance(job, dict):
             continue
         cond = job.get("if")
+        if cond is True:
+            cond = None  # YAML `if: true` always runs
+        elif cond is not None and not isinstance(cond, str):
+            cond = str(cond).lower()
         cond = cond if isinstance(cond, str) and cond.strip() else None
         for check in _job_check_names(str(job_id), job):
             out.append((check, cond))
@@ -145,36 +140,25 @@ def _expand_jobs(parsed: dict) -> list[tuple[str, str | None]]:
 
 
 def expand_check_names(parsed: dict) -> list[str]:
-    """Return ALL GitHub check names a parsed workflow produces (every job,
-    including `if:`-gated ones). The requireable/conditional split lives in
-    ``workflow_report``."""
+    """Return every job check name, including `if:`-gated ones."""
     return [name for name, _cond in _expand_jobs(parsed)]
 
 
 def _is_dormant(parsed: dict) -> bool:
-    """True when the workflow has no active `pull_request` trigger — so its
-    checks never report on a PR and it MUST be activated before being required."""
+    """True when no `pull_request` trigger can report checks on a PR."""
     # PyYAML quirk: bare `on:` parses as Python literal True (YAML 1.1 truthy).
-    triggers = parsed.get("on")
-    if triggers is None:
-        triggers = parsed.get(True)
-    if not isinstance(triggers, dict):
-        return True
-    return "pull_request" not in triggers
+    triggers = parsed.get("on") or parsed.get(True)
+    if isinstance(triggers, (dict, list)):
+        return "pull_request" not in triggers
+    return triggers != "pull_request"
 
 
 def workflow_report(project_root: Path, workflow_rel: str) -> dict | None:
-    """Inspect one deployed workflow file; None if it is absent.
+    """Inspect a workflow; None if absent, parse_error on invalid YAML.
 
-    Returns ``{workflow, checks, conditional, dormant, parse_error}``:
-    - ``checks`` — unconditional check names (no job-level `if:`) → safe to
-      require once the workflow's `pull_request:` trigger is active.
-    - ``conditional`` — ``(check_name, if_expr)`` for `if:`-gated jobs (deploy /
-      branch-ref jobs etc.) that may be SKIPPED on a PR; requiring one that
-      never runs would block every PR, so the doc surfaces them with a warning
-      instead of listing them as requireable.
-
-    A file that does not parse to a mapping yields ``parse_error=True``."""
+    ``checks`` are unconditional names; ``conditional`` holds name/if pairs.
+    ``pr_trigger`` is the `pull_request` filter mapping (None when bare).
+    """
     path = Path(project_root) / ".github" / "workflows" / workflow_rel
     if not path.exists():
         return None
@@ -190,11 +174,10 @@ def workflow_report(project_root: Path, workflow_rel: str) -> dict | None:
             "dormant": None,
             "parse_error": True,
         }
+    triggers = parsed.get("on") or parsed.get(True)
     posted = POSTED_STATUS_CONTEXTS.get(workflow_rel)
     if posted is not None:
-        # The gate is the status this workflow posts, not the names of the jobs
-        # that post it. Not dormant: it is triggered by the stage-1 run rather
-        # than by the pull request, which is the design, not a misconfiguration.
+        # The gate is the posted status, not the jobs that post it.
         return {
             "workflow": workflow_rel,
             "checks": [posted],
@@ -203,10 +186,12 @@ def workflow_report(project_root: Path, workflow_rel: str) -> dict | None:
             "parse_error": False,
         }
     expanded = _expand_jobs(parsed)
+    pr_trigger = triggers.get("pull_request") if isinstance(triggers, dict) else None
     return {
         "workflow": workflow_rel,
         "checks": [name for name, cond in expanded if cond is None],
         "conditional": [(name, cond) for name, cond in expanded if cond is not None],
+        "pr_trigger": pr_trigger,
         "dormant": _is_dormant(parsed),
         "parse_error": False,
     }
@@ -272,12 +257,11 @@ def render_checks_table(reports: list[dict]) -> str:
     if conditional_lines:
         table += (
             "\n> **Conditional jobs — do NOT require unless they run on your "
-            "PRs.** These jobs carry a job-level `if:` and may be skipped (a "
-            "skipped job never reports, so requiring it blocks every PR). A job "
-            "gated on `github.event_name == 'pull_request'` does run on PRs and "
-            "is safe to require; a deploy job gated on a branch ref "
-            "(`refs/heads/main`) does **not** run on a feature-branch PR — never "
-            "require it.\n>\n"
+            "PRs.** A skipped job reports a successful check, so requiring it "
+            "does not gate any work. A job gated on "
+            "`github.event_name == 'pull_request'` runs on PRs and is safe to "
+            "require; a deploy job gated on `refs/heads/main` does **not** run "
+            "on a feature-branch PR — never require it.\n>\n"
             + "\n".join(f"> {line}" for line in conditional_lines)
             + "\n"
         )
