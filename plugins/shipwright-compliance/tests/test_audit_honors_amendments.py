@@ -30,6 +30,12 @@ def _d5(tmp_path: Path):
     return next(f for f in group_d.run(tmp_path, {}, None) if f.check_id == "D5")
 
 
+def _cleared(f) -> bool:
+    # D5 is advisory (FR-01.10/AC06): "cleared" = nothing flagged, no fix offered.
+    return (f.status == "pass" and f.suggested_iterate_cmd is None
+            and not f.detail.startswith("advisory"))
+
+
 def test_d5_honors_spec_impact_none_amendment(tmp_path):
     # The real-world case: a flagged feature/change event (spec_impact=modify,
     # no FR) corrected by an event_amended that reclassifies spec_impact=none
@@ -42,18 +48,20 @@ def test_d5_honors_spec_impact_none_amendment(tmp_path):
          "fields": {"spec_impact": "none", "none_reason": "tooling no-op"},
          "ts": "2026-06-01T01:00:00+00:00"},
     ])
-    assert _d5(tmp_path).status == "pass"
+    assert _cleared(_d5(tmp_path))
 
 
-def test_d5_fails_without_the_amendment(tmp_path):
-    # Control: the SAME event without the correction still fails — proving the
-    # amendment (not some other quirk) is what flips D5 to pass.
+def test_d5_flags_without_the_amendment(tmp_path):
+    # Control: the SAME event without the correction still gets flagged — proving the
+    # amendment (not some other quirk) is what clears D5.
     _events(tmp_path / "shipwright_events.jsonl", [
         {"id": "evt-1", "type": "work_completed", "source": "iterate",
          "intent": "change", "ts": "2026-06-01T00:00:00+00:00", "commit": "c1",
          "change_type": "fix", "spec_impact": "modify"},
     ])
-    assert _d5(tmp_path).status == "fail"
+    d5 = _d5(tmp_path)
+    assert d5.status == "pass" and d5.detail.startswith("advisory")
+    assert d5.suggested_iterate_cmd is not None
 
 
 def test_d5_honors_affected_frs_amendment(tmp_path):
@@ -66,7 +74,7 @@ def test_d5_honors_affected_frs_amendment(tmp_path):
         {"type": "event_amended", "amends": "evt-2",
          "fields": {"affected_frs": ["FR-001"]}, "ts": "2026-06-01T01:00:00+00:00"},
     ])
-    assert _d5(tmp_path).status == "pass"
+    assert _cleared(_d5(tmp_path))
 
 
 def test_amended_entry_never_evaluated_as_work_event(tmp_path):

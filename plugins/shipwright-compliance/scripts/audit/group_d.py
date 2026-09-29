@@ -14,7 +14,7 @@ test-traceability manifest) against the project's spec table FRs (via
 - D4 — Latest covering event landed in a FAILING build. Keys on genuine failures
   (``total - passed - skipped``), not the raw gap — a gap without an explicit
   ``tests.skipped`` count is host-gated skips, not failures. LOW.
-- D5 — FEATURE/CHANGE iterate event with no FR linkage and no ``spec_impact=none``. MEDIUM.
+- D5 — FEATURE/CHANGE iterate event, no FR linkage, no ``spec_impact=none``. MEDIUM, advisory (AC06).
 - D-orphan / D-layer — manifest-driven (see ``_group_d_traceability``): a test tagged with
   a removed/absent FR; an active FR missing an executed-passing test at a required layer.
 
@@ -43,6 +43,7 @@ from scripts.audit.audit_adapters import (
 drift_parsers = load_shared_lib("drift_parsers")
 events_amend = load_shared_lib("events_amend")  # honor event_amended corrections
 fr_classification = load_shared_lib("fr_classification")  # D5↔write-gate SSOT parity
+_ADVISORY_PREFIX = "advisory — "  # pass + prefix = flagged w/ fix, never fails the audit
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +320,8 @@ def _check_d5(
     events: list[dict] | None,
 ) -> tuple[str, str, str, list[str]]:
     """(status, severity, detail, evidence). Inverse of D1: flags FEATURE/CHANGE
-    iterate ``work_completed`` events touching no FR. Exempt when
+    iterate ``work_completed`` events touching no FR. ADVISORY (AC06): ``pass`` +
+    ``advisory —`` prefix, never fails; ``run`` attaches the fix. Exempt when
     ``spec_impact=none`` OR an exempt ``change_type`` + ``none_reason``
     (record_event ADR-C.1 parity). BUG/build out of scope; time-invariant.
     """
@@ -357,19 +359,17 @@ def _check_d5(
     def _label(ev: dict) -> str:
         commit = str(ev.get("commit", ""))[:8] or "?"
         desc = str(ev.get("description", "")).strip()
-        if len(desc) > 60:
-            desc = desc[:57] + "…"
+        desc = desc if len(desc) <= 60 else desc[:57] + "…"
         return f"{ev.get('intent', '?')} {commit}: {desc or '(no description)'}"
 
     head = "; ".join(_label(ev) for ev in unlinked[:3])
     if len(unlinked) > 3:
         head += f", … (+{len(unlinked) - 3})"
     detail = (
-        f"{len(unlinked)} feature/change iterate event(s) with no FR linkage "
-        f"and no spec_impact=none — {head}"
+        f"{_ADVISORY_PREFIX}{len(unlinked)} feature/change iterate event(s) with "
+        f"no FR linkage and no spec_impact=none — {head}"
     )
-    evidence = [_label(ev) for ev in unlinked]
-    return "fail", "MEDIUM", detail, evidence
+    return "pass", "MEDIUM", detail, [_label(ev) for ev in unlinked]
 
 
 # ---------------------------------------------------------------------------
@@ -421,7 +421,7 @@ def run(
             status=status, detail=detail, evidence=list(evidence),
             suggested_iterate_cmd=(
                 _suggest(check_id, _NAME_BY_CHECK[check_id])
-                if status == "fail" else None
+                if status == "fail" or detail.startswith(_ADVISORY_PREFIX) else None
             ),
         ))
     # D-orphan + D-layer consume the TT1 manifest (self-contained + fail-closed).

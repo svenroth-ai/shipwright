@@ -716,7 +716,7 @@ def test_d5_flags_feature_iterate_with_no_fr(tmp_path):
     ])
     findings = group_d.run(tmp_path, _default_config(), None)
     d5 = next(f for f in findings if f.check_id == "D5")
-    assert d5.status == "fail"
+    assert (d5.status, d5.detail[:8]) == ("pass", "advisory")  # AC06: no fail
     assert d5.severity == "MEDIUM"
     assert "deadbee1" in d5.detail
     assert d5.suggested_iterate_cmd is not None

@@ -1,0 +1,56 @@
+{
+  "run_id": "iterate-2026-09-29-d5-advisory-ac06",
+  "date": "2026-09-29T06:44:57.517571Z",
+  "event_at": "2026-09-28T22:42:19.885904+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/d5-advisory-ac06",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-29-d5-advisory-ac06",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "D5 flag returns status=pass with 'advisory \u2014' detail (does not fail)",
+        "disposition": "tested",
+        "evidence": "test_audit_groups_a_d.py::test_d5_flags_feature_iterate_with_no_fr PASSED"
+      },
+      {
+        "behavior": "D5 flag carries suggested fix command; AuditReport.any_fail stays false",
+        "disposition": "tested",
+        "evidence": "test_audit_d5_change_type.py::test_d5_flag_does_not_fail_the_audit PASSED"
+      },
+      {
+        "behavior": "audit-report.md renders the suggested command with warning marker for advisory flag",
+        "disposition": "tested",
+        "evidence": "test_audit_d5_change_type.py::test_d5_flag_renders_suggested_command_in_markdown PASSED"
+      },
+      {
+        "behavior": "exemptions (spec_impact none / change_type+none_reason / amendments) still clear D5 without a fix",
+        "disposition": "tested",
+        "evidence": "test_audit_d5_change_type.py + test_audit_honors_amendments.py PASSED (59)"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "n/a",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "n/a",
+    "timestamp": "2026-09-29T12:00:00Z",
+    "justification": "Compliance audit library change (CLI-internal report/exit-code semantics); no web/API/CLI surface beyond the unit-tested audit functions; covered by pytest unit tests."
+  }
+}
