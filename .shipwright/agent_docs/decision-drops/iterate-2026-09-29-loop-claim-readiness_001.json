@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-29-loop-claim-readiness",
+  "date": "2026-09-29",
+  "section": "Iterate — feature: loop_claim.py readiness (read-only ready-set for the WebUI DAG view)",
+  "title": "Read-only readiness command sharing one verdict function with next-batch",
+  "context": "WebUI card 10 must show which campaign units are launchable. next-batch is the only computation of that and it also claims; readiness is not just 'dependencies merged' but also 'merged commit is on the batch base' and 'strategy supported'.",
+  "decision": "Add `loop_claim.py readiness` (no lock, no claim, no write). The ready-set moved to new lib/loop_ready_set.py: unit_blockers() is the single per-unit verdict, ready == no blockers, blocked_by IS those blockers; next-batch calls the same function. Output is a versioned JSON contract (schema_version 1.0, frozen fixture).",
+  "consequences": "The WebUI never re-derives readiness. Ancestry may fetch origin once per call, so the view must not poll tightly. loop_claim.py shrinks 540 to 519 lines (bloat exception unchanged). The origin/main git-baseline bump gate (contract_baseline) is not yet wired for this third producer.",
+  "rationale": "One verdict per unit makes a not-ready pending row always carry a reason, and a memoized oracle caps git fetches at one per call; both were code-review findings against a first design with a separate blocked_by derivation.",
+  "rejected": "Duplicating the rule in the WebUI (drifts from next-batch); a second hand-mirrored blocked_by derivation (can disagree with ready and refetches).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-29-loop-claim-readiness.md"
+}

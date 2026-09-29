@@ -5,7 +5,7 @@ for why the split). Campaign ``campaign-dag-scheduler`` R4. Batch-parallel
 sibling of ``autonomous_loop.py``'s single-unit ``cmd_next``/``cmd_record``;
 NEVER touches `kind == "section"` state.
 
-Single CLI entry point for all five R4 commands (``next-batch``, ``release``,
+Single CLI entry point for all six commands (``next-batch``, ``readiness``, ``release``,
 ``mark``, ``mark-running``, ``mark-merged``) — ``main()`` dispatches the last
 three into ``lib.loop_mark``, so a caller never needs to know about the
 internal module split.
@@ -13,6 +13,9 @@ internal module split.
 - ``next-batch`` — computes the bounded ready set (reusing
   ``lib.loop_state.is_unit_ready``/``describe_blocker``) and claims
   ``min(--max-parallel, |ready_set|)`` atomically under ``loop.lock``.
+- ``readiness`` — read-only twin of ``next-batch``: same ready-set function
+  (``lib.loop_ready_set``), no lock/claim; emits the versioned per-unit JSON
+  the WebUI DAG view renders (``blocked_by`` reasons included).
 - ``release`` — launch-failure path: a unit still ``claimed`` at wave-return
   goes back to ``pending`` (or ``failed`` once ``--max-attempts`` exhausted).
 
@@ -34,10 +37,6 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-try:  # bare-sibling — see module docstring's import-convention note
-    from branch_base import fresh_remote_default_ref
-except ImportError:  # pragma: no cover
-    fresh_remote_default_ref = None  # type: ignore[assignment]
 from file_lock import LockTimeout, file_lock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -48,12 +47,12 @@ from lib.campaign_unit_worktree import (  # noqa: E402
 )
 from lib.git_base import GitError, main_repo_root  # noqa: E402
 from lib.loop_mark import cmd_mark, cmd_mark_merged, cmd_mark_running  # noqa: E402
+from lib.loop_ready_set import build_readiness, ready_unit_ids, resolve_batch_base  # noqa: E402
 from lib.loop_state import (  # noqa: E402
     TERMINAL,
     describe_blocker,
     find_unit_row,
     is_unit_ready,
-    is_valid_sha,
     now_iso,
     validate_attempt_token,
 )
@@ -133,51 +132,6 @@ def _save_state(state_path: Path, state: dict) -> None:
     _retry_on_transient_permission_error(lambda: tmp.replace(state_path))
 
 
-def _is_ancestor(commit: str, base: str, *, cwd: str | None = None) -> bool:
-    try:
-        r = subprocess.run(["git", "merge-base", "--is-ancestor", commit, base],
-                            capture_output=True, text=True, timeout=15, cwd=cwd)
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False
-    return r.returncode == 0
-
-
-def _ancestry_ok(unit: dict, all_units: list[dict], base_branch: str | None, *, cwd: str | None = None) -> bool:
-    """Try once without fetching; on failure, fetch origin once and retry;
-    still absent -> leave ``pending`` for the next call. `base_branch=None`
-    fails closed for a unit with real dependencies."""
-    deps = unit.get("depends_on") or []
-    if not deps:
-        return True
-    if not base_branch:
-        return False
-    by_id = {str(u.get("id")).lower(): u for u in all_units}
-    for dep_id in deps:
-        dep = by_id.get(str(dep_id).lower())
-        commit = dep.get("merged_commit") if dep else None
-        if not commit or not is_valid_sha(commit):
-            return False
-        if _is_ancestor(commit, base_branch, cwd=cwd):
-            continue
-        try:
-            subprocess.run(["git", "fetch", "origin"], capture_output=True, text=True, timeout=60, cwd=cwd)
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return False
-        if not _is_ancestor(commit, base_branch, cwd=cwd):
-            return False
-    return True
-
-
-def _resolve_batch_base(strategy: str, *, cwd: str | None) -> str | None:
-    """`serial`/`independent` only — `stacked` has no single base for a
-    parallel ready set (out of scope) and resolves to ``None``."""
-    if strategy == "serial":
-        return fresh_remote_default_ref(cwd=cwd) if fresh_remote_default_ref else None
-    if strategy == "independent":
-        return "main"
-    return None
-
-
 def _claim_unit(unit: dict, loop_id: str) -> tuple[int, str]:
     """First-ever claim: no bump. A unit already carrying an `attempt_id`
     (reclaimed to `pending` before) increments — a reclaim never bumps
@@ -227,7 +181,7 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
     # Base ref + ancestry pre-check both run OUTSIDE loop.lock — each can
     # fetch (60s timeout), a starvation hazard inside a 30s-timeout lock.
     strategy = state_peek.get("branch_strategy", "single-branch")
-    base_branch = _resolve_batch_base(strategy, cwd=args.campaign_worktree)
+    base_branch = resolve_batch_base(strategy, cwd=args.campaign_worktree)
     if base_branch is None:
         # External Tier-3 PR review (GPT, round 6): a `None` base must never
         # reach the ready-set computation below — `_ancestry_ok` returns True
@@ -265,11 +219,7 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
         u["id"]: frozenset(str(d).lower() for d in (u.get("depends_on") or []))
         for u in pre_units
     }
-    ancestry_confirmed = {
-        u["id"] for u in pre_units
-        if u["status"] == "pending" and is_unit_ready(u, pre_units)
-        and _ancestry_ok(u, pre_units, base_branch, cwd=args.campaign_worktree)
-    }
+    ancestry_confirmed = ready_unit_ids(pre_units, base_branch, cwd=args.campaign_worktree)
 
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
@@ -367,6 +317,28 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
     except LockTimeout as exc:
         print(json.dumps({"error": "lock_timeout", "detail": str(exc)}), file=sys.stderr)
         return 6
+
+
+def cmd_readiness(args: argparse.Namespace) -> int:
+    """Read-only: the SAME ready-set code path as `next-batch`
+    (`loop_ready_set.ready_unit_ids`), but no lock, no claim, no state write.
+    Emits the versioned `loop_ready_set.build_readiness` JSON — the contract
+    the WebUI DAG view renders instead of re-deriving readiness."""
+    try:
+        state = _load_state(Path(args.state))
+    except (OSError, ValueError) as exc:
+        print(json.dumps({"error": "unreadable_state", "detail": str(exc)}), file=sys.stderr)
+        return 1
+    if state.get("kind") != "sub_iterate":
+        print("ERROR: readiness is only valid for kind == 'sub_iterate'", file=sys.stderr)
+        return 1
+    try:
+        report = build_readiness(state, cwd=args.campaign_worktree)
+    except (KeyError, TypeError, AttributeError) as exc:
+        print(json.dumps({"error": "malformed_state", "detail": f"{type(exc).__name__}: {exc}"}), file=sys.stderr)
+        return 1
+    print(json.dumps(report))
+    return 0
 
 
 def _cleanup_unit_worktree(campaign_worktree: str, campaign_slug: str, unit_id: str, attempt: int) -> None:
@@ -492,6 +464,12 @@ def main() -> int:
                           help="cwd for every git call this command makes (base-ref resolution, ancestry asserts)")
     p_batch.add_argument("--max-parallel", type=int, required=True)
 
+    p_ready = sub.add_parser("readiness", help="Read-only per-unit readiness (same ready-set as next-batch)")
+    p_ready.add_argument("--state", required=True)
+    p_ready.add_argument("--campaign-worktree", required=True,
+                          help="cwd for every git call (base-ref resolution, ancestry asserts)")
+    p_ready.add_argument("--json", action="store_true", help="accepted for clarity; output is always JSON")
+
     p_release = sub.add_parser("release", help="claimed -> pending|failed (launch failure)")
     p_release.add_argument("--state", required=True)
     p_release.add_argument("--unit", required=True)
@@ -528,6 +506,7 @@ def main() -> int:
     args = parser.parse_args()
     cmd_map = {
         "next-batch": cmd_next_batch,
+        "readiness": cmd_readiness,
         "release": cmd_release,
         "mark-running": cmd_mark_running,
         "mark-merged": cmd_mark_merged,
