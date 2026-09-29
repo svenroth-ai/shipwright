@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-29-d5-advisory-ac06",
+    "date": "2026-09-29",
+    "unit": {
+      "status": "passed",
+      "passed": 600,
+      "total": 600
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "n/a",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "n/a",
+      "timestamp": "2026-09-29T12:00:00Z",
+      "justification": "Compliance audit library change (CLI-internal report/exit-code semantics); no web/API/CLI surface beyond the unit-tested audit functions; covered by pytest unit tests."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "D5 flag returns status=pass with 'advisory \u2014' detail (does not fail)",
+          "disposition": "tested",
+          "evidence": "test_audit_groups_a_d.py::test_d5_flags_feature_iterate_with_no_fr PASSED"
+        },
+        {
+          "behavior": "D5 flag carries suggested fix command; AuditReport.any_fail stays false",
+          "disposition": "tested",
+          "evidence": "test_audit_d5_change_type.py::test_d5_flag_does_not_fail_the_audit PASSED"
+        },
+        {
+          "behavior": "audit-report.md renders the suggested command with warning marker for advisory flag",
+          "disposition": "tested",
+          "evidence": "test_audit_d5_change_type.py::test_d5_flag_renders_suggested_command_in_markdown PASSED"
+        },
+        {
+          "behavior": "exemptions (spec_impact none / change_type+none_reason / amendments) still clear D5 without a fix",
+          "disposition": "tested",
+          "evidence": "test_audit_d5_change_type.py + test_audit_honors_amendments.py PASSED (59)"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-29-d5-advisory-ac06",
+    "commit": "a2cc94d9bcc0c6864de3834e2b875d7bbae7f962",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
