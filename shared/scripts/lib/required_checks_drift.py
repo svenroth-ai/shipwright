@@ -24,6 +24,7 @@ FR-01.17 (E)6.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Iterable
@@ -33,6 +34,27 @@ from typing import Iterable
 # rather than drift. Keeping this explicit stops the producer from nagging about
 # checks the operator has decided not to gate on.
 ADVISORY_CONTEXTS: frozenset[str] = frozenset()
+
+# Where a consumer repo records its own "deliberately not required" decision:
+# a top-level list of check names in the run config every Shipwright project has.
+ADVISORY_CONFIG_FILE = "shipwright_run_config.json"
+ADVISORY_CONFIG_KEY = "required_checks_advisory"
+
+
+def load_advisory_checks(project_root: Path | str) -> list[str]:
+    """Check names the repo's operator declared advisory (run-config key).
+
+    Missing file, missing key, or a malformed value yields ``[]``: an unreadable
+    declaration must never suppress a finding, so the producer keeps reporting.
+    """
+    try:
+        data = json.loads((Path(project_root) / ADVISORY_CONFIG_FILE).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return []
+    value = data.get(ADVISORY_CONFIG_KEY) if isinstance(data, dict) else None
+    if not isinstance(value, list):
+        return []
+    return [v.strip() for v in value if isinstance(v, str) and v.strip()]
 
 
 _PR_DEFAULT_TYPES = {"opened", "synchronize", "reopened"}
@@ -137,13 +159,16 @@ def compare_required_checks(
     """
     d = {str(x).strip() for x in derived if str(x).strip()}
     c = {str(x).strip() for x in configured if str(x).strip()}
-    adv = {str(x).strip() for x in advisory if str(x).strip()} | ADVISORY_CONTEXTS
+    # A declared-advisory name only silences "unenforced". It must NOT silence a
+    # phantom: an in-repo list can go stale, and a name that is both declared
+    # advisory and configured-but-never-produced blocks every PR.
+    declared = {str(x).strip() for x in advisory if str(x).strip()}
     candidates = d if unenforced_candidates is None else {
         str(x).strip() for x in unenforced_candidates if str(x).strip()
     }
 
-    unenforced = sorted(candidates - c - adv)
-    phantom = sorted(c - d - adv)
+    unenforced = sorted(candidates - c - declared - ADVISORY_CONTEXTS)
+    phantom = sorted(c - d - ADVISORY_CONTEXTS)
     return {
         "in_sync": not unenforced and not phantom,
         "unenforced": unenforced,
@@ -164,7 +189,8 @@ def render_drift(result: dict, repo: str) -> str:
             "nothing up, because they are not in the configured must-pass set: "
             + ", ".join(result["unenforced"])
             + ". Add them at Settings -> Rules, or decide deliberately that they "
-            "are advisory."
+            "are advisory (list them under `required_checks_advisory` in "
+            "shipwright_run_config.json)."
         )
     if result["phantom"]:
         parts.append(

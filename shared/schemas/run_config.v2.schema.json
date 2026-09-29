@@ -20,6 +20,11 @@
   ],
   "additionalProperties": true,
   "properties": {
+    "required_checks_advisory": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Check names that run on PRs but are deliberately not required; the required-checks drift producer does not report them as unenforced."
+    },
     "schemaVersion": {
       "const": 2,
       "description": "Hard cut: orchestrator phase-lifecycle subcommands reject anything other than 2."

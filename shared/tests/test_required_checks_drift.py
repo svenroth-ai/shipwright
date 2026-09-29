@@ -38,6 +38,7 @@ from lib.required_checks_drift import (  # noqa: E402
     all_workflow_check_names,
     compare_required_checks,
     dedup_key,
+    load_advisory_checks,
     render_drift,
     workflow_check_sets,
 )
@@ -77,6 +78,47 @@ def test_advisory_contexts_are_not_drift() -> None:
     """An operator's deliberate 'this one is informational' must not nag."""
     r = compare_required_checks(["a", "informational"], ["a"], advisory=["informational"])
     assert r["in_sync"]
+
+
+def test_a_declared_advisory_check_is_not_unenforced_but_never_hides_a_phantom() -> None:
+    """Advisory = "runs, reports, deliberately not required"."""
+    r = compare_required_checks(["gate", "helper"], ["gate"], advisory=["helper"])
+    assert r["in_sync"] and r["unenforced"] == []
+    other = compare_required_checks(["gate", "x"], ["gate"], advisory=["helper"])
+    assert other["unenforced"] == ["x"]
+    # Required yet no longer produced is merge-blocking; a stale in-repo
+    # declaration must not silence it.
+    stale = compare_required_checks(["gate"], ["gate", "helper"], advisory=["helper"])
+    assert stale["phantom"] == ["helper"]
+
+
+def _write_cfg(root: Path, text: str) -> None:
+    (root / "shipwright_run_config.json").write_text(text, encoding="utf-8")
+
+
+def test_advisory_list_is_read_from_the_run_config(tmp_path: Path) -> None:
+    _write_cfg(tmp_path, '{"status": "complete", "required_checks_advisory": '
+                         '[" Prepare review request ", "", 7]}')
+    assert load_advisory_checks(tmp_path) == ["Prepare review request"]
+
+
+def test_advisory_list_survives_a_utf8_bom(tmp_path: Path) -> None:
+    (tmp_path / "shipwright_run_config.json").write_text(
+        '{"required_checks_advisory": ["helper"]}', encoding="utf-8-sig")
+    assert load_advisory_checks(tmp_path) == ["helper"]
+
+
+@pytest.mark.parametrize("text", [
+    None, "not json", "[]", '{"status": "complete"}',
+    '{"required_checks_advisory": "Prepare review request"}',
+])
+def test_missing_or_malformed_advisory_declaration_declares_nothing(
+    tmp_path: Path, text: str | None
+) -> None:
+    """An unreadable declaration must never suppress a finding."""
+    if text is not None:
+        _write_cfg(tmp_path, text)
+    assert load_advisory_checks(tmp_path) == []
 
 
 def test_whitespace_and_blanks_do_not_create_phantom_drift() -> None:

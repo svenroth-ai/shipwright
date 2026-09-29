@@ -271,3 +271,38 @@ def test_drift_files_one_item_keyed_on_repo_and_branch(monkeypatch, capsys) -> N
     # for the tree in hand, which is what this asserts.
     assert filed[0]["to_outbox"] == crc.should_route_to_outbox(REPO_ROOT)
     assert "o/r@main" in filed[0]["dedup_key"], filed[0]["dedup_key"]
+
+
+@pytest.mark.parametrize("declared, cards", [(["helper"], 0), ([], 1)])
+def test_a_repo_declared_advisory_check_files_no_card(
+    tmp_path, monkeypatch, declared, cards
+) -> None:
+    """End to end: the producer reads the repo's advisory list, so a check that
+    runs on PRs but is deliberately not required stops re-filing the card."""
+    from triage import read_all_items
+
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"status": "complete", "required_checks_advisory": declared}),
+        encoding="utf-8")
+    (tmp_path / ".shipwright").mkdir()
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text(
+        "name: CI\non:\n  pull_request:\n    branches: [main]\njobs:\n"
+        "  gate:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n"
+        "  helper:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n",
+        encoding="utf-8",
+    )
+    rules = [{"type": "required_status_checks", "parameters": {
+        "required_status_checks": [{"context": "gate"}]}}]
+    monkeypatch.setattr(crc.subprocess, "run", gh_router({
+        "repos/o/r": REPO_OK,
+        "/rules/branches/main": Resp(0, json.dumps(rules)),
+        "/branches/main/protection": NOT_FOUND,
+    }))
+
+    assert crc.main(["--project-root", str(tmp_path)]) == 0
+    filed = [i for i in read_all_items(tmp_path)
+             if (i.get("source") or "") == "required-checks"]
+    assert len(filed) == cards          # 1 without the key is the positive control
+    assert all("helper" in (i.get("detail") or "") for i in filed)

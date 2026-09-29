@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-29-required-checks-advisory",
+    "date": "2026-09-29",
+    "unit": {
+      "status": "passed",
+      "passed": 12156,
+      "total": 12161
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "declared advisory check is not reported unenforced",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_required_checks_drift.py::test_a_declared_advisory_check_is_not_unenforced_but_never_hides_a_phantom PASSED"
+        },
+        {
+          "behavior": "declared advisory never hides a configured-but-unproduced phantom",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_required_checks_drift.py::test_a_declared_advisory_check_is_not_unenforced_but_never_hides_a_phantom PASSED"
+        },
+        {
+          "behavior": "advisory list read from run config (trimmed, string entries only, BOM-safe)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_required_checks_drift.py::test_advisory_list_is_read_from_the_run_config + test_advisory_list_survives_a_utf8_bom PASSED"
+        },
+        {
+          "behavior": "missing/malformed declaration declares nothing (fails open)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_required_checks_drift.py::test_missing_or_malformed_advisory_declaration_declares_nothing[5 params] PASSED"
+        },
+        {
+          "behavior": "producer wires the declaration end to end (card filed without key, none with it)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_required_checks_cli.py::test_a_repo_declared_advisory_check_files_no_card[2 params] PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-09-29T18:03:33.779Z",
+      "justification": "Pure comparison library + producer CLI; no startable surface. Behavior proven in-process by unit tests and an end-to-end producer main() test with a faked gh."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-29-required-checks-advisory",
+    "commit": "ec57796b0019de275303d0b0d0b0b629528b42d4",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -4383,6 +4383,14 @@ can see that, so the two drift silently and in both directions:
 uv run shared/scripts/tools/check_required_checks.py --project-root .
 ```
 
+**Deliberately advisory checks.** A check that runs on PRs but is intentionally
+not required is declared in the consumer repo's `shipwright_run_config.json` as
+`"required_checks_advisory": ["<check name>", ...]`
+(`lib.required_checks_drift.load_advisory_checks`; a missing or malformed value
+declares nothing). It silences `unenforced` only — never `phantom`, because a
+stale in-repo list must not hide a check that blocks every PR. The producer does
+not close a card it already filed: dismiss it after declaring.
+
 **A producer, not a CI gate:** the Actions token cannot read a repo's protection
 configuration, so it runs out-of-band with the operator's own `gh` auth. On
 divergence it files ONE triage action-unit (`source="required-checks"`, routed to

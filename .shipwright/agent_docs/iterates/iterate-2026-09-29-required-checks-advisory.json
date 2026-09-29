@@ -1,0 +1,57 @@
+{
+  "run_id": "iterate-2026-09-29-required-checks-advisory",
+  "date": "2026-09-29T18:03:59.107640Z",
+  "event_at": "2026-09-29T07:23:21.520106+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/required-checks-advisory",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-29-required-checks-advisory",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "declared advisory check is not reported unenforced",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_required_checks_drift.py::test_a_declared_advisory_check_is_not_unenforced_but_never_hides_a_phantom PASSED"
+      },
+      {
+        "behavior": "declared advisory never hides a configured-but-unproduced phantom",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_required_checks_drift.py::test_a_declared_advisory_check_is_not_unenforced_but_never_hides_a_phantom PASSED"
+      },
+      {
+        "behavior": "advisory list read from run config (trimmed, string entries only, BOM-safe)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_required_checks_drift.py::test_advisory_list_is_read_from_the_run_config + test_advisory_list_survives_a_utf8_bom PASSED"
+      },
+      {
+        "behavior": "missing/malformed declaration declares nothing (fails open)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_required_checks_drift.py::test_missing_or_malformed_advisory_declaration_declares_nothing[5 params] PASSED"
+      },
+      {
+        "behavior": "producer wires the declaration end to end (card filed without key, none with it)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_check_required_checks_cli.py::test_a_repo_declared_advisory_check_files_no_card[2 params] PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-09-29T18:03:33.779Z",
+    "justification": "Pure comparison library + producer CLI; no startable surface. Behavior proven in-process by unit tests and an end-to-end producer main() test with a faked gh."
+  }
+}

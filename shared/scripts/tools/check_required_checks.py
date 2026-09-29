@@ -38,6 +38,7 @@ from lib.required_checks_drift import (  # noqa: E402
     all_workflow_check_names as all_workflow_check_names,  # existing CLI module API
     compare_required_checks,
     dedup_key,
+    load_advisory_checks,
     render_drift,
     workflow_check_sets,
 )
@@ -221,6 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     possible, guaranteed = workflow_check_sets(root, branch=branch)
     result = compare_required_checks(
         possible, configured, unenforced_candidates=guaranteed,
+        advisory=load_advisory_checks(root),
     )
     if args.json:
         print(json.dumps({"repo": repo, "branch": branch, **result}, indent=2))
