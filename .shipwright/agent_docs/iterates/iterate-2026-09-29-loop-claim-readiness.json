@@ -1,0 +1,97 @@
+{
+  "run_id": "iterate-2026-09-29-loop-claim-readiness",
+  "date": "2026-09-29T07:23:21.316171Z",
+  "event_at": "2026-09-28T22:42:19.885904+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/loop-claim-readiness",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-29-loop-claim-readiness",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "readiness emits per unit id/state/ready and blocked_by with reasons not_merged, commit_not_on_base, commit_missing, dependency_missing (real git ancestry)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestBuildReadiness::test_reasons_and_flags PASSED"
+      },
+      {
+        "behavior": "unsupported branch strategies (stacked/single-branch/bogus) block every pending unit with unsupported_strategy",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestBuildReadiness::test_unsupported_strategy_blocks_every_pending_unit (3) PASSED"
+      },
+      {
+        "behavior": "finalized campaign is never ready and skips base resolution (no fetch)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::test_finalized_campaign_is_never_ready, test_finalized_does_not_resolve_a_base PASSED"
+      },
+      {
+        "behavior": "next-batch claims exactly the readiness ready set; readiness writes no state and takes no lock",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestAgreesWithNextBatch::test_next_batch_claims_exactly_the_readiness_ready_set PASSED"
+      },
+      {
+        "behavior": "agreement holds for case-mismatched dependency ids and the serial strategy; pending-not-ready always has a reason",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestAgreesWithNextBatch::test_agreement_edge_cases (2) PASSED"
+      },
+      {
+        "behavior": "next-batch refuses an unsupported strategy exactly where readiness reports it",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestAgreesWithNextBatch::test_unsupported_strategy_agrees_next_batch_refuses PASSED"
+      },
+      {
+        "behavior": "both commands run one shared verdict function (structural pin)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestAgreesWithNextBatch::test_both_paths_use_one_function PASSED"
+      },
+      {
+        "behavior": "at most one git fetch per call and ready/blocked_by never disagree when the ref moves mid-call",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestAgreesWithNextBatch::test_at_most_one_fetch_and_verdict_survives_a_moving_ref PASSED"
+      },
+      {
+        "behavior": "CLI: --json output, exit 0; section state / missing file exit 1; malformed state is a structured error",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestCli (3 tests) PASSED"
+      },
+      {
+        "behavior": "wire contract: live shape equals frozen loop-readiness-1.0.json skeleton incl. nullable arms, reason enum pinned",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestWireContract::test_shape_matches_frozen_v1_fixture PASSED"
+      },
+      {
+        "behavior": "extraction leaves next-batch/release/claim behavior unchanged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_claim*.py, test_campaign_dag_scheduler_integration.py, test_loop_claim_concurrency_integration.py (existing, repointed patch targets) PASSED"
+      },
+      {
+        "behavior": "cross-component composition: next-batch and readiness composing over a real git repo",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_readiness.py::TestAgreesWithNextBatch::test_next_batch_claims_exactly_the_readiness_ready_set PASSED (real git repo, both CLI entry functions)"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_loop_readiness.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 16,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\loop-claim-readiness\\.shipwright\\runs\\iterate-2026-09-29-loop-claim-readiness\\surface_verification.log",
+    "timestamp": "2026-09-29T07:22:52.300Z",
+    "attempts": 1
+  }
+}

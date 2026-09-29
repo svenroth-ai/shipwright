@@ -97,7 +97,11 @@ def test_review_claude_cli_sends_content_via_stdin_not_argv(monkeypatch):
         "an empty --allowedTools closes the tool-denial sandbox gap; "
         "dropping this flag would let the reviewer invoke tools"
     )
-    assert "--bare" in argv
+    assert "--bare" not in argv, "--bare skips OAuth/keychain: subscription login => 'Not logged in'"
+    assert argv[argv.index("--setting-sources") + 1] == "", (
+        "empty setting sources replace --bare's isolation: no hooks/CLAUDE.md/plugins"
+    )
+    assert "--disable-slash-commands" in argv and "--no-session-persistence" in argv
     assert "--max-turns" in argv and argv[argv.index("--max-turns") + 1] == "1"
     assert "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json"
 
@@ -215,8 +219,57 @@ def test_review_claude_cli_preserves_anthropic_auth_token_outside_codextender(mo
     result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
     assert result["status"] == "success"
     env = captured["env"]
-    assert env is None, (
-        "outside Codextender, review_claude_cli must pass env=None (inherit "
-        "unchanged) so a legitimate ANTHROPIC_AUTH_TOKEN-only installation "
-        "keeps its own real Anthropic authentication"
+    assert env["ANTHROPIC_AUTH_TOKEN"] == "my-real-anthropic-bearer-token", (
+        "outside Codextender the caller's own env (only the two memory-isolation "
+        "switches added) must reach the CLI so a legitimate ANTHROPIC_AUTH_TOKEN-only "
+        "installation keeps its own real Anthropic authentication"
     )
+
+
+def test_review_claude_cli_treats_is_error_reply_as_error_not_review(monkeypatch):
+    """exit 0 + is_error=true carries an error string in `result` (e.g. 'Not logged
+    in') — it must never be recorded as a successful review."""
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    out = json.dumps({"is_error": True, "result": "Not logged in · Please run /login"})
+    monkeypatch.setattr(legs.subprocess, "run", lambda *a, **k: _FakeCompleted(stdout=out))
+    result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
+    assert result["status"] == "error"
+    assert "Not logged in" in result["reason"]
+
+
+def test_review_claude_cli_runs_from_an_empty_isolated_cwd(monkeypatch, tmp_path):
+    """The reviewed checkout's CLAUDE.md/.claude must be unreachable: the CLI runs
+    in a fresh empty dir (removed afterwards), never the caller's cwd."""
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    monkeypatch.chdir(tmp_path)
+    seen = {}
+
+    def _fake_run(cmd, input, **kwargs):  # noqa: A002
+        seen["cwd"] = Path(kwargs["cwd"])
+        seen["entries"] = list(seen["cwd"].iterdir())
+        return _FakeCompleted(stdout=_json_ok("ok"))
+
+    monkeypatch.setattr(legs.subprocess, "run", _fake_run)
+    assert legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)["status"] == "success"
+    assert seen["cwd"].resolve() != tmp_path.resolve()
+    assert seen["entries"] == []
+    assert not seen["cwd"].exists()
+
+
+def test_review_claude_cli_env_disables_user_claude_md_and_auto_memory(monkeypatch):
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    monkeypatch.delenv("CODEXTENDER_ACTIVE", raising=False)
+    seen = {}
+
+    def _fake_run(cmd, input, **kwargs):  # noqa: A002
+        seen["env"] = kwargs["env"]
+        return _FakeCompleted(stdout=_json_ok("ok"))
+
+    monkeypatch.setattr(legs.subprocess, "run", _fake_run)
+    legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
+    assert seen["env"]["CLAUDE_CODE_DISABLE_CLAUDE_MDS"] == "1"
+    assert seen["env"]["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    assert "PATH" in seen["env"] or "Path" in seen["env"], "the inherited env must survive"

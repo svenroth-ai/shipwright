@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Requirements met","verdict":"pass","note":"readiness subcommand; shared ready-set; blocked_by reasons; agreement + contract tests"},
+{"name":"Tests cover happy and error paths","verdict":"pass","note":"16 new tests incl. real-git ancestry, CLI, malformed state"},
+{"name":"No unrelated changes","verdict":"pass","note":"only helper move + test repoint"},
+{"name":"Error handling","verdict":"pass","note":"structured errors for unreadable/malformed/non-sub_iterate"},
+{"name":"Security","verdict":"pass","note":"no new inputs beyond existing --state/--campaign-worktree; git args are list-form"},
+{"name":"Style and file size","verdict":"pass","note":"ruff clean; loop_claim.py 540->519, under its exception cap"},
+{"name":"Docs and glossary","verdict":"n/a","note":"module docstrings carry the contract"},
+{"name":"Affected boundaries","verdict":"pass","note":"cross-repo JSON output contract (WebUI card 10), versioned + frozen fixture"}]}
