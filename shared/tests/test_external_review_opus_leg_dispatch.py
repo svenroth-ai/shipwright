@@ -97,7 +97,7 @@ def test_review_claude_cli_sends_content_via_stdin_not_argv(monkeypatch):
         "an empty --allowedTools closes the tool-denial sandbox gap; "
         "dropping this flag would let the reviewer invoke tools"
     )
-    assert "--bare" in argv
+    assert "--bare" not in argv, "--bare skips OAuth/keychain: subscription login => 'Not logged in'"
     assert "--max-turns" in argv and argv[argv.index("--max-turns") + 1] == "1"
     assert "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json"
 
@@ -220,3 +220,15 @@ def test_review_claude_cli_preserves_anthropic_auth_token_outside_codextender(mo
         "unchanged) so a legitimate ANTHROPIC_AUTH_TOKEN-only installation "
         "keeps its own real Anthropic authentication"
     )
+
+
+def test_review_claude_cli_treats_is_error_reply_as_error_not_review(monkeypatch):
+    """exit 0 + is_error=true carries an error string in `result` (e.g. 'Not logged
+    in') — it must never be recorded as a successful review."""
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    out = json.dumps({"is_error": True, "result": "Not logged in · Please run /login"})
+    monkeypatch.setattr(legs.subprocess, "run", lambda *a, **k: _FakeCompleted(stdout=out))
+    result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
+    assert result["status"] == "error"
+    assert "Not logged in" in result["reason"]

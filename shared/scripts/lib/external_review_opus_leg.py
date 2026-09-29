@@ -169,6 +169,10 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
     that did slip through would still only see instructions text, never the
     diff.
 
+    ``--bare`` is deliberately NOT passed: it skips OAuth/keychain reads, so under
+    a Claude *subscription* login (this leg's whole point) the CLI answers
+    "Not logged in" and the leg silently loses its review.
+
     ``--mcp-config`` (pointed at a checked-in empty-``mcpServers`` file) plus
     ``--strict-mcp-config`` (a boolean flag — ignore every other MCP source)
     and ``--allowedTools ""`` close this leg's sandbox-parity gap with
@@ -200,7 +204,7 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
     stdin_payload = f"<content>\n{content}\n</content>\n\n<context>\n{context}\n</context>\n"
 
     argv = [
-        claude_bin, "--bare", "-p", full_prompt, "--model", model_name,
+        claude_bin, "-p", full_prompt, "--model", model_name,
         "--output-format", "json", "--permission-mode", "dontAsk",
         "--max-turns", "1", "--mcp-config", str(_EMPTY_MCP_CONFIG_PATH),
         "--strict-mcp-config", "--allowedTools", "",
@@ -227,6 +231,12 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
             payload = json.loads(proc.stdout)
         except json.JSONDecodeError as exc:
             return {"status": "error", "via": "claude_cli", "reason": f"could not parse claude CLI JSON output: {exc}"}
+
+        if isinstance(payload, dict) and payload.get("is_error"):
+            # The CLI reports auth/API failures as exit 0 + is_error=true with the
+            # error text in `result` — never a review, so never classify it as one.
+            detail = str(payload.get("result") or payload.get("terminal_reason") or "unknown")[:300]
+            return {"status": "error", "via": "claude_cli", "reason": f"claude CLI reported an error: {detail}"}
 
         feedback = payload.get("result") if isinstance(payload, dict) else None
         result = classify_reply(feedback if isinstance(feedback, str) else None, None, via="claude_cli")
