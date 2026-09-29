@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from lib import loop_claim
+from lib import loop_claim, loop_ready_set
 from lib.loop_claim import MAX_PARALLEL_HARD_CAP, cmd_next_batch
 
 _FAKE_SHA = "deadbeef" * 5
@@ -158,8 +158,8 @@ class TestCmdNextBatch:
             {"id": "dep", "status": "merged", "attempt": 0, "merged_commit": _FAKE_SHA},
             {"id": "A", "status": "pending", "attempt": 0, "depends_on": ["dep"]},
         ])
-        with patch.object(loop_claim, "_is_ancestor", return_value=True), \
-                patch.object(loop_claim.subprocess, "run"):
+        with patch.object(loop_ready_set, "_is_ancestor", return_value=True), \
+                patch.object(loop_ready_set.subprocess, "run"):
             rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
         assert rc == 0
         out = json.loads(capsys.readouterr().out)
@@ -174,8 +174,8 @@ class TestCmdNextBatch:
             {"id": "R0", "status": "merged", "attempt": 0, "merged_commit": _FAKE_SHA},
             {"id": "A", "status": "pending", "attempt": 0, "depends_on": ["r0"]},
         ])
-        with patch.object(loop_claim, "_is_ancestor", return_value=True), \
-                patch.object(loop_claim.subprocess, "run"):
+        with patch.object(loop_ready_set, "_is_ancestor", return_value=True), \
+                patch.object(loop_ready_set.subprocess, "run"):
             rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
         assert rc == 0
         out = json.loads(capsys.readouterr().out)
@@ -204,8 +204,8 @@ class TestCmdNextBatch:
         changed_state["units"][0]["merged_commit"] = "cafebabe" * 5  # different SHA, in-lock
 
         with patch.object(loop_claim, "_load_state", side_effect=[stale_state, changed_state]), \
-                patch.object(loop_claim, "_is_ancestor", return_value=True), \
-                patch.object(loop_claim.subprocess, "run"):
+                patch.object(loop_ready_set, "_is_ancestor", return_value=True), \
+                patch.object(loop_ready_set.subprocess, "run"):
             rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
         out = json.loads(capsys.readouterr().out)
         assert out["claimed"] == []

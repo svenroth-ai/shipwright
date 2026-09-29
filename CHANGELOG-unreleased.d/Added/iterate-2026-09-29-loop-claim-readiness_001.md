@@ -1,0 +1,1 @@
+`loop_claim.py readiness` — a read-only per-unit readiness report (id, state, ready, blocked_by with reasons) that runs the same ready-set as `next-batch` without locking or claiming; versioned JSON contract for the WebUI DAG view (`lib/loop_ready_set.py`)
