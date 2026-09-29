@@ -171,7 +171,11 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
 
     ``--bare`` is deliberately NOT passed: it skips OAuth/keychain reads, so under
     a Claude *subscription* login (this leg's whole point) the CLI answers
-    "Not logged in" and the leg silently loses its review.
+    "Not logged in" and the leg silently loses its review. Its isolation is
+    kept instead by ``--setting-sources ""`` (no user/project/local settings =>
+    no hooks, no plugins, no CLAUDE.md), ``--disable-slash-commands`` and
+    ``--no-session-persistence`` — verified live: login works, none of the
+    operator's hooks/CLAUDE.md reach the reviewer.
 
     ``--mcp-config`` (pointed at a checked-in empty-``mcpServers`` file) plus
     ``--strict-mcp-config`` (a boolean flag — ignore every other MCP source)
@@ -208,6 +212,7 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
         "--output-format", "json", "--permission-mode", "dontAsk",
         "--max-turns", "1", "--mcp-config", str(_EMPTY_MCP_CONFIG_PATH),
         "--strict-mcp-config", "--allowedTools", "",
+        "--setting-sources", "", "--disable-slash-commands", "--no-session-persistence",
     ]
 
     result: dict = {"status": "degraded", "reason": "no attempt made", "via": "claude_cli"}

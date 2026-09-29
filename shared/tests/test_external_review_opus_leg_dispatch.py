@@ -98,6 +98,10 @@ def test_review_claude_cli_sends_content_via_stdin_not_argv(monkeypatch):
         "dropping this flag would let the reviewer invoke tools"
     )
     assert "--bare" not in argv, "--bare skips OAuth/keychain: subscription login => 'Not logged in'"
+    assert argv[argv.index("--setting-sources") + 1] == "", (
+        "empty setting sources replace --bare's isolation: no hooks/CLAUDE.md/plugins"
+    )
+    assert "--disable-slash-commands" in argv and "--no-session-persistence" in argv
     assert "--max-turns" in argv and argv[argv.index("--max-turns") + 1] == "1"
     assert "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json"
 
