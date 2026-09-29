@@ -71,6 +71,16 @@ def _real_anthropic_env() -> dict[str, str] | None:
     return {key: value for key, value in os.environ.items() if key not in _ANTHROPIC_ENV_SCRUB_KEYS}
 
 
+_MEMORY_ISOLATION_ENV = {"CLAUDE_CODE_DISABLE_CLAUDE_MDS": "1", "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
+
+
+def _isolated_env() -> dict[str, str]:
+    """Child env: the Codextender-scrubbed (or inherited) env plus switches that
+    keep the operator's user-level CLAUDE.md and auto-memory out of the review."""
+    base = _real_anthropic_env()
+    return {**(os.environ if base is None else base), **_MEMORY_ISOLATION_ENV}
+
+
 def _resolve_claude_binary() -> str | None:
     """``shutil.which("claude")``, refusing two unsafe resolutions.
 
@@ -231,7 +241,7 @@ def _run_claude_attempts(
             proc = subprocess.run(
                 argv, input=stdin_payload, capture_output=True,
                 encoding="utf-8", errors="replace", timeout=timeout,
-                env=_real_anthropic_env(), cwd=cwd,
+                env=_isolated_env(), cwd=cwd,
             )
         except subprocess.TimeoutExpired:
             return {"status": "error", "via": "claude_cli", "reason": f"claude CLI timed out after {timeout}s"}

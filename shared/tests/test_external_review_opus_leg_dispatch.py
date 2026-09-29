@@ -219,10 +219,10 @@ def test_review_claude_cli_preserves_anthropic_auth_token_outside_codextender(mo
     result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
     assert result["status"] == "success"
     env = captured["env"]
-    assert env is None, (
-        "outside Codextender, review_claude_cli must pass env=None (inherit "
-        "unchanged) so a legitimate ANTHROPIC_AUTH_TOKEN-only installation "
-        "keeps its own real Anthropic authentication"
+    assert env["ANTHROPIC_AUTH_TOKEN"] == "my-real-anthropic-bearer-token", (
+        "outside Codextender the caller's own env (only the two memory-isolation "
+        "switches added) must reach the CLI so a legitimate ANTHROPIC_AUTH_TOKEN-only "
+        "installation keeps its own real Anthropic authentication"
     )
 
 
@@ -256,3 +256,20 @@ def test_review_claude_cli_runs_from_an_empty_isolated_cwd(monkeypatch, tmp_path
     assert seen["cwd"].resolve() != tmp_path.resolve()
     assert seen["entries"] == []
     assert not seen["cwd"].exists()
+
+
+def test_review_claude_cli_env_disables_user_claude_md_and_auto_memory(monkeypatch):
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    monkeypatch.delenv("CODEXTENDER_ACTIVE", raising=False)
+    seen = {}
+
+    def _fake_run(cmd, input, **kwargs):  # noqa: A002
+        seen["env"] = kwargs["env"]
+        return _FakeCompleted(stdout=_json_ok("ok"))
+
+    monkeypatch.setattr(legs.subprocess, "run", _fake_run)
+    legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
+    assert seen["env"]["CLAUDE_CODE_DISABLE_CLAUDE_MDS"] == "1"
+    assert seen["env"]["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    assert "PATH" in seen["env"] or "Path" in seen["env"], "the inherited env must survive"
