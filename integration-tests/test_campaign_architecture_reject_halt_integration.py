@@ -119,7 +119,7 @@ def _halted_units(state: Path) -> list[dict]:
     return found
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11/AC39")
 def test_reject_halts_the_unit_and_step_5_can_still_find_it(loop_state: Path, tmp_path: Path):
     jsonschema = pytest.importorskip("jsonschema")
     envelope = _summarize({
@@ -154,7 +154,7 @@ def test_reject_halts_the_unit_and_step_5_can_still_find_it(loop_state: Path, tm
     assert Path(halted[0]["halted_patch"]).is_relative_to(Path(rows["3.1"]["result_path"]).parent)
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11/AC39")
 def test_a_reject_in_a_later_sibling_is_found_even_though_the_wave_stopped_first(
     loop_state: Path, tmp_path: Path
 ):
@@ -177,7 +177,7 @@ def test_a_reject_in_a_later_sibling_is_found_even_though_the_wave_stopped_first
     assert halted[0]["architecture_review"]["verdicts"] == {"glm": "reject", "openai": "reject"}
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11/AC39")
 def test_a_stale_attempt_cannot_overwrite_the_halt(loop_state: Path, tmp_path: Path):
     """The fencing token still guards the record: a superseded attempt's halt is
     rejected (exit 5), not silently recorded over the current attempt."""
@@ -191,7 +191,7 @@ def test_a_stale_attempt_cannot_overwrite_the_halt(loop_state: Path, tmp_path: P
     assert _halted_units(loop_state) == []
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11/AC39")
 def test_unavailable_or_unknown_leg_is_not_a_reject():
     """A degraded provider must not halt a unit: only a real `reject` does."""
     envelope = _summarize({
