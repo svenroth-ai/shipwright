@@ -129,8 +129,15 @@ def test_sub_iterate_runner_resolves_its_own_driver_not_a_placeholder():
     path = (
         PLUGINS_ROOT / "shipwright-iterate" / "agents" / "sub-iterate-runner.md"
     )
-    blocks = [block for p, block in _fenced_shell_blocks() if p == path]
-    assert len(blocks) == 2, f"expected 2 external_review.py blocks in {path}, found {len(blocks)}"
+    # Step 3.5's two Branch A calls were extracted out of the runner into this
+    # reference (the runner stopped inlining a copy of iteration-planning.md
+    # Step 4), so the runner's own blocks now live in two files.
+    ref = (
+        PLUGINS_ROOT / "shipwright-iterate" / "skills" / "iterate"
+        / "references" / "campaign-step-3-5-plan-review.md"
+    )
+    blocks = [block for p, block in _fenced_shell_blocks() if p in (path, ref)]
+    assert len(blocks) == 3, f"expected 3 external_review.py blocks in {path} + {ref}, found {len(blocks)}"
     for block in blocks:
         assert "{driver}" not in block, (
             f"sub-iterate-runner.md has no caller to substitute a {{driver}} "
@@ -231,14 +238,15 @@ def _live_idioms() -> list[tuple[str, Path]]:
 
 def test_live_idioms_cover_every_self_resolving_site():
     """Sanity floor pinning the exact block count: 2 var-form (external-review.md,
-    code-review.md) + 4 inline-form (sub-iterate-runner.md x2,
-    step-5-external-review.md x2) = 6. A silently dropped or malformed site
+    code-review.md) + 5 inline-form (sub-iterate-runner.md x1,
+    campaign-step-3-5-plan-review.md x2 -- the runner's other two blocks moved
+    there when Step 3.5 was extracted --, step-5-external-review.md x2) = 7. A silently dropped or malformed site
     would shrink this count directly, which >= 2 (a dedup-based floor) could
     not catch (F11 local PR-review preflight comment, round 5)."""
     per_block = _live_idioms_per_block()
-    assert len(per_block) == 6, (
-        f"expected exactly 6 self-resolving driver-idiom blocks "
-        f"(2 var-form + 4 inline-form), found {len(per_block)}: {per_block!r}"
+    assert len(per_block) == 7, (
+        f"expected exactly 7 self-resolving driver-idiom blocks "
+        f"(2 var-form + 5 inline-form), found {len(per_block)}: {per_block!r}"
     )
     idioms = _live_idioms()
     assert len(idioms) == 2, (

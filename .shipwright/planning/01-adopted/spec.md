@@ -936,6 +936,14 @@ _Where the work detail lives_ at the end of this document.
   the same way `/shipwright-plan`'s internal architecture review does — before
   any outside second opinion, and never at trivial or small complexity.
   (iterate-2026-09-28-architecture-review-internal-arm)
+- (E) [AC39] Given a change built as one step of an unattended multi-change
+  campaign, when the outside second opinion on whether the work should be
+  built at all comes back "reject" from either reviewer, then that change is
+  stopped — nothing is finished, committed or pushed — and both verdicts plus
+  the reviewers' recommended alternative are shown to the operator when the
+  campaign ends, instead of the run either asking a question nobody is there
+  to answer or building on regardless.
+  (iterate-2026-09-29-campaign-runner-architecture-review)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

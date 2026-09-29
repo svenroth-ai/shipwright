@@ -1,0 +1,9 @@
+{"items": [
+  {"name": "1. Spec Compliance", "verdict": "pass", "note": "AC1-AC7 each map to a diff hunk or test; runner 528->510 lines, campaign-mode.md held at 1708, baseline lowered, no exception minted."},
+  {"name": "2. Error Handling", "verdict": "pass", "note": "Call-2 failure -> reviews.architecture 'unavailable' (non-halting); no-alternative reject -> fixed fallback string; stale attempt still fenced (exit 5)."},
+  {"name": "3. Security Basics", "verdict": "pass", "note": "Reviewer prose no longer crosses a single-quoted --result argument (3f uses cat); printed at campaign end as quoted data; runner never writes its own CI ack (unchanged)."},
+  {"name": "4. Test Quality", "verdict": "pass", "note": "Integration test drives the production sub_iterate/attempt_id shape through the real autonomous_loop.py subprocess; schema negatives cover 5 non-actionable shapes; a drift guard pins the reference to iteration-planning.md."},
+  {"name": "5. Performance Basics", "verdict": "n/a", "note": "Prose, one JSON schema, tests; one extra reviewer call per qualifying campaign unit (accepted, same as standalone)."},
+  {"name": "6. Naming & Structure", "verdict": "pass", "note": "New reference follows the campaign-step-3-4 precedent (campaign-step-3-5-plan-review.md); reason_code architecture_review_rejected parallels ci_supplychain_requires_operator."},
+  {"name": "7. Affected Boundaries", "verdict": "pass", "note": "external_review verdicts -> runner result -> schema -> autonomous_loop record -> finalize step 5 probed end to end incl. the escalated->failed row collapse and hostile prose."}
+]}

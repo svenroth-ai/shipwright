@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-29-campaign-runner-architecture-review",
+  "date": "2026-09-29",
+  "section": "Iterate — feature: campaign runner architecture review",
+  "title": "Campaign sub-iterate-runner runs the external architecture review; a reject halts the unit",
+  "context": "The external architecture pass (PR #582) was wired for standalone iterate and plan but not the campaign runner, which carried an inlined copy of Step 3.5 at its bloat cap and cannot ask an operator on a reject.",
+  "decision": "Extract the runner's Step 3.5 into references/campaign-step-3-5-plan-review.md and add the second call there. A reject from either architecture reviewer halts the unit: escalated / architecture_review_rejected, both verdicts + alternative + halted.patch inline in result.json, surfaced at campaign end by finalize step 5.",
+  "consequences": "Runner 528->510 lines and baseline lowered, no exception minted. One reject stalls the whole wave (existing escalated STRICT-STOP). The reject arrives post-Build (halted.patch keeps the work). The internal arm stays a not_run gap.",
+  "rationale": "Extraction removes the duplication that caused the divergence; halting reuses Branch B's record-and-report shape. Claimed R5a rows collapse escalated to failed, so step 5 reads persisted result.json files, never the row.",
+  "rejected": "A new ADR-gated bloat exception (records the duplication as permanent); pointing the runner at the interactive step with deltas only (that step is written around STOP-and-ask; the runner needs runnable commands).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

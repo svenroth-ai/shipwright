@@ -54,7 +54,7 @@ _SCAN_EXCLUDE_DIRNAMES = {".git", ".venv", "node_modules", ".worktrees", "__pyca
 # call site is deliberately accounted for here, not just auto-absorbed.
 # Counts individual `uv run` COMMANDS, not enclosing fences -- a fence
 # holding two invocations must count (and be checked) as two.
-EXPECTED_TOTAL_COMMANDS = 9
+EXPECTED_TOTAL_COMMANDS = 10  # +1: the campaign architecture call (Step 3.5 extraction)
 
 # `--project` must be the token immediately after `uv run`, quoted --
 # anchored via `.match()` so a `--project` placed later in the command
@@ -239,11 +239,19 @@ def test_campaign_to_runner_plan_plugin_root_chain_composes():
     input_section = runner_text.split("## Input", 1)[1].split("## Workflow", 1)[0]
     assert "plan_plugin_root" in input_section, "consumer declaration hop broken"
 
+    # Step 3.5's two Branch A calls moved into this reference (the runner's own
+    # inlined copy was extracted); the runner keeps only the code-review call.
+    step_3_5_text = (
+        REPO_ROOT / "plugins/shipwright-iterate/skills/iterate/references"
+        / "campaign-step-3-5-plan-review.md"
+    ).read_text(encoding="utf-8")
     consuming_commands = [
-        cmd for cmd in _external_review_commands(runner_text) if "{plan_plugin_root}" in cmd
+        cmd
+        for cmd in _external_review_commands(runner_text) + _external_review_commands(step_3_5_text)
+        if "{plan_plugin_root}" in cmd
     ]
-    assert len(consuming_commands) == 2, (
-        f"expected both of sub-iterate-runner.md's external_review.py call "
+    assert len(consuming_commands) == 3, (
+        f"expected all of the runner's external_review.py call "
         f"sites to consume the literal {{plan_plugin_root}} token supplied "
         f"by campaign-mode.md's spawn, found {len(consuming_commands)} -- "
         f"the declared Input is not actually wired to the invocations that "

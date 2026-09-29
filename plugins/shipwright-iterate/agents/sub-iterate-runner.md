@@ -98,52 +98,24 @@ range is EMPTY here and the check would silently pass. **Capture stdout AND exit
 
 ### Step 3.5: External Plan Review (mandatory medium+ OR risk flag OR diff > 100 LOC, ADR-029)
 
-After Step 3.4 and before Finalization, run the external LLM plan review the SKILL.md
-Step 4 (External LLM Review) gate requires for medium+ iterates. Mirror of
-`references/iteration-planning.md` Step 4 with Branch A / Branch B / Branch C semantics.
+After Step 3.4, before Finalization. **Trigger** — Step 3.4's `plan_review_required`; **skip** only
+when none of its three arms hold. **Full body — read it first:**
+`references/campaign-step-3-5-plan-review.md` (extracted so this file stops inlining a copy of
+`iteration-planning.md` Step 4). It carries the commands, the recording, and the halt rule. Run
+`check-external-review-keys.py`, then branch:
 
-**Trigger** — identical to Step 3.7's, from Step 3.4's `plan_review_required`: effective complexity `medium`+, OR any canonical risk flag, OR diff > 100 lines (before alignment 3.5 lacked this diff-size arm, so a `small` unit skipped it).
-
-**Skip** only when none of the three hold. Procedure:
-
-```bash
-uv run "{shared_root}/scripts/checks/check-external-review-keys.py"
-```
-
-Parse the JSON. Then:
-
-- **Branch A — `available`:** driver is hardcoded, not `{driver}` — this agent is only ever spawned as a Claude Code subagent via the Agent tool, which has no Codex-CLI equivalent yet, so `claude` is the only *harness* value that can reach this file today; a real Codex-driven campaign needs its own wiring, tracked separately as trg-a27ab4d9. Still conditional on `CODEXTENDER_ACTIVE` (this subagent runs in-process, inheriting the spawning session's environment): `codex` when set, else `claude`.
-
-  ```bash
-  uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" --mode iterate \
-    --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
-    --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
-  ```
-
-  Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse `reviews.glm.feedback` + `reviews.openai.feedback` (or `reviews.opus.feedback` under `--driver codex`; required, no default, never hardcoded). Merge
-  high/medium findings into the iterate ADR's
-  `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
-  `rejected-with-reason`, before Finalization.
-
+- **Branch A — `available`:** TWO calls — the plan review (`--mode iterate`) and the architecture
+  review (`--mode architecture`, over a brief, never the mini-plan). **A `reject` from either
+  ARCHITECTURE reviewer HALTS THE UNIT** (the runner cannot ask): write the escalation to
+  Step 6's `result.json` FIRST (3e reads the file), then return `status:"escalated"`,
+  `reason_code:"architecture_review_rejected"` with `architecture_review` (both verdicts + the
+  recommended alternative) inline — Output → Escalation; commit and push nothing.
 - **Branch B — `missing_keys`:** autonomous; cannot prompt. Log, proceed, record the opt-out;
-  orchestrator surfaces at campaign-end. (`uv run --project` failure ≠ this branch —
-  iteration-reviews.md's note: `--status not_run`, no `--marker-status`.)
+  the orchestrator surfaces it at campaign-end. Neither call runs.
+- **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`): notice + skip both
+  calls; record `skipped_config_disabled` in the ADR.
 
-- **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`):
-  notice + skip; record `skipped_config_disabled` in the ADR.
-
-Always record the pass — writes the review record AND dual-writes the legacy
-marker. **Every pass here records its row** (`self` 3.6, `plan`+`plan_internal`+
-`architecture_internal` here, `code`+`doubt` 3.7, `external_code` cascade); F11
-STOPs while any is `pending`, so a skipped pass needs a `--disposition` naming the rule. `reviews.plan` (Step 6) stays the campaign view; both internal-arm commands are in `references/iteration-reviews.md` → *Campaign sub-iterate rows*, the Contract.
-
-```bash
-uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
-  --project-root "{project_root}" --run-id "{run_id}" --review-type plan \
-  --status "{completed | not_run}" --provider "{openrouter | null}" \
-  --marker-status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
-  [--from external-review-json --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"] [--disposition "{why}"]
-```
+Always record the `plan` row (command in the reference); every other row is listed at Step 3.7.
 
 ### Step 3.6: Self-Review (always, ADR-029 follow-up)
 
@@ -372,6 +344,7 @@ Success:
   },
   "reviews": {
     "plan": {"status": "completed | skipped_complexity_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
+    "architecture": {"status": "completed | skipped_complexity_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys | unavailable", "verdicts": {"glm": "approve", "openai": "approve"}},
     "self_review": {"status": "completed", "items_failed": 0, "items_passed": 7},
     "code": {"status": "completed | delegated_to_orchestrator | delegated_to_skill | skipped_diff_below_threshold", "findings_count": 0},
     "external_code": {"status": "completed | skipped_diff_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
@@ -423,6 +396,15 @@ Escalation — Step 3.4 (CI trust boundary; `ci_paths` MUST be non-empty):
  "reason": "Diff touches the CI trust boundary; the ack names a posture decision an operator must choose",
  "reason_code": "ci_supplychain_requires_operator", "detected_complexity": "medium",
  "ci_paths": [".github/workflows/ci.yml"]}
+```
+
+Escalation — Step 3.5 (architecture review rejected by either reviewer; `architecture_review.recommended_alternative` MUST be non-empty — shape + rationale: `references/campaign-step-3-5-plan-review.md`):
+```json
+{"sub_iterate_id": "{sub_iterate_id}", "status": "escalated",
+ "reason": "architecture_review_rejected: an operator must choose the alternative, keep the plan, or rework",
+ "reason_code": "architecture_review_rejected", "detected_complexity": "medium",
+ "architecture_review": {"verdicts": {"glm": "reject", "openai": "approve"},
+   "recommended_alternative": "{one line}", "findings": ["{one line each}"]}, "halted_patch": "{path}"}
 ```
 
 ## Safety Rules

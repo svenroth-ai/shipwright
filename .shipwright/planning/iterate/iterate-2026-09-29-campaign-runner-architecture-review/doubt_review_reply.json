@@ -1,0 +1,5 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","lens":"concurrency & ordering","claim_under_doubt":"a rejected campaign unit is always surfaced at campaign end","disproof_attempt":"3f STRICT-STOPs on the first exit 3, so a later sibling's reject is never recorded and has no result_path; step 5 would skip it. ADDRESSED: step 5 falls back to a{attempt}/result.json; integration case added.","what_would_resolve_it":"read the attempt-scoped file"},
+{"severity":"low","lens":"boundary & contract","claim_under_doubt":"halt write path defined for every dispatch","disproof_attempt":"reference hard-coded the attempt-scoped path only. ADDRESSED: says the path Step 6 resolves, with the pre-R5a fallback.","what_would_resolve_it":"name both branches"},
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"operator sees a halt, not a failure","disproof_attempt":"row collapses to failed on the board. ADDRESSED: reason is prefixed architecture_review_rejected: so failure_reason says what happened.","what_would_resolve_it":"prefix reason"}],
+"summary":"1 medium, 2 low, all addressed."}

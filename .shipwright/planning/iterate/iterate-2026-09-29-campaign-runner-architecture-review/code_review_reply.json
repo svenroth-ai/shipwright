@@ -1,0 +1,12 @@
+{
+  "section": "iterate-2026-09-29-campaign-runner-architecture-review",
+  "review": [
+    {"severity": "medium", "category": "correctness", "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md", "finding": "Halt ordering contradicts itself: result.json must contain halted_patch but was to be written FIRST; no mkdir for the attempt dir before the patch redirect.", "suggestion": "Order as mkdir, save patch (--binary), write result.json with halted_patch, return. -- FIXED"},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md", "finding": "Runner's escalation example omits halted_patch. -- FIXED (same line)", "suggestion": "Add halted_patch to the example."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md", "finding": "Unclear whether the plan row is recorded before a halt. -- FIXED (deliberately unrecorded; F11 never runs for the unit)", "suggestion": "State it outright."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_architecture_review.py", "finding": "test_reference_says_non_reject_verdicts_proceed was vacuous. -- FIXED (asserts the rule sentence)", "suggestion": "Assert the rule."},
+    {"severity": "low", "category": "correctness", "file": "integration-tests/test_campaign_architecture_reject_halt_integration.py", "finding": "Comment overstated: list argv never exercises the 3f shell quoting. -- FIXED (comment reworded; disclosed)", "suggestion": "Reword."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md", "finding": "Step 3.5 pointer sat before Step 3.4. -- FIXED (moved after, line-neutral)", "suggestion": "Move it."}
+  ],
+  "notes": {"verified_ok": ["Schema conditionals correct under 2020-12; prose matches resolve_record_status/cmd_record; bloat only lowered (runner 510, campaign-mode 1708 unchanged)."]}
+}
