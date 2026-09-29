@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "S2b passes A+B+C: passes A+B, plus explicit not-a-directory finding, include_iterate=False with the setup_adopt and spec_parser exceptions, posix separators in setup-design-session",
+  "regenerated_for": "adopt review_runner.run_review passes driver=codex to llm_review under CODEXTENDER_ACTIVE (iterate-2026-09-29-llm-review-opus-leg-codex-driver); only disc.review_runner.run_review source hash changes",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -1721,8 +1721,8 @@
     },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "1640721d874c679a4fb72ed89578e2db0bf823a8b9462c08eda822c5d920066f",
-      "source_lines": 120
+      "sha256": "a14365d2c56d3c5989584310e21f985dfb6cc063b6b6803aff3286c95c1ef1ee",
+      "source_lines": 125
     },
     "disc.rtm.collect_external_review_states": {
       "fixtures": {
