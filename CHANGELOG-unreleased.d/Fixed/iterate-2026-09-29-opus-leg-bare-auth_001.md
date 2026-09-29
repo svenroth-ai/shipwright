@@ -1,0 +1,1 @@
+External-review opus leg no longer passes `--bare` to the Claude CLI (it skipped subscription login, so the leg answered "Not logged in"), and an `is_error` CLI reply is now an error instead of being recorded as a review.

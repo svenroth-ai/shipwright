@@ -14,6 +14,7 @@ import math
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 try:  # bare: this directory is on sys.path
@@ -68,6 +69,16 @@ def _real_anthropic_env() -> dict[str, str] | None:
     if not os.environ.get("CODEXTENDER_ACTIVE"):
         return None
     return {key: value for key, value in os.environ.items() if key not in _ANTHROPIC_ENV_SCRUB_KEYS}
+
+
+_MEMORY_ISOLATION_ENV = {"CLAUDE_CODE_DISABLE_CLAUDE_MDS": "1", "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
+
+
+def _isolated_env() -> dict[str, str]:
+    """Child env: the Codextender-scrubbed (or inherited) env plus switches that
+    keep the operator's user-level CLAUDE.md and auto-memory out of the review."""
+    base = _real_anthropic_env()
+    return {**(os.environ if base is None else base), **_MEMORY_ISOLATION_ENV}
 
 
 def _resolve_claude_binary() -> str | None:
@@ -169,6 +180,14 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
     that did slip through would still only see instructions text, never the
     diff.
 
+    ``--bare`` is deliberately NOT passed: it skips OAuth/keychain reads, so under
+    a Claude *subscription* login (this leg's whole point) the CLI answers
+    "Not logged in" and the leg silently loses its review. Its isolation is
+    kept instead by ``--setting-sources ""`` (no user/project/local settings =>
+    no hooks, no plugins, no CLAUDE.md), ``--disable-slash-commands`` and
+    ``--no-session-persistence`` — verified live: login works, none of the
+    operator's hooks/CLAUDE.md reach the reviewer.
+
     ``--mcp-config`` (pointed at a checked-in empty-``mcpServers`` file) plus
     ``--strict-mcp-config`` (a boolean flag — ignore every other MCP source)
     and ``--allowedTools ""`` close this leg's sandbox-parity gap with
@@ -200,19 +219,29 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
     stdin_payload = f"<content>\n{content}\n</content>\n\n<context>\n{context}\n</context>\n"
 
     argv = [
-        claude_bin, "--bare", "-p", full_prompt, "--model", model_name,
+        claude_bin, "-p", full_prompt, "--model", model_name,
         "--output-format", "json", "--permission-mode", "dontAsk",
         "--max-turns", "1", "--mcp-config", str(_EMPTY_MCP_CONFIG_PATH),
         "--strict-mcp-config", "--allowedTools", "",
+        "--setting-sources", "", "--disable-slash-commands", "--no-session-persistence",
     ]
 
     result: dict = {"status": "degraded", "reason": "no attempt made", "via": "claude_cli"}
+    # Run from a fresh EMPTY directory: the diff rides stdin, so the CLI never needs
+    # the reviewed checkout, and no repo/ancestor CLAUDE.md or .claude/ can be found.
+    with tempfile.TemporaryDirectory(prefix="shipwright-opus-review-") as isolated_cwd:
+        return _run_claude_attempts(argv, stdin_payload, timeout, max_retries, isolated_cwd, result)
+
+
+def _run_claude_attempts(
+    argv: list[str], stdin_payload: str, timeout: float, max_retries: int, cwd: str, result: dict,
+) -> dict:
     for _attempt in range(max_retries + 1):
         try:
             proc = subprocess.run(
                 argv, input=stdin_payload, capture_output=True,
                 encoding="utf-8", errors="replace", timeout=timeout,
-                env=_real_anthropic_env(),
+                env=_isolated_env(), cwd=cwd,
             )
         except subprocess.TimeoutExpired:
             return {"status": "error", "via": "claude_cli", "reason": f"claude CLI timed out after {timeout}s"}
@@ -227,6 +256,12 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
             payload = json.loads(proc.stdout)
         except json.JSONDecodeError as exc:
             return {"status": "error", "via": "claude_cli", "reason": f"could not parse claude CLI JSON output: {exc}"}
+
+        if isinstance(payload, dict) and payload.get("is_error"):
+            # The CLI reports auth/API failures as exit 0 + is_error=true with the
+            # error text in `result` — never a review, so never classify it as one.
+            detail = str(payload.get("result") or payload.get("terminal_reason") or "unknown")[:300]
+            return {"status": "error", "via": "claude_cli", "reason": f"claude CLI reported an error: {detail}"}
 
         feedback = payload.get("result") if isinstance(payload, dict) else None
         result = classify_reply(feedback if isinstance(feedback, str) else None, None, via="claude_cli")
