@@ -14,6 +14,7 @@ import math
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 try:  # bare: this directory is on sys.path
@@ -216,12 +217,21 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
     ]
 
     result: dict = {"status": "degraded", "reason": "no attempt made", "via": "claude_cli"}
+    # Run from a fresh EMPTY directory: the diff rides stdin, so the CLI never needs
+    # the reviewed checkout, and no repo/ancestor CLAUDE.md or .claude/ can be found.
+    with tempfile.TemporaryDirectory(prefix="shipwright-opus-review-") as isolated_cwd:
+        return _run_claude_attempts(argv, stdin_payload, timeout, max_retries, isolated_cwd, result)
+
+
+def _run_claude_attempts(
+    argv: list[str], stdin_payload: str, timeout: float, max_retries: int, cwd: str, result: dict,
+) -> dict:
     for _attempt in range(max_retries + 1):
         try:
             proc = subprocess.run(
                 argv, input=stdin_payload, capture_output=True,
                 encoding="utf-8", errors="replace", timeout=timeout,
-                env=_real_anthropic_env(),
+                env=_real_anthropic_env(), cwd=cwd,
             )
         except subprocess.TimeoutExpired:
             return {"status": "error", "via": "claude_cli", "reason": f"claude CLI timed out after {timeout}s"}

@@ -236,3 +236,23 @@ def test_review_claude_cli_treats_is_error_reply_as_error_not_review(monkeypatch
     result = legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)
     assert result["status"] == "error"
     assert "Not logged in" in result["reason"]
+
+
+def test_review_claude_cli_runs_from_an_empty_isolated_cwd(monkeypatch, tmp_path):
+    """The reviewed checkout's CLAUDE.md/.claude must be unreachable: the CLI runs
+    in a fresh empty dir (removed afterwards), never the caller's cwd."""
+    monkeypatch.setattr(legs, "is_claude_cli_available", lambda: (True, ""))
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/claude")
+    monkeypatch.chdir(tmp_path)
+    seen = {}
+
+    def _fake_run(cmd, input, **kwargs):  # noqa: A002
+        seen["cwd"] = Path(kwargs["cwd"])
+        seen["entries"] = list(seen["cwd"].iterdir())
+        return _FakeCompleted(stdout=_json_ok("ok"))
+
+    monkeypatch.setattr(legs.subprocess, "run", _fake_run)
+    assert legs.review_claude_cli("c", "x", "sys", "user", _CONFIG)["status"] == "success"
+    assert seen["cwd"].resolve() != tmp_path.resolve()
+    assert seen["entries"] == []
+    assert not seen["cwd"].exists()
