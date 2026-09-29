@@ -70,7 +70,8 @@ def test_openai_feedback_parse_sites_are_still_present():
     matching (e.g. a rename), the assertion above would pass vacuously."""
     known_sites = {
         PLUGINS_ROOT / "shipwright-build" / "skills" / "build" / "references" / "code-review.md",
-        PLUGINS_ROOT / "shipwright-iterate" / "agents" / "sub-iterate-runner.md",
+        # moved out of agents/sub-iterate-runner.md when Step 3.5 was extracted
+        PLUGINS_ROOT / "shipwright-iterate" / "skills" / "iterate" / "references" / "campaign-step-3-5-plan-review.md",
         PLUGINS_ROOT / "shipwright-iterate" / "skills" / "iterate" / "references" / "iteration-planning.md",
         PLUGINS_ROOT / "shipwright-iterate" / "skills" / "iterate" / "references" / "iteration-reviews.md",
     }

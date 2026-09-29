@@ -539,10 +539,12 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    most need the question asked, and both external reviewers said so
    independently when this pass was reviewed with itself. The brief being three
    lines when nothing permanent is added is what keeps that affordable.
-   **Campaign sub-iterates do not run it yet** — the `sub-iterate-runner`
-   carries its own inlined copy of this step, is at its bloat cap, and cannot
-   ask an operator on a `reject`. That gap is deliberate and named, not an
-   oversight (trg follow-up).
+   **Campaign sub-iterates run it too** (`sub-iterate-runner` Step 3.5 Branch A,
+   body in [campaign-step-3-5-plan-review.md](campaign-step-3-5-plan-review.md)).
+   The one difference: the runner cannot ask an operator, so on a `reject` it
+   **halts the unit** and returns an `escalated` /
+   `architecture_review_rejected` result carrying both verdicts and the
+   recommended alternative; the orchestrator surfaces it at campaign end.
 
    **On a `reject` from either reviewer — STOP and ask the operator.** Do not
    build first and report after; the whole value is a human seeing it while the

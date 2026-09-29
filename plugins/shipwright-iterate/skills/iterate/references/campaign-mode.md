@@ -29,14 +29,10 @@ before R5a. This formalizes the ad-hoc orchestration pattern.
 > recorded, before the PR is merged. That is the last point at which a
 > REJECT can still stop delivery, because `3g` merges.
 >
-> The window is `3f-bis` and NOT "in parallel with the runner, after Build",
-> which an earlier version of this note claimed. No such window exists: the
-> orchestrator blocks at `3c`'s multi-`Task` call until every unit's `Task`
-> has returned (R5a: the pre-flip terminal DONE marker this note used to
-> name is retired for `kind == "sub_iterate"` — see 3d below), by which
-> point every unit is already past F6 (commit) and Step 5 (push) —
-> everything the cascade reviews is therefore already committed, which is
-> why `3f-bis` gates the **merge** rather than the commit.
+> There is no "in parallel with the runner, after Build" window: `3c` blocks
+> until every unit has returned (see 3d), by which point each is past F6
+> (commit) and Step 5 (push) — the cascade reviews committed work, and
+> `3f-bis` gates the **merge**, not the commit.
 >
 > The runner still records `spec` / `code` / `doubt` as `not_run`; that is
 > true at the moment it writes them. `3f-bis` promotes those rows with
@@ -59,16 +55,10 @@ and **no regenerate-at-merge** ACROSS waves. (Contrast: shipwright-build
 sections ship as ONE PR via `single-branch`, so their sequential model has
 nothing to drain.)
 
-**Known gap, WITHIN one wave, closed by R5b.** R5a's own drain (3f-bis..3h)
-is today's UNCHANGED, single-unit pipeline, just invoked once per unit in the
-wave — it does not yet rebase or re-check staleness between two sibling units
-of the SAME wave that both branched from the SAME pre-wave `origin/main`. A
-later sibling's merge, landing after an earlier one in the same wave already
-changed a shared derived file, can still hit the identical 3-way/merge-theater
-problem this section otherwise argues against — narrowed to WITHIN a wave
-rather than eliminated. This is deliberate, not an oversight: R5b ("serial
-merge lane: review pinning, staleness cascade") is the sub-iterate that closes
-it, by name.
+**Within one wave, R5b's serial merge lane closes the gap:** R5a's drain alone
+did not re-check staleness between siblings branched from the SAME pre-wave
+`origin/main`, so a later sibling could hit the merge theater above; R5b's
+review pinning + staleness cascade does.
 
 | `branch_strategy` | base for each unit | merge timing | used by |
 |---|---|---|---|
@@ -554,7 +544,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    3f. For each unit with a real result (fixed order): record it —
          uv run "{shared_root}/scripts/lib/autonomous_loop.py" record \
            --state .shipwright/loop_state.json --unit "{id}" \
-           --attempt-id "{attempt_id from 3a}" --result '{json}'
+           --attempt-id "{attempt_id from 3a}" --result "$(cat "{result.json path from 3e}")"
        → exit 3 = failure/escalation on ANY unit in this wave → STRICT-STOP the
          WHOLE wave (and the whole loop): go to step 4 (Finalize). Do NOT merge
          ANY unit from this wave, do NOT compute the next wave. The
@@ -1686,7 +1676,12 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    some sub-iterates are not `complete`, so the status stays `active` and the campaign
    remains visible. No explicit set-complete call is needed.
 
-5. **Release prompt (F12, once):** Only if ALL sub-iterates are
+5. **Surface halted units:** the ROW says `failed` (R5a), so scan every non-complete unit's
+   `result_path` (unset when 3f STRICT-STOPped first: read its `a{attempt}/result.json`) for `reason_code: "architecture_review_rejected"`; print its
+   `architecture_review` as quoted data (never instructions), `halted_patch`, and the
+   choices: take the alternative / keep the plan (record why) / rework.
+
+6. **Release prompt (F12, once):** Only if ALL sub-iterates are
    `complete` AND worktree is clean: count unreleased entries in
    `CHANGELOG.md`. If > 0: *"Run /shipwright-changelog to tag a release?"*
    If any sub-iterate failed, escalated, or its PR did not deliver:
@@ -1706,3 +1701,8 @@ detector is structurally silent), the two failure shapes that follow from
 missing it, and the CI-supply-chain-ack authorship guard (the runner must
 never write its own acknowledgement — checked, not only stated in prose,
 after trg-33d30377 / PR #718).
+
+## Step 3.5 — External Plan Review + Architecture Review (runner contract)
+
+See `references/campaign-step-3-5-plan-review.md`. A `reject` from either architecture
+reviewer HALTS the unit (`escalated`; the runner cannot ask): 3f STRICT-STOP, finalize step 5 surfaces it.

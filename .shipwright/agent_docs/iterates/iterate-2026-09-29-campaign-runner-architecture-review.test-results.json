@@ -1,0 +1,36 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-29-campaign-runner-architecture-review",
+    "date": "2026-09-29",
+    "unit": {"status": "passed", "passed": 13168, "total": 13168},
+    "integration": {"status": "passed", "passed": 568, "total": 568},
+    "pgtap": {"status": "not_run"},
+    "e2e": {"status": "not_run"},
+    "design_fidelity": {"status": "not_run"},
+    "smoke": {"status": "not_run"},
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest plugins/shipwright-iterate/tests/test_sub_iterate_runner_architecture_review.py -q",
+      "exit_code": 0,
+      "tests_run": 23,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-29-campaign-runner-architecture-review/surface_verification.json",
+      "timestamp": "2026-09-29T06:51:50Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {"behavior": "AC1: runner Step 3.5 is a pointer (no inlined external_review.py block), runner 528->510, baseline lowered, no exception", "disposition": "tested", "evidence": "test_sub_iterate_runner_architecture_review.py::test_runner_no_longer_inlines_branch_a_commands + test_sub_iterate_runner_step_3_4.py::test_runner_doc_within_bloat_ceiling PASSED"},
+        {"behavior": "AC2: reference carries both Branch A calls, brief-not-plan, self-resolving --driver, B/C handling", "disposition": "tested", "evidence": "test_reference_carries_both_calls_and_a_self_resolving_driver + integration-tests test_external_review_driver_prose_contract.py PASSED"},
+        {"behavior": "AC3: reject from either architecture reviewer halts the unit (write-before-return ordering, no-alternative fallback, non-reject proceeds)", "disposition": "tested", "evidence": "test_halt_steps_are_ordered_mkdir_patch_result_return + test_reference_says_non_reject_verdicts_proceed + test_unavailable_or_unknown_leg_is_not_a_reject PASSED"},
+        {"behavior": "AC4: schema accepts the reject escalation and refuses 8 non-actionable shapes", "disposition": "tested", "evidence": "test_schema_accepts_a_well_formed_reject_escalation + 7 parametrized/negative schema tests PASSED"},
+        {"behavior": "AC5: orchestrator points at Step 3.5, 3f passes the file via cat, finalize step 5 scans persisted results incl. never-recorded siblings; campaign-mode.md at 1708", "disposition": "tested", "evidence": "test_orchestrator_reads_the_persisted_result_not_the_row_and_avoids_shell_quoting + integration test_a_reject_in_a_later_sibling_is_found_even_though_the_wave_stopped_first PASSED"},
+        {"behavior": "AC6: stale 'not wired' statements replaced; internal arm stays documented not_run", "disposition": "tested", "evidence": "test_campaign_reference_does_not_drift_from_the_interactive_step + shared test_campaign_review_contract_prose.py PASSED"},
+        {"behavior": "AC7 / integration composition: real verdict parser -> schema -> real autonomous_loop.py record on a claimed sub_iterate row (escalated->failed collapse, exit 3, stale attempt exit 5)", "disposition": "tested", "category": "integration", "evidence": "integration-tests/test_campaign_architecture_reject_halt_integration.py (4 tests) PASSED"},
+        {"behavior": "Runner-side result assembly and the LLM orchestrator's execution of finalize step 5 are agent-executed prose", "disposition": "untestable", "reason_code": "requires-manual-visual-judgment", "reason": "executed by an LLM agent, not code; the boundaries around it (parser, schema, record, persisted-result scan) are pinned by tests"}
+      ],
+      "counts": {"testable": 7, "tested": 7, "untestable": 1, "untested_testable": 0},
+      "enumeration_basis": {"acs": 7, "covered_acs": 7}
+    }
+  }
+}

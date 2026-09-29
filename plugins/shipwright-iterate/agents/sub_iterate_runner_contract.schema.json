@@ -57,6 +57,29 @@
                 "reason": { "type": "string" }
               }
             },
+            "architecture": {
+              "type": "object",
+              "description": "External Architecture Review (Step 3.5, second call of Branch A; references/campaign-step-3-5-plan-review.md). Carries no review-record row of its own. A `reject` never appears on a `complete` result - it halts the unit as an `escalated` architecture_review_rejected.",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "skipped_complexity_below_threshold",
+                    "skipped_user_opt_out",
+                    "skipped_config_disabled",
+                    "missing_keys",
+                    "unavailable"
+                  ]
+                },
+                "verdicts": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                },
+                "reason": { "type": "string" }
+              }
+            },
             "self_review": {
               "type": "object",
               "description": "Self-Review (Step 3.6 of sub-iterate-runner contract, post-ADR-029 follow-up). Mandatory at every complexity. Maps to references/iteration-reviews.md 7-item Self-Review Checklist (item 7 'Affected Boundaries' from ADR-024).",
@@ -197,8 +220,8 @@
         "reason": { "type": "string" },
         "reason_code": {
           "type": "string",
-          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01).",
-          "enum": ["complexity_large", "ci_supplychain_requires_operator"]
+          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01). `architecture_review_rejected` is the Step 3.5 case: either external architecture reviewer answered `reject`; the interactive contract is STOP-and-ask, the autonomous runner cannot ask, so it halts the unit and carries both verdicts plus the recommended alternative inline for the orchestrator to surface at campaign end.",
+          "enum": ["complexity_large", "ci_supplychain_requires_operator", "architecture_review_rejected"]
         },
         "detected_complexity": {
           "type": "string",
@@ -209,6 +232,24 @@
           "type": "array",
           "description": "The CI trust-boundary files that forced the handback. Required and non-empty for a ci_supplychain_requires_operator escalation — an escalation naming no path is not actionable.",
           "items": { "type": "string" }
+        },
+        "halted_patch": {
+          "type": "string",
+          "description": "Path of the uncommitted work saved beside result.json when an architecture_review_rejected halt fires - the per-unit worktree may be cleaned up by the drain, so this is how the operator's 'keep the plan' choice avoids a rebuild from scratch."
+        },
+        "architecture_review": {
+          "type": "object",
+          "description": "The whole architecture-review decision, inline (the per-unit worktree and its raw files may be gone by the time an operator reads this). Required for an architecture_review_rejected escalation; `verdicts` must name both reviewers and contain at least one `reject`, `findings` is required (may be empty), and `recommended_alternative` must be non-empty - a reject naming no alternative is not actionable.",
+          "required": ["verdicts", "recommended_alternative", "findings"],
+          "properties": {
+            "verdicts": {
+              "type": "object",
+              "minProperties": 2,
+              "additionalProperties": { "type": "string" }
+            },
+            "recommended_alternative": { "type": "string", "pattern": "\\S" },
+            "findings": { "type": "array", "items": { "type": "string" } }
+          }
         },
         "partial_commit": { "type": ["string", "null"] }
       },
@@ -224,6 +265,30 @@
           "then": {
             "required": ["reason_code", "ci_paths"],
             "properties": { "ci_paths": { "minItems": 1 } }
+          }
+        },
+        {
+          "if": {
+            "required": ["reason_code"],
+            "properties": {
+              "reason_code": { "const": "architecture_review_rejected" }
+            }
+          },
+          "then": {
+            "required": ["reason_code", "architecture_review"],
+            "properties": {
+              "architecture_review": {
+                "properties": {
+                  "verdicts": {
+                    "anyOf": [
+                      { "required": ["glm"], "properties": { "glm": { "const": "reject" } } },
+                      { "required": ["openai"], "properties": { "openai": { "const": "reject" } } },
+                      { "required": ["opus"], "properties": { "opus": { "const": "reject" } } }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       ]

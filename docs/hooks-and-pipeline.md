@@ -3752,6 +3752,12 @@ iterate SKILL
     tool and no spawn site for either internal arm yet — records
     `architecture_internal` permanently `not_run` with a documented-gap
     disposition, same treatment as `plan_internal`
+  → the EXTERNAL architecture call IS wired in campaigns (runner Step 3.5
+    Branch A, body in `campaign-step-3-5-plan-review.md`): the runner authors
+    the brief itself, and a `reject` from either reviewer HALTS the unit —
+    `escalated` / `architecture_review_rejected`, both verdicts + the
+    recommended alternative inline in result.json; `autonomous_loop.py record`
+    exits 3 (3f STRICT-STOP) and campaign-mode.md finalize step 5 surfaces it
 ```
 
 ### section-writer (Plan Phase)
