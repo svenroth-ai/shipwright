@@ -1,0 +1,6 @@
+{"section":"iterate-2026-09-29-required-checks-advisory","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/required_checks_drift.py","finding":"Repo-declared advisory also hides a PHANTOM (merge-blocking direction); stale declaration could hide it."},
+{"severity":"medium","category":"correctness","file":"shared/tests/test_check_required_checks_cli.py","finding":"E2E no-card test has no positive control."},
+{"severity":"low","category":"correctness","file":"shared/tests/test_required_checks_drift.py","finding":"BOM handling (utf-8-sig) untested."},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/check_required_checks.py","finding":"Producer never closes an already-filed card after declaring advisory."},
+{"severity":"low","category":"architecture","file":"shared/scripts/lib/required_checks_drift.py","finding":"New run-config key undocumented in schema/docs; path hardcoded."}]}

@@ -1,0 +1,1 @@
+Required-checks drift producer honours `required_checks_advisory` in `shipwright_run_config.json`, so checks that run on PRs but are deliberately not required stop re-filing the drift card (a phantom is still always reported).
