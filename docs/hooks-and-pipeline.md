@@ -3055,6 +3055,12 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    Separately, **D5** now exempts iterate events whose `change_type` ∈
    `{tooling,compliance,infra,docs}` (parity with the `record_event` ADR-C.1
    gate), not just `spec_impact=none`.
+   D5 is **advisory** (FR-01.10/AC06): an unlinked feature/change is reported
+   with a suggested fix command but stays `pass`, so it never flips
+   `AuditReport.any_fail` or `run_audit`'s exit code. It borrows Group I's
+   pass-plus-`advisory —` convention but, unlike Group I, still carries the fix
+   command (AC06 requires it; `audit-report.md` renders it). Being `pass`, it
+   no longer feeds the `compliance:backlog` triage card.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|

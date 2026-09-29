@@ -69,18 +69,22 @@ def _render_findings_block(title: str, items: list[Finding]) -> list[str]:
 
     lines = [f"### {title}", ""]
     for f in sorted(items, key=_sort_key):
-        status_marker = {"fail": "❌", "skip": "⏭", "pass": "✅"}.get(f.status, "•")
+        advisory = f.status == "pass" and f.detail.startswith("advisory")
+        status_marker = (
+            "⚠️" if advisory
+            else {"fail": "❌", "skip": "⏭", "pass": "✅"}.get(f.status, "•")
+        )
         lines.append(
             f"- {status_marker} **{f.check_id}** ({f.group}, {f.severity}): "
             f"{f.name}"
         )
         if f.detail:
             lines.append(f"  - {f.detail}")
-        # Only a real FAIL warrants a remediation command. A passing/skipped
-        # check is not a problem, so emitting "Suggested: …reconcile" on it is a
-        # false action (alarm-fatigue). The JSON payload still carries the field
-        # alongside ``status`` for callers that want to gate differently.
-        if f.suggested_iterate_cmd and f.status == "fail":
+        # Only a real FAIL or an explicit advisory flag (FR-01.10/AC06: reported
+        # WITH a fix, without failing) warrants a remediation command. A plain
+        # passing/skipped check is not a problem, so emitting "Suggested:
+        # …reconcile" on it is a false action (alarm-fatigue).
+        if f.suggested_iterate_cmd and (f.status == "fail" or advisory):
             lines.append(f"  - _Suggested:_ `{f.suggested_iterate_cmd}`")
     lines.append("")
     return lines
