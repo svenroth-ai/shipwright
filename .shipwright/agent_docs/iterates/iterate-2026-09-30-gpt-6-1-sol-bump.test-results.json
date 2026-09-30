@@ -1,0 +1,78 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-30-gpt-6-1-sol-bump",
+    "date": "2026-09-30",
+    "unit": {
+      "status": "passed",
+      "passed": 12162,
+      "total": 12162
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "openai reviewer identity resolves to gpt-6.1-sol on openrouter/direct/codex routes",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_glm_review_routing.py + test_llm_review.py + test_external_review_gpt_leg_provider.py PASSED; F0.5 probe_bindings exit 0"
+        },
+        {
+          "behavior": "identity lock/codex transport default + model resolution use gpt-6.1-sol",
+          "disposition": "tested",
+          "evidence": "test_codex_review_model_resolution.py, test_codex_review_transport_model_override.py, test_external_review_codex_leg.py PASSED"
+        },
+        {
+          "behavior": "condense_release_notes fallback model is gpt-6.1-sol on both routes",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_condense_release_notes.py::test_fallback_model_is_gpt_6_1_sol_when_config_has_no_model PASSED"
+        },
+        {
+          "behavior": "slug exists on the real providers",
+          "disposition": "tested",
+          "evidence": "live ping OpenRouter openai/gpt-6.1-sol and Codex CLI 0.159.2 gpt-6.1-sol both answered PONG (2026-09-30)"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run python .shipwright/runs/iterate-2026-09-30-gpt-6-1-sol-bump/probe_bindings.py",
+      "exit_code": 0,
+      "tests_run": 3,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\gpt-6-1-sol-bump\\.shipwright\\runs\\iterate-2026-09-30-gpt-6-1-sol-bump\\surface_verification.log",
+      "timestamp": "2026-09-30T08:05:15.711Z"
+    }
+  }
+}

@@ -90,7 +90,7 @@ def _call_openrouter(system_prompt: str, user_prompt: str, config: dict) -> dict
     try:
         from openai import OpenAI
 
-        model_name = resolve_model(config, "openrouter_chatgpt") or "openai/gpt-5.4"
+        model_name = resolve_model(config, "openrouter_chatgpt") or "openai/gpt-6.1-sol"
         timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
         client = OpenAI(
             api_key=api_key, base_url="https://openrouter.ai/api/v1", timeout=timeout
@@ -118,7 +118,7 @@ def _call_openai_direct(system_prompt: str, user_prompt: str, config: dict) -> d
     try:
         from openai import OpenAI
 
-        model_name = resolve_model(config, "chatgpt") or "gpt-5.4"
+        model_name = resolve_model(config, "chatgpt") or "gpt-6.1-sol"
         timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
         client = OpenAI(api_key=api_key, timeout=timeout)
         response = client.chat.completions.create(

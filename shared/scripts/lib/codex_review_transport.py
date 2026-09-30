@@ -100,7 +100,7 @@ __all__ = [
 #: Mirrors the Codex operating policy (Internal Plan Review, resolved
 #: 2026-09-17: kept same-vendor-by-design, mirroring Claude's own
 #: opus-reviews-sonnet internal-cascade split) — a separate axis from
-#: `models.codex` (`gpt-6-sol`, execution/finalization). Last-resort fallback
+#: `models.codex` (`gpt-6.1-sol`, execution/finalization). Last-resort fallback
 #: when nothing else names a value — see `codex_review_model_resolution.py`
 #: for the full precedence chain (`model` arg > env var > config > this
 #: constant) and the `_CODEX_MODEL_SLUG_PATTERN` allowlist below for why
@@ -108,7 +108,7 @@ __all__ = [
 #: (raise-before-launch lock, reinstated
 #: iterate-2026-09-18-codex-review-tier-config after AC2 removed and this run's
 #: own predecessor found it insufficiently enforced; see each run's own ADR).
-CODEX_REVIEW_MODEL = "gpt-6-sol"
+CODEX_REVIEW_MODEL = "gpt-6.1-sol"
 
 #: Syntactic allowlist for a Codex model slug — the ONLY shipwright-side
 #: validation (no live catalog call; see the mini-plan's "Simplification

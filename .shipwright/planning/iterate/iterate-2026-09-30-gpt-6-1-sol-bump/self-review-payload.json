@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"gpt-6-sol -> gpt-6.1-sol in every in-scope file (config, routing bindings, llm_review defaults, codex transport, prompts, schema, docs, tests); gpt-6-luna untouched; gpt-5.4 fallbacks in condense_release_notes replaced; history/ADRs untouched."},
+{"name":"Error Handling","verdict":"n/a","note":"Pure identifier rename, no control flow changed."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets added; the OpenRouter ping used the key from the environment only and never printed it."},
+{"name":"Test Quality","verdict":"pass","note":"Existing identity-lock/routing/resolution tests updated to the new slug and assert it; 127 targeted shared tests + 19 tools tests pass."},
+{"name":"Performance Basics","verdict":"n/a","note":"No runtime path change."},
+{"name":"Naming & Structure","verdict":"pass","note":"Mechanical replace; no new files except the changelog drop."},
+{"name":"Affected Boundaries","verdict":"pass","note":"The three code-owned pins (external_review.json models, _REVIEW_MODEL_BINDINGS, llm_review defaults) plus CODEX_REVIEW_MODEL moved in lockstep; slug live-verified on OpenRouter and Codex CLI 0.159.2 (PONG)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips, xfails or weakened assertions introduced; diff is 42 line pairs of literal substitution."}
+]}

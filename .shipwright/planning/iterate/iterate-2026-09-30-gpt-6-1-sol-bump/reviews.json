@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-30-gpt-6-1-sol-bump",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:06.624103+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:06.735441+00:00",
+      "disposition": "external/internal plan and architecture review are medium+ only; this run is small (CHANGE, no mini-plan)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:00.128230+00:00",
+      "disposition": "code-reviewer only for diff>100 lines, security-sensitive files or medium+; this run is small, no risk flags, diff 84 lines",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:00.229095+00:00",
+      "disposition": "doubt-reviewer is conditional on non-trivial touches (migrations, concurrency, cross-plugin imports, irreversible ops); pure identifier rename",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:00.358436+00:00",
+      "disposition": "cascade fires only on diff>100 lines, security-sensitive files or medium+; none met",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:00.025635+00:00",
+      "disposition": "spec review is conditional; quiet small run (<100 diff lines, no risk flag, no security-sensitive file) per iteration-reviews.md Trigger Rule",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:06.863576+00:00",
+      "disposition": "external/internal plan and architecture review are medium+ only; this run is small (CHANGE, no mini-plan)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-30T08:04:06.971400+00:00",
+      "disposition": "external/internal plan and architecture review are medium+ only; this run is small (CHANGE, no mini-plan)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
