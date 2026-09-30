@@ -66,7 +66,7 @@ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
 #: test_agents_md_does_not_hardcode_codex_review_models` now guards the
 #: opposite direction — that the prose never comes back.
 #:
-#: Matches the Codex operating policy (review subagents run gpt-6-sol
+#: Matches the Codex operating policy (review subagents run gpt-6.1-sol
 #: with high reasoning) — a policy the dispatch call never actually
 #: enforced until this iterate (no
 #: `model_reasoning_effort` reached `codex exec`'s argv at all). Pinned by

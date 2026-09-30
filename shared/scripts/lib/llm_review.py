@@ -104,9 +104,9 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
 # in full) holds across both rosters.
 DEFAULT_MODELS = {
     "openrouter_glm": "z-ai/glm-5.3",
-    "openrouter_chatgpt": "openai/gpt-6-sol",
-    "chatgpt": "gpt-6-sol",
-    "codex": "gpt-6-sol",
+    "openrouter_chatgpt": "openai/gpt-6.1-sol",
+    "chatgpt": "gpt-6.1-sol",
+    "codex": "gpt-6.1-sol",
     "claude_cli": "claude-opus-5-5",
     "openrouter_opus": "anthropic/claude-opus-5-5",
 }

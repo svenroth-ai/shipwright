@@ -212,3 +212,22 @@ def test_release_notes_prompt_file_exists_with_required_markers():
     text = _PROMPT_PATH.read_text(encoding="utf-8")
     for marker in ("Highlights", "Features", "Breaking Changes", "Changed", "Fixed", "Security"):
         assert marker in text, f"prompt file is missing the {marker!r} section marker"
+
+
+def test_fallback_model_is_gpt_6_1_sol_when_config_has_no_model(tmp_path: Path, monkeypatch):
+    """With no configured model the hardcoded fallback must be the live GPT-6.1 Sol slug."""
+    fake_response = MagicMock()
+    fake_response.choices = [MagicMock(message=MagicMock(content="## Highlights\n"))]
+    monkeypatch.setattr(crn, "resolve_model", lambda *_a, **_k: None)
+
+    for env, unset, expected in (
+        ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "openai/gpt-6.1-sol"),
+        ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "gpt-6.1-sol"),
+    ):
+        monkeypatch.setenv(env, "test-key")
+        monkeypatch.delenv(unset, raising=False)
+        with patch("openai.OpenAI") as MockClient:
+            create = MockClient.return_value.chat.completions.create
+            create.return_value = fake_response
+            crn.condense("some section text", "1.2.3", "prompt template", project_root=tmp_path)
+        assert create.call_args.kwargs["model"] == expected

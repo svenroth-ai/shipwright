@@ -80,7 +80,7 @@ def _routing_config():
     return {
         "models": {
             "openrouter_glm": "z-ai/glm-5.3",
-            "openrouter_chatgpt": "openai/gpt-6-sol",
+            "openrouter_chatgpt": "openai/gpt-6.1-sol",
         },
         "glm_routing": {
             "provider_allowlist": [
@@ -133,7 +133,7 @@ def test_openrouter_adjudicate_consensus_via_fake_openai(monkeypatch):
         },
         "reasoning": {"effort": "low"},
     }
-    assert calls[1]["model"] == "openai/gpt-6-sol"
+    assert calls[1]["model"] == "openai/gpt-6.1-sol"
     assert calls[1]["extra_body"] == {}
 
 

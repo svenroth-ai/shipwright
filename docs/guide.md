@@ -850,7 +850,7 @@ A round claiming it changed a requirement is refused unless a requirements file 
 
 ### 4.4 Planning -- /shipwright-plan
 
-**Purpose.** Creates a detailed, section-based implementation plan from a single spec file. The plan follows a TDD approach (tests defined before code) and is **always independently reviewed first by two internal reviewers, in order** — a plan reviewer (`opus-plan-reviewer`) checking the plan against the spec, then a separate fresh-context reviewer (`architecture-internal-reviewer`) asking whether the change should be built at all, shown only a short brief + the spec, never the plan (model for both resolved from `plan_review` in `shipwright_model_config.json` — inherit unless a project configures it) — then **by external LLMs by default on top of that** (ZDR-routed GLM 5.3 + GPT-6 Sol). If no API key is set in `.env.local`, the skill **asks you interactively** whether to add one or skip and rely on the internal reviews, which already ran (`opus-plan-reviewer` carries the gate); a mandatory self-review ("2x denken") pass remains only as a last-resort fallback for the rare case the plan reviewer (`opus-plan-reviewer`) itself could not run (the architecture pass does not count toward that checkpoint either way). It no longer silently skips review.
+**Purpose.** Creates a detailed, section-based implementation plan from a single spec file. The plan follows a TDD approach (tests defined before code) and is **always independently reviewed first by two internal reviewers, in order** — a plan reviewer (`opus-plan-reviewer`) checking the plan against the spec, then a separate fresh-context reviewer (`architecture-internal-reviewer`) asking whether the change should be built at all, shown only a short brief + the spec, never the plan (model for both resolved from `plan_review` in `shipwright_model_config.json` — inherit unless a project configures it) — then **by external LLMs by default on top of that** (ZDR-routed GLM 5.3 + GPT-6.1 Sol). If no API key is set in `.env.local`, the skill **asks you interactively** whether to add one or skip and rely on the internal reviews, which already ran (`opus-plan-reviewer` carries the gate); a mandatory self-review ("2x denken") pass remains only as a last-resort fallback for the rare case the plan reviewer (`opus-plan-reviewer`) itself could not run (the architecture pass does not count toward that checkpoint either way). It no longer silently skips review.
 
 **Command and Arguments**
 
@@ -1484,7 +1484,7 @@ The profile configures two deployment environments: **DEV** (auto-deploy on push
 
 ### External LLM Review
 
-Shipwright can send artifacts to external LLMs for an independent second opinion, GLM 5.3 always paired with a second identity chosen by `--driver` (required, no default): `claude` pairs it with GPT-6 Sol, `codex` pairs it with Opus 5.5 (local Claude CLI, OpenRouter fallback) -- Codex CLI already drives its own subagents, so a second Codex-launched OpenAI call would be a same-vendor rubber stamp. `--driver codex` also applies under Codextender mode (`CODEXTENDER_ACTIVE` set) even though the driving binary is `claude` -- the diff was still authored by a Codex-backed model, so the roster swaps for the same reason. The same CLI -- `shared/scripts/tools/external_review.py` -- runs four review modes; which one fires depends on the phase that triggers it.
+Shipwright can send artifacts to external LLMs for an independent second opinion, GLM 5.3 always paired with a second identity chosen by `--driver` (required, no default): `claude` pairs it with GPT-6.1 Sol, `codex` pairs it with Opus 5.5 (local Claude CLI, OpenRouter fallback) -- Codex CLI already drives its own subagents, so a second Codex-launched OpenAI call would be a same-vendor rubber stamp. `--driver codex` also applies under Codextender mode (`CODEXTENDER_ACTIVE` set) even though the driving binary is `claude` -- the diff was still authored by a Codex-backed model, so the roster swaps for the same reason. The same CLI -- `shared/scripts/tools/external_review.py` -- runs four review modes; which one fires depends on the phase that triggers it.
 
 | Mode | Trigger | Reviews | Marker file |
 |---|---|---|---|
@@ -1537,7 +1537,7 @@ OPENAI_API_KEY=sk-your-key
 
 **Empty-diff short-circuit:** Code mode skips the API call entirely if the diff file is empty or whitespace-only. The marker records `status: skipped_user_opt_out` with `reason: "empty_diff"`.
 
-**Model identity lock:** The review arms are fixed to `z-ai/glm-5.3` and `openai/gpt-6-sol` (or `gpt-6-sol` direct). A differing config value or `SHIPWRIGHT_REVIEW_MODEL_<KEY>` override fails before client creation, preventing a model from travelling under the wrong reviewer identity or routing policy.
+**Model identity lock:** The review arms are fixed to `z-ai/glm-5.3` and `openai/gpt-6.1-sol` (or `gpt-6.1-sol` direct). A differing config value or `SHIPWRIGHT_REVIEW_MODEL_<KEY>` override fails before client creation, preventing a model from travelling under the wrong reviewer identity or routing policy.
 
 ### Security Scanning
 
