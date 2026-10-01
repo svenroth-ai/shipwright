@@ -1,0 +1,1 @@
+The local test gate (F0) no longer fails its parallel `shared/tests` run on Windows path-length limits, so it stops re-running the whole unit serially; a full F0 drops from about 28 to about 7 minutes.

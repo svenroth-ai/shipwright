@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "Part 1 (F0 contention) root-caused to MAX_PATH in the parallel attempt and fixed via a short pytest --basetemp; Part 4 dropped on operator decision (CI stays serial, test_ci_stays_SERIAL); Parts 2 and 3 deferred to triage cards with reasons."},
+  {"name": "Error Handling", "verdict": "pass", "note": "basetemp is optional (None = unchanged argv); no new failure path. The basetemp is a SUBdir so pytest's start-of-run wipe cannot delete the attempt log or the JUnit report that proves pytest ran."},
+  {"name": "Security Basics", "verdict": "pass", "note": "argv-only, no shell, no user-supplied strings; the path is runner-owned temp."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Two tests: argv carries --basetemp only when given; _exec pins it to a subdir of the unit temp, not the temp itself, and the JUnit path stays outside the wiped dir. Real-load proof: full F0 before (shared/tests 1509s, RETRY-GREEN, 5 FileNotFoundError/diff failures) and after (313s, no retry, all 18 units PASS, diff-coverage PASS)."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "Measured: shared/tests 1509s -> 313s per F0; no added work."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "run_test_suite.py held at 529 lines (bloat exception ADR-123: net-zero growth, comments condensed); new test in its own 55-line file; F0.md 362 lines (<400)."},
+  {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized format changed; a pytest CLI flag is added to the runner's own argv."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+]}
