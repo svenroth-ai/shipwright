@@ -76,7 +76,7 @@ class TestSnapshotTree:
 
 
 class TestSymlinks:
-    def test_a_symlink_stays_a_link_and_is_never_followed(self, tmp_path):
+    def test_symlinks_are_skipped_never_followed_or_recreated(self, tmp_path):
         import pytest
         root = _project(tmp_path)
         outside = tmp_path / "outside.txt"
@@ -89,8 +89,8 @@ class TestSymlinks:
         dest = tmp_path / "dest"
         dest.mkdir()
         mod.snapshot_tree(root, dest)
-        assert (dest / "link.txt").is_symlink()
-        assert (dest / "dangling.txt").is_symlink()
+        assert not (dest / "link.txt").exists() and not (dest / "link.txt").is_symlink()
+        assert not (dest / "dangling.txt").is_symlink()
 
 
 class TestSymlinkedAncestors:
