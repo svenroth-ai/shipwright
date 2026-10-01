@@ -60,7 +60,7 @@ def _tool(cwd: Path, name: str, **tool_input) -> dict:
 @COVERS
 @pytest.mark.parametrize("command", [
     "git branch -v newbranch", "git branch -vv newbranch", "git branch newbranch",
-    "git diff --output=x.txt", "git ls-remote --upload-pack=x .", "git log --output x", "git fetch origin main:newbranch",
+    "git diff --output=x.txt", "git ls-remote --upload-pack=x .", "git -c diff.external=touch diff --ext-diff", "git -c core.pager=x log", "git diff --ext-diff", "git log --output x", "git fetch origin main:newbranch",
 ])
 def test_creating_or_writing_git_forms_are_denied(repo, command):
     handle_payload(_prompt(repo))

@@ -97,10 +97,14 @@ def _git_args(segment: list[str]) -> list[str]:
 
 
 def _git_is_safe(segment: list[str]) -> bool:
+    # ``-c k=v`` / ``--config-env`` / ``--exec-path`` make git run a configured command
+    # (``-c diff.external=...``); none of the pre-setup steps need them.
+    if any(f.startswith(("-c", "--config-env", "--exec-path")) and f != "-C" for f in segment[1 : len(segment) - len(_git_args(segment))]):
+        return False
     sub, *args = _git_args(segment) or [""]
     if sub in _GIT_READ_SUBCOMMANDS:
         # ``--output=<file>`` writes a file; a ``src:dst`` fetch refspec creates a local ref.
-        return not any(a.startswith(("--output", "--upload-pack", "--receive-pack")) for a in args) and not (sub == "fetch" and any(":" in a for a in args))
+        return not any(a.startswith(("--output", "--upload-pack", "--receive-pack", "--ext-diff", "--textconv")) for a in args) and not (sub == "fetch" and any(":" in a for a in args))
     if sub == "worktree":
         return bool(args) and args[0] in _GIT_WORKTREE_ACTIONS
     if sub == "branch":
