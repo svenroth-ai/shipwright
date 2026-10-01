@@ -96,6 +96,11 @@ def _git_args(segment: list[str]) -> list[str]:
     return segment[idx:]
 
 
+def _is_iterate_worktree_path(path: str) -> bool:
+    parts = path.replace("\\", "/").split("/")
+    return ".." not in parts and ".worktrees" in parts[:-1]
+
+
 def _git_is_safe(segment: list[str]) -> bool:
     # ``-c k=v`` / ``--config-env`` / ``--exec-path`` make git run a configured command
     # (``-c diff.external=...``); none of the pre-setup steps need them.
@@ -106,7 +111,11 @@ def _git_is_safe(segment: list[str]) -> bool:
         # ``--output=<file>`` writes a file; a ``src:dst`` fetch refspec creates a local ref.
         return not any(a.startswith(("--output", "--upload-pack", "--receive-pack", "--ext-diff", "--textconv")) for a in args) and not (sub == "fetch" and any(":" in a for a in args))
     if sub == "worktree":
-        return bool(args) and args[0] in _GIT_WORKTREE_ACTIONS
+        if not args or args[0] not in _GIT_WORKTREE_ACTIONS:
+            return False
+        # B1 Abandon removes an iterate worktree; never an arbitrary one.
+        targets = [a for a in args[1:] if not a.startswith("-")]
+        return args[0] != "remove" or (bool(targets) and all(_is_iterate_worktree_path(t) for t in targets))
     if sub == "branch":
         flags = [a for a in args if a.startswith("-")]
         if not args:
@@ -114,8 +123,10 @@ def _git_is_safe(segment: list[str]) -> bool:
         if not flags or not all(f in _GIT_BRANCH_FLAGS for f in flags):
             return False
         # A bare name creates a branch (``-v name`` still does); only delete/--list take one.
-        has_name = len(flags) < len(args)
-        return not has_name or any(f in {"-d", "-D", "--delete", "--list"} for f in flags)
+        names = [a for a in args if not a.startswith("-")]
+        if any(f in {"-d", "-D", "--delete"} for f in flags):  # B1 Abandon deletes iterate/<slug> only
+            return bool(names) and all(n.startswith("iterate/") for n in names)
+        return not names or "--list" in flags
     if sub == "remote":
         return not args or args[0] in _GIT_REMOTE_ACTIONS
     return False
