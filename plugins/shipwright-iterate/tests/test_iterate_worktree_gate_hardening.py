@@ -20,6 +20,7 @@ from iterate_worktree_gate_policy import shell_is_preflight_safe  # noqa: E402
 
 COVERS = pytest.mark.covers("FR-01.11/AC40")
 SESSION = "sess-1"
+BS = chr(92)
 
 
 def _git(cwd: Path, *args: str) -> None:
@@ -130,3 +131,15 @@ def test_line_breaks_never_hide_a_second_statement(command):
     """A bare CR is a statement break in PowerShell; shlex would read it as whitespace."""
     assert not shell_is_preflight_safe({"command": command})
     assert not shell_is_preflight_safe({"command": command.replace("echo hi", "git status")})
+
+
+@COVERS
+def test_backslash_newline_continuation_is_bash_only(repo):
+    """In PowerShell a trailing backslash is a literal and the newline starts a new statement."""
+    command = "Get-Content a.txt " + BS + chr(10) + "Remove-Item a.txt"
+    assert not shell_is_preflight_safe({"command": command}, powershell=True)
+    handle_payload(_prompt(repo))
+    assert handle_payload(_tool(repo, "PowerShell", command=command))["hookSpecificOutput"]["permissionDecision"] == "deny"
+    folded = "ls " + BS + chr(10) + "  -la"  # the documented bash continuation still folds into one command
+    assert shell_is_preflight_safe({"command": folded})
+    assert not shell_is_preflight_safe({"command": folded}, powershell=True)

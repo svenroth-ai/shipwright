@@ -135,7 +135,7 @@ def _blocked(tool_name: object, tool_input: object, cwd: Path, main_root: Path) 
         raw = tool_input.get("file_path") or tool_input.get("notebook_path")
         return _inside_main_tree(raw, cwd, main_root)
     if tool_name in _SHELL_TOOLS:
-        return not shell_is_preflight_safe(tool_input)
+        return not shell_is_preflight_safe(tool_input, powershell=tool_name == "PowerShell")
     return False
 
 

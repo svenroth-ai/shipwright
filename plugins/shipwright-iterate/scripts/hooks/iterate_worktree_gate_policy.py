@@ -63,13 +63,16 @@ _SAFE_SCRIPTS = frozenset({
 })
 
 
-def _tokenize(command: object) -> list[list[str]] | None:
+def _tokenize(command: object, *, powershell: bool = False) -> list[list[str]] | None:
     """Segments of ``command`` split on ``&&``/``;``, or ``None`` when the
     command has any shape that cannot be judged segment-by-segment."""
     if not isinstance(command, str) or not command.strip():
         return None
-    # SKILL.md prints the setup call with a trailing-backslash line continuation.
-    command = command.strip().replace("\\\r\n", " ").replace("\\\n", " ")
+    command = command.strip()
+    if not powershell:
+        # SKILL.md prints the setup call with a bash trailing-backslash continuation.
+        # PowerShell has no such thing: the backslash is literal and the newline ends the statement.
+        command = command.replace("\\\r\n", " ").replace("\\\n", " ")
     if any(marker in command for marker in _UNSAFE_SUBSTRINGS):
         return None
     try:
@@ -158,9 +161,9 @@ def _segment_is_safe(segment: list[str]) -> bool:
     return script in _SAFE_SCRIPTS
 
 
-def shell_is_preflight_safe(tool_input: object) -> bool:
+def shell_is_preflight_safe(tool_input: object, *, powershell: bool = False) -> bool:
     """True iff every segment of the call's ``command`` is allowlisted."""
     if not isinstance(tool_input, dict):
         return False
-    segments = _tokenize(tool_input.get("command"))
+    segments = _tokenize(tool_input.get("command"), powershell=powershell)
     return segments is not None and all(_segment_is_safe(s) for s in segments)
