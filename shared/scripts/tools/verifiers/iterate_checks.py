@@ -39,10 +39,7 @@ from lib.architecture_doc import (  # noqa: E402
 )
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
-from lib.iterate_entry import (  # noqa: E402
-    find_entry_by_run_id,
-    read_iterate_entries,
-)
+from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
 
 from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
@@ -57,6 +54,7 @@ from .decision_log_gate import (  # noqa: E402, F401 — re-exported surface
     check_decision_drop_committed,
     check_iterate_no_direct_decision_log,
 )
+from .review_driver_check import check_review_driver  # noqa: E402
 from .review_record_check import check_review_record  # noqa: E402
 from .test_results_evidence_check import check_test_results_backfill, check_test_results_evidence  # noqa: E402,F401
 # Private names are re-exported so the drift-pin tests
@@ -1075,6 +1073,7 @@ def run_all_checks(
         check_fr_hygiene_on_touched_rows(project_root, run_id, commit_hash),
         check_risk_recheck_recorded(project_root, run_id),
         check_review_record(project_root, run_id, commit_hash),
+        check_review_driver(project_root, run_id),
         check_iterate_no_direct_decision_log(project_root, run_id, commit_hash),
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),

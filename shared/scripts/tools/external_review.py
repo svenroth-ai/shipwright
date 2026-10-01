@@ -120,8 +120,10 @@ from external_review_routing import (  # noqa: E402
     DRIVER_CHOICES,
     DRIVER_ROSTERS,
     openrouter_extra_body,
+    resolve_effective_driver,
     resolve_reviewer_model,
 )
+from external_review_empty import empty_diff_envelope  # noqa: E402
 from iterate_timings import span as _timing_span  # noqa: E402
 from review_verdict import summarize_reviews  # noqa: E402
 
@@ -216,12 +218,12 @@ def detect_provider() -> str:
     )
 
 
-def _fail_envelope(error: str) -> int:
+def _fail_envelope(error: str, driver_record: dict) -> int:
     """Print the standard failure envelope and return the shell exit code
     every early-exit path in ``main()`` uses — one shape regardless of
     which check failed."""
     print(json.dumps(
-        {"review_schema": REVIEW_ENVELOPE_SCHEMA, "success": False, "error": error},
+        {"review_schema": REVIEW_ENVELOPE_SCHEMA, "success": False, "error": error, **driver_record},
         indent=2,
     ))
     return 1
@@ -297,6 +299,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # Enforced, not trusted; the record rides in every envelope for the F11 check.
+    args.driver, driver_record = resolve_effective_driver(args.driver, announce=True)
+
     # Mode-specific validation lives in lib/external_review_modes (a foreign
     # flag first, then a missing one — see there for why the order matters).
     try:
@@ -312,10 +317,10 @@ def main() -> int:
     spec_path = Path(args.spec_file)
 
     if not primary_path.exists():
-        return _fail_envelope(f"{primary_label} not found: {primary_path}")
+        return _fail_envelope(f"{primary_label} not found: {primary_path}", driver_record)
 
     if not spec_path.exists():
-        return _fail_envelope(f"Spec not found: {spec_path}")
+        return _fail_envelope(f"Spec not found: {spec_path}", driver_record)
 
     primary_text = primary_path.read_text(encoding="utf-8")
     spec = spec_path.read_text(encoding="utf-8")
@@ -323,7 +328,7 @@ def main() -> int:
         try:
             spec = strip_prior_review_sections(spec)
         except UnstrippableSpecError as exc:
-            return _fail_envelope(f"cannot sanitize spec: {exc}")
+            return _fail_envelope(f"cannot sanitize spec: {exc}", driver_record)
     # `.strip()` alone is not enough: a BOM is not whitespace to Python
     # (`'﻿'.isspace()` is False), and PowerShell 5.1's `Set-Content -Encoding
     # UTF8 ""` writes exactly BOM+CRLF — which would have read as a non-empty
@@ -339,30 +344,13 @@ def main() -> int:
             f"Brief is empty: {primary_path} — the architecture review has "
             "nothing to reason over, and reviewing nothing is not a pass. "
             "Write it from shared/templates/architecture_brief.md; when the "
-            "change adds nothing permanent that is three lines."
+            "change adds nothing permanent that is three lines.",
+            driver_record,
         )
 
-    # Code-mode short-circuit: empty diff → no provider call. The LLM cannot
-    # review what isn't there, and many providers reject empty inputs. Built
-    # from the selected roster (not hardcoded glm/openai) so a --driver codex
-    # run correctly skips {glm, opus}, not a nonexistent "openai" leg.
+    # Code-mode short-circuit: empty diff → no provider call.
     if args.mode == "code" and not primary_text.strip():
-        empty_reviews = {
-            name: {"status": "skipped", "reason": "empty diff"}
-            for name in DRIVER_ROSTERS[args.driver]
-        }
-        print(json.dumps({
-            "review_schema": REVIEW_ENVELOPE_SCHEMA,
-            "success": True,
-            "skipped": "empty_diff",
-            "provider": "none",
-            "driver": args.driver,
-            "degraded": False,
-            "reviews": empty_reviews,
-            # Same shape on every exit path so a consumer never has to guard
-            # for the block's absence.
-            **summarize_reviews(empty_reviews),
-        }, indent=2))
+        print(json.dumps(empty_diff_envelope(args.driver, driver_record), indent=2))
         return 0
 
     config = load_review_config(project_root=Path(args.project_root).resolve())
@@ -445,8 +433,11 @@ def main() -> int:
             timing_extra["provider"] = provider
 
     # Degraded-gate: keys present but 0 reviews succeeded → fail loud (never a silent no-op).
+    if "driver_enforced_reason" in driver_record and reviews.get(second_id, {}).get("status") != "success":
+        reviews.setdefault(second_id, {})["coercion_note"] = (  # say WHY this leg, not openai, was tried
+            "driver coerced to codex under CODEXTENDER_ACTIVE: this leg needs a logged-in claude CLI or OPENROUTER_API_KEY")
     output, exit_code = finalize_review_output(provider, reviews)
-    output["driver"] = args.driver
+    output.update(driver_record)
     # Two reviewers exist so disagreement gets noticed; carry both verdicts and
     # the derived contradiction alongside the full texts rather than letting a
     # downstream finding count average them away.

@@ -4595,6 +4595,16 @@ that makes the operator's pre-merge "did you empirically test everything?"
 question structurally self-answering (`iterate-2026-05-30-test-completeness-gate`).
 Trivial iterates emit an auto `n/a` line and skip the hard gate.
 
+**Review-driver gate (iterate).** Under Codextender (`CODEXTENDER_ACTIVE`) a
+GPT-family model authors the diff, so `external_review.py` and
+`llm_review.run_review` coerce a typed `--driver claude` to `codex` (glm + opus)
+and record `driver`, `driver_requested`, `codextender_active` and, when coerced,
+`driver_enforced_reason` in every envelope. `check_review_driver`
+(`verifiers/review_driver_check.py`) STOPs F11 when an
+`external-{plan,code}-review-raw.json` says `driver=claude` with
+`codextender_active: true`, or while the F11 process itself runs under Codextender
+(any non-empty `CODEXTENDER_ACTIVE` counts, `0` included — unset it to turn it off).
+
 **Review-record gate (iterate).** Every review pass closes its own row in
 `.shipwright/planning/iterate/<run_id>/reviews.json`; `check_review_record`
 (`verifiers/review_record_check.py`, substance predicates in

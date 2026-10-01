@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-01-codextender-driver-enforcement",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:19:07.623835+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:19:08.017386+00:00",
+      "disposition": "plan/plan_internal/architecture_internal: small CHANGE run, mini-plan and plan reviews are medium+ only",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_external_review_driver_enforcement.py",
+          "line": 74,
+          "finding": "run_review test not sealed from real claude CLI / gateway",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/external_review_routing.py",
+          "line": 41,
+          "finding": "ambient CODEXTENDER_ACTIVE flips roster for existing driver=claude tests",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/review_driver_check.py",
+          "line": 60,
+          "finding": "record flag false + active session passed",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/review_driver_check.py",
+          "line": 37,
+          "finding": "unchecked raw files undocumented",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4598,
+          "finding": "new F11 gate undocumented",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/external_review_empty.py",
+          "line": 7,
+          "finding": "bare-import-only",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 437,
+          "finding": "redundant driver assignment",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/llm_review.py",
+          "line": 300,
+          "finding": "file at 300 LOC",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T13:19:07.892466+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: codex-forced review depends on opus leg reachability — accepted-and-fixed: skipped/failed second leg now carries coercion_note naming the cause; live run proved opus claude_cli success in this env",
+          "suggestion": "accepted-and-fixed: skipped/failed second leg now carries coercion_note naming the cause; live run proved opus claude_cli success in this env",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: session env overriding record flag — accepted: message now says re-run F11 outside Codextender; session-wins kept deliberately (review shell losing env is the likeliest bypass)",
+          "suggestion": "accepted: message now says re-run F11 outside Codextender; session-wins kept deliberately (review shell losing env is the likeliest bypass)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: gateway path driver record misleading — rejected-with-reason: llm_review envelope is not persisted nor gated at F11; llm_review.py is at the 300-LOC cap",
+          "suggestion": "rejected-with-reason: llm_review envelope is not persisted nor gated at F11; llm_review.py is at the 300-LOC cap",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: odd env values — accepted-and-fixed: documented (docstring + hooks-and-pipeline.md); matches shell [ -n ] rule and opus-leg scrub",
+          "suggestion": "accepted-and-fixed: documented (docstring + hooks-and-pipeline.md); matches shell [ -n ] rule and opus-leg scrub",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: unparseable raw file fails open — accepted-and-fixed: fails under Codextender; architecture raw name has no canonical basename so not added",
+          "suggestion": "accepted-and-fixed: fails under Codextender; architecture raw name has no canonical basename so not added",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: fixture missing in other roots — rejected-with-reason: no test in those roots runs external_review/llm_review with driver=claude (grep)",
+          "suggestion": "rejected-with-reason: no test in those roots runs external_review/llm_review with driver=claude (grep)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ui_plan header / prefix — prefix made caller-neutral; ui_plan label cosmetic, accepted",
+          "suggestion": "prefix made caller-neutral; ui_plan label cosmetic, accepted",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: bare imports — acknowledged (comment present)",
+          "suggestion": "acknowledged (comment present)",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T13:19:18.351001+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "shared/scripts/lib/external_review_routing.py:41 (`resolve_effective_driver`)",
+          "line": null,
+          "finding": "Coercion applies to any non-codex driver, not just `claude`. A `--driver deepseek` run under Codextender is silently flipped to the codex roster with the message text hardcoding \"`--driver {requested}` was coerced to codex\" — spec only authorizes the claude→codex rule. This is probably desirable, but it is untested behavior (no test for deepseek under Codextender).",
+          "suggestion": "Either pin the coercion to `requested == \"claude\"` per spec, or add a test covering a non-claude driver so the expanded behavior is intentional.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_external_review_driver_enforcement.py:96-110",
+          "line": null,
+          "finding": "test_run_review_coerces_and_announces` deletes `OPENROUTER_API_KEY`/`OPENAI_API_KEY` and stubs `detect_provider` to `\"none\"`, but does not stub the glm leg's network path. If `run_review`'s glm leg attempts an OpenRouter call before falling back, the test could be slow or flaky in CI; if it degrades gracefully the test passes for reasons unrelated to the coercion being asserted. The driver assertions themselves (`out[\"driver\"]`, roster keys) are solid and would fail if coercion regressed.",
+          "suggestion": "Stub the glm leg's provider resolution as well so the test depends only on routing, not network fallback behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/verifiers/review_driver_check.py:60-64",
+          "line": null,
+          "finding": "A raw record with `driver=claude`, no `codextender_active` key, and F11 running outside Codextender passes. This matches the stated \"predates enforcement\" rationale, but it is also the exact hole for a hand-crafted/legacy claude record created during a Codextender session and reviewed later by a non-Codextender F11 run. The docstring discloses this, so it's a documented limitation rather than a bug — but note it's the weakest AC-4 link.",
+          "suggestion": "If feasible, treat a missing `codextender_active` key combined with `driver_requested` also missing (i.e., a record with no enforcement-era fields at all) as at least a warn.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression |",
+          "file": "shared/scripts/lib/llm_review.py",
+          "line": 174,
+          "finding": "The `run_review` envelope now unconditionally includes `driver`, `driver_requested`, `codextender_active` keys that were previously absent or had different semantics (`driver` only on the CLI path). Any downstream consumer doing strict key-set comparison on the adopt Layer-3 envelope could break. The bloat constraint is also borderline: the file grew ~2 lines; the code-review reply asserts it was at exactly 300, which is \"at limit, not over,\" so this is likely compliant but worth a mechanical check.",
+          "suggestion": "Verify llm_review.py's LOC against HEAD programmatically before merge; grep adopt consumers for strict dict-shape checks on `run_review` output.  No security issues — the change reads env vars, no injection or secret exposure. The `is_safe_run_id` guard in the verifier is correctly applied before path construction.  Tests — good coverage: coercion, non-coercion both directions, CLI empty-diff envelope, failure envelope, and all five verifier truth-table rows. They would catch a regressed (non-coercing) implementation, not just call the function.  Overall assessment: sound implementation covering all four ACs with meaningful tests; the findings are refinements (driver-scope of coercion, test sealing, anti-ratchet verification). Ship-with-fixes at most; the fixes are small.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/external_review.py:~305`, the mode-validation `try/except` right after `resolve_effective_driver`.",
+          "line": null,
+          "finding": "AC-2 says the driver record must appear in every envelope. The diff threads `driver_record` into four `_fail_envelope` calls: primary missing, spec missing, unsanitizable spec and empty brief. It does not change the mode-validation failure path that runs between them. That `except` almost certainly still calls `_fail_envelope(str(exc))` with no `extra`. A foreign or missing mode flag under Codextender therefore produces an envelope with no `driver`, `driver_requested` or `codextender_active`. I couldn't see the hidden lines, so this needs confirming. The same gap applies to any other early-exit envelope later in `main()`, and to any early `return` inside `llm_review.run_review` before line 295.",
+          "suggestion": "Pass `driver_record` to every remaining `_fail_envelope` call. Better, make `driver_record` a required argument so a missed call site fails loudly. Add one test that triggers the mode-validation failure.  2. Category: test · Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_external_review_driver_enforcement.py:99-107",
+          "line": null,
+          "finding": "The test patches `lib.external_review_opus_leg.is_claude_cli_available`. But `llm_review` first tries the bare import path (`from external_review_opus_leg import ...`), and that path wins whenever `shared/scripts/lib` is on `sys.path`. Earlier tests in this same file `import external_review`, which puts `lib` on `sys.path`. The bare module `external_review_opus_leg` and the package module `lib.external_review_opus_leg` are then two separate objects, so the stub may never reach the code that `resolve_opus_route` actually calls. On a developer machine with the `claude` CLI installed, the test could launch a real Opus review. The code-review reply says this was fixed (\"stubs is_claude_cli_available\"), but the fix depends on the import order.",
+          "suggestion": "Patch both `sys.modules.get(\"external_review_opus_leg\")` and `lib.external_review_opus_leg` when they're present, or patch the name where `llm_review` looks it up. Also assert `out[\"reviews\"][\"opus\"][\"status\"]` is a skip or failure, which proves no real call happened.  3. Category: test · Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/external_review.py:437` (`output.update(driver_record)`)",
+          "line": null,
+          "finding": "The normal success/degraded path (`finalize_review_output` followed by `output.update(driver_record)`) has no test. If someone reverted it to `output[\"driver\"] = args.driver`, every test would still pass, because `args.driver` is already coerced. The record would silently lose `driver_requested`, `codextender_active` and `driver_enforced_reason`.",
+          "suggestion": "Add a non-empty-diff CLI test with a stubbed provider and both review legs, asserting that all four record keys are in the output.  4. Category: edge-case · Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/lib/external_review_routing.py",
+          "line": 44,
+          "finding": "bool(env.get(\"CODEXTENDER_ACTIVE\"))` treats `\"0\"`, `\"false\"` and `\"no\"` as active. Anyone who turns the variable off by setting it to `0`, instead of unsetting it, gets silent coercion to codex. The F11 gate then fails any `driver=claude` record.",
+          "suggestion": "Treat only `1`, `true` and `yes` (case-insensitive) as active. If the Codextender launcher guarantees unset-or-`1`, document that instead.  5. Category: edge-case · Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/review_driver_check.py",
+          "line": 68,
+          "finding": "A raw record with no `driver` key passes as \"consistent with the session driver\" even while the session is Codextender, and it counts toward `seen`. A record from an older tool version, or a hand-written one, gets a PASS, not the \"never checked\" signal the routing docstring promises.",
+          "suggestion": "When `session_active` is true and the record has no `driver` or no `codextender_active` key, fail or warn instead of counting it as consistent.  6. Category: spec · Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "docs/hooks-and-pipeline.md:4598`, and the `llm_review.py` row in `code_review_reply.json`.",
+          "line": null,
+          "finding": "The bloat constraint applies to any file already over 300 lines. The docs file is about 4,600 lines and grows by 9. Whether docs are exempt isn't stated. Separately, the reply rejects the `llm_review.py` finding with \"no growth\", but the diff adds 2 lines to that file. That's fine only if HEAD was at most 298 lines; the stated reason is wrong.",
+          "suggestion": "Confirm whether docs are exempt from the constraint, and correct the rejection reason to give the actual HEAD and new line counts.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "claude_cli",
+      "completed_at": "2026-10-01T13:17:41.199487+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Audit of the diff against the spec (ACs 1–4, constraint on bloat):\n\n**Spec compliance**\n\n- AC1, AC3, AC4 appear implemented: `resolve_effective_driver` coerces with a stderr note, `external_review.py` and `llm_review.run_review` both use it, `check_review_driver` is wired into `run_all_checks`, and every envelope path shown (empty-diff, failure envelope, final output, `run_review` result) carries the driver record. The `llm_review` coercion happens after roster validation, so unknown drivers still raise — correct.\n\n**Findings**\n\n- Category: spec | Severity: low\n  File: shared/scripts/lib/external_review_routing.py:41 (`resolve_effective_driver`)\n  Finding: Coercion applies to *any* non-codex driver, not just `claude`. A `--driver deepseek` run under Codextender is silently flipped to the codex roster with the message text hardcoding \"`--driver {requested}` was coerced to codex\" — spec only authorizes the claude→codex rule. This is probably desirable, but it is untested behavior (no test for deepseek under Codextender).\n  Suggestion: Either pin the coercion to `requested == \"claude\"` per spec, or add a test covering a non-claude driver so the expanded behavior is intentional.\n\n- Category: test | Severity: low\n  File: shared/tests/test_external_review_driver_enforcement.py:96-110\n  Finding: `test_run_review_coerces_and_announces` deletes `OPENROUTER_API_KEY`/`OPENAI_API_KEY` and stubs `detect_provider` to `\"none\"`, but does not stub the glm leg's network path. If `run_review`'s glm leg attempts an OpenRouter call before falling back, the test could be slow or flaky in CI; if it degrades gracefully the test passes for reasons unrelated to the coercion being asserted. The driver assertions themselves (`out[\"driver\"]`, roster keys) are solid and would fail if coercion regressed.\n  Suggestion: Stub the glm leg's provider resolution as well so the test depends only on routing, not network fallback behavior.\n\n- Category: edge-case | Severity: low\n  File: shared […truncated]\n\n[opus] # Review: enforce `driver=codex` under Codextender\n\n## Findings\n\n**1. Category: spec · Severity: medium**\n- **File:line:** `shared/scripts/tools/external_review.py:~305`, the mode-validation `try/except` right after `resolve_effective_driver`.\n- **Finding:** AC-2 says the driver record must appear in *every* envelope. The diff threads `driver_record` into four `_fail_envelope` calls: primary missing, spec missing, unsanitizable spec and empty brief. It does not change the mode-validation failure path that runs between them. That `except` almost certainly still calls `_fail_envelope(str(exc))` with no `extra`. A foreign or missing mode flag under Codextender therefore produces an envelope with no `driver`, `driver_requested` or `codextender_active`. I couldn't see the hidden lines, so this needs confirming. The same gap applies to any other early-exit envelope later in `main()`, and to any early `return` inside `llm_review.run_review` before line 295.\n- **Suggestion:** Pass `driver_record` to every remaining `_fail_envelope` call. Better, make `driver_record` a required argument so a missed call site fails loudly. Add one test that triggers the mode-validation failure.\n\n**2. Category: test · Severity: medium**\n- **File:line:** `shared/tests/test_external_review_driver_enforcement.py:99-107`\n- **Finding:** The test patches `lib.external_review_opus_leg.is_claude_cli_available`. But `llm_review` first tries the bare import path (`from external_review_opus_leg import ...`), and that path wins whenever `shared/scripts/lib` is on `sys.path`. Earlier tests in this same file `import external_review`, which puts `lib` on `sys.path`. The bare module `external_review_opus_leg` and the package module `lib.external_review_opus_leg` are then two separate objects, so the stub may never reach the code that `resolve_opus_route` actually calls. On a developer machine with the `claude` CLI installed, the test could launch a real Opus review. The code-review reply says thi […truncated]",
+      "verdicts": {
+        "opus": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:12:24.024495+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:19:08.017386+00:00",
+      "disposition": "plan/plan_internal/architecture_internal: small CHANGE run, mini-plan and plan reviews are medium+ only",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:19:08.017386+00:00",
+      "disposition": "plan/plan_internal/architecture_internal: small CHANGE run, mini-plan and plan reviews are medium+ only",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

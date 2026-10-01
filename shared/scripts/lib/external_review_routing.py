@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import os
+import sys
+from collections.abc import Mapping
 from typing import Any
 
 __all__ = [
@@ -13,7 +16,9 @@ __all__ = [
     "DeepSeekRoutingPolicyError",
     "GlmRoutingPolicyError",
     "ReviewModelPolicyError",
+    "codextender_active",
     "deepseek_openrouter_extra_body",
+    "resolve_effective_driver",
     "glm_openrouter_extra_body",
     "openrouter_extra_body",
     "resolve_reviewer_model",
@@ -31,6 +36,43 @@ DRIVER_ROSTERS: dict[str, tuple[str, str]] = {
     "claude": ("glm", "openai"),
     "codex": ("glm", "opus"),
 }
+
+
+def codextender_active(environ: Mapping[str, str] | None = None) -> bool:
+    """True when this session is Codextender-routed (a GPT-family model builds).
+    Any non-empty value counts ("0" included) — the same rule as the opus leg's env
+    scrub and the skills' ``[ -n ... ]`` test; unset the variable to turn it off."""
+    env = os.environ if environ is None else environ
+    return bool(env.get("CODEXTENDER_ACTIVE"))
+
+
+def resolve_effective_driver(
+    requested: str, environ: Mapping[str, str] | None = None, announce: bool = False,
+) -> tuple[str, dict[str, Any]]:
+    """Enforce the driver rather than trust the typed flag.
+
+    Under Codextender the diff is authored by a GPT-family model, so a
+    ``claude`` roster (whose second leg is GPT) would be a self-review. The
+    skills ask the agent to type ``--driver codex``; in practice it did not, so
+    the tool coerces. Returns ``(effective, record)`` where ``record`` is the
+    evidence to merge into the raw review JSON — always carrying
+    ``codextender_active`` so a later gate can tell "enforced" from "never
+    checked" (a raw file with no such key predates this enforcement).
+    """
+    active = codextender_active(environ)
+    effective = "codex" if active else requested
+    record: dict[str, Any] = {
+        "driver": effective, "driver_requested": requested, "codextender_active": active,
+    }
+    if effective != requested:
+        record["driver_enforced_reason"] = (
+            "CODEXTENDER_ACTIVE is set: the diff was authored by a GPT-family model, "
+            f"so --driver {requested} was coerced to codex (roster glm + opus) to "
+            "keep the external review cross-vendor"
+        )
+        if announce:
+            print(f"review driver: {record['driver_enforced_reason']}", file=sys.stderr)
+    return effective, record
 
 # Authorization is code-owned. Configuration declares the active ordered
 # allowlist and its verification metadata, but cannot bless an arbitrary slug by
