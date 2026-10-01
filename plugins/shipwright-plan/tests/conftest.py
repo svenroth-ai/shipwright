@@ -101,3 +101,11 @@ def sample_prompts(plugin_root):
     assert system.exists(), f"Missing: {system}"
     assert user.exists(), f"Missing: {user}"
     return system, user
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_codextender(monkeypatch):
+    """CODEXTENDER_ACTIVE now coerces the external-review driver, so an ambient value
+    (a developer running pytest inside a Codextender session) would flip every
+    `driver=claude` roster test. Tests that want it opt in with setenv."""
+    monkeypatch.delenv("CODEXTENDER_ACTIVE", raising=False)

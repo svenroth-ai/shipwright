@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-01-codextender-driver-enforcement",
+  "date": "2026-10-01",
+  "section": "Iterate — change: enforce external-review driver under Codextender",
+  "title": "External review driver is enforced, not trusted",
+  "context": "Under Codextender a GPT-family model builds, yet agents typed --driver claude, so the external review's openai leg (GPT) reviewed GPT-authored code. Two earlier runs recorded driver=claude with no opus leg.",
+  "decision": "external_review.py and llm_review.run_review coerce --driver claude to codex whenever CODEXTENDER_ACTIVE is set (any non-empty value), print a stderr note, and record driver, driver_requested, codextender_active and driver_enforced_reason in every envelope. New F11 check check_review_driver fails a run whose raw external review says driver=claude under Codextender.",
+  "consequences": "A Codextender review now depends on the opus leg being reachable (claude CLI login or OPENROUTER_API_KEY); a skipped/failed leg carries a coercion_note naming the cause. Tests clear ambient CODEXTENDER_ACTIVE via autouse fixtures in four roots.",
+  "rationale": "The tool is the only place that cannot be mistyped; the skills' shell snippet was agent-typed and demonstrably skipped.",
+  "rejected": "Refusing (exit non-zero) on --driver claude: blocks legitimate scripted callers instead of fixing them. Trusting the flag plus prose: already failed twice.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

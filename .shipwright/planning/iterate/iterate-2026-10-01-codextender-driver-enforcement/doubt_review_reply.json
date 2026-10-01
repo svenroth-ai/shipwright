@@ -1,0 +1,62 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "codex-forced review depends on opus leg reachability",
+   "disproof_attempt": "accepted-and-fixed: skipped/failed second leg now carries coercion_note naming the cause; live run proved opus claude_cli success in this env",
+   "what_would_resolve_it": "accepted-and-fixed: skipped/failed second leg now carries coercion_note naming the cause; live run proved opus claude_cli success in this env"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "session env overriding record flag",
+   "disproof_attempt": "accepted: message now says re-run F11 outside Codextender; session-wins kept deliberately (review shell losing env is the likeliest bypass)",
+   "what_would_resolve_it": "accepted: message now says re-run F11 outside Codextender; session-wins kept deliberately (review shell losing env is the likeliest bypass)"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "gateway path driver record misleading",
+   "disproof_attempt": "rejected-with-reason: llm_review envelope is not persisted nor gated at F11; llm_review.py is at the 300-LOC cap",
+   "what_would_resolve_it": "rejected-with-reason: llm_review envelope is not persisted nor gated at F11; llm_review.py is at the 300-LOC cap"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "odd env values",
+   "disproof_attempt": "accepted-and-fixed: documented (docstring + hooks-and-pipeline.md); matches shell [ -n ] rule and opus-leg scrub",
+   "what_would_resolve_it": "accepted-and-fixed: documented (docstring + hooks-and-pipeline.md); matches shell [ -n ] rule and opus-leg scrub"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "unparseable raw file fails open",
+   "disproof_attempt": "accepted-and-fixed: fails under Codextender; architecture raw name has no canonical basename so not added",
+   "what_would_resolve_it": "accepted-and-fixed: fails under Codextender; architecture raw name has no canonical basename so not added"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "fixture missing in other roots",
+   "disproof_attempt": "rejected-with-reason: no test in those roots runs external_review/llm_review with driver=claude (grep)",
+   "what_would_resolve_it": "rejected-with-reason: no test in those roots runs external_review/llm_review with driver=claude (grep)"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "ui_plan header / prefix",
+   "disproof_attempt": "prefix made caller-neutral; ui_plan label cosmetic, accepted",
+   "what_would_resolve_it": "prefix made caller-neutral; ui_plan label cosmetic, accepted"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "bare imports",
+   "disproof_attempt": "acknowledged (comment present)",
+   "what_would_resolve_it": "acknowledged (comment present)"
+  }
+ ]
+}
