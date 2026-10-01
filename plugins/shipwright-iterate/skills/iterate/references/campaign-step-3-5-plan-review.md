@@ -18,7 +18,10 @@ and branch on its JSON.
 `--driver` is self-resolving (no caller substitutes a `{driver}` placeholder): the
 runner is only ever spawned as a Claude Code subagent, so the *harness* is
 `claude`; `codex` when `CODEXTENDER_ACTIVE` is set (the subagent inherits the
-spawning session's environment). Real Codex-driven campaigns: trg-a27ab4d9.
+spawning session's environment). This is the external roster only (a
+Codex-backed author needs a non-OpenAI second reviewer); reviewer *dispatch*
+is unaffected — Codextender spawns Agent-tool subagents like any Claude Code
+session. Real Codex-driven campaigns: trg-a27ab4d9.
 
 **Call 1 — the plan review.**
 

@@ -1,0 +1,63 @@
+{
+ "section": "iterate-2026-10-01-codextender-agent-tool-review-dispatch",
+ "verdict": "APPROVE_WITH_FINDINGS",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "integration-tests/test_codex_review_dispatch_sites_present.py",
+   "line": 148,
+   "finding": "AC4 drift test positive half is vacuous (strings already present); negative half matches one exact old string."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "integration-tests/test_codex_review_dispatch_sites_present.py",
+   "line": 166,
+   "finding": "Dead .replace(); stale-phrase check covers only the dispatch doc."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "integration-tests/test_codex_review_dispatch_sites_present.py",
+   "line": 157,
+   "finding": "Test pins exact prose; module docstring still frames the retired rule."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/prompts/codex_review_dispatch.md",
+   "line": 127,
+   "finding": "Fallback bullet says session never reaches this doc; contradicts spawn sites and code-review.md pointer."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "docs/hooks-and-pipeline.md",
+   "line": 3717,
+   "finding": "'NOT --driver codex and NOT CODEXTENDER_ACTIVE' phrasing is ambiguous."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+   "line": 578,
+   "finding": "Nested parentheticals in dispatch pointer (also iterate SKILL.md:182, step-5-external-review.md:37)."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md",
+   "line": 32,
+   "finding": "Ragged re-wrap."
+  },
+  {
+   "severity": "low",
+   "category": "architecture",
+   "file": "shared/prompts/codex_review_dispatch.md",
+   "line": 4,
+   "finding": "Doc site list does not mention the two architecture-internal skip sites."
+  }
+ ],
+ "notes": "AC1-AC3 met; main gap is AC4 test strength."
+}

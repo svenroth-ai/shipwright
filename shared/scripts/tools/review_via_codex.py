@@ -1,8 +1,8 @@
 """CLI entry point for the Codex-CLI internal-review transport.
 
 The AC1 dispatch target: a driving harness that cannot spawn an independent
-Agent-tool subagent (Codex CLI itself, or a Claude Code session redirected to
-a non-Anthropic backend) runs this instead of `Task(...)` for one review
+Agent-tool subagent (Codex CLI itself — a Claude Code session redirected via
+Codextender keeps the Agent tool and spawns normally) runs this instead of `Task(...)` for one review
 role. Wraps `lib.codex_review_transport.run_codex_review` — reads the
 reviewer agent's `.md` file plus its review subject (`--spec-file` always;
 `--diff-file` for spec/code/doubt, `--plan-file` for plan_review — the same
