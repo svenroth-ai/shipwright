@@ -1,0 +1,62 @@
+{
+  "run_id": "iterate-2026-10-01-codextender-driver-enforcement",
+  "date": "2026-10-01T14:04:41.184573Z",
+  "event_at": "2026-10-01T14:04:34.084609+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/codextender-driver-enforcement",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-01-codextender-driver-enforcement",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "CODEXTENDER_ACTIVE coerces --driver claude to codex (roster glm+opus), codex and non-Codextender unchanged",
+        "disposition": "tested",
+        "evidence": "test_external_review_driver_enforcement.py::test_claude_is_coerced_under_codextender + test_codex_unchanged_under_codextender_and_claude_unchanged_outside PASSED"
+      },
+      {
+        "behavior": "every envelope (empty-diff, failure, success/degraded) records driver, driver_requested, codextender_active, driver_enforced_reason",
+        "disposition": "tested",
+        "evidence": "test_cli_empty_diff_records_effective_driver, test_failure_envelope_carries_driver_record, test_success_path_envelope_carries_driver_record PASSED"
+      },
+      {
+        "behavior": "llm_review.run_review coerces and announces on stderr",
+        "disposition": "tested",
+        "evidence": "test_run_review_coerces_and_announces PASSED"
+      },
+      {
+        "behavior": "F11 check_review_driver fails driver=claude under Codextender (record flag, session env, flag=false, missing driver, unreadable raw) and passes legit non-Codextender/codex records",
+        "disposition": "tested",
+        "evidence": "test_verifier[4 params] + test_verifier_flags_unreadable_raw_only_under_codextender + test_verifier_skips_without_records PASSED"
+      },
+      {
+        "behavior": "a real Codextender-routed iterate yields driver=codex with an opus leg success",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "needs a real Codextender session and live Opus; simulated live with CODEXTENDER_ACTIVE=1 external_review.py run (driver=codex, opus+glm success), real-session run is an operator step"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_external_review_driver_enforcement.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 14,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-01-codextender-driver-enforcement/surface_verification.log",
+    "timestamp": "2026-10-01T14:03:48.450Z",
+    "attempts": 1
+  }
+}

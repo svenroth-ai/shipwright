@@ -58,8 +58,8 @@ def _isolate_scanner_environment(monkeypatch):
     leak from the host into shared-test assertions. Mirror of fixtures in
     plugins/shipwright-run/tests/conftest.py + integration-tests/conftest.py.
     """
-    monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
-    monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)
+    for name in ("AIKIDO_CLIENT_ID", "SHIPWRIGHT_SCANNER_BACKEND", "CODEXTENDER_ACTIVE"):  # last: coerces the review driver
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS", "1")
     real_which = shutil.which
 
