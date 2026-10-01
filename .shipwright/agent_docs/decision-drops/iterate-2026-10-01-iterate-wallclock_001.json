@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-01-iterate-wallclock",
+  "date": "2026-10-01",
+  "section": "Iterate - fix: F0 parallel attempt exceeded Windows MAX_PATH",
+  "title": "F0 pins a short pytest --basetemp per unit",
+  "context": "Since 2026-09-06 shared/tests failed its parallel F0 attempt in 99 of 100 runs and paid a whole-unit serial retry (median 1235 s vs 215 s). Root cause: pytest's default pytest-of-<user>/pytest-N/ plus xdist's popen-gwN/ pushed deep fixture trees past 260 chars in the parallel attempt only.",
+  "decision": "run_test_suite._exec passes --basetemp <unit tmp>/t (a SUBdir, since pytest wipes its basetemp and the JUnit report/attempt log live in the unit tmp) via a new optional build_command param.",
+  "consequences": "Measured under real fleet load: shared/tests 1509 s (RETRY-GREEN) to ~305-313 s, no retry, all 18 units PASS, diff-coverage PASS; F0 wall ~28 min to ~7 min. Retry and gate semantics unchanged. Follow-ups filed as triage cards: failed-tests-only retry; F0 pre-check of the AC coverage ratchet.",
+  "rationale": "Fixes the cause instead of tuning the fleet budget; no gate weakened; zero net lines in a bloat-exception file.",
+  "rejected": "xdist in ci.yml (CI must stay serial, test_ci_stays_SERIAL - operator dropped it); budget/ordering tuning (the contention hypothesis was disproved by measurement).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

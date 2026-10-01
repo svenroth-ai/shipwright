@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-01-iterate-wallclock",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:33:57.677813+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:36:11.144012+00:00",
+      "disposition": "plan/architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 356,
+          "finding": "Comment says 'Capture the REAL retry argv' but retry_cmd = build_command(unit, workers) omits --basetemp (and --junit-xml) the retry actually ran with; a human running it on Windows gets pytest's default deep basetemp and can hit the MAX_PATH FileNotFoundError.",
+          "suggestion": "Soften the comment ('minus run-local temp/report paths') or add a short stable basetemp in reproduce_command.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_run_test_suite_basetemp.py",
+          "line": 280,
+          "finding": "assert basetemp != unit_tmp is implied by basetemp.parent == unit_tmp; fake returns SimpleNamespace while sibling tests build suite_process.ProcessResult.",
+          "suggestion": "Drop the redundant assert; build the fake with ProcessResult.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F0.md",
+          "line": 122,
+          "finding": "'do not accept the retry' overstates what is enforced; the runner still passes RETRY-GREEN automatically.",
+          "suggestion": "Reword as an operator judgement: treat as a regression to fix, not an ordinary race.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T14:35:55.413553+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:36:11.034533+00:00",
+      "disposition": "doubt pass is conditional (migrations, async/concurrency, cross-plugin imports, irreversible ops); this diff adds one pytest CLI flag to the runner argv",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:36:11.488073+00:00",
+      "disposition": "external LLM review is advisory/skipped at small per the phase matrix; internal spec+code reviewers (opus) ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:34:44.391223+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:36:11.249804+00:00",
+      "disposition": "plan/architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T14:36:11.362784+00:00",
+      "disposition": "plan/architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

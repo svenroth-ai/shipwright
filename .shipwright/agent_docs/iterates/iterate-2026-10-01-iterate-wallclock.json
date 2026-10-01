@@ -1,0 +1,50 @@
+{
+  "run_id": "iterate-2026-10-01-iterate-wallclock",
+  "date": "2026-10-01T14:44:13.185323Z",
+  "event_at": "2026-09-30T08:08:07.945806+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/iterate-wallclock",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-01-iterate-wallclock",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "build_command adds --basetemp only when a basetemp is given (argv otherwise unchanged)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_run_test_suite_basetemp.py::test_basetemp_is_passed_only_when_given PASSED"
+      },
+      {
+        "behavior": "_exec pins pytest basetemp to a SUBdir of the unit temp, keeping the JUnit report/attempt log outside the wiped dir",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_run_test_suite_basetemp.py::test_exec_pins_basetemp_to_a_subdir_of_the_units_temp PASSED"
+      },
+      {
+        "behavior": "under real F0 fleet load the parallel attempt of shared/tests no longer fails on >260-char paths, so no whole-unit serial retry runs",
+        "disposition": "tested",
+        "evidence": "full F0 baseline (shared/tests 1509s RETRY-GREEN, FileNotFoundError) vs after-fix F0 runs after-wallclock-1 (312.6s) and canonical iterate-2026-10-01-iterate-wallclock (305.2s): all 18 units PASS, no retry, diff-coverage PASS"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --with pytest --with pytest-mock pytest shared/scripts/tools/tests/test_run_test_suite_basetemp.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 2,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\iterate-wallclock\\.shipwright\\runs\\iterate-2026-10-01-iterate-wallclock\\surface_verification.log",
+    "timestamp": "2026-10-01T14:43:32.808Z"
+  }
+}

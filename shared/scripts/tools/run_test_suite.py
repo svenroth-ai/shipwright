@@ -129,7 +129,8 @@ class SuiteResult:
     cov_files: tuple[str, ...] = ()
 
 
-def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = None) -> list[str]:
+def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = None,
+                  basetemp: Path | None = None) -> list[str]:
     """argv only - never a shell string (config/paths must not reach a shell)."""
     cmd = [*UV_RUN, "--with", "pytest", "--with", "pytest-mock"]
     for dep in unit.extra_deps:
@@ -145,6 +146,8 @@ def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = N
         cmd += ["-n", str(xdist_workers)]
     if report is not None:  # existence of this file PROVES pytest ran (see docstring)
         cmd += ["--junit-xml", str(report)]
+    if basetemp is not None:
+        cmd += ["--basetemp", str(basetemp)]
     return cmd
 
 
@@ -190,9 +193,8 @@ def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Pa
     tmp_dir.mkdir(parents=True, exist_ok=True)
     for key in ("TMPDIR", "TEMP", "TMP"):  # units must not collide via shared temp state
         env[key] = str(tmp_dir)
-    # Per-unit data file, never a shared one: the pool runs these CONCURRENTLY. Popped
-    # first so an UNinstrumented unit cannot inherit an ambient COVERAGE_FILE from the
-    # operator's shell and scribble into someone else's tier.
+    # Per-unit data file (the pool runs CONCURRENTLY). Popped first so an UNinstrumented
+    # unit cannot inherit an ambient COVERAGE_FILE and scribble into someone else's tier.
     env.pop("COVERAGE_FILE", None)
     if unit.cov_file:
         env["COVERAGE_FILE"] = unit.cov_file
@@ -201,7 +203,9 @@ def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Pa
     started = time.monotonic()
     try:
         result = _run_process(
-            build_command(unit, xdist_workers, report),
+            # Short basetemp, a SUBdir (pytest wipes it): pytest-of-<user>/pytest-N/ +
+            # xdist's popen-gwN/ pushed fixture trees past MAX_PATH in the parallel attempt only.
+            build_command(unit, xdist_workers, report, tmp_dir / "t"),
             cwd=project_root / unit.cwd, env=env,
             log_path=log_path, timeout=timeout,
             cancel_event=cancel_event,
@@ -285,18 +289,16 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
     budget = _Budget(normalize_cpu_weight(requested_budget))
     cancel_event = threading.Event()
     started = time.time()
-    # Every unit's OWN JUnit report, on ANY outcome - not just failures - so
-    # stage_f0_evidence.py (AC3) can stage the SAME run F0 already performed
-    # instead of a second pytest pass. None (no run_id) means no retention.
+    # Every unit's OWN JUnit report on ANY outcome, so stage_f0_evidence.py (AC3) stages
+    # the SAME run F0 performed, not a second pass. None (no run_id) = no retention.
     retention = Retention(project_root, run_id) if run_id else None
 
     def _xdist_workers(unit_id: str) -> int | None:
         requested = config.xdist.get(unit_id)
         return min(requested, budget.total) if requested else None
 
-    # ignore_cleanup_errors: a leaked temp file (a still-open handle on Windows) must
-    # never turn a GREEN suite into a traceback - that would be a false STOP. Short path
-    # segments keep Windows MAX_PATH headroom for the tests' own fixture trees.
+    # ignore_cleanup_errors: a leaked temp handle (Windows) must never turn a GREEN suite
+    # into a traceback (a false STOP). Short path segments keep MAX_PATH headroom.
     with tempfile.TemporaryDirectory(prefix="swf0-", ignore_cleanup_errors=True) as tmp:
         tmp_root = Path(tmp)
 
@@ -338,11 +340,10 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             run_id=run_id, stream=stream, cancel_event=cancel_event,
         )
 
-        # Retries - AFTER the pool drains, so "serially" is literally true, and in a clean
-        # temp dir. A TEST failure is re-run WITHOUT xdist (the authoritative old-F0 shape).
-        # An INFRA fault is re-run with the IDENTICAL shape, so a deterministic fault (rc 5,
-        # usage error, unprovisionable xdist) reproduces and still fails - only a transient
-        # concurrency-induced fault recovers.
+        # Retries - AFTER the pool drains ("serially" is literally true), clean temp dir.
+        # TEST failure: re-run WITHOUT xdist (authoritative old-F0 shape). INFRA fault:
+        # re-run with the IDENTICAL shape, so a deterministic fault (rc 5, usage error,
+        # unprovisionable xdist) still fails and only a transient one recovers.
         by_id = {u.id: u for u in units}
         completed_units = sum(res.outcome == PASS for res in results)
         for idx, res in enumerate(results):
@@ -352,9 +353,8 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             keep_xdist = res.outcome == INFRA
             workers = _xdist_workers(res.unit_id) if keep_xdist else None
             _clear_failed_attempt_coverage(unit)
-            # Capture the REAL retry argv: a follow-up card that guesses the command
-            # is an attractive but unreliable "reproduce me".
-            res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers))
+            repro_temp = Path(tempfile.gettempdir()) / "swf0-repro"  # short, like the real one
+            res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers, basetemp=repro_temp))
             retry_weight = _xdist_workers(res.unit_id) if keep_xdist else 1
             retry_state = "identical-shape-infra" if keep_xdist else "authoritative-serial"
             _emit_unit_event(stream, run_id=run_id, event="start", unit_id=res.unit_id,
