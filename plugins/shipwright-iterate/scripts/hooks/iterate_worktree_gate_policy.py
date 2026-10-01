@@ -47,9 +47,9 @@ _GIT_READ_SUBCOMMANDS = frozenset({
     "describe", "ls-files", "for-each-ref",
 })
 #: Subcommands allowed only in the forms the skill's pre-setup steps need.
-#: ``worktree`` (list/prune) and ``branch`` (listing) appear -- never creating or
+#: ``worktree`` (list) and ``branch`` (listing) appear -- never creating or
 #: destroying: B1 "Abandon" (remove / -D) waits for the user to release the gate.
-_GIT_WORKTREE_ACTIONS = frozenset({"list", "prune"})
+_GIT_WORKTREE_ACTIONS = frozenset({"list"})
 _GIT_BRANCH_FLAGS = frozenset({
     "--list", "--show-current", "-a", "-r", "-v", "-vv",
     "--merged", "--no-merged",
@@ -109,7 +109,7 @@ def _git_is_safe(segment: list[str]) -> bool:
     if sub in _GIT_READ_SUBCOMMANDS:
         # ``--output=<file>`` writes a file; the others run a configured command.
         return not any(a.startswith(("--output", "--upload-pack", "--receive-pack", "--ext-diff", "--textconv")) for a in args)
-    if sub == "worktree":  # remove is destructive and unverifiable here: B1 Abandon waits for the user's release
+    if sub == "worktree":  # remove/prune change metadata and cannot be verified here: B1 Abandon waits for the user's release
         return bool(args) and args[0] in _GIT_WORKTREE_ACTIONS
     if sub == "branch":
         flags = [a for a in args if a.startswith("-")]

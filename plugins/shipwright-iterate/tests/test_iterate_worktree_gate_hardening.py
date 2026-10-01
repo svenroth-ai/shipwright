@@ -61,7 +61,7 @@ def _tool(cwd: Path, name: str, **tool_input) -> dict:
 @COVERS
 @pytest.mark.parametrize("command", [
     "git branch -v newbranch", "git branch -vv newbranch", "git branch newbranch",
-    "git diff --output=x.txt", "git ls-remote --upload-pack=x .", "git worktree remove ../other", "git worktree remove --force /srv/x", "git worktree remove .worktrees/../..", "git branch -D main", "git branch -D iterate/a main", "git -c diff.external=touch diff --ext-diff", "git -c core.pager=x log", "git diff --ext-diff", "git log --output x", "git fetch origin main:newbranch", "git fetch --all",
+    "git diff --output=x.txt", "git ls-remote --upload-pack=x .", "git worktree remove ../other", "git worktree prune", "git worktree remove --force /srv/x", "git worktree remove .worktrees/../..", "git branch -D main", "git branch -D iterate/a main", "git -c diff.external=touch diff --ext-diff", "git -c core.pager=x log", "git diff --ext-diff", "git log --output x", "git fetch origin main:newbranch", "git fetch --all",
 ])
 def test_creating_or_writing_git_forms_are_denied(repo, command):
     handle_payload(_prompt(repo))
@@ -69,7 +69,7 @@ def test_creating_or_writing_git_forms_are_denied(repo, command):
 
 
 @COVERS
-@pytest.mark.parametrize("command", ["git worktree list", "git worktree prune", "git branch --list 'iterate/*'", "git branch -vv"])
+@pytest.mark.parametrize("command", ["git worktree list", "git branch --list 'iterate/*'", "git branch -vv"])
 def test_non_creating_git_forms_stay_allowed(repo, command):
     handle_payload(_prompt(repo))
     assert handle_payload(_tool(repo, "Bash", command=command)) is None
