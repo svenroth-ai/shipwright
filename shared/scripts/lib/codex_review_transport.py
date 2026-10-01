@@ -2,8 +2,9 @@
 
 The AC1 dispatch target when the driving harness cannot spawn an independent
 Agent-tool subagent for spec-reviewer/code-reviewer/doubt-reviewer/
-opus-plan-reviewer — either because this session IS Codex CLI itself, or its
-own model has been redirected to a non-Anthropic backend. See
+opus-plan-reviewer — i.e. this session IS Codex CLI itself. A Claude Code
+session redirected via Codextender keeps the Agent tool (proxy-mapped to
+``sol``, the same model this transport defaults to) and does NOT use this. See
 ``.shipwright/planning/iterate/iterate-2026-09-13-codex-internal-review-transport.md``
 for the full design and its Internal Plan Review findings, several of which
 are load-bearing here:

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-01-codextender-agent-tool-review-dispatch",
+  "date": "2026-10-01",
+  "section": "Iterate — change: Codextender reviewers are Agent-tool subagents",
+  "title": "Reviewer dispatch keys on the harness, not on CODEXTENDER_ACTIVE",
+  "context": "Codextender (Claude Code behind a proxy that maps subagents to sol) spawns spec/code/doubt-reviewer through the Agent tool and never ran review_via_codex.py, yet the architecture-internal review was skipped for it and codex_review_dispatch.md told redirected sessions to use codex exec.",
+  "decision": "Skip architecture-internal-reviewer and dispatch via review_via_codex.py only when Codex CLI itself drives. Codextender and every Claude Code session spawn Agent-tool subagents and record Ran: yes. The external --driver roster mapping is unchanged.",
+  "consequences": "Codextender iterates now run the architecture review. Prose-only change plus drift tests; a real Codextender iterate must still confirm Ran: yes live. Codex Light parity is card 19.",
+  "rationale": "codex exec defaults to gpt-6.1-sol, the same family Codextender maps subagents to, so dispatching through it buys no independence. The --driver roster answers a different question (the diff author was Codex-backed).",
+  "rejected": "Adding a Codex transport for architecture_internal (still out of scope); dropping the --driver codex mapping (still right for author independence).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

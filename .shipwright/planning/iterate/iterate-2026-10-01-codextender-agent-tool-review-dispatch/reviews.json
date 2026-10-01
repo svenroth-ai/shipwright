@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-01-codextender-agent-tool-review-dispatch",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:00:29.346243+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:05:18.842317+00:00",
+      "disposition": "external plan review is medium+ only; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/test_codex_review_dispatch_sites_present.py",
+          "line": 148,
+          "finding": "AC4 drift test positive half is vacuous (strings already present); negative half matches one exact old string.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_codex_review_dispatch_sites_present.py",
+          "line": 166,
+          "finding": "Dead .replace(); stale-phrase check covers only the dispatch doc.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/test_codex_review_dispatch_sites_present.py",
+          "line": 157,
+          "finding": "Test pins exact prose; module docstring still frames the retired rule.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/prompts/codex_review_dispatch.md",
+          "line": 127,
+          "finding": "Fallback bullet says session never reaches this doc; contradicts spawn sites and code-review.md pointer.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 3717,
+          "finding": "'NOT --driver codex and NOT CODEXTENDER_ACTIVE' phrasing is ambiguous.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 578,
+          "finding": "Nested parentheticals in dispatch pointer (also iterate SKILL.md:182, step-5-external-review.md:37).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md",
+          "line": 32,
+          "finding": "Ragged re-wrap.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/prompts/codex_review_dispatch.md",
+          "line": 4,
+          "finding": "Doc site list does not mention the two architecture-internal skip sites.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T13:03:27.962089+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:05:18.641804+00:00",
+      "disposition": "docs-only diff (runtime-prompt prose, docstrings, one drift test); doubt pass is conditional per iteration-reviews.md and no migration/async/cross-plugin-import/irreversible touch",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:05:18.739763+00:00",
+      "disposition": "external code review is medium+ only; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:02:08.295115+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:05:18.941890+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T13:05:19.038062+00:00",
+      "disposition": "internal architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

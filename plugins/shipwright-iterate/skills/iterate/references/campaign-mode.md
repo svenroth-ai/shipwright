@@ -574,9 +574,9 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        step before 3g merges, so a REJECT here can still stop delivery.
 
        **Dispatch rule, checked before spawning a) below:** see
-       `shared/prompts/codex_review_dispatch.md` for the full Codex-driver
-       procedure (add `--force` to every `record_review_pass.py record` call
-       it describes, matching the promotions below). The ORCHESTRATOR here has
+       `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure (Codex CLI → `review_via_codex.py`;
+       Claude Code incl. Codextender → spawn as normal, proxy-mapped to `sol`). Add `--force` to every `record_review_pass.py record`
+       call it describes, matching the promotions below. The ORCHESTRATOR here has
        no ordinary Agent-tool fallback of its own if Codex CLI is driving the
        campaign — a transport failure always lands on the doc's `not_run`
        branch. This rule belongs HERE, never inside the runner subagent's own

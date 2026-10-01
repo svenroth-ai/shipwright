@@ -1,5 +1,6 @@
-"""Drift-protection: the AC1 dispatch rule ("can this driving harness spawn
-an independent Agent-tool subagent — if not, run `review_via_codex.py`") is
+"""Drift-protection: the AC1 dispatch rule (Codex CLI driving → run
+`review_via_codex.py`; Claude Code incl. Codextender → spawn the Agent-tool
+subagent as normal) is
 pointed to from each of its four real spawn sites; the full procedure lives
 in exactly one place, `shared/prompts/codex_review_dispatch.md`.
 
@@ -23,6 +24,7 @@ diff that adds the spawn.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -121,3 +123,72 @@ def test_sub_iterate_runner_agent_carries_no_dispatch_rule() -> None:
         "rule — it has no Agent tool either way and always defers to the "
         "orchestrator's campaign-mode.md 3f-bis step"
     )
+
+
+# --- Codextender is a Claude Code harness: reviewers are Agent-tool spawns ---
+#
+# Codextender sessions spawn spec/code/doubt-reviewer through the Agent tool
+# (the proxy maps them to `sol`) and never ran `review_via_codex.py`; the
+# internal architecture review was nevertheless skipped for them. The skip and
+# the dispatch doc must key on a REAL Codex CLI driver, not CODEXTENDER_ACTIVE.
+
+ARCH_INTERNAL_SKIP_SITES = (
+    REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
+    / "step-5-int-arch.md",
+    REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "references"
+    / "iteration-planning.md",
+)
+
+_SKIP_MARKER = "No Codex-CLI transport yet."
+#: the retired Ran literal and skip condition, anywhere user- or agent-facing
+_OLD_RAN_LITERAL = "no Codex transport for architecture_internal"
+_OLD_SKIP_CONDITION = re.compile(
+    r"under[^.\n]{0,40}--driver codex`?\s*\(?or\s*`?CODEXTENDER_ACTIVE", re.I
+)
+
+
+def _skip_paragraph(site: Path) -> str:
+    text = site.read_text(encoding="utf-8").replace("\r\n", "\n")
+    start = text.find(_SKIP_MARKER)
+    assert start != -1, f"{site} lost its {_SKIP_MARKER!r} skip paragraph"
+    end = text.find("\n\n", start)
+    return text[start : end if end != -1 else len(text)]
+
+
+@pytest.mark.parametrize("site", ARCH_INTERNAL_SKIP_SITES)
+def test_architecture_internal_skip_is_codex_cli_only(site: Path) -> None:
+    para = _skip_paragraph(site)
+    assert "CODEXTENDER_ACTIVE" not in para, (
+        f"{site}: the skip must not key on CODEXTENDER_ACTIVE; Codextender has "
+        "a working Agent tool and must spawn the reviewer."
+    )
+    assert "Codextender" in para and "Ran: yes" in para, (
+        f"{site}: skip paragraph must say Codextender spawns and records Ran: yes"
+    )
+    assert "Codex CLI" in para
+
+
+def test_old_skip_wording_is_gone_everywhere() -> None:
+    files = [
+        CANONICAL_DOC,
+        REPO_ROOT / "docs" / "guide.md",
+        REPO_ROOT / "docs" / "hooks-and-pipeline.md",
+        REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "SKILL.md",
+        *ARCH_INTERNAL_SKIP_SITES,
+    ]
+    for f in files:
+        text = f.read_text(encoding="utf-8")
+        assert _OLD_RAN_LITERAL not in text, f"{f} still carries the retired Ran literal"
+        assert not _OLD_SKIP_CONDITION.search(text), f"{f} skips on CODEXTENDER_ACTIVE"
+
+
+def test_dispatch_doc_routes_codextender_to_agent_tool() -> None:
+    text = " ".join(CANONICAL_DOC.read_text(encoding="utf-8").split()).lower()
+    assert "| driving harness | dispatch |" in text
+    assert "codextender does not dispatch through `review_via_codex.py`" in text
+    assert "spawn the agent-tool subagent as normal" in text
+
+
+def test_guide_does_not_send_a_redirected_session_to_codex_exec() -> None:
+    guide = (REPO_ROOT / "docs" / "guide.md").read_text(encoding="utf-8")
+    assert "Claude Code redirected to a non-Anthropic backend), the cascade runs" not in guide
