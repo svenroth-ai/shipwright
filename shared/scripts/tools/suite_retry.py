@@ -40,7 +40,7 @@ RETRY_FAILED_ONLY = "failed-only"  # the red tests alone passed (the rest were n
 #: more red tests than this looks like state pollution, not a race: re-run the whole unit
 FAILED_ONLY_MAX_TESTS = 10
 _WHOLE = "authoritative-serial"
-_INCOMPLETE_MARKERS = ("stopping after", "worker crashed", "node down", "crashed while running")
+_INCOMPLETE_MARKERS = ("stopping after", "crashed", "node down", "maximum crashed workers")
 
 
 @dataclass(frozen=True)
@@ -76,7 +76,10 @@ def _expected_failed(res, attempt_dir: Path) -> int:
         return 0
     # A stopped run (-x/--maxfail) or a crashed xdist worker leaves tests un-run / coverage
     # lost: the unit is not described by its red tests, so re-run it whole.
-    if any(marker in res.output for marker in _INCOMPLETE_MARKERS):
+    # Output is only a TAIL (and a differently-worded message would slip past a marker),
+    # so a truncated first attempt can never be proven complete: whole unit.
+    out = res.output.lower()
+    if res.truncated or any(marker in out for marker in _INCOMPLETE_MARKERS):
         return 0
     n = failed_only_count(attempt_dir / "c", attempt_dir / "r.xml")
     return n if 0 < n <= FAILED_ONLY_MAX_TESTS else 0

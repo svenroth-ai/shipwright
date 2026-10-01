@@ -207,12 +207,22 @@ def test_a_short_rerun_that_lost_a_red_test_falls_back_to_the_whole_unit(tmp_pat
     assert len(list(ET.parse(h.recorded[0][0]).getroot().iter("testcase"))) == 3
 
 
-@pytest.mark.parametrize("marker", ["!!! stopping after 1 failures !!!", "worker crashed", "node down: x"])
+@pytest.mark.parametrize("marker", ["!!! stopping after 1 failures !!!", "Worker GW0 CRASHED while running", "node down: x"])
 def test_an_incomplete_first_attempt_is_retried_whole(tmp_path, marker):
     _attempt(tmp_path, ["bad"], ["ok"])
     h = _Harness(tmp_path, [(0, [("bad", False), ("ok", False)])])
     res = _red()
     res.output = marker
+    h.run([res])
+    assert h.exec_calls[0]["extra_args"] == () and h.cleared == 1
+
+
+def test_a_truncated_first_attempt_is_retried_whole(tmp_path):
+    """The output is only a tail: an incomplete run cannot be ruled out, so never narrow."""
+    _attempt(tmp_path, ["bad"], ["ok"])
+    h = _Harness(tmp_path, [(0, [("bad", False), ("ok", False)])])
+    res = _red()
+    res.truncated = True
     h.run([res])
     assert h.exec_calls[0]["extra_args"] == () and h.cleared == 1
 
