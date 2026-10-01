@@ -1,0 +1,8 @@
+{"stage":"doubt","doubts":[
+{"severity":"high","claim_under_doubt":"A module/session fixture teardown error is reported against the last test; re-running that test alone passes.","what_would_resolve_it":"FIXED: any <error> testcase refuses the narrow path (failed_only_count -> 0); unit test added."},
+{"severity":"medium","claim_under_doubt":"--lf skips collecting files without failure, so an import/collection-order red can vanish.","what_would_resolve_it":"DISCLOSED in F0.md Honest limit; CI re-gates."},
+{"severity":"medium","claim_under_doubt":"-x/--maxfail leaves the unit incomplete; narrow retry would stage it as green.","what_would_resolve_it":"FIXED: 'stopping after' marker forces whole-unit; test added."},
+{"severity":"low","claim_under_doubt":"cache enabled in every attempt; AC-6 wording.","what_would_resolve_it":"DISCLOSED in F0.md."},
+{"severity":"low","claim_under_doubt":"No lastfailed id matches -> pytest runs all, labelled failed-only, coverage appended.","what_would_resolve_it":"FIXED: narrow re-run must run exactly the red count; test added."},
+{"severity":"low","claim_under_doubt":"Crashed xdist worker loses coverage.","what_would_resolve_it":"FIXED: 'worker crashed'/'node down' markers force whole-unit."}
+]}

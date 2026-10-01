@@ -1,0 +1,6 @@
+{"section":"iterate-2026-10-02-failed-only-retry (re-review)","review":[
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/run_test_suite.py","line":215,"finding":"_exec passes a cache dir to every attempt, so the pytest cacheprovider is on everywhere; the printed reproduce command still says -p no:cacheprovider.","suggestion":"Disclosed in F0.md (accepted: the narrow retry needs the first attempt's cache)."},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/suite_failed_only.py","line":330,"finding":"merge_junit recomputes totals on suites[0] only.","suggestion":"FIXED: returns False (whole-unit fallback) for a multi-suite report."},
+{"severity":"low","category":"readability","file":"shared/scripts/tools/suite_report.py","line":210,"finding":"'failed-only' literal duplicated.","suggestion":"FIXED: RETRY_FAILED_ONLY imported."},
+{"severity":"low","category":"readability","file":"docs/hooks-and-pipeline.md","line":9,"finding":"Fallback list omits the short re-run trigger.","suggestion":"FIXED in docs and F0.md."}
+]}

@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS on re-review (round 2). Round 1 REJECT cited AC-1 retry_kind text, AC-7 wording, AC-5 block header and a stale narrow r.xml in the whole-unit fallback; all fixed (spec text aligned, header marker added, report unlinked before fallback, tests added)."}

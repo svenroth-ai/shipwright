@@ -89,6 +89,8 @@ _RUNNER_FILES = (
     "scripts/tools/suite_race_triage.py",
     # AC2: run_test_suite.py now retains every unit's report via Retention.
     "scripts/tools/suite_retention.py",
+    "scripts/tools/suite_retry.py",
+    "scripts/tools/suite_failed_only.py",
     "scripts/tools/suite_timing.py",
     "scripts/tools/suite_units.py",
 )

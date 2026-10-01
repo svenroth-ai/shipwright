@@ -138,7 +138,9 @@ def test_single_root_session_still_executes_green() -> None:
         errors="replace",
     )
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
-    assert "failed" not in result.stdout.lower(), result.stdout
+    # the summary line, not the whole stdout: the rootdir line echoes the checkout path
+    # (a worktree slug may legitimately contain the word "failed")
+    assert not re.search(r"\d+ failed", result.stdout), result.stdout
     match = re.search(r"(\d+) passed", result.stdout)
     assert match and int(match.group(1)) > 0, (
         f"Expected a non-zero passing count.\n{result.stdout}"
