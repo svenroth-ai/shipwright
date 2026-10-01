@@ -1,0 +1,12 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "verdict": "PASS (advisory). 2 medium, 3 low doubts, each addressed.",
+  "doubts": [
+    {"severity": "medium", "lens": "hidden coupling", "claim_under_doubt": "a session that never really started an iterate is never blocked", "disposition": "fixed: arming requires an iterate-eligible project (run_config status complete or iterate_history); tests added"},
+    {"severity": "medium", "lens": "boundary & contract", "claim_under_doubt": "once released, the session works in its worktree", "disposition": "disclosed in Out of Scope: pointer-only isolation releases the gate before the cd; the F0/F11 leak guard is the backstop"},
+    {"severity": "low", "lens": "Codex", "claim_under_doubt": "Codex changes are only the punctuation hardening", "disposition": "fixed: Out of Scope names both changes; Codex decide() regression test added"},
+    {"severity": "low", "lens": "shell allowlist", "claim_under_doubt": "read-only git forms cannot execute", "disposition": "fixed: --upload-pack/--receive-pack denied; git -c stays a disclosed residual"},
+    {"severity": "low", "lens": "concurrency", "claim_under_doubt": "marker reads are consistent under parallel calls", "disposition": "fixed: marker written to a temp file and os.replace'd"}
+  ]
+}

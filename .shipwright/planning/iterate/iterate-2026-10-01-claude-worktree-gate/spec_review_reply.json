@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Round 2 PASS. Round 1 REJECT (undocumented `/shipwright-iterate --gate-off` release phrase; `git branch -v <name>` creating form allowed) fixed; --output and fetch-refspec forms denied and disclosed; AC-7 and AC-6 off-switch tests strengthened; ledger paths corrected."
+}

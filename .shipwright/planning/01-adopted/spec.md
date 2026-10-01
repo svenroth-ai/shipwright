@@ -944,6 +944,16 @@ _Where the work detail lives_ at the end of this document.
   campaign ends, instead of the run either asking a question nobody is there
   to answer or building on regardless.
   (iterate-2026-09-29-campaign-runner-architecture-review)
+- (E) [AC40] Given a Claude-driven session has started a change through
+  `/shipwright-iterate` but has not yet created that change's own separate
+  working copy, when it tries to edit a file in the main checkout or run a
+  command that is not plainly read-only, then it is stopped with the exact
+  setup command to run first; once the working copy exists (the session is
+  working inside it, or its own record names it) nothing is blocked, and a
+  session that never started a change this way, an operator who switched the
+  protection off, or any failure of the protection itself leaves work
+  unhindered.
+  (iterate-2026-10-01-claude-worktree-gate)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

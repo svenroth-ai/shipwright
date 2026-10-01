@@ -1935,8 +1935,14 @@ its own branch, in a sibling directory: shared git history, isolated files.
 
 The skill's B1a step (`setup_iterate_worktree.py`) creates the worktree;
 the F0/F11 leak-guard (`check_iterate_isolation.py`) fails the run closed
-if isolation is ever violated. This chapter is the model plus the few
-things you still do manually.
+if isolation is ever violated. On Claude Code a hook (`iterate_worktree_gate.py`)
+also enforces B1a up front: once `/shipwright-iterate` starts, edits to the main
+checkout and shell commands that could write are blocked until the worktree
+exists, and the block message prints the exact setup command. It lifts by itself
+as soon as the session is inside the worktree. If it ever gets in your way, set
+`SHIPWRIGHT_ITERATE_WORKTREE_GATE=off`, or type exactly `iterate gate off` to
+release the current session. This chapter is the model plus the few things you
+still do manually.
 
 ### Mental model
 
