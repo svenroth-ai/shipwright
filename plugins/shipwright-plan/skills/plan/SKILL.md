@@ -146,7 +146,7 @@ Step 6, per `gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`
 failure record `Ran: no` and continue; the **Pre-5b Checkpoint** decides
 whether the Self-Review Fallback runs.
 
-**Step 5-int-arch (always, right after 5-int; no Codex transport yet):** a
+**Step 5-int-arch (always, right after 5-int; skipped only under a real Codex CLI driver — spawned under Codextender):** a
 separate fresh-context agent, spawn
 `shipwright-plan:architecture-internal-reviewer` over a freshly-authored
 architecture brief + `spec.md` — **never `plan.md`**, to escape the plan's

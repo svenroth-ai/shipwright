@@ -1,0 +1,69 @@
+{
+  "run_id": "iterate-2026-10-01-codextender-agent-tool-review-dispatch",
+  "date": "2026-10-01T14:27:03.028002Z",
+  "event_at": "2026-09-30T08:08:07.945806+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/codextender-agent-tool-review-dispatch",
+  "spec": ".shipwright/planning/iterate/2026-10-01-codextender-agent-tool-review-dispatch.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-01-codextender-agent-tool-review-dispatch",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1: architecture-internal skip fires only for a real Codex CLI driver (plan step-5-int-arch + iterate iteration-planning); Codextender spawns and records Ran: yes",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_codex_review_dispatch_sites_present.py::test_architecture_internal_skip_is_codex_cli_only PASSED (both sites)"
+      },
+      {
+        "behavior": "AC2: dispatch doc routes Codex CLI to review_via_codex.py and Claude Code incl. Codextender to Agent-tool subagents; guide no longer sends a redirected session to codex exec",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_codex_review_dispatch_sites_present.py::test_dispatch_doc_routes_codextender_to_agent_tool + test_guide_does_not_send_a_redirected_session_to_codex_exec PASSED"
+      },
+      {
+        "behavior": "AC3: external-review --driver mapping unchanged",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_external_review_driver_prose_contract.py + test_external_review_key_consistency_contract.py PASSED"
+      },
+      {
+        "behavior": "AC4: retired skip condition and old Ran literal absent from all carrying files",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_codex_review_dispatch_sites_present.py::test_old_skip_wording_is_gone_everywhere PASSED (regex verified to match the pre-change text)"
+      },
+      {
+        "behavior": "cross_component (campaign-mode.md touched): the dispatch pointers at all four sites and the canonical doc stay consistent across plugins",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_codex_review_dispatch_sites_present.py (cross-plugin: build, plan, iterate x2, shared doc) 16+ tests PASSED"
+      },
+      {
+        "behavior": "Codextender session actually shows Ran: yes for the architecture review",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "needs a live Codextender-proxied session; not reproducible in CI. Flagged for a real Codextender iterate."
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-01T14:26:20.797Z",
+    "attempts": 0,
+    "justification": "Runtime-prompt/doc prose, two docstrings and a drift test only; no startable web/cli/api surface exists. The drift test runs in integration-tests (F0 suite green)."
+  }
+}

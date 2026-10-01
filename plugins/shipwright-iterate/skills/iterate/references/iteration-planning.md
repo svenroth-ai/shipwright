@@ -348,15 +348,19 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    same file instead. List the options **without** the reasons any were
    rejected; do not copy the mini-plan's rejection rationale into it (the
    rule step 2a's brief has always followed). **Do this before the Codex
-   check below** — a Codex-driven run still needs the brief on disk for
+   check below** — a Codex-CLI-driven run still needs the brief on disk for
    step 2a to re-read.
 
-   **No Codex transport yet.** Under `--driver codex` (or `CODEXTENDER_ACTIVE`
-   set), do NOT spawn — `shipwright-plan:architecture-internal-reviewer` is a
-   Claude-Agent-tool subagent only; reusing `role=plan_review`'s Codex leg
+   **No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
+   (no Claude `Agent` tool — the harness identity, NOT the resolved
+   `--driver` value, which is also `codex` under Codextender), do NOT spawn —
+   `shipwright-plan:architecture-internal-reviewer` is a Claude-Agent-tool
+   subagent only. **Under Codextender the Agent tool works (the proxy maps
+   the subagent to `sol`): spawn it like the other reviewers and record
+   `Ran: yes`** — see `shared/prompts/codex_review_dispatch.md`. Reusing `role=plan_review`'s Codex leg
    would collide on the fixed canonical basename `plan_review_reply.json`
    step 0's real Internal Plan Review already writes there. Record
-   `Ran: no (no Codex transport for architecture_internal yet)` and continue
+   `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue
    to step 1 — a full Codex-side role is an explicit follow-up, out of this
    run's scope.
 
@@ -407,7 +411,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
    ```markdown
    ## Internal Architecture Review (architecture-internal-reviewer)
-   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (no Codex transport for architecture_internal yet)}
+   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (Codex CLI driver: no transport for architecture_internal yet)}
    - **Severity:** {low|medium|high, or n/a if Ran: no}
    - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
    - **Findings:** {one line per finding: category, severity, disposition, one-line reason}
