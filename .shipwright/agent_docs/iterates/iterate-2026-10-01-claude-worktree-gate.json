@@ -1,0 +1,95 @@
+{
+  "run_id": "iterate-2026-10-01-claude-worktree-gate",
+  "date": "2026-10-01T14:49:18.263694Z",
+  "event_at": "2026-09-30T08:08:07.945806+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/claude-worktree-gate",
+  "spec": ".shipwright/planning/iterate/2026-10-01-claude-worktree-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-01-claude-worktree-gate",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "slash prompt arms + nudges; other prompts and unrelated Skill calls do not",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_slash_command_arms_and_nudges, ::test_skill_tool_arms PASSED"
+      },
+      {
+        "behavior": "write-tool targets: main / outside repo / worktree / relative / notebook",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_write_targets PASSED"
+      },
+      {
+        "behavior": "shell allow/deny matrix incl. compound smuggling, creating git forms, mid-word hash, line continuation",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_shell_blocked_before_setup, test_iterate_worktree_gate_hardening.py::test_creating_or_writing_git_forms_are_denied, test_iterate_worktree_gate_lifecycle.py::test_mid_word_hash_does_not_hide_the_rest_of_the_command PASSED"
+      },
+      {
+        "behavior": "isolation by cwd, by own-session run pointer, not by foreign pointer or separate-git-dir",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_isolated_by_cwd_in_worktree, test_iterate_worktree_gate_hardening.py::test_separate_git_dir_under_a_worktrees_path_is_not_isolation PASSED"
+      },
+      {
+        "behavior": "inert cases: per-session, off switch off/0/false, stale/corrupt marker, Codex, non-Shipwright, ineligible project, malformed payload",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate_lifecycle.py::test_off_switch, test_iterate_worktree_gate_hardening.py::test_project_the_skill_would_refuse_is_never_armed PASSED"
+      },
+      {
+        "behavior": "hooks.json registration for both events with full matcher; absent from hooks-codex",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_hook_is_registered_for_both_events, ::test_hook_is_not_registered_for_codex PASSED"
+      },
+      {
+        "behavior": "Codex matcher refactor is behavior-preserving; composite punctuation and mid-word hash now deny",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_codex_pretooluse_matcher.py::TestCompositePunctuationTokens PASSED"
+      },
+      {
+        "behavior": "registered command runs under harness-shaped stdin and emits schema-legal output",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_registered_command_end_to_end PASSED"
+      },
+      {
+        "behavior": "release on first isolation, stays released, re-arm, user release phrase and forgery cases, campaign not armed",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate_lifecycle.py::test_release_is_permanent_until_rearmed, ::test_user_can_release_by_typing_the_phrase, ::test_campaign_runs_are_not_armed PASSED"
+      },
+      {
+        "behavior": "allowlist pinned and drift-guarded against SKILL.md B1/B1a (verbatim setup block)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate_lifecycle.py::test_skill_b1a_setup_block_passes_verbatim, ::test_read_only_program_list_is_pinned PASSED"
+      },
+      {
+        "behavior": "marker file round trip and gitignore",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_marker_round_trip, test_iterate_worktree_gate_lifecycle.py::test_marker_directory_is_gitignored PASSED"
+      },
+      {
+        "behavior": "gate composes with the real setup_iterate_worktree.py (setup writes worktree + pointer, gate flips deny to allow)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate_integration.py::test_real_setup_releases_the_gate PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-iterate pytest plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py plugins/shipwright-iterate/tests/test_iterate_worktree_gate_lifecycle.py plugins/shipwright-iterate/tests/test_iterate_worktree_gate_hardening.py plugins/shipwright-iterate/tests/test_iterate_worktree_gate_integration.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 108,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-01-claude-worktree-gate/surface_verification.json",
+    "timestamp": "2026-10-01T14:14:59.238Z"
+  }
+}

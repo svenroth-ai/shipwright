@@ -10,6 +10,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 HOOK_SCRIPT = (
     Path(__file__).resolve().parent.parent / "scripts" / "hooks" / "codex_pretooluse_matcher.py"
 )
@@ -156,3 +158,25 @@ class TestDecide:
 
     def test_unrecognized_class_denies_by_default(self):
         assert decide("SomeOtherTool", {}) is False
+
+
+class TestCompositePunctuationTokens:
+    """Behavior CHANGE (iterate-2026-10-01-claude-worktree-gate, operator-approved
+    scope expansion): ``shlex(punctuation_chars=True)`` returns a run of
+    punctuation as ONE token, so ``&>``/``>&``/``>|``/``|&``/``;(``/``);`` slipped
+    past the exact-match ``|``/``&``/redirection checks. They now deny; the
+    habitual ``2>&1`` stays allowed so the setup call itself is never refused."""
+
+    SETUP = "uv run setup_iterate_worktree.py"
+
+    @pytest.mark.parametrize("suffix", [" &> f", " >& f", " >| f", " |& sh", " ;(rm x);", " ; ( ls )"])
+    def test_previously_allowed_composites_now_deny(self, suffix):
+        assert decide("Bash", {"command": self.SETUP + suffix}) is False
+
+    def test_mid_word_hash_no_longer_hides_a_trailing_command(self):
+        """shlex treated a mid-word '#' as a comment start and dropped the rest."""
+        assert decide("Bash", {"command": self.SETUP + " x#; rm -rf y"}) is False
+
+    @pytest.mark.parametrize("suffix", ["", " 2>&1", " --project-root ."])
+    def test_setup_call_still_allowed(self, suffix):
+        assert decide("Bash", {"command": self.SETUP + suffix}) is True

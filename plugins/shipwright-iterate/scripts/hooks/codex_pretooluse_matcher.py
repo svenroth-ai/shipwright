@@ -51,6 +51,28 @@ _UNSAFE_SUBSTRINGS = ("\n", "\r", "$(", "`")
 _REDIRECTION_OR_GROUPING = (">", "<", ">>", "<<", "(", ")")
 
 
+_PUNCTUATION_CHARS = frozenset("();<>|&")
+
+
+def has_unsafe_punctuation(tokens: list[str]) -> bool:
+    """True when ``tokens`` (from the ``punctuation_chars=True`` lexer) contain
+    a shell control token this module cannot judge. The lexer returns a RUN of
+    punctuation characters as one token, so ``&>``, ``>&``, ``>|``, ``|&``,
+    ``;(`` and ``);`` slip past the exact-match checks on ``|``/``&``/``>``
+    (plan review, high-adjacent): each redirects, pipes or groups. Only the
+    sequencing tokens ``&&`` and ``;`` are allowed, plus the one habitual
+    stderr merge ``2>&1`` (its ``>&`` token between ``2`` and ``1``) -- a
+    naive "deny everything" would falsely refuse the setup call when a model
+    appends it."""
+    for i, token in enumerate(tokens):
+        if not token or not set(token) <= _PUNCTUATION_CHARS or token in ("&&", ";"):
+            continue
+        if token == ">&" and 0 < i < len(tokens) - 1 and tokens[i - 1] == "2" and tokens[i + 1] == "1":
+            continue
+        return True
+    return False
+
+
 def _basename(token: str) -> str:
     """Basename of ``token``, splitting on BOTH ``/`` and ``\\`` regardless of
     host platform (external review, block: ``pathlib.Path(...).name`` uses
@@ -108,8 +130,17 @@ def _segment_targets_setup(segment: list[str]) -> bool:
     setup_iterate_worktree.py`` (the SECOND segment's program, through the
     ``uv run`` wrapper, is the script) — the two named false-positive/
     false-negative traps."""
+    return segment_script_basename(segment) == _SETUP_SCRIPT_BASENAME
+
+
+def segment_script_basename(segment: list[str]) -> str | None:
+    """Basename of the program a segment actually runs — the segment's own
+    first token, or the target behind a ``uv run``/interpreter wrapper — or
+    ``None`` when the wrapper names no target. Shared with the Claude-side
+    ``iterate_worktree_gate_policy`` so both gates read "what does this
+    segment invoke" from one implementation."""
     if not segment:
-        return False
+        return None
     # Basename-only match, not path/identity-verified: a script anywhere on
     # disk literally named ``setup_iterate_worktree.py`` would also satisfy
     # this. Accepted residual risk (code-reviewer finding, medium) -- this
@@ -123,8 +154,6 @@ def _segment_targets_setup(segment: list[str]) -> bool:
     # denied by the caller), so it's the same cooperative-enforcement
     # boundary, not a new bypass class (code-reviewer finding, low, round 2).
     program = _basename(segment[0])
-    if program == _SETUP_SCRIPT_BASENAME:
-        return True
     rest = segment[1:]
     if program in _RUN_WRAPPERS:
         idx = 0
@@ -137,13 +166,13 @@ def _segment_targets_setup(segment: list[str]) -> bool:
                 idx += 1  # also consume this flag's value token
         if idx < len(rest) and rest[idx] == "--":
             idx += 1
-        return idx < len(rest) and _basename(rest[idx]) == _SETUP_SCRIPT_BASENAME
+        return _basename(rest[idx]) if idx < len(rest) else None
     if program in _INTERPRETER_WRAPPERS:
         idx = 0
         while idx < len(rest) and rest[idx].startswith("-"):
             idx += 1
-        return idx < len(rest) and _basename(rest[idx]) == _SETUP_SCRIPT_BASENAME
-    return False
+        return _basename(rest[idx]) if idx < len(rest) else None
+    return program
 
 
 def _is_bare_cd(segment: list[str]) -> bool:
@@ -194,6 +223,7 @@ def _bash_command_matches_setup(tool_input: object) -> bool:
     try:
         lexer = shlex.shlex(command, posix=(sys.platform != "win32"), punctuation_chars=True)
         lexer.whitespace_split = True
+        lexer.commenters = ""  # bash keeps a mid-word '#'; shlex would drop the rest of the command
         tokens = list(lexer)
     except ValueError:
         return False
@@ -201,6 +231,8 @@ def _bash_command_matches_setup(tool_input: object) -> bool:
     if "||" in tokens or "|" in tokens or "&" in tokens:
         return False
     if any(t in _REDIRECTION_OR_GROUPING for t in tokens):
+        return False
+    if has_unsafe_punctuation(tokens):
         return False
     segments = _segments(tokens)
     if not segments:

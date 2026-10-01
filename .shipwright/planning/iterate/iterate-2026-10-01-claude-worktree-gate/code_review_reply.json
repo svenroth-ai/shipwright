@@ -1,0 +1,9 @@
+{
+  "section": "iterate-2026-10-01-claude-worktree-gate",
+  "verdict": "PASS",
+  "verdict_rationale": "Round 2 PASS. Round 1 REJECT (two medium: SKILL.md B1a line-continuation setup command denied by the gate; mid-word '#' made shlex drop the rest of a command, in both the gate and the Codex matcher) fixed with regression tests; low items fixed (submodule .git file, tautological tests, grammar, changelog). Advisory only, left open: tokenizer dedup, test-fixture conftest.",
+  "review": [
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/scripts/hooks/iterate_worktree_gate_policy.py", "line": 71, "finding": "backslash-newline replaced by a space (bash joins with nothing); only causes extra denials, within the threat model."}
+  ],
+  "review_type": "full-review"
+}
