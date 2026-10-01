@@ -75,6 +75,24 @@ class TestSnapshotTree:
         assert copied.read_text(encoding="utf-8") == "# edited\n"
 
 
+class TestSymlinks:
+    def test_a_symlink_stays_a_link_and_is_never_followed(self, tmp_path):
+        import pytest
+        root = _project(tmp_path)
+        outside = tmp_path / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+        try:
+            (root / "link.txt").symlink_to(outside)
+            (root / "dangling.txt").symlink_to(tmp_path / "nowhere")
+        except OSError:
+            pytest.skip("host cannot create symlinks")
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        mod.snapshot_tree(root, dest)
+        assert (dest / "link.txt").is_symlink()
+        assert (dest / "dangling.txt").is_symlink()
+
+
 class TestRefusals:
     def test_no_retained_run_is_an_infra_fault(self, tmp_path, capsys):
         root = _project(tmp_path)

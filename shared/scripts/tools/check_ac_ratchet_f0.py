@@ -35,6 +35,7 @@ checker from the PR's base revision, which a branch cannot do to itself - it sta
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import tempfile
@@ -77,7 +78,7 @@ def snapshot_tree(root: Path, dest: Path) -> int:
     """Copy every tracked-or-untracked, non-ignored file of ``root`` into ``dest``.
 
     The same file set `git add -A` would stage, which is the tree F6 commits and CI
-    checks out. A tracked path deleted from the working tree is skipped, not an error.
+    checks out. A symlink stays a symlink. A tracked path deleted from the working tree is skipped, not an error.
     Returns the number of files copied.
     """
     listing = _git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
@@ -85,9 +86,20 @@ def snapshot_tree(root: Path, dest: Path) -> int:
     for raw in sorted({p for p in listing.split(b"\0") if p}):
         rel = raw.decode("utf-8", "surrogateescape")
         src = root / rel
+        target = dest / rel
+        if src.is_symlink():
+            # Git commits the LINK, not what it points at - reproduce it, never follow it
+            # (a followed link would also pull in content from outside the tree). A host
+            # that cannot create symlinks drops it: no @covers tag or spec lives behind one.
+            target.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                target.symlink_to(os.readlink(src))
+            except OSError:
+                continue
+            copied += 1
+            continue
         if not src.is_file():
             continue  # deleted in the working tree, or a gitlink / submodule directory
-        target = dest / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(src.read_bytes())
         copied += 1
