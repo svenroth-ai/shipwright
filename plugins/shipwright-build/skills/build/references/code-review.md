@@ -27,8 +27,10 @@ Claude tier on it would misrepresent which model actually answered.
 
 **Dispatch rule, checked once before spawning any reviewer below:** see
 `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure
-(when it applies, the `review_via_codex.py` invocation, and how to record the
-result — including a transport failure that falls back to an ordinary spawn).
+— Codex CLI driving → `review_via_codex.py`; Claude Code, incl. Codextender →
+spawn the Agent-tool subagent as normal (proxy-mapped to `sol`). The doc
+covers the invocation and how to record the result, incl. what to do when the
+Codex transport fails.
 
 ### Stage 1 — `spec-reviewer` (HARD-GATE)
 

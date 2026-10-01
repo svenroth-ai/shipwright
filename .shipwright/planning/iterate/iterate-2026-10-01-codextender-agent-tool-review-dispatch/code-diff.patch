@@ -1,0 +1,397 @@
+diff --git a/docs/guide.md b/docs/guide.md
+index cf8acffac..3932569d2 100644
+--- a/docs/guide.md
++++ b/docs/guide.md
+@@ -189,7 +189,7 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
+ Patterns from [`obra/superpowers`](https://github.com/obra/superpowers) (MIT, © Jesse Vincent) drive the parts of Shipwright that say "no" to drive-by AI output:
+ 
+ - **Iron-Law verification language:** the "NO X WITHOUT Y FIRST" framing in the bloat Stop-gate (`shared/scripts/hooks/bloat_gate_on_stop.py`) and in the PR template's Human Authorization / Duplicate Search / Verification sections (`.github/PULL_REQUEST_TEMPLATE.md`).
+-- **Two-stage review pattern:** a `spec-reviewer` spec-compliance HARD-GATE runs first, then the `code-reviewer` quality stage (`plugins/shipwright-build/agents/spec-reviewer.md`; build Step 6 / `references/code-review.md`). An optional third `doubt-reviewer` (fresh-context, disprove-biased, addyosmani/agent-skills OS3) runs after for non-trivial diffs. When the driving harness cannot spawn an independent Agent-tool subagent for any of these (Codex CLI itself driving, or Claude Code redirected to a non-Anthropic backend), the cascade runs through `review_via_codex.py` instead — see `shared/prompts/codex_review_dispatch.md`.
++- **Two-stage review pattern:** a `spec-reviewer` spec-compliance HARD-GATE runs first, then the `code-reviewer` quality stage (`plugins/shipwright-build/agents/spec-reviewer.md`; build Step 6 / `references/code-review.md`). An optional third `doubt-reviewer` (fresh-context, disprove-biased, addyosmani/agent-skills OS3) runs after for non-trivial diffs. When Codex CLI itself is driving (no Claude Agent tool), the cascade runs through `review_via_codex.py` instead; a Claude Code session, including one redirected through Codextender, spawns the Agent-tool subagents as normal — see `shared/prompts/codex_review_dispatch.md`.
+ - **Anti-slop PR-template framing:** the "most AI-generated PRs are rejected because process is skipped" banner, the explicit "If you are an AI agent" rules, and the empirical-verification-before-checkbox stance, all citing Superpowers attribution in the template footer.
+ 
+ #### Karpathy — Four Pre-Phase Principles
+@@ -1505,7 +1505,7 @@ So the architecture pass is **a second call inside the same review step, not a s
+ 
+ **On a `reject`, the run stops and asks you** -- take the alternative, keep the plan with the reason recorded, or rework and re-review. The reconciliation against the plan's own rejection rationale is written down at that point, which is where the withheld reasoning re-enters the record.
+ 
+-**An internal reviewer asks the same question first, before this external pass.** At medium+ (`/shipwright-iterate` Step 0b) and on every `/shipwright-plan` run (Step 5-int-arch), a separate fresh-context agent (`architecture-internal-reviewer` -- not an extension of `opus-plan-reviewer`) reads the same brief + spec, before Branch A/B/C, and authors the brief this external pass then re-reads rather than writing fresh. Same triage rule, same STOP-and-ask on a declined or disclosed high-severity finding, its own review-record row (`architecture_internal`) on the iterate side. Not yet available under Codex-driven runs (`Ran: no (no Codex transport for architecture_internal yet)`) or for campaign sub-iterates (the runner has no `Agent` tool; only the external pass runs there) -- both documented gaps, same treatment as the internal plan reviewer's own.
++**An internal reviewer asks the same question first, before this external pass.** At medium+ (`/shipwright-iterate` Step 0b) and on every `/shipwright-plan` run (Step 5-int-arch), a separate fresh-context agent (`architecture-internal-reviewer` -- not an extension of `opus-plan-reviewer`) reads the same brief + spec, before Branch A/B/C, and authors the brief this external pass then re-reads rather than writing fresh. Same triage rule, same STOP-and-ask on a declined or disclosed high-severity finding, its own review-record row (`architecture_internal`) on the iterate side. Not yet available under a real Codex CLI driver (`Ran: no (Codex CLI driver: no transport for architecture_internal yet)`; a Codextender session spawns it normally) or for campaign sub-iterates (the runner has no `Agent` tool; only the external pass runs there) -- both documented gaps, same treatment as the internal plan reviewer's own.
+ 
+ **Provider configuration (same for all four modes):**
+ 
+diff --git a/docs/hooks-and-pipeline.md b/docs/hooks-and-pipeline.md
+index 89f85e71e..a55fa1225 100644
+--- a/docs/hooks-and-pipeline.md
++++ b/docs/hooks-and-pipeline.md
+@@ -3714,12 +3714,13 @@ plan SKILL
+     `plan.architecture-internal-review-high-severity-declined` (its own id,
+     not Step 5-int's)
+   → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C
+-  → under a Codex-driven run (`--driver codex` or `CODEXTENDER_ACTIVE`): does
+-    NOT spawn — reusing
++  → under a real Codex CLI driver (harness identity, NOT `--driver codex` and
++    NOT `CODEXTENDER_ACTIVE`): does NOT spawn — reusing
+     `plan_review`'s Codex leg would collide on the fixed canonical basename
+     Step 5-int's real pass already writes; records
+-    `Ran: no (no Codex transport for architecture_internal yet)` — a full
+-    Codex-side role is an explicit follow-up, out of this change's scope
++    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` —
++    a full Codex-side role is an explicit follow-up. Under Codextender the
++    Agent tool works (proxy-mapped to `sol`): it spawns and records `Ran: yes`
+   → writes NO review-record row and NO marker of its own — same as Step
+     5-int, this phase has no run_id to record against; does NOT carry the
+     Pre-5b gate (only Step 5-int or a completed Branch A review count there)
+@@ -3748,9 +3749,9 @@ iterate SKILL
+     `Ran:`/`Status:` in the iterate ADR
+   → on spawn/parse failure (incl. shipwright-plan not installed): records
+     `Ran: no`, continues to Branch A/B/C
+-  → under a Codex-driven run (`--driver codex` or `CODEXTENDER_ACTIVE`):
+-    does NOT spawn, records
+-    `Ran: no (no Codex transport for architecture_internal yet)`
++  → under a real Codex CLI driver only (NOT Codextender, whose Agent tool
++    works): does NOT spawn, records
++    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)`
+   → when `Ran: yes`: records an `architecture_internal` review-record row via
+     record_review_pass.py (metadata-only, same shape as `plan_internal`) —
+     the row `floors.plan_review` also judges
+@@ -4627,9 +4628,9 @@ Trivial iterates emit an auto `n/a` line and skip the hard gate.
+   not tell" must not be reported as "not applicable".
+ - **A row optionally names which harness answered it.** `transport` (`agent` |
+   `codex`) plus a free-text `transport_note` record whether a driving harness
+-  with no independent Agent tool (Codex CLI itself, or Claude Code redirected
+-  to a non-Anthropic backend) ran the pass via `review_via_codex.py` instead
+-  of an Agent-tool spawn — see `shared/prompts/codex_review_dispatch.md` for
++  with no Agent tool (Codex CLI itself — never Claude Code, including Codextender,
++  whose subagents are proxy-mapped to `sol`) ran the pass via
++  `review_via_codex.py` instead of an Agent-tool spawn — see `shared/prompts/codex_review_dispatch.md` for
+   the dispatch procedure and its four call sites. `record_review_pass.py
+   record --transport` writes it; the model-tier floor verifier
+   (`review_record_model_tier.py`) exempts a `codex` row, which carries no
+diff --git a/integration-tests/test_codex_review_dispatch_sites_present.py b/integration-tests/test_codex_review_dispatch_sites_present.py
+index deaa80628..f3c442a31 100644
+--- a/integration-tests/test_codex_review_dispatch_sites_present.py
++++ b/integration-tests/test_codex_review_dispatch_sites_present.py
+@@ -121,3 +121,48 @@ def test_sub_iterate_runner_agent_carries_no_dispatch_rule() -> None:
+         "rule — it has no Agent tool either way and always defers to the "
+         "orchestrator's campaign-mode.md 3f-bis step"
+     )
++
++
++# --- Codextender is a Claude Code harness: reviewers are Agent-tool spawns ---
++#
++# Codextender sessions spawn spec/code/doubt-reviewer through the Agent tool
++# (the proxy maps them to `sol`) and never ran `review_via_codex.py`; the
++# internal architecture review was nevertheless skipped for them. The skip and
++# the dispatch doc must key on a REAL Codex CLI driver, not CODEXTENDER_ACTIVE.
++
++ARCH_INTERNAL_SKIP_SITES = (
++    REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
++    / "step-5-int-arch.md",
++    REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "references"
++    / "iteration-planning.md",
++)
++
++_STALE_SKIP = "Under `--driver codex` (or `CODEXTENDER_ACTIVE`"
++
++
++@pytest.mark.parametrize("site", ARCH_INTERNAL_SKIP_SITES)
++def test_architecture_internal_skip_is_codex_cli_only(site: Path) -> None:
++    text = site.read_text(encoding="utf-8")
++    assert _STALE_SKIP not in text, (
++        f"{site} skips architecture-internal-reviewer under CODEXTENDER_ACTIVE; "
++        "Codextender has a working Agent tool and must spawn it (Ran: yes)."
++    )
++    assert "Codextender" in text and "Ran: yes" in text, (
++        f"{site} must say that Codextender spawns the reviewer and records Ran: yes"
++    )
++    assert "Codex CLI" in text
++
++
++def test_dispatch_doc_routes_codextender_to_agent_tool() -> None:
++    text = CANONICAL_DOC.read_text(encoding="utf-8")
++    assert "redirected to a non-Anthropic backend — run" not in text
++    assert "Codextender does NOT dispatch through `review_via_codex.py`" in text
++    assert "Spawn the Agent-tool subagent as normal" in text
++
++
++def test_no_user_facing_prose_sends_a_redirected_session_to_codex_exec() -> None:
++    guide = (REPO_ROOT / "docs" / "guide.md").read_text(encoding="utf-8")
++    assert "Claude Code redirected to a non-Anthropic backend), the cascade runs" not in guide
++    assert "no Codex transport for architecture_internal yet" not in CANONICAL_DOC.read_text(
++        encoding="utf-8"
++    ).replace("Codex CLI driver: no transport for architecture_internal yet", "")
+diff --git a/plugins/shipwright-build/skills/build/references/code-review.md b/plugins/shipwright-build/skills/build/references/code-review.md
+index c49b990d0..adedcda36 100644
+--- a/plugins/shipwright-build/skills/build/references/code-review.md
++++ b/plugins/shipwright-build/skills/build/references/code-review.md
+@@ -27,8 +27,10 @@ Claude tier on it would misrepresent which model actually answered.
+ 
+ **Dispatch rule, checked once before spawning any reviewer below:** see
+ `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure
+-(when it applies, the `review_via_codex.py` invocation, and how to record the
+-result — including a transport failure that falls back to an ordinary spawn).
++— Codex CLI driving → `review_via_codex.py`; Claude Code, incl. Codextender →
++spawn the Agent-tool subagent as normal (the proxy maps it to `sol`). The doc
++covers the invocation and how to record the result, incl. a transport
++failure that falls back to an ordinary spawn.
+ 
+ ### Stage 1 — `spec-reviewer` (HARD-GATE)
+ 
+diff --git a/plugins/shipwright-iterate/skills/iterate/SKILL.md b/plugins/shipwright-iterate/skills/iterate/SKILL.md
+index 5ce34a4c5..b7e8f391d 100644
+--- a/plugins/shipwright-iterate/skills/iterate/SKILL.md
++++ b/plugins/shipwright-iterate/skills/iterate/SKILL.md
+@@ -179,7 +179,7 @@ See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affecte
+ 
+ ### Step 8: Full Code Review (conditional)
+ 
+-See `references/iteration-reviews.md` for trigger rules. **Dispatch rule, checked before any of the three spawns below:** see `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure (never applies to a delegated campaign sub-iterate — see `references/campaign-mode.md` step 3f-bis, which states this rule for the orchestrator's own spawn instead). **A standing grant in `CLAUDE.md` outranks this — if the project states that review subagents are requested by default, spawn them and do NOT ask.** Only when no such grant exists and a session policy gates spawning: ask for the go-ahead as your FIRST action here — before Stage 1. Such a policy (e.g. a standing *"do not call the Agent tool unless the user requested it"*) is **conditional**: one sentence from the operator lifts it for the rest of the session. It is not a capability limit. Ask only when all three hold — the cascade is required for this diff; the `Agent` tool is in **this agent's capabilities** (asking without it wins a "yes" and fails anyway); and permission was not **already given earlier in this session** (it holds for the whole session — do not re-ask). A question asked at finalization buys nothing, because the work is already built. **If the answer is no**, that is blocker #4 — follow the escalation ladder in `references/iteration-reviews.md` (external review mandatory; `code` and `doubt` recorded `not_run` with a disposition naming *operator-declined*). **Under `--autonomous`** you cannot block to ask — but that prevents *acquiring* permission, **not using permission already held**; only when it is absent and unobtainable do you record `code = not_run` naming the mode, run the external review, and surface the ungated pass in the **closing run summary (F12)** so the operator can lift it next time. **This session spawns the cascade itself** — a standalone iterate has the `Agent` tool, so there is no delegate and nothing to wait for: `spec-reviewer` (Stage 1, **HARD-GATE** — a REJECT blocks Stage 2 until the diff is fixed and re-reviewed) → `code-reviewer` (Stage 2) → `doubt-reviewer` (Stage 3, conditional, advisory-must-address). **Pass `model=<the review tier resolved in §F>` to the Agent tool at each of the three spawns** (omit the parameter when the resolved value is `inherit` — the Agent tool has no `inherit` literal of its own). **State the run_id in plain text in every spawn prompt** (e.g. "This review is part of iterate run `{run_id}`.") — the `SubagentStop` salvage hook (`write-review-payload-on-stop.py`) can only find it in the subagent's own transcript, never from an env var. **The instant each subagent returns, write its reply to its payload file and call `record_review_pass.py record` before any other reasoning or spawning the next reviewer** — this is a mitigation, not a guarantee (it is agent-followed prose, not code-enforced; the salvage hook above is the code-level backstop for exactly the window this instruction cannot close by itself). It runs **before F6 (commit)**, because a review that lands after the commit reviews something already shipped. It reviews the **code diff**; artifacts written afterwards by Steps 11a/11b and finalization ship in the same commit unreviewed, so "before F6" buys *not after*, not *reviews everything that ships*. **Every stage closes its own row**: `spec` from Stage 1, `code` from Stage 2 (`--from code-reviewer`), `doubt` from Stage 3 — every `record_review_pass.py record` call for these three carries `--model-tier "{resolved_review_tier}"` (the same value passed at the spawn above). Stage 1's row is an ordinary `reviews` key. It was parked in a sibling `gates` object while the webui refused to read a record carrying a sixth key; that reader now renders review types it does not recognise, so `spec` was promoted (`references/iteration-reviews.md`). Records written before the promotion keep `spec` under `gates` and are still read from there — permanently, since they are immutable. The gate enforces the cascade's own ordering: a `code` row recorded `completed` while `spec` is not `completed` FAILS, because Stage 2 cannot legitimately have run without its HARD-GATE passing first. A completed `code`/`external_code` row must also carry evidence a review happened — findings, a provider, a raw excerpt, or a `recorded_by` naming an adapter other than `none`. The runner contract's "delegated" wording (§5b) is **campaign-only** and does not apply here.
++See `references/iteration-reviews.md` for trigger rules. **Dispatch rule, checked before any of the three spawns below:** see `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure (Codex CLI driving → `review_via_codex.py`; Claude Code incl. Codextender → spawn the Agent-tool subagent as normal (the proxy maps it to `sol`); never applies to a delegated campaign sub-iterate — see `references/campaign-mode.md` step 3f-bis, which states this rule for the orchestrator's own spawn instead). **A standing grant in `CLAUDE.md` outranks this — if the project states that review subagents are requested by default, spawn them and do NOT ask.** Only when no such grant exists and a session policy gates spawning: ask for the go-ahead as your FIRST action here — before Stage 1. Such a policy (e.g. a standing *"do not call the Agent tool unless the user requested it"*) is **conditional**: one sentence from the operator lifts it for the rest of the session. It is not a capability limit. Ask only when all three hold — the cascade is required for this diff; the `Agent` tool is in **this agent's capabilities** (asking without it wins a "yes" and fails anyway); and permission was not **already given earlier in this session** (it holds for the whole session — do not re-ask). A question asked at finalization buys nothing, because the work is already built. **If the answer is no**, that is blocker #4 — follow the escalation ladder in `references/iteration-reviews.md` (external review mandatory; `code` and `doubt` recorded `not_run` with a disposition naming *operator-declined*). **Under `--autonomous`** you cannot block to ask — but that prevents *acquiring* permission, **not using permission already held**; only when it is absent and unobtainable do you record `code = not_run` naming the mode, run the external review, and surface the ungated pass in the **closing run summary (F12)** so the operator can lift it next time. **This session spawns the cascade itself** — a standalone iterate has the `Agent` tool, so there is no delegate and nothing to wait for: `spec-reviewer` (Stage 1, **HARD-GATE** — a REJECT blocks Stage 2 until the diff is fixed and re-reviewed) → `code-reviewer` (Stage 2) → `doubt-reviewer` (Stage 3, conditional, advisory-must-address). **Pass `model=<the review tier resolved in §F>` to the Agent tool at each of the three spawns** (omit the parameter when the resolved value is `inherit` — the Agent tool has no `inherit` literal of its own). **State the run_id in plain text in every spawn prompt** (e.g. "This review is part of iterate run `{run_id}`.") — the `SubagentStop` salvage hook (`write-review-payload-on-stop.py`) can only find it in the subagent's own transcript, never from an env var. **The instant each subagent returns, write its reply to its payload file and call `record_review_pass.py record` before any other reasoning or spawning the next reviewer** — this is a mitigation, not a guarantee (it is agent-followed prose, not code-enforced; the salvage hook above is the code-level backstop for exactly the window this instruction cannot close by itself). It runs **before F6 (commit)**, because a review that lands after the commit reviews something already shipped. It reviews the **code diff**; artifacts written afterwards by Steps 11a/11b and finalization ship in the same commit unreviewed, so "before F6" buys *not after*, not *reviews everything that ships*. **Every stage closes its own row**: `spec` from Stage 1, `code` from Stage 2 (`--from code-reviewer`), `doubt` from Stage 3 — every `record_review_pass.py record` call for these three carries `--model-tier "{resolved_review_tier}"` (the same value passed at the spawn above). Stage 1's row is an ordinary `reviews` key. It was parked in a sibling `gates` object while the webui refused to read a record carrying a sixth key; that reader now renders review types it does not recognise, so `spec` was promoted (`references/iteration-reviews.md`). Records written before the promotion keep `spec` under `gates` and are still read from there — permanently, since they are immutable. The gate enforces the cascade's own ordering: a `code` row recorded `completed` while `spec` is not `completed` FAILS, because Stage 2 cannot legitimately have run without its HARD-GATE passing first. A completed `code`/`external_code` row must also carry evidence a review happened — findings, a provider, a raw excerpt, or a `recorded_by` naming an adapter other than `none`. The runner contract's "delegated" wording (§5b) is **campaign-only** and does not apply here.
+ 
+ ### Step 11a: Author E2E Spec (always at medium+; if feature+UI at trivial/small)
+ 
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md b/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md
+index 71d0b7aa1..f7914acc2 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md
+@@ -575,7 +575,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
+ 
+        **Dispatch rule, checked before spawning a) below:** see
+        `shared/prompts/codex_review_dispatch.md` for the full Codex-driver
+-       procedure (add `--force` to every `record_review_pass.py record` call
++       procedure (Codex CLI driving → `review_via_codex.py`; Claude Code incl. Codextender → spawn the Agent-tool subagent as normal (the proxy maps it to `sol`)) (add `--force` to every `record_review_pass.py record` call
+        it describes, matching the promotions below). The ORCHESTRATOR here has
+        no ordinary Agent-tool fallback of its own if Codex CLI is driving the
+        campaign — a transport failure always lands on the doc's `not_run`
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md b/plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md
+index 305c8cdf0..7b9f70059 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md
+@@ -18,7 +18,10 @@ and branch on its JSON.
+ `--driver` is self-resolving (no caller substitutes a `{driver}` placeholder): the
+ runner is only ever spawned as a Claude Code subagent, so the *harness* is
+ `claude`; `codex` when `CODEXTENDER_ACTIVE` is set (the subagent inherits the
+-spawning session's environment). Real Codex-driven campaigns: trg-a27ab4d9.
++spawning session's environment). This is the external roster only (a
++Codex-backed author needs a non-OpenAI second reviewer); reviewer *dispatch*
++is unaffected — Codextender spawns Agent-tool subagents like any Claude Code
++session. Real Codex-driven campaigns: trg-a27ab4d9.
+ 
+ **Call 1 — the plan review.**
+ 
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+index 872bb241c..51be0cd16 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+@@ -348,15 +348,19 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+    same file instead. List the options **without** the reasons any were
+    rejected; do not copy the mini-plan's rejection rationale into it (the
+    rule step 2a's brief has always followed). **Do this before the Codex
+-   check below** — a Codex-driven run still needs the brief on disk for
++   check below** — a Codex-CLI-driven run still needs the brief on disk for
+    step 2a to re-read.
+ 
+-   **No Codex transport yet.** Under `--driver codex` (or `CODEXTENDER_ACTIVE`
+-   set), do NOT spawn — `shipwright-plan:architecture-internal-reviewer` is a
+-   Claude-Agent-tool subagent only; reusing `role=plan_review`'s Codex leg
++   **No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
++   (no Claude `Agent` tool — the harness identity, NOT the resolved
++   `--driver` value, which is also `codex` under Codextender), do NOT spawn —
++   `shipwright-plan:architecture-internal-reviewer` is a Claude-Agent-tool
++   subagent only. **Under Codextender the Agent tool works (the proxy maps
++   the subagent to `sol`): spawn it like the other reviewers and record
++   `Ran: yes`** — see `shared/prompts/codex_review_dispatch.md`. Reusing `role=plan_review`'s Codex leg
+    would collide on the fixed canonical basename `plan_review_reply.json`
+    step 0's real Internal Plan Review already writes there. Record
+-   `Ran: no (no Codex transport for architecture_internal yet)` and continue
++   `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue
+    to step 1 — a full Codex-side role is an explicit follow-up, out of this
+    run's scope.
+ 
+@@ -407,7 +411,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+ 
+    ```markdown
+    ## Internal Architecture Review (architecture-internal-reviewer)
+-   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (no Codex transport for architecture_internal yet)}
++   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (Codex CLI driver: no transport for architecture_internal yet)}
+    - **Severity:** {low|medium|high, or n/a if Ran: no}
+    - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+    - **Findings:** {one line per finding: category, severity, disposition, one-line reason}
+diff --git a/plugins/shipwright-plan/skills/plan/SKILL.md b/plugins/shipwright-plan/skills/plan/SKILL.md
+index dd877bcec..e0fb5c347 100644
+--- a/plugins/shipwright-plan/skills/plan/SKILL.md
++++ b/plugins/shipwright-plan/skills/plan/SKILL.md
+@@ -146,7 +146,7 @@ Step 6, per `gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`
+ failure record `Ran: no` and continue; the **Pre-5b Checkpoint** decides
+ whether the Self-Review Fallback runs.
+ 
+-**Step 5-int-arch (always, right after 5-int; no Codex transport yet):** a
++**Step 5-int-arch (always, right after 5-int; skipped only under a real Codex CLI driver — spawned under Codextender):** a
+ separate fresh-context agent, spawn
+ `shipwright-plan:architecture-internal-reviewer` over a freshly-authored
+ architecture brief + `spec.md` — **never `plan.md`**, to escape the plan's
+diff --git a/plugins/shipwright-plan/skills/plan/references/step-5-external-review.md b/plugins/shipwright-plan/skills/plan/references/step-5-external-review.md
+index 1c0b39287..9cab89412 100644
+--- a/plugins/shipwright-plan/skills/plan/references/step-5-external-review.md
++++ b/plugins/shipwright-plan/skills/plan/references/step-5-external-review.md
+@@ -34,7 +34,7 @@ only the project's `shipwright_model_config.json`):
+ ```bash
+ uv run "{shared_root}/scripts/tools/resolve_model_tier.py" --project-root "{project_root}"
+ ```
+-**Dispatch rule:** see `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure (`role="plan_review"`); on an unrecovered failure record `Ran: no` in `plan.md` naming the reason instead of the `not_run` row the doc describes for the standalone cascade.
++**Dispatch rule:** see `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure (`role="plan_review"`; Codex CLI driving → `review_via_codex.py`; Claude Code incl. Codextender → spawn the Agent-tool subagent as normal (the proxy maps it to `sol`)); on an unrecovered failure record `Ran: no` in `plan.md` naming the reason instead of the `not_run` row the doc describes for the standalone cascade.
+ Parse `.plan_review.agent_param`. Spawn `shipwright-plan:opus-plan-reviewer`
+ (Read/Grep/Glob only) over `{planning_dir}/plan.md` + `{spec_file}`, passing the
+ Agent tool's `model=` parameter when `agent_param` is non-null (a configured
+diff --git a/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md b/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md
+index 3a091597b..c6b68a3e3 100644
+--- a/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md
++++ b/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md
+@@ -25,10 +25,13 @@ anchoring defense the brief already gives Step 5a. Pass that same
+ `agent_param` as the Agent tool's `model=` parameter when non-null; omit when
+ `null`.
+ 
+-**No Codex transport yet.** Under `--driver codex` (or `CODEXTENDER_ACTIVE`
+-set), do NOT spawn — reusing `role="plan_review"`'s Codex leg would collide on
++**No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
++(no Claude `Agent` tool — harness identity, NOT the resolved `--driver`
++value, which is also `codex` under Codextender), do NOT spawn. **Under
++Codextender the Agent tool works (proxy-mapped to `sol`): spawn as above and
++record `Ran: yes`** (`shared/prompts/codex_review_dispatch.md`). Reusing `role="plan_review"`'s Codex leg would collide on
+ the canonical basename Step 5-int's Internal Plan Review already writes. Record
+-`Ran: no (no Codex transport for architecture_internal yet)` and continue — a
++`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue — a
+ full Codex-side role is an explicit follow-up, out of scope here.
+ 
+ **Degraded handling** mirrors Step 5-int: unreachable subagent, unparseable
+@@ -48,7 +51,7 @@ is `plan.md` + `decision_log.md`):
+ 
+ ```markdown
+ ## Internal Architecture Review (architecture-internal-reviewer)
+-- **Ran:** {yes | no (capability failure) | no (parse failure) | no (no Codex transport for architecture_internal yet)}
++- **Ran:** {yes | no (capability failure) | no (parse failure) | no (Codex CLI driver: no transport for architecture_internal yet)}
+ - **Severity:** {low|medium|high, or n/a if Ran: no}
+ - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+ - **Findings:** {one line per finding: category, severity, disposition, reason}
+diff --git a/shared/prompts/codex_review_dispatch.md b/shared/prompts/codex_review_dispatch.md
+index 75290736a..a9f00acc5 100644
+--- a/shared/prompts/codex_review_dispatch.md
++++ b/shared/prompts/codex_review_dispatch.md
+@@ -1,34 +1,51 @@
+ # Codex-Driver Internal-Review Dispatch
+ 
+ Checked once before spawning any of `spec-reviewer` / `code-reviewer` /
+-`doubt-reviewer` / `opus-plan-reviewer`: can this driving harness genuinely
+-spawn an Agent-tool subagent on a model independent of its own (Claude Code,
+-driving on an Anthropic model)? If yes, spawn as normal — this doc does not
+-apply. Never applies inside an Agent-tool-less Shipwright subagent (e.g.
++`doubt-reviewer` / `opus-plan-reviewer` / `architecture-internal-reviewer`:
++**which harness is driving this session, and does it have the Agent tool?**
++This is the harness's own identity — self-evident to the agent executing
++these instructions, never sniffed from an env var:
++
++| Driving harness | Dispatch |
++|---|---|
++| Claude Code (an Anthropic backend **or** redirected to a non-Anthropic one via the Codextender proxy, `CODEXTENDER_ACTIVE` set) | **Spawn the Agent-tool subagent as normal** — this doc does not apply. Under Codextender the proxy maps the subagent to `sol`; that is the intended path. Record the pass with the default `agent` transport. |
++| Codex CLI itself (no Claude `Agent` tool) | Run `review_via_codex.py` below. |
++
++**Codextender does NOT dispatch through `review_via_codex.py`.** The Agent
++tool works there, and `codex exec` would buy no independence: its default
++review model (`CODEX_REVIEW_MODEL`, `codex_review_transport.py`) is
++`gpt-6.1-sol`, the same family Codextender's proxy already maps subagents to.
++(Observed: Codextender sessions spawned 70+ spec/code/doubt-reviewer
++subagents on `sol` and never ran `review_via_codex.py`; the old wording of
++this doc described a path sessions did not take.) `CODEXTENDER_ACTIVE` still
++steers the **external** review's `--driver` roster (`codex` → `{glm, opus}`)
++because that is a different question — the diff's *author* was Codex-backed,
++so a GPT-family second reviewer would not be independent — and that mapping
++is unchanged. Do not read `--driver codex` as "the harness is Codex CLI".
++
++Never applies inside an Agent-tool-less Shipwright subagent (e.g.
+ `section-builder`, `sub-iterate-runner`) — those keep deferring to the
+ orchestrator exactly as they do today; this is for an orchestrator's own
+ spawn site only (`shipwright-build` Step 6, `shipwright-plan` Step 5-int,
+ `shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis).
+ 
+-**`architecture-internal-reviewer` has no Codex transport yet, deliberately.**
+-Unlike the four roles above, a Codex-driven run (`--driver codex` or
+-`CODEXTENDER_ACTIVE`) does NOT dispatch this one through
+-`review_via_codex.py` — there is no `architecture_internal` (or
+-`architecture_review`) value for `--role` below. Reusing `role=plan_review`'s
+-Codex leg was considered and rejected: it would collide on the same fixed
+-canonical basename `plan_review_reply.json` the real Internal Plan Review
+-pass already writes, and `plan_review`'s shape requires `--plan-file`, which
+-this pass structurally never has (brief + spec only). Plan Step 5-int-arch and
+-iterate's Internal Architecture Review sub-step both record
+-`Ran: no (no Codex transport for architecture_internal yet)` under a
+-Codex-driven run and continue — a dedicated Codex role for this pass is an
+-explicit follow-up, not in scope here (tracked: trg-2b46f709 — filed after
+-Stage-3 doubt review flagged that this degrades every Codex-driven run,
+-with no aggregate signal distinguishing "always degraded" from "ran once,
+-degraded").
++**`architecture-internal-reviewer` has no Codex-CLI transport yet,
++deliberately.** Only a **real Codex CLI driver** skips it: there is no
++`architecture_internal` (or `architecture_review`) value for `--role` below.
++Reusing `role=plan_review`'s Codex leg was considered and rejected: it would
++collide on the same fixed canonical basename `plan_review_reply.json` the
++real Internal Plan Review pass already writes, and `plan_review`'s shape
++requires `--plan-file`, which this pass structurally never has (brief + spec
++only). Under Codex CLI, plan Step 5-int-arch and iterate's Internal
++Architecture Review sub-step both record
++`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue — a
++dedicated Codex role for this pass is an explicit follow-up (tracked:
++trg-2b46f709). **Under Codextender (and any other Claude Code session) the
++skip does NOT apply:** spawn
++`shipwright-plan:architecture-internal-reviewer` through the Agent tool like
++the other reviewers, so the pass shows `Ran: yes`.
+ 
+-If not — Codex CLI itself is driving, or a Claude Code session has been
+-redirected to a non-Anthropic backend — run:
++Only when **Codex CLI itself is driving** — run:
+ 
+ ```bash
+ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
+@@ -107,8 +124,9 @@ Parse the printed JSON line:
+     Review` section, exactly as an Agent-tool `opus-plan-reviewer` spawn's
+     return value would be used.
+ - **`status: "error"`** — `reason` names the concrete failure.
+-  - This session can ALSO spawn an ordinary Agent-tool subagent (a redirected
+-    Claude Code session, not Codex CLI itself): fall back to `Task(...)`,
++  - This session can nonetheless spawn an ordinary Agent-tool subagent (not
++    expected under Codex CLI; a Claude Code / Codextender session never
++    reaches this doc at all): fall back to `Task(...)`,
+     then record the resulting pass normally **plus** `--transport agent
+     --transport-note "codex transport failed: {reason}; fell back to an
+     ordinary Agent-tool spawn"` — this is what makes a codex-answered pass and
+diff --git a/shared/scripts/lib/codex_review_transport.py b/shared/scripts/lib/codex_review_transport.py
+index 934175580..d50ab78eb 100644
+--- a/shared/scripts/lib/codex_review_transport.py
++++ b/shared/scripts/lib/codex_review_transport.py
+@@ -2,8 +2,9 @@
+ 
+ The AC1 dispatch target when the driving harness cannot spawn an independent
+ Agent-tool subagent for spec-reviewer/code-reviewer/doubt-reviewer/
+-opus-plan-reviewer — either because this session IS Codex CLI itself, or its
+-own model has been redirected to a non-Anthropic backend. See
++opus-plan-reviewer — i.e. this session IS Codex CLI itself. A Claude Code
++session redirected via Codextender keeps the Agent tool (proxy-mapped to
++``sol``, the same model this transport defaults to) and does NOT use this. See
+ ``.shipwright/planning/iterate/iterate-2026-09-13-codex-internal-review-transport.md``
+ for the full design and its Internal Plan Review findings, several of which
+ are load-bearing here:
+diff --git a/shared/scripts/tools/review_via_codex.py b/shared/scripts/tools/review_via_codex.py
+index 67ea05120..9048c24df 100644
+--- a/shared/scripts/tools/review_via_codex.py
++++ b/shared/scripts/tools/review_via_codex.py
+@@ -1,8 +1,8 @@
+ """CLI entry point for the Codex-CLI internal-review transport.
+ 
+ The AC1 dispatch target: a driving harness that cannot spawn an independent
+-Agent-tool subagent (Codex CLI itself, or a Claude Code session redirected to
+-a non-Anthropic backend) runs this instead of `Task(...)` for one review
++Agent-tool subagent (Codex CLI itself — a Claude Code session redirected via
++Codextender keeps the Agent tool and spawns normally) runs this instead of `Task(...)` for one review
+ role. Wraps `lib.codex_review_transport.run_codex_review` — reads the
+ reviewer agent's `.md` file plus its review subject (`--spec-file` always;
+ `--diff-file` for spec/code/doubt, `--plan-file` for plan_review — the same

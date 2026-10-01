@@ -3714,12 +3714,14 @@ plan SKILL
     `plan.architecture-internal-review-high-severity-declined` (its own id,
     not Step 5-int's)
   → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C
-  → under a Codex-driven run (`--driver codex` or `CODEXTENDER_ACTIVE`): does
-    NOT spawn — reusing
+  → under a real Codex CLI driver (decided by harness identity — not by
+    `--driver codex` or `CODEXTENDER_ACTIVE`, both of which are also true
+    under Codextender): does NOT spawn — reusing
     `plan_review`'s Codex leg would collide on the fixed canonical basename
     Step 5-int's real pass already writes; records
-    `Ran: no (no Codex transport for architecture_internal yet)` — a full
-    Codex-side role is an explicit follow-up, out of this change's scope
+    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` —
+    a full Codex-side role is an explicit follow-up. Under Codextender the
+    Agent tool works (proxy-mapped to `sol`): it spawns and records `Ran: yes`
   → writes NO review-record row and NO marker of its own — same as Step
     5-int, this phase has no run_id to record against; does NOT carry the
     Pre-5b gate (only Step 5-int or a completed Branch A review count there)
@@ -3748,9 +3750,9 @@ iterate SKILL
     `Ran:`/`Status:` in the iterate ADR
   → on spawn/parse failure (incl. shipwright-plan not installed): records
     `Ran: no`, continues to Branch A/B/C
-  → under a Codex-driven run (`--driver codex` or `CODEXTENDER_ACTIVE`):
-    does NOT spawn, records
-    `Ran: no (no Codex transport for architecture_internal yet)`
+  → under a real Codex CLI driver only (NOT Codextender, whose Agent tool
+    works): does NOT spawn, records
+    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)`
   → when `Ran: yes`: records an `architecture_internal` review-record row via
     record_review_pass.py (metadata-only, same shape as `plan_internal`) —
     the row `floors.plan_review` also judges
@@ -4637,9 +4639,9 @@ and record `driver`, `driver_requested`, `codextender_active` and, when coerced,
   not tell" must not be reported as "not applicable".
 - **A row optionally names which harness answered it.** `transport` (`agent` |
   `codex`) plus a free-text `transport_note` record whether a driving harness
-  with no independent Agent tool (Codex CLI itself, or Claude Code redirected
-  to a non-Anthropic backend) ran the pass via `review_via_codex.py` instead
-  of an Agent-tool spawn — see `shared/prompts/codex_review_dispatch.md` for
+  with no Agent tool (Codex CLI itself — never Claude Code, including Codextender,
+  whose subagents are proxy-mapped to `sol`) ran the pass via
+  `review_via_codex.py` instead of an Agent-tool spawn — see `shared/prompts/codex_review_dispatch.md` for
   the dispatch procedure and its four call sites. `record_review_pass.py
   record --transport` writes it; the model-tier floor verifier
   (`review_record_model_tier.py`) exempts a `codex` row, which carries no

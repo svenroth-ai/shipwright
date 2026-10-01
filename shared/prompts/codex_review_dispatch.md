@@ -1,34 +1,53 @@
 # Codex-Driver Internal-Review Dispatch
 
 Checked once before spawning any of `spec-reviewer` / `code-reviewer` /
-`doubt-reviewer` / `opus-plan-reviewer`: can this driving harness genuinely
-spawn an Agent-tool subagent on a model independent of its own (Claude Code,
-driving on an Anthropic model)? If yes, spawn as normal — this doc does not
-apply. Never applies inside an Agent-tool-less Shipwright subagent (e.g.
+`doubt-reviewer` / `opus-plan-reviewer` / `architecture-internal-reviewer`:
+**which harness is driving this session, and does it have the Agent tool?**
+This is the harness's own identity — self-evident to the agent executing
+these instructions, never sniffed from an env var:
+
+| Driving harness | Dispatch |
+|---|---|
+| Claude Code (an Anthropic backend **or** redirected to a non-Anthropic one via the Codextender proxy, `CODEXTENDER_ACTIVE` set) | **Spawn the Agent-tool subagent as normal** — this doc does not apply. Under Codextender the proxy maps the subagent to `sol`; that is the intended path. Record the pass with the default `agent` transport. |
+| Codex CLI itself (no Claude `Agent` tool) | Run `review_via_codex.py` below. |
+
+**Codextender does NOT dispatch through `review_via_codex.py`.** The Agent
+tool works there, and `codex exec` would buy no independence: its default
+review model (`CODEX_REVIEW_MODEL`, `codex_review_transport.py`) is
+`gpt-6.1-sol`, the same family Codextender's proxy already maps subagents to.
+(Observed: Codextender sessions spawned 70+ spec/code/doubt-reviewer
+subagents on `sol` and never ran `review_via_codex.py`; the old wording of
+this doc described a path sessions did not take.) `CODEXTENDER_ACTIVE` still
+steers the **external** review's `--driver` roster (`codex` → `{glm, opus}`)
+because that is a different question — the diff's *author* was Codex-backed,
+so a GPT-family second reviewer would not be independent — and that mapping
+is unchanged. Do not read `--driver codex` as "the harness is Codex CLI".
+
+Never applies inside an Agent-tool-less Shipwright subagent (e.g.
 `section-builder`, `sub-iterate-runner`) — those keep deferring to the
 orchestrator exactly as they do today; this is for an orchestrator's own
 spawn site only (`shipwright-build` Step 6, `shipwright-plan` Step 5-int,
 `shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis).
+Plan Step 5-int-arch and iterate Step 3.5 (0b) point here only for the
+skip rule below; they are not dispatch sites.
 
-**`architecture-internal-reviewer` has no Codex transport yet, deliberately.**
-Unlike the four roles above, a Codex-driven run (`--driver codex` or
-`CODEXTENDER_ACTIVE`) does NOT dispatch this one through
-`review_via_codex.py` — there is no `architecture_internal` (or
-`architecture_review`) value for `--role` below. Reusing `role=plan_review`'s
-Codex leg was considered and rejected: it would collide on the same fixed
-canonical basename `plan_review_reply.json` the real Internal Plan Review
-pass already writes, and `plan_review`'s shape requires `--plan-file`, which
-this pass structurally never has (brief + spec only). Plan Step 5-int-arch and
-iterate's Internal Architecture Review sub-step both record
-`Ran: no (no Codex transport for architecture_internal yet)` under a
-Codex-driven run and continue — a dedicated Codex role for this pass is an
-explicit follow-up, not in scope here (tracked: trg-2b46f709 — filed after
-Stage-3 doubt review flagged that this degrades every Codex-driven run,
-with no aggregate signal distinguishing "always degraded" from "ran once,
-degraded").
+**`architecture-internal-reviewer` has no Codex-CLI transport yet,
+deliberately.** Only a **real Codex CLI driver** skips it: there is no
+`architecture_internal` (or `architecture_review`) value for `--role` below.
+Reusing `role=plan_review`'s Codex leg was considered and rejected: it would
+collide on the same fixed canonical basename `plan_review_reply.json` the
+real Internal Plan Review pass already writes, and `plan_review`'s shape
+requires `--plan-file`, which this pass structurally never has (brief + spec
+only). Under Codex CLI, plan Step 5-int-arch and iterate's Internal
+Architecture Review sub-step both record
+`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue — a
+dedicated Codex role for this pass is an explicit follow-up (tracked:
+trg-2b46f709). **Under Codextender (and any other Claude Code session) the
+skip does NOT apply:** spawn
+`shipwright-plan:architecture-internal-reviewer` through the Agent tool like
+the other reviewers, so the pass shows `Ran: yes`.
 
-If not — Codex CLI itself is driving, or a Claude Code session has been
-redirected to a non-Anthropic backend — run:
+Only when **Codex CLI itself is driving** — run:
 
 ```bash
 uv run "{shared_root}/scripts/tools/review_via_codex.py" \
@@ -107,9 +126,10 @@ Parse the printed JSON line:
     Review` section, exactly as an Agent-tool `opus-plan-reviewer` spawn's
     return value would be used.
 - **`status: "error"`** — `reason` names the concrete failure.
-  - This session can ALSO spawn an ordinary Agent-tool subagent (a redirected
-    Claude Code session, not Codex CLI itself): fall back to `Task(...)`,
-    then record the resulting pass normally **plus** `--transport agent
+  - Rare: this Codex-CLI-driven session can nonetheless spawn an ordinary
+    Agent-tool subagent (normally it cannot — then see the next bullet; a
+    Claude Code / Codextender session never reaches this step): fall back to
+    `Task(...)`, then record the resulting pass normally **plus** `--transport agent
     --transport-note "codex transport failed: {reason}; fell back to an
     ordinary Agent-tool spawn"` — this is what makes a codex-answered pass and
     a failed-then-agent-answered pass distinguishable in `reviews.json`

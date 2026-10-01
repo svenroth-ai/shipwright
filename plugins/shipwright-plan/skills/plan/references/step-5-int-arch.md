@@ -25,11 +25,15 @@ anchoring defense the brief already gives Step 5a. Pass that same
 `agent_param` as the Agent tool's `model=` parameter when non-null; omit when
 `null`.
 
-**No Codex transport yet.** Under `--driver codex` (or `CODEXTENDER_ACTIVE`
-set), do NOT spawn — reusing `role="plan_review"`'s Codex leg would collide on
-the canonical basename Step 5-int's Internal Plan Review already writes. Record
-`Ran: no (no Codex transport for architecture_internal yet)` and continue — a
-full Codex-side role is an explicit follow-up, out of scope here.
+**No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
+(no Claude `Agent` tool — harness identity, NOT the resolved `--driver`
+value, which is also `codex` under Codextender), do NOT spawn. **Under
+Codextender the Agent tool works (proxy-mapped to `sol`): spawn as above and
+record `Ran: yes`** (`shared/prompts/codex_review_dispatch.md`). Reusing
+`role="plan_review"`'s Codex leg would collide on the canonical basename
+Step 5-int's Internal Plan Review already writes. Under Codex CLI record
+`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and
+continue — a full Codex-side role is an explicit follow-up, out of scope here.
 
 **Degraded handling** mirrors Step 5-int: unreachable subagent, unparseable
 reply, or missing `findings`/`summary` → record `Ran: no` (reason) in the
@@ -48,7 +52,7 @@ is `plan.md` + `decision_log.md`):
 
 ```markdown
 ## Internal Architecture Review (architecture-internal-reviewer)
-- **Ran:** {yes | no (capability failure) | no (parse failure) | no (no Codex transport for architecture_internal yet)}
+- **Ran:** {yes | no (capability failure) | no (parse failure) | no (Codex CLI driver: no transport for architecture_internal yet)}
 - **Severity:** {low|medium|high, or n/a if Ran: no}
 - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
 - **Findings:** {one line per finding: category, severity, disposition, reason}

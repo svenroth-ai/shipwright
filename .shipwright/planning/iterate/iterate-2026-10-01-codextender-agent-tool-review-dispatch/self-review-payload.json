@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC4 each map to an edited site + new drift test"},
+{"name":"Error Handling","verdict":"n/a","note":"prose + docstrings only"},
+{"name":"Security Basics","verdict":"n/a","note":"no code path or input handling changed"},
+{"name":"Test Quality","verdict":"pass","note":"new tests fail on the stale skip clause and on the old dispatch wording"},
+{"name":"Performance Basics","verdict":"n/a","note":"none"},
+{"name":"Naming & Structure","verdict":"pass","note":"Ran: string reworded to 'Codex CLI driver: no transport...'; free text, no parser consumes it"},
+{"name":"Affected Boundaries","verdict":"pass","note":"external --driver roster unchanged; runtime-prompt LOC caps checked"},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"no skips added"}]}
