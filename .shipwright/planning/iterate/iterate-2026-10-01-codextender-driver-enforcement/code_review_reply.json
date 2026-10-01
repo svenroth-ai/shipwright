@@ -1,0 +1,10 @@
+{"review": [
+{"severity":"medium","category":"correctness","file":"shared/tests/test_external_review_driver_enforcement.py","line":74,"finding":"run_review test not sealed from real claude CLI / gateway","disposition":"accepted-and-fixed (stubs is_claude_cli_available + detect_provider)"},
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/external_review_routing.py","line":41,"finding":"ambient CODEXTENDER_ACTIVE flips roster for existing driver=claude tests","disposition":"accepted-and-fixed (autouse delenv fixture in 4 conftests)"},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/verifiers/review_driver_check.py","line":60,"finding":"record flag false + active session passed","disposition":"accepted-and-fixed (session signal wins, test added)"},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/verifiers/review_driver_check.py","line":37,"finding":"unchecked raw files undocumented","disposition":"accepted-and-fixed (docstring)"},
+{"severity":"low","category":"architecture","file":"docs/hooks-and-pipeline.md","line":4598,"finding":"new F11 gate undocumented","disposition":"accepted-and-fixed"},
+{"severity":"low","category":"architecture","file":"shared/scripts/lib/external_review_empty.py","line":7,"finding":"bare-import-only","disposition":"accepted-and-fixed (comment)"},
+{"severity":"low","category":"readability","file":"shared/scripts/tools/external_review.py","line":437,"finding":"redundant driver assignment","disposition":"accepted-and-fixed (deleted)"},
+{"severity":"low","category":"architecture","file":"shared/scripts/lib/llm_review.py","line":300,"finding":"file at 300 LOC","disposition":"rejected-with-reason (HEAD 298 -> 300: at, not over, the cap)"}
+], "verdict": "PASS WITH FINDINGS"}

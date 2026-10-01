@@ -73,7 +73,7 @@ try:  # bare: this directory is on sys.path
         resolve_opus_route,
         review_claude_cli as _review_claude_cli,
     )
-    from external_review_routing import DRIVER_ROSTERS
+    from external_review_routing import DRIVER_ROSTERS, resolve_effective_driver
 except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
     if exc.name != "external_review_degraded":
         raise
@@ -94,7 +94,7 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
         resolve_opus_route,
         review_claude_cli as _review_claude_cli,
     )
-    from lib.external_review_routing import DRIVER_ROSTERS  # type: ignore[no-redef]
+    from lib.external_review_routing import DRIVER_ROSTERS, resolve_effective_driver  # type: ignore[no-redef]
 
 
 # Identity-locked model bindings. The shipping config must match exactly.
@@ -171,6 +171,7 @@ def run_review(
     """
     if driver not in DRIVER_ROSTERS:
         raise ValueError(f"unknown driver {driver!r}; expected one of {sorted(DRIVER_ROSTERS)}")
+    driver, driver_record = resolve_effective_driver(driver, announce=True)
     if not system_prompt:
         system_prompt = "You are a senior software engineer reviewing code for quality, security, and correctness."
     if not user_prompt:
@@ -294,5 +295,6 @@ def run_review(
         "partial": partial,
         "warnings": warnings,
         "provider": provider,
+        **driver_record,
         "reviews": reviews,
     }
