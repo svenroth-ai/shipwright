@@ -105,7 +105,7 @@ def _setup_hint(session_id: str) -> str:
 
 _RESUME_NOTE = (
     "Resuming an existing .worktrees/<slug>? cd into it and re-run the same command there "
-    "(a no-op that records this session). Never remove an existing worktree to get past this gate."
+    "(a no-op that records this session). Never remove an existing worktree to get past this gate; to abandon a stale run, ask the user to release the gate first (`iterate gate off`)."
 )
 
 

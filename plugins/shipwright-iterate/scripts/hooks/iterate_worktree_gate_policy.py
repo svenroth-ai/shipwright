@@ -47,11 +47,11 @@ _GIT_READ_SUBCOMMANDS = frozenset({
     "describe", "ls-files", "for-each-ref",
 })
 #: Subcommands allowed only in the forms the skill's pre-setup steps need.
-#: B1 "Abandon" removes a stale worktree/branch before a fresh setup, so
-#: ``worktree`` and ``branch`` appear -- but never in a creating form.
-_GIT_WORKTREE_ACTIONS = frozenset({"list", "remove", "prune"})
+#: ``worktree`` (list/prune) and ``branch`` (listing) appear -- never creating or
+#: destroying: B1 "Abandon" (remove / -D) waits for the user to release the gate.
+_GIT_WORKTREE_ACTIONS = frozenset({"list", "prune"})
 _GIT_BRANCH_FLAGS = frozenset({
-    "-d", "-D", "--delete", "--list", "--show-current", "-a", "-r", "-v", "-vv",
+    "--list", "--show-current", "-a", "-r", "-v", "-vv",
     "--merged", "--no-merged",
 })
 _GIT_REMOTE_ACTIONS = frozenset({"-v", "get-url"})
@@ -100,11 +100,6 @@ def _git_args(segment: list[str]) -> list[str]:
     return segment[idx:]
 
 
-def _is_iterate_worktree_path(path: str) -> bool:
-    parts = path.replace("\\", "/").split("/")
-    return ".." not in parts and ".worktrees" in parts[:-1]
-
-
 def _git_is_safe(segment: list[str]) -> bool:
     # ``-c k=v`` / ``--config-env`` / ``--exec-path`` make git run a configured command
     # (``-c diff.external=...``); none of the pre-setup steps need them.
@@ -114,12 +109,8 @@ def _git_is_safe(segment: list[str]) -> bool:
     if sub in _GIT_READ_SUBCOMMANDS:
         # ``--output=<file>`` writes a file; the others run a configured command.
         return not any(a.startswith(("--output", "--upload-pack", "--receive-pack", "--ext-diff", "--textconv")) for a in args)
-    if sub == "worktree":
-        if not args or args[0] not in _GIT_WORKTREE_ACTIONS:
-            return False
-        # B1 Abandon removes an iterate worktree; never an arbitrary one.
-        targets = [a for a in args[1:] if not a.startswith("-")]
-        return args[0] != "remove" or (bool(targets) and all(_is_iterate_worktree_path(t) for t in targets))
+    if sub == "worktree":  # remove is destructive and unverifiable here: B1 Abandon waits for the user's release
+        return bool(args) and args[0] in _GIT_WORKTREE_ACTIONS
     if sub == "branch":
         flags = [a for a in args if a.startswith("-")]
         if not args:
@@ -128,8 +119,6 @@ def _git_is_safe(segment: list[str]) -> bool:
             return False
         # A bare name creates a branch (``-v name`` still does); only delete/--list take one.
         names = [a for a in args if not a.startswith("-")]
-        if any(f in {"-d", "-D", "--delete"} for f in flags):  # B1 Abandon deletes iterate/<slug> only
-            return bool(names) and all(n.startswith("iterate/") for n in names)
         return not names or "--list" in flags
     if sub == "remote":
         return not args or args[0] in _GIT_REMOTE_ACTIONS

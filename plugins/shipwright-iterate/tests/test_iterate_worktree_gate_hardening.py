@@ -69,7 +69,7 @@ def test_creating_or_writing_git_forms_are_denied(repo, command):
 
 
 @COVERS
-@pytest.mark.parametrize("command", ["git branch -D iterate/old", "git worktree remove .worktrees/old", "git worktree remove --force C:/p/.worktrees/old", "git worktree list", "git branch --list 'iterate/*'", "git branch -vv"])
+@pytest.mark.parametrize("command", ["git worktree list", "git worktree prune", "git branch --list 'iterate/*'", "git branch -vv"])
 def test_non_creating_git_forms_stay_allowed(repo, command):
     handle_payload(_prompt(repo))
     assert handle_payload(_tool(repo, "Bash", command=command)) is None
