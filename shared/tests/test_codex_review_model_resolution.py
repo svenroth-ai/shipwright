@@ -148,3 +148,9 @@ def test_matching_tables_do_not_raise() -> None:
     resolution._check_role_tables_complete(
         resolution.ROLE_SCHEMAS.keys(), resolution.ROLE_TO_CODEX_CONFIG_KEY.keys(),
         resolution.ROLE_TO_CODEX_ENV_VAR.keys())
+
+
+def test_architecture_internal_shares_the_plan_reviewer_codex_model_key() -> None:
+    """Same Claude-side tier role as plan_review, so the same Codex key and env var."""
+    assert resolution.ROLE_TO_CODEX_CONFIG_KEY["architecture_internal"] == "codex_plan_review"
+    assert resolution.ROLE_TO_CODEX_ENV_VAR["architecture_internal"] == "SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL"

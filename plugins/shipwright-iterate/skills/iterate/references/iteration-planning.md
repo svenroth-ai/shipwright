@@ -351,18 +351,19 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    check below** — a Codex-CLI-driven run still needs the brief on disk for
    step 2a to re-read.
 
-   **No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
-   (no Claude `Agent` tool — the harness identity, NOT the resolved
-   `--driver` value, which is also `codex` under Codextender), do NOT spawn —
-   `shipwright-plan:architecture-internal-reviewer` is a Claude-Agent-tool
-   subagent only. **Under Codextender the Agent tool works (the proxy maps
-   the subagent to `sol`): spawn it like the other reviewers and record
-   `Ran: yes`** — see `shared/prompts/codex_review_dispatch.md`. Reusing `role=plan_review`'s Codex leg
-   would collide on the fixed canonical basename `plan_review_reply.json`
-   step 0's real Internal Plan Review already writes there. Record
-   `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue
-   to step 1 — a full Codex-side role is an explicit follow-up, out of this
-   run's scope.
+   **Codex CLI driver — dedicated `architecture_internal` role.** Only when
+   the harness itself is Codex CLI (no Claude `Agent` tool — the harness
+   identity, NOT the resolved `--driver` value, which is also `codex` under
+   Codextender), do NOT spawn the Agent-tool subagent: after the sanitize
+   step below, run `review_via_codex.py --role architecture_internal` with
+   `--brief-file` the brief, `--spec-file` the SANITIZED copy and `--out-dir`
+   `.shipwright/planning/iterate/{run_id}/` per
+   `shared/prompts/codex_review_dispatch.md`. It writes its own
+   `architecture_internal_reply.json` (never step 0's `plan_review_reply.json`),
+   at high reasoning effort; use its `findings`/`summary` exactly as a
+   spawned reviewer's return and record `Ran: yes`. **Under Codextender the
+   Agent tool works (the proxy maps the subagent to `sol`): spawn it like the
+   other reviewers and record `Ran: yes`.**
 
    **Sanitize the spec before spawning.** By this point the iterate spec
    already carries step 0's `## Internal Plan Review` section (and, at
@@ -382,7 +383,8 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    (same ephemeral, gitignored location `surface_verification.py` uses for
    per-run scratch evidence — never committed) and prints that path.
 
-   Spawn `shipwright-plan:architecture-internal-reviewer` (Read/Grep/Glob
+   Spawn (or, under Codex CLI, dispatch per the paragraph above)
+   `shipwright-plan:architecture-internal-reviewer` (Read/Grep/Glob
    only) over the architecture brief + **that sanitized copy — never the
    real iterate spec, the plan, or the mini-plan**. Pass
    `plan_review.agent_param` (from §F above — the SAME role step 0 resolved;
@@ -411,7 +413,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
    ```markdown
    ## Internal Architecture Review (architecture-internal-reviewer)
-   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (Codex CLI driver: no transport for architecture_internal yet)}
+   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed)}
    - **Severity:** {low|medium|high, or n/a if Ran: no}
    - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
    - **Findings:** {one line per finding: category, severity, disposition, one-line reason}
@@ -425,7 +427,9 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    When `Ran: yes`, record a metadata-only row (no `--from` adapter matches
    this reviewer's shape, same accepted trade-off as step 0/`plan`/
    Architecture Review — `findings_count` is structurally always `0`; the
-   actual count lives in the spec section above):
+   actual count lives in the spec section above). Under the Codex CLI path,
+   replace `--model-tier ...` with `--transport codex --transport-note
+   "{transport_note}"` (the dispatch result's field verbatim):
    ```bash
    uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
      --project-root "{project_root}" --run-id "{run_id}" \

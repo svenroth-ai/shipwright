@@ -247,7 +247,6 @@ def run_codex_review(
                 "--ephemeral", "--cd", str(worktree_root),
                 "--output-schema", str(ROLE_SCHEMAS[role]), "-o", str(tmp_path),
             ]
-            # `plan_review` (not in REASONING_EFFORT_ROLES) keeps its prior argv.
             if role in REASONING_EFFORT_ROLES:
                 argv += ["-c", f"model_reasoning_effort={CODEX_REVIEW_REASONING_EFFORT}"]
             try:

@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "required": ["stage", "verdict", "spec_citations", "summary"],
   "properties": {
-    "stage": { "const": "spec-compliance" },
-    "verdict": { "enum": ["REJECT", "PASS"] },
+    "stage": { "type": "string", "const": "spec-compliance" },
+    "verdict": { "type": "string", "enum": ["REJECT", "PASS"] },
     "spec_citations": {
       "type": "array",
       "items": {
@@ -19,7 +19,7 @@
           "spec_ref": { "type": "string" },
           "divergence": { "type": "string" },
           "diff_location": { "type": "string" },
-          "kind": { "enum": ["missing", "unfaithful", "out-of-scope", "contradiction"] }
+          "kind": { "type": "string", "enum": ["missing", "unfaithful", "out-of-scope", "contradiction"] }
         }
       }
     },

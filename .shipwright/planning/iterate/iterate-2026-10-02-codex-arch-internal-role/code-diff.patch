@@ -1,0 +1,900 @@
+diff --git a/docs/guide.md b/docs/guide.md
+index ab898897a..1d3fc6b66 100644
+--- a/docs/guide.md
++++ b/docs/guide.md
+@@ -1505,7 +1505,7 @@ So the architecture pass is **a second call inside the same review step, not a s
+ 
+ **On a `reject`, the run stops and asks you** -- take the alternative, keep the plan with the reason recorded, or rework and re-review. The reconciliation against the plan's own rejection rationale is written down at that point, which is where the withheld reasoning re-enters the record.
+ 
+-**An internal reviewer asks the same question first, before this external pass.** At medium+ (`/shipwright-iterate` Step 0b) and on every `/shipwright-plan` run (Step 5-int-arch), a separate fresh-context agent (`architecture-internal-reviewer` -- not an extension of `opus-plan-reviewer`) reads the same brief + spec, before Branch A/B/C, and authors the brief this external pass then re-reads rather than writing fresh. Same triage rule, same STOP-and-ask on a declined or disclosed high-severity finding, its own review-record row (`architecture_internal`) on the iterate side. Not yet available under a real Codex CLI driver (`Ran: no (Codex CLI driver: no transport for architecture_internal yet)`; a Codextender session spawns it normally) or for campaign sub-iterates (the runner has no `Agent` tool; only the external pass runs there) -- both documented gaps, same treatment as the internal plan reviewer's own.
++**An internal reviewer asks the same question first, before this external pass.** At medium+ (`/shipwright-iterate` Step 0b) and on every `/shipwright-plan` run (Step 5-int-arch), a separate fresh-context agent (`architecture-internal-reviewer` -- not an extension of `opus-plan-reviewer`) reads the same brief + spec, before Branch A/B/C, and authors the brief this external pass then re-reads rather than writing fresh. Same triage rule, same STOP-and-ask on a declined or disclosed high-severity finding, its own review-record row (`architecture_internal`) on the iterate side. Under a real Codex CLI driver it runs through `codex exec` as its own `architecture_internal` role (high reasoning effort; a Codextender session spawns it normally). Not available for campaign sub-iterates (the runner has no `Agent` tool; only the external pass runs there) -- a documented gap, same treatment as the internal plan reviewer's own.
+ 
+ **Provider configuration (same for all four modes):**
+ 
+diff --git a/docs/hooks-and-pipeline.md b/docs/hooks-and-pipeline.md
+index bcf09722c..c36128775 100644
+--- a/docs/hooks-and-pipeline.md
++++ b/docs/hooks-and-pipeline.md
+@@ -3718,12 +3718,13 @@ plan SKILL
+   → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C
+   → under a real Codex CLI driver (decided by harness identity — not by
+     `--driver codex` or `CODEXTENDER_ACTIVE`, both of which are also true
+-    under Codextender): does NOT spawn — reusing
+-    `plan_review`'s Codex leg would collide on the fixed canonical basename
+-    Step 5-int's real pass already writes; records
+-    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` —
+-    a full Codex-side role is an explicit follow-up. Under Codextender the
+-    Agent tool works (proxy-mapped to `sol`): it spawns and records `Ran: yes`
++    under Codextender): does NOT spawn — runs
++    `review_via_codex.py --role architecture_internal` (own schema, own
++    canonical basename `architecture_internal_reply.json`, inputs brief +
++    spec, high reasoning effort; reusing `plan_review` would collide on the
++    basename Step 5-int's real pass writes) and records `Ran: yes`. Under
++    Codextender the Agent tool works (proxy-mapped to `sol`): it spawns and
++    records `Ran: yes`
+   → writes NO review-record row and NO marker of its own — same as Step
+     5-int, this phase has no run_id to record against; does NOT carry the
+     Pre-5b gate (only Step 5-int or a completed Branch A review count there)
+@@ -3753,8 +3754,10 @@ iterate SKILL
+   → on spawn/parse failure (incl. shipwright-plan not installed): records
+     `Ran: no`, continues to Branch A/B/C
+   → under a real Codex CLI driver only (NOT Codextender, whose Agent tool
+-    works): does NOT spawn, records
+-    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)`
++    works): does NOT spawn, dispatches `review_via_codex.py --role
++    architecture_internal` over the brief + the sanitized spec copy and records
++    `Ran: yes` with a `--transport codex` row (on transport error: `Ran: no
++    (capability failure)`, and the Step 7 sweep closes the row)
+   → when `Ran: yes`: records an `architecture_internal` review-record row via
+     record_review_pass.py (metadata-only, same shape as `plan_internal`) —
+     the row `floors.plan_review` also judges
+diff --git a/integration-tests/test_codex_review_dispatch_sites_present.py b/integration-tests/test_codex_review_dispatch_sites_present.py
+index c11a30b3a..52e4fc090 100644
+--- a/integration-tests/test_codex_review_dispatch_sites_present.py
++++ b/integration-tests/test_codex_review_dispatch_sites_present.py
+@@ -132,16 +132,19 @@ def test_sub_iterate_runner_agent_carries_no_dispatch_rule() -> None:
+ # internal architecture review was nevertheless skipped for them. The skip and
+ # the dispatch doc must key on a REAL Codex CLI driver, not CODEXTENDER_ACTIVE.
+ 
+-ARCH_INTERNAL_SKIP_SITES = (
++ARCH_INTERNAL_SKIP_SITES = (  # name kept; these are now the dedicated-role sites
+     REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
+     / "step-5-int-arch.md",
+     REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "references"
+     / "iteration-planning.md",
+ )
+ 
+-_SKIP_MARKER = "No Codex-CLI transport yet."
++_SKIP_MARKER = "Codex CLI driver — dedicated `architecture_internal` role."
+ #: the retired Ran literal and skip condition, anywhere user- or agent-facing
+-_OLD_RAN_LITERAL = "no Codex transport for architecture_internal"
++_OLD_RAN_LITERALS = (
++    "no Codex transport for architecture_internal",
++    "no transport for architecture_internal yet",
++)
+ _OLD_SKIP_CONDITION = re.compile(
+     r"under[^.\n]{0,40}--driver codex`?\s*\(?or\s*`?CODEXTENDER_ACTIVE", re.I
+ )
+@@ -156,8 +159,13 @@ def _skip_paragraph(site: Path) -> str:
+ 
+ 
+ @pytest.mark.parametrize("site", ARCH_INTERNAL_SKIP_SITES)
+-def test_architecture_internal_skip_is_codex_cli_only(site: Path) -> None:
++def test_architecture_internal_has_its_own_codex_role_not_a_skip(site: Path) -> None:
+     para = _skip_paragraph(site)
++    assert "--role architecture_internal" in para, f"{site}: must dispatch the dedicated role"
++    assert "architecture_internal_reply.json" in para, f"{site}: must name its own canonical reply"
++    assert "plan_review_reply.json" in para and "never" in para, (
++        f"{site}: must say it never shares plan_review's reply basename"
++    )
+     assert "CODEXTENDER_ACTIVE" not in para, (
+         f"{site}: the skip must not key on CODEXTENDER_ACTIVE; Codextender has "
+         "a working Agent tool and must spawn the reviewer."
+@@ -178,10 +186,17 @@ def test_old_skip_wording_is_gone_everywhere() -> None:
+     ]
+     for f in files:
+         text = f.read_text(encoding="utf-8")
+-        assert _OLD_RAN_LITERAL not in text, f"{f} still carries the retired Ran literal"
++        for literal in _OLD_RAN_LITERALS:
++            assert literal not in text, f"{f} still carries the retired Ran literal {literal!r}"
+         assert not _OLD_SKIP_CONDITION.search(text), f"{f} skips on CODEXTENDER_ACTIVE"
+ 
+ 
++def test_dispatch_doc_lists_architecture_internal_role_and_brief_file() -> None:
++    text = CANONICAL_DOC.read_text(encoding="utf-8")
++    assert "--role {spec|code|doubt|plan_review|architecture_internal}" in text
++    assert "--brief-file" in text and "architecture_internal_reply.json" in text
++
++
+ def test_dispatch_doc_routes_codextender_to_agent_tool() -> None:
+     text = " ".join(CANONICAL_DOC.read_text(encoding="utf-8").split()).lower()
+     assert "| driving harness | dispatch |" in text
+diff --git a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+index 51be0cd16..504656531 100644
+--- a/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
++++ b/plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md
+@@ -351,18 +351,19 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+    check below** — a Codex-CLI-driven run still needs the brief on disk for
+    step 2a to re-read.
+ 
+-   **No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
+-   (no Claude `Agent` tool — the harness identity, NOT the resolved
+-   `--driver` value, which is also `codex` under Codextender), do NOT spawn —
+-   `shipwright-plan:architecture-internal-reviewer` is a Claude-Agent-tool
+-   subagent only. **Under Codextender the Agent tool works (the proxy maps
+-   the subagent to `sol`): spawn it like the other reviewers and record
+-   `Ran: yes`** — see `shared/prompts/codex_review_dispatch.md`. Reusing `role=plan_review`'s Codex leg
+-   would collide on the fixed canonical basename `plan_review_reply.json`
+-   step 0's real Internal Plan Review already writes there. Record
+-   `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue
+-   to step 1 — a full Codex-side role is an explicit follow-up, out of this
+-   run's scope.
++   **Codex CLI driver — dedicated `architecture_internal` role.** Only when
++   the harness itself is Codex CLI (no Claude `Agent` tool — the harness
++   identity, NOT the resolved `--driver` value, which is also `codex` under
++   Codextender), do NOT spawn the Agent-tool subagent: after the sanitize
++   step below, run `review_via_codex.py --role architecture_internal` with
++   `--brief-file` the brief, `--spec-file` the SANITIZED copy and `--out-dir`
++   `.shipwright/planning/iterate/{run_id}/` per
++   `shared/prompts/codex_review_dispatch.md`. It writes its own
++   `architecture_internal_reply.json` (never step 0's `plan_review_reply.json`),
++   at high reasoning effort; use its `findings`/`summary` exactly as a
++   spawned reviewer's return and record `Ran: yes`. **Under Codextender the
++   Agent tool works (the proxy maps the subagent to `sol`): spawn it like the
++   other reviewers and record `Ran: yes`.**
+ 
+    **Sanitize the spec before spawning.** By this point the iterate spec
+    already carries step 0's `## Internal Plan Review` section (and, at
+@@ -382,7 +383,8 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+    (same ephemeral, gitignored location `surface_verification.py` uses for
+    per-run scratch evidence — never committed) and prints that path.
+ 
+-   Spawn `shipwright-plan:architecture-internal-reviewer` (Read/Grep/Glob
++   Spawn (or, under Codex CLI, dispatch per the paragraph above)
++   `shipwright-plan:architecture-internal-reviewer` (Read/Grep/Glob
+    only) over the architecture brief + **that sanitized copy — never the
+    real iterate spec, the plan, or the mini-plan**. Pass
+    `plan_review.agent_param` (from §F above — the SAME role step 0 resolved;
+@@ -411,7 +413,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+ 
+    ```markdown
+    ## Internal Architecture Review (architecture-internal-reviewer)
+-   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed) | no (Codex CLI driver: no transport for architecture_internal yet)}
++   - **Ran:** {yes | no (capability failure) | no (parse failure) | no (shipwright-plan not installed)}
+    - **Severity:** {low|medium|high, or n/a if Ran: no}
+    - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+    - **Findings:** {one line per finding: category, severity, disposition, one-line reason}
+@@ -425,7 +427,9 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+    When `Ran: yes`, record a metadata-only row (no `--from` adapter matches
+    this reviewer's shape, same accepted trade-off as step 0/`plan`/
+    Architecture Review — `findings_count` is structurally always `0`; the
+-   actual count lives in the spec section above):
++   actual count lives in the spec section above). Under the Codex CLI path,
++   replace `--model-tier ...` with `--transport codex --transport-note
++   "{transport_note}"` (the dispatch result's field verbatim):
+    ```bash
+    uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+      --project-root "{project_root}" --run-id "{run_id}" \
+diff --git a/plugins/shipwright-plan/skills/plan/SKILL.md b/plugins/shipwright-plan/skills/plan/SKILL.md
+index e0fb5c347..9af2576f6 100644
+--- a/plugins/shipwright-plan/skills/plan/SKILL.md
++++ b/plugins/shipwright-plan/skills/plan/SKILL.md
+@@ -146,7 +146,7 @@ Step 6, per `gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`
+ failure record `Ran: no` and continue; the **Pre-5b Checkpoint** decides
+ whether the Self-Review Fallback runs.
+ 
+-**Step 5-int-arch (always, right after 5-int; skipped only under a real Codex CLI driver — spawned under Codextender):** a
++**Step 5-int-arch (always, right after 5-int; spawned, or run via the `architecture_internal` Codex role under a real Codex CLI driver):** a
+ separate fresh-context agent, spawn
+ `shipwright-plan:architecture-internal-reviewer` over a freshly-authored
+ architecture brief + `spec.md` — **never `plan.md`**, to escape the plan's
+diff --git a/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md b/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md
+index 11427e54b..748516cb1 100644
+--- a/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md
++++ b/plugins/shipwright-plan/skills/plan/references/step-5-int-arch.md
+@@ -25,15 +25,18 @@ anchoring defense the brief already gives Step 5a. Pass that same
+ `agent_param` as the Agent tool's `model=` parameter when non-null; omit when
+ `null`.
+ 
+-**No Codex-CLI transport yet.** Only when the harness itself is Codex CLI
+-(no Claude `Agent` tool — harness identity, NOT the resolved `--driver`
+-value, which is also `codex` under Codextender), do NOT spawn. **Under
+-Codextender the Agent tool works (proxy-mapped to `sol`): spawn as above and
+-record `Ran: yes`** (`shared/prompts/codex_review_dispatch.md`). Reusing
+-`role="plan_review"`'s Codex leg would collide on the canonical basename
+-Step 5-int's Internal Plan Review already writes. Under Codex CLI record
+-`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and
+-continue — a full Codex-side role is an explicit follow-up, out of scope here.
++**Codex CLI driver — dedicated `architecture_internal` role.** Only when the
++harness itself is Codex CLI (no Claude `Agent` tool — harness identity, NOT
++the resolved `--driver` value, which is also `codex` under Codextender), do
++NOT spawn: run `review_via_codex.py --role architecture_internal` with
++`--brief-file` the architecture brief, `--spec-file` `{spec_file}` and
++`--out-dir` `{planning_dir}` per `shared/prompts/codex_review_dispatch.md`;
++it writes its own `architecture_internal_reply.json` (never Step 5-int's
++`plan_review_reply.json`), at high reasoning effort. Read `canonical_path`,
++treat its `findings`/`summary` exactly as a spawned reviewer's return, and
++record `Ran: yes`; on `status: "error"` record `Ran: no (capability failure)`.
++**Under Codextender the Agent tool works (proxy-mapped to `sol`): spawn as
++above and record `Ran: yes`.**
+ 
+ **Degraded handling** mirrors Step 5-int: unreachable subagent, unparseable
+ reply, or missing `findings`/`summary` → record `Ran: no` (reason) in the
+@@ -52,7 +55,7 @@ is `plan.md` + `decision_log.md`):
+ 
+ ```markdown
+ ## Internal Architecture Review (architecture-internal-reviewer)
+-- **Ran:** {yes | no (capability failure) | no (parse failure) | no (Codex CLI driver: no transport for architecture_internal yet)}
++- **Ran:** {yes | no (capability failure) | no (parse failure)}
+ - **Severity:** {low|medium|high, or n/a if Ran: no}
+ - **Summary:** {reviewer's one-line assessment, or the failure reason if Ran: no}
+ - **Findings:** {one line per finding: category, severity, disposition, reason}
+diff --git a/shared/prompts/codex_review_dispatch.md b/shared/prompts/codex_review_dispatch.md
+index 86350732d..b77db7720 100644
+--- a/shared/prompts/codex_review_dispatch.md
++++ b/shared/prompts/codex_review_dispatch.md
+@@ -27,38 +27,38 @@ Never applies inside an Agent-tool-less Shipwright subagent (e.g.
+ `section-builder`, `sub-iterate-runner`) — those keep deferring to the
+ orchestrator exactly as they do today; this is for an orchestrator's own
+ spawn site only (`shipwright-build` Step 6, `shipwright-plan` Step 5-int,
+-`shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis).
+-Plan Step 5-int-arch and iterate Step 3.5 (0b) point here only for the
+-skip rule below; they are not dispatch sites.
++`shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis),
++plus plan Step 5-int-arch and iterate Step 3.5 (0b), which dispatch the
++`architecture_internal` role below.
+ 
+-**`architecture-internal-reviewer` has no Codex-CLI transport yet,
+-deliberately.** Only a **real Codex CLI driver** skips it: there is no
+-`architecture_internal` (or `architecture_review`) value for `--role` below.
+-Reusing `role=plan_review`'s Codex leg was considered and rejected: it would
+-collide on the same fixed canonical basename `plan_review_reply.json` the
+-real Internal Plan Review pass already writes, and `plan_review`'s shape
+-requires `--plan-file`, which this pass structurally never has (brief + spec
+-only). Under Codex CLI, plan Step 5-int-arch and iterate's Internal
+-Architecture Review sub-step both record
+-`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue — a
+-dedicated Codex role for this pass is an explicit follow-up (tracked:
+-trg-2b46f709). **Under Codextender (and any other Claude Code session) the
+-skip does NOT apply:** spawn
++**`architecture-internal-reviewer` has its own Codex role,
++`architecture_internal`** (own schema, own canonical basename
++`architecture_internal_reply.json`, inputs `--brief-file` + `--spec-file`,
++high reasoning effort). It is a role of its own because reusing
++`role=plan_review` would collide on the fixed basename
++`plan_review_reply.json` the real Internal Plan Review pass already writes,
++and `plan_review` requires `--plan-file`, which this pass structurally never
++has (brief + spec only). Only a **real Codex CLI driver** runs it through
++`review_via_codex.py`, via the `architecture_internal` call below;
++**under Codextender (and any other Claude Code session)** spawn
+ `shipwright-plan:architecture-internal-reviewer` through the Agent tool like
+-the other reviewers, so the pass shows `Ran: yes`.
++the other reviewers. Either way the pass shows `Ran: yes`.
+ 
+ Only when **Codex CLI itself is driving** — run:
+ 
+ ```bash
+ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
+-  --role {spec|code|doubt|plan_review} \
++  --role {spec|code|doubt|plan_review|architecture_internal} \
+   --worktree-root "{project_root}" \
+   --agent-md "{the role's agent .md — plugins/shipwright-build/agents/spec-reviewer.md,
+-    .../code-reviewer.md, .../doubt-reviewer.md, or
+-    plugins/shipwright-plan/agents/opus-plan-reviewer.md}" \
+-  --spec-file "{the spec/section-plan file — all four roles take this}" \
++    .../code-reviewer.md, .../doubt-reviewer.md,
++    plugins/shipwright-plan/agents/opus-plan-reviewer.md, or
++    plugins/shipwright-plan/agents/architecture-internal-reviewer.md}" \
++  --spec-file "{the spec/section-plan file — all five roles take this; for
++    architecture_internal the SANITIZED spec copy, never the real spec}" \
+   --diff-file "{the diff file — required for role spec|code|doubt, omit for plan_review}" \
+   --plan-file "{the plan file — required for role plan_review only}" \
++  --brief-file "{architecture_brief.md — required for role architecture_internal only}" \
+   --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
+   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
+     gpt-6.1-sol — optional; unset defers to this role's session env var,
+@@ -82,7 +82,8 @@ review in that shell.
+ 
+ `--spec-file` is always required. `--diff-file` is required for `spec`/`code`/
+ `doubt` (omit `--plan-file`); `--plan-file` is required for `plan_review`
+-(omit `--diff-file`) — the same two paths each agent `.md` already documents
++(omit `--diff-file`); `--brief-file` is required for `architecture_internal`
++(omit `--diff-file` and `--plan-file` — this pass never sees a plan) — the same two paths each agent `.md` already documents
+ receiving from an Agent-tool spawn (code-reviewer REJECT, 2026-09-17: without
+ these the transport has no channel for the review subject at all).
+ 
+@@ -119,6 +120,15 @@ Parse the printed JSON line:
+     argument and the record call errors out, silently losing the very
+     evidence row this step exists to write (doubt-reviewer, medium,
+     2026-09-20).
++  - **`role` is `architecture_internal`:** like `plan_review`, no
++    `--from` adapter exists (the `architecture_internal` row is metadata-only).
++    Read `canonical_path` directly, write its `findings`/`summary` into the
++    `## Internal Architecture Review` section (`Ran: yes`), and — on the
++    iterate side only, plan has no run_id — record the row:
++    `record_review_pass.py record --run-id "{run_id}" --review-type
++    architecture_internal --status completed --recorded-by
++    architecture-internal-reviewer --transport codex --transport-note
++    "{transport_note}"` (no `--model-tier`, as for the other Codex rows).
+   - **`role` is `plan_review`:** there is no `record_review_pass.py --from`
+     adapter for it (`plan_internal` is a metadata-only row with no payload
+     file, see `review_payloads.py`) — read `canonical_path` directly and
+@@ -134,7 +144,9 @@ Parse the printed JSON line:
+     ordinary Agent-tool spawn"` — this is what makes a codex-answered pass and
+     a failed-then-agent-answered pass distinguishable in `reviews.json`
+     (External Review, openai #8).
+-  - It cannot (Codex CLI is the driver): `record_review_pass.py record
++  - It cannot (Codex CLI is the driver): for `architecture_internal` record
++    `Ran: no (capability failure)` in the section and let Step 7's sweep
++    close the row; otherwise `record_review_pass.py record
+     --run-id "{run_id}" --review-type {spec|code|doubt} --status not_run
+     --disposition "codex transport failed: {reason}"` — never silently
+     proceed as if reviewed.
+diff --git a/shared/schemas/codex_architecture_internal_review_schema.json b/shared/schemas/codex_architecture_internal_review_schema.json
+new file mode 100644
+index 000000000..51d0214ad
+--- /dev/null
++++ b/shared/schemas/codex_architecture_internal_review_schema.json
+@@ -0,0 +1,28 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "$id": "https://shipwright.local/schemas/codex_architecture_internal_review_schema.json",
++  "title": "Codex architecture-internal-reviewer output",
++  "description": "Pinned to plugins/shipwright-plan/agents/architecture-internal-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns.",
++  "type": "object",
++  "additionalProperties": false,
++  "required": ["reviewer", "severity", "findings", "summary"],
++  "properties": {
++    "reviewer": { "type": "string", "const": "architecture-internal-reviewer" },
++    "severity": { "type": "string", "enum": ["high", "medium", "low"] },
++    "findings": {
++      "type": "array",
++      "items": {
++        "type": "object",
++        "additionalProperties": false,
++        "required": ["category", "severity", "finding", "suggestion"],
++        "properties": {
++          "category": { "type": "string", "enum": ["necessity", "smallest-option", "security", "complexity-cost", "completeness"] },
++          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
++          "finding": { "type": "string" },
++          "suggestion": { "type": ["string", "null"] }
++        }
++      }
++    },
++    "summary": { "type": "string" }
++  }
++}
+diff --git a/shared/schemas/codex_code_review_schema.json b/shared/schemas/codex_code_review_schema.json
+index 1ece48da8..c63c3db73 100644
+--- a/shared/schemas/codex_code_review_schema.json
++++ b/shared/schemas/codex_code_review_schema.json
+@@ -15,8 +15,9 @@
+         "additionalProperties": false,
+         "required": ["severity", "category", "file", "line", "finding", "suggestion", "source"],
+         "properties": {
+-          "severity": { "enum": ["high", "medium", "low"] },
++          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+           "category": {
++            "type": "string",
+             "enum": ["correctness", "readability", "architecture", "security", "performance"]
+           },
+           "file": { "type": ["string", "null"] },
+diff --git a/shared/schemas/codex_doubt_review_schema.json b/shared/schemas/codex_doubt_review_schema.json
+index b1adbc10a..e0f7cf0c6 100644
+--- a/shared/schemas/codex_doubt_review_schema.json
++++ b/shared/schemas/codex_doubt_review_schema.json
+@@ -7,8 +7,8 @@
+   "additionalProperties": false,
+   "required": ["stage", "gating", "trigger", "doubts", "summary"],
+   "properties": {
+-    "stage": { "const": "doubt" },
+-    "gating": { "const": "advisory-must-address" },
++    "stage": { "type": "string", "const": "doubt" },
++    "gating": { "type": "string", "const": "advisory-must-address" },
+     "trigger": { "type": "string" },
+     "doubts": {
+       "type": "array",
+@@ -20,7 +20,7 @@
+           "file", "what_would_resolve_it"
+         ],
+         "properties": {
+-          "severity": { "enum": ["high", "medium", "low"] },
++          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+           "lens": { "type": "string" },
+           "claim_under_doubt": { "type": "string" },
+           "disproof_attempt": { "type": "string" },
+diff --git a/shared/schemas/codex_plan_review_schema.json b/shared/schemas/codex_plan_review_schema.json
+index de5011e05..dbafe7e71 100644
+--- a/shared/schemas/codex_plan_review_schema.json
++++ b/shared/schemas/codex_plan_review_schema.json
+@@ -7,8 +7,8 @@
+   "additionalProperties": false,
+   "required": ["reviewer", "severity", "findings", "summary"],
+   "properties": {
+-    "reviewer": { "const": "opus-plan-reviewer" },
+-    "severity": { "enum": ["high", "medium", "low", "none"] },
++    "reviewer": { "type": "string", "const": "opus-plan-reviewer" },
++    "severity": { "type": "string", "enum": ["high", "medium", "low", "none"] },
+     "findings": {
+       "type": "array",
+       "items": {
+@@ -17,7 +17,7 @@
+         "required": ["category", "severity", "finding", "suggestion"],
+         "properties": {
+           "category": { "type": "string" },
+-          "severity": { "enum": ["high", "medium", "low"] },
++          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+           "finding": { "type": "string" },
+           "suggestion": { "type": ["string", "null"] }
+         }
+diff --git a/shared/schemas/codex_spec_review_schema.json b/shared/schemas/codex_spec_review_schema.json
+index 324f61124..581fc271b 100644
+--- a/shared/schemas/codex_spec_review_schema.json
++++ b/shared/schemas/codex_spec_review_schema.json
+@@ -7,8 +7,8 @@
+   "additionalProperties": false,
+   "required": ["stage", "verdict", "spec_citations", "summary"],
+   "properties": {
+-    "stage": { "const": "spec-compliance" },
+-    "verdict": { "enum": ["REJECT", "PASS"] },
++    "stage": { "type": "string", "const": "spec-compliance" },
++    "verdict": { "type": "string", "enum": ["REJECT", "PASS"] },
+     "spec_citations": {
+       "type": "array",
+       "items": {
+@@ -19,7 +19,7 @@
+           "spec_ref": { "type": "string" },
+           "divergence": { "type": "string" },
+           "diff_location": { "type": "string" },
+-          "kind": { "enum": ["missing", "unfaithful", "out-of-scope", "contradiction"] }
++          "kind": { "type": "string", "enum": ["missing", "unfaithful", "out-of-scope", "contradiction"] }
+         }
+       }
+     },
+diff --git a/shared/scripts/lib/codex_review_model_resolution.py b/shared/scripts/lib/codex_review_model_resolution.py
+index ce4bf34dd..159925ff4 100644
+--- a/shared/scripts/lib/codex_review_model_resolution.py
++++ b/shared/scripts/lib/codex_review_model_resolution.py
+@@ -78,6 +78,9 @@ ROLE_TO_CODEX_CONFIG_KEY: dict[str, str] = {
+     "code": "codex_review",
+     "doubt": "codex_review",
+     "plan_review": "codex_plan_review",
++    # Same Claude-side tier role as plan_review (this pass is not a fifth
++    # role), so it shares the plan reviewer's Codex model key.
++    "architecture_internal": "codex_plan_review",
+ }
+ 
+ #: role -> the env var carrying a SESSION-scoped override for that role's
+@@ -87,6 +90,7 @@ ROLE_TO_CODEX_ENV_VAR: dict[str, str] = {
+     "code": "SHIPWRIGHT_CODEX_REVIEW_MODEL",
+     "doubt": "SHIPWRIGHT_CODEX_REVIEW_MODEL",
+     "plan_review": "SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL",
++    "architecture_internal": "SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL",
+ }
+ 
+ def _check_role_tables_complete(
+diff --git a/shared/scripts/lib/codex_review_roles.py b/shared/scripts/lib/codex_review_roles.py
+index ebe2ab25e..11788f576 100644
+--- a/shared/scripts/lib/codex_review_roles.py
++++ b/shared/scripts/lib/codex_review_roles.py
+@@ -14,6 +14,7 @@ ROLE_SCHEMAS: dict[str, Path] = {
+     "code": _SCHEMAS_DIR / "codex_code_review_schema.json",
+     "doubt": _SCHEMAS_DIR / "codex_doubt_review_schema.json",
+     "plan_review": _SCHEMAS_DIR / "codex_plan_review_schema.json",
++    "architecture_internal": _SCHEMAS_DIR / "codex_architecture_internal_review_schema.json",
+ }
+ 
+ ROLE_CANONICAL_BASENAMES: dict[str, str] = {
+@@ -29,6 +30,11 @@ ROLE_CANONICAL_BASENAMES: dict[str, str] = {
+     # absent, so the `finally` unlink deleted the very file just returned as
+     # `canonical_path` (spec-reviewer REJECT, 2026-09-17).
+     "plan_review": "plan_review_reply.json",
++    # architecture_internal is metadata-only in the review record (no `--from`
++    # adapter), like plan_review: its call site reads this file directly. Its
++    # OWN basename, never plan_review's -- the Internal Plan Review pass runs
++    # in the same out_dir and would otherwise overwrite/consume it.
++    "architecture_internal": "architecture_internal_reply.json",
+ }
+ 
+ assert ROLE_SCHEMAS.keys() == ROLE_CANONICAL_BASENAMES.keys(), (
+@@ -38,14 +44,17 @@ assert ROLE_SCHEMAS.keys() == ROLE_CANONICAL_BASENAMES.keys(), (
+     "the payload (code-reviewer REJECT, 2026-09-17)"
+ )
+ 
+-#: Which review roles carry the canonical reasoning-effort contract — ONLY
+-#: the review-cascade roles the iterate/build skills Task()-invoke and this
+-#: transport already dispatches (iterate-2026-09-20-m4-codex-subagent-
+-#: dispatch). Deliberately a STRICT SUBSET of ROLE_SCHEMAS: `plan_review` is
+-#: out of this iterate's scope (shipwright-plan, not iterate/build — see
+-#: that iterate's spec's "Out of Scope"), so it carries no entry here and
+-#: `run_codex_review`'s effort injection skips any role absent from this set.
+-REASONING_EFFORT_ROLES: frozenset[str] = frozenset({"spec", "code", "doubt"})
++#: Which review roles carry the canonical reasoning-effort contract: every
++#: role this transport dispatches (the spec/code/doubt cascade since
++#: iterate-2026-09-20-m4-codex-subagent-dispatch; `plan_review` and
++#: `architecture_internal` since iterate-2026-10-02-codex-arch-internal-role).
++#: Every dispatched role carries the flag, and a test pins that equality with
++#: `ROLE_SCHEMAS`, so a new role cannot silently skip it. The `not in` branch of
++#: `transport_note_for` and the `if role in` guard in `run_codex_review` are
++#: therefore defensive only today.
++REASONING_EFFORT_ROLES: frozenset[str] = frozenset(
++    {"spec", "code", "doubt", "plan_review", "architecture_internal"}
++)
+ 
+ if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
+     # `raise`, not `assert` -- stripped under `python -O`, exactly the class
+@@ -112,7 +121,7 @@ def transport_note_for(role: str, effective_model: str) -> str:
+     with zero headroom, and this function's only reason to be imported
+     there is to read these same two constants (code-reviewer, low,
+     2026-09-20). Bare `effective_model` for a role outside
+-    `REASONING_EFFORT_ROLES` (`plan_review` today).
++    `REASONING_EFFORT_ROLES` (none today).
+ 
+     ``effective_model`` MUST already have passed
+     `codex_review_transport._CODEX_MODEL_SLUG_PATTERN` before it reaches
+diff --git a/shared/scripts/lib/codex_review_transport.py b/shared/scripts/lib/codex_review_transport.py
+index d50ab78eb..6fc1e7b02 100644
+--- a/shared/scripts/lib/codex_review_transport.py
++++ b/shared/scripts/lib/codex_review_transport.py
+@@ -247,7 +247,6 @@ def run_codex_review(
+                 "--ephemeral", "--cd", str(worktree_root),
+                 "--output-schema", str(ROLE_SCHEMAS[role]), "-o", str(tmp_path),
+             ]
+-            # `plan_review` (not in REASONING_EFFORT_ROLES) keeps its prior argv.
+             if role in REASONING_EFFORT_ROLES:
+                 argv += ["-c", f"model_reasoning_effort={CODEX_REVIEW_REASONING_EFFORT}"]
+             try:
+diff --git a/shared/scripts/tools/review_via_codex.py b/shared/scripts/tools/review_via_codex.py
+index 9048c24df..d75655284 100644
+--- a/shared/scripts/tools/review_via_codex.py
++++ b/shared/scripts/tools/review_via_codex.py
+@@ -33,7 +33,10 @@ spec|code|doubt`, pass `canonical_path` to `record_review_pass.py record
+ legal Claude tier). For `--role plan_review`, there is no `--from` adapter
+ (`plan_internal` is a metadata-only row) — read `canonical_path` directly and
+ write its `findings`/`summary` into `plan.md`'s own `## Internal Plan
+-Review` section instead. On `status: "error"`, `reason` names the concrete
++Review` section instead. `--role architecture_internal` is the same shape
++(metadata-only `architecture_internal` row, own canonical basename
++`architecture_internal_reply.json`) but takes `--brief-file` (the architecture
++brief) + `--spec-file` (the sanitized spec copy) — never a plan or diff. On `status: "error"`, `reason` names the concrete
+ failure — either fall back to an ordinary Agent-tool spawn (then record
+ `--transport agent --transport-note "<reason>"`) or, when no fallback
+ exists, record `--status not_run --disposition "<reason>"`. See
+@@ -61,6 +64,10 @@ from lib.codex_review_transport import (  # noqa: E402
+ )
+ 
+ 
++#: Sections the sanitized spec copy has stripped (prepare_architecture_internal_spec.py).
++_PRIOR_REVIEW_HEADINGS = ("## Internal Plan Review", "## Self-Review")
++
++
+ def _emit_error(reason: str) -> int:
+     print(json.dumps({"status": "error", "transport": "codex", "reason": reason}))
+     return 1
+@@ -76,15 +83,18 @@ def main(argv: list[str] | None = None) -> int:
+                         help="the run's own evidence directory, e.g. "
+                              ".shipwright/planning/iterate/<run_id>/")
+     # The review subject: every agent .md this transport can drive (spec/code/
+-    # doubt-reviewer, opus-plan-reviewer) documents receiving two file paths —
++    # doubt-reviewer, opus-plan-reviewer, architecture-internal-reviewer —
++    # the last takes brief + spec) documents receiving two file paths —
+     # without these the child has no idea what it is reviewing (code-reviewer
+     # REJECT, 2026-09-17).
+     parser.add_argument("--spec-file", required=True,
+-                        help="the spec/section-plan file path (all four roles take this)")
++                        help="the spec/section-plan file path (all five roles take this)")
+     parser.add_argument("--diff-file", default=None,
+                         help="required for --role spec|code|doubt: the diff being reviewed")
+     parser.add_argument("--plan-file", default=None,
+                         help="required for --role plan_review: the plan being reviewed")
++    parser.add_argument("--brief-file", default=None,
++                        help="required for --role architecture_internal: the architecture brief")
+     parser.add_argument("--timeout", type=float, default=None)
+     parser.add_argument("--max-retries", type=int, default=None)
+     # Distinctly named — never reuses `--review-model`/`--plan-review-model`
+@@ -98,10 +108,14 @@ def main(argv: list[str] | None = None) -> int:
+                              "(a Codex model slug, e.g. gpt-6.1-sol); for a "
+                              "session-scoped override with no flag to thread, "
+                              "set SHIPWRIGHT_CODEX_REVIEW_MODEL (spec/code/doubt) "
+-                             "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review)")
++                             "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review, architecture_internal)")
+     args = parser.parse_args(argv)
+ 
+-    if args.role == "plan_review":
++    if args.role == "architecture_internal":
++        if not args.brief_file:
++            return _emit_error("--brief-file is required for --role architecture_internal")
++        context_paths = {"Architecture brief": args.brief_file, "Spec file": args.spec_file}
++    elif args.role == "plan_review":
+         if not args.plan_file:
+             return _emit_error("--plan-file is required for --role plan_review")
+         context_paths = {"Plan file": args.plan_file, "Spec file": args.spec_file}
+@@ -126,6 +140,17 @@ def main(argv: list[str] | None = None) -> int:
+         if not content.strip():
+             return _emit_error(f"{label} is empty — nothing to review")
+ 
++    if args.role == "architecture_internal":
++        # Fresh-context pass: refuse the REAL iterate spec, which already carries
++        # the prior-review sections the sanitized copy has stripped (doubt-reviewer).
++        spec_text = context_sections[f"Spec file ({args.spec_file})"]
++        leaked = [h for h in _PRIOR_REVIEW_HEADINGS if h in spec_text]
++        if leaked:
++            return _emit_error(
++                f"--spec-file carries prior-review section(s) {leaked}; pass the sanitized copy "
++                "from prepare_architecture_internal_spec.py, never the real spec"
++            )
++
+     prompt = build_prompt(agent_markdown, context_sections)
+     kwargs: dict[str, float | int] = {}
+     # Clamped the same way as `codex_settings()` — an unclamped `--timeout 0`
+diff --git a/shared/tests/test_codex_review_model_resolution.py b/shared/tests/test_codex_review_model_resolution.py
+index e78b5e8d5..52366bcb0 100644
+--- a/shared/tests/test_codex_review_model_resolution.py
++++ b/shared/tests/test_codex_review_model_resolution.py
+@@ -148,3 +148,9 @@ def test_matching_tables_do_not_raise() -> None:
+     resolution._check_role_tables_complete(
+         resolution.ROLE_SCHEMAS.keys(), resolution.ROLE_TO_CODEX_CONFIG_KEY.keys(),
+         resolution.ROLE_TO_CODEX_ENV_VAR.keys())
++
++
++def test_architecture_internal_shares_the_plan_reviewer_codex_model_key() -> None:
++    """Same Claude-side tier role as plan_review, so the same Codex key and env var."""
++    assert resolution.ROLE_TO_CODEX_CONFIG_KEY["architecture_internal"] == "codex_plan_review"
++    assert resolution.ROLE_TO_CODEX_ENV_VAR["architecture_internal"] == "SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL"
+diff --git a/shared/tests/test_codex_review_schemas_typed.py b/shared/tests/test_codex_review_schemas_typed.py
+new file mode 100644
+index 000000000..963a15287
+--- /dev/null
++++ b/shared/tests/test_codex_review_schemas_typed.py
+@@ -0,0 +1,42 @@
++"""Every `--output-schema` file the Codex review transport passes must give each
++`const`/`enum` property an explicit `type`.
++
++Found live (2026-10-02, codex-cli 0.159.2, gpt-6.1-sol): the OpenAI structured-output
++endpoint rejects an untyped `{"const": ...}` / `{"enum": [...]}` with
++`invalid_json_schema ... schema must have a 'type' key`, so the spec/doubt/plan_review
++roles (and the new architecture_internal one) exited 1 on every launch while the offline
++tests (which never reach the API) stayed green. The code schema's one untyped enum was
++typed too for consistency; the live probe did not isolate it as a failure.
++"""
++
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++import pytest
++
++import sys
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
++
++from lib.codex_review_roles import ROLE_SCHEMAS  # noqa: E402
++
++
++def _untyped(node: object, path: str = "") -> list[str]:
++    found: list[str] = []
++    if isinstance(node, dict):
++        if ("const" in node or "enum" in node) and "type" not in node:
++            found.append(path or "<root>")
++        for key, value in node.items():
++            found += _untyped(value, f"{path}/{key}")
++    elif isinstance(node, list):
++        for index, value in enumerate(node):
++            found += _untyped(value, f"{path}/{index}")
++    return found
++
++
++@pytest.mark.parametrize("role", sorted(ROLE_SCHEMAS))
++def test_const_and_enum_properties_declare_a_type(role: str) -> None:
++    schema = json.loads(ROLE_SCHEMAS[role].read_text(encoding="utf-8"))
++    assert _untyped(schema) == [], f"{role}: untyped const/enum is rejected by the live API"
+diff --git a/shared/tests/test_codex_review_transport_reasoning_effort.py b/shared/tests/test_codex_review_transport_reasoning_effort.py
+index a6eb2a034..901ac1a04 100644
+--- a/shared/tests/test_codex_review_transport_reasoning_effort.py
++++ b/shared/tests/test_codex_review_transport_reasoning_effort.py
+@@ -32,6 +32,9 @@ _VALID_PAYLOADS: dict[str, dict] = {
+     "code": VALID_CODE_REVIEW,
+     "doubt": {"stage": "doubt", "gating": "advisory-must-address", "trigger": "io-boundary", "doubts": [], "summary": "ok"},
+     "plan_review": {"reviewer": "opus-plan-reviewer", "severity": "none", "findings": [], "summary": "ok"},
++    "architecture_internal": {
++        "reviewer": "architecture-internal-reviewer", "severity": "low", "findings": [], "summary": "ok",
++    },
+ }
+ 
+ 
+@@ -63,46 +66,37 @@ def test_review_cascade_role_gets_reasoning_effort_flag(tmp_path: Path, monkeypa
+     assert argv[idx + 1] == f"model_reasoning_effort={transport.CODEX_REVIEW_REASONING_EFFORT}"
+ 
+ 
+-def test_plan_review_role_has_no_reasoning_effort_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+-    """`plan_review` is deliberately absent from `REASONING_EFFORT_ROLES` (out
+-    of this iterate's scope) — its argv must stay byte-identical to before."""
+-    fake_run = _patch_available(monkeypatch)
+-    transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
+-    argv = fake_run.call_args.args[0]
+-    assert "-c" not in argv
+-    assert not any("model_reasoning_effort" in part for part in argv)
+-
+-
+-def test_plan_review_role_full_argv_is_byte_identical_to_pre_iterate_shape(
+-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
++@pytest.mark.parametrize("role", ["plan_review", "architecture_internal"])
++def test_plan_side_roles_get_reasoning_effort_flag(
++    role: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+ ) -> None:
+-    """The absence assertion above only proves the flag is missing, not that
+-    nothing else in argv shifted while the reasoning-effort branch was added
+-    (External Review, OpenAI leg, medium, 2026-09-20: a refactor of the
+-    sandbox value into a shared constant could reorder or drop another
+-    argument while still satisfying an absence-only check)."""
+-    # `CODEX_REVIEW_SANDBOX_MODE == "read-only"` is pinned here too -- asserting
+-    # the constant against itself below would still pass a refactor that
+-    # silently changed its value (code-reviewer, medium, 2026-09-20).
++    """`plan_review` (trg-0a3c4edb) and `architecture_internal` carry the same
++    `-c model_reasoning_effort=high` as the review cascade, and the rest of
++    argv is exactly the pre-existing shape, with the flag appended after `-o`."""
+     assert transport.CODEX_REVIEW_SANDBOX_MODE == "read-only"
+-    fake_run = _patch_available(monkeypatch)
+-    transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
++    fake_run = _patch_available(monkeypatch, payload=_VALID_PAYLOADS[role])
++    result = transport.run_codex_review(role, tmp_path, "prompt", tmp_path)
++    assert result["status"] == "completed", result
+     argv = fake_run.call_args.args[0]
+-    schema_path = str(transport.ROLE_SCHEMAS["plan_review"])
++    schema_path = str(transport.ROLE_SCHEMAS[role])
+     assert argv == [
+         "codex", "exec", "-m", transport.CODEX_REVIEW_MODEL, "--skip-git-repo-check",
+         "--sandbox", "read-only", "--ignore-user-config", "--ignore-rules",
+         "--ephemeral", "--cd", str(tmp_path),
+         "--output-schema", schema_path, "-o", argv[argv.index("-o") + 1],
++        "-c", f"model_reasoning_effort={transport.CODEX_REVIEW_REASONING_EFFORT}",
+     ]
+ 
+ 
+-def test_reasoning_effort_roles_is_exactly_the_review_cascade(monkeypatch: pytest.MonkeyPatch) -> None:
++def test_reasoning_effort_roles_is_exactly_every_dispatched_role(monkeypatch: pytest.MonkeyPatch) -> None:
+     """A future role added to `ROLE_SCHEMAS` without a deliberate call on its
+     effort membership must fail this exact-set check rather than silently
+     falling into the no-flag branch unremarked (External Review, GLM leg,
+     low, 2026-09-20)."""
+-    assert transport.REASONING_EFFORT_ROLES == frozenset({"spec", "code", "doubt"})
++    assert transport.REASONING_EFFORT_ROLES == frozenset(
++        {"spec", "code", "doubt", "plan_review", "architecture_internal"}
++    )
++    assert transport.REASONING_EFFORT_ROLES == transport.ROLE_SCHEMAS.keys()
+ 
+ 
+ def test_all_three_review_cascade_roles_get_the_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@@ -147,17 +141,45 @@ def test_reasoning_effort_flag_still_added_under_an_explicit_model_override(
+     )
+ 
+ 
+-def test_plan_review_transport_note_is_the_bare_model(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+-    """The Test Completeness Ledger's row for `plan_review`'s `transport_note`
+-    cited the AC2 distinctness fixture as coverage; that fixture only ever
+-    calls `spec`/`code`/`doubt` (no `--from` adapter exists for `plan_review`),
+-    so the ledger's own claim was false and the gating branch inside
+-    `transport_note_for` had zero coverage (doubt-reviewer, medium, 2026-09-20)."""
+-    fake_run = _patch_available(monkeypatch, payload=_VALID_PAYLOADS["plan_review"])
+-    result = transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
++@pytest.mark.parametrize("role", ["plan_review", "architecture_internal"])
++def test_plan_side_transport_note_names_effort_and_sandbox(
++    role: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    fake_run = _patch_available(monkeypatch, payload=_VALID_PAYLOADS[role])
++    result = transport.run_codex_review(role, tmp_path, "prompt", tmp_path)
+     assert result["status"] == "completed", result
+-    assert "-c" not in fake_run.call_args.args[0]
+-    assert result["transport_note"] == transport.CODEX_REVIEW_MODEL
++    assert f"model_reasoning_effort={transport.CODEX_REVIEW_REASONING_EFFORT}" in fake_run.call_args.args[0]
++    assert result["transport_note"] == (
++        f"{transport.CODEX_REVIEW_MODEL} effort={transport.CODEX_REVIEW_REASONING_EFFORT} "
++        f"sandbox={transport.CODEX_REVIEW_SANDBOX_MODE}"
++    )
++
++
++def test_architecture_internal_has_its_own_canonical_reply(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    """Never `plan_review_reply.json`: Internal Plan Review writes that name in
++    the same out_dir, and a shared name would let one pass clobber the other."""
++    with monkeypatch.context() as m:
++        _patch_available(m, payload=_VALID_PAYLOADS["plan_review"])
++        plan = transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
++    with monkeypatch.context() as m:
++        _patch_available(m, payload=_VALID_PAYLOADS["architecture_internal"])
++        arch = transport.run_codex_review("architecture_internal", tmp_path, "prompt", tmp_path)
++    assert plan["status"] == "completed", plan
++    assert arch["status"] == "completed", arch
++    assert Path(arch["canonical_path"]).name == "architecture_internal_reply.json"
++    assert (tmp_path / "plan_review_reply.json").is_file()
++    assert (tmp_path / "architecture_internal_reply.json").is_file()
++    assert json.loads((tmp_path / "plan_review_reply.json").read_text(encoding="utf-8"))["reviewer"] == "opus-plan-reviewer"
++
++
++def test_architecture_internal_rejects_a_plan_review_shaped_reply(
++    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    """Own schema: the reviewer const and category enum differ from plan_review's."""
++    _patch_available(monkeypatch, payload=_VALID_PAYLOADS["plan_review"])
++    result = transport.run_codex_review("architecture_internal", tmp_path, "prompt", tmp_path)
++    assert result["status"] == "error", result
++    assert "schema validation" in result["reason"]
+ 
+ 
+ def test_argv_reasoning_effort_flag_and_transport_note_effort_agree_for_every_role(
+diff --git a/shared/tests/test_review_via_codex_cli.py b/shared/tests/test_review_via_codex_cli.py
+index b7708cb4b..6e5634e0a 100644
+--- a/shared/tests/test_review_via_codex_cli.py
++++ b/shared/tests/test_review_via_codex_cli.py
+@@ -220,3 +220,71 @@ def test_invalid_role_rejected_by_argparse(tmp_path: Path) -> None:
+             "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
+             "--spec-file", str(agent_md),
+         ])
++
++
++def test_architecture_internal_takes_brief_and_spec_never_plan_or_diff(
++    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
++) -> None:
++    _patch_available(monkeypatch)
++    agent_md = tmp_path / "architecture-internal-reviewer.md"
++    agent_md.write_text("Judge the options.", encoding="utf-8")
++    spec_file = tmp_path / "sanitized-spec.md"
++    spec_file.write_text("the sanitized spec", encoding="utf-8")
++    brief_file = tmp_path / "architecture_brief.md"
++    brief_file.write_text("the options brief", encoding="utf-8")
++    valid = {"reviewer": "architecture-internal-reviewer", "severity": "low", "findings": [], "summary": "ok"}
++    captured = {}
++
++    def _run(argv, input=None, **kwargs):  # noqa: A002
++        if argv[0] != "codex":
++            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="not a git repo")
++        captured["prompt"], captured["argv"] = input, argv
++        Path(argv[argv.index("-o") + 1]).write_text(json.dumps(valid), encoding="utf-8")
++        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
++
++    monkeypatch.setattr(transport.subprocess, "run", Mock(side_effect=_run))
++
++    exit_code = review_via_codex.main([
++        "--role", "architecture_internal", "--worktree-root", str(tmp_path),
++        "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
++        "--spec-file", str(spec_file), "--brief-file", str(brief_file),
++    ])
++
++    assert exit_code == 0
++    result = json.loads(capsys.readouterr().out)
++    assert result["canonical_path"] == str(tmp_path / "architecture_internal_reply.json")
++    assert "the options brief" in captured["prompt"] and "the sanitized spec" in captured["prompt"]
++    assert "model_reasoning_effort=high" in captured["argv"]
++
++
++def test_brief_file_missing_for_architecture_internal_is_reported_not_raised(tmp_path: Path) -> None:
++    agent_md = tmp_path / "a.md"
++    agent_md.write_text("x", encoding="utf-8")
++    spec_file = tmp_path / "spec.md"
++    spec_file.write_text("x", encoding="utf-8")
++
++    exit_code = review_via_codex.main([
++        "--role", "architecture_internal", "--worktree-root", str(tmp_path),
++        "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
++        "--spec-file", str(spec_file),
++    ])
++
++    assert exit_code == 1
++
++
++def test_architecture_internal_refuses_an_unsanitized_spec(tmp_path: Path) -> None:
++    agent_md = tmp_path / "a.md"
++    agent_md.write_text("x", encoding="utf-8")
++    spec_file = tmp_path / "spec.md"
++    spec_file.write_text("# Spec\n\n## Internal Plan Review\n- rationale\n", encoding="utf-8")
++    brief_file = tmp_path / "brief.md"
++    brief_file.write_text("brief", encoding="utf-8")
++
++    exit_code = review_via_codex.main([
++        "--role", "architecture_internal", "--worktree-root", str(tmp_path),
++        "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
++        "--spec-file", str(spec_file), "--brief-file", str(brief_file),
++    ])
++
++    assert exit_code == 1
++    assert not (tmp_path / "architecture_internal_reply.json").exists()

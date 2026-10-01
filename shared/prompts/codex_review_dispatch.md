@@ -27,38 +27,38 @@ Never applies inside an Agent-tool-less Shipwright subagent (e.g.
 `section-builder`, `sub-iterate-runner`) — those keep deferring to the
 orchestrator exactly as they do today; this is for an orchestrator's own
 spawn site only (`shipwright-build` Step 6, `shipwright-plan` Step 5-int,
-`shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis).
-Plan Step 5-int-arch and iterate Step 3.5 (0b) point here only for the
-skip rule below; they are not dispatch sites.
+`shipwright-iterate` Step 8, `shipwright-iterate` campaign-mode 3f-bis),
+plus plan Step 5-int-arch and iterate Step 3.5 (0b), which dispatch the
+`architecture_internal` role below.
 
-**`architecture-internal-reviewer` has no Codex-CLI transport yet,
-deliberately.** Only a **real Codex CLI driver** skips it: there is no
-`architecture_internal` (or `architecture_review`) value for `--role` below.
-Reusing `role=plan_review`'s Codex leg was considered and rejected: it would
-collide on the same fixed canonical basename `plan_review_reply.json` the
-real Internal Plan Review pass already writes, and `plan_review`'s shape
-requires `--plan-file`, which this pass structurally never has (brief + spec
-only). Under Codex CLI, plan Step 5-int-arch and iterate's Internal
-Architecture Review sub-step both record
-`Ran: no (Codex CLI driver: no transport for architecture_internal yet)` and continue — a
-dedicated Codex role for this pass is an explicit follow-up (tracked:
-trg-2b46f709). **Under Codextender (and any other Claude Code session) the
-skip does NOT apply:** spawn
+**`architecture-internal-reviewer` has its own Codex role,
+`architecture_internal`** (own schema, own canonical basename
+`architecture_internal_reply.json`, inputs `--brief-file` + `--spec-file`,
+high reasoning effort). It is a role of its own because reusing
+`role=plan_review` would collide on the fixed basename
+`plan_review_reply.json` the real Internal Plan Review pass already writes,
+and `plan_review` requires `--plan-file`, which this pass structurally never
+has (brief + spec only). Only a **real Codex CLI driver** runs it through
+`review_via_codex.py`, via the `architecture_internal` call below;
+**under Codextender (and any other Claude Code session)** spawn
 `shipwright-plan:architecture-internal-reviewer` through the Agent tool like
-the other reviewers, so the pass shows `Ran: yes`.
+the other reviewers. Either way the pass shows `Ran: yes`.
 
 Only when **Codex CLI itself is driving** — run:
 
 ```bash
 uv run "{shared_root}/scripts/tools/review_via_codex.py" \
-  --role {spec|code|doubt|plan_review} \
+  --role {spec|code|doubt|plan_review|architecture_internal} \
   --worktree-root "{project_root}" \
   --agent-md "{the role's agent .md — plugins/shipwright-build/agents/spec-reviewer.md,
-    .../code-reviewer.md, .../doubt-reviewer.md, or
-    plugins/shipwright-plan/agents/opus-plan-reviewer.md}" \
-  --spec-file "{the spec/section-plan file — all four roles take this}" \
+    .../code-reviewer.md, .../doubt-reviewer.md,
+    plugins/shipwright-plan/agents/opus-plan-reviewer.md, or
+    plugins/shipwright-plan/agents/architecture-internal-reviewer.md}" \
+  --spec-file "{the spec/section-plan file — all five roles take this; for
+    architecture_internal the SANITIZED spec copy, never the real spec}" \
   --diff-file "{the diff file — required for role spec|code|doubt, omit for plan_review}" \
   --plan-file "{the plan file — required for role plan_review only}" \
+  --brief-file "{architecture_brief.md — required for role architecture_internal only}" \
   --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
     gpt-6.1-sol — optional; unset defers to this role's session env var,
@@ -82,7 +82,8 @@ review in that shell.
 
 `--spec-file` is always required. `--diff-file` is required for `spec`/`code`/
 `doubt` (omit `--plan-file`); `--plan-file` is required for `plan_review`
-(omit `--diff-file`) — the same two paths each agent `.md` already documents
+(omit `--diff-file`); `--brief-file` is required for `architecture_internal`
+(omit `--diff-file` and `--plan-file` — this pass never sees a plan) — the same two paths each agent `.md` already documents
 receiving from an Agent-tool spawn (code-reviewer REJECT, 2026-09-17: without
 these the transport has no channel for the review subject at all).
 
@@ -119,6 +120,15 @@ Parse the printed JSON line:
     argument and the record call errors out, silently losing the very
     evidence row this step exists to write (doubt-reviewer, medium,
     2026-09-20).
+  - **`role` is `architecture_internal`:** like `plan_review`, no
+    `--from` adapter exists (the `architecture_internal` row is metadata-only).
+    Read `canonical_path` directly, write its `findings`/`summary` into the
+    `## Internal Architecture Review` section (`Ran: yes`), and — on the
+    iterate side only, plan has no run_id — record the row:
+    `record_review_pass.py record --run-id "{run_id}" --review-type
+    architecture_internal --status completed --recorded-by
+    architecture-internal-reviewer --transport codex --transport-note
+    "{transport_note}"` (no `--model-tier`, as for the other Codex rows).
   - **`role` is `plan_review`:** there is no `record_review_pass.py --from`
     adapter for it (`plan_internal` is a metadata-only row with no payload
     file, see `review_payloads.py`) — read `canonical_path` directly and
@@ -134,7 +144,9 @@ Parse the printed JSON line:
     ordinary Agent-tool spawn"` — this is what makes a codex-answered pass and
     a failed-then-agent-answered pass distinguishable in `reviews.json`
     (External Review, openai #8).
-  - It cannot (Codex CLI is the driver): `record_review_pass.py record
+  - It cannot (Codex CLI is the driver): for `architecture_internal` record
+    `Ran: no (capability failure)` in the section and let Step 7's sweep
+    close the row; otherwise `record_review_pass.py record
     --run-id "{run_id}" --review-type {spec|code|doubt} --status not_run
     --disposition "codex transport failed: {reason}"` — never silently
     proceed as if reviewed.

@@ -78,6 +78,9 @@ ROLE_TO_CODEX_CONFIG_KEY: dict[str, str] = {
     "code": "codex_review",
     "doubt": "codex_review",
     "plan_review": "codex_plan_review",
+    # Same Claude-side tier role as plan_review (this pass is not a fifth
+    # role), so it shares the plan reviewer's Codex model key.
+    "architecture_internal": "codex_plan_review",
 }
 
 #: role -> the env var carrying a SESSION-scoped override for that role's
@@ -87,6 +90,7 @@ ROLE_TO_CODEX_ENV_VAR: dict[str, str] = {
     "code": "SHIPWRIGHT_CODEX_REVIEW_MODEL",
     "doubt": "SHIPWRIGHT_CODEX_REVIEW_MODEL",
     "plan_review": "SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL",
+    "architecture_internal": "SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL",
 }
 
 def _check_role_tables_complete(

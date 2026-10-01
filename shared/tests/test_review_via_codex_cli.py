@@ -220,3 +220,71 @@ def test_invalid_role_rejected_by_argparse(tmp_path: Path) -> None:
             "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
             "--spec-file", str(agent_md),
         ])
+
+
+def test_architecture_internal_takes_brief_and_spec_never_plan_or_diff(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _patch_available(monkeypatch)
+    agent_md = tmp_path / "architecture-internal-reviewer.md"
+    agent_md.write_text("Judge the options.", encoding="utf-8")
+    spec_file = tmp_path / "sanitized-spec.md"
+    spec_file.write_text("the sanitized spec", encoding="utf-8")
+    brief_file = tmp_path / "architecture_brief.md"
+    brief_file.write_text("the options brief", encoding="utf-8")
+    valid = {"reviewer": "architecture-internal-reviewer", "severity": "low", "findings": [], "summary": "ok"}
+    captured = {}
+
+    def _run(argv, input=None, **kwargs):  # noqa: A002
+        if argv[0] != "codex":
+            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="not a git repo")
+        captured["prompt"], captured["argv"] = input, argv
+        Path(argv[argv.index("-o") + 1]).write_text(json.dumps(valid), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(transport.subprocess, "run", Mock(side_effect=_run))
+
+    exit_code = review_via_codex.main([
+        "--role", "architecture_internal", "--worktree-root", str(tmp_path),
+        "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
+        "--spec-file", str(spec_file), "--brief-file", str(brief_file),
+    ])
+
+    assert exit_code == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["canonical_path"] == str(tmp_path / "architecture_internal_reply.json")
+    assert "the options brief" in captured["prompt"] and "the sanitized spec" in captured["prompt"]
+    assert "model_reasoning_effort=high" in captured["argv"]
+
+
+def test_brief_file_missing_for_architecture_internal_is_reported_not_raised(tmp_path: Path) -> None:
+    agent_md = tmp_path / "a.md"
+    agent_md.write_text("x", encoding="utf-8")
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text("x", encoding="utf-8")
+
+    exit_code = review_via_codex.main([
+        "--role", "architecture_internal", "--worktree-root", str(tmp_path),
+        "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
+        "--spec-file", str(spec_file),
+    ])
+
+    assert exit_code == 1
+
+
+def test_architecture_internal_refuses_an_unsanitized_spec(tmp_path: Path) -> None:
+    agent_md = tmp_path / "a.md"
+    agent_md.write_text("x", encoding="utf-8")
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text("# Spec\n\n## Internal Plan Review\n- rationale\n", encoding="utf-8")
+    brief_file = tmp_path / "brief.md"
+    brief_file.write_text("brief", encoding="utf-8")
+
+    exit_code = review_via_codex.main([
+        "--role", "architecture_internal", "--worktree-root", str(tmp_path),
+        "--agent-md", str(agent_md), "--out-dir", str(tmp_path),
+        "--spec-file", str(spec_file), "--brief-file", str(brief_file),
+    ])
+
+    assert exit_code == 1
+    assert not (tmp_path / "architecture_internal_reply.json").exists()
