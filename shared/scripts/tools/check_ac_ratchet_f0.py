@@ -74,6 +74,17 @@ def _git(root: Path, *args: str) -> bytes:
     return proc.stdout
 
 
+def _has_symlinked_ancestor(root: Path, path: Path) -> bool:
+    """True when a directory BETWEEN ``root`` and ``path`` is a symlink. Reading or writing
+    through one would leave the project (source) or the scratch root (destination)."""
+    parent = path.parent
+    while parent != root and root in parent.parents:
+        if parent.is_symlink():
+            return True
+        parent = parent.parent
+    return False
+
+
 def snapshot_tree(root: Path, dest: Path) -> int:
     """Copy every tracked-or-untracked, non-ignored file of ``root`` into ``dest``.
 
@@ -87,6 +98,8 @@ def snapshot_tree(root: Path, dest: Path) -> int:
         rel = raw.decode("utf-8", "surrogateescape")
         src = root / rel
         target = dest / rel
+        if _has_symlinked_ancestor(root, src):
+            continue  # git cannot track a path beneath a link; a stale artifact, never copy
         if src.is_symlink():
             # Git commits the LINK, not what it points at - reproduce it, never follow it
             # (a followed link would also pull in content from outside the tree). A host

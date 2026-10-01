@@ -93,6 +93,40 @@ class TestSymlinks:
         assert (dest / "dangling.txt").is_symlink()
 
 
+class TestSymlinkedAncestors:
+    def test_nothing_is_copied_through_a_symlinked_directory(self, tmp_path):
+        import pytest
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "leak.py").write_text("secret = 1", encoding="utf-8")
+        root = _project(tmp_path)
+        try:
+            (root / "viadir").symlink_to(outside, target_is_directory=True)
+        except OSError:
+            pytest.skip("host cannot create symlinks")
+        dest = tmp_path / "dest"
+        dest.mkdir()
+        mod.snapshot_tree(root, dest)
+        assert not (dest / "viadir" / "leak.py").exists()
+        assert not any(outside.glob("*.tmp"))  # and nothing was written outside scratch
+        assert mod._has_symlinked_ancestor(root, root / "viadir" / "leak.py")
+
+    def test_a_link_between_root_and_path_is_detected_on_any_host(self, tmp_path, monkeypatch):
+        root = _project(tmp_path)
+        linked = root / "plugins"
+        real = Path.is_symlink
+        monkeypatch.setattr(Path, "is_symlink", lambda self: self == linked or real(self))
+        assert mod._has_symlinked_ancestor(root, linked / "shipwright-x" / "tests" / "test_a.py")
+        # the root itself being a link is the caller's choice, not an ancestor INSIDE it
+        monkeypatch.setattr(Path, "is_symlink", lambda self: self == root or real(self))
+        assert not mod._has_symlinked_ancestor(root, linked / "shipwright-x" / "pyproject.toml")
+
+    def test_ordinary_nested_paths_are_not_flagged(self, tmp_path):
+        root = _project(tmp_path)
+        nested = root / "plugins" / "shipwright-x" / "tests" / "test_a.py"
+        assert not mod._has_symlinked_ancestor(root, nested)
+
+
 class TestRefusals:
     def test_no_retained_run_is_an_infra_fault(self, tmp_path, capsys):
         root = _project(tmp_path)
