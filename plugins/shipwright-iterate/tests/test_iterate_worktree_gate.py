@@ -127,7 +127,6 @@ def test_write_targets(repo, tmp_path):
     "git status",
     "git -C . log --oneline",
     "git worktree remove --force .worktrees/s && git branch -D iterate/s",
-    "git fetch origin",
     "ls -la",
     "uv run /x/shared/scripts/tools/list_iterate_branches.py --project-root .",
 ])
@@ -151,6 +150,9 @@ def test_shell_allowed_before_setup(command):
     "git branch -D x -f",
     "git worktree add .worktrees/y",
     "git remote add o u",
+    "git fetch origin",
+    "git ls-remote origin",
+    "git remote show origin",
     "git config user.name x",
     "git stash",
     "git checkout -- a.txt",

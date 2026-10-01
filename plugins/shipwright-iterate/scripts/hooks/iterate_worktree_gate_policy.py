@@ -40,10 +40,11 @@ _READ_ONLY_PROGRAMS = frozenset({
     "where", "type", "true", "test",
     "set-location", "get-location", "get-childitem", "get-content", "test-path",
 })
-#: ``git`` subcommands that only read (``fetch`` writes refs, not the tree).
+#: ``git`` subcommands that only read local state (no ``fetch``/``ls-remote``: they contact a remote;
+#: setup_iterate_worktree.py does its own fetch).
 _GIT_READ_SUBCOMMANDS = frozenset({
     "status", "log", "diff", "show", "rev-parse", "rev-list", "merge-base",
-    "describe", "ls-files", "ls-remote", "for-each-ref", "fetch",
+    "describe", "ls-files", "for-each-ref",
 })
 #: Subcommands allowed only in the forms the skill's pre-setup steps need.
 #: B1 "Abandon" removes a stale worktree/branch before a fresh setup, so
@@ -53,7 +54,7 @@ _GIT_BRANCH_FLAGS = frozenset({
     "-d", "-D", "--delete", "--list", "--show-current", "-a", "-r", "-v", "-vv",
     "--merged", "--no-merged",
 })
-_GIT_REMOTE_ACTIONS = frozenset({"-v", "show", "get-url"})
+_GIT_REMOTE_ACTIONS = frozenset({"-v", "get-url"})
 _GIT_VALUE_FLAGS = ("-C", "-c", "--git-dir", "--work-tree")
 #: Skill scripts that read project state only (B1 resume menu, health, scoring).
 _SAFE_SCRIPTS = frozenset({
@@ -108,8 +109,8 @@ def _git_is_safe(segment: list[str]) -> bool:
         return False
     sub, *args = _git_args(segment) or [""]
     if sub in _GIT_READ_SUBCOMMANDS:
-        # ``--output=<file>`` writes a file; a ``src:dst`` fetch refspec creates a local ref.
-        return not any(a.startswith(("--output", "--upload-pack", "--receive-pack", "--ext-diff", "--textconv")) for a in args) and not (sub == "fetch" and any(":" in a for a in args))
+        # ``--output=<file>`` writes a file; the others run a configured command.
+        return not any(a.startswith(("--output", "--upload-pack", "--receive-pack", "--ext-diff", "--textconv")) for a in args)
     if sub == "worktree":
         if not args or args[0] not in _GIT_WORKTREE_ACTIONS:
             return False
