@@ -116,17 +116,33 @@ generate_file(project_root)
 """
 
 
-def regenerate_manifest(project_root: Path) -> None:
-    plugin_root = project_root / "plugins" / "shipwright-compliance"
+_REGEN_TIMEOUT_SECONDS = 900
+
+
+def regenerate_manifest(project_root: Path, plugin_root: Path | None = None) -> None:
+    """Regenerate ``project_root``'s manifest in place. ``plugin_root`` (default: the
+    compliance plugin inside ``project_root``) lets a caller point the generator CODE at
+    one checkout and the DATA at another — ``check_ac_ratchet_f0.py`` regenerates into a
+    scratch copy without paying for a second plugin venv."""
+    # An override points at a checkout other than the data root: never let `uv run` re-lock
+    # (and so rewrite) that checkout's tracked uv.lock, and never wait on it forever.
+    overridden = plugin_root is not None
+    if plugin_root is None:
+        plugin_root = project_root / "plugins" / "shipwright-compliance"
     script_path = project_root / ".ci-junit" / "_regen_test_links.py"
     script_path.parent.mkdir(parents=True, exist_ok=True)
     script_path.write_text(_REGEN_SCRIPT, encoding="utf-8")
-    proc = subprocess.run(  # nosec B603,B607 - fixed argv, shell=False
-        ["uv", "run", "--project", str(plugin_root), "python", str(script_path),
-         str(plugin_root), str(project_root)],
-        cwd=project_root, capture_output=True, text=True, encoding="utf-8",
-        errors="replace", check=False, shell=False,
-    )
+    try:
+        proc = subprocess.run(  # nosec B603,B607 - fixed argv, shell=False
+            ["uv", "run", *(["--frozen"] if overridden else []), "--project", str(plugin_root),
+             "python", str(script_path), str(plugin_root), str(project_root)],
+            cwd=project_root, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", check=False, shell=False, timeout=_REGEN_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DriftCheckError(
+            f"test_links.generate_file() timed out after {_REGEN_TIMEOUT_SECONDS}s"
+        ) from exc
     if proc.returncode != 0:
         raise DriftCheckError(
             f"test_links.generate_file() failed (uv run exit {proc.returncode}): "
