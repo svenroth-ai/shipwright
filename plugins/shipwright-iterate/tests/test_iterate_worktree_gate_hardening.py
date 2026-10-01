@@ -118,3 +118,15 @@ def test_project_the_skill_would_refuse_is_never_armed(repo, config):
 def test_iterate_history_alone_makes_a_project_eligible(repo):
     (repo / "shipwright_run_config.json").write_text('{"iterate_history": [{"run_id": "r"}]}', encoding="utf-8")
     assert handle_payload(_prompt(repo)) is not None
+
+
+@COVERS
+@pytest.mark.parametrize("command", [
+    "echo hi\rRemove-Item a.txt",
+    "echo hi\r\nRemove-Item a.txt",
+    "echo hi\nrm x",
+])
+def test_line_breaks_never_hide_a_second_statement(command):
+    """A bare CR is a statement break in PowerShell; shlex would read it as whitespace."""
+    assert not shell_is_preflight_safe({"command": command})
+    assert not shell_is_preflight_safe({"command": command.replace("echo hi", "git status")})
