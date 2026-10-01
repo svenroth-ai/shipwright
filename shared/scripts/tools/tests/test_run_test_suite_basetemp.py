@@ -52,3 +52,27 @@ def test_exec_pins_basetemp_to_a_subdir_of_the_units_temp(monkeypatch, tmp_path)
     assert basetemp.parent == unit_tmp
     # the report path the runner reads back is NOT inside the wiped directory
     assert Path(argv[argv.index("--junit-xml") + 1]).parent == unit_tmp
+
+
+def test_the_recorded_retry_command_carries_a_short_basetemp(monkeypatch, tmp_path):
+    """The `reproduce me` a race card shows must keep the path-length workaround, or a
+    human re-running it on Windows can hit the very MAX_PATH failure this fixes."""
+    (tmp_path / "shared" / "tests").mkdir(parents=True)
+    plugin = tmp_path / "plugins" / "shipwright-alpha"
+    (plugin / "tests").mkdir(parents=True)
+    (plugin / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    for d in ("shared/scripts/tests", "shared/scripts/tools/tests", "integration-tests"):
+        (tmp_path / d).mkdir(parents=True)
+    attempts = {}
+
+    def fake_exec(unit, project_root, xdist_workers, tmp_dir, timeout=None,
+                  cancel_event=None):
+        attempts[unit.id] = attempts.get(unit.id, 0) + 1
+        red = unit.id == "shared/tests" and attempts[unit.id] == 1
+        return (1 if red else 0), "out", 0.01, True, False, False
+
+    monkeypatch.setattr(mod, "_exec", fake_exec)
+    result = mod.run_suite(tmp_path, mod.SuiteConfig(), preflight=False)
+
+    retried = next(r for r in result.results if r.unit_id == "shared/tests")
+    assert retried.race and "--basetemp" in (retried.retry_cmd or "")

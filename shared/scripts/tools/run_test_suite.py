@@ -353,8 +353,8 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             keep_xdist = res.outcome == INFRA
             workers = _xdist_workers(res.unit_id) if keep_xdist else None
             _clear_failed_attempt_coverage(unit)
-            # The retry's argv, minus run-local temp/report paths - a guessed one misleads.
-            res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers))
+            repro_temp = Path(tempfile.gettempdir()) / "swf0-repro"  # short, like the real one
+            res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers, basetemp=repro_temp))
             retry_weight = _xdist_workers(res.unit_id) if keep_xdist else 1
             retry_state = "identical-shape-infra" if keep_xdist else "authoritative-serial"
             _emit_unit_event(stream, run_id=run_id, event="start", unit_id=res.unit_id,
