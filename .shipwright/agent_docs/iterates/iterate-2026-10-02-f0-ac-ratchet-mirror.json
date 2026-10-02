@@ -1,0 +1,66 @@
+{
+  "run_id": "iterate-2026-10-02-f0-ac-ratchet-mirror",
+  "date": "2026-10-01T23:20:36.582777Z",
+  "event_at": "2026-10-01T14:49:27.384043+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/f0-ac-ratchet-mirror",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-02-f0-ac-ratchet-mirror",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "snapshot copies tracked+untracked non-ignored working-tree bytes, skips ignored/deleted",
+        "disposition": "tested",
+        "evidence": "test_check_ac_ratchet_f0.py::TestSnapshotTree PASSED"
+      },
+      {
+        "behavior": "no/red retained F0 run is refused with exit 2",
+        "disposition": "tested",
+        "evidence": "test_check_ac_ratchet_f0.py::TestRefusals PASSED"
+      },
+      {
+        "behavior": "regeneration failure -> exit 2, scratch removed",
+        "disposition": "tested",
+        "evidence": "TestRefusals::test_regeneration_failure... PASSED"
+      },
+      {
+        "behavior": "ratchet reads the REGENERATED manifest from scratch; real tree + committed manifest untouched; exit code relayed",
+        "disposition": "tested",
+        "evidence": "TestNoSelfVouching PASSED (2)"
+      },
+      {
+        "behavior": "stage_f0_evidence.main behaviour unchanged after extracting validated_junit_reports",
+        "disposition": "tested",
+        "evidence": "test_stage_f0_evidence.py 10 PASSED"
+      },
+      {
+        "behavior": "real end-to-end: regenerate from F0's real retained JUnit then real ratchet -> clean; removing a baselined unbound AC -> blocked exit 1",
+        "disposition": "tested",
+        "evidence": "F0 run + CLI surface probe (exit 0) and negative probe (exit 1, new_unbound FR-01.03/AC03)"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/check_ac_ratchet_f0.py --project-root . --run-id iterate-2026-10-02-f0-ac-ratchet-mirror",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\f0-ac-ratchet-mirror\\.shipwright\\runs\\iterate-2026-10-02-f0-ac-ratchet-mirror\\surface_verification.log",
+    "timestamp": "2026-10-01T22:47:36.552Z",
+    "attempts": 1
+  }
+}

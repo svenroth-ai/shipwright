@@ -4292,7 +4292,16 @@ documented in the script's own module docstring, including why arm 1 alone
 does not close the two-PR sequence.
 
 Neither feeder check is mirrored by `scripts/verify_local.py`, for the same
-structural reason as the Keystone gate (`CI_ONLY_GATES` in that script).
+structural reason as the Keystone gate (`CI_ONLY_GATES` in that script). The
+**AC coverage ratchet is mirrored by F0 instead**, after the suite
+(`shared/scripts/tools/check_ac_ratchet_f0.py`, `iterate-2026-10-02-f0-ac-ratchet-mirror`):
+the manifest is regenerated into a **scratch copy** of the working tree
+(`.scratch/`) from the working tree's `@covers` tags, staged with F0's retained
+JUnit so it has CI's shape, and the real `check_ac_coverage_ratchet.py` is
+pointed at it. The committed manifest never vouches for itself and the
+manifest/evidence are never written in the real tree. The
+orphan-binding and keystone arms stay CI-only (they need a PR merge base), as
+does `Repair-PR safety (gate)` (its checker comes from the base revision).
 
 **A third step closes the job — advisory-only, never a hard gate.**
 `Check-body suspects (advisory, non-blocking)`

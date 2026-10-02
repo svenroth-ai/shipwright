@@ -131,11 +131,13 @@ CI_ONLY_GATES = {
         "and has no merge base to diff against outside a PR."
     ),
     "AC coverage ratchet (gate)": (
-        "Same structural reason as the Keystone gate above: it reads which ACs are "
-        "currently bound from the SAME regenerated traceability manifest, so a local "
-        "invocation would ratchet the baseline against execution claims nobody "
-        "re-verified. `check_ac_coverage_ratchet.py` is still runnable directly "
-        "(e.g. to regenerate the baseline via --write); it is only not mirrored here."
+        "Not mirrored HERE, but mirrored by F0: it needs F0's retained JUnit, which "
+        "does not exist until the suite has run, and this wrapper runs before it. F0's "
+        "post-suite step (`shared/scripts/tools/check_ac_ratchet_f0.py`) regenerates the "
+        "manifest into a scratch copy of the working tree and runs the ratchet "
+        "against that, so the committed manifest never vouches for itself. Running "
+        "`check_ac_coverage_ratchet.py` directly grades the COMMITTED manifest and is "
+        "only for regenerating the baseline via --write."
     ),
     "Orphan AC binding (gate)": (
         "Same structural reason as the Keystone gate above, plus the same "
