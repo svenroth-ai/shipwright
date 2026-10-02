@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC-1..AC-8 each map to code+test: failed_only_ok/retry branch (test_suite_retry), merge (test_suite_failed_only), isolation (build_command tests), real pytest (integration). Resume ACs were cut by review and recorded in the spec."},
+{"name":"Error Handling","verdict":"pass","note":"Every doubt (no cache, count mismatch, rc 5, unmergeable report, >10 failures, INFRA) falls back to the pre-existing whole-unit retry; cancel path preserved and raises KeyboardInterrupt as before."},
+{"name":"Security Basics","verdict":"pass","note":"No new external input: reads our own pytest cache/JUnit (ET.parse of locally produced files, nosec noted), argv lists only, no shell."},
+{"name":"Test Quality","verdict":"pass","note":"Outcome-based: executed-test marker files prove ok tests ran once and red ones twice under real pytest+xdist; 3 consecutive green runs; fakes only for orchestration branches."},
+{"name":"Performance Basics","verdict":"pass","note":"Narrow retry replaces a ~22 min whole-unit run for small red sets; one extra XML parse per red unit."},
+{"name":"Naming & Structure","verdict":"pass","note":"run_test_suite.py 529->485 lines (bloat cap respected); new modules 128/134 lines; RETRY_* constants re-exported so existing imports hold."},
+{"name":"Affected Boundaries","verdict":"pass","note":"pytest cache lastfailed -> read_lastfailed and merge_junit -> Retention/stage_f0_evidence; both exercised with real pytest output in the integration test."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff: no findings; the module-level skip is guarded by a CI hard-fail."}
+]}

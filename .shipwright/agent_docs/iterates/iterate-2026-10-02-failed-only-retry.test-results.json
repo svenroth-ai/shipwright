@@ -1,0 +1,132 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-02-failed-only-retry",
+    "date": "2026-10-02",
+    "unit": {
+      "status": "passed",
+      "passed": 21064,
+      "total": 21155
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 573,
+      "total": 573
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-02-failed-only-retry/surface_verification.json",
+      "timestamp": "2026-10-01T23:40:16.448102+00:00",
+      "justification": "CLI/library mechanics of the F0 test runner; no startable web/api surface. The real-pytest integration test is the empirical probe."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 red tests alone re-run (--lf --lfnf=none), race=True retry_kind=failed-only",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_retry.py::test_failed_only_retry_runs_just_the_red_tests_and_appends_coverage PASSED"
+        },
+        {
+          "behavior": "AC-1 real pytest+xdist: 2 red of 4 re-run only the red",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_f0_failed_only_real_pytest.py::test_two_red_of_four_rerun_only_the_red_and_the_report_and_coverage_hold PASSED"
+        },
+        {
+          "behavior": "AC-2 fallback: no cache / count mismatch / >10 / rc5 / unmergeable / short or long re-run",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_retry.py (test_without_a_cache..., test_a_count_mismatch..., test_wide_failure..., test_rc5..., test_an_unmergeable..., test_a_short_rerun..., test_a_rerun_that_ran_more...) PASSED"
+        },
+        {
+          "behavior": "AC-2 refuse narrow path for <error> testcases, collection errors, -x/maxfail, crashed worker",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_failed_only.py::test_failed_only_count_is_zero_when_any_red_testcase_is_an_error + test_suite_retry.py::test_an_incomplete_first_attempt_is_retried_whole PASSED"
+        },
+        {
+          "behavior": "AC-2 INFRA never takes failed-only path",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_retry.py::test_an_infra_fault_never_takes_the_failed_only_path PASSED"
+        },
+        {
+          "behavior": "AC-3 coverage appended on narrow retry (union proven by executed line), cleared on whole retry",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_f0_failed_only_real_pytest.py (line 2 of only_ok.py survives) + test_suite_retry.py (h.cleared) PASSED"
+        },
+        {
+          "behavior": "AC-4 merged report keeps whole unit, drops failures, retry wins on collision",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_failed_only.py::test_merge_* PASSED"
+        },
+        {
+          "behavior": "AC-5 still-red is red with the retry's output; summary and block header say failed-only",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_retry.py::test_still_red_after_the_narrow_retry_is_red_with_the_retrys_output + test_the_console_names_a_failed_only_retry PASSED"
+        },
+        {
+          "behavior": "AC-6 build_command default byte-identical; cache_dir replaces -p no:cacheprovider",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_failed_only.py::test_build_command_default_is_unchanged_and_cache_dir_replaces_the_disable_flag PASSED"
+        },
+        {
+          "behavior": "cancellation during narrow try and fallback raises KeyboardInterrupt, records nothing",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_retry.py::test_cancellation_propagates_without_recording_a_result[1,2] PASSED"
+        },
+        {
+          "behavior": "fallback runs under heartbeat and announces itself",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_retry.py::test_the_fallback_runs_under_the_heartbeat_and_announces_itself PASSED"
+        },
+        {
+          "behavior": "AC-8 run_test_suite.py does not grow (529 -> 486); existing F0 tests green (CLI e2e module list updated)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py PASSED; full F0 21155 tests green"
+        },
+        {
+          "behavior": "cross-component: real runner run_suite + real uv/pytest/xdist compose with the retry",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/scripts/tools/tests/test_f0_failed_only_real_pytest.py (4 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-02-failed-only-retry",
+    "commit": "0308ebceec03aea73b389438358d12ace4f2a0d9",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

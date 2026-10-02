@@ -31,6 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from scripts.tools.suite_retry import RETRY_FAILED_ONLY  # noqa: E402
 from scripts.tools.suite_units import INFRA, PASS, TEST_FAILURE, UV_RUN  # noqa: E402
 
 TRUNCATION_MARKER = "FAULT: output tail truncated to the bounded diagnostic limit\n"
@@ -207,11 +208,15 @@ def render_run_report(result) -> list[str]:
     lines = []
     for res in sorted(result.results, key=lambda r: -r.seconds):
         note = "  [passed on a retry - gate not stopped]" if res.race else ""
+        if getattr(res, "retry_kind", None) == RETRY_FAILED_ONLY:  # only the red tests re-ran
+            note += " [failed-only retry: the unit's other tests were not re-run]"
         lines.append(f"  {_TAGS[res.outcome]:5} {res.seconds:7.1f}s  "
                      f"{res.unit_id}{note}")
     for res in result.results:  # output for what failed AND for a retry (its evidence)
         if res.outcome != PASS or res.race:
             serial = f", retry rc={res.serial_rc}" if res.serial_rc is not None else ""
+            if getattr(res, "retry_kind", None) == RETRY_FAILED_ONLY:
+                serial += ", failed-only retry"
             output = ((TRUNCATION_MARKER if getattr(res, "truncated", False) else "")
                       + res.output)
             lines.append(f"\n{'=' * 70}\n{res.unit_id} "

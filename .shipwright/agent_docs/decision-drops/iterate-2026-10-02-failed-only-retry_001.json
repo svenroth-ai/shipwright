@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-02-failed-only-retry",
+  "date": "2026-10-02",
+  "section": "Iterate — change: F0 failed-only retry",
+  "title": "F0 retries only the red tests of a unit that failed in parallel",
+  "context": "A unit red in its parallel F0 attempt was re-run whole and serial (shared/tests ~20 min). Measured over 146 red unit-attempts: 66% passed alone (races), most real reds had 1-2 red tests.",
+  "decision": "Retry only the red tests (pytest --lf --lfnf=none --cov-append against the first attempt's own per-unit cache) when the cache's lastfailed count equals the JUnit failure count (0<n<=10). Refuse for <error> testcases, collection errors, stopped runs, crashed workers, or a re-run whose testcase count is not exactly the red count; every doubt falls back to the whole-unit retry. Cross-invocation resume deferred (triage trg-ab3de9ab).",
+  "consequences": "A residual race costs seconds instead of the whole unit. Order-dependent and import-order failures can pass alone, so such a green is still filed as a race (retry_kind=failed-only) and CI stays the authoritative full serial gate. The pytest cache is now enabled in every F0 attempt.",
+  "rationale": "In-run only: no persisted state, nothing that can claim a green tree that never ran. Reviews (internal, external, doubt) drove the scope down from resume.",
+  "rejected": "Cross-invocation resume with a 5-file change bound: reviews found false greens after non-test source changes, non-Python inputs invisible to a .py hash, and staged evidence claiming a full run.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

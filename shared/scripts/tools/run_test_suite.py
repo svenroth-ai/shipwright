@@ -71,6 +71,10 @@ from scripts.tools.suite_report import (  # noqa: E402
     render_retry_block, render_run_report, reproduce_command, suite_command,
 )
 from scripts.tools.suite_retention import Retention  # noqa: E402
+from scripts.tools.suite_retry import (  # noqa: E402,F401  (re-export: one import site)
+    RETRY_FAILED_ONLY, RETRY_INFRA, RETRY_SERIAL, RetryOps,
+    retry_red_units as _retry_red_units,
+)
 from scripts.tools.suite_host_resources import (  # noqa: E402
     HostLeaseError, f0_cpu_lease, normalize_cpu_weight, uv_warmup_lease,
 )
@@ -93,9 +97,6 @@ from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import si
 )
 
 _RC_SPAWN_FAILED = 126
-#: how a unit recovered on its retry - purely for an honest operator message
-RETRY_SERIAL = "serial"   # a test failure that passed when run alone, without xdist
-RETRY_INFRA = "infra"     # a transient infrastructure fault that did not reproduce
 
 
 @dataclass
@@ -130,18 +131,23 @@ class SuiteResult:
 
 
 def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = None,
-                  basetemp: Path | None = None) -> list[str]:
-    """argv only - never a shell string (config/paths must not reach a shell)."""
+                  basetemp: Path | None = None, cache_dir: Path | None = None,
+                  extra_args: tuple[str, ...] = ()) -> list[str]:
+    """argv only - never a shell string (config/paths must not reach a shell).
+
+    `cache_dir` keeps pytest's cache in the unit's own temp (`suite_failed_only`), never
+    the repo's `.pytest_cache`; without it the cache stays disabled, as always."""
     cmd = [*UV_RUN, "--with", "pytest", "--with", "pytest-mock"]
     for dep in unit.extra_deps:
         cmd += ["--with", dep]
     if xdist_workers:
         cmd += ["--with", "pytest-xdist"]  # provisioned, not assumed (AC12)
-    cmd += ["pytest", unit.target, "-q", "-p", "no:cacheprovider"]
+    cmd += ["pytest", unit.target, "-q"]
+    cmd += ["-o", f"cache_dir={cache_dir}"] if cache_dir else ["-p", "no:cacheprovider"]
     # Coverage args go AFTER the markers: a CLI `-m` REPLACES the pyproject default,
     # so anything wedged between `-m` and its expression would silently rewrite the
     # shared tier's selection rather than add to it.
-    cmd += [*unit.markers, *unit.cov_args]
+    cmd += [*unit.markers, *unit.cov_args, *extra_args]
     if xdist_workers:
         cmd += ["-n", str(xdist_workers)]
     if report is not None:  # existence of this file PROVES pytest ran (see docstring)
@@ -183,6 +189,7 @@ def warm_up(project_root: Path) -> None:
 def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Path,
           timeout: int | None = None,
           cancel_event: threading.Event | None = None,
+          cache_dir: Path | None = None, extra_args: tuple[str, ...] = (),
           ) -> tuple[int, str, float, bool, bool, bool]:
     """Run one unit. Returns rc, output, seconds, pytest_ran, truncated, cancelled.
 
@@ -205,7 +212,8 @@ def _exec(unit: Unit, project_root: Path, xdist_workers: int | None, tmp_dir: Pa
         result = _run_process(
             # Short basetemp, a SUBdir (pytest wipes it): pytest-of-<user>/pytest-N/ +
             # xdist's popen-gwN/ pushed fixture trees past MAX_PATH in the parallel attempt only.
-            build_command(unit, xdist_workers, report, tmp_dir / "t"),
+            build_command(unit, xdist_workers, report, tmp_dir / "t",
+                          cache_dir or tmp_dir / "c", extra_args),
             cwd=project_root / unit.cwd, env=env,
             log_path=log_path, timeout=timeout,
             cancel_event=cancel_event,
@@ -341,69 +349,17 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
         )
 
         # Retries - AFTER the pool drains ("serially" is literally true), clean temp dir.
-        # TEST failure: re-run WITHOUT xdist (authoritative old-F0 shape). INFRA fault:
-        # re-run with the IDENTICAL shape, so a deterministic fault (rc 5, usage error,
-        # unprovisionable xdist) still fails and only a transient one recovers.
-        by_id = {u.id: u for u in units}
-        completed_units = sum(res.outcome == PASS for res in results)
-        for idx, res in enumerate(results):
-            if res.outcome == PASS:
-                continue
-            unit = by_id[res.unit_id]
-            keep_xdist = res.outcome == INFRA
-            workers = _xdist_workers(res.unit_id) if keep_xdist else None
-            _clear_failed_attempt_coverage(unit)
-            repro_temp = Path(tempfile.gettempdir()) / "swf0-repro"  # short, like the real one
-            res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers, basetemp=repro_temp))
-            retry_weight = _xdist_workers(res.unit_id) if keep_xdist else 1
-            retry_state = "identical-shape-infra" if keep_xdist else "authoritative-serial"
-            _emit_unit_event(stream, run_id=run_id, event="start", unit_id=res.unit_id,
-                             weight=retry_weight or 1, phase="serial-retry",
-                             retry_kind=retry_state)
-            with _heartbeat_while(
-                    heartbeat_seconds=heartbeat_seconds, run_id=run_id,
-                    completed=completed_units, total=len(units),
-                    initial_completed=len(results),
-                    phase="serial-retry",
-                    unit_id=res.unit_id, stream=stream):
-                rc, out, retry_secs, ran, retry_truncated, retry_cancelled = _exec(
-                    unit, project_root, workers, tmp_root / "s" / f"u{idx}",
-                    config.timeout_seconds, cancel_event)
-            res.serial_rc = rc
-            if retry_cancelled:
-                res.retry_evidence_path, error = _retain_attempt_evidence(
-                    project_root, run_id=run_id, unit_id=unit.id, phase="cancelled-retry",
-                    rc=rc, seconds=retry_secs, output=out, pytest_ran=ran,
-                    truncated=retry_truncated)
-                res.evidence_error = res.evidence_error or error
-                _emit_unit_event(
-                    stream, run_id=run_id, event="complete", unit_id=res.unit_id,
-                    weight=retry_weight or 1, outcome="cancelled",
-                    seconds=retry_secs, phase="serial-retry",
-                    retry_kind=retry_state)
-                raise KeyboardInterrupt
-            # retry_kind + the extra wall-clock apply either way (doubt review).
-            res.retry_kind = RETRY_INFRA if keep_xdist else RETRY_SERIAL
-            res.seconds += retry_secs
-            if classify(rc, ran) == PASS:
-                res.race = True  # keep the FIRST output: it is the evidence
-                res.outcome = PASS
-            else:
-                res.outcome, res.output = classify(rc, ran), out
-                res.truncated = retry_truncated
-                res.cancelled = retry_cancelled
-                res.retry_evidence_path, error = _retain_attempt_evidence(
-                    project_root, run_id=run_id, unit_id=unit.id, phase="retry",
-                    rc=rc, seconds=retry_secs, output=out, pytest_ran=ran,
-                    truncated=retry_truncated)
-                res.evidence_error = res.evidence_error or error
-            if retention is not None:  # supersedes the initial attempt's report
-                retention.record(unit, tmp_root / "s" / f"u{idx}" / "r.xml", res.outcome)
-            _emit_unit_event(stream, run_id=run_id, event="complete",
-                             unit_id=res.unit_id, weight=retry_weight or 1,
-                             outcome=res.outcome, seconds=retry_secs,
-                             phase="serial-retry", retry_kind=retry_state)
-            completed_units += 1
+        # TEST failure: re-run the red tests alone when the pytest cache provably describes
+        # the attempt, else the whole unit WITHOUT xdist (authoritative old-F0 shape).
+        # INFRA fault: IDENTICAL shape, so a deterministic fault still fails.
+        _retry_red_units(results, {u.id: u for u in units}, RetryOps(
+            exec_fn=_exec, retain_fn=_retain_attempt_evidence,
+            clear_cov_fn=_clear_failed_attempt_coverage, build_fn=build_command,
+            repro_fn=reproduce_command, emit_fn=_emit_unit_event,
+            heartbeat_fn=_heartbeat_while, classify_fn=classify, workers_fn=_xdist_workers),
+            project_root=project_root, tmp_root=tmp_root, timeout=config.timeout_seconds,
+            cancel_event=cancel_event, stream=stream,
+            heartbeat_seconds=heartbeat_seconds, run_id=run_id, retention=retention)
 
     if retention is not None:
         retention.publish()
@@ -420,7 +376,8 @@ def unrecorded_races(result: SuiteResult) -> list[UnitResult]:
     only when the parallel outcome was a genuine pytest TEST failure - every other
     class (rc 2/3/4/5, timeout, spawn failure, rc 1 with no report) is INFRA.
     """
-    return [r for r in result.results if r.race and r.retry_kind == RETRY_SERIAL]
+    return [r for r in result.results
+            if r.race and r.retry_kind in (RETRY_SERIAL, RETRY_FAILED_ONLY)]
 
 
 def _gate_green_suite(root: Path, result: SuiteResult,

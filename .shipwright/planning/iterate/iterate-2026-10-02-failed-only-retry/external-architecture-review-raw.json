@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Should it exist?** Choose A: failed-only retries within the current invocation are proportionate to the measured delay; cross-invocation resume state should not exist in this change.\n\n2. **Smallest thing that would do:** Use the existing serial retry with the same temporary per-unit pytest cache to select failed tests, append coverage, and merge retry results into the unit report; fall back to the existing whole-unit retry when necessary. Retain nothing for reuse by another invocation.\n\n3. **What it costs to keep:** The existing gate gains an ongoing obligation to keep failed-test selection, merged reports, and combined coverage consistent. This is bounded maintenance within an existing mechanism, justified by frequent retries costing up to 22 minutes.\n\n4. **What it forecloses:** None identified. Whole-unit fallback and authoritative serial CI preserve room to change the retry strategy later.\n\n5. **Findings:** No findings. This approval applies to option A as scoped in the specification; the architecture brief\u2019s persisted resume state is outside that scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 the shipped scope (option A, in-run failed-only retry) is the right size; it changes the existing retry loop rather than adding a standing mechanism, and the risky part (cross-invocation resume, options B/C) was correctly cut.\n\n2. **The smallest thing that would do.** What the iterate already ships: reuse the pytest `lastfailed` cache the first attempt already writes, re-run with `--lf`, merge the JUnit reports, fall back to the whole-unit retry whenever anything is off. No persisted state, no new data location outside the unit's existing temp dir, no schema or CI change. This is option A and I would take it over D (the ~22-minute cost is real and recurring) and over B/C (their evidence and coverage hazards are documented and not worth a permanent state store to save a developer one gate re-invocation).\n\n3. **What it costs to keep.** Two ongoing obligations: (a) the report-merge primitive must stay semantically honest with `stage_f0_evidence`'s \"complete and green\" rule \u2014 any future change to how evidence is staged or what a report means has to reason about merged-vs-native reports; (b) enabling the pytest cache provider for first attempts (previously `no:cacheprovider`) is now part of the retry contract, so anyone touching cache handling or the `build_command` byte-compatibility has to know this. Both are contained to the F0 runner itself; neither escapes to CI or product code.\n\n4. **What it forecloses.** Mostly nothing bad \u2014 the primitives (`lastfailed` read, merge, `--lf` argv) were deliberately shaped to be reusable by a future resume. The one mild foreclosure: `--lf` semantics and the cross-check rule are now load-bearing, so a future switch of retry strategy has to unwind them; cheap. The union-coverage limit (red-attempt pre-failure lines included) is disclosed and re-gated by CI.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The `lastfailed`/JUnit cross-check plus merge plus rc-5 fallback is a fair amount of machinery to buy down a ~20-minute retry, but the measurement (66% races, 22-min units, F0 = 77% of wall clock) justifies it, and every failure mode falls back to today's behavior.\n- Suggestion: none \u2014 keep the fallback path as the single safety net rather than adding more guards around the fast path.\n\n- Category: ownership\n- Severity: low\n- Finding: The merged-report invariant (unit total preserved, retry wins on collision) is an implicit contract with `stage_f0_evidence`; nothing outside the tests will notice if it drifts.\n- Suggestion: one comment or assertion at the `stage_f0_evidence` call site stating that retained reports may be merges, so a future change there knows the assumption exists.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

@@ -1,0 +1,1 @@
+F0: a unit red in its parallel attempt is now retried on its red tests only (pytest --lf, coverage appended) when pytest's failure index matches the JUnit report; any doubt falls back to the whole-unit retry
