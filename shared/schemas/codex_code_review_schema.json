@@ -15,8 +15,9 @@
         "additionalProperties": false,
         "required": ["severity", "category", "file", "line", "finding", "suggestion", "source"],
         "properties": {
-          "severity": { "enum": ["high", "medium", "low"] },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
           "category": {
+            "type": "string",
             "enum": ["correctness", "readability", "architecture", "security", "performance"]
           },
           "file": { "type": ["string", "null"] },

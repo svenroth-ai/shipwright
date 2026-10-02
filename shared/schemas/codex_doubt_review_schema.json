@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "required": ["stage", "gating", "trigger", "doubts", "summary"],
   "properties": {
-    "stage": { "const": "doubt" },
-    "gating": { "const": "advisory-must-address" },
+    "stage": { "type": "string", "const": "doubt" },
+    "gating": { "type": "string", "const": "advisory-must-address" },
     "trigger": { "type": "string" },
     "doubts": {
       "type": "array",
@@ -20,7 +20,7 @@
           "file", "what_would_resolve_it"
         ],
         "properties": {
-          "severity": { "enum": ["high", "medium", "low"] },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
           "lens": { "type": "string" },
           "claim_under_doubt": { "type": "string" },
           "disproof_attempt": { "type": "string" },

@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "required": ["reviewer", "severity", "findings", "summary"],
   "properties": {
-    "reviewer": { "const": "opus-plan-reviewer" },
-    "severity": { "enum": ["high", "medium", "low", "none"] },
+    "reviewer": { "type": "string", "const": "opus-plan-reviewer" },
+    "severity": { "type": "string", "enum": ["high", "medium", "low", "none"] },
     "findings": {
       "type": "array",
       "items": {
@@ -17,7 +17,7 @@
         "required": ["category", "severity", "finding", "suggestion"],
         "properties": {
           "category": { "type": "string" },
-          "severity": { "enum": ["high", "medium", "low"] },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
           "finding": { "type": "string" },
           "suggestion": { "type": ["string", "null"] }
         }

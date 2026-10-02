@@ -1,0 +1,1 @@
+Codex Light runs the internal architecture review through its own `architecture_internal` role in `review_via_codex.py` (own schema and reply file, brief + sanitized spec inputs, high reasoning effort) instead of recording `Ran: no`.

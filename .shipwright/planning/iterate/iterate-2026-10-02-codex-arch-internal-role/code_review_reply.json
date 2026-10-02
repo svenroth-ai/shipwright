@@ -1,0 +1,41 @@
+{
+  "section": "iterate-2026-10-02-codex-arch-internal-role",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+      "line": 158,
+      "finding": "Canonical-reply test fed plan_review the architecture payload so the inequality was vacuous.",
+      "suggestion": "Use valid payloads for both and assert both files exist.",
+      "source": "code-reviewer"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/review_via_codex.py",
+      "line": 81,
+      "finding": "Comment still listed four driven agents.",
+      "suggestion": "Add architecture-internal-reviewer.",
+      "source": "code-reviewer"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/codex_review_roles.py",
+      "line": 51,
+      "finding": "Set now equals ROLE_SCHEMAS keys; comment rationale stale.",
+      "suggestion": "Reword as defensive-only.",
+      "source": "code-reviewer"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "docs/hooks-and-pipeline.md",
+      "line": 3757,
+      "finding": "Iterate Codex bullet omitted the transport-error branch.",
+      "suggestion": "Add Ran: no (capability failure).",
+      "source": "code-reviewer"
+    }
+  ]
+}

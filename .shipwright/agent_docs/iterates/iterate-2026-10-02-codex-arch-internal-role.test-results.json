@@ -1,0 +1,89 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-02-codex-arch-internal-role",
+    "date": "2026-10-02",
+    "unit": {
+      "status": "passed",
+      "passed": 12194,
+      "total": 12242
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 574,
+      "total": 574
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_codex_review_transport_reasoning_effort.py shared/tests/test_review_via_codex_cli.py shared/tests/test_codex_review_schemas_typed.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 24,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\codex-arch-internal-role\\.shipwright\\runs\\iterate-2026-10-02-codex-arch-internal-role\\surface_verification.log",
+      "timestamp": "2026-10-01T22:50:20.245Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "plan_review and architecture_internal get -c model_reasoning_effort=high; argv otherwise unchanged",
+          "disposition": "tested",
+          "evidence": "test_codex_review_transport_reasoning_effort.py::test_plan_side_roles_get_reasoning_effort_flag[2 params] PASSED"
+        },
+        {
+          "behavior": "architecture_internal replies to its own architecture_internal_reply.json, coexisting with plan_review_reply.json, and rejects a plan_review-shaped reply",
+          "disposition": "tested",
+          "evidence": "test_architecture_internal_has_its_own_canonical_reply + test_architecture_internal_rejects_a_plan_review_shaped_reply PASSED"
+        },
+        {
+          "behavior": "CLI takes --brief-file + sanitized --spec-file for architecture_internal; missing brief or an unsanitized spec is a status:error, not a traceback",
+          "disposition": "tested",
+          "evidence": "test_review_via_codex_cli.py::test_architecture_internal_* (3 tests) PASSED"
+        },
+        {
+          "behavior": "architecture_internal shares the plan reviewer's Codex model config key and env var; role tables stay complete",
+          "disposition": "tested",
+          "evidence": "test_codex_review_model_resolution.py::test_architecture_internal_shares_the_plan_reviewer_codex_model_key PASSED"
+        },
+        {
+          "behavior": "every Codex review schema types its const/enum properties (live API rejects untyped ones)",
+          "disposition": "tested",
+          "evidence": "test_codex_review_schemas_typed.py (5 roles) PASSED; live codex exec launch of spec/code/doubt/architecture_internal/plan_review exit 0"
+        },
+        {
+          "behavior": "skill/doc wiring: dispatch doc lists the role, sites dispatch it, retired Ran literal gone",
+          "disposition": "tested",
+          "evidence": "test_codex_review_dispatch_sites_present.py (18 tests) PASSED"
+        },
+        {
+          "behavior": "a full Codex Light (Codex CLI driven) iterate shows architecture review Ran: yes end to end",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a real Codex CLI-driven session; the transport was exercised live via review_via_codex.py against real codex exec for both new-effort roles, the session itself is an operator step"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  }
+}
