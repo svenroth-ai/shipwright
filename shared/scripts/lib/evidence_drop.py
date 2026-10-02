@@ -100,6 +100,7 @@ def stage_reports(
     junit_reports: list[tuple[str, Path | str]] | None = None,
     playwright: Path | str | None = None,
     vitest: Path | str | None = None,
+    provenance_extra: dict | None = None,
 ) -> dict:
     """Clear the evidence dir, copy each provided report to its conventional name, and
     write the provenance sidecar. Returns the provenance dict.
@@ -115,6 +116,9 @@ def stage_reports(
     list, staged **byte-identical** (E-A) as ``junit-01.xml`` .. ``junit-NN.xml``
     (numbering only the ones that exist). When both are given, ``junit`` is prepended
     as an additional entry with base ``""``.
+
+    ``provenance_extra`` adds top-level keys to the sidecar (never ``run_id`` /
+    ``head_commit`` / ``reports``) - how a RESUMED F0 run says it was resumed.
     """
     d = evidence_dir(project_root)
     d.mkdir(parents=True, exist_ok=True)
@@ -168,6 +172,8 @@ def stage_reports(
         "staged_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "reports": staged,
     }
+    for key, value in (provenance_extra or {}).items():
+        provenance.setdefault(key, value)
     _provenance_path(project_root).write_text(
         json.dumps(provenance, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )

@@ -73,6 +73,9 @@ class Retention:
     run_id: str
     _pending_dir: Path = field(init=False)
     _units: dict[str, dict] = field(default_factory=dict, init=False)
+    #: top-level manifest keys a resumed run adds (`resumed` / `resume_fallback`), so the
+    #: evidence says what it is - see `suite_resume_report.manifest_extra`
+    extra: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self._pending_dir = (
@@ -95,6 +98,11 @@ class Retention:
         except OSError as exc:
             warnings.warn(f"F0 retention: could not record {unit.id!r}: {exc}", stacklevel=2)
 
+    def pending_report(self, unit_id: str) -> Path | None:
+        """The report currently recorded for a unit (the final attempt's, once retried)."""
+        rel = self._units.get(unit_id, {}).get("report_path")
+        return self._pending_dir / rel if rel else None
+
     def publish(self) -> Path | None:
         """Write the side-manifest and atomically rename into `published/`.
 
@@ -105,6 +113,7 @@ class Retention:
             return None
         try:
             manifest = {
+                **self.extra,
                 "schema_version": SCHEMA_VERSION,
                 "run_id": self.run_id,
                 "published_at": datetime.now(timezone.utc).isoformat(),

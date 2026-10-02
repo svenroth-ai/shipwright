@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-02-f0-cross-invocation-resume",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-02T07:58:13.278900+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The operator decision covers source edits, but the sharpest residual risk is narrower than stated: within a red unit, only the previously-red tests re-run, so a fix that newly breaks a test that was previously green in that same unit is consolidated into the saved report as still-green and surfaces only in CI. The spec describes the risk as tree-wide; it's actually per-unit too.",
+          "suggestion": "Explicitly document this in the F0.md resume notice and in the `resumed` manifest (list which testcases in the consolidated report are stale stand-ins), so anyone reading a green-looking unit report can see exactly which results were not re-executed. No code change needed — just make the evidence state which testcases are reused, not only which units.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "lf` semantics: pytest's `lastfailed` is keyed by nodeid. If a red test is renamed or moved between invocations (test file edit), `--lfnf=none` runs nothing, and the \"exactly the red tests, not fewer\" check (AC-2) correctly catches it — good. But if the red test's nodeid survives while its file changed, the test-file-change rule triggers a full run. Verify the \"exactly N tests ran\" check counts collected testcases, not just pytest's reported count, since collection errors can masquerade as short runs.",
+          "suggestion": "In `test_f0_resume_real_pytest.py`, add a case: rename the red test between invocations and assert the unit falls back to a full run with a printed reason (nodeid mismatch, not silent green).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Coverage purge drops rows for edited files and unmappable paths, but unedited files' coverage is kept even though the source edit may change which lines of those files execute. This is the same accepted operator risk, but the diff-coverage gate consumes this data — the one-shot exit-4 fallback covers a refusal, not a spurious pass. That is accepted per the operator decision; just confirm the fallback path is genuinely one-shot and cannot loop (a second exit 4 after the full re-run must return non-zero).",
+          "suggestion": "Assert in tests that `resume_fallback` runs at most once and that a post-fallback exit 4 propagates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Restoring `lastfailed` assumes the pytest cache schema and the saved `.pytest_cache` layout are compatible across invocations (same pytest version, same `cache_dir`). The runner pins its environment, so this is likely fine, but a cache restore into a directory pytest will also use for the resumed run could interleave badly if the in-run retry (existing `RetryOps`) then reads a half-updated cache.",
+          "suggestion": "Confirm ordering in step 4: resume execution → write consolidated `r.xml` + cache → existing retry path, with the retry reading the restored then re-executed cache, not the saved one directly. A test of \"still-red after resume flows through in-run retry\" would lock this in (the design notes claim it; make it an explicit test).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Direct sqlite manipulation of coverage data is workable but couples to the coverage 5+ schema; if the environment's coverage version bumps, `restore_coverage` fails — AC-5's \"coverage that cannot be restored => full unit run\" must catch schema-mismatch errors specifically, not just missing files. Confirm the refusal covers `sqlite3.DatabaseError` / unexpected table shapes.",
+          "suggestion": "Treat any sqlite exception or missing table/column as a restore failure → full run, and unit-test that path with a corrupted db file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "State under `<main root>/.shipwright/runs/f0-evidence/resume/<hash>/` with SHA-256-verified manifests and pointer-escape refusal is solid. One gap: the hash of the checkout path is a directory key, not an auth boundary — fine since it's local dev state, but ensure the stored reports/coverage are never copied into published evidence unmarked (AC-8's staging provenance covers this; verify `evidence_drop` cannot be tricked into `full` provenance by a renamed manifest key).",
+          "suggestion": "One test asserting `stage_f0_evidence` rejects or marks a manifest missing the `resumed` key when reusing stored reports.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "over-production",
+          "file": null,
+          "line": null,
+          "finding": "Five new modules plus a `ResumeOps` seam is at the reasonable upper bound for this complexity, and the spec's line budgets (<300 each, runner ≤529 net) force discipline. I don't see removable abstraction — the state/cov/report split maps to genuinely different failure domains. The one thing to watch: `suite_resume_report.py` (console block + manifest marking + gate rule) may be thin enough to fold into `suite_resume.py`; decide by whether it stays under ~100 lines.",
+          "suggestion": "Merge `suite_resume_report.py` into `suite_resume.py` if it comes in small; otherwise keep.  Overall assessment: This is a well-specified, fails-closed design with an unusually honest treatment of its accepted risks; the residual within-unit regression risk and a handful of edge-case confirmations (fallback one-shot, cache retry interleave, rename fallback) are refinements, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Test-file invalidation covers additions, deletions, and renames, but omits modifications. An edited green test could be reused without executing, while an edited formerly passing test in a red unit would be omitted from the narrow run. The binding decision allows source edits; it does not resolve changes to the tests themselves.",
+          "suggestion": "Compare saved and current hashes of existing test files and run the affected unit in full when they change. Include collection inputs such as `conftest.py` in this rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not specify how “EXACTLY the red tests” is verified. Matching counts alone can accept the wrong tests, particularly with parametrization or duplicate testcase names. Consolidating by an ambiguous report identity could also replace the wrong saved testcase.",
+          "suggestion": "Define a stable mapping between pytest node IDs and saved report testcases. Compare the actual executed identity set with the saved red identity set, require unambiguous replacements, and fall back to a full unit run when either check fails. Test equal-count but different-identity executions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The coverage-gate fallback needs an explicit reset boundary. After a resumed attempt, restored coverage, consolidated reports, pytest caches, and retention metadata already exist. A second pass could accidentally append to partial coverage or publish resumed evidence as a full run.",
+          "suggestion": "Make the fallback start with the ordinary full-run initialization, clearing all attempt artifacts and resume planning state. Retain only the recorded `resume_fallback` reason. Add an integration test that triggers exit 4 and verifies fresh coverage, full execution of every unit, and no `resumed` markers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Atomic publication protects against torn state, but does not ensure that the tree fingerprint describes the files actually tested. Edits during execution could leave reports and coverage associated with an inaccurate snapshot, affecting both subsequent invalidation and coverage purging.",
+          "suggestion": "Snapshot before execution and again before saving the token. If the tree changed during the run, refuse to save resumable state and print the reason. This can use the existing fingerprint mechanism.  The approach is sound within the operator’s accepted tradeoff, and the module split follows distinct responsibilities. Resolve test-edit invalidation, identity verification, and fallback/state lifecycle details before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-02T07:45:40.557988+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: risk — Severity: medium**\n  **Finding:** The operator decision covers source edits, but the sharpest residual risk is narrower than stated: within a *red unit*, only the previously-red tests re-run, so a fix that newly breaks a test that was previously *green in that same unit* is consolidated into the saved report as still-green and surfaces only in CI. The spec describes the risk as tree-wide; it's actually per-unit too.\n  **Suggestion:** Explicitly document this in the F0.md resume notice and in the `resumed` manifest (list which testcases in the consolidated report are stale stand-ins), so anyone reading a green-looking unit report can see exactly which results were not re-executed. No code change needed — just make the evidence state which testcases are reused, not only which units.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `--lf` semantics: pytest's `lastfailed` is keyed by nodeid. If a red test is *renamed or moved* between invocations (test file edit), `--lfnf=none` runs nothing, and the \"exactly the red tests, not fewer\" check (AC-2) correctly catches it — good. But if the red test's nodeid survives while its *file* changed, the test-file-change rule triggers a full run. Verify the \"exactly N tests ran\" check counts collected testcases, not just pytest's reported count, since collection errors can masquerade as short runs.\n  **Suggestion:** In `test_f0_resume_real_pytest.py`, add a case: rename the red test between invocations and assert the unit falls back to a full run with a printed reason (nodeid mismatch, not silent green).\n\n- **Category: edge-case — Severity: low**\n  **Finding:** Coverage purge drops rows for edited files and unmappable paths, but *unedited* files' coverage is kept even though the source edit may change which lines of those files execute. This is the same accepted operator risk, but the diff-coverage gate consumes this data — the one-shot exit-4 fallback covers a refusa […truncated]\n\n[openai] 1. **Category: edge-case | Severity: high**  \n   **Finding:** Test-file invalidation covers additions, deletions, and renames, but omits modifications. An edited green test could be reused without executing, while an edited formerly passing test in a red unit would be omitted from the narrow run. The binding decision allows source edits; it does not resolve changes to the tests themselves.  \n   **Suggestion:** Compare saved and current hashes of existing test files and run the affected unit in full when they change. Include collection inputs such as `conftest.py` in this rule.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** The plan does not specify how “EXACTLY the red tests” is verified. Matching counts alone can accept the wrong tests, particularly with parametrization or duplicate testcase names. Consolidating by an ambiguous report identity could also replace the wrong saved testcase.  \n   **Suggestion:** Define a stable mapping between pytest node IDs and saved report testcases. Compare the actual executed identity set with the saved red identity set, require unambiguous replacements, and fall back to a full unit run when either check fails. Test equal-count but different-identity executions.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** The coverage-gate fallback needs an explicit reset boundary. After a resumed attempt, restored coverage, consolidated reports, pytest caches, and retention metadata already exist. A second pass could accidentally append to partial coverage or publish resumed evidence as a full run.  \n   **Suggestion:** Make the fallback start with the ordinary full-run initialization, clearing all attempt artifacts and resume planning state. Retain only the recorded `resume_fallback` reason. Add an integration test that triggers exit 4 and verifies fresh coverage, full execution of every unit, and no `resumed` markers.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Atomic publication p […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      },
+      "contradiction_resolution": "glm approve vs openai revise: openai's two high findings (test edits, identity check) were fixed in code; see spec Architecture Review"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_resume.py",
+          "line": 238,
+          "finding": "Superseded resume token survives a red run that fails to persist (save_state False, snapshot None, or exception): the next F0 plans against a state two invocations old.",
+          "suggestion": "Spend the old token whenever a non-green run cannot publish a new one.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 341,
+          "finding": "The run_suite._one narrow-to-full fallback (slot release, full-width re-acquire, weight=0 guard under SuiteCancelled) has no run_suite-level test.",
+          "suggestion": "Add a run_suite-level test with a Budget spy.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_resume_report.py",
+          "line": 68,
+          "finding": "gate_refused_resume fires on any exit 4 and the recorded reason blames the restored data.",
+          "suggestion": "Reword the reason.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 491,
+          "finding": "A gate-refused run and its fallback both call emit_race_followups under one run_id; a duplicate triage card is possible.",
+          "suggestion": "Pass filed race ids into the fallback pass.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/suite_resume_state.py",
+          "line": 126,
+          "finding": "Non-.py test data under the test target is not fingerprinted.",
+          "suggestion": "Hash every file under the target.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_f0_resume_real_pytest.py",
+          "line": 181,
+          "finding": "The real-pytest test does not prove that restored coverage of an untouched file survives --cov-append of a re-run unit.",
+          "suggestion": "Give beta an unedited second lib.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 491,
+          "finding": "run_suite(resume=..., resume_fallback=...) encodes one fact twice.",
+          "suggestion": "Derive enabled from fallback.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/check_ac_ratchet_f0.py",
+          "line": 135,
+          "finding": "_run_dir keeps a leading underscore though used.",
+          "suggestion": "Rename to run_dir.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_suite_resume.py",
+          "line": 1,
+          "finding": "Test hygiene nits: dead imports, mid-module pytest_plugins, a duplicate pointer test.",
+          "suggestion": "Tidy.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-02T08:05:37.506798+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": null,
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a resumed run can never be mistaken for a full green run downstream (F5/F11/stage_f0_evidence) — stage_f0_evidence writes provenance.resumed_local, but nothing reads it. F11 fresh_evidence and the compliance refresh_index credit reused green testcases (which ran on an older tree) as executed at head_commit; F5 test_results only has the prose rule in F0.md.",
+          "suggestion": "make fresh_evidence / refresh_index treat resumed_local units as resumed, or restate AC-8 as 'disclosed, consumed by nothing' and record the gap as accepted by the operator",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the token can never serve a result for a tree it does not describe beyond decision A (worktree path reuse) — run_id is stored but never compared; the store key is the checkout path only, so a different iterate in the same checkout within 24 h could reuse the token.",
+          "suggestion": "refuse the state when manifest.run_id != current run_id",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test files added/removed/renamed/EDITED always force a full unit run — only *.py under the target plus conftest.py were hashed; an edited fixture/golden file left the unit reusable.",
+          "suggestion": "hash every file under the test target",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-02T08:03:08.263285+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/run_test_suite.py` (`_run_locked` fallback loop) + `suite_retention.publish",
+          "line": null,
+          "finding": "After a gate-refused resume, the fallback re-run publishes a second retained run under the same `run_id`. `stage_f0_evidence.find_published_run(root, run_id)` (and the AC-ratchet mirror) selects by run_id; if `published/` is timestamped rather than fixed-name, the refused, `resumed`-marked first run can be the one staged/inspected, presenting resumed-local evidence (or, worse, `resumed: true`) for an invocation whose authoritative result was the full fallback run — an AC-8 evidence-honesty hazard.",
+          "suggestion": "Verify empirically which of the two published dirs `find_published_run` resolves to for a duplicated run_id; if ambiguous, either suppress publication/`resumed` marking of the gate-refused attempt or make the fallback run publish under a suffixed id that the stage step prefers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/suite_resume.py` (`persist`)",
+          "line": null,
+          "finding": "The \"fully green\" check is `all(r.outcome == PASS for r in results)`, but `run_suite`'s own failure computation is `r.outcome != PASS or r.evidence_error`. A run whose units all passed but whose retention recorded an evidence error exits 1 yet still spends the resume token (AC-1 says only a fully green run deletes it). Cost is only a later full run, but it diverges from the spec's wording.",
+          "suggestion": "Use the same predicate as `run_suite`: `all(r.outcome == PASS and not r.evidence_error for r in results)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/suite_resume.py` (`try_resume`, cancelled branch)",
+          "line": null,
+          "finding": "On a cancelled narrow attempt the function returns `got` and leaves `attempt_dir/r.xml` as the red-tests-only (unmerged) report, which `retention.record` then files — breaking the documented invariant that the report left for the unit is always the whole unit's report. Downstream cancelled-run handling probably discards it, but the retained evidence for that unit is not the whole unit.",
+          "suggestion": "On cancellation, either delete `r.xml` (so retention records nothing for the unit) or restore the saved whole report before returning.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/suite_resume.py` (`prepare_resume`)",
+          "line": null,
+          "finding": "tree_snapshot` (hash of every file in the checkout) is computed before the `ENV_OFF=0` / `enabled=False` check, so the kill switch and the fallback re-run still pay the full-tree hash for nothing. Pure waste on the most expensive path (the fallback already re-runs everything).",
+          "suggestion": "Short-circuit: check `enabled`/`ENV_OFF` first and skip the snapshot (persist already tolerates `snapshot=None`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/suite_resume_state.py` (`load_state` age check)",
+          "line": null,
+          "finding": "A manifest with a future `created` timestamp (clock skew between save and load) yields a negative age and passes the 24 h check. Trivially forged by hand-editing, though editing breaks the hash — only a genuinely skewed clock reaches this.",
+          "suggestion": "Also refuse when `age < 0`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/run_test_suite.py` (`_one` worker) / `suite_resume.py` (`try_resume`)",
+          "line": null,
+          "finding": "ctx.used.add`, `ctx.notes[...] =`, `ctx.reran[...] =` are mutated from worker threads. Under CPython's GIL these are individually atomic and keys are per-unit, so it works today, but it's an implicit dependency; a future read-modify-write (e.g., `ctx.reran[u].append`) would race.",
+          "suggestion": "Note the single-writer-per-key contract on `ResumeContext`, or guard mutations with a lock.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/suite_resume_state.py",
+          "line": 226,
+          "finding": "The manifest itself has no integrity check. Valid JSON edits to unit outcomes, reuse counts, or timestamps pass loading because only the files listed inside `sha256` are verified. Changing a saved red unit’s outcome to `pass` makes `_plan_unit` reuse it without executing its failing tests, violating AC-1.",
+          "suggestion": "Store and verify the manifest’s SHA-256 outside the manifest, published atomically with its directory token in `CURRENT`. Add a test that changes a manifest field while preserving valid JSON and requires refusal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/suite_resume_state.py",
+          "line": 221,
+          "finding": "The pointer check does not establish containment. `Path(\"..\").name == \"..\"`, so that token passes the check when the parent exists; a directory symlink can also resolve outside the store. Loading is refused only incidentally if the escaped location lacks a usable manifest, rather than enforcing AC-1.",
+          "suggestion": "Resolve the candidate directory and require it to be a strict descendant of the resolved store, rejecting `..` and escaping symlinks before reading any state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/suite_resume.py",
+          "line": 225,
+          "finding": "persist` returns before clearing state when the snapshot is unavailable. A fully green run during an unavailable `origin/main` merge base therefore leaves the previous resume token live. Once the ref becomes available again, a later invocation can reuse evidence predating that green run, contrary to AC-1’s token-spending rule.",
+          "suggestion": "Clear state for a fully green run before checking snapshot or retention availability. Test a green run with an existing token and `ctx.snapshot=None`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_f0_resume_real_pytest.py",
+          "line": 181,
+          "finding": "The coverage assertion cannot prove that edited-file coverage was discarded and rebuilt. Both versions of `lib_b.py` execute exactly lines `{1, 2}`; the comment about stale line 3 has no corresponding setup. An implementation that preserves all old coverage rows would pass this probe.",
+          "suggestion": "Initially cover a line that the fix leaves unexecuted, then assert that its coverage disappears after resume while fresh coverage appears. Keep the untouched-file assertion to verify preservation.  Overall assessment: ship-with-fixes. The implementation follows the intended resume strategy, but state integrity, pointer containment, and token spending need specific corrections before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-02T07:57:32.374413+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe implementation is unusually thorough against the spec: refusal branches, tamper detection, atomic publication, identity-checked re-runs, and a real-pytest/real-git probe (AC-10) that reads execution off marker files rather than inferring it. The test suite would catch most broken implementations, including the equal-count/different-identity case and torn/edited state. Findings below are residual, not structural.\n\n### Findings\n\n- **Category: edge-case | Severity: medium**\n  **File:** `shared/scripts/tools/run_test_suite.py` (`_run_locked` fallback loop) + `suite_retention.publish`\n  **Finding:** After a gate-refused resume, the fallback re-run publishes a **second retained run under the same `run_id`**. `stage_f0_evidence.find_published_run(root, run_id)` (and the AC-ratchet mirror) selects by run_id; if `published/` is timestamped rather than fixed-name, the *refused, `resumed`-marked* first run can be the one staged/inspected, presenting resumed-local evidence (or, worse, `resumed: true`) for an invocation whose authoritative result was the full fallback run — an AC-8 evidence-honesty hazard.\n  **Suggestion:** Verify empirically which of the two published dirs `find_published_run` resolves to for a duplicated run_id; if ambiguous, either suppress publication/`resumed` marking of the gate-refused attempt or make the fallback run publish under a suffixed id that the stage step prefers.\n\n- **Category: bug | Severity: low**\n  **File:** `shared/scripts/tools/suite_resume.py` (`persist`)\n  **Finding:** The \"fully green\" check is `all(r.outcome == PASS for r in results)`, but `run_suite`'s own failure computation is `r.outcome != PASS or r.evidence_error`. A run whose units all passed but whose retention recorded an evidence error exits 1 yet still **spends the resume token** (AC-1 says only a fully green run deletes it). Cost is only a later full run, but it diverges from the spec's wording.\n  **Suggestion:** Use the same predicate as `run_sui […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/suite_resume_state.py:226\n- Finding: The manifest itself has no integrity check. Valid JSON edits to unit outcomes, reuse counts, or timestamps pass loading because only the files listed inside `sha256` are verified. Changing a saved red unit’s outcome to `pass` makes `_plan_unit` reuse it without executing its failing tests, violating AC-1.\n- Suggestion: Store and verify the manifest’s SHA-256 outside the manifest, published atomically with its directory token in `CURRENT`. Add a test that changes a manifest field while preserving valid JSON and requires refusal.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/suite_resume_state.py:221\n- Finding: The pointer check does not establish containment. `Path(\"..\").name == \"..\"`, so that token passes the check when the parent exists; a directory symlink can also resolve outside the store. Loading is refused only incidentally if the escaped location lacks a usable manifest, rather than enforcing AC-1.\n- Suggestion: Resolve the candidate directory and require it to be a strict descendant of the resolved store, rejecting `..` and escaping symlinks before reading any state.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/suite_resume.py:225\n- Finding: `persist` returns before clearing state when the snapshot is unavailable. A fully green run during an unavailable `origin/main` merge base therefore leaves the previous resume token live. Once the ref becomes available again, a later invocation can reuse evidence predating that green run, contrary to AC-1’s token-spending rule.\n- Suggestion: Clear state for a fully green run before checking snapshot or retention availability. Test a green run with an existing token and `ctx.snapshot=None`.\n\n- Category: test\n- Severity: medium\n- File: shared/scripts/tools/tests/test_f0_resume_real_pytest.py:181\n- Finding: The coverage assertion cannot prove that edited-file coverage was di […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      },
+      "contradiction_resolution": "glm approve vs openai revise: all openai findings fixed or verified; see spec External Code Review"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-02T07:59:23.995576+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-02T07:45:40.240902+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-02T07:45:40.404726+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-02-f0-cross-invocation-resume",
+    "date": "2026-10-02",
+    "unit": {
+      "status": "passed",
+      "passed": 20704,
+      "total": 20704
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 574,
+      "total": 574
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "justification": "CLI/library mechanics of the F0 test runner; the real-pytest + real-git fix-round test is the empirical probe."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 state is a resume token (atomic, hash-pinned, refusals, spent by a green run)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_resume_state.py PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-2 red unit re-runs only the red tests, identity-checked, whole report kept",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_resume_exec.py PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-3 green unit reused, not executed",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_f0_resume_real_pytest.py::test_a_fix_round_reruns_only_the_red_test_and_reuses_the_green_unit PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-4 source edit is not a refusal",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_resume.py::test_a_source_edit_is_NOT_a_refusal_by_operator_decision PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-5 every doubt runs the unit in full with a printed reason",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_resume.py PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-6 fingerprint covers all files, per checkout",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_resume_state.py::test_the_snapshot_hashes_every_file_not_only_python PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-7 coverage restore purges edited/unknown files; gate refusal falls back once",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_suite_resume_report.py PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-8 resumed evidence marked on console, manifest, provenance, ratchet",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_stage_f0_evidence_resumed.py PASSED (F0 run 4, 18 units GREEN)"
+        },
+        {
+          "behavior": "AC-9 runner within bloat baseline, new modules < 300 lines",
+          "disposition": "tested",
+          "evidence": "verify_local.py PASS + wc: run_test_suite.py 523 <= 529"
+        },
+        {
+          "behavior": "AC-10 real pytest + real git fix round",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_f0_resume_real_pytest.py (3 tests) PASSED (F0 run 4, 18 units GREEN)",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-02-f0-cross-invocation-resume",
+    "commit": "f7b52f48a78f3b4ff9c9f3c78d30a00dccf281b8",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

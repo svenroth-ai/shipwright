@@ -91,6 +91,11 @@ _RUNNER_FILES = (
     "scripts/tools/suite_retention.py",
     "scripts/tools/suite_retry.py",
     "scripts/tools/suite_failed_only.py",
+    # cross-invocation resume: run_test_suite imports all four at module load
+    "scripts/tools/suite_resume.py",
+    "scripts/tools/suite_resume_cov.py",
+    "scripts/tools/suite_resume_report.py",
+    "scripts/tools/suite_resume_state.py",
     "scripts/tools/suite_timing.py",
     "scripts/tools/suite_units.py",
 )

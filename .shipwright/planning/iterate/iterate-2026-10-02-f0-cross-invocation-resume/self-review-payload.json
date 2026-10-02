@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "AC-1..AC-10 implemented and each pinned by a test; the spec reviewer's three divergences (console names both invocations, full-run reasons always printed, AC-10 probe strength) were fixed and re-reviewed."},
+    {"name": "Error Handling", "verdict": "pass", "note": "prepare_resume and persist never raise (fail closed = full run); every refusal branch has a reason string and a test; save_state failure keeps the previous state and leaves no stray pointer."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No secrets; state is local-only; CURRENT pins the manifest hash, pointer containment is resolved against the store, every opened path must be hash-verified, provenance_extra cannot override run_id/head_commit/reports."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Real pytest + real git fix round asserts executions via marker files, merged whole-unit total, purged stale coverage line, spent token; fake-exec tests cover every refusal; equal-count/different-identity and edited-test-file cases pinned."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "One extra whole-tree hash per F0 (disclosed, unmeasured); a gate-refused resume costs one extra full run (disclosed, one-shot, recorded as resume_fallback)."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Four new modules each < 300 lines, ResumeOps seam mirrors RetryOps, run_test_suite.py stays at 523 <= 529, F0.md back at its 400-line cap."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Four producer/consumer pairs (state save/load, coverage sqlite restore, lastfailed cache, manifest resumed marker) each round-tripped through real files; the real-pytest test reads the sqlite coverage that pytest-cov wrote."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+  ]
+}

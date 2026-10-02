@@ -1,0 +1,14 @@
+{"doubts":[
+ {"claim_under_doubt":"a resumed run can never be mistaken for a full green run downstream (F5/F11/stage_f0_evidence)",
+  "disproof_attempt":"stage_f0_evidence writes provenance.resumed_local, but nothing reads it. F11 fresh_evidence and the compliance refresh_index credit reused green testcases (which ran on an older tree) as executed at head_commit; F5 test_results only has the prose rule in F0.md.",
+  "lens":"boundary & contract",
+  "what_would_resolve_it":"make fresh_evidence / refresh_index treat resumed_local units as resumed, or restate AC-8 as 'disclosed, consumed by nothing' and record the gap as accepted by the operator"},
+ {"claim_under_doubt":"the token can never serve a result for a tree it does not describe beyond decision A (worktree path reuse)",
+  "disproof_attempt":"run_id is stored but never compared; the store key is the checkout path only, so a different iterate in the same checkout within 24 h could reuse the token.",
+  "lens":"hidden coupling & blast radius",
+  "what_would_resolve_it":"refuse the state when manifest.run_id != current run_id"},
+ {"claim_under_doubt":"test files added/removed/renamed/EDITED always force a full unit run",
+  "disproof_attempt":"only *.py under the target plus conftest.py were hashed; an edited fixture/golden file left the unit reusable.",
+  "lens":"boundary & contract",
+  "what_would_resolve_it":"hash every file under the test target"}
+]}

@@ -178,6 +178,18 @@ def validated_junit_reports(root: Path, run_id: str) -> tuple[Path, list[tuple[s
     return run_dir, [(e["base"], run_dir / e["report_path"]) for e in units]
 
 
+def published_resumed(run_dir: Path) -> dict | None:
+    """The manifest's ``resumed`` block when the retained run was a RESUME (some unit
+    reused or re-run on its red tests only), else None. Unreadable = None: the manifest
+    was already validated by ``validated_junit_reports``."""
+    try:
+        data = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    resumed = data.get("resumed") if isinstance(data, dict) else None
+    return resumed if isinstance(resumed, dict) else None
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project-root", default=".", type=Path)
@@ -192,13 +204,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return EXIT_ERROR
 
+    # A resumed run is staged, but AS resumed-local evidence (never a full green run).
+    resumed = published_resumed(run_dir)
     prov = evidence_drop.stage_reports(
         root, run_id=args.run_id, head_commit=args.head_commit, junit_reports=junit_reports,
+        provenance_extra={"resumed_local": resumed} if resumed else None,
     )
     print(json.dumps({
         "staged": len(prov.get("reports", {}).get("junit", [])),
         "run_id": prov.get("run_id"),
         "source_run_dir": str(run_dir),
+        "resumed": resumed is not None,
     }, indent=2))
     return EXIT_OK
 

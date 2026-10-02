@@ -70,6 +70,10 @@ from scripts.tools.suite_race_triage import (  # noqa: E402
 from scripts.tools.suite_report import (  # noqa: E402
     render_retry_block, render_run_report, reproduce_command, suite_command,
 )
+from scripts.tools.suite_resume import (  # noqa: E402
+    ResumeOps, persist as _persist_resume, prepare_resume, try_resume as _try_resume)
+from scripts.tools.suite_resume_report import (  # noqa: E402
+    gate_refused_resume, manifest_extra as _resume_extra, render_block as _render_resume)
 from scripts.tools.suite_retention import Retention  # noqa: E402
 from scripts.tools.suite_retry import (  # noqa: E402,F401  (re-export: one import site)
     RETRY_FAILED_ONLY, RETRY_INFRA, RETRY_SERIAL, RetryOps,
@@ -116,6 +120,8 @@ class UnitResult:
     evidence_error: str | None = None
     truncated: bool = False
     cancelled: bool = False
+    cache_dir: str | None = None  # verdict attempt's pytest cache (`suite_resume`)
+    resume: str | None = None     # how a resume served this unit
 
 
 @dataclass
@@ -128,6 +134,7 @@ class SuiteResult:
     #: "nothing to gate"; a NAMED file that never appeared means the measurement
     #: evaporated - the gate must not confuse the two.
     cov_files: tuple[str, ...] = ()
+    resume: object | None = None  # this invocation's `suite_resume.ResumeContext`
 
 
 def build_command(unit: Unit, xdist_workers: int | None, report: Path | None = None,
@@ -282,7 +289,8 @@ def _retain_attempt_evidence(project_root: Path, *, run_id: str | None,
 def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
               budget_total: int | None = None, preflight: bool = True,
               heartbeat_seconds: float = 30.0, run_id: str | None = None,
-              stream: TextIO | None = None) -> SuiteResult:
+              stream: TextIO | None = None, resume: bool = True,
+              resume_fallback: str | None = None) -> SuiteResult:
     units = discover_units(project_root)
     if not units:
         raise SuiteConfigError(  # a suite that runs nothing must never report GREEN
@@ -293,9 +301,12 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
         ensure_xdist_available(config, project_root)
         warm_up(project_root)
     units = instrument_for_coverage(units, project_root, prepare_coverage(project_root))
+    # AFTER the coverage reset: a resumed unit's saved coverage is restored into its file.
+    resume_ctx = prepare_resume(project_root, units, run_id, enabled=resume, fallback=resume_fallback)
     requested_budget = budget_total if budget_total is not None else config.max_workers
     budget = _Budget(normalize_cpu_weight(requested_budget))
     cancel_event = threading.Event()
+    resume_ops = ResumeOps(_exec, _clear_failed_attempt_coverage, classify)
     started = time.time()
     # Every unit's OWN JUnit report on ANY outcome, so stage_f0_evidence.py (AC3) stages
     # the SAME run F0 performed, not a second pass. None (no run_id) = no retention.
@@ -318,22 +329,33 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
         def _one(indexed: tuple[int, Unit]) -> UnitResult:
             idx, unit = indexed
             workers = _xdist_workers(unit.id)
-            weight = budget.acquire(workers or 1, cancel_event=cancel_event)
+            resumable = unit.id in resume_ctx.plans  # starts narrow: holds one slot
+            weight = budget.acquire(1 if resumable else workers or 1, cancel_event=cancel_event)
             started_utc = datetime.now(timezone.utc).isoformat()
             _emit_unit_event(stream, run_id=run_id, event="start", unit_id=unit.id,
                              weight=weight)
             try:  # a unit may never fan out wider than the budget it holds
-                rc, out, secs, ran, truncated, cancelled = _exec(
+                got = _try_resume(
+                    resume_ctx, unit, project_root, tmp_root / "p" / f"u{idx}", resume_ops,
+                    timeout=config.timeout_seconds, cancel_event=cancel_event)
+                if got is None and resumable:  # untrusted: the full attempt needs full width
+                    budget.release(weight)
+                    weight = 0  # nothing held while waiting (finally releases only a held slot)
+                    weight = budget.acquire(workers or 1, cancel_event=cancel_event)
+                rc, out, secs, ran, truncated, cancelled = got or _exec(
                     unit, project_root, weight if workers else None,
                     tmp_root / "p" / f"u{idx}", config.timeout_seconds, cancel_event)
             finally:
-                budget.release(weight)
+                if weight:
+                    budget.release(weight)
             outcome = classify(rc, ran)
             if retention is not None:
                 retention.record(unit, tmp_root / "p" / f"u{idx}" / "r.xml", outcome)
             result = UnitResult(
                 unit.id, outcome, rc, secs, out, started_utc=started_utc,
-                truncated=truncated, cancelled=cancelled)
+                truncated=truncated, cancelled=cancelled,
+                cache_dir=str(tmp_root / "p" / f"u{idx}" / "c"),
+                resume=resume_ctx.label(unit.id))
             if outcome != PASS:
                 result.evidence_path, result.evidence_error = _retain_attempt_evidence(
                     project_root, run_id=run_id, unit_id=unit.id, phase="initial",
@@ -360,13 +382,15 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             project_root=project_root, tmp_root=tmp_root, timeout=config.timeout_seconds,
             cancel_event=cancel_event, stream=stream,
             heartbeat_seconds=heartbeat_seconds, run_id=run_id, retention=retention)
+        _persist_resume(resume_ctx, project_root, run_id, units, results, retention)
 
     if retention is not None:
+        retention.extra.update(_resume_extra(resume_ctx, run_id))
         retention.publish()
     failed = [r for r in results if r.outcome != PASS or r.evidence_error]
     return SuiteResult(results, 1 if failed else 0, time.time() - started,
                        tuple(config.xdist),
-                       tuple(u.cov_file for u in units if u.cov_file))
+                       tuple(u.cov_file for u in units if u.cov_file), resume_ctx)
 
 
 def unrecorded_races(result: SuiteResult) -> list[UnitResult]:
@@ -386,7 +410,7 @@ def _gate_green_suite(root: Path, result: SuiteResult,
 
 
 @contextmanager
-def _run_host_leased_suite(root: Path, run_id: str | None):
+def _run_host_leased_suite(root: Path, run_id: str | None, resume_fallback: str | None = None):
     """Serialize uv setup, then hold the CPU grant through the F0 verdict."""
     source_before, fingerprint_error = source_fingerprint(root)
     config = resolve_suite_config(root)
@@ -406,7 +430,9 @@ def _run_host_leased_suite(root: Path, run_id: str | None):
         active_start = datetime.now(timezone.utc)
         try:
             result = run_suite(root, config, budget_total=grant.weight,
-                               preflight=False, run_id=run_id)
+                               preflight=False, run_id=run_id,
+                               resume=resume_fallback is None,
+                               resume_fallback=resume_fallback)
         except BaseException:
             # A real producer boundary that never returns is exactly the run
             # where attribution matters most - record it incomplete rather
@@ -431,7 +457,8 @@ def _finish_locked(root: Path, run_id: str | None, result: SuiteResult,
     # Print the suite's own evidence FIRST: the gate below can take a minute, and a
     # finished suite's results must not be withheld for it - nor lost if it is
     # interrupted part-way through.
-    for line in render_run_report(result) + render_retry_block(result, races, report):
+    for line in (render_run_report(result) + _render_resume(result)
+                 + render_retry_block(result, races, report)):
         print_console(line)
     # The gate CI runs, run here: an under-tested diff STOPs the run instead of
     # reddening a PR after the iterate has already reported done. A red suite (or
@@ -453,11 +480,21 @@ def _finish_locked(root: Path, run_id: str | None, result: SuiteResult,
     return final_exit_code(result.exit_code, report.failed, gate)
 
 
+_RESUME_GATE_REFUSED = "the diff-coverage gate failed on a resumed run"
+
+
 def _run_locked(root: Path, run_id: str | None) -> int:
-    """The full reset -> suite -> combine -> gate critical section."""
-    with _run_host_leased_suite(root, run_id) as leased:
-        result, source_before, fingerprint_error = leased
-        return _finish_locked(root, run_id, result, source_before, fingerprint_error)
+    """Reset -> suite -> combine -> gate. A RESUMED run the diff-coverage gate refuses is
+    re-run in full, once, and says why (restored coverage of an edited file is dropped)."""
+    fallback = None
+    while True:
+        with _run_host_leased_suite(root, run_id, *((fallback,) if fallback else ())) as leased:
+            result, source_before, fingerprint_error = leased
+            rc = _finish_locked(root, run_id, result, source_before, fingerprint_error)
+        if fallback is not None or not gate_refused_resume(result, rc):
+            return rc
+        fallback = _RESUME_GATE_REFUSED
+        print_console(f"F0 resume fallback: {fallback}; re-running the whole suite.")
 
 
 def main() -> int:
