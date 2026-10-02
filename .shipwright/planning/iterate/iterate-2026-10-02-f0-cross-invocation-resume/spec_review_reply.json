@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Pass 3 (after pass 1 REJECT on AC-8/AC-5/AC-10 and pass 2 REJECT on the AC-10 coverage probe, both fixed): AC-1..AC-10 present and faithful; run_test_suite.py 523 <= 529; new modules < 300 lines; no pre-existing assertions changed."}

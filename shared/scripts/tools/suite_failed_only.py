@@ -106,6 +106,16 @@ def _key(case: ET.Element) -> tuple[str, str]:
     return (case.get("classname", ""), case.get("name", ""))
 
 
+def same_tests(saved: Path, rerun: Path) -> bool:
+    """The re-run executed exactly the saved report's red testcases, by identity - an equal
+    COUNT of different tests (renamed, parametrized differently) is not a resume."""
+    old, new = _parse(saved), _parse(rerun)
+    if old is None or new is None:
+        return False
+    red = {_key(c) for c in _testcases(old.getroot()) if _is_bad(c)}
+    return bool(red) and red == {_key(c) for c in _testcases(new.getroot())}
+
+
 def merge_junit(base: Path, rerun: Path, out: Path) -> bool:
     """Write `out` = base's testcases minus the re-run ones, plus the re-run ones.
 

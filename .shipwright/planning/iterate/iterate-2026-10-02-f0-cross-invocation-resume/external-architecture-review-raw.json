@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** A resume mechanism is worth having \u2014 the problem (15-22 min per fix round for a developer-local gate) is real and recurring \u2014 but Option A in the proposed shape is oversized, and the smallest thing that would do is: persist per-unit pass/fail plus reports, skip green units, **re-run red units in full**, and drop the coverage-sqlite restoration and the lastfailed-trust machinery entirely.\n\n2. **The smallest thing that would do.** A resume token holding, per unit: outcome, JUnit report, and coverage file. On resume: green units stand in as-is; red units re-run in full (the in-run failed-only retry already exists and covers the fast path within that run); for the diff-coverage gate, evaluate it over the changed files and, where a changed file's coverage can't come from the re-run red units, take the existing AC-7 fallback (one full re-run) \u2014 which the spec already accepts as the terminal path. That eliminates two of the four new boundaries (the direct-sqlite coverage surgery and the restored-`lastfailed` trust checks) and most of AC-2/AC-6's proving machinery, while keeping the operator's Option-A decision intact. The 15-22 min figure is the *largest* unit run in full; a full red-unit re-run is typically minutes, and the precision machinery buys only the difference between \"whole red unit\" and \"its red tests.\"\n\n3. **What it costs to keep.** Every future change to `run_test_suite.py`, to report formats, to coverage tooling, or to the evidence-staging path must now reason about a second execution mode (\"resumed\") that produces different reports, different coverage provenance, and different manifest keys. The fail-closed trigger list in AC-5 is itself a standing obligation: each new doubt category someone discovers becomes another refusal rule to maintain and test. The sqlite surgery additionally couples the project to coverage 5+'s internal schema forever.\n\n4. **What it forecloses.** The coverage-sqlite editing forecloses cheap upgrades of coverage.py (schema changes break it silently or noisily). The `lastfailed` restoration couples the resume to pytest's cache format. The labelling/provenance scheme means any future consumer of staged evidence must understand `resumed_local`.\n\n- Category: proportionality\n- Severity: medium\n- Finding: The precision layer \u2014 restoring `lastfailed` and enforcing that pytest re-runs exactly the 1-10 red tests, plus editing coverage via direct sqlite across three tables \u2014 is a large permanent mechanism bought to shave minutes off a fix round whose alternative (re-run the red unit in full) is already cheap for typical units and is already the fallback everywhere the precision layer is unsure.\n- Suggestion: Drop `suite_resume_cov.restore_coverage` and the `lastfailed` restoration. Resume = green units stand in, red units re-run in full, diff-coverage gate falls back to the existing single full re-run when it cannot be satisfied from the red unit's fresh coverage. This is roughly Option A minus two of the four new boundaries.\n- Category: simpler-alternative\n- Severity: low\n- Finding: The coverage restoration is likely near-dead weight for its stated purpose: the diff-coverage gate only cares about files changed by the fix, and those rows are exactly the ones dropped by AC-7's own rules \u2014 so the restored coverage mostly serves files the gate does not evaluate.\n- Suggestion: Delete the sqlite path entirely; rely on the already-specified `resume_fallback` full re-run when the gate refuses a resumed run.\n- Category: existence\n- Severity: low\n- Finding: Option A over B is correct and should stand: B's condition makes the resume almost never fire, since fixes touch source. The safety-net argument (CI full run per PR) is sound and the operator's acceptance is the right call.\n- Suggestion: Keep Option A's disposition; shrink only the machinery, not the policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014option A is proportionate to repeated 15\u201322-minute fix rounds, provided full CI remains authoritative and resumed evidence remains explicitly partial.**\n\n2. **Smallest thing that would do:** a bounded, per-checkout resume token using the existing runner, failed-test selection, and retained evidence. Reuse green units, re-run saved failures, and fall back to full execution when the token is unusable. B excludes ordinary source fixes; C retains the delay; D introduces a broader test-selection obligation.\n\n3. **What it costs to keep:** the runner must maintain persistent-state compatibility, report consolidation, coverage restoration, and resumed provenance across every evidence consumer. This is substantially more than a small disk record, but it addresses a recurring, expensive delay. Automatic expiry, refusal, and deletion give it an owner without requiring a human to notice stale state.\n\n4. **What it forecloses:** treating every green local F0 result as validation of the current source tree. Future changes to coverage formats, unit definitions, or evidence consumers must preserve resume behavior or deliberately force full runs. Making local F0 authoritative would require revisiting this mechanism.\n\n5. **No findings.**\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "glm": "revise",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

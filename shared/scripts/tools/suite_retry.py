@@ -160,6 +160,9 @@ def retry_red_units(results: list, by_id: dict, ops: RetryOps, *, project_root: 
         if expected and not att.narrow:
             state = _WHOLE
         outcome = ops.classify_fn(att.rc, att.ran)
+        # Where the verdict-producing attempt's pytest cache lives: `suite_resume` reads the
+        # red ids from it (a whole-unit retry wrote its OWN cache, the narrow one reused ours).
+        res.cache_dir = str((dirs[0] if att.narrow else dirs[1]) / "c")
         res.serial_rc = att.rc
         if att.cancelled:
             res.retry_evidence_path, error = ops.retain_fn(

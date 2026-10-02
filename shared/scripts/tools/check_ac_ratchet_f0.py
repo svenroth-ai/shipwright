@@ -132,10 +132,13 @@ def _run(project_root: Path, run_id: str, scratch_parent: Path | None) -> int:
         scratch_parent = project_root / ".scratch"  # short + gitignored (MAX_PATH headroom)
     scratch_parent.mkdir(parents=True, exist_ok=True)
     try:
-        _run_dir, junit_reports = _f0.validated_junit_reports(project_root, run_id)
+        run_dir, junit_reports = _f0.validated_junit_reports(project_root, run_id)
     except _f0.StageError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return EXIT_INFRA
+    if _f0.published_resumed(run_dir):
+        print("NOTE: the retained F0 run is a RESUME (reused/red-only results); the JUnit "
+              "is resumed-local evidence, CI re-runs everything.")
 
     with tempfile.TemporaryDirectory(
         prefix="acr-", dir=scratch_parent, ignore_cleanup_errors=True,
