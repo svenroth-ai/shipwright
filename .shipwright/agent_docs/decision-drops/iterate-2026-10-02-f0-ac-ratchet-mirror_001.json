@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-02-f0-ac-ratchet-mirror",
+  "date": "2026-10-02",
+  "section": "Iterate - change: F0 mirrors the AC coverage ratchet gate",
+  "title": "F0 runs the AC coverage ratchet against a scratch-regenerated manifest",
+  "context": "AC coverage ratchet (gate) turned CI red 3 times in 4 days (newly minted ACs unbound); verify_local.py listed it as un-mirrorable because the committed manifest would vouch for itself.",
+  "decision": "New post-suite F0 step shared/scripts/tools/check_ac_ratchet_f0.py: copy the working tree to <project>/.scratch, stage F0's retained JUnit, regenerate the manifest there from the working tree's @covers tags, run the real check_ac_coverage_ratchet.py on it. Exit 0/1/2; no-op for projects without the gate. Repair-PR safety stays CI-only.",
+  "consequences": "A new unbound AC now fails at F0, not in CI. Costs one working-tree copy plus a regen (~1 min). stage_f0_evidence gained validated_junit_reports and regenerate_manifest an optional plugin_root (--frozen, timeout) - both behaviour-preserving for existing callers.",
+  "rationale": "Regeneration from a scratch copy, not the committed manifest, is what removes self-vouching; the real tree and its tracked manifest are never written. Verified end to end: clean on the real tree, blocked (exit 1) when a baselined AC is removed.",
+  "rejected": "Regenerating in place (dirties the tracked manifest F6 commits); mirroring inside verify_local.py (runs before the suite, so no JUnit exists yet); mirroring Repair-PR safety (needs the PR base revision).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

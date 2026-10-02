@@ -134,6 +134,50 @@ def load_and_validate_manifest(run_dir: Path) -> list[dict]:
     return units
 
 
+def validated_junit_reports(root: Path, run_id: str) -> tuple[Path, list[tuple[str, Path]]]:
+    """``(run_dir, [(base, report), ...])`` for the retained F0 run under ``run_id``.
+
+    Raises :class:`StageError` unless that run is present, structurally valid, covers
+    exactly the units ``discover_units`` finds in ``root`` right now, is fully green,
+    and has a retained report for every unit. Shared by ``main`` (which stages the
+    result as compliance evidence) and ``check_ac_ratchet_f0.py`` (which only reads it)
+    so both refuse the same incomplete or red runs.
+    """
+    run_dir = find_published_run(root, run_id)
+    if run_dir is None:
+        raise StageError(
+            f"no published F0 retention run found for run_id={run_id!r} "
+            f"under {retention_root(root) / 'published'}"
+        )
+    units = load_and_validate_manifest(run_dir)
+
+    expected_ids = {u.id for u in discover_units(root)}
+    manifest_ids = {entry["unit_id"] for entry in units}
+    missing, unexpected = expected_ids - manifest_ids, manifest_ids - expected_ids
+    if missing or unexpected:
+        raise StageError(
+            "the retained run's unit set does not match the units "
+            f"discovered in this tree right now - missing={sorted(missing)} "
+            f"unexpected={sorted(unexpected)}; refusing to stage a run that "
+            "does not cover the live suite."
+        )
+
+    not_green = sorted(e["unit_id"] for e in units if e["outcome"] != "pass")
+    if not_green:
+        raise StageError(
+            f"the retained run is not fully green - {not_green} did not "
+            "pass; refusing to stage a red run as compliance evidence."
+        )
+
+    missing_reports = sorted(e["unit_id"] for e in units if e.get("report_path") is None)
+    if missing_reports:
+        raise StageError(
+            f"{missing_reports} have no retained report; refusing to "
+            "stage incomplete evidence."
+        )
+    return run_dir, [(e["base"], run_dir / e["report_path"]) for e in units]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project-root", default=".", type=Path)
@@ -142,53 +186,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     root = args.project_root.resolve()
 
-    run_dir = find_published_run(root, args.run_id)
-    if run_dir is None:
-        print(
-            f"ERROR: no published F0 retention run found for run_id={args.run_id!r} "
-            f"under {retention_root(root) / 'published'}",
-            file=sys.stderr,
-        )
-        return EXIT_ERROR
-
     try:
-        units = load_and_validate_manifest(run_dir)
+        run_dir, junit_reports = validated_junit_reports(root, args.run_id)
     except StageError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return EXIT_ERROR
 
-    expected_ids = {u.id for u in discover_units(root)}
-    manifest_ids = {entry["unit_id"] for entry in units}
-    missing, unexpected = expected_ids - manifest_ids, manifest_ids - expected_ids
-    if missing or unexpected:
-        print(
-            "ERROR: the retained run's unit set does not match the units "
-            f"discovered in this tree right now - missing={sorted(missing)} "
-            f"unexpected={sorted(unexpected)}; refusing to stage a run that "
-            "does not cover the live suite.",
-            file=sys.stderr,
-        )
-        return EXIT_ERROR
-
-    not_green = sorted(e["unit_id"] for e in units if e["outcome"] != "pass")
-    if not_green:
-        print(
-            f"ERROR: the retained run is not fully green - {not_green} did not "
-            "pass; refusing to stage a red run as compliance evidence.",
-            file=sys.stderr,
-        )
-        return EXIT_ERROR
-
-    missing_reports = sorted(e["unit_id"] for e in units if e.get("report_path") is None)
-    if missing_reports:
-        print(
-            f"ERROR: {missing_reports} have no retained report; refusing to "
-            "stage incomplete evidence.",
-            file=sys.stderr,
-        )
-        return EXIT_ERROR
-
-    junit_reports = [(e["base"], run_dir / e["report_path"]) for e in units]
     prov = evidence_drop.stage_reports(
         root, run_id=args.run_id, head_commit=args.head_commit, junit_reports=junit_reports,
     )

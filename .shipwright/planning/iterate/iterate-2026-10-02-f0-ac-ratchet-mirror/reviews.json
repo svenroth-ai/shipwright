@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-02-f0-ac-ratchet-mirror",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:00:52.740515+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:01:03.870352+00:00",
+      "disposition": "plan/architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F0.md",
+          "line": 347,
+          "finding": "New F0 step has no guard for projects that do not run this gate (hardcoded plugins/shipwright-compliance; absent baseline blocks every unbound AC).",
+          "suggestion": "No-op unless plugins/shipwright-compliance and shipwright_ac_coverage_baseline.json exist; document and test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_ac_ratchet_f0.py",
+          "line": 202,
+          "finding": "Unexpected exceptions (TimeoutExpired etc.) exit 1, aliasing EXIT_BLOCKED.",
+          "suggestion": "Last-resort except -> EXIT_INFRA; catch timeout; test it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_ac_ratchet_f0.py",
+          "line": 187,
+          "finding": "Scratch under TEMP can cross Windows MAX_PATH for deep tracked paths.",
+          "suggestion": "Default scratch parent to a short gitignored dir.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/ci_manifest_drift_check.py",
+          "line": 129,
+          "finding": "uv run against the real plugin dir can rewrite tracked uv.lock; regen subprocess has no timeout.",
+          "suggestion": "--frozen in the override path; add timeout raising DriftCheckError.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/check_ac_ratchet_f0.py",
+          "line": 1,
+          "finding": "Docs overstate the JUnit's role; the ratchet counts bound by link existence, regeneration from scratch is what removes self-vouching.",
+          "suggestion": "Reword docstring, F0.md, hooks-and-pipeline.md, verify_local text.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_check_ac_ratchet_f0.py",
+          "line": 1,
+          "finding": "Test gaps: main(), non-git root, regenerate_manifest override argv.",
+          "suggestion": "Add those tests.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T23:00:52.861750+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:01:04.390662+00:00",
+      "disposition": "doubt pass is conditional (migrations, async/concurrency, cross-plugin imports, irreversible ops); none touched",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:01:04.256164+00:00",
+      "disposition": "external code review is medium+ only, this run is small; internal code-reviewer ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:01:34.066038+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:01:04.016090+00:00",
+      "disposition": "plan/architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T23:01:04.158115+00:00",
+      "disposition": "plan/architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
