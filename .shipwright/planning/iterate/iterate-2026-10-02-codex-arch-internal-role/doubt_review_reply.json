@@ -1,0 +1,40 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin wiring + external API call",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "claim_under_doubt": "type fix makes all roles launch live",
+      "disproof_attempt": "offline test cannot show API acceptance",
+      "file": "shared/schemas/codex_*_review_schema.json",
+      "what_would_resolve_it": "live launch per role"
+    },
+    {
+      "severity": "low",
+      "lens": "boundary-and-contract",
+      "claim_under_doubt": "only the sanitized spec is reviewed",
+      "disproof_attempt": "nothing in code enforces it",
+      "file": "shared/scripts/tools/review_via_codex.py",
+      "what_would_resolve_it": "refuse a spec carrying prior-review headings"
+    },
+    {
+      "severity": "low",
+      "lens": "hidden-coupling",
+      "claim_under_doubt": "own-basename test proves no clobbering",
+      "disproof_attempt": "plan_review call errored",
+      "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+      "what_would_resolve_it": "valid payloads for both"
+    },
+    {
+      "severity": "low",
+      "lens": "hidden-coupling",
+      "claim_under_doubt": "role works once merged",
+      "disproof_attempt": "plugin cache must carry the new schema",
+      "file": "shared/schemas/codex_architecture_internal_review_schema.json",
+      "what_would_resolve_it": "update-marketplace + check_plugin_cache_sync --strict"
+    }
+  ],
+  "summary": "Addressed: live probe of all five roles (exit 0, schema-valid replies) rebuts doubt 1; doubt 2 fixed with a code guard + test; doubt 3 fixed; doubt 4 is the standard post-merge cache sync."
+}

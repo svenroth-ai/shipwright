@@ -33,7 +33,10 @@ spec|code|doubt`, pass `canonical_path` to `record_review_pass.py record
 legal Claude tier). For `--role plan_review`, there is no `--from` adapter
 (`plan_internal` is a metadata-only row) — read `canonical_path` directly and
 write its `findings`/`summary` into `plan.md`'s own `## Internal Plan
-Review` section instead. On `status: "error"`, `reason` names the concrete
+Review` section instead. `--role architecture_internal` is the same shape
+(metadata-only `architecture_internal` row, own canonical basename
+`architecture_internal_reply.json`) but takes `--brief-file` (the architecture
+brief) + `--spec-file` (the sanitized spec copy) — never a plan or diff. On `status: "error"`, `reason` names the concrete
 failure — either fall back to an ordinary Agent-tool spawn (then record
 `--transport agent --transport-note "<reason>"`) or, when no fallback
 exists, record `--status not_run --disposition "<reason>"`. See
@@ -61,6 +64,10 @@ from lib.codex_review_transport import (  # noqa: E402
 )
 
 
+#: Sections the sanitized spec copy has stripped (prepare_architecture_internal_spec.py).
+_PRIOR_REVIEW_HEADINGS = ("## Internal Plan Review", "## Self-Review")
+
+
 def _emit_error(reason: str) -> int:
     print(json.dumps({"status": "error", "transport": "codex", "reason": reason}))
     return 1
@@ -76,15 +83,18 @@ def main(argv: list[str] | None = None) -> int:
                         help="the run's own evidence directory, e.g. "
                              ".shipwright/planning/iterate/<run_id>/")
     # The review subject: every agent .md this transport can drive (spec/code/
-    # doubt-reviewer, opus-plan-reviewer) documents receiving two file paths —
+    # doubt-reviewer, opus-plan-reviewer, architecture-internal-reviewer —
+    # the last takes brief + spec) documents receiving two file paths —
     # without these the child has no idea what it is reviewing (code-reviewer
     # REJECT, 2026-09-17).
     parser.add_argument("--spec-file", required=True,
-                        help="the spec/section-plan file path (all four roles take this)")
+                        help="the spec/section-plan file path (all five roles take this)")
     parser.add_argument("--diff-file", default=None,
                         help="required for --role spec|code|doubt: the diff being reviewed")
     parser.add_argument("--plan-file", default=None,
                         help="required for --role plan_review: the plan being reviewed")
+    parser.add_argument("--brief-file", default=None,
+                        help="required for --role architecture_internal: the architecture brief")
     parser.add_argument("--timeout", type=float, default=None)
     parser.add_argument("--max-retries", type=int, default=None)
     # Distinctly named — never reuses `--review-model`/`--plan-review-model`
@@ -98,10 +108,14 @@ def main(argv: list[str] | None = None) -> int:
                              "(a Codex model slug, e.g. gpt-6.1-sol); for a "
                              "session-scoped override with no flag to thread, "
                              "set SHIPWRIGHT_CODEX_REVIEW_MODEL (spec/code/doubt) "
-                             "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review)")
+                             "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review, architecture_internal)")
     args = parser.parse_args(argv)
 
-    if args.role == "plan_review":
+    if args.role == "architecture_internal":
+        if not args.brief_file:
+            return _emit_error("--brief-file is required for --role architecture_internal")
+        context_paths = {"Architecture brief": args.brief_file, "Spec file": args.spec_file}
+    elif args.role == "plan_review":
         if not args.plan_file:
             return _emit_error("--plan-file is required for --role plan_review")
         context_paths = {"Plan file": args.plan_file, "Spec file": args.spec_file}
@@ -125,6 +139,17 @@ def main(argv: list[str] | None = None) -> int:
     for label, content in context_sections.items():
         if not content.strip():
             return _emit_error(f"{label} is empty — nothing to review")
+
+    if args.role == "architecture_internal":
+        # Fresh-context pass: refuse the REAL iterate spec, which already carries
+        # the prior-review sections the sanitized copy has stripped (doubt-reviewer).
+        spec_text = context_sections[f"Spec file ({args.spec_file})"]
+        leaked = [h for h in _PRIOR_REVIEW_HEADINGS if h in spec_text]
+        if leaked:
+            return _emit_error(
+                f"--spec-file carries prior-review section(s) {leaked}; pass the sanitized copy "
+                "from prepare_architecture_internal_spec.py, never the real spec"
+            )
 
     prompt = build_prompt(agent_markdown, context_sections)
     kwargs: dict[str, float | int] = {}

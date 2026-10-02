@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-02-codex-arch-internal-role",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.082603+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.518872+00:00",
+      "disposition": "external plan review is medium+ only; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+          "line": 158,
+          "finding": "Canonical-reply test fed plan_review the architecture payload so the inequality was vacuous.",
+          "suggestion": "Use valid payloads for both and assert both files exist.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/review_via_codex.py",
+          "line": 81,
+          "finding": "Comment still listed four driven agents.",
+          "suggestion": "Add architecture-internal-reviewer.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/codex_review_roles.py",
+          "line": 51,
+          "finding": "Set now equals ROLE_SCHEMAS keys; comment rationale stale.",
+          "suggestion": "Reword as defensive-only.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 3757,
+          "finding": "Iterate Codex bullet omitted the transport-error branch.",
+          "suggestion": "Add Ran: no (capability failure).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.293076+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/schemas/codex_*_review_schema.json",
+          "line": null,
+          "finding": "Claim under doubt: type fix makes all roles launch live — offline test cannot show API acceptance",
+          "suggestion": "live launch per role",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tools/review_via_codex.py",
+          "line": null,
+          "finding": "Claim under doubt: only the sanitized spec is reviewed — nothing in code enforces it",
+          "suggestion": "refuse a spec carrying prior-review headings",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+          "line": null,
+          "finding": "Claim under doubt: own-basename test proves no clobbering — plan_review call errored",
+          "suggestion": "valid payloads for both",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/schemas/codex_architecture_internal_review_schema.json",
+          "line": null,
+          "finding": "Claim under doubt: role works once merged — plugin cache must carry the new schema",
+          "suggestion": "update-marketplace + check_plugin_cache_sync --strict",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.400528+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:55.763581+00:00",
+      "disposition": "external code review is medium+ only; this run is classified small and the internal cascade ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.186838+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.626060+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-01T22:49:49.724328+00:00",
+      "disposition": "internal architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

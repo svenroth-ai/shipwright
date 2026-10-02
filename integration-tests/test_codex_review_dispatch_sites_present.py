@@ -132,16 +132,19 @@ def test_sub_iterate_runner_agent_carries_no_dispatch_rule() -> None:
 # internal architecture review was nevertheless skipped for them. The skip and
 # the dispatch doc must key on a REAL Codex CLI driver, not CODEXTENDER_ACTIVE.
 
-ARCH_INTERNAL_SKIP_SITES = (
+ARCH_INTERNAL_SKIP_SITES = (  # name kept; these are now the dedicated-role sites
     REPO_ROOT / "plugins" / "shipwright-plan" / "skills" / "plan" / "references"
     / "step-5-int-arch.md",
     REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "references"
     / "iteration-planning.md",
 )
 
-_SKIP_MARKER = "No Codex-CLI transport yet."
+_SKIP_MARKER = "Codex CLI driver — dedicated `architecture_internal` role."
 #: the retired Ran literal and skip condition, anywhere user- or agent-facing
-_OLD_RAN_LITERAL = "no Codex transport for architecture_internal"
+_OLD_RAN_LITERALS = (
+    "no Codex transport for architecture_internal",
+    "no transport for architecture_internal yet",
+)
 _OLD_SKIP_CONDITION = re.compile(
     r"under[^.\n]{0,40}--driver codex`?\s*\(?or\s*`?CODEXTENDER_ACTIVE", re.I
 )
@@ -156,8 +159,13 @@ def _skip_paragraph(site: Path) -> str:
 
 
 @pytest.mark.parametrize("site", ARCH_INTERNAL_SKIP_SITES)
-def test_architecture_internal_skip_is_codex_cli_only(site: Path) -> None:
+def test_architecture_internal_has_its_own_codex_role_not_a_skip(site: Path) -> None:
     para = _skip_paragraph(site)
+    assert "--role architecture_internal" in para, f"{site}: must dispatch the dedicated role"
+    assert "architecture_internal_reply.json" in para, f"{site}: must name its own canonical reply"
+    assert "plan_review_reply.json" in para and "never" in para, (
+        f"{site}: must say it never shares plan_review's reply basename"
+    )
     assert "CODEXTENDER_ACTIVE" not in para, (
         f"{site}: the skip must not key on CODEXTENDER_ACTIVE; Codextender has "
         "a working Agent tool and must spawn the reviewer."
@@ -178,8 +186,15 @@ def test_old_skip_wording_is_gone_everywhere() -> None:
     ]
     for f in files:
         text = f.read_text(encoding="utf-8")
-        assert _OLD_RAN_LITERAL not in text, f"{f} still carries the retired Ran literal"
+        for literal in _OLD_RAN_LITERALS:
+            assert literal not in text, f"{f} still carries the retired Ran literal {literal!r}"
         assert not _OLD_SKIP_CONDITION.search(text), f"{f} skips on CODEXTENDER_ACTIVE"
+
+
+def test_dispatch_doc_lists_architecture_internal_role_and_brief_file() -> None:
+    text = CANONICAL_DOC.read_text(encoding="utf-8")
+    assert "--role {spec|code|doubt|plan_review|architecture_internal}" in text
+    assert "--brief-file" in text and "architecture_internal_reply.json" in text
 
 
 def test_dispatch_doc_routes_codextender_to_agent_tool() -> None:

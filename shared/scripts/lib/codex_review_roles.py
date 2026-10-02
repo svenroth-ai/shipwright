@@ -14,6 +14,7 @@ ROLE_SCHEMAS: dict[str, Path] = {
     "code": _SCHEMAS_DIR / "codex_code_review_schema.json",
     "doubt": _SCHEMAS_DIR / "codex_doubt_review_schema.json",
     "plan_review": _SCHEMAS_DIR / "codex_plan_review_schema.json",
+    "architecture_internal": _SCHEMAS_DIR / "codex_architecture_internal_review_schema.json",
 }
 
 ROLE_CANONICAL_BASENAMES: dict[str, str] = {
@@ -29,6 +30,11 @@ ROLE_CANONICAL_BASENAMES: dict[str, str] = {
     # absent, so the `finally` unlink deleted the very file just returned as
     # `canonical_path` (spec-reviewer REJECT, 2026-09-17).
     "plan_review": "plan_review_reply.json",
+    # architecture_internal is metadata-only in the review record (no `--from`
+    # adapter), like plan_review: its call site reads this file directly. Its
+    # OWN basename, never plan_review's -- the Internal Plan Review pass runs
+    # in the same out_dir and would otherwise overwrite/consume it.
+    "architecture_internal": "architecture_internal_reply.json",
 }
 
 assert ROLE_SCHEMAS.keys() == ROLE_CANONICAL_BASENAMES.keys(), (
@@ -38,14 +44,17 @@ assert ROLE_SCHEMAS.keys() == ROLE_CANONICAL_BASENAMES.keys(), (
     "the payload (code-reviewer REJECT, 2026-09-17)"
 )
 
-#: Which review roles carry the canonical reasoning-effort contract — ONLY
-#: the review-cascade roles the iterate/build skills Task()-invoke and this
-#: transport already dispatches (iterate-2026-09-20-m4-codex-subagent-
-#: dispatch). Deliberately a STRICT SUBSET of ROLE_SCHEMAS: `plan_review` is
-#: out of this iterate's scope (shipwright-plan, not iterate/build — see
-#: that iterate's spec's "Out of Scope"), so it carries no entry here and
-#: `run_codex_review`'s effort injection skips any role absent from this set.
-REASONING_EFFORT_ROLES: frozenset[str] = frozenset({"spec", "code", "doubt"})
+#: Which review roles carry the canonical reasoning-effort contract: every
+#: role this transport dispatches (the spec/code/doubt cascade since
+#: iterate-2026-09-20-m4-codex-subagent-dispatch; `plan_review` and
+#: `architecture_internal` since iterate-2026-10-02-codex-arch-internal-role).
+#: Every dispatched role carries the flag, and a test pins that equality with
+#: `ROLE_SCHEMAS`, so a new role cannot silently skip it. The `not in` branch of
+#: `transport_note_for` and the `if role in` guard in `run_codex_review` are
+#: therefore defensive only today.
+REASONING_EFFORT_ROLES: frozenset[str] = frozenset(
+    {"spec", "code", "doubt", "plan_review", "architecture_internal"}
+)
 
 if not REASONING_EFFORT_ROLES <= ROLE_SCHEMAS.keys():
     # `raise`, not `assert` -- stripped under `python -O`, exactly the class
@@ -112,7 +121,7 @@ def transport_note_for(role: str, effective_model: str) -> str:
     with zero headroom, and this function's only reason to be imported
     there is to read these same two constants (code-reviewer, low,
     2026-09-20). Bare `effective_model` for a role outside
-    `REASONING_EFFORT_ROLES` (`plan_review` today).
+    `REASONING_EFFORT_ROLES` (none today).
 
     ``effective_model`` MUST already have passed
     `codex_review_transport._CODEX_MODEL_SLUG_PATTERN` before it reaches

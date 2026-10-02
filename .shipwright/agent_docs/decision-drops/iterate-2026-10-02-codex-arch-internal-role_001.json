@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-02-codex-arch-internal-role",
+  "date": "2026-10-02",
+  "section": "Iterate — change: Codex Light review parity (architecture_internal role, plan_review effort)",
+  "title": "architecture_internal is its own Codex review role",
+  "context": "Under a Codex CLI driver (no Agent tool) the internal architecture review recorded Ran: no, and plan_review ran at default reasoning effort. A live probe also showed the API rejecting untyped const/enum in the spec/doubt/plan_review schemas, so those roles never launched.",
+  "decision": "Add role architecture_internal to review_via_codex.py (own schema, own architecture_internal_reply.json, inputs --brief-file + sanitized --spec-file, effort=high, plan reviewer's Codex model key). plan_review joins the effort set. Every Codex review schema now types its const/enum properties. Plan step 5-int-arch and iterate step 0b dispatch the role under Codex CLI.",
+  "consequences": "A Codex-driven run records the internal architecture review as Ran: yes. The CLI refuses a spec still carrying prior-review sections. A new schema file must reach the plugin cache (update-marketplace) or the role reports capability failure.",
+  "rationale": "Reusing plan_review would clobber plan_review_reply.json and needs a --plan-file this pass never has.",
+  "rejected": "Reusing role=plan_review (basename collision, wrong inputs); a new config key (same tier role as plan_review, so it shares codex_plan_review).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

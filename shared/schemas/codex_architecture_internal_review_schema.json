@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/codex_architecture_internal_review_schema.json",
+  "title": "Codex architecture-internal-reviewer output",
+  "description": "Pinned to plugins/shipwright-plan/agents/architecture-internal-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reviewer", "severity", "findings", "summary"],
+  "properties": {
+    "reviewer": { "type": "string", "const": "architecture-internal-reviewer" },
+    "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "severity", "finding", "suggestion"],
+        "properties": {
+          "category": { "type": "string", "enum": ["necessity", "smallest-option", "security", "complexity-cost", "completeness"] },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+          "finding": { "type": "string" },
+          "suggestion": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "summary": { "type": "string" }
+  }
+}

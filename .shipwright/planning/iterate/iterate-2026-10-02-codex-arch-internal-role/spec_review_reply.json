@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Re-review after fixing the stale 'not dispatch sites' sentence: AC1-AC4 met, AC5 rests on the live probe."
+}

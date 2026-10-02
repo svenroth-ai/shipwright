@@ -3718,12 +3718,13 @@ plan SKILL
   → on spawn/parse failure: records `Ran: no`, continues to Branch A/B/C
   → under a real Codex CLI driver (decided by harness identity — not by
     `--driver codex` or `CODEXTENDER_ACTIVE`, both of which are also true
-    under Codextender): does NOT spawn — reusing
-    `plan_review`'s Codex leg would collide on the fixed canonical basename
-    Step 5-int's real pass already writes; records
-    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)` —
-    a full Codex-side role is an explicit follow-up. Under Codextender the
-    Agent tool works (proxy-mapped to `sol`): it spawns and records `Ran: yes`
+    under Codextender): does NOT spawn — runs
+    `review_via_codex.py --role architecture_internal` (own schema, own
+    canonical basename `architecture_internal_reply.json`, inputs brief +
+    spec, high reasoning effort; reusing `plan_review` would collide on the
+    basename Step 5-int's real pass writes) and records `Ran: yes`. Under
+    Codextender the Agent tool works (proxy-mapped to `sol`): it spawns and
+    records `Ran: yes`
   → writes NO review-record row and NO marker of its own — same as Step
     5-int, this phase has no run_id to record against; does NOT carry the
     Pre-5b gate (only Step 5-int or a completed Branch A review count there)
@@ -3753,8 +3754,10 @@ iterate SKILL
   → on spawn/parse failure (incl. shipwright-plan not installed): records
     `Ran: no`, continues to Branch A/B/C
   → under a real Codex CLI driver only (NOT Codextender, whose Agent tool
-    works): does NOT spawn, records
-    `Ran: no (Codex CLI driver: no transport for architecture_internal yet)`
+    works): does NOT spawn, dispatches `review_via_codex.py --role
+    architecture_internal` over the brief + the sanitized spec copy and records
+    `Ran: yes` with a `--transport codex` row (on transport error: `Ran: no
+    (capability failure)`, and the Step 7 sweep closes the row)
   → when `Ran: yes`: records an `architecture_internal` review-record row via
     record_review_pass.py (metadata-only, same shape as `plan_internal`) —
     the row `floors.plan_review` also judges

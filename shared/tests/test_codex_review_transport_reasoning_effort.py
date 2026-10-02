@@ -32,6 +32,9 @@ _VALID_PAYLOADS: dict[str, dict] = {
     "code": VALID_CODE_REVIEW,
     "doubt": {"stage": "doubt", "gating": "advisory-must-address", "trigger": "io-boundary", "doubts": [], "summary": "ok"},
     "plan_review": {"reviewer": "opus-plan-reviewer", "severity": "none", "findings": [], "summary": "ok"},
+    "architecture_internal": {
+        "reviewer": "architecture-internal-reviewer", "severity": "low", "findings": [], "summary": "ok",
+    },
 }
 
 
@@ -63,46 +66,37 @@ def test_review_cascade_role_gets_reasoning_effort_flag(tmp_path: Path, monkeypa
     assert argv[idx + 1] == f"model_reasoning_effort={transport.CODEX_REVIEW_REASONING_EFFORT}"
 
 
-def test_plan_review_role_has_no_reasoning_effort_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """`plan_review` is deliberately absent from `REASONING_EFFORT_ROLES` (out
-    of this iterate's scope) — its argv must stay byte-identical to before."""
-    fake_run = _patch_available(monkeypatch)
-    transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
-    argv = fake_run.call_args.args[0]
-    assert "-c" not in argv
-    assert not any("model_reasoning_effort" in part for part in argv)
-
-
-def test_plan_review_role_full_argv_is_byte_identical_to_pre_iterate_shape(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("role", ["plan_review", "architecture_internal"])
+def test_plan_side_roles_get_reasoning_effort_flag(
+    role: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The absence assertion above only proves the flag is missing, not that
-    nothing else in argv shifted while the reasoning-effort branch was added
-    (External Review, OpenAI leg, medium, 2026-09-20: a refactor of the
-    sandbox value into a shared constant could reorder or drop another
-    argument while still satisfying an absence-only check)."""
-    # `CODEX_REVIEW_SANDBOX_MODE == "read-only"` is pinned here too -- asserting
-    # the constant against itself below would still pass a refactor that
-    # silently changed its value (code-reviewer, medium, 2026-09-20).
+    """`plan_review` (trg-0a3c4edb) and `architecture_internal` carry the same
+    `-c model_reasoning_effort=high` as the review cascade, and the rest of
+    argv is exactly the pre-existing shape, with the flag appended after `-o`."""
     assert transport.CODEX_REVIEW_SANDBOX_MODE == "read-only"
-    fake_run = _patch_available(monkeypatch)
-    transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
+    fake_run = _patch_available(monkeypatch, payload=_VALID_PAYLOADS[role])
+    result = transport.run_codex_review(role, tmp_path, "prompt", tmp_path)
+    assert result["status"] == "completed", result
     argv = fake_run.call_args.args[0]
-    schema_path = str(transport.ROLE_SCHEMAS["plan_review"])
+    schema_path = str(transport.ROLE_SCHEMAS[role])
     assert argv == [
         "codex", "exec", "-m", transport.CODEX_REVIEW_MODEL, "--skip-git-repo-check",
         "--sandbox", "read-only", "--ignore-user-config", "--ignore-rules",
         "--ephemeral", "--cd", str(tmp_path),
         "--output-schema", schema_path, "-o", argv[argv.index("-o") + 1],
+        "-c", f"model_reasoning_effort={transport.CODEX_REVIEW_REASONING_EFFORT}",
     ]
 
 
-def test_reasoning_effort_roles_is_exactly_the_review_cascade(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_reasoning_effort_roles_is_exactly_every_dispatched_role(monkeypatch: pytest.MonkeyPatch) -> None:
     """A future role added to `ROLE_SCHEMAS` without a deliberate call on its
     effort membership must fail this exact-set check rather than silently
     falling into the no-flag branch unremarked (External Review, GLM leg,
     low, 2026-09-20)."""
-    assert transport.REASONING_EFFORT_ROLES == frozenset({"spec", "code", "doubt"})
+    assert transport.REASONING_EFFORT_ROLES == frozenset(
+        {"spec", "code", "doubt", "plan_review", "architecture_internal"}
+    )
+    assert transport.REASONING_EFFORT_ROLES == transport.ROLE_SCHEMAS.keys()
 
 
 def test_all_three_review_cascade_roles_get_the_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -147,17 +141,45 @@ def test_reasoning_effort_flag_still_added_under_an_explicit_model_override(
     )
 
 
-def test_plan_review_transport_note_is_the_bare_model(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The Test Completeness Ledger's row for `plan_review`'s `transport_note`
-    cited the AC2 distinctness fixture as coverage; that fixture only ever
-    calls `spec`/`code`/`doubt` (no `--from` adapter exists for `plan_review`),
-    so the ledger's own claim was false and the gating branch inside
-    `transport_note_for` had zero coverage (doubt-reviewer, medium, 2026-09-20)."""
-    fake_run = _patch_available(monkeypatch, payload=_VALID_PAYLOADS["plan_review"])
-    result = transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
+@pytest.mark.parametrize("role", ["plan_review", "architecture_internal"])
+def test_plan_side_transport_note_names_effort_and_sandbox(
+    role: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_run = _patch_available(monkeypatch, payload=_VALID_PAYLOADS[role])
+    result = transport.run_codex_review(role, tmp_path, "prompt", tmp_path)
     assert result["status"] == "completed", result
-    assert "-c" not in fake_run.call_args.args[0]
-    assert result["transport_note"] == transport.CODEX_REVIEW_MODEL
+    assert f"model_reasoning_effort={transport.CODEX_REVIEW_REASONING_EFFORT}" in fake_run.call_args.args[0]
+    assert result["transport_note"] == (
+        f"{transport.CODEX_REVIEW_MODEL} effort={transport.CODEX_REVIEW_REASONING_EFFORT} "
+        f"sandbox={transport.CODEX_REVIEW_SANDBOX_MODE}"
+    )
+
+
+def test_architecture_internal_has_its_own_canonical_reply(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never `plan_review_reply.json`: Internal Plan Review writes that name in
+    the same out_dir, and a shared name would let one pass clobber the other."""
+    with monkeypatch.context() as m:
+        _patch_available(m, payload=_VALID_PAYLOADS["plan_review"])
+        plan = transport.run_codex_review("plan_review", tmp_path, "prompt", tmp_path)
+    with monkeypatch.context() as m:
+        _patch_available(m, payload=_VALID_PAYLOADS["architecture_internal"])
+        arch = transport.run_codex_review("architecture_internal", tmp_path, "prompt", tmp_path)
+    assert plan["status"] == "completed", plan
+    assert arch["status"] == "completed", arch
+    assert Path(arch["canonical_path"]).name == "architecture_internal_reply.json"
+    assert (tmp_path / "plan_review_reply.json").is_file()
+    assert (tmp_path / "architecture_internal_reply.json").is_file()
+    assert json.loads((tmp_path / "plan_review_reply.json").read_text(encoding="utf-8"))["reviewer"] == "opus-plan-reviewer"
+
+
+def test_architecture_internal_rejects_a_plan_review_shaped_reply(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Own schema: the reviewer const and category enum differ from plan_review's."""
+    _patch_available(monkeypatch, payload=_VALID_PAYLOADS["plan_review"])
+    result = transport.run_codex_review("architecture_internal", tmp_path, "prompt", tmp_path)
+    assert result["status"] == "error", result
+    assert "schema validation" in result["reason"]
 
 
 def test_argv_reasoning_effort_flag_and_transport_note_effort_agree_for_every_role(
