@@ -1,0 +1,1 @@
+F0 now runs the `AC coverage ratchet` gate locally after the suite (`shared/scripts/tools/check_ac_ratchet_f0.py`): it regenerates the traceability manifest in a scratch copy of the working tree and ratchets against that, so a newly minted but unbound AC fails before push instead of in CI. `Repair-PR safety` stays CI-only.

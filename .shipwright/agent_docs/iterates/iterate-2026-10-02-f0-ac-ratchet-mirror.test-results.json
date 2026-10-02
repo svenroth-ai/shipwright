@@ -1,0 +1,94 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-02-f0-ac-ratchet-mirror",
+    "date": "2026-10-02",
+    "unit": {
+      "status": "passed",
+      "passed": 21038,
+      "total": 21129
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/check_ac_ratchet_f0.py --project-root . --run-id iterate-2026-10-02-f0-ac-ratchet-mirror",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\f0-ac-ratchet-mirror\\.shipwright\\runs\\iterate-2026-10-02-f0-ac-ratchet-mirror\\surface_verification.log",
+      "timestamp": "2026-10-01T22:47:36.552Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "snapshot copies tracked+untracked non-ignored working-tree bytes, skips ignored/deleted",
+          "disposition": "tested",
+          "evidence": "test_check_ac_ratchet_f0.py::TestSnapshotTree PASSED"
+        },
+        {
+          "behavior": "no/red retained F0 run is refused with exit 2",
+          "disposition": "tested",
+          "evidence": "test_check_ac_ratchet_f0.py::TestRefusals PASSED"
+        },
+        {
+          "behavior": "regeneration failure -> exit 2, scratch removed",
+          "disposition": "tested",
+          "evidence": "TestRefusals::test_regeneration_failure... PASSED"
+        },
+        {
+          "behavior": "ratchet reads the REGENERATED manifest from scratch; real tree + committed manifest untouched; exit code relayed",
+          "disposition": "tested",
+          "evidence": "TestNoSelfVouching PASSED (2)"
+        },
+        {
+          "behavior": "stage_f0_evidence.main behaviour unchanged after extracting validated_junit_reports",
+          "disposition": "tested",
+          "evidence": "test_stage_f0_evidence.py 10 PASSED"
+        },
+        {
+          "behavior": "real end-to-end: regenerate from F0's real retained JUnit then real ratchet -> clean; removing a baselined unbound AC -> blocked exit 1",
+          "disposition": "tested",
+          "evidence": "F0 run + CLI surface probe (exit 0) and negative probe (exit 1, new_unbound FR-01.03/AC03)"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

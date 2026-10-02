@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Delivers the task statement: F0 regenerates the manifest into a scratch copy, runs the real ratchet against it, refuses without a complete green retained run; Repair-PR safety stays CI-only; docs and tests wired; shared-code changes minimal."}

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Scope matches request","verdict":"pass","note":"F0 mirror of AC coverage ratchet via scratch regeneration; Repair-PR safety untouched (CI-only)."},
+{"name":"Tests first / outcome-based","verdict":"pass","note":"14 new tests + real end-to-end (clean, and blocked on a removed baseline entry)."},
+{"name":"No real-tree mutation","verdict":"pass","note":"verified by test and git status after real run."},
+{"name":"Docs updated in same diff","verdict":"pass","note":"F0.md, hooks-and-pipeline.md, verify_local CI_ONLY reason."},
+{"name":"Error/exit-code contract","verdict":"pass","note":"0/1/2 with last-resort boundary after code review."},
+{"name":"Lint","verdict":"pass","note":"ruff 0.15.15 clean."},
+{"name":"Affected boundaries","verdict":"pass","note":"stage_f0_evidence refactor preserves messages/exit codes (existing tests green); regenerate_manifest default unchanged."}
+]}
