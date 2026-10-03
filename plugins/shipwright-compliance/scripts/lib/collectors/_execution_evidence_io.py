@@ -112,6 +112,13 @@ def _junit_bases_from_provenance(evidence_d: Path) -> dict[str, str]:
     return out
 
 
+def _resumed_local_from_provenance(evidence_d: Path) -> dict | None:
+    """The staged provenance's ``resumed_local`` marker (a RESUMED F0 run), else None."""
+    data = _read_json(evidence_d / "_provenance.json")
+    marker = data.get("resumed_local") if isinstance(data, dict) else None
+    return marker if isinstance(marker, dict) else None
+
+
 def _read_text(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
@@ -202,6 +209,7 @@ def refresh_index(project_root: Path) -> Path | None:
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         source_reports=source_reports,
         waivers=_existing_waivers(_index_path(root)),  # machine refresh must not drop operator waivers
+        resumed_local=_resumed_local_from_provenance(evidence_d) if is_staged else None,
     )
     return _write_index(_index_path(root), index)
 

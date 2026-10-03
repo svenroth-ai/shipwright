@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-03-f0-resume-provenance-consumers",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:04:08.007166+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:04:08.285127+00:00",
+      "disposition": "small complexity: plan review is medium+ only (phase matrix)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/resumed_evidence.py",
+          "line": 21,
+          "finding": "check_resumed_evidence raised TypeError on malformed rerun_tests, escaping main() and blocking F11 from a warning-only check",
+          "suggestion": "isolate with try/except and guard the len(); add a test - FIXED",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_resume.py",
+          "line": 41,
+          "finding": "units with empty base are never tagged reused (documented; F11 warning still names them)",
+          "suggestion": "follow-up: record unit root in with_unit_bases - DISCLOSED",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_resume.py",
+          "line": 28,
+          "finding": "_norm split param after '::' and used greedy regex",
+          "suggestion": "strip param first - FIXED",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/execution_evidence.py",
+          "line": 107,
+          "finding": "tag applied to every runner; normalize_index dropped reused",
+          "suggestion": "pytest-only, carry reused - FIXED",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verify_iterate_finalization.py",
+          "line": 79,
+          "finding": "check wired in verify_iterate_finalization.main, not run_all_checks (iterate_checks.py LOC budget)",
+          "suggestion": "DISCLOSED",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-03T20:07:24.934270+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:07:36.824854+00:00",
+      "disposition": "small diff, no migrations/async/new cross-plugin imports/irreversible ops; the doubt pass is conditional per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:04:08.727757+00:00",
+      "disposition": "small complexity: external_code review is medium+ only (phase matrix)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:04:08.148786+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:04:08.440295+00:00",
+      "disposition": "small complexity: plan_internal review is medium+ only (phase matrix)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-03T20:04:08.573842+00:00",
+      "disposition": "small complexity: architecture_internal review is medium+ only (phase matrix)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

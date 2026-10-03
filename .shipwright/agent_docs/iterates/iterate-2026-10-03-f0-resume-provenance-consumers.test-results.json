@@ -1,0 +1,101 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-03-f0-resume-provenance-consumers",
+    "date": "2026-10-03",
+    "unit": {
+      "status": "passed",
+      "passed": 21287,
+      "total": 21287
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_resumed_evidence_provenance.py -q",
+      "exit_code": 0,
+      "tests_run": 5,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-03-f0-resume-provenance-consumers/surface_verification.log",
+      "timestamp": "2026-10-03T20:17:05.162Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A reused-green unit's testcases and a failed-only unit's non-re-run testcases are tagged reused:true in the evidence index; re-run red tests are not",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_resumed_evidence_provenance.py::test_reused_results_are_tagged_and_executed_ones_are_not PASSED"
+        },
+        {
+          "behavior": "compliance refresh_index reads the staged resumed_local marker and tags reused entries (schema-valid)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_evidence_resume_tag.py::test_refresh_index_reads_the_staged_marker PASSED"
+        },
+        {
+          "behavior": "A full run tags nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_resumed_evidence_provenance.py::test_a_full_run_tags_nothing PASSED"
+        },
+        {
+          "behavior": "F11 check_resumed_evidence warns (WARNING, strict_exempt) naming resumed units; quiet for full run / no evidence",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_resumed_evidence_provenance.py::test_check_warns_on_a_resumed_run_but_never_blocks PASSED"
+        },
+        {
+          "behavior": "The check never raises on malformed provenance (cannot block F11)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_resumed_evidence_provenance.py::test_check_never_crashes_on_malformed_provenance PASSED"
+        },
+        {
+          "behavior": "stage_f0_evidence records each unit's report base in resumed_local",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_stage_f0_evidence_resumed.py::test_a_resumed_run_is_staged_as_resumed_local_evidence PASSED"
+        },
+        {
+          "behavior": "id normalisation handles class/param/'::' params, non-pytest runners untagged",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_evidence_resume_tag.py::test_param_with_double_colon_and_non_pytest_runner PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

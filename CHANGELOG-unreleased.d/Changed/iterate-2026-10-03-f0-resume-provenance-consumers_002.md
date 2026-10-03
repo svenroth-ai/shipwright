@@ -1,0 +1,1 @@
+shipwright-iterate: a resumed F0 run's reused results are now distinguishable from executed ones - the evidence index tags carried-over testcases reused and F11 adds a warning-only check naming the resumed units (never blocking)

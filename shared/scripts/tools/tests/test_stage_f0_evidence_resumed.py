@@ -64,7 +64,10 @@ def test_a_resumed_run_is_staged_as_resumed_local_evidence(tmp_path):
 
     assert payload["resumed"] is True and payload["staged"] == 1
     prov = evidence_drop.read_provenance(root)
-    assert prov["resumed_local"] == _RESUMED
+    # the manifest's marker plus each unit's report base (lets consumers attribute reused ids)
+    want = {**_RESUMED, "units": {"shipwright-x": {
+        **_RESUMED["units"]["shipwright-x"], "base": "plugins/shipwright-x"}}}
+    assert prov["resumed_local"] == want
     assert prov["run_id"] == "r1" and prov["reports"]["junit"]  # still valid evidence
 
 

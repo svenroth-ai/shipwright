@@ -23,6 +23,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from ._evidence_readers import read_junit, read_playwright, read_vitest
+from ._evidence_resume import reuse_predicate
 from ._evidence_vocab import (
     EVIDENCE_INDEX_VERSION,
     EXECUTED_VOCAB,
@@ -65,6 +66,7 @@ def build_index(
     generated_at: str | None = None,
     source_reports: list[str] | None = None,
     waivers: list[dict] | None = None,
+    resumed_local: dict | None = None,
 ) -> dict:
     """Merge parsed runner evidence into one schema-validated index (pure; no writes).
 
@@ -82,6 +84,10 @@ def build_index(
     actually joins the manifest. Every entry folds through the same fail-closed
     reduction as every other parsed set, so a root that never ran still reads
     ``not_run`` rather than being silently absent.
+
+    ``resumed_local`` (the staged provenance's marker for a RESUMED F0 run) tags the entries
+    that run reused rather than executed with ``reused: true``. Descriptive only - status and
+    ``executed`` are untouched, so a reused green test still counts as a pass.
     """
     bases = bases or {}
     parsed_sets = []
@@ -98,6 +104,11 @@ def build_index(
     for parsed in parsed_sets:
         for tid, ent in parsed.items():
             merge_into(results, tid, ent)
+    reused = reuse_predicate(resumed_local)
+    if reused is not None:
+        for tid, ent in results.items():
+            if ent.get("runner") == "pytest" and reused(tid):  # resume is pytest-only
+                ent["reused"] = True
     index: dict = {"schema_version": EVIDENCE_INDEX_VERSION, "results": results}
     if generated_at is not None:
         index["generated_at"] = generated_at
@@ -122,6 +133,8 @@ def normalize_index(raw: dict) -> dict:
         if not isinstance(ev, dict):
             continue
         ent = _entry(ev.get("status"), ev.get("executed"), "")
+        if ev.get("reused") is True:
+            ent["reused"] = True
         if ev.get("runner"):
             ent["runner"] = str(ev["runner"])
         else:
