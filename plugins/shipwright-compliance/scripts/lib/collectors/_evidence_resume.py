@@ -19,14 +19,16 @@ REUSE_GREEN = "reused-green"
 FAILED_ONLY = "failed-only"
 
 
-def _norm(ident: str, base: str = "") -> str:
-    """``tests/test_x.py::Cls::test_y[p]`` (unit-relative node id) -> the evidence id
-    ``<base>/tests/test_x.py::test_y``. Class and parametrization are dropped, the param from
-    the FIRST ``[`` on (any ``]``/``::`` inside it included), on BOTH sides of the comparison -
-    so an id the reader strips differently can only ever read as re-run, never as reused."""
+def _norm(ident: str) -> str:
+    """``<base>/tests/test_x.py::Cls::test_y[p]`` -> ``<base>/tests/test_x.py::test_y``.
+
+    The ONE normalisation both sides of the comparison go through (a re-run node id after
+    the unit base is prefixed, and an evidence id as ``read_junit`` built it): class and
+    parametrization are dropped, the param from the FIRST ``[`` on (any ``]``/``::`` inside
+    it included) - so an id the reader strips differently can only ever read as re-run."""
     path, _, rest = ident.partition("::")
     name = rest.split("[", 1)[0].rsplit("::", 1)[-1]
-    return f"{base}/{path}::{name}".replace("\\", "/") if base else f"{path}::{name}"
+    return f"{path}::{name}".replace("\\", "/")
 
 
 def reuse_predicate(resumed_local: object) -> Callable[[str], bool] | None:
@@ -45,7 +47,7 @@ def reuse_predicate(resumed_local: object) -> Callable[[str], bool] | None:
         elif entry.get("mode") == FAILED_ONLY:
             reran = entry.get("rerun_tests")
             ids = reran if isinstance(reran, list) else []
-            partial[base + "/"] = {_norm(i, base) for i in ids if isinstance(i, str)}
+            partial[base + "/"] = {_norm(f"{base}/{i}") for i in ids if isinstance(i, str)}
     if not whole and not partial:
         return None
 
