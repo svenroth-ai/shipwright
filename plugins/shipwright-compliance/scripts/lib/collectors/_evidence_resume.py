@@ -8,7 +8,8 @@ into a predicate over evidence ids so ``build_index`` can tag them ``reused`` (t
 descriptive: the entry still reads ``executed: pass``, so resume keeps its speed-up).
 
 A unit whose ``base`` is empty (tests at the repo root) cannot be attributed by id prefix and
-is treated as executed - the F11 warning still names it. Malformed input is "nothing reused".
+is treated as executed - the F11 warning still names it. Malformed input (incl. a failed-only
+unit with no usable ``rerun_tests``) is "nothing reused": never guessed into a blanket tag.
 """
 
 from __future__ import annotations
@@ -46,8 +47,10 @@ def reuse_predicate(resumed_local: object) -> Callable[[str], bool] | None:
             whole.append(base + "/")
         elif entry.get("mode") == FAILED_ONLY:
             reran = entry.get("rerun_tests")
-            ids = reran if isinstance(reran, list) else []
-            partial[base + "/"] = {_norm(f"{base}/{i}") for i in ids if isinstance(i, str)}
+            ids = [i for i in reran if isinstance(i, str)] if isinstance(reran, list) else []
+            if not ids:  # a failed-only unit always re-ran >= 1 test; none named = cannot attribute
+                continue
+            partial[base + "/"] = {_norm(f"{base}/{i}") for i in ids}
     if not whole and not partial:
         return None
 

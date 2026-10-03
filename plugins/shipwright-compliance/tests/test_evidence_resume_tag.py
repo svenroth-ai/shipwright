@@ -56,3 +56,11 @@ def test_param_containing_a_closing_bracket_still_reads_as_rerun():
     assert not fo("p/u/tests/t.py::test_x[a]b]")  # id as read_junit leaves it
     assert not fo("p/u/tests/t.py::test_x")        # id as a stripping reader would give
     assert fo("p/u/tests/t.py::test_y")
+
+
+def test_failed_only_unit_without_usable_rerun_ids_tags_nothing():
+    for bad in (None, 5, [], [None, 3]):
+        entry = {"mode": "failed-only", "base": "p/u"}
+        if bad is not None:
+            entry["rerun_tests"] = bad
+        assert reuse_predicate({"units": {"u": entry}}) is None
