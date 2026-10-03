@@ -41,6 +41,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 # by shared/tests/test_verify_iterate_finalization.py. DO NOT remove any
 # of these without migrating every importer and updating the tests.
 from tools.verifiers.common import CheckResult, Severity, format_report  # noqa: E402,F401
+from tools.verifiers.resumed_evidence import check_resumed_evidence  # noqa: E402
 from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_adr_in_iterate_history,
@@ -75,6 +76,7 @@ def main() -> None:
 
     project_root = Path(args.project_root).resolve()
     results = run_all_checks(project_root, args.run_id, args.commit)
+    results.append(check_resumed_evidence(project_root, args.run_id))  # warning-only: resume provenance
     print(format_report("iterate finalization", results))
 
     errors = sum(1 for r in results if r.is_failure and r.severity == Severity.ERROR.value)

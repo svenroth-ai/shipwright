@@ -100,6 +100,7 @@ def fresh_evidence(project_root: Path, run_id: str, commit_hash: str, evio) -> d
     try:
         index = evio.build_index(
             junit_reports=junit_reports, playwright=playwright, vitest=vitest, root=Path(project_root),
+            resumed_local=prov.get("resumed_local"),  # reused (not executed) entries are tagged
         )
     except Exception:  # noqa: BLE001 — a broken/invalid report degrades to empty (fail-closed)
         return {}

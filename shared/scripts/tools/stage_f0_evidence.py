@@ -190,6 +190,15 @@ def published_resumed(run_dir: Path) -> dict | None:
     return resumed if isinstance(resumed, dict) else None
 
 
+def with_unit_bases(run_dir: Path, resumed: dict) -> dict:
+    """``resumed`` with each unit's report ``base`` added, so a consumer can tell which
+    evidence ids a reused unit owns (the manifest's ``resumed.units`` has no path)."""
+    bases = {e["unit_id"]: e["base"] for e in load_and_validate_manifest(run_dir)}
+    units = {u: {**v, "base": bases[u]} if isinstance(v, dict) and u in bases else v
+             for u, v in (resumed.get("units") or {}).items()}
+    return {**resumed, "units": units}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project-root", default=".", type=Path)
@@ -206,6 +215,8 @@ def main(argv: list[str] | None = None) -> int:
 
     # A resumed run is staged, but AS resumed-local evidence (never a full green run).
     resumed = published_resumed(run_dir)
+    if resumed:
+        resumed = with_unit_bases(run_dir, resumed)
     prov = evidence_drop.stage_reports(
         root, run_id=args.run_id, head_commit=args.head_commit, junit_reports=junit_reports,
         provenance_extra={"resumed_local": resumed} if resumed else None,

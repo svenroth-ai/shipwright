@@ -1,0 +1,44 @@
+{
+ "review": [
+  {
+   "finding": "check_resumed_evidence raised TypeError on malformed rerun_tests, escaping main() and blocking F11 from a warning-only check",
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/scripts/tools/verifiers/resumed_evidence.py",
+   "line": 21,
+   "suggestion": "isolate with try/except and guard the len(); add a test - FIXED"
+  },
+  {
+   "finding": "units with empty base are never tagged reused (documented; F11 warning still names them)",
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_resume.py",
+   "line": 41,
+   "suggestion": "follow-up: record unit root in with_unit_bases - DISCLOSED"
+  },
+  {
+   "finding": "_norm split param after '::' and used greedy regex",
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_resume.py",
+   "line": 28,
+   "suggestion": "strip param first - FIXED"
+  },
+  {
+   "finding": "tag applied to every runner; normalize_index dropped reused",
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-compliance/scripts/lib/collectors/execution_evidence.py",
+   "line": 107,
+   "suggestion": "pytest-only, carry reused - FIXED"
+  },
+  {
+   "finding": "check wired in verify_iterate_finalization.main, not run_all_checks (iterate_checks.py LOC budget)",
+   "severity": "low",
+   "category": "architecture",
+   "file": "shared/scripts/tools/verify_iterate_finalization.py",
+   "line": 79,
+   "suggestion": "DISCLOSED"
+  }
+ ]
+}

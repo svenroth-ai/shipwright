@@ -59,6 +59,10 @@
         "runner": {
           "type": "string",
           "description": "Which runner produced the evidence (pytest | playwright | vitest | ...), for audit provenance."
+        },
+        "reused": {
+          "const": true,
+          "description": "Present only when a RESUMED F0 run carried this result over from an earlier run on an older tree instead of executing it at this head. Descriptive: status/executed still read as observed, so the result still counts."
         }
       }
     },
