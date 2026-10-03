@@ -13,20 +13,20 @@ is treated as executed - the F11 warning still names it. Malformed input is "not
 
 from __future__ import annotations
 
-import re
 from typing import Callable
 
 REUSE_GREEN = "reused-green"
 FAILED_ONLY = "failed-only"
-_PARAM_SUFFIX = re.compile(r"\[[^\]]*\]$")
 
 
-def _norm(ident: str, base: str) -> str:
+def _norm(ident: str, base: str = "") -> str:
     """``tests/test_x.py::Cls::test_y[p]`` (unit-relative node id) -> the evidence id
-    ``<base>/tests/test_x.py::test_y`` (``read_junit`` drops the class and the param)."""
+    ``<base>/tests/test_x.py::test_y``. Class and parametrization are dropped, the param from
+    the FIRST ``[`` on (any ``]``/``::`` inside it included), on BOTH sides of the comparison -
+    so an id the reader strips differently can only ever read as re-run, never as reused."""
     path, _, rest = ident.partition("::")
-    name = _PARAM_SUFFIX.sub("", rest).rsplit("::", 1)[-1]
-    return f"{base}/{path}::{name}".replace("\\", "/")
+    name = rest.split("[", 1)[0].rsplit("::", 1)[-1]
+    return f"{base}/{path}::{name}".replace("\\", "/") if base else f"{path}::{name}"
 
 
 def reuse_predicate(resumed_local: object) -> Callable[[str], bool] | None:
@@ -52,6 +52,7 @@ def reuse_predicate(resumed_local: object) -> Callable[[str], bool] | None:
     def reused(test_id: str) -> bool:
         if any(test_id.startswith(p) for p in whole):
             return True
-        return any(test_id.startswith(p) and test_id not in reran for p, reran in partial.items())
+        norm = _norm(test_id)
+        return any(test_id.startswith(p) and norm not in reran for p, reran in partial.items())
 
     return reused

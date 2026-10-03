@@ -48,3 +48,11 @@ def test_param_with_double_colon_and_non_pytest_runner():
     pw = {"suites": []}
     idx = build_index(junit_reports=[(_J, "plugins/u")], playwright=pw, resumed_local=_MARK)
     assert all(e.get("runner") != "playwright" or "reused" not in e for e in idx["results"].values())
+
+
+def test_param_containing_a_closing_bracket_still_reads_as_rerun():
+    fo = reuse_predicate({"units": {"u": {"mode": "failed-only", "base": "p/u",
+                                          "rerun_tests": ["tests/t.py::test_x[a]b]"]}}})
+    assert not fo("p/u/tests/t.py::test_x[a]b]")  # id as read_junit leaves it
+    assert not fo("p/u/tests/t.py::test_x")        # id as a stripping reader would give
+    assert fo("p/u/tests/t.py::test_y")
