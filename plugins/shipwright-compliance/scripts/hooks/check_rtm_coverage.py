@@ -5,11 +5,17 @@
 # ///
 """PreToolUse hook: Soft-block git commit when RTM coverage is below threshold.
 
-Reads the compliance traceability matrix from .shipwright/compliance/traceability-matrix.md,
-extracts coverage percentage, and blocks commit if below threshold.
+Measures REQUIREMENT coverage -- the share of active requirements (and, reported
+separately, acceptance criteria) with an executed-passing bound test -- from the
+working-tree copy of the committed/cached
+``.shipwright/compliance/test-traceability.json``. It never regenerates
+the manifest (it fires on every ``git commit``); a stale manifest is a WARN. Only
+when no usable manifest exists does it fall back to the RTM's legacy "Traceability
+coverage" line (build sections with a commit). Cases that cannot be measured emit
+a visible WARN (``additionalContext``) instead of allowing silently.
 
 Exit codes:
-  0 = allow (no compliance data yet, or coverage sufficient)
+  0 = allow (no compliance data yet, coverage sufficient, or unmeasurable + WARN)
   2 = soft-block (user can say "Continue anyway", gets logged)
 
 The user can override by saying "Continue anyway". If they do, Claude should
@@ -20,7 +26,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -48,6 +53,19 @@ def _resolve_project_root() -> str:
         return env_root if env_root else os.getcwd()
 
 
+def _lib():
+    """Import the sibling support module lazily, inside ``main()``'s own try/except.
+
+    A top-level import failure would crash the hook process and hard-block every
+    Bash call; here it surfaces as a visible WARN and an ALLOW."""
+    lib_dir = Path(__file__).resolve().parent.parent / "lib"
+    if str(lib_dir) not in sys.path:
+        sys.path.insert(0, str(lib_dir))
+    import rtm_gate_support  # noqa: PLC0415
+
+    return rtm_gate_support
+
+
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
     """Build soft-block hook output with override support."""
     return {
@@ -67,40 +85,27 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def get_coverage_from_rtm(project_root: str) -> int | None:
-    """Parse coverage percentage from traceability-matrix.md.
-
-    Returns coverage as int (0-100) or None if file doesn't exist.
-    """
-    rtm_path = str(Path(project_root) / ".shipwright" / "compliance" / "traceability-matrix.md")
-    if not os.path.exists(rtm_path):
-        return None
-
-    try:
-        with open(rtm_path, encoding="utf-8") as f:
-            content = f.read()
-    except OSError:
-        return None
-
-    # Match "| Traceability coverage | NN% |"
-    match = re.search(r"Traceability coverage\s*\|\s*(\d+)%", content)
-    if match:
-        return int(match.group(1))
-    return None
+def _read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
+    return _lib().read_threshold(project_root)
 
 
 def get_threshold(project_root: str) -> float:
     """Load RTM coverage threshold from compliance config."""
-    config_path = os.path.join(project_root, "shipwright_compliance_config.json")
-    if not os.path.exists(config_path):
-        return 0.80  # default
+    return _read_threshold(project_root)[0]
 
-    try:
-        with open(config_path, encoding="utf-8") as f:
-            config = json.load(f)
-        return config.get("enforcement", {}).get("rtm_coverage_min", 0.80)
-    except (json.JSONDecodeError, OSError):
-        return 0.80
+
+def _measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
+    return _lib().measure(project_root)
+
+
+def _warn_output(warnings: list[str], info: str | None = None) -> None:
+    parts = [f"check_rtm_coverage: {info}"] if info else []
+    if warnings:
+        parts.append("WARN (check_rtm_coverage): " + "; ".join(warnings))
+    print(json.dumps({"hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "additionalContext": "\n".join(parts),
+    }}))
 
 
 def main() -> int:
@@ -117,45 +122,60 @@ def main() -> int:
     # Resolve the managed project root (auto-descends in subdir layouts).
     project_root = _resolve_project_root()
 
-    # If no compliance data yet (early pipeline), allow
-    coverage = get_coverage_from_rtm(project_root)
-    if coverage is None:
+    try:
+        measure, warnings = _measure(project_root)
+        threshold, config_warnings, baseline = _read_threshold(project_root)
+    except Exception as exc:  # noqa: BLE001 - a broken gate must say so, then allow
+        _warn_output([
+            f"coverage measurement failed ({type(exc).__name__}: {str(exc)[:120]}); "
+            "the 80% commit gate is NOT evaluating"
+        ])
+        return 0
+    warnings += config_warnings
+    if measure is None:
+        if warnings:
+            _warn_output(warnings)
         return 0
 
-    threshold = get_threshold(project_root)
-    threshold_pct = int(threshold * 100)
-
-    if coverage < threshold_pct:
-        # Find uncovered sections for actionable feedback
-        uncovered = _find_uncovered_sections(project_root)
+    lib = _lib()
+    threshold_pct = lib.pct_text(threshold)
+    if not lib.meets(measure, threshold):
+        details: dict[str, Any] = {
+            "coverage_pct": measure["pct"],
+            "threshold_pct": float(threshold_pct),
+            "metric": measure["kind"],
+            "warnings": warnings,
+            "ratchet_hint": (
+                "A project far below target records its measured value as "
+                "enforcement.rtm_coverage_baseline in shipwright_compliance_config.json; "
+                "the gate then ratchets from there. The hook never writes it."
+            ),
+        }
+        if measure["kind"] == "requirements":
+            details["fr"] = measure["coverage"]["fr"]
+            details["ac"] = measure["coverage"]["ac"]
+            details["source_commit"] = measure["source_commit"]
+            details["uncovered_requirements"] = measure["coverage"]["uncovered_requirements"]
+        else:
+            details["uncovered_sections"] = lib.find_uncovered_sections(project_root)
         print(json.dumps(_hook_block(
-            reason=f"RTM coverage {coverage}% < {threshold_pct}% threshold",
-            details={
-                "coverage_pct": coverage,
-                "threshold_pct": threshold_pct,
-                "uncovered_sections": uncovered,
-            },
+            reason=f"{lib.describe(measure)} < {threshold_pct}% threshold",
+            details=details,
         )))
         return 2
 
+    if baseline is not None and lib.above_baseline(measure, baseline):
+        warnings.append(
+            f"measured {measure['pct']}% is above the recorded rtm_coverage_baseline "
+            f"({lib.pct_text(baseline)}%); raise it in shipwright_compliance_config.json "
+            "so the ratchet only moves up"
+        )
+    if measure["kind"] == "requirements":
+        # the number and its definition are visible on every evaluated commit
+        _warn_output(warnings, info=f"{lib.describe(measure)} >= {threshold_pct}% threshold")
+    elif warnings:
+        _warn_output(warnings)
     return 0
-
-
-def _find_uncovered_sections(project_root: str) -> list[str]:
-    """Find sections without commits from the RTM."""
-    rtm_path = str(Path(project_root) / ".shipwright" / "compliance" / "traceability-matrix.md")
-    uncovered = []
-    try:
-        with open(rtm_path, encoding="utf-8") as f:
-            for line in f:
-                # Table rows: "| split | section | — | ..." means no commit
-                if line.startswith("|") and "| — |" in line:
-                    parts = [p.strip() for p in line.split("|")]
-                    if len(parts) >= 3 and parts[2]:  # section name
-                        uncovered.append(parts[2])
-    except OSError:
-        pass
-    return uncovered
 
 
 def _run() -> int:

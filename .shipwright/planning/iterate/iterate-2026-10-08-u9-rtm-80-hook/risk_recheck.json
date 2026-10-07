@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u9-rtm-80-hook",
+  "risk_recheck": {
+    "changed_file_count": 5,
+    "diff_loc": 523,
+    "risk_flags": [
+      "cross_component",
+      "touches_auth"
+    ],
+    "diff_risk_flags": [
+      "cross_component"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "small",
+    "effective_complexity": "medium",
+    "upgraded": true,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}
