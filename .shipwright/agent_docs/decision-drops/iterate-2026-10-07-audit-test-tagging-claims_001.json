@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-07-audit-test-tagging-claims",
+  "date": "2026-10-07",
+  "section": "Iterate - docs: finalization-claims hardening campaign brief",
+  "title": "Campaign brief to make finalization enforce what the documentation claims",
+  "context": "An audit of the whitepaper against the code found that only 6.0% (monorepo) and 28.9% (WebUI) of tests carry an FR tag, that iterate never instructs the agent to tag new tests, and that several promised gates are narrower than described (AC-text-only, medium+-only, self-reported fields, prose-only).",
+  "decision": "Record a 12-unit parallel campaign (U0 foundation, U1 hard test-tag gate, U2 delta backfill, U3-U7, U9-U12; U8 cut) in a campaign brief, revised after internal Opus and external GPT/GLM plan and architecture reviews. Operator decisions: U1 hard STOP at every complexity, autonomous runs continue loudly when external review is unavailable, 80% hook stays a soft-block.",
+  "consequences": "The campaign adds roughly seven tightened or new finalization verifiers behind one extension point; each is a permanent obligation and a false positive blocks every iterate, so U1 and U9 start with a measurement and U7 is warn-first. Whitepaper wording is deliberately not part of this campaign.",
+  "rationale": "Reviews showed the first draft's file sets were not disjoint (iterate_checks.py is at its bloat cap), so a foundation unit and a tag-from-the-start contract were added. The U1 feasibility spike measured 28 s cold / 11.5 s warm manifest regeneration, which is acceptable for F11.",
+  "rejected": "Option C (correct the documentation only) - GPT's architecture reviewer and Opus preferred it, but the operator wants the product to do what the paper says. Option D (one generic claims-registry verifier) - harder to reason about and saves no per-claim logic.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
