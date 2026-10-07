@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "Local command execution was blocked, so this review uses the supplied diff; I could not read the full campaign brief or run tests.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/record_review_pass.py:206\n- Finding: A bare `--reason-code` synthesizes a disposition for the review record, but companion markers still receive `args.disposition`, which is `None`. For `plan` and `external_code`, the record and marker therefore disagree about why the review did not run; marker consumers lose the explanation.\n- Suggestion: Pass `_disposition(args)` into `marker_reason` too. Extend the bare-code CLI test to assert the companion marker contains the synthesized reason.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/exemption_record.py:76\n- Finding: Explicit `\"exemptions\": null` is accepted as legacy and summarized as `0`. The documented contract permits an **absent** key for legacy records and otherwise requires an object with `count` and `items`; the writer and F11 gate currently accept this malformed block.\n- Suggestion: Distinguish an absent key from an explicitly null value, using a sentinel or a presence check. Add tests showing that the writer rejects null, F11 fails it, and the summary exits with an error.\n\nOverall assessment: ship-with-fixes. The foundation is largely implemented, but companion reasons and malformed exemption handling need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/record_review_pass.py:~203 (`reason=marker_reason(args.disposition, parse_status, len(findings))`)\n- Finding: When a `not_run` row is recorded with only `--reason-code` (no `--disposition`), `args.disposition` is `None`, so `marker_reason(None, ...)` returns `None` (assuming parse_status is None) and the cross-repo marker is written with a null `reason` for a not_run row. Previously `--disposition` was required, so the marker always carried the explanation. The synthesized rule-naming disposition (`_disposition(args)`) never reaches the marker, which is the field the downstream `ReviewRow` consumer surfaces as `disposition`.\n- Suggestion: Pass `marker_reason(_disposition(args), parse_status, len(findings))` (and the same in the `close-missing`/`write_markers` path) so the synthesized disposition also reaches the marker.\n\n- Category: bug\n- Severity: low\n- File: shared/scripts/tools/record_review_pass.py:~138 (`if args.reason_code and args.status == STATUS_COMPLETED`)\n- Finding: The CLI only rejects `--reason-code` on `completed` rows. `record --status pending --reason-code unavailable` passes CLI validation; `make_entry` doesn't take `reason_code`, and the field is bolted on afterwards (`entry[\"reason_code\"] = args.reason_code`). Whether it's caught depends on whether the write path re-validates; if `record` writes without `validate_record` (only markers/repair paths shown validate), an invalid record can be persisted.\n- Suggestion: Reject `--reason-code` unless `status` is in `{not_run, not_applicable}` (matching `reason_code_entry_error`), or assert `validate_entry` runs on the assembled entry before write.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_finalization_claims_registry.py:~99 (`assert lines <= 1087`)\n- Finding: The \"did not grow\" test hard-codes 1087 as the cap, which is exactly (or near) the post-change size. If the file was under the cap before this diff, this allows it to have grown within this very change and any future change up to 1087 lines without tripping \u2014 it doesn't pin \"not larger than before this change.\"\n- Suggestion: Derive the baseline from the pre-change count (or a stricter documented ADR-125 number) and note it in the assertion, so growth within the diff itself is caught.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_finalization_claims_registry.py:~84 (`test_run_all_checks_splices_the_registry_in_once`)\n- Finding: Running `iterate_checks.run_all_checks` on a bare `tmp_path` depends on every historical check tolerating an empty project without raising \u2014 `run_all_checks` calls the checks directly (no try/except there; the crash-to-RED wrapper lives only in `run_claim_checks`). If any existing check throws on a missing `.shipwright` tree, this test fails for a reason unrelated to the splice, and a future check added to `run_all_checks` could break it.\n- Suggestion: If the empty-project run is already known-good, fine; otherwise build the minimal fixture the historical checks expect (as `test_exemption_record.py` does with `.shipwright/agent_docs`).\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/exemption_record.py:~46 (`path = scope.split(\"::\", 1)[0]`)\n- Finding: Path-safety is only checked on the portion before the first `::`. A scope like `x.py::/etc/../../secret` passes validation. Since scope is descriptive rather than resolved to disk this is low risk, but the docstring claims the whole scope is path-safe.\n- Suggestion: Either validate the full string for `..` segments and control chars (already done for control chars via `_CONTROL_RE` on the whole scope \u2014 only `..`/absolute checks are partial) or document that only the path component is checked.\n\nOtherwise the diff is a faithful implementation of U0: the registry with both-direction meta-tests, the shared vocabulary with legacy-tolerant schema and matching writers, and the exemption count surfaced in F5c/F11/F12 plus the summary CLI, with iterate_checks.py net-shrunk. The marker-reason regression is the one item I'd fix before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

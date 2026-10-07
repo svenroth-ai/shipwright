@@ -62,12 +62,12 @@ from lib.iterate_entry import (  # noqa: E402
     sort_key,
     validate_iterate_entry,
 )
+from lib.exemption_record import entry_exemptions_error  # noqa: E402
 from lib.iterate_test_results import (  # noqa: E402
     EvidenceError,
     evidence_file_for,
     install_current_evidence,
 )
-
 
 ITERATE_RETENTION = 200  # ~200 unpinned entries, not exactly: pins add on top; cross-worktree merges can overshoot by one per branch and self-heal next append -- see F5c.md's retention section + test_retention_merge_overshoot.py. Raised from 50 on 2026-09-12 for headroom against current iterate-branch concurrency; see that date's ADR amending iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md.
 
@@ -316,8 +316,8 @@ def append_iterate_entry(
     retention: int = ITERATE_RETENTION,
 ) -> dict[str, Any]:
     """Append ``entry`` and its mandatory current-run test-result evidence."""
-    ok, err = validate_iterate_entry(entry, strict=True)
-    if not ok:
+    err = validate_iterate_entry(entry, strict=True)[1] or entry_exemptions_error(entry)
+    if err:
         raise IterateAppendError(f"invalid entry: {err}")
 
     project_root = project_root.resolve()

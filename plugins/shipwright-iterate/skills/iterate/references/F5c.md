@@ -19,9 +19,17 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
     "adr": "{run_id}",
     "test_completeness": { ...the F5 ledger block... },
     "surface_verification": { ...the F0.5 block... },
-    "declared_removals": [ {"path": "...", "reason": "..."} ]
+    "declared_removals": [ {"path": "...", "reason": "..."} ],
+    "exemptions": {"count": 0, "items": []}
   }'
 ```
+
+**`exemptions` (additive, optional; absent = legacy = zero).** One item per exemption any gate
+accepted this run: `{"kind": "<reason-code family>", "scope": "<path or path::name, project-relative>",
+"reason_code": "<code from that family in shared/scripts/lib/reason_codes.py>"}`; `count` MUST equal
+`len(items)`. Free text is not a reason: `append_iterate_entry.py` refuses an unknown family or code,
+an absolute or `..` scope, or a count that disagrees, and F11 (`check_exemption_record`) re-checks it.
+F12 and the PR body print the count (`exemption_summary.py`).
 
 **The complete test snapshot is mandatory input, not another field in
 `--entry-json`.** Before changing the summary store, the tool reads

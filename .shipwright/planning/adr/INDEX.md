@@ -178,3 +178,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Internal architecture-review arm for /shipwright-plan and /shipwright-iterate](iterate-2026-09-28-architecture-review-internal-arm-adr.md)
 - [Deferred: split-or-ADR decision for the two H1 bloat outliers](iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md)
 - [Required-check presence and PR execution](iterate-2026-09-28-fix-required-check-conditional-pr-required-check-drift.md)
+- [Finalization gate registry and shared reason codes (campaign unit U0)](iterate-2026-10-08-u0-foundation-gate-registry-reviews.md)

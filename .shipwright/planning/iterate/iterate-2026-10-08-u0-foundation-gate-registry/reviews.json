@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u0-foundation-gate-registry",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T23:28:52.443159+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Backward compatibility is defined for readers, but new writers can still omit `reason_code`. That allows newly created `not_run`/`not_applicable` records to keep using free text indefinitely, undermining the closed vocabulary.",
+          "suggestion": "Keep accepting legacy records without codes, but require valid family-specific codes when writing new applicable records. Define how `close-missing` handles existing legacy entries without rewriting their history.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The exemption structure stores both `count` and `items`, but the plan does not specify their consistency rules or distinguish absent legacy data from an explicit zero. An inconsistent record could underreport exemptions while passing schema validation.",
+          "suggestion": "Derive the count in the writer and validate `count == len(items)` in F11. Reject negative, noninteger, and boolean counts; validate each reason against its `kind` family. Define duplicate handling and preserve “legacy/unknown” separately from zero.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Adding `exemption_summary.py` and documenting it does not establish that F12 and PR-body generation actually invoke it. The stated requirement is printed counts in both outputs, and the listed tests do not explicitly cover that integration.",
+          "suggestion": "Identify and update both output paths to consume the validated F5c exemption data. Add integration coverage proving the recorded count appears in the F12 summary and generated PR body.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Registry resolution tests do not prove that a crashing check makes the overall gate fail. The new runner introduces an exception-handling boundary whose aggregation behavior matters.",
+          "suggestion": "Test that an exception produces a named RED result, makes `run_all_checks` fail, and still permits subsequent checks to run in registry order.  The registry and shared vocabulary are a sound foundation, and the targeted extractions appear proportionate. Clarify writer enforcement and exemption invariants, and make the summary integration explicit before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-07T23:28:52.556944+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Approach — Medium**\nThe plan puts `run_claim_checks` in `verifiers/_finalization_claims.py` but then also migrates the first tenant (`exemption_record_check.check_exemption_record`) into it. That's two moves in the \"foundation\" diff: creating the extension point *and* relocating a live check. If the tenant move goes wrong, it muddies whether the registry splice itself is sound. Consider landing the registry + splice with the tenant as part of the same unit only if the splice is verified first; the meta-test (item 1) should be written before the tenant migrates so you can distinguish \"registry broken\" from \"check broken.\"\n\n**Approach — Low**\n\"Refused at write time in `append_iterate_entry.py` and re-checked at F11\" duplicates validation. Fine as belt-and-braces, but ensure both paths call the *same* function in `lib/exemption_record.py` rather than two hand-rolled checks — otherwise the F11 re-check can drift from the writer's rule (e.g., on optional-vs-required semantics).\n\n**Edge case — Medium**\nThe `REASON_CODES` vocabulary is per check family, but the plan only names three codes: `{untestable, review_not_run, test_exemption}`. The review-record side says `reason_code` is validated against the `review_not_run` family only, while F5c exemptions carry `reason_code` from (presumably) the `test_exemption`/`untestable` families. Make the family-to-context mapping explicit: a code valid in F5c must be invalid in a review record and vice versa, or future units will silently cross-assign codes. The tests in step 6 should include a negative test for cross-family use.\n\n**Edge case — Medium**\nLegacy compatibility: \"old rows without `reason_code` stay valid\" — but what about rows *with* an invalid or empty `reason_code` (e.g., `\"\"` or `null` written by a buggy writer)? Decide now: empty string/null treated as absent, unknown non-empty code is an error. Also `--reason-code` with a bare code \"supplies a rule-naming disposition\" — define whether the C […truncated]\n\n[openai] The environment blocked repository reads, so this review is based on the supplied specification and mini-plan; I could not verify BRIEF §3 or existing code.\n\n1. **Category: approach · Severity: medium**  \n   **Finding:** Backward compatibility is defined for readers, but new writers can still omit `reason_code`. That allows newly created `not_run`/`not_applicable` records to keep using free text indefinitely, undermining the closed vocabulary.  \n   **Suggestion:** Keep accepting legacy records without codes, but require valid family-specific codes when writing new applicable records. Define how `close-missing` handles existing legacy entries without rewriting their history.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** The exemption structure stores both `count` and `items`, but the plan does not specify their consistency rules or distinguish absent legacy data from an explicit zero. An inconsistent record could underreport exemptions while passing schema validation.  \n   **Suggestion:** Derive the count in the writer and validate `count == len(items)` in F11. Reject negative, noninteger, and boolean counts; validate each reason against its `kind` family. Define duplicate handling and preserve “legacy/unknown” separately from zero.\n\n3. **Category: dependency · Severity: medium**  \n   **Finding:** Adding `exemption_summary.py` and documenting it does not establish that F12 and PR-body generation actually invoke it. The stated requirement is printed counts in both outputs, and the listed tests do not explicitly cover that integration.  \n   **Suggestion:** Identify and update both output paths to consume the validated F5c exemption data. Add integration coverage proving the recorded count appears in the F12 summary and generated PR body.\n\n4. **Category: risk · Severity: low**  \n   **Finding:** Registry resolution tests do not prove that a crashing check makes the overall gate fail. The new runner introduces an exception-handling boundary […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T23:28:59.155536+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the code reviewer; delegated to the campaign orchestrator at 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T23:28:59.266372+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the doubt reviewer; delegated to the campaign orchestrator at 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_review_pass.py:~203 (`reason=marker_reason(args.disposition, parse_status, len(findings))`)",
+          "line": null,
+          "finding": "When a `not_run` row is recorded with only `--reason-code` (no `--disposition`), `args.disposition` is `None`, so `marker_reason(None, ...)` returns `None` (assuming parse_status is None) and the cross-repo marker is written with a null `reason` for a not_run row. Previously `--disposition` was required, so the marker always carried the explanation. The synthesized rule-naming disposition (`_disposition(args)`) never reaches the marker, which is the field the downstream `ReviewRow` consumer surfaces as `disposition`.",
+          "suggestion": "Pass `marker_reason(_disposition(args), parse_status, len(findings))` (and the same in the `close-missing`/`write_markers` path) so the synthesized disposition also reaches the marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_review_pass.py:~138 (`if args.reason_code and args.status == STATUS_COMPLETED`)",
+          "line": null,
+          "finding": "The CLI only rejects `--reason-code` on `completed` rows. `record --status pending --reason-code unavailable` passes CLI validation; `make_entry` doesn't take `reason_code`, and the field is bolted on afterwards (`entry[\"reason_code\"] = args.reason_code`). Whether it's caught depends on whether the write path re-validates; if `record` writes without `validate_record` (only markers/repair paths shown validate), an invalid record can be persisted.",
+          "suggestion": "Reject `--reason-code` unless `status` is in `{not_run, not_applicable}` (matching `reason_code_entry_error`), or assert `validate_entry` runs on the assembled entry before write.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_finalization_claims_registry.py:~99 (`assert lines <= 1087`)",
+          "line": null,
+          "finding": "The \"did not grow\" test hard-codes 1087 as the cap, which is exactly (or near) the post-change size. If the file was under the cap before this diff, this allows it to have grown within this very change and any future change up to 1087 lines without tripping — it doesn't pin \"not larger than before this change.\"",
+          "suggestion": "Derive the baseline from the pre-change count (or a stricter documented ADR-125 number) and note it in the assertion, so growth within the diff itself is caught.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_finalization_claims_registry.py:~84 (`test_run_all_checks_splices_the_registry_in_once`)",
+          "line": null,
+          "finding": "Running `iterate_checks.run_all_checks` on a bare `tmp_path` depends on every historical check tolerating an empty project without raising — `run_all_checks` calls the checks directly (no try/except there; the crash-to-RED wrapper lives only in `run_claim_checks`). If any existing check throws on a missing `.shipwright` tree, this test fails for a reason unrelated to the splice, and a future check added to `run_all_checks` could break it.",
+          "suggestion": "If the empty-project run is already known-good, fine; otherwise build the minimal fixture the historical checks expect (as `test_exemption_record.py` does with `.shipwright/agent_docs`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/exemption_record.py:~46 (`path = scope.split(\"::\", 1)[0]`)",
+          "line": null,
+          "finding": "Path-safety is only checked on the portion before the first `::`. A scope like `x.py::/etc/../../secret` passes validation. Since scope is descriptive rather than resolved to disk this is low risk, but the docstring claims the whole scope is path-safe.",
+          "suggestion": "Either validate the full string for `..` segments and control chars (already done for control chars via `_CONTROL_RE` on the whole scope — only `..`/absolute checks are partial) or document that only the path component is checked.  Otherwise the diff is a faithful implementation of U0: the registry with both-direction meta-tests, the shared vocabulary with legacy-tolerant schema and matching writers, and the exemption count surfaced in F5c/F11/F12 plus the summary CLI, with iterate_checks.py net-shrunk. The marker-reason regression is the one item I'd fix before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 206,
+          "finding": "A bare `--reason-code` synthesizes a disposition for the review record, but companion markers still receive `args.disposition`, which is `None`. For `plan` and `external_code`, the record and marker therefore disagree about why the review did not run; marker consumers lose the explanation.",
+          "suggestion": "Pass `_disposition(args)` into `marker_reason` too. Extend the bare-code CLI test to assert the companion marker contains the synthesized reason.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/exemption_record.py",
+          "line": 76,
+          "finding": "Explicit `\"exemptions\": null` is accepted as legacy and summarized as `0`. The documented contract permits an absent key for legacy records and otherwise requires an object with `count` and `items`; the writer and F11 gate currently accept this malformed block.",
+          "suggestion": "Distinguish an absent key from an explicitly null value, using a sentinel or a presence check. Add tests showing that the writer rejects null, F11 fails it, and the summary exits with an error.  Overall assessment: ship-with-fixes. The foundation is largely implemented, but companion reasons and malformed exemption handling need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-07T23:28:52.681700+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/record_review_pass.py:~203 (`reason=marker_reason(args.disposition, parse_status, len(findings))`)\n- Finding: When a `not_run` row is recorded with only `--reason-code` (no `--disposition`), `args.disposition` is `None`, so `marker_reason(None, ...)` returns `None` (assuming parse_status is None) and the cross-repo marker is written with a null `reason` for a not_run row. Previously `--disposition` was required, so the marker always carried the explanation. The synthesized rule-naming disposition (`_disposition(args)`) never reaches the marker, which is the field the downstream `ReviewRow` consumer surfaces as `disposition`.\n- Suggestion: Pass `marker_reason(_disposition(args), parse_status, len(findings))` (and the same in the `close-missing`/`write_markers` path) so the synthesized disposition also reaches the marker.\n\n- Category: bug\n- Severity: low\n- File: shared/scripts/tools/record_review_pass.py:~138 (`if args.reason_code and args.status == STATUS_COMPLETED`)\n- Finding: The CLI only rejects `--reason-code` on `completed` rows. `record --status pending --reason-code unavailable` passes CLI validation; `make_entry` doesn't take `reason_code`, and the field is bolted on afterwards (`entry[\"reason_code\"] = args.reason_code`). Whether it's caught depends on whether the write path re-validates; if `record` writes without `validate_record` (only markers/repair paths shown validate), an invalid record can be persisted.\n- Suggestion: Reject `--reason-code` unless `status` is in `{not_run, not_applicable}` (matching `reason_code_entry_error`), or assert `validate_entry` runs on the assembled entry before write.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_finalization_claims_registry.py:~99 (`assert lines <= 1087`)\n- Finding: The \"did not grow\" test hard-codes 1087 as the cap, which is exactly (or near) the post-change size. If the file was under the cap before this diff, this a […truncated]\n\n[openai] Local command execution was blocked, so this review uses the supplied diff; I could not read the full campaign brief or run tests.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/record_review_pass.py:206\n- Finding: A bare `--reason-code` synthesizes a disposition for the review record, but companion markers still receive `args.disposition`, which is `None`. For `plan` and `external_code`, the record and marker therefore disagree about why the review did not run; marker consumers lose the explanation.\n- Suggestion: Pass `_disposition(args)` into `marker_reason` too. Extend the bare-code CLI test to assert the companion marker contains the synthesized reason.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/exemption_record.py:76\n- Finding: Explicit `\"exemptions\": null` is accepted as legacy and summarized as `0`. The documented contract permits an **absent** key for legacy records and otherwise requires an object with `count` and `items`; the writer and F11 gate currently accept this malformed block.\n- Suggestion: Distinguish an absent key from an explicitly null value, using a sentinel or a presence check. Add tests showing that the writer rejects null, F11 fails it, and the summary exits with an error.\n\nOverall assessment: ship-with-fixes. The foundation is largely implemented, but companion reasons and malformed exemption handling need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T23:28:59.053550+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the spec reviewer; delegated to the campaign orchestrator at 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T23:28:53.198937+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T23:28:53.315443+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet - a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
