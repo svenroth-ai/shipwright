@@ -1,0 +1,19 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-07-audit-test-tagging-claims",
+    "date": "2026-10-07",
+    "unit": {"status": "not_run", "passed": 0, "total": 0},
+    "integration": {"status": "skipped", "passed": 0, "total": 0},
+    "pgtap": {"status": "skipped", "passed": 0, "total": 0},
+    "e2e": {"status": "skipped", "passed": 0, "total": 0},
+    "design_fidelity": {"status": "skipped", "passed": 0, "total": 0},
+    "smoke": {"status": "skipped"},
+    "degraded": ["planning-documents-only diff: no code changed, so no related unit tests exist; mirrored merge gates (scripts/verify_local.py) passed 3/3"],
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "Planning documents only (campaign brief + architecture brief); no behavior introduced or changed.",
+      "behaviors": [],
+      "counts": {"testable": 0, "tested": 0, "untestable": 0, "untested_testable": 0}
+    }
+  }
+}

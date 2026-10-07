@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "scope", "verdict": "pass", "note": "Planning documents only: campaign brief and architecture brief. No code, no hooks, no gates changed."},
+ {"name": "claims-vs-evidence", "verdict": "pass", "note": "Every number in section 0 was measured in this session (manifests, 45-PR retrospective, spike timing); gate behaviour claims come from three read-only audits and the plan review verified the cited paths exist."},
+ {"name": "review-findings-integrated", "verdict": "pass", "note": "Internal Opus plan + architecture and external GPT + GLM plan + architecture reviews were integrated in revision 2 (U0 foundation, U1 on manifests, U8 cut, U7 narrowed)."},
+ {"name": "dependency-graph", "verdict": "pass", "note": "File sets re-derived from the real repo (iterate_checks.py cap, review-record schema, sub-iterate-runner.md); edges added where files overlap."},
+ {"name": "operator-decisions", "verdict": "pass", "note": "Hard U1, U10 continue-loudly, U9 soft-block, U8 cut, U7 warn-first all recorded as decided by the operator."},
+ {"name": "boundaries", "verdict": "n/a", "note": "No I/O boundary touched."},
+ {"name": "tests", "verdict": "n/a", "note": "No behaviour changed; nothing to test. The brief itself defines acceptance tests per unit."},
+ {"name": "open-risks", "verdict": "pass", "note": "U1 false-positive rate and U9 measured baseline are explicit first steps in the units; WebUI parity is a named follow-on."}
+]}

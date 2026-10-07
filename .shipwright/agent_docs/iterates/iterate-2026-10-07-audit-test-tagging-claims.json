@@ -1,0 +1,23 @@
+{
+  "run_id": "iterate-2026-10-07-audit-test-tagging-claims",
+  "date": "2026-10-07T21:03:52.121705Z",
+  "event_at": "2026-10-03T20:17:40.711990+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/audit-test-tagging-claims",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-07-audit-test-tagging-claims",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "Planning documents only (campaign brief + architecture brief); no behavior introduced or changed.",
+    "behaviors": [],
+    "counts": {
+      "testable": 0,
+      "tested": 0,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  }
+}
