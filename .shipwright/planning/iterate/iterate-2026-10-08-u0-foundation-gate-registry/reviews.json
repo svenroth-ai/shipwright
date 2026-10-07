@@ -179,12 +179,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-07T23:28:59.053550+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the spec reviewer; delegated to the campaign orchestrator at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-07T23:39:33.639424+00:00",
+      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: BRIEF U0.3 (L73) vs F12.md:45-47 -> the diff's docs count reviews closed without running as exemptions, but this run's own F5c entry records exemptions.count=0 despite two delegated not_run rows, so the printed count is wrong. Fix: narrow F12.md/F5c.md:27 to per-test exemptions OR record the two rows as review_not_run items. Delivery stopped; PR left open.",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
