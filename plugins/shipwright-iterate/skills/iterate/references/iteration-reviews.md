@@ -264,16 +264,16 @@ does not disappear:
 
 1. the external review becomes **mandatory** and carries the pass — record it
    `--review-type external_code --status completed`;
-2. record `code` — **and `doubt`, which Stage 3 cannot reach without a Stage 2
-   pass** — as `not_run`, each with a disposition naming *why* and specifically
-   **which of the four** blockers above applied, because "a session directive"
-   reads identically whether or not anyone asked. Record `doubt` `not_run` only
-   **when Stage 3 would have applied to this diff**; on a docs-only or trivial
-   surface it is `not_applicable` naming the conditional rule, because saying
-   "blocked" about a pass that was never due is the same false statement this
-   record exists to prevent. Do **not** record either
-   `completed` "by substitution": that claims the pass the contract describes
-   ran, and it did not;
+2. record `code` — **and `doubt`, which Stage 3 cannot reach without a Stage 2 pass**
+   — as `not_run`, each with a disposition naming *why* and specifically **which
+   of the four** blockers above applied, because "a session directive" reads
+   identically whether or not anyone asked. The code follows the blocker: #1 in a
+   campaign and #3 → `--reason-code delegated-to-orchestrator`; #1 standalone and
+   #2 → `unavailable`; #4 → `user-opt-out`. Record `doubt` `not_run` only **when
+   Stage 3 would have applied to this diff**; on a docs-only or trivial surface it
+   is `not_applicable` naming the conditional rule, because saying "blocked" about
+   a pass never due is the false statement this record exists to prevent. Do
+   **not** record either `completed` "by substitution": that claims the contract's pass ran, and it did not;
 3. in campaign mode the same escalation is what ADR-029 already specifies —
    the runner has no `Agent` tool, so the cascade is delegated to the
    orchestrator. This section is its standalone-mode counterpart, which was
@@ -504,8 +504,8 @@ own ordering: **a `code` row recorded `completed` while `spec` is not `completed
 FAILS**, because Stage 2 cannot legitimately have run without its HARD-GATE
 passing first. `external_code` is deliberately outside that rule — the
 spec-compliance and doubt roles are not cascaded to external providers, so a run
-carried by the external route closes `spec` as `not_run` with a disposition, and
-`_substitution_note` reports what that does not buy.
+carried by the external route closes `spec` `not_run --reason-code unavailable`
+with a disposition, and `_substitution_note` reports what that does not buy.
 
 > **Do not re-attempt: carrying the Stage-1 verdict inside the `code` row.**
 > That shape was built and then WITHDRAWN on

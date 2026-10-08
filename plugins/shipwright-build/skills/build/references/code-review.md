@@ -254,8 +254,8 @@ package context from cwd, which has no such declaration outside this
 monorepo, and the import silently fails. `{plan_plugin_root}` resolves the
 same way `{shared_root}` above it does — the installed shipwright-plan
 plugin's root. A non-zero `uv run` exit, or stdout that is not the
-expected JSON, means the pass did NOT run: record it `not_run` with that
-reason, never parsed as a completed review.)
+expected JSON, means the pass did NOT run: record it `not_run --reason-code
+unavailable` with that reason as the disposition, never a completed review.)
 
 (`--plugin-root` is unused in code-mode prompt loading but the argument
 remains required for CLI shape parity with plan/iterate modes.)

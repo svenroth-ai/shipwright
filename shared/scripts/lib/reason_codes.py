@@ -44,7 +44,7 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "diff-below-threshold",        # no risk flag and the diff is under the size trigger
         "complexity-below-threshold",  # complexity below the pass's trigger
         "user-opt-out",                # the operator declined the pass
-        "config-disabled",             # external_review.feedback_iterations is 0
+        "config-disabled",             # review disabled in config (feedback_iterations 0 or a *_review.enabled flag false)
         "missing-keys",                # no provider key configured
         "no-spawn-site",               # nothing in this context can spawn the pass (campaign internal arms)
     }),
