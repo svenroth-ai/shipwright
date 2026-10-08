@@ -7,9 +7,10 @@
 
 Measures REQUIREMENT coverage -- the share of active requirements (and, reported
 separately, acceptance criteria) with an executed-passing bound test -- from the
-COMMITTED ``.shipwright/compliance/test-traceability.json`` (``git show HEAD:``;
-the working-tree copy, which the local pipeline regenerates fail-closed as all
-``not_run``, is read only outside a repo or when HEAD has no such file). It never
+``.shipwright/compliance/test-traceability.json`` being COMMITTED: the staged
+(index) copy, else the one at ``HEAD``; the working-tree copy, which the local
+pipeline regenerates fail-closed as all ``not_run``, is read only outside a repo
+or when git has no such file. It never
 regenerates the manifest (it fires on every ``git commit``); a stale or
 provenance-unknown manifest is a WARN, and a non-current schema or a manifest with
 no executed result is unmeasurable (WARN + allow), never 0%. Only when no manifest

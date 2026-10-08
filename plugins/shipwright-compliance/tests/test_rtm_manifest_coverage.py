@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import json
-import subprocess
+import shutil
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -12,6 +11,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts" / "lib"))
 import rtm_manifest_coverage as rmc  # noqa: E402
+
+if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
+    sys.path.insert(0, str(Path(__file__).parent))
+from rtm_hook_test_support import git, init_repo  # noqa: E402
+from rtm_hook_test_support import scrub_git_env  # noqa: E402,F401 - autouse
+
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
 
 pytestmark = pytest.mark.covers("FR-01.10")
 
@@ -59,19 +65,6 @@ def test_nothing_to_measure_is_none_not_100():
     assert rmc.compute_coverage({"requirements": {"a": _req([_link()])}})["ac"]["pct"] is None
 
 
-def test_read_manifest_distinguishes_absent_corrupt_and_ok(tmp_path):
-    assert rmc.read_manifest(tmp_path) == (None, None)
-    path = tmp_path / rmc.MANIFEST_RELPATH
-    path.parent.mkdir(parents=True)
-    path.write_text("{not json", encoding="utf-8")
-    data, problem = rmc.read_manifest(tmp_path)
-    assert data is None and "cannot read" in problem
-    path.write_text("[]", encoding="utf-8")
-    assert rmc.read_manifest(tmp_path)[0] is None
-    path.write_text(json.dumps({"requirements": {}}), encoding="utf-8")
-    assert rmc.read_manifest(tmp_path) == ({"requirements": {}}, None)
-
-
 def test_staleness_by_age_and_unreadable_timestamp(tmp_path):
     now = datetime(2026, 10, 8, tzinfo=timezone.utc)
     fresh = {"generated_at": (now - timedelta(days=2)).isoformat()}
@@ -94,13 +87,17 @@ def test_commits_behind_is_none_outside_a_repo(tmp_path):
     assert rmc.commits_behind(tmp_path, "deadbeef") is None
 
 
-def test_read_manifest_tolerates_utf8_bom_and_crlf(tmp_path):
-    """Boundary probe: an editor-saved manifest (BOM / CRLF) must not read as corrupt."""
-    path = tmp_path / rmc.MANIFEST_RELPATH
-    path.parent.mkdir(parents=True)
-    body = json.dumps({"requirements": {}}, indent=1).replace("\n", "\r\n")
-    path.write_bytes(b"\xef\xbb\xbf" + body.encode("utf-8"))
-    assert rmc.read_manifest(tmp_path) == ({"requirements": {}}, None)
+@needs_git
+def test_a_source_commit_missing_from_local_history_warns_distance_unknown(tmp_path):
+    init_repo(tmp_path)
+    (tmp_path / "f").write_text("x", encoding="utf-8")
+    git(tmp_path, "add", "-A")
+    git(tmp_path, "commit", "-q", "-m", "c")
+    assert rmc.commits_behind(tmp_path, "deadbeef" * 5) == rmc.NOT_IN_HISTORY
+    now = datetime(2026, 10, 8, tzinfo=timezone.utc)
+    m = {"generated_at": now.isoformat(), "source_commit": "deadbeef" * 5}
+    warn = rmc.staleness_warning(m, tmp_path, now)
+    assert "commit distance unknown (source_commit not in local history)" in warn
 
 
 _SPEC = """# Spec
@@ -188,56 +185,6 @@ def test_schema_and_execution_problems():
     assert "no executed test result" in rmc.execution_problem(unrun)
     ac_only = {"requirements": {"a": _req([_link("not_run")], {"AC01": [_link("pass")]})}}
     assert rmc.execution_problem(ac_only) is None
-
-
-def test_read_manifest_non_object_and_undecodable(tmp_path):
-    path = tmp_path / rmc.MANIFEST_RELPATH
-    path.parent.mkdir(parents=True)
-    path.write_bytes(b"\xff\xfe{")
-    assert "cannot read" in rmc.read_manifest(tmp_path)[1]
-    path.write_text("[]", encoding="utf-8")
-    assert "not a JSON object" in rmc.read_manifest(tmp_path)[1]
-
-
-def _working_tree_manifest(tmp_path):
-    path = tmp_path / rmc.MANIFEST_RELPATH
-    path.parent.mkdir(parents=True)
-    path.write_text(json.dumps({"requirements": {}}), encoding="utf-8")
-
-
-@pytest.mark.parametrize("error, reason", [
-    (FileNotFoundError("git"), "git is not runnable (FileNotFoundError)"),
-    (subprocess.TimeoutExpired("git", 5), "git show HEAD timed out after 5 s"),
-])
-def test_a_failed_head_read_says_why_and_warns_on_the_working_tree_read(
-        tmp_path, monkeypatch, error, reason):
-    def broken(*_a, **_k):
-        raise error
-
-    monkeypatch.setattr(rmc.subprocess, "run", broken)
-    assert rmc._committed_bytes(tmp_path) == (None, reason)
-    assert rmc.read_manifest_noted(tmp_path) == (None, None, [])  # nothing to fall back to
-    _working_tree_manifest(tmp_path)
-    data, problem, notes = rmc.read_manifest_noted(tmp_path)
-    assert data == {"requirements": {}} and problem is None
-    assert notes == [f"reading working-tree manifest: {reason}"]
-
-
-@pytest.mark.parametrize("stderr, reason, warns", [
-    (b"fatal: not a git repository (or any of the parent directories): .git",
-     "not a git repo", False),
-    (b"fatal: path 'x' does not exist in 'HEAD'", "HEAD has no such file", False),
-    (b"fatal: path 'x' exists on disk, but not in 'HEAD'", "HEAD has no such file", False),
-    (b"fatal: invalid object name 'HEAD'.", "HEAD has no commit yet", True),
-    (b"fatal: something odd", "git show HEAD failed (fatal: something odd)", True),
-    (b"", "git show HEAD failed (exit 128)", True),
-])
-def test_git_failure_reasons_are_classified(tmp_path, monkeypatch, stderr, reason, warns):
-    monkeypatch.setattr(rmc.subprocess, "run", lambda *_a, **_k: subprocess.CompletedProcess(
-        [], 128, stdout=b"", stderr=stderr))
-    assert rmc._committed_bytes(tmp_path) == (None, reason)
-    _working_tree_manifest(tmp_path)
-    assert bool(rmc.read_manifest_noted(tmp_path)[2]) is warns
 
 
 def test_spec_path_outside_the_project_root_is_never_read(tmp_path):

@@ -13,68 +13,27 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
     sys.path.insert(0, str(Path(__file__).parent))
-from rtm_hook_test_support import hook_env  # noqa: E402
+from rtm_hook_test_support import (  # noqa: E402
+    REL,
+    hook_env,
+    scrub_git_env,  # noqa: F401 - autouse: in-process git reads see tmp_path only
+)
+from rtm_hook_test_support import collector_manifest as _collector_manifest  # noqa: E402
+from rtm_hook_test_support import commit_all as _commit_all  # noqa: E402
+from rtm_hook_test_support import git as _git  # noqa: E402
+from rtm_hook_test_support import init_repo as _repo  # noqa: E402
+from rtm_hook_test_support import write_manifest as _write  # noqa: E402
 
 pytestmark = pytest.mark.covers("FR-01.10")
 
 PLUGIN = Path(__file__).parent.parent
 HOOK = PLUGIN / "scripts" / "hooks" / "check_rtm_coverage.py"
-REL = Path(".shipwright") / "compliance" / "test-traceability.json"
-
-
-def _collector_manifest(passing: int, total: int, *, executed_rest="not_run",
-                        schema_version=4, generated_at=None, source_commit="a" * 40):
-    reqs = {}
-    for i in range(total):
-        fr = f"FR-01.{i:02d}"
-        link = {"id": f"plugins/x/tests/test_x.py::test_{i}",
-                "path": f"plugins/x/tests/test_x.py::test_{i}", "layer": "unit",
-                "status": "enabled", "executed": "pass" if i < passing else executed_rest,
-                "tag_source": "pytest_marker", "ac_id": "AC01"}
-        reqs[f"01::{fr}"] = {
-            "id": fr, "spec_path": ".shipwright/planning/01-adopted/spec.md",
-            "title": f"req {i}", "priority": "Must", "status": "active",
-            "required_layers": ["unit"], "required_layers_source": "inferred_legacy",
-            "tests": {"unit": [link]}, "acs": {"AC01": {"tests": {"unit": [dict(link)]}}},
-        }
-    return {
-        "schema_version": schema_version, "collector_version": "test_links/1.0.0",
-        "generated_at": generated_at or datetime.now(timezone.utc).isoformat(),
-        "source_commit": source_commit, "spec_hash": "sha256:" + "0" * 64,
-        "requirements": reqs, "orphans": [], "invalid_tags": [], "invalid_layers": [],
-        "untagged_tests": [],
-    }
-
-
-def _write(root: Path, manifest: dict) -> None:
-    path = root / REL
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-
-
-def _git(root: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True,
-                   env=hook_env(), timeout=30)
-
-
-def _repo(root: Path) -> None:
-    _git(root, "init", "-q")
-    _git(root, "config", "user.email", "t@example.invalid")
-    _git(root, "config", "user.name", "t")
-    _git(root, "config", "commit.gpgsign", "false")
-    _git(root, "config", "core.hooksPath", str(root / ".no-hooks"))
-
-
-def _commit_all(root: Path) -> None:
-    _git(root, "add", "-A")
-    _git(root, "commit", "-q", "-m", "manifest")
 
 
 def _run(root: Path, command: str = "git commit -m x"):
@@ -131,6 +90,42 @@ def test_subdirectory_project_reads_its_own_committed_manifest(tmp_path):
     finally:
         sys.path.remove(str(PLUGIN / "scripts" / "lib"))
     assert problem is None and rmc.execution_problem(data) is None
+
+
+@needs_git
+def test_a_staged_correction_is_measured_not_the_low_head_copy(tmp_path):
+    """Committing a regenerated manifest is gated on what is being committed (the index)."""
+    _repo(tmp_path)
+    _write(tmp_path, _collector_manifest(3, 10, executed_rest="fail"))
+    _commit_all(tmp_path)
+    _write(tmp_path, _collector_manifest(10, 10))
+    _git(tmp_path, "add", REL.as_posix())
+    _write(tmp_path, _collector_manifest(0, 10))  # dirtied again after staging
+    rc, out = _run(tmp_path, "git commit -m regen")
+    assert rc == 0 and "Requirement coverage 100% (10/10" in out
+    assert "reading working-tree manifest" not in out
+
+
+@needs_git
+def test_a_path_removed_from_the_index_falls_back_to_head_without_a_warn(tmp_path):
+    _repo(tmp_path)
+    _write(tmp_path, _collector_manifest(3, 10, executed_rest="fail"))
+    _commit_all(tmp_path)
+    _git(tmp_path, "rm", "-q", "--cached", REL.as_posix())
+    _write(tmp_path, _collector_manifest(10, 10))
+    rc, out = _run(tmp_path)
+    assert rc == 2 and "Requirement coverage 30% (3/10" in out
+    assert "reading working-tree manifest" not in out
+
+
+@needs_git
+def test_an_unborn_head_with_a_staged_manifest_reads_it_without_a_warn(tmp_path):
+    _repo(tmp_path)
+    _write(tmp_path, _collector_manifest(10, 10))
+    _git(tmp_path, "add", "-A")
+    _write(tmp_path, _collector_manifest(0, 10))
+    rc, out = _run(tmp_path)
+    assert rc == 0 and "100% (10/10" in out and "HEAD has no commit yet" not in out
 
 
 def test_all_not_run_manifest_is_unmeasurable_not_zero_percent(tmp_path):

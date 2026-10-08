@@ -103,7 +103,7 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     """
     warnings: list[str] = []
     manifest, problem, notes = manifest_cov.read_manifest_noted(project_root)
-    warnings.extend(notes)  # a working-tree read taken because the HEAD read failed
+    warnings.extend(notes)  # the git (index / HEAD) read failed unexpectedly
     if problem:
         warnings.append(problem)
     if manifest is not None:

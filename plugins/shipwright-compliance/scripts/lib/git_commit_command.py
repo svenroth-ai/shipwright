@@ -3,7 +3,9 @@
 Pure, stdlib-only: the hook fires on every Bash call and must not misfire on text
 that merely mentions "git commit" (``rg "git commit"``, ``git log --grep``), nor
 fail open for the wrappers people actually type (``env``, ``sudo``, ``timeout 60``,
-``sh -c '...'``) or a backslash-continued line.
+``sh -c '...'``, ``eval``, ``pwsh -Command``, ``cmd /c``), shell compound syntax
+(``if ...; then git commit; fi``, ``{ ...; }``, ``! ...``), a ``#`` inside a word
+(``curl http://h/#a && git commit``) or a backslash-continued line.
 """
 
 from __future__ import annotations
@@ -27,6 +29,9 @@ _WRAPPERS: dict[str, frozenset[str]] = {
     "timeout": frozenset({"-s", "--signal", "-k", "--kill-after"}),
 }
 _SHELLS = frozenset({"sh", "bash", "zsh", "dash"})
+_POWERSHELLS = frozenset({"pwsh", "powershell"})
+# Closed set of shell reserved words that may precede a command in a segment.
+_RESERVED = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"})
 _MAX_SHELL_DEPTH = 3
 
 
@@ -36,11 +41,11 @@ def _program(token: str) -> str:
 
 
 def _skip_wrappers(tokens: list[str]) -> int:
-    """Index of the real program after ``VAR=val`` and wrapper commands (+ their args)."""
+    """Index of the real program after reserved words, ``VAR=val`` and wrappers (+ args)."""
     i = 0
     while i < len(tokens):
-        if _ENV_ASSIGNMENT.match(tokens[i]):
-            i += 1  # FOO=bar git commit / env FOO=1 git commit
+        if tokens[i] in _RESERVED or _ENV_ASSIGNMENT.match(tokens[i]):
+            i += 1  # then git commit / ! git commit / FOO=bar git commit
             continue
         name = _program(tokens[i])
         if name not in _WRAPPERS:
@@ -65,12 +70,38 @@ def _shell_command(tokens: list[str]) -> str | None:
     return tokens[i] if has_c and i < len(tokens) else None
 
 
+def _after_flag(tokens: list[str], is_flag) -> str | None:
+    """The rest of the line after the first token matching *is_flag*, joined; else None."""
+    for j, token in enumerate(tokens[1:], start=1):
+        if is_flag(token.lower()):
+            return " ".join(tokens[j + 1:]) or None
+    return None
+
+
+def _inner_command(tokens: list[str]) -> str | None:
+    """The command string a shell-like program runs, or None when it is not one.
+
+    ``sh|bash|zsh|dash -c '<cmd>'``, ``eval <words>``, ``pwsh|powershell [...]
+    -Command <cmd>`` (any ``-c``/``-Command`` prefix) and ``cmd [/d /q ...] /c|/k <cmd>``.
+    """
+    name = _program(tokens[0])
+    if name in _SHELLS:
+        return _shell_command(tokens)
+    if name == "eval":
+        return " ".join(tokens[1:]) or None
+    if name in _POWERSHELLS:
+        return _after_flag(tokens, lambda t: len(t) >= 2 and "-command".startswith(t))
+    if name == "cmd":
+        return _after_flag(tokens, lambda t: t in ("/c", "/k", "//c", "//k"))
+    return None
+
+
 def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
     tokens = tokens[_skip_wrappers(tokens):]
-    if not tokens:
-        return False
-    if _program(tokens[0]) in _SHELLS:
-        inner = _shell_command(tokens)
+    if not tokens or tokens[0].startswith("#"):
+        return False  # empty, or a comment: # git commit
+    if _program(tokens[0]) in (*_SHELLS, *_POWERSHELLS, "eval", "cmd"):
+        inner = _inner_command(tokens)
         return inner is not None and depth < _MAX_SHELL_DEPTH and is_git_commit(inner, depth + 1)
     if _program(tokens[0]) != "git":
         return False
@@ -84,17 +115,22 @@ def is_git_commit(command: str, _depth: int = 0) -> bool:
     """True when some ``&&`` / ``;`` / ``|``-separated segment runs ``git ... commit``.
 
     Global options before the subcommand (``-C <path>``, ``-c k=v``, ``--no-pager``)
-    are skipped, as are ``VAR=val`` prefixes and a closed set of wrappers (``env``,
-    ``sudo``, ``timeout 60``, ``nohup``, ...); ``sh|bash -c '<cmd>'`` is parsed
-    recursively. ``git -c k=v diff``, ``rg "git commit"``, ``echo git commit`` and
-    ``git log --grep 'git commit'`` are not commits. Backslash-newline continuations
-    are joined first. Unparseable shell text (an unbalanced quote) falls back to the
-    substring test so the gate still fires.
+    are skipped, as are leading reserved words (``if then else elif do while until
+    ! { }``), ``VAR=val`` prefixes and a closed set of wrappers (``env``, ``sudo``,
+    ``timeout 60``, ``nohup``, ...); ``sh|bash -c``, ``eval``, ``pwsh -Command`` and
+    ``cmd /c`` strings are parsed recursively (depth-capped). ``git -c k=v diff``,
+    ``rg "git commit"``, ``echo git commit``, ``# git commit`` and ``git log --grep
+    'git commit'`` are not commits. ``#`` is not a comment character to the lexer
+    (``http://h/#a`` stays one word; a line comment ends at its newline, which is a
+    separator); a segment starting with ``#`` is a comment. Backslash-newline
+    continuations are joined first. Unparseable shell text (an unbalanced quote)
+    falls back to the substring test so the gate still fires.
     """
     text = command.replace("\\\r\n", " ").replace("\\\n", " ")
     try:
         lexer = shlex.shlex(text.replace("\n", " ; "), posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
+        lexer.commenters = ""  # a '#' must not swallow the rest of the flattened line
         tokens = list(lexer)
     except ValueError:
         return "git commit" in command

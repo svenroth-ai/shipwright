@@ -1,13 +1,13 @@
-"""Requirement coverage read from the COMMITTED (HEAD) traceability manifest.
+"""Requirement coverage read from the traceability manifest being COMMITTED.
 
 The commit hook used to gate on the RTM's "Traceability coverage" line -- the
 share of build sections with a commit, absent for an adopted project (so every
 commit was allowed, silently). This module computes requirement coverage from
-``.shipwright/compliance/test-traceability.json`` as committed at ``HEAD``. The
-working-tree copy is not trusted (the local pipeline regenerates it fail-closed,
-every link ``not_run``, which would read as 0%); it is read only outside a repo or
-when HEAD has no such file -- or, with a WARN naming why, when the HEAD read fails
-(``rtm_manifest_read``). Never regenerated here. A non-current schema or a
+``.shipwright/compliance/test-traceability.json`` as staged in the index (else as
+committed at ``HEAD``). The working-tree copy is not trusted (the local pipeline
+regenerates it fail-closed, every link ``not_run``, which would read as 0%); it is
+read only outside a repo or when git has no such file -- or, with a WARN naming
+why, when the git read fails (``rtm_manifest_read``). Never regenerated here. A non-current schema or a
 manifest with no executed result is *unmeasurable* (WARN), never 0%:
 
 * **FR metric** -- counting unit: an *active* requirement. Covered when at least
@@ -28,13 +28,14 @@ Pure apart from reading project files and the ``git`` probes.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-# The HEAD-first read lives in its own module; re-exported so callers keep one import.
+# The index-then-HEAD read lives in its own module; re-exported so callers keep one import.
 from rtm_manifest_read import (  # noqa: F401
     _GIT_TIMEOUT_S,
     MANIFEST_RELPATH,
@@ -211,16 +212,27 @@ def execution_problem(manifest: dict[str, Any]) -> str | None:
     )
 
 
+NOT_IN_HISTORY = -1  # commits_behind: git ran in a repo, but rev-list could not count
+
+
 def commits_behind(project_root: str | Path, source_commit: str) -> int | None:
-    """Commits between the manifest's ``source_commit`` and HEAD; ``None`` if unknown."""
+    """Commits between the manifest's ``source_commit`` and HEAD.
+
+    ``None`` when git cannot answer at all (not a repo, git missing, a timeout);
+    :data:`NOT_IN_HISTORY` when rev-list fails inside a repo (the commit is not in
+    local history -- a shallow clone, a rewritten branch).
+    """
+    env = {**os.environ, "LC_ALL": "C", "LANGUAGE": "C"}
     try:
         out = subprocess.run(
             ["git", "-C", str(project_root), "rev-list", "--count", f"{source_commit}..HEAD"],
-            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S, check=False,
+            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S, check=False, env=env,
         )
-        return int(out.stdout.strip()) if out.returncode == 0 else None
+        if out.returncode == 0:
+            return int(out.stdout.strip())
     except (OSError, ValueError, subprocess.SubprocessError):
         return None
+    return None if "not a git repository" in (out.stderr or "") else NOT_IN_HISTORY
 
 
 _ZERO_SHA = re.compile(r"0{7,64}")
@@ -251,18 +263,20 @@ def staleness_warning(manifest: dict[str, Any], project_root: str | Path,
             generated = generated.replace(tzinfo=timezone.utc)
         age = (now - generated).days
         if age > STALE_AFTER_DAYS:
-            reasons.append(f"{age} days old")
+            reasons.append(f"is {age} days old")
     except (TypeError, ValueError):
         reasons.append("carries no readable generated_at")
     source = manifest.get("source_commit")
     if isinstance(source, str) and re.fullmatch(r"[0-9a-fA-F]{7,64}", source):
         behind = commits_behind(project_root, source)
-        if behind is not None and behind > STALE_AFTER_COMMITS:
-            reasons.append(f"{behind} commits behind HEAD")
+        if behind == NOT_IN_HISTORY:
+            reasons.append("has commit distance unknown (source_commit not in local history)")
+        elif behind is not None and behind > STALE_AFTER_COMMITS:
+            reasons.append(f"is {behind} commits behind HEAD")
     if not reasons:
         return None
     return (
-        "traceability manifest is " + " and ".join(reasons)
+        "traceability manifest " + "; ".join(reasons)
         + "; coverage below is computed from that snapshot "
         "(regenerate it in F11 / CI -- this hook never does)"
     )
