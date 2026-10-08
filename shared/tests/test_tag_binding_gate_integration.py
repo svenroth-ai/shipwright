@@ -159,8 +159,10 @@ def test_webui_shaped_project_gets_the_gate_through_the_f11_check_list(tmp_path)
 
 
 @pytest.mark.covers("FR-01.11/AC41")
-def test_a_non_git_project_skips(tmp_path):
-    assert gate.check_test_tag_binding(tmp_path, RUN, "abc").is_skipped
+def test_a_non_git_project_stops_with_a_remediation(tmp_path):
+    result = gate.check_test_tag_binding(tmp_path, RUN, "abc")
+    assert result.ok is False and not result.is_skipped
+    assert "not a git work tree" in result.detail and "git work tree" in result.detail.split(" - ", 1)[1]
 
 
 @pytest.mark.covers("FR-01.11/AC41")

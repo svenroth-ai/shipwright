@@ -5,7 +5,8 @@ Campaign `2026-10-07-finalization-claims-hardening`, unit U1. New F11 claim chec
 ## Deviations from the unit text (stated, not hidden)
 
 - **Base manifest is REGENERATED, not read from git.** The brief names `_keystone_base_manifest.py` for the base read. The committed manifest at the merge-base is stale by construction (it lags every untagged test merged since its last regen - 290 in nine days), so reading it would false-STOP every pre-existing untagged test as "added". Both sides go through `regenerate_base_head` (same collector, same semantics on both sides); `_keystone_base_manifest.require_manifest_shape` + `ReadError` still validate both fail-closed.
-- **A non-git directory SKIPs.** Both plan reviewers and the GPT code reviewer asked for STOP. Rejected-with-reason: every regenerating sibling gate (removal coverage, integration coverage, CI supply chain) SKIPs there; an iterate runs in its own git worktree by construction (F0 leak-guard); making it STOP reds the historical F11 happy-path test that runs on a non-git temp project. "Unobtainable diff" is read as git present but unanswerable - that STOPs (no commit, no merge-base, unlistable diff, collector or archive failure, malformed manifest, crash).
+- **Body digest is a second implementation, not `verifiers/_test_body_suspects.py`.** The unit text names `_test_body_suspects.py` as the body-digest source; `_tag_binding_identity.py` adds its own. Reason: the existing module digests verbatim source (`ast.get_source_segment`) and only covers AC-bound tests, so it cannot give the spec's identity rules - a docstring- or comment-only edit is not a modification, and TS/JS bodies are token-normalised. The two modules are deliberately not merged here.
+- **Removed: the non-git SKIP.** An earlier revision SKIPped a non-git directory (sibling-gate parity). The spec-review on PR #841 held it to the unit text (AC5: an unobtainable diff STOPs with a remediation, never SKIPs) and the operator decision ("hard STOP at every complexity from day one"), neither of which excepts a non-git directory. The spec's STOP was kept: `not_git` now STOPs with "run the iterate inside a git work tree"; the historical F11 fixtures that run on a non-git temp project (the two `run_all_checks` happy paths and the `verify_iterate_finalization` CLI cases in `test_audit_e2e_integration.py`) now require exactly that one STOP and judge every other check as before. Every other infra gap STOPs as before (no commit, no merge-base, unlistable diff, collector or archive failure, malformed manifest, crash).
 
 ## Architecture Review
 
@@ -18,7 +19,7 @@ External, `--mode architecture` over `architecture_brief.md`: GLM **approve**, G
 
 | Reviewer | Finding | Disposition |
 |---|---|---|
-| GPT high / GLM high | non-git SKIP contradicts "unobtainable diff STOPs" | rejected-with-reason (Deviations above) |
+| GPT high / GLM high | non-git SKIP contradicts "unobtainable diff STOPs" | accepted-and-fixed after spec review: a non-git directory STOPs (Deviations above) |
 | GPT high / GLM medium | anonymised digest equality accepts call swaps / renames onto a used name | accepted-and-fixed: `mechanically_renamed` also requires a bijective identifier mapping at every occurrence; tests for swap, collision, single-call replacement |
 | GPT medium | joining multi-line heads may alter strings/comments; nested suites | accepted-and-fixed: join aborts on a comment line, judges the callback with string literals blanked, only at statement start; nested describe already handled by `_suite_tags`; measured delta below |
 | GPT medium / GLM medium | static `would_collect` may disagree with pytest | partly accepted: `Test*` class with `__init__` added, unparseable -> fail closed; custom `python_functions` is a documented limit |
@@ -32,7 +33,7 @@ External, `--mode architecture` over `architecture_brief.md`: GLM **approve**, G
 
 ## Self-Review
 
-1. Spec Compliance - pass: ACs 1-9 each have a test; carry-overs 1-4 done; two deviations stated above.
+1. Spec Compliance - pass: ACs 1-9 each have a test; carry-overs 1-4 done; deviations stated above (regenerated base; own body digest in `_tag_binding_identity.py` because `_test_body_suspects.py` digests verbatim source and only AC-bound tests; the non-git SKIP removed - it STOPs, as the spec says).
 2. Error Handling - pass: every infra gap STOPs with a remediation; a crash reads RED.
 3. Security Basics - pass: exemption scope must be exactly one `<file>::<test>` (no glob, no file-level), on top of U0's path-safety; git via argument lists.
 4. Test Quality - pass: rule tests on dicts, real-git integration through the production collector and `run_all_checks`, collector shape tests.
@@ -48,7 +49,7 @@ External, `--mode architecture` over `architecture_brief.md`: GLM **approve**, G
 | GPT medium | fixture exclusion not applied to invalid/unresolved tags | accepted-and-fixed + test |
 | GPT medium / GLM low | share denominator undercounts | accepted-and-fixed: `touched` = every test added or edited in the diff, tagged or not |
 | GPT medium | out-of-scope WARN only for brand-new tests | accepted-and-fixed: compares (FR, test) pairs base vs head |
-| GPT medium | non-git SKIP | rejected-with-reason (Deviations above) |
+| GPT medium | non-git SKIP | accepted-and-fixed after spec review: a non-git directory STOPs (Deviations above) |
 | GLM high | registry test imports missing | rejected-with-reason: `inspect`, `re`, `Path` are imported at the top of the file; the tests pass |
 | GLM medium | `function`/`=>` inside the title ends the head early | accepted-and-fixed: string literals blanked before matching + test |
 | GLM medium | WARNING maps to `ok=False` | verified non-blocking: `verify_iterate_finalization` counts only ERROR failures, and the result is `strict_exempt`; gate-level test for an unused exemption |

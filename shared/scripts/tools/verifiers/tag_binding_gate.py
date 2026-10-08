@@ -13,13 +13,12 @@ pytest marks — and memoises both evidence-free manifests, so the removal gate 
 one share a single regeneration per run. ``_keystone_base_manifest.require_manifest_shape``
 validates both sides fail-closed. The verdict is :mod:`._tag_binding_core`.
 
-Hard STOP at every complexity. Every infra gap — no ``--commit``, no merge-base, the
-collector cannot load, a manifest is malformed, the diff cannot be listed, a file cannot
-be read — is a FAILURE with a remediation, never a SKIP (in particular never the
-lazy-loader SKIP: a collector that does not load STOPs here). Only a directory that is not
-a git repository at all SKIPs, as every regenerating sibling gate does (removal, integration
-coverage, CI supply chain): an iterate runs in its own git worktree by construction (the F0
-leak-guard enforces it), so a non-git directory is not an iterate whose diff went missing.
+Hard STOP at every complexity. Every infra gap — not a git work tree, no ``--commit``, no
+merge-base, the collector cannot load, a manifest is malformed, the diff cannot be listed,
+a file cannot be read — is a FAILURE with a remediation, never a SKIP (in particular never
+the lazy-loader SKIP: a collector that does not load STOPs here). A non-git directory is no
+exception: it has no diff to judge, and an unobtainable diff STOPs. (The regenerating sibling
+gates — removal, integration coverage, CI supply chain — still SKIP there; this one does not.)
 
 Exemptions are per test, read from the F5c entry's ``exemptions`` block
 (``lib.exemption_record``). The FRs the run's ``work_completed`` event names
@@ -79,8 +78,8 @@ def check_test_tag_binding(project_root: Path, run_id: str, commit_hash: str = "
     project_root = Path(project_root)
     ctx = git_context(project_root)
     if ctx == "not_git":
-        return CheckResult(CHECK_NAME, True, "skipped (not a git work tree - no diff to judge)",
-                           severity=Severity.SKIPPED.value)
+        return _fail("cannot enforce: not a git work tree, so the diff cannot be obtained - run the "
+                     "iterate inside a git work tree (its own `git worktree add` checkout) and re-run F11")
     if ctx != "work_tree":
         return _fail("cannot enforce: git could not answer whether this is a work tree - run "
                      "`git -C <project> rev-parse --is-inside-work-tree` and fix what it reports")
