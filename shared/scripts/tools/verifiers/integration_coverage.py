@@ -118,8 +118,8 @@ def _floor_note(entry: object | None) -> str:
         "it is under-classified as well as under-tested. Either route clears this "
         "gate: record the integration behavior in THIS run's F5c entry "
         "(`test_completeness.behaviors`, which this gate reads at every tier — it "
-        "is accepted at `trivial` even though the ledger is otherwise auto-`n/a` "
-        "there), or escalate the run to `medium` if the change really warrants the "
+        "is accepted at `trivial`, where the ledger is otherwise the one "
+        "`n/a`/`trivial-auto` row), or escalate the run to `medium` if the change really warrants the "
         "fuller process."
     )
 

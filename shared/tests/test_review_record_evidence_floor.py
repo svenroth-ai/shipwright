@@ -11,18 +11,22 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib.review_record import (  # noqa: E402
     REVIEW_TYPES,
     STATUS_COMPLETED,
-    STATUS_NOT_RUN,
     make_entry,
     new_record,
     upsert_review,
     write_record,
 )
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _review_background_row import background_row  # noqa: E402
 
 RUN = "iterate-2026-07-28-floor"
 WHY = "operator declined the subagent cascade for this session, per Step 8"
@@ -45,8 +49,7 @@ def _record(root: Path, **overrides):
         # `spec` is set explicitly below; without this skip it would be written
         # twice — closed `not_run` here, then force-overwritten `completed`.
         if review_type not in overrides and review_type != "spec":
-            record = upsert_review(record, make_entry(
-                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+            record = upsert_review(record, background_row(review_type, WHY), force=True)
     # No `force`: after the loop skip above this row is still `pending`, so the
     # normal path applies. Dropping it deliberately — a `force` that is not
     # needed hides the day it becomes needed.
@@ -111,7 +114,7 @@ def test_findings_alone_are_evidence(tmp_path):
 
 def test_small_complexity_has_no_floor(tmp_path):
     _entry(tmp_path, complexity="small")
-    _record(tmp_path, code=make_entry("code", STATUS_NOT_RUN, disposition=WHY))
+    _record(tmp_path, code=background_row("code", WHY))
 
     assert check_review_record(tmp_path, RUN).ok is True
 
@@ -122,8 +125,7 @@ def test_a_completed_code_row_without_a_completed_spec_row_fails(tmp_path):
     _entry(tmp_path)
     record = _record(tmp_path, code=make_entry(
         "code", STATUS_COMPLETED, recorded_by="code-reviewer"))
-    record = upsert_review(record, make_entry(
-        "spec", STATUS_NOT_RUN, disposition=WHY), force=True)
+    record = upsert_review(record, background_row("spec", WHY), force=True)
     write_record(tmp_path, RUN, record)
 
     result = check_review_record(tmp_path, RUN)
@@ -138,9 +140,8 @@ def test_external_code_is_outside_the_stage_1_invariant(tmp_path):
     _entry(tmp_path)
     record = _record(tmp_path, external_code=make_entry(
         "external_code", STATUS_COMPLETED, provider="openrouter"))
-    record = upsert_review(record, make_entry(
-        "spec", STATUS_NOT_RUN,
-        disposition="Stage 1 is not cascaded to external providers"), force=True)
+    record = upsert_review(record, background_row(
+        "spec", "Stage 1 is not cascaded to external providers"), force=True)
     write_record(tmp_path, RUN, record)
 
     assert check_review_record(tmp_path, RUN).ok is True
@@ -168,8 +169,7 @@ def test_an_unanswered_spec_row_blocks_like_any_other_type(tmp_path):
     for review_type in REVIEW_TYPES:
         if review_type == "spec":
             continue          # the subject: left genuinely unanswered
-        record = upsert_review(record, make_entry(
-            review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+        record = upsert_review(record, background_row(review_type, WHY), force=True)
     write_record(tmp_path, RUN, record)
 
     result = check_review_record(tmp_path, RUN)
@@ -193,10 +193,14 @@ def test_a_missing_iterate_entry_fails_instead_of_skipping(tmp_path):
     assert "F5c" in result.detail
 
 
-def test_trivial_complexity_still_skips(tmp_path):
+@pytest.mark.covers("FR-01.11")
+def test_trivial_complexity_no_longer_skips(tmp_path):
+    """U3: a trivial run with no record is a finding, not an exemption."""
     _entry(tmp_path, complexity="trivial")
 
-    assert check_review_record(tmp_path, RUN).is_skipped
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.is_failure and "no review record" in result.detail
 
 
 def test_the_stage_1_remediation_command_actually_parses(tmp_path):

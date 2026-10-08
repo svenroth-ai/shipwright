@@ -934,7 +934,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        row standing — its disposition says the cascade did not run, which is now
        FALSE. Re-record it for the reason that actually applies (same
        `--project-root "$unit_wt"` override, same `|| STRICT-STOP`):
-         … record --project-root "$unit_wt" --review-type doubt --status not_applicable --force              --disposition "Stage 3 is conditional and did not trigger for this
+         … record --project-root "$unit_wt" --review-type doubt --status not_applicable --reason-code diff-below-threshold --force --disposition "Stage 3 is conditional and did not trigger for this
              diff; Stage 2 passed at 3f-bis" || STRICT-STOP
 
        Then ship the record with the PR. `run_dir`/`pr_url`/`unit_wt` were
@@ -1113,15 +1113,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        REJECTED. `completed` is wrong here — the native Stage-1 payload stores
        `spec_citations` and drops `verdict`, so a `completed` REJECT is
        byte-indistinguishable from a PASS to the next reader, human or gate.
-       This branch never reaches the ship path's own `run_dir` re-derivation
-       above (it SKIPS ship entirely on a REJECT), so it re-derives its own
-       here — the identical gap as the promote-rows block above, on a
-       separate branch (code-review round 5, blocking):
+       `--reason-code delegated-to-orchestrator` is carried over only so the
+       record satisfies the gate; the disposition (`Stage-1 REJECTED …`) is what
+       holds the REJECT. This branch SKIPS `--mode ship` on a REJECT, so it re-derives
+       `run_dir` itself (the identical gap as the promote-rows block above):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          … record --project-root "$unit_wt" --review-type spec --status not_run --force \
-             --recorded-by spec-reviewer \
-             --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
+             --recorded-by spec-reviewer --reason-code delegated-to-orchestrator \
+             --disposition "Stage-1 REJECTED at 3f-bis: {the
              citations, spec_ref -> divergence}. Delivery stopped; PR left open." || STRICT-STOP
          git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
          git -C "$unit_wt" commit -m "chore(review): record the Stage-1 REJECT for {id}" -- ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP

@@ -148,5 +148,5 @@ Parse the printed JSON line:
     `Ran: no (capability failure)` in the section and let Step 7's sweep
     close the row; otherwise `record_review_pass.py record
     --run-id "{run_id}" --review-type {spec|code|doubt} --status not_run
-    --disposition "codex transport failed: {reason}"` — never silently
+    --reason-code unavailable --disposition "codex transport failed: {reason}"` — never silently
     proceed as if reviewed.

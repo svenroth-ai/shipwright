@@ -1,0 +1,95 @@
+{
+  "run_id": "iterate-2026-10-08-u3-review-record-trivial",
+  "date": "2026-10-08T09:46:52.002728Z",
+  "event_at": "2026-10-08T09:46:29.175900+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U3",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-10-07-finalization-claims-hardening/sub-iterates/U3-review-record-trivial.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u3-review-record-trivial",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an all-not_run record (self included) fails at trivial, small, medium and large",
+        "disposition": "tested",
+        "evidence": "test_record_review_pass_cli_floor.py::test_an_all_not_run_record_fails_at_every_complexity[trivial|small|medium|large] + test_review_record_closure.py::test_self_not_run_fails_at_every_complexity PASSED"
+      },
+      {
+        "behavior": "self must be completed WITH evidence; an evidence-free self row fails",
+        "disposition": "tested",
+        "evidence": "test_review_record_closure.py::test_an_evidence_free_self_row_fails PASSED"
+      },
+      {
+        "behavior": "trivial: self + one close-missing --reason-code trivial-auto passes and is not reported as a skip",
+        "disposition": "tested",
+        "evidence": "test_record_review_pass_cli_floor.py::test_trivial_closes_with_self_plus_the_one_default_code + test_review_record_closure.py::test_trivial_self_plus_the_default_code_passes_and_is_not_a_skip PASSED"
+      },
+      {
+        "behavior": "trivial: free-text-only closures fail and the message names the one command",
+        "disposition": "tested",
+        "evidence": "test_review_record_closure.py::test_trivial_free_text_closure_names_the_one_command + test_record_review_pass_cli_floor.py::test_free_text_closures_fail_below_medium[trivial] PASSED"
+      },
+      {
+        "behavior": "small+: a skipped row without a reason_code fails naming the type (legacy gates.spec row included)",
+        "disposition": "tested",
+        "evidence": "test_review_record_closure.py::test_small_names_the_type_that_lacks_a_code + test_a_legacy_gates_spec_row_is_held_to_the_same_rule PASSED"
+      },
+      {
+        "behavior": "small+: trivial-auto is refused",
+        "disposition": "tested",
+        "evidence": "test_review_record_closure.py::test_the_trivial_default_is_refused_above_trivial[small|medium|large] + test_record_review_pass_cli_floor.py::test_trivial_auto_is_refused_above_trivial PASSED"
+      },
+      {
+        "behavior": "a review reason_code outside the closed vocabulary is an integrity fault",
+        "disposition": "tested",
+        "evidence": "test_review_record_closure.py::test_a_code_outside_the_vocabulary_is_an_integrity_fault PASSED"
+      },
+      {
+        "behavior": "ledger at trivial: recorded trivial-auto row passes (not a skip); no block fails naming the row; justification or enumeration still accepted",
+        "disposition": "tested",
+        "evidence": "test_ledger_trivial_row.py::test_trivial_default_row_passes_and_is_not_a_skip + test_trivial_with_no_block_fails_and_names_the_row + test_trivial_may_still_justify_or_enumerate PASSED; test_verify_iterate_finalization.py::test_completeness_trivial_without_a_row_fails PASSED"
+      },
+      {
+        "behavior": "ledger: trivial-auto refused at small, n/a refused at medium, any other n/a code refused",
+        "disposition": "tested",
+        "evidence": "test_ledger_trivial_row.py::test_the_default_row_is_refused_at_small + test_n_a_at_medium_is_still_refused_even_with_the_code + test_any_other_ledger_code_is_refused PASSED"
+      },
+      {
+        "behavior": "ledger check moved out of iterate_checks.py without changing its import path or pre-existing behavior",
+        "disposition": "tested",
+        "evidence": "test_ledger_trivial_row.py::test_iterate_checks_still_exports_the_moved_names + test_test_completeness_ledger_edges.py + test_verify_iterate_finalization.py ledger tests PASSED"
+      },
+      {
+        "behavior": "campaign runner rows with delegated-to-orchestrator / no-spawn-site pass and 3f-bis promotion still greens the gate",
+        "disposition": "tested",
+        "evidence": "test_review_record_campaign_shape.py + test_campaign_cascade_record_roundtrip.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest -q -p no:cacheprovider shared/tests/test_review_record_closure.py shared/tests/test_ledger_trivial_row.py shared/tests/test_record_review_pass_cli_floor.py",
+    "exit_code": 0,
+    "tests_run": 35,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-08-u3-review-record-trivial/surface_verification.json",
+    "timestamp": "2026-10-08T09:44:01.362Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
