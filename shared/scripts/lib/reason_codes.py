@@ -26,7 +26,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import Mapping
 
-__all__ = ["EXEMPTION_FAMILIES", "REASON_CODES", "family_codes", "reason_code_error"]
+__all__ = ["EXEMPTION_FAMILIES", "REASON_CODES", "TRIVIAL_AUTO", "family_codes", "reason_code_error"]
 
 REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
     "untestable": frozenset({
@@ -46,12 +46,16 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "user-opt-out",                # the operator declined the pass
         "config-disabled",             # external_review.feedback_iterations is 0
         "missing-keys",                # no provider key configured
+        "no-spawn-site",               # nothing in this context can spawn the pass (campaign internal arms)
     }),
     "test_exemption": frozenset({
         "fixture-or-helper",    # a function the collector does not collect as a test
         "mechanical-refactor",  # body diff limited to renamed identifiers
     }),
 })
+
+#: The ONE default a trivial run closes every pass it did not run with (and its ledger).
+TRIVIAL_AUTO = "trivial-auto"
 
 #: Families whose answers are EXEMPTIONS (recorded in the F5c `exemptions` block). A review
 #: closed not_run and an untestable behaviour are answers, not exemptions.

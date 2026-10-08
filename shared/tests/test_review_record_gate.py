@@ -47,16 +47,15 @@ def _complete_record(project, **overrides):
     # the retired `gates` seam, and may separate again.)
     for review_type in RECORDABLE_TYPES:
         status = overrides.get(review_type, "completed")
-        record = upsert_review(
-            record,
-            make_entry(review_type, status,
-                       disposition=REASON if status != "completed" else None,
-                       # A completed row must carry evidence a pass happened;
-                       # `recorded_by` is what a real `--from <adapter>`
-                       # recording leaves behind.
-                       recorded_by="code-reviewer" if status == "completed" else None),
-            force=True,
-        )
+        entry = make_entry(review_type, status,
+                           disposition=REASON if status != "completed" else None,
+                           # A completed row must carry evidence a pass happened;
+                           # `recorded_by` is what a real `--from <adapter>`
+                           # recording leaves behind.
+                           recorded_by="code-reviewer" if status == "completed" else None)
+        if status != "completed":
+            entry["reason_code"] = "diff-below-threshold"  # closed vocab, small+ (U3)
+        record = upsert_review(record, entry, force=True)
     write_record(project, RUN_ID, record)
     return record
 
@@ -139,15 +138,10 @@ def test_fails_when_the_record_belongs_to_another_run(tmp_path):
     assert not result.ok
 
 
-def test_skips_at_trivial_complexity(tmp_path):
-    project = _project(tmp_path, complexity="trivial")
-    result = check_review_record(project, RUN_ID)
-    assert result.ok
-    assert "skipped" in result.detail.lower()
-
-
-@pytest.mark.parametrize("complexity", ["small", "medium", "large"])
-def test_applies_from_small_upwards(tmp_path, complexity):
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("complexity", ["trivial", "small", "medium", "large"])
+def test_applies_at_every_complexity(tmp_path, complexity):
+    """U3: trivial is no longer skipped — a run with no record fails at every level."""
     project = _project(tmp_path, complexity=complexity)
     assert not check_review_record(project, RUN_ID).ok
 

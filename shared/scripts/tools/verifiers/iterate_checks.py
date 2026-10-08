@@ -39,11 +39,18 @@ from lib.architecture_doc import (  # noqa: E402
 )
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
-from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
 
 from ._finalization_claims import run_claim_checks  # noqa: E402
+from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402 — re-exported
 from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
+# The Test Completeness gate lives in its own module (size cap); re-exported here.
+from ._ledger_completeness import (  # noqa: E402, F401 — re-exported surface
+    _COMPLETENESS_ENFORCED_COMPLEXITIES,
+    _COMPLETENESS_VALID_DISPOSITIONS,
+    UNTESTABLE_REASON_CODES,
+    check_test_completeness_ledger,
+)
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
@@ -80,65 +87,6 @@ from ._migration_check import check_migration_quarantine_empty  # noqa: E402, F4
 from .layer_coverage import check_cross_layer_coverage, check_removal_coverage  # noqa: E402, F401
 from .layer_coverage_binding import check_binding_completeness  # noqa: E402, F401
 from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F401
-
-
-# ---------------------------------------------------------------------------
-# Test Completeness vocabulary (iterate-2026-05-30-test-completeness-gate)
-# ---------------------------------------------------------------------------
-#
-# The closed set of *structural*, falsifiable reasons a behavior may be left
-# UNTESTABLE. "Could-test-but-didn't" is NOT in this set — that escape hatch
-# is the whole point of the gate. SSoT: this frozenset is mirrored in
-# ``plugins/shipwright-iterate/skills/iterate/references/confidence-anti-patterns.md``
-# and a reverse-drift test
-# (``shared/tests/test_untestable_vocab_doc_sync.py``)
-# asserts the doc lists exactly these codes.
-
-UNTESTABLE_REASON_CODES: frozenset[str] = REASON_CODES["untestable"]  # closed vocab now lives in lib/reason_codes.py
-
-# Completeness is enforced at these complexities; trivial is auto-n/a.
-_COMPLETENESS_ENFORCED_COMPLEXITIES: frozenset[str] = frozenset({"small", "medium", "large"})
-# The only two honest dispositions for a behavior. Any other value (e.g.
-# "deferred", "untested", "acceptable") IS the escape hatch and fails.
-_COMPLETENESS_VALID_DISPOSITIONS: frozenset[str] = frozenset({"tested", "untestable"})
-
-
-def _wrong_shape_detail(field: str, value: object) -> str:
-    """The F5c entry ANSWERED, but not in a shape the gate can read.
-
-    `validate_iterate_entry` performs no shape check on these extra keys, so
-    `"test_completeness": "see the spec"` is accepted at F5c and would otherwise
-    be silently ignored here — falling through to the shared file and reporting
-    "the F5c entry carries no {field} either", which is false and points the
-    operator at a repair they already performed (Stage-3 doubt).
-    """
-    return (
-        f"the F5c entry's {field} is a {type(value).__name__}, not an object — "
-        "it answered, but not in a shape this gate can read. Fix the "
-        "`--entry-json` payload; see references/F5c.md for the block's shape"
-    )
-
-
-def _no_entry_detail(run_id: str) -> str:
-    """Why an absent F5c entry FAILS instead of skipping.
-
-    Both gates resolve the run's complexity from the entry; without one they don't
-    know what to enforce. SKIPPED there answered "not applicable" to a question
-    that was never asked — and at F11, F5c is mandatory and already ran, so an
-    absent entry honestly reads "F5c did not happen", never "this run is exempt".
-    """
-    from tools.append_iterate_entry import ITERATE_RETENTION
-    return (
-        f"no iterate entry for {run_id} in .shipwright/agent_docs/iterates/ — "
-        "this gate cannot resolve the run's complexity and must not report "
-        "itself as not-applicable. For the run being finalized this means F5c "
-        "did not run: `append_iterate_entry.py --run-id ... --entry-json ...`. "
-        f"For an OLDER run it may instead have been evicted by the {ITERATE_RETENTION}-entry "
-        "retention window (that directory is a recency cache, not the historical "
-        "record — `shipwright_events.jsonl` keeps the `work_completed` event "
-        "permanently), in which case the run cannot be re-verified from the "
-        "tree and this result is a limit, not a defect"
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -620,181 +568,6 @@ def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
     return CheckResult(
         name, True,
         f"surface={surface}, tests_run={tests_run}, exit_code=0",
-    )
-
-
-# ---------------------------------------------------------------------------
-# Test Completeness gate — "testable ⇒ tested"
-# (iterate-2026-05-30-test-completeness-gate)
-# ---------------------------------------------------------------------------
-
-def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResult:
-    """Test Completeness gate — every behavior the diff introduces is either
-    ``tested`` (with evidence) or ``untestable`` (with a closed-vocabulary
-    structural reason). The "could-test-but-didn't" escape hatch is abolished,
-    so the question *"did you empirically test everything testable?"* becomes
-    structurally self-answering and the operator never has to ask.
-
-    Reads ``shipwright_test_results.json.iterate_latest.test_completeness``
-    (written at F5, the same producer step that writes ``surface_verification``).
-    Enforced at small / medium / large; SKIPped at trivial (auto n/a) and when
-    the run_id is absent. Severity ERROR — fails ``--strict`` and default both;
-    a non-zero F11 verifier STOPs the run before the PR.
-
-    Fail-closed conditions:
-
-    1. small+ iterate but no results file / no ``test_completeness`` block
-       (F5 didn't populate it).
-    2. malformed results JSON.
-    3. ``status`` not in {``complete``, ``n/a``}.
-    4. ``status == "n/a"`` without a non-empty ``justification``.
-    5. ``status == "complete"`` with an empty ``behaviors`` list.
-    6. any behavior ``disposition`` outside {``tested``, ``untestable``} — the
-       escape hatch.
-    7. any ``untestable`` behavior whose ``reason_code`` is outside
-       ``UNTESTABLE_REASON_CODES``.
-    8. any ``tested`` behavior citing no ``evidence``.
-    9. ``counts.untested_testable`` missing or > 0 (declared testable-but-untested).
-    10. ``enumeration_basis`` reports more ``acs`` than ``covered_acs``
-        (under-enumeration guard — stops a vacuous pass via a short list).
-    """
-    name = "test completeness ledger"
-
-    entry = find_entry_by_run_id(project_root, run_id)
-    if not entry:
-        return CheckResult(name, False, _no_entry_detail(run_id))
-    complexity = str(entry.get("complexity", "")).lower()
-    if complexity == "trivial":
-        return CheckResult(
-            name, True, "skipped (complexity=trivial — completeness n/a)",
-            severity=Severity.SKIPPED.value,
-        )
-    if complexity not in _COMPLETENESS_ENFORCED_COMPLEXITIES:
-        return CheckResult(
-            name, True, f"skipped (complexity={complexity or 'unknown'})",
-            severity=Severity.SKIPPED.value,
-        )
-
-    # Prefer the PER-RUN entry: an iterate does not commit the shared results file,
-    # so on a behind branch it can still hold HEAD's — the PREVIOUS run's — ledger,
-    # failing a run that did everything right. Shared file = legacy fallback.
-    block = entry.get("test_completeness")
-    if block is not None and not isinstance(block, dict):
-        return CheckResult(name, False, _wrong_shape_detail("test_completeness", block))
-    if not isinstance(block, dict):
-        latest = read_iterate_latest(project_root, run_id)
-        if not latest.is_current:
-            return CheckResult(
-                name, False, stale_detail(latest, run_id, "test_completeness"),
-            )
-        block = (latest.block or {}).get("test_completeness")
-    if not isinstance(block, dict):
-        return CheckResult(
-            name, False,
-            f"iterate_latest.test_completeness missing for a {complexity} "
-            "iterate — populate the ledger at F5",
-        )
-
-    status = str(block.get("status", "")).lower()
-    if status not in ("complete", "n/a"):
-        return CheckResult(
-            name, False,
-            f"test_completeness.status={status!r} not one of complete / n/a",
-        )
-
-    if status == "n/a":
-        # n/a is the "no testable behavior" claim. It is honest only for
-        # genuinely behaviorless changes — which, by definition, are not
-        # medium/large. Forbidding it at medium+ closes the residual escape
-        # hatch (a real feature self-classifying n/a to skip enumeration).
-        if complexity in ("medium", "large"):
-            return CheckResult(
-                name, False,
-                f"status=n/a is not allowed at {complexity} complexity — a "
-                f"{complexity} iterate has testable behavior by definition. "
-                "Enumerate it (status=complete), or re-classify the iterate as "
-                "small if the change is genuinely behaviorless",
-            )
-        justification = str(block.get("justification", "")).strip()
-        if not justification:
-            return CheckResult(
-                name, False,
-                "status=n/a requires a justification (e.g. 'markdown-only "
-                "edit; no executable behavior changed')",
-            )
-        return CheckResult(
-            name, True, f"n/a, justified ({len(justification)} chars)",
-        )
-
-    # status == "complete" --------------------------------------------------
-    behaviors = block.get("behaviors")
-    if not isinstance(behaviors, list) or not behaviors:
-        return CheckResult(
-            name, False,
-            "status=complete but no behaviors enumerated — a small+ iterate "
-            "that changed behavior must list at least one testable behavior",
-        )
-
-    for i, beh in enumerate(behaviors):
-        if not isinstance(beh, dict):
-            return CheckResult(name, False, f"behavior[{i}] is not an object")
-        label = str(beh.get("behavior", f"#{i}"))
-        disposition = str(beh.get("disposition", "")).lower()
-        if disposition not in _COMPLETENESS_VALID_DISPOSITIONS:
-            return CheckResult(
-                name, False,
-                f"behavior {label!r} has disposition={disposition!r} — only "
-                "'tested' or 'untestable' are allowed. The "
-                "'could-test-but-didn't' escape hatch is not permitted: test "
-                "it, or classify it untestable with a structural reason_code",
-            )
-        if disposition == "untestable":
-            reason_code = str(beh.get("reason_code", "")).strip()
-            if reason_code not in UNTESTABLE_REASON_CODES:
-                return CheckResult(
-                    name, False,
-                    f"behavior {label!r} untestable with reason_code="
-                    f"{reason_code!r}, not in the closed vocabulary "
-                    f"{sorted(UNTESTABLE_REASON_CODES)}",
-                )
-        elif not str(beh.get("evidence", "")).strip():
-            return CheckResult(
-                name, False,
-                f"behavior {label!r} is 'tested' but cites no evidence — name "
-                "the test + result",
-            )
-
-    counts = block.get("counts") if isinstance(block.get("counts"), dict) else {}
-    untested_testable = counts.get("untested_testable", None)
-    # NB: bool is a subclass of int — `untested_testable: false` must NOT
-    # satisfy the "must be int == 0" contract.
-    if (isinstance(untested_testable, bool)
-            or not isinstance(untested_testable, int)
-            or untested_testable > 0):
-        return CheckResult(
-            name, False,
-            f"counts.untested_testable={untested_testable!r} — every testable "
-            "behavior must be tested (target 0)",
-        )
-
-    basis = block.get("enumeration_basis")
-    if isinstance(basis, dict):
-        acs, covered = basis.get("acs"), basis.get("covered_acs")
-        if isinstance(acs, int) and isinstance(covered, int) and acs > covered:
-            return CheckResult(
-                name, False,
-                f"enumeration gap: {acs} acceptance criteria, only {covered} "
-                "covered by ledger rows — enumerate the remainder",
-            )
-
-    tested = sum(
-        1 for beh in behaviors if str(beh.get("disposition", "")).lower() == "tested"
-    )
-    untestable = len(behaviors) - tested
-    return CheckResult(
-        name, True,
-        f"complete: {tested} tested, {untestable} untestable (valid reason), "
-        "0 untested-testable",
     )
 
 

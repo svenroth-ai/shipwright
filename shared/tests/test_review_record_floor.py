@@ -63,7 +63,7 @@ def _write_run(
         # routing is exactly what this helper must not re-implement. (`spec` is
         # an ordinary `reviews` key now, but reads still fall back to the
         # retired `gates` sibling for older records.)
-        record = upsert_review(record, make_entry(
+        entry = make_entry(
             review_type, status,
             disposition=("the rule that applies" if status != "completed" else None),
             # Evidence, because the floor now asks whether a pass HAPPENED and
@@ -71,7 +71,11 @@ def _write_run(
             # `--from <adapter>` recording leaves behind; all 45 of this repo's
             # real records carry at least one of the four traces.
             recorded_by=("code-reviewer" if status == "completed" else None),
-        ), force=True)
+        )
+        if status != "completed":
+            # The closed-vocabulary code every skipped pass now carries (U3).
+            entry["reason_code"] = "trivial-auto" if complexity == "trivial" else "diff-below-threshold"
+        record = upsert_review(record, entry, force=True)
 
     d = root / ".shipwright" / "planning" / "iterate" / run_id
     d.mkdir(parents=True, exist_ok=True)
@@ -184,7 +188,10 @@ def test_unknown_complexity_fails_the_gate(tmp_path: Path):
     assert "F5c" in result.detail
 
 
-def test_trivial_is_skipped_entirely(tmp_path: Path):
+@pytest.mark.covers("FR-01.11")
+def test_trivial_is_enforced_but_has_no_floor(tmp_path: Path):
+    """U3: trivial is checked now (not skipped) — and passes with `self` plus
+    `trivial-auto` rows, because the code-review floor is still medium+."""
     _write_run(
         tmp_path, "iterate-x", complexity="trivial",
         statuses={"code": "not_run", "external_code": "not_run"},

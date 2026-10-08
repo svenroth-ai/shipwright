@@ -17,7 +17,7 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
     "spec": "{path to iterate spec or null}",
     "tests_passed": true,
     "adr": "{run_id}",
-    "test_completeness": { ...the F5 ledger block... },
+    "test_completeness": { ...the F5 ledger block; at trivial {"status": "n/a", "reason_code": "trivial-auto"}... },
     "surface_verification": { ...the F0.5 block... },
     "declared_removals": [ {"path": "...", "reason": "..."} ],
     "exemptions": {"count": 0, "items": []}
@@ -66,6 +66,12 @@ keyword-classified runs only, so history cannot feed on its own output) becomes
 implementable once ~20 entries carry it. Until then `complexity_history.py`
 deliberately does not filter on it — a filter over zero qualifying entries
 would return no prior at all and drop the fall-through to bare `trivial`.
+
+**`test_completeness` is owed at EVERY complexity.** A trivial run is no longer
+skipped by F11: it carries the one recorded default row
+`{"status": "n/a", "reason_code": "trivial-auto"}` here (the same code it closes
+its unperformed review passes with — `iteration-reviews.md`), and fails without
+it. The code is refused above trivial.
 
 **Carry the three evidence blocks here, not only in
 `shipwright_test_results.json`.** An iterate does not commit that file, so the copy

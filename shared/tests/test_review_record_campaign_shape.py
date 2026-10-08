@@ -32,7 +32,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _review_cli_harness import (  # noqa: E402
-    EXTERNAL_REVIEW_OUTPUT,
+    EXTERNAL_REVIEW_OUTPUT, RUNNER_REASON_CODES,
     RUN_ID,
     make_project,
     payload,
@@ -100,12 +100,12 @@ def _record_row(root: Path, review_type: str, status: str, disposition: str | No
     """Returns `(returncode, output)` — the harness's shape."""
     args = ["record", "--review-type", review_type, "--status", status]
     if disposition:
-        args += ["--disposition", disposition]
+        args += ["--disposition", disposition, "--reason-code", RUNNER_REASON_CODES[review_type]]
     if status == "completed":
         # Evidence. The floor now asks whether a pass HAPPENED, and a completed
         # row with none is the shape it rejects — so the fixture has to produce
-        # what a real recording produces, not the minimum the CLI accepts.
-        args += ["--recorded-by", f"{review_type}-reviewer"]
+        # what a real recording produces, not the minimum the CLI accepts (`self-review` for self).
+        args += ["--recorded-by", "self-review" if review_type == "self" else f"{review_type}-reviewer"]
     if status == "completed" and review_type in ("plan", "external_code"):
         args += [
             "--marker-status", "completed", "--provider", "openrouter",

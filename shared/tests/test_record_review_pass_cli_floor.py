@@ -26,7 +26,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _review_cli_harness import EXTERNAL_REVIEW_OUTPUT, payload  # noqa: E402
+from _review_cli_harness import EXTERNAL_REVIEW_OUTPUT, SELF_REVIEW_REPLY, payload  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
@@ -53,10 +53,25 @@ def project(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _close_missing(project: Path) -> int:
+def _record_self(project: Path) -> None:
+    """The one pass every complexity owes (U3) — recorded before closing the rest."""
+    result = subprocess.run(
+        [sys.executable, TOOL, "record", "--review-type", "self", "--status", "completed",
+         "--from", "self-review", "--payload-file", payload(
+             project, CANONICAL_PAYLOAD_BASENAMES["self"], SELF_REVIEW_REPLY),
+         "--project-root", str(project), "--run-id", RUN_ID],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _close_missing(project: Path, *, code: str | None = "diff-below-threshold",
+                   record_self: bool = True) -> int:
+    if record_self:
+        _record_self(project)
     result = subprocess.run(
         [sys.executable, TOOL, "close-missing", "--status", "not_run",
-         "--disposition", DISPOSITION,
+         "--disposition", DISPOSITION, *(["--reason-code", code] if code else []),
          "--project-root", str(project), "--run-id", RUN_ID],
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -84,18 +99,55 @@ def test_close_missing_does_not_satisfy_the_floor_at_medium(project: Path):
 
 
 def test_close_missing_still_unblocks_a_small_run(project: Path):
-    """At small the escape hatch is untouched — the floor is medium+ only."""
+    """At small, `self` plus a coded close-missing still unblocks — the floor is medium+ only."""
     _set_complexity(project, "small")
 
     assert _close_missing(project) == 0
     assert check_review_record(project, RUN_ID).ok
 
 
-def test_close_missing_still_unblocks_a_trivial_run(project: Path):
+@pytest.mark.covers("FR-01.11")
+def test_trivial_closes_with_self_plus_the_one_default_code(project: Path):
+    """U3: at trivial `self` + ONE `close-missing --reason-code trivial-auto` is the record."""
     _set_complexity(project, "trivial")
 
-    assert _close_missing(project) == 0
+    assert _close_missing(project, code="trivial-auto") == 0
     assert check_review_record(project, RUN_ID).ok
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("complexity", ["trivial", "small", "medium", "large"])
+def test_an_all_not_run_record_fails_at_every_complexity(project: Path, complexity: str):
+    """U3: closing EVERY type not_run — `self` included — is a change nobody
+    reviewed, and no complexity waves it through any more."""
+    _set_complexity(project, complexity)
+
+    assert _close_missing(project, code="trivial-auto" if complexity == "trivial"
+                          else "diff-below-threshold", record_self=False) == 0
+    result = check_review_record(project, RUN_ID)
+    assert result.is_failure
+    assert "`self` is 'not_run'" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("complexity", ["trivial", "small"])
+def test_free_text_closures_fail_below_medium(project: Path, complexity: str):
+    """U3: a disposition alone is not a reason any more — not even at trivial."""
+    _set_complexity(project, complexity)
+
+    assert _close_missing(project, code=None) == 0
+    result = check_review_record(project, RUN_ID)
+    assert result.is_failure and "without a reason_code" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+def test_trivial_auto_is_refused_above_trivial(project: Path):
+    """U3: from `small` up each type names its OWN code; the trivial default is not one."""
+    _set_complexity(project, "small")
+
+    assert _close_missing(project, code="trivial-auto") == 0
+    result = check_review_record(project, RUN_ID)
+    assert result.is_failure and "'trivial-auto' at small" in result.detail
 
 
 def test_recording_one_real_review_clears_the_floor(project: Path):

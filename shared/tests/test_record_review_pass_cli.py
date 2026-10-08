@@ -70,7 +70,7 @@ def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
          "--payload-file", payload(
              tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT)],
         ["record", "--review-type", "external_code", "--status", "not_applicable",
-         "--disposition", REASON],
+         "--disposition", REASON, "--reason-code", "config-disabled"],
         # Stage 1 of the cascade. `code` is recorded completed above, and the
         # gate now requires the HARD-GATE that must precede it to have passed —
         # a completed Stage 2 with no completed Stage 1 describes a cascade that
@@ -80,9 +80,9 @@ def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
          "--payload-file", payload(
              tmp_path, CANONICAL_PAYLOAD_BASENAMES["spec"], CODE_REVIEWER_REPLY)],
         ["record", "--review-type", "plan_internal", "--status", "not_applicable",
-         "--disposition", REASON],
+         "--disposition", REASON, "--reason-code", "complexity-below-threshold"],
         ["record", "--review-type", "architecture_internal", "--status", "not_applicable",
-         "--disposition", REASON],
+         "--disposition", REASON, "--reason-code", "complexity-below-threshold"],
     ):
         code, output = run_tool(project, *args)
         assert code == 0, output

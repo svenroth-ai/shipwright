@@ -1,0 +1,9 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "All five BRIEF U3 clauses implemented: all-not_run fails everywhere (self required), trivial one-command trivial-auto close, closed codes from small up, ledger trivial row recorded not skipped, SKILL.md + F5c.md updated in the same diff."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Closure rules run after schema validation and the pending check, so an absent self row or an out-of-vocabulary code reports through the existing pending / integrity-fault branches; unknown complexity keeps its prior SKIP."},
+  {"name": "Security Basics", "verdict": "pass", "note": "No new input surface; run_id is validated by the record path before it reaches a message; codes are a frozen closed set."},
+  {"name": "Test Quality", "verdict": "pass", "note": "New tests tagged FR-01.11 cover each rule both ways, incl. a CLI round-trip all-not_run case at every complexity independent of the fixture helper; existing fixtures updated, not weakened."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One pass over eight review types; the ledger check is unchanged in cost."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Ledger moved to verifiers/_ledger_completeness.py per the BRIEF touch set, iterate_checks.py shrinks 1082 -> 855 and re-exports; new closure predicates sit next to review_record_floor.py; every touched source file < 300 lines."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Producers/consumers: F5c entry test_completeness (append_iterate_entry.py -> _ledger_completeness) probed end to end through the real CLI; reviews.json reason_code (record_review_pass.py -> review_record_closure) round-tripped by subprocess tests; webui reader unaffected (reason_code is additive since U0)."}
+]}

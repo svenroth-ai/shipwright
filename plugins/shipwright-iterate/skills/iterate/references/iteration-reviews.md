@@ -524,9 +524,12 @@ of: a non-empty `findings` list, a non-blank `provider`, a non-blank
 `--status completed` with `--from` omitted produces a row with none of them —
 indistinguishable from one nobody earned — and that no longer greens the gate.
 
-**F11 stops the run while any type is still `pending`** (small+; skipped at
-trivial), so an empty Review row in the Mission view always means "genuinely not
-run", never "nobody wrote it down". A `spec` row absent from **both** sections
+**F11 stops the run while any type is still `pending`** — at every
+complexity, trivial included — so an empty Review row in the Mission view always
+means "genuinely not run", never "nobody wrote it down". It also stops a record
+whose `self` row is not `completed` with evidence (the Self-Review runs at every
+complexity, so an all-`not_run` record fails everywhere), and any `not_run` /
+`not_applicable` row without a closed-vocabulary `reason_code` (below). A `spec` row absent from **both** sections
 counts as pending: the schema tolerates the absence so older records stay
 readable, and a live run gets nothing from that — it cannot dodge the row by
 declining to write it. The reviewers
@@ -625,13 +628,13 @@ LATEST round — it is overwritten, never suffixed (`-round2`, …); the
 recorded row is what persists the outcome, an earlier round's raw file is
 disposable scratch once superseded.
 
-**A pass that did NOT run** must say so and name the rule — a bare "skipped" is
-rejected:
+**A pass that did NOT run** must say so with its closed-vocabulary code (and may
+name the rule in a disposition — a bare "skipped" is rejected):
 
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" \
-  --review-type doubt --status {not_run|not_applicable} \
+  --review-type doubt --status {not_run|not_applicable} --reason-code diff-below-threshold \
   --disposition "docs-only diff; the doubt pass is conditional per iteration-reviews.md"
 ```
 
@@ -639,14 +642,26 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 complexity or change shape; `not_run` when it applied but was skipped (opt-out,
 missing keys, degraded provider).
 
-**`--reason-code` — the machine-readable half (optional today, `record` and `close-missing`).**
-Next to the free-text disposition a `not_run` / `not_applicable` row may carry one code from the
-closed `review_not_run` vocabulary in `shared/scripts/lib/reason_codes.py` (`unavailable`,
-`trivial-auto`, `delegated-to-orchestrator`, `diff-below-threshold`, `complexity-below-threshold`,
-`user-opt-out`, `config-disabled`, `missing-keys`). Given alone it supplies a rule-naming disposition;
-given with `--disposition` both are stored. A completed pass has no code, and a code outside the
-vocabulary is refused at the CLI. Rows without one are legacy and stay valid. Later gates may make
-the code mandatory per complexity; record it now.
+**`--reason-code` — REQUIRED on every `not_run` / `not_applicable` row (`record` and `close-missing`).**
+One code from the closed `review_not_run` vocabulary in `shared/scripts/lib/reason_codes.py`
+(`unavailable`, `trivial-auto`, `delegated-to-orchestrator`, `diff-below-threshold`,
+`complexity-below-threshold`, `user-opt-out`, `config-disabled`, `missing-keys`, `no-spawn-site`).
+Given alone it supplies a rule-naming disposition; given with `--disposition` both are stored. A
+completed pass has no code, and a code outside the vocabulary is refused at the CLI. F11 refuses a
+skipped row without one at every complexity. F11 verifies the run being finalized; a record
+written before this rule carries codeless legacy rows and would fail if it were re-verified.
+
+- **Trivial:** record `self` (always), then close everything else with ONE command —
+  `uv run "{shared_root}/scripts/tools/record_review_pass.py" close-missing --project-root
+  "{project_root}" --run-id "{run_id}" --status not_applicable --reason-code trivial-auto`.
+  Any other closed code is accepted too, when a more specific one applies.
+- **Small and up:** each type names a code that fits IT — `trivial-auto` is refused. The gate checks
+  that a code is present and is not the trivial default; which code fits is the reviewable claim in
+  the diff (no type-to-code matrix is re-encoded in the verifier). The usual ones:
+  `complexity-below-threshold` (`plan`, `plan_internal`, `architecture_internal` below medium),
+  `diff-below-threshold` (`code`/`spec`/`doubt`/`external_code` with no risk flag and a small diff),
+  `user-opt-out` / `config-disabled` / `missing-keys` (an external pass the operator, config or keys
+  ruled out), `delegated-to-orchestrator` / `no-spawn-site` (campaign runner, below).
 
 ### Campaign sub-iterate rows
 
@@ -672,33 +687,33 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 # …or, when it did not run. `not_run` REQUIRES a disposition, and the marker
 # vocabulary is narrower than the result-JSON one — `skipped_diff_below_threshold`
 # is a valid result.json status but NOT a valid --marker-status.
-… --review-type external_code --status not_run \
+… --review-type external_code --status not_run --reason-code {config-disabled|user-opt-out|missing-keys} \
   --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
   --marker-status "{skipped_user_opt_out | skipped_config_disabled}"
 
 # the delegated internal cascade — recorded as NOT having run.
 # Stage 1 has a row of its own and is delegated with the rest; omitting it
 # leaves `spec` pending and reds the sub-iterate at F11.
-… --review-type spec --status not_run \
+… --review-type spec --status not_run --reason-code delegated-to-orchestrator \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
 
-… --review-type code --status not_run \
+… --review-type code --status not_run --reason-code delegated-to-orchestrator \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 
 # Stage 3 cannot precede Stage 2
-… --review-type doubt --status not_run \
+… --review-type doubt --status not_run --reason-code delegated-to-orchestrator \
   --disposition "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate"
 
 # the internal plan-review arm — recorded as NOT having run, and NEVER
 # promoted at 3f-bis: unlike spec/code/doubt there is no campaign-level
 # internal-arm spawn site yet (documented gap), so this row stays `not_run`
 # for the life of the sub-iterate.
-… --review-type plan_internal --status not_run \
+… --review-type plan_internal --status not_run --reason-code no-spawn-site \
   --disposition "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three"
 
 # the internal architecture-review arm — same treatment, same reason: no
 # campaign-level spawn site exists yet for a fresh-context architecture pass.
-… --review-type architecture_internal --status not_run \
+… --review-type architecture_internal --status not_run --reason-code no-spawn-site \
   --disposition "campaign sub-iterates have no internal architecture-review arm yet — a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three"
 ```
 
@@ -715,8 +730,11 @@ everything still open in one command:
 ```bash
 uv run "{shared_root}/scripts/tools/record_review_pass.py" close-missing \
   --project-root "{project_root}" --run-id "{run_id}" \
-  --status not_run --disposition "predates the per-run review record"
+  --status not_run --reason-code {the code that applies} --disposition "predates the per-run review record"
 ```
+
+`close-missing` never closes `self` as completed (it cannot assert a pass in bulk), so record the
+Self-Review first — a record closed entirely by `close-missing` fails F11 at every complexity.
 
 ---
 

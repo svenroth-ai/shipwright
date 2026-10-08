@@ -40,6 +40,7 @@ from _review_cli_harness import (  # noqa: E402
     CODE_REVIEWER_REPLY,
     DOUBT_REVIEWER_REPLY,
     EXTERNAL_REVIEW_OUTPUT,
+    RUNNER_REASON_CODES,
     RUN_ID,
     make_project,
     payload,
@@ -112,7 +113,8 @@ def campaign_root(tmp_path: Path) -> Path:
 
     for review_type, disposition in _DELEGATED:
         rc, out = run_tool(root, "record", "--review-type", review_type,
-                           "--status", "not_run", "--disposition", disposition)
+                           "--status", "not_run", "--disposition", disposition,
+                           "--reason-code", RUNNER_REASON_CODES[review_type])
         assert rc == 0, f"{review_type}: {out}"
     return root
 
