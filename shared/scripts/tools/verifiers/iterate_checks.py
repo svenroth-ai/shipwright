@@ -655,8 +655,8 @@ def check_spec_impact_recorded(
        ``spec_impact``): the iterate's WORK up to ``event_commit`` — via
        :func:`_iterate_changed_paths`, NOT one commit — must touch a planning spec.md.
 
-    BUG iterates, intent-less entries, and runs whose entry is absent are
-    SKIPPED — a bug fix need not touch the spec. ``git_context`` SKIPs on
+    Intent-less entries and runs whose entry is absent are SKIPPED; a BUG
+    iterate is NOT (U6: fixes answer too). ``git_context`` SKIPs on
     ``not_git``, fails CLOSED on any other fault (trg-4183acd3). Severity ERROR
     on failure (blocks default exit and ``--strict``). Origin: iterate-2026-05-16-spec-impact-gate.
     """
@@ -669,7 +669,7 @@ def check_spec_impact_recorded(
             severity=Severity.SKIPPED.value,
         )
     intent = entry.get("intent", entry.get("type", ""))
-    if intent not in ("feature", "change"):
+    if intent not in ("feature", "change", "bug"):
         return CheckResult(
             name, True, f"skipped (intent={intent or 'unknown'})",
             severity=Severity.SKIPPED.value,

@@ -325,7 +325,7 @@ class TestFrOrChangeTypeGate:
             "--source", "iterate",
             "--intent", "bug",
             "--change-type", "tooling",
-            "--none-reason", "fix flaky CI",
+            "--none-reason", "fix flaky CI", "--spec-impact", "none", "--spec-impact-reason-code", "tooling-only",
         ])
         assert rc == 0
         captured = capsys.readouterr()

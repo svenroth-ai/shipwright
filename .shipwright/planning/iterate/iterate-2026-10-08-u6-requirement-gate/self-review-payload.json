@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "Every U6 clause is implemented and tested: bugs not exempt, closed spec_impact_none code, zero-parsed specs fail closed, spec-impact gate on the F5b path, change_type checked against a fork-point-to-working-tree diff incl. untracked, mixed/rename/unknown paths, monorepo and WebUI shapes."},
+  {"name": "Error Handling", "verdict": "pass", "note": "git present but unable to answer (no trunk ref, git failure, unreadable output, dubious ownership) refuses with change_type_diff_unavailable; not-a-repo warns; a collector crash on present specs reads as found and fails closed."},
+  {"name": "Security Basics", "verdict": "pass", "note": "git runs with argv lists and no shell; paths are classified, never executed; the run-config override key was dropped after review, so a change cannot widen its own exemption."},
+  {"name": "Test Quality", "verdict": "pass", "note": "40 new tests tagged FR-01.11/AC03 or AC04 use real git repos for the diff arm; the local-main-at-HEAD test fails against a local-first base choice; existing fixtures updated with the reason code."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "At most five merge-base calls plus rev-list ordering checks, and only on the no-FR branch of an iterate event write."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Three new lib modules under 300 lines; fr_gates.py is at 299; record_event.py shrank 777 to 731; iterate_checks.py unchanged in length."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "The event gains spec_impact_reason_code: producers are the record_event CLI and F5b finalize, the consumer is F11 check_spec_impact_recorded; a CLI-to-events.jsonl-to-F11 round-trip probe ran green."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff reports no findings."}
+]}

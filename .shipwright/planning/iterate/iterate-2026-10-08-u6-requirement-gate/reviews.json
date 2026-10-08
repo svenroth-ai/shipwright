@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u6-requirement-gate",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:17:42.350093+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "define candidate priority explicitly, log which base was chosen in the gate outcome, and add a test for \"local `main` ahead of `origin/main`\" and detached HEAD. Also decide shallow-clone behavior (merge-base may not exist → currently falls into `change_type_diff_unavailable`? verify).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "note the residual gap; consider whether F11's existing check could cheaply compare the committed diff against the recorded change_type as a follow-up unit, not here.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "state explicitly that the CLI's previous spec-impact check is deleted, not duplicated; add a test that a bug iterate is rejected exactly once (no double error output / no double reason-code requirement).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "confirm the rollout ordering within the campaign (this unit lands after in-flight units are finalized), or accept-and-warn once for events missing the reason code when their intent is not feature/change/bug.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "document that narrowing requires a new shape mechanism (or accept a `!` negation in a follow-up); at minimum log which shape was detected and which label matched, so misclassification is debuggable. Malformed config = error is good.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "pin the semantics in the test: rename across labels fails even if either side alone would pass.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "accept both on read, but document one canonical name for authoring and note the other as legacy alias; or add an F11-side check that at most one is present.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The monorepo classification is broader than the specified contract. Allowing `plugins/` and `shared/` for tooling, infra, and compliance would let changes to unrelated implementation code qualify for a no-FR exemption. The contract specifically identifies `shared/scripts/` and `scripts/` as legitimate tooling/infra paths.",
+          "suggestion": "Define distinct, narrow allowlists for each label using actual project paths. Add negative tests showing that implementation changes elsewhere in `shared/` or `plugins/` cannot claim these exemptions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "Add-only configuration extensions can still defeat the gate. If the working-tree `shipwright_run_config.json` supplies the policy, a change can add a permissive glob and then use it to exempt its own implementation changes. Rejecting malformed configuration does not prevent this.",
+          "suggestion": "Load exemption extensions from the trusted baseline revision, or require FRs when a change modifies its own exemption policy. Test a mixed diff that changes both the configuration and newly exempted code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Selecting the “narrowest merge-base” from several candidate refs can undercount the change. A local `main` or `master` advanced to the current HEAD could win over the actual integration baseline, hiding committed implementation changes while leaving only permissible working-tree edits visible.",
+          "suggestion": "Resolve one authoritative integration target through project configuration or documented remote-default precedence, then calculate its merge-base. Test conflicting local/remote refs, a local trunk pointing at HEAD, and committed implementation changes followed by uncommitted documentation edits.  The shared gate entry point and fail-closed parser behavior are sound directions, but the exemption policy and baseline selection need tightening before implementation. Repository access was blocked by the execution policy, so this assessment is based on the supplied specification and mini-plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:17:34.497025+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case — Severity: medium**\n  Narrowest merge-base over a candidate list (`origin/HEAD`, `origin/main`, `main`, …) plus untracked files is the riskiest piece. \"Narrowest\" merge-base across divergent candidates can pick a base that excludes recent trunk work, silently classifying changed-by-trunk files as part of this iterate — or, worse, on a fresh branch with no upstream, fall through to a local ref and produce a diff spanning many commits. The spec says \"merge-base to working tree incl. untracked,\" which is fine, but the candidate selection needs an explicit tie-break and a documented expectation for detached HEAD / shallow clones.\n  **Suggestion:** define candidate priority explicitly, log which base was chosen in the gate outcome, and add a test for \"local `main` ahead of `origin/main`\" and detached HEAD. Also decide shallow-clone behavior (merge-base may not exist → currently falls into `change_type_diff_unavailable`? verify).\n\n- **Category: risk — Severity: medium**\n  Untracked files are judged by *path glob*, but untracked content is unreviewable — a `docs/` path with arbitrary content still passes. That's inherent to the spec (\"event written before the commit\"), so acceptable, but the plan should state the residual risk explicitly so F11 (post-commit) doesn't need a re-check argument later. The plan defers F11 re-checking; make sure the reason recorded in the BRIEF covers \"untracked path spoofing.\"\n  **Suggestion:** note the residual gap; consider whether F11's existing check could cheaply compare the committed diff against the recorded change_type as a follow-up unit, not here.\n\n- **Category: risk — Severity: medium**\n  Adding both arms to `run_fr_gates` means the CLI path (`record_event.py`), which presumably already ran the spec-impact check before this refactor, may now run it twice (once in the old inline check, once via the shared gate). Moving `spec_impact_gate` out of `record_event.py` is right, but the pla […truncated]\n\n[openai] 1. **Category: approach | Severity: high**  \n   **Finding:** The monorepo classification is broader than the specified contract. Allowing `plugins/**` and `shared/**` for tooling, infra, and compliance would let changes to unrelated implementation code qualify for a no-FR exemption. The contract specifically identifies `shared/scripts/**` and `scripts/**` as legitimate tooling/infra paths.  \n   **Suggestion:** Define distinct, narrow allowlists for each label using actual project paths. Add negative tests showing that implementation changes elsewhere in `shared/**` or `plugins/**` cannot claim these exemptions.\n\n2. **Category: security | Severity: high**  \n   **Finding:** Add-only configuration extensions can still defeat the gate. If the working-tree `shipwright_run_config.json` supplies the policy, a change can add a permissive glob and then use it to exempt its own implementation changes. Rejecting malformed configuration does not prevent this.  \n   **Suggestion:** Load exemption extensions from the trusted baseline revision, or require FRs when a change modifies its own exemption policy. Test a mixed diff that changes both the configuration and newly exempted code.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** Selecting the “narrowest merge-base” from several candidate refs can undercount the change. A local `main` or `master` advanced to the current HEAD could win over the actual integration baseline, hiding committed implementation changes while leaving only permissible working-tree edits visible.  \n   **Suggestion:** Resolve one authoritative integration target through project configuration or documented remote-default precedence, then calculate its merge-base. Test conflicting local/remote refs, a local trunk pointing at HEAD, and committed implementation changes followed by uncommitted documentation edits.\n\nThe shared gate entry point and fail-closed parser behavior are sound directions, but the exemption policy and baseline  […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:17:34.781289+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:17:34.891626+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/spec_impact_gate.py:43-46 (`spec_impact_gate_error`, the `spec_impact == \"none\"` early branch)",
+          "line": null,
+          "finding": "The `none` branch runs before the FR check and is unconditional: any event recording `spec_impact: \"none\"` must supply a justification and a reason code even when `affected_frs`/`new_frs` are present. The spec text (\"one that names no requirement and gives no reason is rejected\") and the new F5b.md / F7.md docs (\"A feature, change or bug with no affected_frs/new_frs must set spec_impact none + justification + code\") both scope the requirement to the no-FR case. The code is stricter than both. The diff itself shows this combination was common in practice — `test_fr_gate_test_evidence.py` and `test_finalize_test_evidence_gate.py` events had `spec_impact: none` + `affected_frs` with no justification and had to be patched to keep passing.",
+          "suggestion": "Either gate the `none` branch on `not (affected_frs or new_frs)` to match the documented contract, or update F5b.md/F7.md/spec AC03 to say the justification+code is required for every `spec_impact: none`. As written, code and docs disagree, and legitimate docs-only FR-linked iterates get refused.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/change_type_diff.py:47-53 (`_narrowest`)",
+          "line": null,
+          "finding": "If a `rev-list --count` call fails (non-zero return, empty stdout) for one of the trunk pairs, the comparison silently reads as \"not an ancestor,\" so two trunk refs that are ordered can be reported as \"share no ordering\" and the write is refused (`change_type_diff_unavailable`). Fail-closed, so not a bypass, but a transient git fault turns into a hard refusal with a misleading repair message.",
+          "suggestion": "Check `returncode != 0` on the `rev-list` calls and raise a `DiffUnavailable` with the actual stderr instead of the \"no ordering\" message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/change_type_paths.py (`_BOOKKEEPING`, `_DOCS`)",
+          "line": null,
+          "finding": "docs/` is anchored at the root, so a nested `packages/foo/docs/` directory in a generic-shaped repo is not covered by the `docs` label (only `/.md` is). A pure-documentation change under `packages/foo/docs/` that also touches, e.g., `packages/foo/docs/requirements.txt` would be refused with no available label. Narrow but real for pnpm/Lerna-style layouts, which the WebUI-shape tests don't cover.",
+          "suggestion": "Add `/docs/` to `_DOCS` (it can't widen anything dangerous — it only covers markdown-ish trees), or document the limitation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_requirement_gate_spec_impact.py (`test_a_collector_crash_on_present_specs_reads_as_found_not_absent`)",
+          "line": null,
+          "finding": "The collector-crash test monkeypatches `drift_parsers.collect_requirements_from_planning`, but the fail-closed behavior depends on `specs_found` being flipped to `True` before the patched call inside `collect_known_fr_ids` — code that is not visible in the diff (only the `specs_found = False` init and the final `except` are shown). If the ordering in the hidden body ever changes (e.g., the flag is set after collection succeeds), this test still passes via the re-imported patched symbol but the production guarantee silently inverts.",
+          "suggestion": "Also assert the positive path explicitly — a repo with a parseable spec returning a non-empty id set with `specs_found=True` — to pin the flag's set point.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/change_type_paths.py",
+          "line": 46,
+          "finding": "Allowing `/.mdx` as documentation lets executable WebUI pages bypass FR linkage. For example, changing `src/app/page.mdx` can alter rendered product behavior while passing the `docs` exemption. The tests only check runtime files with `.tsx`, `.ts`, and `.py` extensions.",
+          "suggestion": "Classify MDX under runtime page directories as runtime code, even when its extension resembles documentation. Add a WebUI test showing that a docs-only event changing such a page is refused.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/spec_impact_gate.py",
+          "line": 38,
+          "finding": "Coercing the justification through `str()` accepts JSON booleans, numbers, lists, and objects as explanations. An FR-linked F5b event with `spec_impact: \"none\"`, `spec_impact_justification: true`, and a valid reason code passes without the required one-line textual justification; multiline strings also pass.",
+          "suggestion": "Require a non-empty string with no line breaks before accepting the justification. Test malformed values through F5b as well as the shared gate.  Ship-with-fixes: the shared enforcement addresses the main bypasses, but these gaps still admit invalid exemptions or records. Repository access was blocked, so this assessment is limited to the supplied specification and diff; the referenced BRIEF and tests could not be independently checked.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:22:24.285283+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/spec_impact_gate.py:43-46 (`spec_impact_gate_error`, the `spec_impact == \"none\"` early branch)\n  Finding: The `none` branch runs **before** the FR check and is unconditional: any event recording `spec_impact: \"none\"` must supply a justification and a reason code *even when `affected_frs`/`new_frs` are present*. The spec text (\"one that names no requirement and gives no reason is rejected\") and the new F5b.md / F7.md docs (\"A feature, change or bug **with no affected_frs/new_frs** must set spec_impact none + justification + code\") both scope the requirement to the no-FR case. The code is stricter than both. The diff itself shows this combination was common in practice — `test_fr_gate_test_evidence.py` and `test_finalize_test_evidence_gate.py` events had `spec_impact: none` + `affected_frs` with no justification and had to be patched to keep passing.\n  Suggestion: Either gate the `none` branch on `not (affected_frs or new_frs)` to match the documented contract, or update F5b.md/F7.md/spec AC03 to say the justification+code is required for *every* `spec_impact: none`. As written, code and docs disagree, and legitimate docs-only FR-linked iterates get refused.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/change_type_diff.py:47-53 (`_narrowest`)\n  Finding: If a `rev-list --count` call fails (non-zero return, empty stdout) for one of the trunk pairs, the comparison silently reads as \"not an ancestor,\" so two trunk refs that *are* ordered can be reported as \"share no ordering\" and the write is refused (`change_type_diff_unavailable`). Fail-closed, so not a bypass, but a transient git fault turns into a hard refusal with a misleading repair message.\n  Suggestion: Check `returncode != 0` on the `rev-list` calls and raise a `DiffUnavailable` with the actual stderr instead of the \"no ordering\" message.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/ch […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/lib/change_type_paths.py:46\n- Finding: Allowing `**/*.mdx` as documentation lets executable WebUI pages bypass FR linkage. For example, changing `src/app/page.mdx` can alter rendered product behavior while passing the `docs` exemption. The tests only check runtime files with `.tsx`, `.ts`, and `.py` extensions.\n- Suggestion: Classify MDX under runtime page directories as runtime code, even when its extension resembles documentation. Add a WebUI test showing that a docs-only event changing such a page is refused.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/spec_impact_gate.py:38\n- Finding: Coercing the justification through `str()` accepts JSON booleans, numbers, lists, and objects as explanations. An FR-linked F5b event with `spec_impact: \"none\"`, `spec_impact_justification: true`, and a valid reason code passes without the required one-line textual justification; multiline strings also pass.\n- Suggestion: Require a non-empty string with no line breaks before accepting the justification. Test malformed values through F5b as well as the shared gate.\n\nShip-with-fixes: the shared enforcement addresses the main bypasses, but these gaps still admit invalid exemptions or records. Repository access was blocked, so this assessment is limited to the supplied specification and diff; the referenced BRIEF and tests could not be independently checked.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:17:34.685709+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:17:35.081916+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:17:35.447152+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet — a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

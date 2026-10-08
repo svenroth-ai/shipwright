@@ -4858,9 +4858,9 @@ boundary AND inside `finalize_iterate._record_event`) adds one rule: a
 **behavior-affecting** change (`spec_impact` ∈ `add`/`modify`/`remove`) with no
 `affected_frs`/`new_frs` is rejected (`fr_gate_behavior_affecting_requires_fr`)
 **regardless** of `change_type`/`none_reason` — the no-FR branch is reserved for
-behavior-preserving work. Unlike the CLI-only, intent-gated
-`_spec_impact_gate_error`, this rule is enforced at finalize too (F5b parity) and
-is intent-independent (covers BUG + intent-less events). The classification SSOT
+behavior-preserving work. Like every arm of `lib.fr_gates.run_fr_gates` (incl.
+the spec-impact gate `lib/spec_impact_gate.py`, now on both paths) it runs at F5b
+too and is intent-independent (covers BUG + intent-less events). The classification SSOT
 (`shared/scripts/lib/fr_classification.py`) is shared by the gate and the
 compliance Control-Grade adapter, so "classified" (gate) and "traced" (grade)
 cannot drift. The Control-Grade requirement-traceability dimension's

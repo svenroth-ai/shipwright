@@ -19,6 +19,8 @@ Families
                    test: ``shared/tests/test_untestable_vocab_doc_sync.py``).
 ``review_not_run`` why a review pass closed ``not_run`` / ``not_applicable``.
 ``test_exemption`` why a newly added test carries no requirement tag.
+``spec_impact_none`` why an iterate recording ``spec_impact: none`` leaves every
+                   requirement untouched (``lib/spec_impact_gate.py``).
 """
 
 from __future__ import annotations
@@ -51,6 +53,14 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
     "test_exemption": frozenset({
         "fixture-or-helper",    # a function the collector does not collect as a test
         "mechanical-refactor",  # body diff limited to renamed identifiers
+    }),
+    "spec_impact_none": frozenset({
+        "behavior-preserving",          # refactor / rename: nothing observable changes
+        "restores-specified-behavior",  # a fix: the spec already states the corrected behaviour
+        "docs-only",                    # only documentation changed
+        "tests-only",                   # only tests changed
+        "tooling-only",                 # developer / build tooling, no product behaviour
+        "infra-only",                   # CI, deploy, dependency pins
     }),
 })
 

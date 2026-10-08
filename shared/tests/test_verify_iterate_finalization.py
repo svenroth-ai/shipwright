@@ -1027,7 +1027,7 @@ def test_spec_impact_skipped_when_run_id_missing(tmp_path):
 
 
 def test_spec_impact_skipped_for_bug_intent(tmp_path):
-    """A BUG iterate need not touch the spec — the gate skips it."""
+    """No event + not git: SKIPPED by git context, not by intent (U6: bugs answer too)."""
     proj = tmp_path / "p"
     _seed_entry_with_intent(proj, "r1", "bug")
     result = check_spec_impact_recorded(proj, "r1", "abc1234")

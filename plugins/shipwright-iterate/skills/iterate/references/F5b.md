@@ -30,7 +30,30 @@ placeholder such as `"change_type": "{docs|…}"` is itself a rejection (a prese
   `new_frs`; **omit** `change_type`/`none_reason`.
 - **No-FR** (docs/tooling/compliance/infra) — set `change_type` ∈
   `{docs,tooling,compliance,infra}` + a one-line `none_reason`; **omit**
-  `affected_frs`/`new_frs`.
+  `affected_frs`/`new_frs`. The label is **checked against the diff**
+  (merge-base with the trunk to the working tree, untracked files and both
+  sides of a rename included): every changed path must fall under it.
+  Every label covers docs, tests and Shipwright's own records; `docs`
+  covers only those. Generic projects keep runtime code (`src/**`,
+  `server/**`, …) outside every label; in the Shipwright monorepo
+  `tooling`/`infra`/`compliance` also cover `plugins/**`, `shared/**`,
+  `scripts/**` (rules: `lib/change_type_paths.py`; no per-project
+  override — a path no rule covers needs its FR linked). Refusals:
+  `change_type_not_covered_by_diff` (names the paths) and
+  `change_type_diff_unavailable` (git present, no trunk ref; not a git
+  repo only warns).
+
+**Every intent answers the spec impact — fixes too.** A feature, change or
+bug with no `affected_frs`/`new_frs` must set `spec_impact: "none"`, a
+one-line `spec_impact_justification` (or `none_reason`) **and**
+`spec_impact_reason_code` ∈ `{behavior-preserving,
+restores-specified-behavior, docs-only, tests-only, tooling-only,
+infra-only}` (closed vocabulary, `lib/reason_codes.py`). A fix that brings
+code back to what the spec already says uses `restores-specified-behavior`.
+**Every** recorded `spec_impact: "none"` carries both, with or without FRs
+alongside it (the justification: one line of text, max 280 chars).
+Specs that exist but parse to zero requirements refuse any declared FR id
+(`fr_gate_specs_unparsed`).
 
 **Behavior-affecting changes must be FR-linked.** If `spec_impact` is
 `add`/`modify`/`remove` (the change alters an FR's observable behavior), the
@@ -66,6 +89,7 @@ extras='{
   "summary": "{one plain-language sentence a non-expert can read}",
   "spec_impact": "{add|modify|remove|none}",
   "spec_impact_justification": "{required when spec_impact=none}",
+  "spec_impact_reason_code": "{required when spec_impact=none: closed code}",
   "affected_frs": ["FR-..."],
   "new_frs": ["FR-..."]
 }'

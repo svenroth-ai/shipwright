@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-u6-requirement-gate",
+  "date": "2026-10-08",
+  "section": "Iterate — change: requirement gate bypasses (campaign U6)",
+  "title": "Requirement gates: fixes answer, none-reasons are coded, no-FR labels are checked against the diff",
+  "context": "The write-time requirement gates had five bypasses: bug iterates were exempt from the spec-impact rule; spec_impact none accepted any free text; FR existence allowed declared ids when specs parsed to zero requirements; the spec-impact gate ran at the record_event CLI only, never at F5b; a no-FR change_type label was believed without looking at what changed.",
+  "decision": "run_fr_gates (called by both write paths) gains two arms: lib/spec_impact_gate.py (feature/change/bug link FRs or record none; every none carries a one-line justification and a closed spec_impact_none code) and lib/change_type_diff.py with built-in project-shape rules in lib/change_type_paths.py (label must cover the fork-point to working-tree diff, untracked and renames incl.). Existence fails closed; F11 stops skipping bugs.",
+  "consequences": "Every CLI or F5b event recording spec_impact none now needs spec_impact_reason_code (forward-only; stored events are not re-gated). A no-FR label that does not cover a changed path is refused, naming the paths; git present without a trunk ref refuses; not a git repo only warns. Campaign siblings finalizing after this merge must add the code.",
+  "rationale": "Replayed 167 historical no-FR events: the draft rules refused 18 legitimate runs; after widening to the observed config, CI and test paths, 4 remain, all real mislabels. Narrowing the monorepo set to shared/scripts and scripts refused 82 of 167 (49%), the outcome the brief rules out. Trunk resolved remote-first so a local main at HEAD cannot hide committed work.",
+  "rejected": "A global no-runtime-code rule (refuses every monorepo tooling change). A per-project change_type_paths override in shipwright_run_config.json (dropped after both architecture reviewers: a permanent exemption contract with no demonstrated need, and the working-tree copy let a change widen its own exemption). A separate F11 re-check (both write paths already share the gate).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-08-u6-requirement-gate-reviews.md"
+}

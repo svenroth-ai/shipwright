@@ -32,10 +32,10 @@ from lib.fr_classification import (
     is_valid_none_reason as _is_valid_none_reason,
     unknown_fr_ids,
 )
-# Imported for run_fr_gates() below; the function lives in its own module
-# (see that module's docstring for why) to keep this file under the 300-LOC
-# guideline it already asks its siblings to respect.
+# run_fr_gates() arms that live in their own modules (this file stays < 300 LOC).
+from lib.change_type_diff import change_type_diff_error
 from lib.fr_test_evidence_gate import missing_test_evidence_error
+from lib.spec_impact_gate import spec_impact_gate_error
 
 #: Canonical planning root, kept as one full literal rather than split into path
 #: segments: the artifact-path-canon lint matches the canonical string, and a
@@ -52,8 +52,9 @@ def collect_known_fr_ids(project_root) -> tuple[frozenset[str], bool]:
     gate must treat those differently — the first is unverifiable, the second is
     the blind-scanner case — so presence is probed separately.
 
-    Never raises. A collector failure degrades to "unverifiable" rather than
-    blocking a write: this is a correctness check, not an availability dependency.
+    Never raises. Specs that exist but cannot be read (the collector raises)
+    report ``specs_found=True`` with no ids, so the gate fails CLOSED for a
+    declared id instead of reading "could not parse" as "nothing to check".
     """
     try:
         from lib.drift_parsers import collect_requirements_from_planning
@@ -61,6 +62,7 @@ def collect_known_fr_ids(project_root) -> tuple[frozenset[str], bool]:
     except Exception:
         return frozenset(), False
 
+    specs_found = False
     try:
         planning = Path(project_root) / _PLANNING
         # require="is_file" (not the majority's "exists") is this call site's own
@@ -81,7 +83,7 @@ def collect_known_fr_ids(project_root) -> tuple[frozenset[str], bool]:
         }
         return frozenset(ids), True
     except Exception:
-        return frozenset(), False
+        return frozenset(), specs_found
 
 
 def existence_gate_error(event, known_fr_ids, *, specs_found: bool) -> dict | None:
@@ -96,17 +98,17 @@ def existence_gate_error(event, known_fr_ids, *, specs_found: bool) -> dict | No
     not, the iterate minted a requirement that exists only in the event log —
     precisely the drift this closes.
 
-    **Graduated, so a gate can never brick a repo that cannot satisfy it:**
-    ``specs_found=False`` (nothing to check against) and an empty
-    ``known_fr_ids`` (specs parse to nothing) both ALLOW — the caller warns for
-    the second. Only an id outside a non-empty known set is a hard failure.
-    Fail-open on *unavailable* is deliberately not fail-open on *unknown*.
+    ``specs_found=False`` (no planning specs at all) ALLOWS: there is nothing
+    to check against. Specs that exist but parse to ZERO requirements FAIL
+    CLOSED for any declared id (``fr_gate_specs_unparsed``): the specs were
+    expected to hold the ids, and a blind parser must not read as "verified".
+    An event declaring no id is not blocked by either case.
     """
     if not isinstance(event, dict):
         return None
     if event.get("type") != "work_completed" or event.get("source") != "iterate":
         return None
-    if not specs_found or not known_fr_ids:
+    if not specs_found:
         return None
 
     declared: list = []
@@ -114,6 +116,15 @@ def existence_gate_error(event, known_fr_ids, *, specs_found: bool) -> dict | No
         value = event.get(key)
         if isinstance(value, list):
             declared.extend(value)
+
+    if not known_fr_ids:
+        named = unknown_fr_ids(declared, frozenset())
+        if not named:
+            return None
+        return {"error": "fr_gate_specs_unparsed", "detail": (
+            f"specs exist under {_PLANNING}/ but parse to zero requirements, so the "
+            f"declared FR id(s) {', '.join(named)} cannot be verified. Repair the "
+            "spec's requirement table (| ID | ... | rows) and re-run.")}
 
     unknown = unknown_fr_ids(declared, known_fr_ids)
     if not unknown:
@@ -140,18 +151,19 @@ def check_fr_existence(event, project_root, caller: str) -> dict | None:
     """
     known_fr_ids, specs_found = collect_known_fr_ids(project_root)
     if specs_found and not known_fr_ids:
-        # Allowed (a legitimately empty project must not be blocked) but never
-        # silent — silence here reads as "nothing to audit".
+        # An event that declares an id is refused below; one that declares none
+        # passes, but never silently: silence here reads as "nothing to audit".
         print(
             f"[{caller}] WARNING: specs found under .shipwright/planning/ but "
-            "zero requirements parsed — FR existence is NOT being verified.",
+            "zero requirements parsed — FR existence cannot be verified.",
             file=sys.stderr,
         )
     return existence_gate_error(event, known_fr_ids, specs_found=specs_found)
 
 
 def run_fr_gates(event, project_root, caller: str) -> dict | None:
-    """All three FR gates, in order: classified, then ids exist, then evidenced.
+    """Every requirement gate, in order: classified, spec impact answered, a
+    no-FR ``change_type`` covering the diff, ids exist, then evidenced.
 
     One entry point so a write path cannot wire up one gate and forget another
     — the exact bypass ADR-059 had to close for the classification gate, which is
@@ -165,6 +177,8 @@ def run_fr_gates(event, project_root, caller: str) -> dict | None:
     """
     return (
         fr_or_change_type_gate_error(event)
+        or spec_impact_gate_error(event)
+        or change_type_diff_error(event, project_root, caller)
         or check_fr_existence(event, project_root, caller)
         or missing_test_evidence_error(event)
     )
@@ -185,8 +199,7 @@ def fr_or_change_type_gate_error(event) -> dict | None:
     BP-1 (campaign 2026-06-27) adds one rule: a **behavior-affecting**
     change (``spec_impact`` ∈ ``{add, modify, remove}``) MUST link an FR
     — the no-FR ``change_type`` branch is reserved for behavior-preserving
-    changes. Unlike the CLI-only, intent-gated ``_spec_impact_gate_error``,
-    this rule runs at finalize too (F5b parity) and is intent-independent.
+    changes. This rule is intent-independent.
 
     Additional consistency check: if ``change_type`` is present at all
     (even alongside valid FRs) it must be a recognized value — a malformed
@@ -206,7 +219,7 @@ def fr_or_change_type_gate_error(event) -> dict | None:
     ``finalize_iterate._record_event`` (the worktree F5b / Stop-hook
     write-path), which calls this same function before its
     ``append_event`` — that bypass is now closed (ADR-059 parity). The
-    spec-impact gate (``_spec_impact_gate_error``) stays CLI-only.
+    spec-impact gate (``lib.spec_impact_gate``) runs on both paths too.
 
     Origin: iterate-2026-05-21-c1-fr-gate-finalize.
     """
@@ -226,9 +239,7 @@ def fr_or_change_type_gate_error(event) -> dict | None:
 
     # BP-1 (campaign 2026-06-27): a behavior-affecting change (spec_impact ∈
     # add/modify/remove) MUST link an FR — the no-FR change_type branch is not
-    # available to it. Closes two holes the CLI-only, intent-gated
-    # _spec_impact_gate_error left open: this runs at finalize too (F5b parity)
-    # AND is intent-independent (catches BUG + intent-less events). Without it a
+    # available to it, whatever the intent (BUG and intent-less too). Without it a
     # behavior change could dodge FR-linkage by self-labeling "tooling", which
     # would also starve BP-2's per-FR reconciliation.
     if _is_behavior_affecting(event.get("spec_impact")) and not has_frs:

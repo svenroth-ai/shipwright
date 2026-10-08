@@ -20,7 +20,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
 | FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, open the release pull request, and publish a readable summary to the code host's release page (best-effort, forward-only). | code | unit (inferred) |
 | FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
-| FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. When an outside second opinion is asked for, the pair of reviewers stays independent of whichever tool drove the change, never the same vendor family reviewing its own output. | code | unit (inferred) |
+| FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature, change or fix records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. When an outside second opinion is asked for, the pair of reviewers stays independent of whichever tool drove the change, never the same vendor family reviewing its own output. | code | unit (inferred) |
 | FR-01.12 | Adopted | /shipwright-preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
 | FR-01.13 | Adopted | /shipwright-adopt | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
 | FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
@@ -749,14 +749,24 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC02] Given a change described in ordinary words, when it is picked up, then its
   kind and its size are detected and the process scales to match — from a quick
   fix through to a fully specified feature with plan, review and tests.
-- (E) [AC03] Given a feature or a change, when it is classified, then it records whether
-  it adds, modifies, removes or leaves the requirements untouched, and one that
-  names no requirement and gives no reason is rejected at the moment it is
-  recorded. A fix is deliberately outside this: repairing behaviour back to what
-  was intended moves no requirement, so it owes no such record.
-- (E) [AC04] Given a feature or change that touched no requirements document, when it
-  is finished, then finishing fails unless the record says the requirements were
-  deliberately left untouched and says why in one line.
+- (E) [AC03] Given a feature, a change or a fix, when it is classified, then it records
+  whether it adds, modifies, removes or leaves the requirements untouched, and
+  one that names no requirement and gives no reason from the fixed list of
+  reasons is rejected at the moment it is recorded — by every recording path,
+  including the one that runs at finalization; a record that says the
+  requirements were left untouched always carries that one-line reason and its
+  fixed-list code, even when it also names requirements. A fix is not exempt:
+  one that only repairs behaviour back to what was intended says so with that
+  reason.
+  A change that names no requirement because it claims to be only
+  documentation, tooling, compliance or infrastructure is checked against the
+  files it actually changed, by the rules of that project's layout; a file that
+  label does not cover is named and the record is refused. Requirement ids are
+  refused too when the requirements documents exist but none can be read.
+  (iterate-2026-10-08-u6-requirement-gate)
+- (E) [AC04] Given a feature, change or fix that touched no requirements document, when
+  it is finished, then finishing fails unless the record says the requirements
+  were deliberately left untouched and says why in one line.
 - (E) [AC05] Given a change completes, polishes, fixes or extends a capability that
   already has a requirement, when its requirement impact is classified, then it
   is routed to modifying that requirement's criteria rather than to adding a new

@@ -82,8 +82,9 @@ differences:
      FR row into a `### Removed Requirements` subsection with the run_id
      and the literal `status: deprecated` (never silently delete).
    - **NONE** — a behavior-preserving internal refactor: record a
-     one-line justification, passed to F7 as `--spec-impact none
-     --spec-impact-justification "..."`.
+     one-line justification and a closed reason code, passed to F7 as
+     `--spec-impact none --spec-impact-justification "..."
+     --spec-impact-reason-code behavior-preserving` (F5b: same keys).
 3. **NONE must be *justified*, not assumed.** The Phase Matrix marks this
    step `always` for CHANGE — that is load-bearing. Scope size is a
    reason the update is *small*, not a reason to skip it. The F11
