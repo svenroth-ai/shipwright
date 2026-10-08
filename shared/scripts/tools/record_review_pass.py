@@ -33,13 +33,10 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.file_lock import LockTimeout  # noqa: E402
 from lib.model_tier_config import TIERS  # noqa: E402
-from lib.review_companion import MARKER_TYPES, repair_markers, write_markers  # noqa: E402
-from lib.review_findings import (  # noqa: E402
-    PARSE_PARTIAL,
-    PARSE_UNSTRUCTURED,
-    ProseOverflowError,
-    ReviewFindingsError,
-)
+from lib.review_companion import MARKER_TYPES, marker_reason, repair_markers, write_markers  # noqa: E402
+from lib.review_entry_checks import REVIEW_FAMILY, default_disposition  # noqa: E402
+from lib.review_findings import ProseOverflowError, ReviewFindingsError  # noqa: E402
+from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
 from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error  # noqa: E402
 from lib.review_record import (  # noqa: E402
@@ -69,29 +66,11 @@ def _fail(error: str, message: str, code: int = EXIT_ERROR) -> int:
     return code
 
 
-def _marker_reason(
-    disposition: str | None, parse_status: str | None, findings_count: int
-) -> str | None:
-    """Carry an unreadable parse into the marker's ``reason``.
-
-    The marker has no ``parse_status`` field, and neither does the pinned
-    cross-repo ``ReviewRow``. A review that RAN but whose prose could not be
-    itemized would otherwise reach the consumer as
-    ``status: completed, findings_count: 0`` — which every reader completes as
-    "…and found nothing". That is the fabrication AC5 exists to prevent, merely
-    displaced one repo downstream. ``reason`` is the one field the consumer
-    already surfaces (as ``disposition``), so the caveat travels there.
-    """
-    if parse_status in (PARSE_UNSTRUCTURED, PARSE_PARTIAL):
-        caveat = (
-            "findings could not be itemized from the reviewer's prose — "
-            f"the count ({findings_count}) is NOT a clean-review result"
-            if parse_status == PARSE_UNSTRUCTURED else
-            f"only some provider legs could be itemized — the count "
-            f"({findings_count}) may understate what was found"
-        )
-        return f"{disposition} — {caveat}" if disposition else caveat
-    return disposition
+def _disposition(args: argparse.Namespace) -> str | None:
+    """The free-text half; a bare ``--reason-code`` supplies a rule-naming default."""
+    if args.disposition or not args.reason_code:
+        return args.disposition
+    return default_disposition(args.reason_code)
 
 
 def _cmd_init(args: argparse.Namespace) -> int:
@@ -157,6 +136,8 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
             and args.review_from != "external-review-json"):
         return (f"completed {args.review_type} markers require --from "
                 "external-review-json so reviewer verdicts are provable")
+    if args.reason_code and args.status == STATUS_COMPLETED:
+        return "--reason-code explains a not_run / not_applicable pass; a completed one has none"
     if args.transport_note and not args.transport:
         return "--transport-note requires --transport"
     if args.transport == "codex" and args.model_tier:
@@ -196,7 +177,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
     try:
         entry = make_entry(
             args.review_type, args.status,
-            findings=findings, provider=args.provider, disposition=args.disposition,
+            findings=findings, provider=args.provider, disposition=_disposition(args),
             completed_at=_now(), recorded_by=args.recorded_by or args.review_from,
             parse_status=parse_status, raw_excerpt=raw, verdicts=verdicts,
             contradiction_resolution=args.contradiction_resolution, model_tier=args.model_tier,
@@ -204,6 +185,8 @@ def _cmd_record(args: argparse.Namespace) -> int:
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
+    if args.reason_code:
+        entry["reason_code"] = args.reason_code
 
     project_root = Path(args.project_root)
     markers: list[str] = []
@@ -220,7 +203,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
                 marker_status=args.marker_status, findings_count=len(findings),
                 record_status=args.status,
                 provider=args.provider,
-                reason=_marker_reason(args.disposition, parse_status, len(findings)),
+                reason=marker_reason(_disposition(args), parse_status, len(findings)),
                 verdicts=verdicts,
                 contradiction_resolution=args.contradiction_resolution,
             ))
@@ -287,6 +270,8 @@ def _cmd_close_missing(args: argparse.Namespace) -> int:
         return _fail("invalid_status",
                      "--status must be not_run or not_applicable — "
                      "'completed' cannot be asserted in bulk", EXIT_USAGE)
+    if not (args.disposition or args.reason_code):
+        return _fail("invalid_arguments", "close-missing needs --disposition or --reason-code", EXIT_USAGE)
     project_root = Path(args.project_root)
     try:
         record = read_record(project_root, args.run_id)
@@ -312,8 +297,9 @@ def _cmd_close_missing(args: argparse.Namespace) -> int:
         # only --force could move, on the very command whose job is to unblock a
         # stuck run.
         entries = [
-            make_entry(t, args.status, disposition=args.disposition,
-                       completed_at=_now(), recorded_by="close-missing")
+            {**make_entry(t, args.status, disposition=_disposition(args),
+                          completed_at=_now(), recorded_by="close-missing"),
+             **({"reason_code": args.reason_code} if args.reason_code else {})}
             for t in targets
         ]
         record = close_pending(project_root, args.run_id, entries)
@@ -361,7 +347,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      help="the reviewer's reply — raw JSON, a ```json block, or prose")
     rec.add_argument("--provider", default=None)
     rec.add_argument("--disposition", default=None,
-                     help="required for not_run / not_applicable; must name the rule")
+                     help="required for not_run / not_applicable unless --reason-code is given; must name the rule")
+    rec.add_argument("--reason-code", default=None, choices=sorted(REASON_CODES[REVIEW_FAMILY]),
+                     help="closed-vocabulary why a not_run / not_applicable pass did not run")
     rec.add_argument("--recorded-by", default=None)
     rec.add_argument("--force", action="store_true",
                      help="overwrite an already-terminal record (corrections only)")
@@ -376,7 +364,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     close = sub.add_parser("close-missing", help="close every still-pending type")
     common(close)
     close.add_argument("--status", required=True)
-    close.add_argument("--disposition", required=True)
+    close.add_argument("--disposition", default=None)
+    close.add_argument("--reason-code", default=None, choices=sorted(REASON_CODES[REVIEW_FAMILY]))
     close.add_argument("--only", default=None,
                        help="comma-separated review types to close "
                             "(default: every still-pending type)")

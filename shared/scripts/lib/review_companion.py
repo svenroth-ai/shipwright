@@ -20,15 +20,41 @@ from typing import Any, Callable
 
 from .review_marker import MARKER_SCHEMA as DEFAULT_MARKER_SCHEMA
 from .review_marker import build_marker, schema_for_roster, write_marker
+from .review_findings import PARSE_PARTIAL, PARSE_UNSTRUCTURED
 from .review_record_core import ReviewRecordError
 from .review_record_ops import repair_companion
 from .review_verdict import contradiction_block
 
-__all__ = ["MARKER_TYPES", "repair_markers", "write_markers"]
+__all__ = ["MARKER_TYPES", "marker_reason", "repair_markers", "write_markers"]
 
 #: Review types that carry a legacy marker, mapped to the marker's own
 #: ``review_mode`` vocabulary (which predates the record's type names).
 MARKER_TYPES = {"plan": "iterate", "external_code": "code"}
+
+
+def marker_reason(
+    disposition: str | None, parse_status: str | None, findings_count: int
+) -> str | None:
+    """Carry an unreadable parse into the marker's ``reason``.
+
+    The marker has no ``parse_status`` field, and neither does the pinned
+    cross-repo ``ReviewRow``. A review that RAN but whose prose could not be
+    itemized would otherwise reach the consumer as
+    ``status: completed, findings_count: 0`` — which every reader completes as
+    "…and found nothing". That is the fabrication AC5 exists to prevent, merely
+    displaced one repo downstream. ``reason`` is the one field the consumer
+    already surfaces (as ``disposition``), so the caveat travels there.
+    """
+    if parse_status in (PARSE_UNSTRUCTURED, PARSE_PARTIAL):
+        caveat = (
+            "findings could not be itemized from the reviewer's prose — "
+            f"the count ({findings_count}) is NOT a clean-review result"
+            if parse_status == PARSE_UNSTRUCTURED else
+            f"only some provider legs could be itemized — the count "
+            f"({findings_count}) may understate what was found"
+        )
+        return f"{disposition} — {caveat}" if disposition else caveat
+    return disposition
 
 
 def write_markers(
