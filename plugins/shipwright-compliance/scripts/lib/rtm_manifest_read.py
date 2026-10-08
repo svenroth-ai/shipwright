@@ -24,7 +24,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-MANIFEST_RELPATH = Path(".shipwright") / "compliance" / "test-traceability.json"
+MANIFEST_RELPATH = Path(".shipwright/compliance/test-traceability.json")
 _GIT_TIMEOUT_S = 5
 # git's own words with LC_ALL=C: the path is not staged, so HEAD is consulted next
 _INDEX_MISSES = ("but not in the index", "nor in the index", "but not at stage 0")

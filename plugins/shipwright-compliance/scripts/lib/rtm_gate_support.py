@@ -17,7 +17,7 @@ from typing import Any
 import rtm_manifest_coverage as manifest_cov
 
 DEFAULT_THRESHOLD = 0.80
-_RTM_RELPATH = Path(".shipwright") / "compliance" / "traceability-matrix.md"
+_RTM_RELPATH = Path(".shipwright/compliance/traceability-matrix.md")
 _NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
 
 
