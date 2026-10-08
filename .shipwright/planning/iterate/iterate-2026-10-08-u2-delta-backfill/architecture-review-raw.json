@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "**1. The question, answered in one sentence.** No new standing mechanism is needed \u2014 option (b) adds none, and it is the right shape.\n\n**2. The smallest thing that would do.** Run the existing deterministic engines, write only what they prove into tags, put the residue into one triage card, and record the measurement in the PR body. That is option (b) as proposed.\n\n**3. What it costs to keep.** Nothing permanent in the repo beyond one evidence doc and one triage card (which is transient debt-tracking, not machinery). The ongoing obligation is the triage card: someone must eventually either close it or accept it as the permanent floor of untagged delta tests.\n\n**4. What it forecloses.** None identified.\n\n**Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The residue risk is that the single triage card becomes the standing mechanism instead of tags \u2014 a card no one owns can sit indefinitely while the untagged set keeps growing with each campaign.\n- Suggestion: Give the triage card a size ceiling (e.g. \"if untagged delta exceeds the current count, split per-root cards\") or fold it into the existing iterate/finalization review cadence so it cannot silently grow.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. No new standing mechanism is needed; option (b), using existing deterministic engines for a bounded backfill, is proportionate.\n2. Run those engines once, apply only proven tags, and record the measurement and unresolved remainder in the PR body and one triage card; a separate evidence doc is unnecessary unless it preserves evidence the PR cannot.\n3. The ongoing obligation is maintaining any resulting coverage tags through existing machinery; the triage card needs an owner until disposition, without recurring backfill work.\n4. What it forecloses: none identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

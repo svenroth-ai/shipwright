@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File:line \u2014 `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md:37`\n- Finding: Step 4 reports a collector run, with the measurement method identifying `_layer_coverage_regen._build`. Calling the collector does not establish that the required `_layer_coverage_regen` regeneration succeeds; failures in the regeneration path remain unchecked.\n- Suggestion: Run `_layer_coverage_regen` on final HEAD and record its exit code and `invalid_tags` count. Require exit 0 and `invalid_tags: 0` before marking this criterion complete.\n\nShip-with-fixes: the conservative zero-tag outcome and single delta triage card fit the specification, but regeneration validation remains incomplete. Repository access was blocked, so this review relies on the supplied diff and specification; the authoritative brief and PR-body evidence could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "This diff is docs/metadata-only (planning docs, review JSON, triage entries) \u2014 no executable code, no tests, so no security, test-quality, or regression surface. The review focus shifts to spec compliance and internal consistency of the evidence.\n\n**Findings**\n\n- Category: bug \u2014 Severity: medium\n  File: `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (\"Cross-check of the zero\" section, near end of file)\n  Finding: Internal contradiction. The engine-results section reports **14 proposals** from `backfill_test_links --dry-run`, but the cross-check section asserts \"all 1,440 delta test ids appear in the dry-run report's `unmapped` list (**0 in `proposals`**, 0 missing)\". Those 14 proposals must map to *some* tests; either they are delta tests (then the cross-check is false and some delta tests did get proposals), or they are pre-existing tests (then the cross-check should say so explicitly. As written, the evidence used to justify \"0 auto-written is a real zero\" is self-contradictory \u2014 precisely the sanity check the plan review's high-severity finding demanded, and it fails its own audit.\n  Suggestion: Reconcile the 14 proposals against the delta ids; state explicitly that none of the 14 are delta tests (with ids), or correct the cross-check.\n\n- Category: spec \u2014 Severity: medium\n  File: `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (\"Manifest regenerates clean (step 4)\" section)\n  Finding: The unit's AC #4 defines \"manifest regenerates clean\" as `_layer_coverage_regen` run on HEAD exiting 0 with `invalid_tags: 0`. The doc claims only \"Collector run on HEAD exits 0 with invalid_tags: 0\" \u2014 the plan review flagged this exact substitution as medium severity, and the fix as-written still substitutes the collector for the regen run. This is the same half-measure the review rejected.\n  Suggestion: Run `_layer_coverage_regen` on HEAD and record its exit code and `invalid_tags` value verbatim, or state explicitly that the regen was run and its output.\n\n- Category: spec \u2014 Severity: medium\n  File: `.shipwright/triage.jsonl` (new entry `trg-067e08fa`) and delta-measurement.md generally\n  Finding: Unit item 1 requires the measurement recorded **in the PR body**; the diff only commits the measurement doc. The plan review flagged this (medium) and the mini-plan wasn't amended. The PR body isn't visible in this diff, so either the AC is unmet or it must be satisfied at PR-open time \u2014 worth confirming, since the committed doc alone doesn't satisfy the stated AC.\n  Suggestion: Ensure the per-root delta table (or its summary) is pasted into the PR body before opening; the committed doc is supplementary.\n\n- Category: edge-case \u2014 Severity: low\n  File: `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (delta table, shared/tests count 983)\n  Finding: The per-file table lists ~150 shared/tests files; a spot-check sum of listed shared/tests entries should equal 983. I did not find an explicit arithmetic reconciliation, and the doc itself admits renames inflate the count (\"upper bound\"). The triage card states \"1,440 tests\" flatly while the doc says it's an upper bound \u2014 the card may over-commit the number.\n  Suggestion: State in the triage card that 1,440 is an upper bound including renames, or reconcile renames before committing the number.\n\nNo correctness issues in the JSON artifacts; the triage JSONL entries are well-formed and the per-root table sums to 1,440 exactly.\n\n**Overall assessment:** ship-with-fixes \u2014 the approach (conservative zero-write + one triage card) is sound, but the evidence doc contains a genuine self-contradiction in its zero-verification cross-check, and AC items 1 and 4 are only partially satisfied as recorded.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

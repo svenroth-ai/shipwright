@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"registry+splice, closed vocab, reason_code in schema/F5c, exemption count printed"},
+{"name":"Error Handling","verdict":"pass","note":"crashing check reads RED; malformed block names the field"},
+{"name":"Security Basics","verdict":"pass","note":"path-safe scopes, closed vocabulary"},
+{"name":"Test Quality","verdict":"pass","note":"62+ tests, both-direction meta test, negative and legacy cases"},
+{"name":"Performance Basics","verdict":"pass","note":"one entry read"},
+{"name":"Naming & Structure","verdict":"pass","note":"capped files shrank; extracted modules"},
+{"name":"Affected Boundaries","verdict":"pass","note":"reviews.json and F5c entry probed with old-reader and real CLI round trips"}]}

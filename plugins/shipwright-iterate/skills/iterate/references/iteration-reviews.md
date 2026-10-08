@@ -639,6 +639,15 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
 complexity or change shape; `not_run` when it applied but was skipped (opt-out,
 missing keys, degraded provider).
 
+**`--reason-code` — the machine-readable half (optional today, `record` and `close-missing`).**
+Next to the free-text disposition a `not_run` / `not_applicable` row may carry one code from the
+closed `review_not_run` vocabulary in `shared/scripts/lib/reason_codes.py` (`unavailable`,
+`trivial-auto`, `delegated-to-orchestrator`, `diff-below-threshold`, `complexity-below-threshold`,
+`user-opt-out`, `config-disabled`, `missing-keys`). Given alone it supplies a rule-naming disposition;
+given with `--disposition` both are stored. A completed pass has no code, and a code outside the
+vocabulary is refused at the CLI. Rows without one are legacy and stay valid. Later gates may make
+the code mandatory per complexity; record it now.
+
 ### Campaign sub-iterate rows
 
 The sub-iterate-runner subagent has no `Agent` tool, so it performs `self`,

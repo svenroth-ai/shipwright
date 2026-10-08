@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "Repository access was blocked by execution policy, so this review uses the supplied specification and mini-plan; the full authoritative brief could not be verified.\n\n1. **Category: approach \u00b7 Severity: medium**\n   **Finding:** Step 5 substitutes a collector result for the explicitly required `_layer_coverage_regen` run. `invalid_tags: 0` alone does not establish that manifest regeneration succeeds.\n   **Suggestion:** Run `_layer_coverage_regen` on the final HEAD and record both exit code 0 and `invalid_tags: 0`.\n\n2. **Category: dependency \u00b7 Severity: medium**\n   **Finding:** The plan omits the campaign\u2019s required pre-push verification and does not explicitly enforce one pytest root per process.\n   **Suggestion:** Collect each root in a separate process and run `uv run scripts/verify_local.py` after the final changes, before pushing.\n\n3. **Category: edge-case \u00b7 Severity: medium**\n   **Finding:** The measurement method leaves the baseline revision and counting unit unspecified. A base-versus-HEAD comparison can count renamed tests as additions, while parametrized collection can inflate \u201ctests\u201d into multiple cases. Committing a measurement document also does not explicitly satisfy the PR-body requirement.\n   **Suggestion:** Record baseline and HEAD SHAs, define whether counts represent test definitions or collected cases, reconcile renames, and put the per-root untagged delta counts in the PR body. Ensure the 1,440 triaged tests reconcile to that delta.\n\n4. **Category: risk \u00b7 Severity: low**\n   **Finding:** Step 2 schedules `backfill_ac_provenance --write` before establishing that both engines yield zero candidates. The plan also omits review of the required bloat-cap report.\n   **Suggestion:** Inspect both dry-run reports first, including files at their caps. If there are zero eligible candidates, skip the write invocation; otherwise, plan same-line tags or the single exception ADR before writing and inspect the resulting diff.\n\nThe conservative tagging approach and single triage card are sound, with little application regression risk if no test files change. Revise the measurement evidence and validation steps before treating U2 as complete; no specific security concern is apparent from the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**Category: risk \u2014 Severity: high**\n**Finding:** Step 3 asserts \"both engines yield zero, so no test file is edited.\" Zero output from the dry-run must be distinguished from an engine that failed to run (env issue, missing archive, wrong base ref, silently swallowed error). The entire plan collapses to \"do nothing\" if the zero is spurious, and the 1,440-test triage card would then be built on a broken measurement.\n**Suggestion:** Sanity-check the zero before committing to it: confirm the dry-run report lists *some* delta candidates (even unmapped ones), cross-check the per-root count against the step-1 measurement, and record the dry-run's raw output in the PR body so a reviewer can see the engines actually processed the delta.\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** The brief's acceptance for \"manifest regenerates clean\" is `_layer_coverage_regen` on HEAD exiting 0 with `invalid_tags: 0`. The mini-plan's step 5 substitutes \"collector on HEAD gives invalid_tags 0\" \u2014 the collector check is only half of the contract and does not verify regen idempotence.\n**Suggestion:** Run `_layer_coverage_regen` on HEAD and require both exit 0 and `invalid_tags: 0`, exactly as specified.\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** The brief (unit item 1) requires the measurement to be recorded **in the PR body**; the mini-plan commits a measurement doc instead. Both may be acceptable, but the stated AC is the PR body \u2014 a doc alone doesn't satisfy it.\n**Suggestion:** Record the numbers in the PR body as the AC requires; the committed doc is optional extra.\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** The brief's item 2 explicitly requires planning for files at the bloat cap (same-line tags or one exception ADR) *before writing*, citing three files by name. The mini-plan skips this entirely on the assumption that no tags will be written. If the dry-run zero turns out to be wrong (see first finding), the plan has no fallback for the bloat-cap constraint, and iterating under pressure is exactly when cap violations get smuggled in.\n**Suggestion:** Keep the bloat-cap decision (same-line tags vs. ADR list) documented in the plan as a contingency, even if unused.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** Step 2 introduces `backfill_ac_provenance` (dry then `--write`), which is not part of the brief's unit text. Since step 3 claims no test files are edited, the `--write` pass may be a no-op \u2014 or it may write files outside the \"no file edited\" claim, contradicting the PR body.\n**Suggestion:** Either drop the `--write` pass (dry-run only, given zero tags are expected) or explicitly account for whatever it writes in step 3's \"no file edited\" statement.\n\n**Category: dependency \u2014 Severity: low**\n**Finding:** The delta measurement (step 1) depends on \"tests added since 2026-09-16\" being determinable per pytest root, including tests moved or renamed between base and HEAD. Renames can inflate or deflate the delta count and thus the 1,440 figure on the triage card.\n**Suggestion:** Note in the measurement doc whether the comparison is add-only or rename-aware, so the triage card's number is auditable later.\n\nNo security concerns specific to this change \u2014 it's read-heavy tooling with no new inputs or exposure.\n\n## Overall assessment\n\nThe approach is directionally sound \u2014 measure, dry-run, tag only high-confidence, one triage card, no auto-delete matches the brief. But two acceptance-criteria substitutions (regen vs. collector; PR body vs. doc) and an unverified \"zero\" that the whole plan rests on mean it should be tightened before execution.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

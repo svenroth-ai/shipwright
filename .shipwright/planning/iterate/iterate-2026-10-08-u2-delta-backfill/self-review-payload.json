@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Measured per root, ran both engines, wrote only deterministic tags (none qualified), filed ONE triage card, manifest regen exit 0 with invalid_tags empty."},
+{"name":"Error Handling","verdict":"pass","note":"No code added; engine zero cross-checked against the unmapped list so a failed run cannot pass as a real zero."},
+{"name":"Security Basics","verdict":"pass","note":"Triage card and doc are neutral, no secrets or vulnerability detail."},
+{"name":"Test Quality","verdict":"pass","note":"No test added or changed; the 6 provenance candidates were refused by the tool, not hand-edited."},
+{"name":"Performance Basics","verdict":"pass","note":"Not applicable, no runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Evidence doc sits beside the run's other planning artifacts; no baseline file grew."},
+{"name":"Affected Boundaries","verdict":"pass","note":"No serialized format changed; the only producer touched is triage.jsonl via triage_add.py, and the tracked file reads back (card trg-067e08fa)."}
+]}

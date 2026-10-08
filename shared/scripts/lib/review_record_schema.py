@@ -26,6 +26,7 @@ try:
         UNKNOWN,
         VERDICTS,
     )
+    from .review_entry_checks import SEVERITIES, reason_code_entry_error, validate_finding
 except ImportError:
     from review_verdict import (  # type: ignore[no-redef]
         CURRENT_REVIEWER_ROSTERS,
@@ -34,6 +35,7 @@ except ImportError:
         UNKNOWN,
         VERDICTS,
     )
+    from review_entry_checks import SEVERITIES, reason_code_entry_error, validate_finding  # type: ignore[no-redef]
 
 __all__ = [
     "ALL_STATUSES",
@@ -123,8 +125,6 @@ ALL_STATUSES = TERMINAL_STATUSES | {STATUS_PENDING}
 #: box-ticking exercise (external plan review O7).
 NEEDS_DISPOSITION = frozenset({STATUS_NOT_RUN, STATUS_NOT_APPLICABLE})
 
-SEVERITIES = frozenset({"high", "medium", "low"})
-
 #: A disposition must name a RULE, not wave at one. Enforced structurally
 #: because "skipped" / "n/a" is exactly how an unreviewed change gets laundered
 #: into a passing gate.
@@ -132,7 +132,7 @@ _MIN_DISPOSITION_CHARS = 12
 
 _OPTIONAL_STRINGS = (
     "provider", "completed_at", "disposition", "recorded_by",
-    "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier", "transport", "transport_note",
+    "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier", "transport", "transport_note", "reason_code",
 )
 
 TRANSPORTS = frozenset({"agent", "codex"})  # which harness answered; absent = ordinary spawn
@@ -167,25 +167,6 @@ def disposition_ok(value: Any) -> bool:
     return len(text) >= _MIN_DISPOSITION_CHARS and " " in text
 
 
-def _validate_finding(item: Any, where: str) -> str | None:
-    if not isinstance(item, dict):
-        return f"{where}: finding is not an object"
-    text = item.get("finding")
-    if not isinstance(text, str) or not text.strip():
-        return f"{where}: finding text is empty"
-    severity = item.get("severity")
-    if severity is not None and severity not in SEVERITIES:
-        return f"{where}: severity {severity!r} is not one of {sorted(SEVERITIES)} or null"
-    line = item.get("line")
-    if line is not None and (isinstance(line, bool) or not isinstance(line, int)):
-        return f"{where}: line must be an integer or null"
-    for key in ("file", "suggestion", "category", "source"):
-        value = item.get(key)
-        if value is not None and not isinstance(value, str):
-            return f"{where}: {key} must be a string or null"
-    return None
-
-
 def validate_entry(review_type: str, entry: Any, *, where: str | None = None) -> str | None:
     """Return an error string, or ``None`` when ``entry`` is well-formed."""
     where = where or f"reviews.{review_type}"
@@ -208,7 +189,7 @@ def validate_entry(review_type: str, entry: Any, *, where: str | None = None) ->
             f"findings has {len(findings)} item(s)"
         )
     for index, item in enumerate(findings):
-        err = _validate_finding(item, f"{where}.findings[{index}]")
+        err = validate_finding(item, f"{where}.findings[{index}]")
         if err:
             return err
     if status in NEEDS_DISPOSITION and not disposition_ok(entry.get("disposition")):
@@ -220,6 +201,8 @@ def validate_entry(review_type: str, entry: Any, *, where: str | None = None) ->
         value = entry.get(key)
         if value is not None and not isinstance(value, str):
             return f"{where}.{key} must be a string or null"
+    if (err := reason_code_entry_error(entry, where)):
+        return err
     if entry.get("transport") not in (None, *TRANSPORTS):
         return f"{where}.transport {entry.get('transport')!r} not in {sorted(TRANSPORTS)}"
     if "verdicts" in entry:
