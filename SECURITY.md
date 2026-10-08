@@ -86,7 +86,7 @@ Contributors unlock broader access only after demonstrating a track record of go
 
 ### Dependency hygiene
 
-- Dependabot **alerts** are active across the repository's `pyproject.toml` manifests; automated dependency-update PRs are held (config staged in [`.github/dependabot.yml`](.github/dependabot.yml)) until the public go-live
+- Dependabot **alerts** and **security updates** are on, so a vulnerable dependency gets a fix PR. Version-update PRs are live for GitHub Actions only (weekly, 7-day cooldown; config in [`.github/dependabot.yml`](.github/dependabot.yml)); Python version updates stay off because Trivy covers them. Secret scanning and push protection are on
 - Trivy SCA scanning runs in CI on every PR and flags vulnerable dependencies
 - New dependencies require justification in an issue
 - Typosquatting detection via the Prompt Injection Scanner
