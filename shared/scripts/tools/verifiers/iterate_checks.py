@@ -39,8 +39,10 @@ from lib.architecture_doc import (  # noqa: E402
 )
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
+from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
 
+from ._finalization_claims import run_claim_checks  # noqa: E402
 from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
@@ -92,14 +94,7 @@ from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F
 # (``shared/tests/test_untestable_vocab_doc_sync.py``)
 # asserts the doc lists exactly these codes.
 
-UNTESTABLE_REASON_CODES: frozenset[str] = frozenset({
-    "requires-prod-credential",                    # real prod secret absent from CI
-    "requires-external-nondeterministic-service",  # live 3rd-party, non-deterministic output
-    "requires-physical-device",                    # hardware/peripheral not in CI
-    "requires-manual-visual-judgment",             # human visual/aesthetic call
-    "requires-interactive-tty",                    # interactive terminal/login the harness can't drive
-    "covered-by-existing-test",                    # already pinned by a named pre-existing test
-})
+UNTESTABLE_REASON_CODES: frozenset[str] = REASON_CODES["untestable"]  # closed vocab now lives in lib/reason_codes.py
 
 # Completeness is enforced at these complexities; trivial is auto-n/a.
 _COMPLETENESS_ENFORCED_COMPLEXITIES: frozenset[str] = frozenset({"small", "medium", "large"})
@@ -1083,4 +1078,5 @@ def run_all_checks(
         check_agent_doc_budget(project_root, run_id, commit_hash),
         check_agent_doc_shape(project_root, run_id, commit_hash),
         check_no_derived_snapshots_committed(project_root, run_id, commit_hash),
+        *run_claim_checks(project_root, run_id, commit_hash),
     ]

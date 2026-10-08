@@ -1,0 +1,95 @@
+{
+  "run_id": "iterate-2026-10-08-u0-foundation-gate-registry",
+  "date": "2026-10-07T23:30:05.371484Z",
+  "event_at": "2026-10-07T23:29:07.274191+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U0",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-10-07-finalization-claims-hardening/sub-iterates/U0-foundation-gate-registry.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u0-foundation-gate-registry",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "run_all_checks splices CLAIM_CHECKS once, in registry order, after the historical list",
+        "disposition": "tested",
+        "evidence": "test_finalization_claims_registry.py::test_run_all_checks_splices_the_registry_in_once PASSED"
+      },
+      {
+        "behavior": "registry and docs claim-checks table agree in both directions",
+        "disposition": "tested",
+        "evidence": "test_finalization_claims_registry.py::test_every_registered_check_is_documented + test_every_documented_check_is_registered PASSED"
+      },
+      {
+        "behavior": "a crashing registered check reads RED and does not hide siblings",
+        "disposition": "tested",
+        "evidence": "test_finalization_claims_registry.py::test_a_crashing_check_reads_red_and_does_not_hide_its_siblings PASSED"
+      },
+      {
+        "behavior": "iterate_checks.py does not grow",
+        "disposition": "tested",
+        "evidence": "test_finalization_claims_registry.py::test_iterate_checks_did_not_grow PASSED"
+      },
+      {
+        "behavior": "REASON_CODES closed, frozen, families disjoint; UNTESTABLE set unchanged",
+        "disposition": "tested",
+        "evidence": "test_reason_codes.py (5 tests) + test_untestable_vocab_doc_sync.py PASSED"
+      },
+      {
+        "behavior": "review row reason_code: legacy valid, vocab code valid, foreign/empty/non-string refused, refused on completed",
+        "disposition": "tested",
+        "evidence": "test_review_reason_code.py::test_legacy_not_run_row_with_only_free_text_stays_valid .. test_a_completed_row_cannot_carry_a_reason_code PASSED"
+      },
+      {
+        "behavior": "record_review_pass record/close-missing --reason-code: synthesised disposition, marker gets it, explicit disposition kept, no-code behaviour unchanged",
+        "disposition": "tested",
+        "evidence": "test_review_reason_code.py (CLI tests) PASSED"
+      },
+      {
+        "behavior": "exemptions block validation: count==len(items), closed kind/code, path-safe scope, null refused, absent legacy",
+        "disposition": "tested",
+        "evidence": "test_exemption_record.py::test_malformed_blocks_are_refused + test_unsafe_scopes_are_refused + test_well_formed_block_is_valid_and_counted_per_reason_code PASSED"
+      },
+      {
+        "behavior": "append_iterate_entry refuses a malformed block and accepts legacy / valid",
+        "disposition": "tested",
+        "evidence": "test_exemption_record.py::test_writer_refuses_a_malformed_block_and_writes_a_valid_one + test_writer_still_accepts_a_legacy_entry_without_the_block PASSED"
+      },
+      {
+        "behavior": "F11 check_exemption_record skips / passes / fails on tamper",
+        "disposition": "tested",
+        "evidence": "test_exemption_record.py::test_f11_check_skips_without_the_block_passes_when_valid_and_fails_when_tampered PASSED"
+      },
+      {
+        "behavior": "exemption_summary CLI prints the F12/PR-body count and fails loudly on a broken record",
+        "disposition": "tested",
+        "evidence": "test_exemption_record.py::test_summary_cli_prints_the_count_for_f12_and_the_pr_body + test_summary_cli_prints_zero_for_a_legacy_entry_and_fails_loudly_without_one PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_exemption_record.py shared/tests/test_review_reason_code.py shared/tests/test_finalization_claims_registry.py shared/tests/test_reason_codes.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 62,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-08-u0-foundation-gate-registry/surface_verification.json",
+    "timestamp": "2026-10-07T23:26:57.658Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

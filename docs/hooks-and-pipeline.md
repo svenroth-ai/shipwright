@@ -3521,6 +3521,28 @@ section is the contract between them.
 
 ---
 
+## Finalization claim checks (F11 extension point)
+
+`shared/scripts/tools/verifiers/iterate_checks.py` holds the historical F11 check list and is at its
+size cap (ADR-125), so it cannot take new gates. Every gate that makes finalization enforce a documented
+claim registers in `verifiers/_finalization_claims.py` (`CLAIM_CHECKS`, ordered); `run_all_checks`
+splices the registry in once (`run_claim_checks`) after the historical list, and a check that raises
+reads RED instead of vanishing. A gate keeps its code in its own `verifiers/<name>.py`.
+`shared/tests/test_finalization_claims_registry.py` fails in both directions between this table and the
+registry. Adding a gate = write the check, append it to `CLAIM_CHECKS`, add one row here.
+
+<!-- claim-checks:start -->
+| Check | Module | What it enforces |
+|---|---|---|
+| `check_exemption_record` | `verifiers/exemption_record_check.py` | the F5c entry's `exemptions` block (`count` == `len(items)`, every item a path-safe `scope` plus a `reason_code` from an exemption family - today only `test_exemption` - in `lib/reason_codes.py`); absent = legacy, SKIPPED |
+<!-- claim-checks:end -->
+
+Closed vocabularies live in `shared/scripts/lib/reason_codes.py` (one frozen set per family:
+`untestable`, `review_not_run`, `test_exemption`). Review-record entries may carry a `reason_code`
+(`record_review_pass.py record|close-missing --reason-code ...`; a record without one is legacy and
+stays valid). The exemption count is part of the F5c entry and is printed by
+`shared/scripts/tools/exemption_summary.py` into the F12 summary and the PR body.
+
 ## Phase Validators
 
 **File:** `plugins/shipwright-run/scripts/lib/phase_validators.py`
