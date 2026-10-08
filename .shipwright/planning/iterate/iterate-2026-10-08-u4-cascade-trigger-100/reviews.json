@@ -132,29 +132,112 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "round 1: an unmeasurable diff, corrupt plan or foreign recheck failed before the review record was read. FIXED in daaff919f: unknown counts as triggered and the record decides.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "round 1: denylist of reason codes. FIXED: ACCEPTED_CODES allowlist {unavailable, delegated-to-orchestrator, user-opt-out}.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "round 2: tip-only measurement when base == head is a quiet pass for unpushed commits on local main. FIXED in 02260266e: tip-only only when the commit is contained in a remote trunk ref, else unknown (triggered).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "round 2: plan reader lacked parent containment and run_id presence check. FIXED (read_plan).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/_cascade_trigger_fixtures.py",
+          "line": null,
+          "finding": "round 2: partial and duplicated hermetic git env. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T09:37:55.639150+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T11:14:56.940681+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: base == head means a squash-merged commit — unpushed or rebase-merged multi-commit work on local main measured only by its tip",
+          "suggestion": "FIXED in 02260266e (remote-trunk containment). Remaining: a rebase-merged PR already on origin/main is still measured by its last commit - accepted limit 4 in the ADR.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "Claim under doubt: a missing or trivial complexity label cannot skip the gate — F5c entry without complexity or labelled trivial skipped the gate",
+          "suggestion": "FIXED in 02260266e: a missing or unknown complexity is in scope; the higher of entry and plan.json wins.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "Claim under doubt: delegated-to-orchestrator is only used by campaign runs — a standalone run can record the code and pass",
+          "suggestion": "ACCEPTED limit (h) in the ADR: trust boundary; the campaign 3f-bis promotion is the downstream gate.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: missing plan.json and risk_recheck.json still triggers on risk flags — a small run without either file reads as no flags",
+          "suggestion": "ACCEPTED limit (g) in the ADR: the diff-size leg and recomputed detectors remain; durable F5c risk_flags is a follow-up card.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T09:37:55.881156+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T11:14:57.057469+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -238,16 +321,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:37:55.006965+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T10:27:14.522377+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
@@ -255,11 +338,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:37:56.081922+00:00",
-      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "completed_at": "2026-10-08T12:15:36.488133+00:00",
+      "disposition": "campaign sub-iterate: no spawn site for the plan_internal reviewer; the delegated cascade runs at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
     },
     "architecture_internal": {
       "review_type": "architecture_internal",
@@ -267,11 +351,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:37:56.294552+00:00",
-      "disposition": "campaign sub-iterates have no internal architecture-review arm yet - a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "completed_at": "2026-10-08T12:15:36.671067+00:00",
+      "disposition": "campaign sub-iterate: no spawn site for the architecture_internal reviewer; the delegated cascade runs at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
     }
   }
 }
