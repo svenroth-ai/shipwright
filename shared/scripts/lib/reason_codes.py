@@ -51,7 +51,7 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
     "review_not_run": frozenset({
         "unavailable",                 # the reviewer could not run (adapter error captured)
         "trivial-auto",                # trivial complexity: closed with the one default row
-        "delegated-to-orchestrator",   # a campaign runner has no Agent tool; 3f-bis runs it
+        "delegated-to-orchestrator",   # a campaign runner whose Agent spawn failed; 3f-bis runs it
         "diff-below-threshold",        # no risk flag and the diff is under the size trigger
         "complexity-below-threshold",  # complexity below the pass's trigger
         "user-opt-out",                # the operator declined the pass

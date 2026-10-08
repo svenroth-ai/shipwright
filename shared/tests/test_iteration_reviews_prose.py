@@ -88,7 +88,7 @@ def test_escalation_defines_what_a_real_blocker_is():
         "'and a standing session policy' while keeping all four words "
         "(Stage-3 doubt T4)"
     )
-    for blocker in ("no agent tool", "errored", "autonomous", "declined"):
+    for blocker in ("no usable agent tool", "errored", "autonomous", "declined"):
         assert blocker in body, (
             f"the escalation section must name '{blocker}' as a real blocker"
         )

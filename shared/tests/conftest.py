@@ -52,13 +52,13 @@ _OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
 def _isolate_scanner_environment(monkeypatch):
     """No-op safety net for the orchestrator path.
 
-    Iterate sec-report-and-orchestrator-decouple (2026) removed
-    `_check_security_available()`. The env-clearing here is now defensive:
-    ensures AIKIDO_CLIENT_ID and any future scanner-related env vars don't
-    leak from the host into shared-test assertions. Mirror of fixtures in
-    plugins/shipwright-run/tests/conftest.py + integration-tests/conftest.py.
+    Iterate sec-report-and-orchestrator-decouple (2026) removed `_check_security_available()`.
+    The env-clearing here is now defensive: AIKIDO_CLIENT_ID and any future
+    scanner-related env vars don't leak from the host into shared-test assertions.
+    Mirror of fixtures in plugins/shipwright-run/tests/conftest.py + integration-tests/conftest.py.
     """
-    for name in ("AIKIDO_CLIENT_ID", "SHIPWRIGHT_SCANNER_BACKEND", "CODEXTENDER_ACTIVE"):  # last: coerces the review driver
+    for name in ("AIKIDO_CLIENT_ID", "SHIPWRIGHT_SCANNER_BACKEND", "CODEXTENDER_ACTIVE",  # last: coerces the review driver
+                 "SHIPWRIGHT_LOOP_ID", "SHIPWRIGHT_LOOP_UNIT_ID"):  # campaign-runner shell; 15 tests red
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS", "1")
     real_which = shutil.which

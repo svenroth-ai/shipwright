@@ -22,23 +22,16 @@ before R5a. This formalizes the ad-hoc orchestration pattern.
 > `reviews.{plan,code,external_code}.status` in its result-JSON with an
 > explicit `skipped_*` value when applicable.
 >
-> **Where the internal cascade runs here.** The runner subagent has no
-> `Agent` tool, so it cannot spawn `spec-reviewer` / `code-reviewer` /
-> `doubt-reviewer` itself. ADR-029 named the **orchestrator** the delegate;
-> step **`3f-bis`** below is where the delegate acts — after the result is
-> recorded, before the PR is merged. That is the last point at which a
-> REJECT can still stop delivery, because `3g` merges.
->
-> There is no "in parallel with the runner, after Build" window: `3c` blocks
-> until every unit has returned (see 3d), by which point each is past F6
-> (commit) and Step 5 (push) — the cascade reviews committed work, and
-> `3f-bis` gates the **merge**, not the commit.
->
-> The runner still records `spec` / `code` / `doubt` as `not_run`; that is
-> true at the moment it writes them. `3f-bis` promotes those rows with
-> `--force` once the passes have actually run, so the record names the actor
-> that performed each one. (A hand-run `--sub-iterate-id` invocation is a
-> normal standalone session WITH the `Agent` tool — it spawns the cascade itself per SKILL.md Step 8 and never reaches `3f-bis`.)
+> **Where the internal reviews run here.** The runner carries the `Agent` tool, so it spawns the
+> internal arms (Step 3.5) and the `spec-reviewer` → `code-reviewer` → `doubt-reviewer` cascade
+> (Step 3.7) itself, `model=opus`, recording the rows `completed`
+> (`references/campaign-step-3-7-internal-reviews.md`). **`3f-bis` is the fallback:** a runner that
+> cannot spawn records them `not_run --reason-code delegated-to-orchestrator`, and `3f-bis` runs the
+> cascade after the result is recorded, before the PR merges (the last point a REJECT can still stop
+> delivery — `3g` merges), then promotes the rows with `--force`. `3f-bis` is also
+> kept as the independent second look when the runner did spawn (whenever its own trigger fires): the
+> runner's `completed` rows are its own attestation (no verdict or reviewed-head binding).
+> A hand-run `--sub-iterate-id` invocation is a standalone session and never reaches `3f-bis`.
 
 ## Why interleaved-serial (and not build-all-then-merge)
 
@@ -213,11 +206,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
      --project-root "$(pwd)" [--review-model {flag}] [--finalization-model {flag}]
    ```
-   (The CLI also resolves `plan_review` — unconsumed here, since campaign
-   sub-iterates' mini-plan review has no internal-arm spawn site of its own
-   yet; `sub-iterate-runner` carries no `Agent` tool. Documented gap, not
-   this call's to close.)
-   Keep `review.resolved` for step 3f-bis's delegated cascade and
+   (The CLI also resolves `plan_review` — unconsumed here: the runner spawns
+   its own internal arms (Step 3.5) and cascade (Step 3.7) with `model=opus`
+   passed explicitly, never the resolved tier.)
+   Keep `review.resolved` for step 3f-bis's fallback cascade and
    `finalization.resolved` for step 3c's `sub-iterate-runner` spawn. Both
    values are substituted as literal `model=` Agent-tool parameters at each
    spawn below — never re-resolved by the runner or by the reviewers it
@@ -580,8 +572,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        no ordinary Agent-tool fallback of its own if Codex CLI is driving the
        campaign — a transport failure always lands on the doc's `not_run`
        branch. This rule belongs HERE, never inside the runner subagent's own
-       instructions — the runner has no `Agent` tool either way and always
-       defers to this step regardless of which harness drives the
+       instructions — the runner spawns Agent-tool subagents (or, when it
+       cannot, defers to this step) regardless of which harness drives the
        orchestrator.
 
        State crosses to 3g in a FILE, never a shell variable: these are separate
@@ -670,7 +662,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          unit_wt=$(jq -r --arg id "{id}" \
            '[.units[]? | select(((.id? // "")|ascii_downcase)==($id|ascii_downcase)) | .worktree] | first // empty' \
            "{project_root}/.shipwright/loop_state.json") || STRICT-STOP
-         [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         [ -n "$unit_wt" ] || { echo "LEASE-FALLBACK: loop_state row for {id} has no worktree (the runner's lease touch failed) - using the shared campaign worktree; the pin's equality check below must catch a wrong tree" >&2; unit_wt="{project_root}"; }
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          echo "$unit_wt" > "$run_dir/unit_worktree" || STRICT-STOP
          pr_json=$(cd "$unit_wt" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
@@ -882,9 +874,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          [ "$(git -C "$unit_wt" rev-parse HEAD)" = "$diff_head" ] || STRICT-STOP
 
        When the trigger did NOT fire: SKIP the rest of 3f-bis, leave the
-       runner's `not_run` rows standing (they are honest), and go to 3g — a
-       below-threshold sub-iterate must still DELIVER. (The pin above already
-       ran with `--review-skipped`, so 3g still has a `reviewed_head` file.)
+       runner's rows standing, and go to 3g — a below-threshold unit must still DELIVER. (The pin above
+       already ran with `--review-skipped`, so 3g still has a `reviewed_head` file.)
 
        Review that same MERGE-BASE diff, never `origin/{default}`'s tip (a moved
        main yields false high findings):

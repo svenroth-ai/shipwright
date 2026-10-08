@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC6 delivered; spec-reviewer PASS."},
+{"name":"Error Handling","verdict":"pass","note":"Lease touch: superseded token stops the unit, other failures loud + retry; spawn failure falls back to 3f-bis."},
+{"name":"Security Basics","verdict":"pass","note":"Settled-skip removed after review (self-attested rows); allow-list and caps disclosed; gates run from shared_root."},
+{"name":"Test Quality","verdict":"pass","note":"New tests drive the real check_unit_lease CLI with flags parsed from the brief, incl. token-less refusal; env-leak regression via subprocess."},
+{"name":"Performance Basics","verdict":"pass","note":"Up to five reviewer runs per unit, documented."},
+{"name":"Naming & Structure","verdict":"pass","note":"Details moved to a new reference; runner brief 508<=510, campaign-mode 1699<=1708."},
+{"name":"Affected Boundaries","verdict":"pass","note":"loop_state.json lease fields round-tripped by test; reviews.json shape unchanged."}]}

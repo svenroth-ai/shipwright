@@ -3923,10 +3923,11 @@ iterate SKILL
   → when `Ran: yes`: records an `architecture_internal` review-record row via
     record_review_pass.py (metadata-only, same shape as `plan_internal`) —
     the row `floors.plan_review` also judges
-  → NOT run for campaign sub-iterates: `sub-iterate-runner` has no `Agent`
-    tool and no spawn site for either internal arm yet — records
-    `architecture_internal` permanently `not_run` with a documented-gap
-    disposition, same treatment as `plan_internal`
+  → campaign sub-iterates: `sub-iterate-runner` carries the `Agent` tool and
+    spawns this arm and `opus-plan-reviewer` itself (Step 3.5, `model=opus`),
+    recording `architecture_internal` / `plan_internal` `completed`; only when
+    the spawn cannot happen does it record them `not_run --reason-code
+    no-spawn-site` (never promoted by the orchestrator's `3f-bis`)
   → the EXTERNAL architecture call IS wired in campaigns (runner Step 3.5
     Branch A, body in `campaign-step-3-5-plan-review.md`): the runner authors
     the brief itself, and a `reject` from either reviewer HALTS the unit —

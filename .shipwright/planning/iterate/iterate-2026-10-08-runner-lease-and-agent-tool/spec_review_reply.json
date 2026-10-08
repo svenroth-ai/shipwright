@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS. The diff delivers all six ACs (lease-touch flags + loud failure, loop-env scrub, cache-lag note, runner Agent tool + opus spawns, 3f-bis fallback with settled skip, docs/schema/tests updated); nothing contradicts or exceeds the spec."}
