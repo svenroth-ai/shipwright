@@ -1115,7 +1115,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        byte-indistinguishable from a PASS to the next reader, human or gate.
        `--reason-code delegated-to-orchestrator` is carried over only so the
        record satisfies the gate; the disposition (`Stage-1 REJECTED …`) is what
-       holds the REJECT. This branch SKIPS ship on a REJECT, so it re-derives
+       holds the REJECT. This branch SKIPS `--mode ship` on a REJECT, so it re-derives
        `run_dir` itself (the identical gap as the promote-rows block above):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"

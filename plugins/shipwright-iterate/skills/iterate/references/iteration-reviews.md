@@ -693,9 +693,9 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 # optional), and the marker vocabulary is narrower than the result-JSON one —
 # `skipped_diff_below_threshold` is a valid result.json status but NOT a valid
 # --marker-status.
-… --review-type external_code --status not_run --reason-code {config-disabled|user-opt-out|missing-keys} \
+… --review-type external_code --status not_run --reason-code {config-disabled|user-opt-out|missing-keys|unavailable} \
   --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
-  --marker-status "{skipped_user_opt_out | skipped_config_disabled}"
+  --marker-status "{skipped_user_opt_out | skipped_config_disabled}"  # omit for missing-keys / unavailable
 
 # the delegated internal cascade — recorded as NOT having run.
 # Stage 1 has a row of its own and is delegated with the rest; omitting it
