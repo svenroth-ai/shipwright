@@ -78,6 +78,8 @@ def test_empty_block_prints_zero():
     _block(_item(kind="no_such_family")),                                      # unknown family
     _block(_item(kind=7)),
     _block(_item(code="unavailable")),                                         # right code, wrong family
+    _block(_item(kind="review_not_run", code="unavailable")),                  # a review answer is not an exemption
+    _block(_item(kind="untestable", code="covered-by-existing-test")),         # nor is an untestable behaviour
 ])
 def test_malformed_blocks_are_refused(bad):
     assert exemptions_error(bad) is not None

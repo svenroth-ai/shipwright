@@ -26,7 +26,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import Mapping
 
-__all__ = ["REASON_CODES", "family_codes", "reason_code_error"]
+__all__ = ["EXEMPTION_FAMILIES", "REASON_CODES", "family_codes", "reason_code_error"]
 
 REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
     "untestable": frozenset({
@@ -52,6 +52,10 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "mechanical-refactor",  # body diff limited to renamed identifiers
     }),
 })
+
+#: Families whose answers are EXEMPTIONS (recorded in the F5c `exemptions` block). A review
+#: closed not_run and an untestable behaviour are answers, not exemptions.
+EXEMPTION_FAMILIES: frozenset[str] = frozenset({"test_exemption"})
 
 
 def family_codes(family: str) -> frozenset[str]:

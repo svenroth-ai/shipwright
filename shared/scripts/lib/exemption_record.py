@@ -30,9 +30,9 @@ from collections import Counter
 from typing import Any
 
 try:
-    from .reason_codes import reason_code_error
+    from .reason_codes import EXEMPTION_FAMILIES, reason_code_error
 except ImportError:  # loaded with lib/ itself on sys.path
-    from reason_codes import reason_code_error  # type: ignore[no-redef]
+    from reason_codes import EXEMPTION_FAMILIES, reason_code_error  # type: ignore[no-redef]
 
 __all__ = ["entry_exemptions_error", "entry_summary_line", "exemption_counts", "exemptions_error", "format_summary_line"]
 
@@ -67,6 +67,8 @@ def _item_error(item: Any, where: str) -> str | None:
     kind = item["kind"]
     if not isinstance(kind, str):
         return f"{where}.kind must be a string"
+    if kind not in EXEMPTION_FAMILIES:
+        return f"{where}.kind {kind!r} is not an exemption family {sorted(EXEMPTION_FAMILIES)} (review_not_run / untestable answers are not exemptions)"
     return reason_code_error(kind, item["reason_code"], where=f"{where}.reason_code")
 
 

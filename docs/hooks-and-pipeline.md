@@ -3534,7 +3534,7 @@ registry. Adding a gate = write the check, append it to `CLAIM_CHECKS`, add one 
 <!-- claim-checks:start -->
 | Check | Module | What it enforces |
 |---|---|---|
-| `check_exemption_record` | `verifiers/exemption_record_check.py` | the F5c entry's `exemptions` block (`count` == `len(items)`, every item a path-safe `scope` plus a `reason_code` from its closed family in `lib/reason_codes.py`); absent = legacy, SKIPPED |
+| `check_exemption_record` | `verifiers/exemption_record_check.py` | the F5c entry's `exemptions` block (`count` == `len(items)`, every item a path-safe `scope` plus a `reason_code` from an exemption family - today only `test_exemption` - in `lib/reason_codes.py`); absent = legacy, SKIPPED |
 <!-- claim-checks:end -->
 
 Closed vocabularies live in `shared/scripts/lib/reason_codes.py` (one frozen set per family:
