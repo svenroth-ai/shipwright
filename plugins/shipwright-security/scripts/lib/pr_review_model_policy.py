@@ -2,8 +2,7 @@
 
 Owns the ONE decision this gate needs beyond a bare model string: whether the
 resolved `SHIPWRIGHT_PR_REVIEW_MODEL` is in a ZDR-gated vendor namespace
-(`deepseek/`, the operator-overridable arm; `z-ai/`, the default since
-iterate-2026-09-01-pr-review-glm-model) and, if so, must carry
+(`deepseek/`, the operator-overridable arm; `z-ai/`, formerly the default) and, if so, must carry
 `shared/scripts/lib/external_review_routing`'s fail-closed ZDR provider-routing
 constraint — the same one already enforced for the review cascade's DeepSeek
 arm (`shared/config/external_review.json`).

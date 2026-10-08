@@ -241,15 +241,16 @@ jobs:
           # Model history + rationale: see pr_review_openrouter.DEFAULT_MODEL's
           # docstring/comment, or the ADR
           # (.shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md).
-          # DeepSeek and GLM stay available as operator overrides on this same
-          # env var. A rollback PR editing this line is itself Tier-3 and
+          # Default is Claude Haiku 5.5 since iterate-2026-10-08-pr-review-haiku-5-5
+          # (swapped from GPT-6 Luna). DeepSeek, GLM and Luna stay available as
+          # operator overrides on this same env var. A rollback PR editing this line is itself Tier-3 and
           # reviewed by THIS file as committed on the default branch
           # (workflow_run always runs the base branch's workflow, never the
           # PR's) — so a maintainer's `gh pr merge --admin` is the recovery
           # path if this model's own verdicts ever need bypassing, with the
           # internal review passes (spec/code/doubt) still required as
           # evidence.
-          SHIPWRIGHT_PR_REVIEW_MODEL: openai/gpt-6-luna
+          SHIPWRIGHT_PR_REVIEW_MODEL: anthropic/claude-haiku-5.5
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
         run: |
