@@ -193,14 +193,6 @@ def test_missing_iterate_entry_fails_surface_verification(tmp_path):
     assert "F5c" in result.detail
 
 
-def test_trivial_complexity_still_skips(tmp_path):
-    """AC-3 must not swallow the deliberate trivial exemption."""
-    _entry(tmp_path, RUN, complexity="trivial")
-    _results(tmp_path, OTHER, test_completeness=_GOOD_LEDGER)
-
-    assert check_test_completeness_ledger(tmp_path, RUN).is_skipped
-
-
 # --- the WIRING, not just the function (external code review, openai #1) ----
 
 def test_run_all_checks_hands_the_run_id_to_the_silent_revert_check(tmp_path, monkeypatch):

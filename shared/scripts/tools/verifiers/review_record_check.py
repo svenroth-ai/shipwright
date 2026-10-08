@@ -10,15 +10,16 @@ silently goes stale. Instead the gate demands an *active declaration* — a pass
 that did not run is recorded as ``not_run`` / ``not_applicable`` with a
 disposition naming the rule. Same coverage, nothing to drift.
 
-The residual weakness is honest and known: a run could close every type as
-``not_run`` and pass. A prompt-driven lifecycle cannot structurally prove who
-decided to skip a pass. What IS enforced is that the skip is written down,
-attributed, and names a rule — which turns a silent omission into a reviewable
-claim in the diff.
+A run can no longer close every type ``not_run`` and pass: ``self`` must be
+completed at every complexity, and every skipped pass names a closed-vocabulary
+``reason_code`` (``review_record_closure``). A prompt-driven lifecycle still
+cannot prove who decided to skip a pass; what IS enforced is that the skip is
+written down, attributed, and coded — a reviewable claim in the diff.
 
-Graduated like the Test Completeness Ledger: enforced at small+, skipped at
-trivial. Fails closed on a missing, unreadable, or schema-invalid record — an
-integrity fault must never present as a clean review history.
+Enforced at EVERY complexity — trivial too, where the passes the run did not
+perform close with the one default code ``trivial-auto``. Fails closed on a
+missing, unreadable, or schema-invalid record — an integrity fault must never
+present as a clean review history.
 """
 
 from __future__ import annotations
@@ -50,6 +51,7 @@ from .review_record_floor import (  # noqa: E402
     substitution_note,
 )
 from .review_record_model_tier import model_tier_note  # noqa: E402
+from .review_record_closure import reason_codes_closed, self_review_recorded  # noqa: E402
 
 
 def _safe_model_tier_note(record: dict, project_root: Path) -> str:
@@ -64,9 +66,10 @@ def _safe_model_tier_note(record: dict, project_root: Path) -> str:
         sys.stderr.write(f"warning: model-tier floor note failed ({exc}); omitting\n")
         return ""
 
-#: Complexities the gate applies at. Trivial runs still get a record if one is
-#: written; they are simply not blocked for lacking one.
-ENFORCED_COMPLEXITIES = ("small", "medium", "large")
+#: Complexities the gate applies at — every one. A trivial run is no longer
+#: waved through for lacking a record: it records ``self`` and closes the rest
+#: with ``trivial-auto``.
+ENFORCED_COMPLEXITIES = ("trivial", "small", "medium", "large")
 
 _TOOL = "shared/scripts/tools/record_review_pass.py"
 
@@ -76,10 +79,11 @@ def _remediation(run_id: str, outstanding: list[str]) -> str:
         f"close each outstanding type — for a pass that ran: "
         f"`uv run {_TOOL} record --run-id {run_id} --review-type <type> "
         f"--status completed --from <adapter> --payload-file <reply>`; "
-        f"for one that did not: `--status not_run|not_applicable --disposition "
-        f"\"<the rule that applies>\"`. To close all "
+        f"for one that did not: `--status not_run|not_applicable --reason-code "
+        f"<code>` (closed vocabulary, lib/reason_codes.py). To close all "
         f"{len(outstanding)} at once: `uv run {_TOOL} close-missing --run-id "
-        f"{run_id} --status not_run --disposition \"<reason>\"`. "
+        f"{run_id} --status not_run|not_applicable --reason-code <code>` "
+        "(`trivial-auto` at trivial only, after `self` is recorded). "
         "NOTE at medium+: closing BOTH `code` and `external_code` without "
         "having run either does not satisfy the gate — one of the two must "
         "actually have happened. "
@@ -110,6 +114,7 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
         )
     complexity = str(entry.get("complexity", "")).lower()
     if complexity not in ENFORCED_COMPLEXITIES:
+        # Unreachable for a real entry (F5c validates the four values).
         return CheckResult(
             CHECK_NAME, True, f"skipped (complexity={complexity or 'unknown'})",
             severity=Severity.SKIPPED.value,
@@ -145,6 +150,10 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
             f"{len(outstanding)} review type(s) still unanswered: "
             f"{', '.join(outstanding)} — {_remediation(run_id, outstanding)}",
         )
+
+    closure = self_review_recorded(record, run_id) or reason_codes_closed(record, complexity, run_id)
+    if closure is not None:
+        return closure
 
     floor = code_review_floor(record, complexity, run_id)
     if floor is not None:

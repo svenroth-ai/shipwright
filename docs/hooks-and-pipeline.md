@@ -4684,12 +4684,14 @@ every `/shipwright-iterate` run writes a `test_completeness` ledger into
 behavior the diff introduces is `tested` (with evidence) or `untestable`
 (closed-vocabulary `reason_code`); the "could-test-but-didn't" disposition
 is abolished. The post-commit audit `check_test_completeness_ledger` in
-`shared/scripts/tools/verifiers/iterate_checks.py` fails closed (ERROR) when
+`shared/scripts/tools/verifiers/_ledger_completeness.py` (re-exported by
+`iterate_checks.py`) fails closed (ERROR) when
 any behavior is testable-but-untested, an `untestable` row lacks a valid
 `reason_code`, or the enumeration is short of the AC count. This is the gate
 that makes the operator's pre-merge "did you empirically test everything?"
 question structurally self-answering (`iterate-2026-05-30-test-completeness-gate`).
-Trivial iterates emit an auto `n/a` line and skip the hard gate.
+Trivial iterates are not skipped: they record the one default row
+`{"status": "n/a", "reason_code": "trivial-auto"}` and fail without it.
 
 **Review-driver gate (iterate).** Under Codextender (`CODEXTENDER_ACTIVE`) a
 GPT-family model authors the diff, so `external_review.py` and
@@ -4704,8 +4706,12 @@ and record `driver`, `driver_requested`, `codextender_active` and, when coerced,
 **Review-record gate (iterate).** Every review pass closes its own row in
 `.shipwright/planning/iterate/<run_id>/reviews.json`; `check_review_record`
 (`verifiers/review_record_check.py`, substance predicates in
-`verifiers/review_record_floor.py`) STOPs the run at small+ while any is
-`pending`. Three properties beyond "no pending row":
+`verifiers/review_record_floor.py`, closure rules in
+`verifiers/review_record_closure.py`) STOPs the run at EVERY complexity while
+any is `pending`, while `self` is not `completed` with evidence, or while a
+`not_run` / `not_applicable` row lacks a closed-vocabulary `reason_code`
+(`trivial-auto` at trivial only; a per-type code from small up). Three
+properties beyond "no pending row":
 
 - **The floor demands evidence, not a status** (medium+). A `code` /
   `external_code` row recorded `completed` must carry a non-empty `findings`

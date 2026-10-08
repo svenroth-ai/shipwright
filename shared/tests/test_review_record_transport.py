@@ -16,7 +16,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from lib.review_record import (  # noqa: E402
     REVIEW_TYPES,
     STATUS_COMPLETED,
-    STATUS_NOT_RUN,
     make_entry,
     new_record,
     upsert_review,
@@ -25,6 +24,9 @@ from lib.review_record import (  # noqa: E402
 from lib.review_record_schema import validate_entry  # noqa: E402
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
 from tools.verifiers.review_record_model_tier import model_tier_note  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _review_background_row import background_row  # noqa: E402
 
 RUN = "iterate-2026-09-13-codex-internal-review-transport-transporttest"
 WHY = "not needed for this test's transport scenario"
@@ -61,8 +63,7 @@ def _record_with_transport(root: Path, transport: str | None) -> None:
     record = new_record(RUN)
     for review_type in REVIEW_TYPES:
         if review_type not in ("code", "spec"):
-            record = upsert_review(record, make_entry(
-                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+            record = upsert_review(record, background_row(review_type, WHY), force=True)
     record = upsert_review(record, make_entry(
         "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
     code_kwargs = {"recorded_by": "code-reviewer"}
