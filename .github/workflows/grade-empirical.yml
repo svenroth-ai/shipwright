@@ -72,7 +72,7 @@ jobs:
         # Always upload (even on a red gate) so the mis-grade is inspectable. The
         # gallery holds only the index + curated/failure reports (size-capped).
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: grade-empirical-gallery
           path: plugins/shipwright-grade/tests/empirical/.gallery

@@ -69,7 +69,7 @@ jobs:
             '{pr_number: $pr, head_sha: $head, base_sha: $base}' \
             > pr-review-request/meta.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pr-review-request
           path: pr-review-request/

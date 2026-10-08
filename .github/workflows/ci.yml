@@ -263,7 +263,7 @@ jobs:
         # always() so a failed earlier step still publishes it. (The diff-cover
         # report is printed to the log by the gate action above.)
         if: always() && hashFiles('coverage.xml') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: repo-diff-coverage
           path: coverage.xml
@@ -390,7 +390,7 @@ jobs:
         # a false `confirmed`.
         if: steps.manifest_drift.outputs.code == '0' && github.event_name == 'push'
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: traceability-manifest-regenerated   # EXECUTION_EVIDENCE_ARTIFACT_NAME constant
           path: .shipwright/compliance/test-traceability.json   # literal path, not a glob
