@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** Yes \u2014 Option A: a convention-based artifact requirement in the existing F11 check plus the small summary/triage tool. No new schema, no new service.\n\n2. **The smallest thing that would do:** Rely on the already-pinned canonical file names per pass (Option A). The F11 check already runs; adding \"an `unavailable` row must have a corresponding adapter-error artifact on disk\" is one more assertion in machinery that exists. The summary/triage tool is a printer plus one idempotent card \u2014 both targets (PR body, triage store) already exist.\n\n3. **What it costs to keep:** Future changes to `external_review.py`'s file naming or to the review-record close path must keep the artifact convention and F11 rule in sync. Modest, and largely the same obligation the canonical-file convention already carries.\n\n4. **What it forecloses:** Nothing material. Option A avoids Option B's real cost \u2014 an artifact-path field would be a review-record schema change that the external WebUI consumer must tolerate, plus a new CLI surface that someone has to keep explaining. Option A keeps the schema untouched.\n\n5. **Findings:**\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: Option B (schema field + CLI flag) is the main risk on the table; it buys discoverability the pinned canonical filenames already provide, at the cost of an external-consumer-visible schema change and a new flag to document forever.\n- Suggestion: Take A. If a path ever needs to be non-canonical, that is a signal the adapter is misbehaving, not a case to model in the schema.\n\n- Category: existence\n- Severity: low\n- Finding: Options C and D are correctly off the table \u2014 C contradicts the operator's explicit decision, D leaves a silent hole the brief exists to close. The chosen shape is the minimum that satisfies \"loud, not silent.\"\n- Suggestion: None; confirm A and stop.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014choose A: extending existing review verification and reporting is proportionate to allowing autonomous runs to continue without external review.\n\n2. **Smallest thing that would do:** Require the existing canonical adapter-error artifact for `unavailable`, derive the PR note and F12 line from the review record, and use the existing idempotent triage API for one re-run card per run. No new artifact-path field or CLI flag is needed.\n\n3. **What it costs to keep:** Maintain agreement between adapter artifact conventions and the verifier, keep both summaries connected to the record, and assign someone responsibility for resolving re-run cards. Filing a card alone does not ensure review eventually happens.\n\n4. **What it forecloses:** Canonical artifact names become a compatibility obligation; changing them requires coordinated adapter and verifier changes. Continuing also leaves external review as an advisory safeguard rather than a prerequisite.\n\n5. **Findings:** No findings.\n\nAssessment is based on the supplied brief; workspace access policy prevented reading the referenced contract.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

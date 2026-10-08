@@ -39,12 +39,11 @@ from lib.review_findings import ProseOverflowError, ReviewFindingsError  # noqa:
 from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
 from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error  # noqa: E402
+from lib.review_unavailable import write_time_error  # noqa: E402
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
-    STATUS_COMPLETED,
-    TERMINAL_STATUSES, TRANSPORTS,
-    ImmutableReviewError,
-    ReviewRecordError,
+    STATUS_COMPLETED, TERMINAL_STATUSES, TRANSPORTS,
+    ImmutableReviewError, ReviewRecordError,
     close_pending, entry_for,
     init_record,
     make_entry,
@@ -155,7 +154,8 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
     if args.marker_status and args.marker_status not in ALLOWED_STATUSES:
         return (f"--marker-status must be one of {sorted(ALLOWED_STATUSES)}, "
                 f"got {args.marker_status!r}")
-    return canonical_basename_error(args.review_type, args.payload_file) if args.payload_file else None
+    return ((canonical_basename_error(args.review_type, args.payload_file) if args.payload_file else None)
+            or write_time_error(args.project_root, args.run_id, args.review_type, args.reason_code))
 
 
 def _cmd_record(args: argparse.Namespace) -> int:

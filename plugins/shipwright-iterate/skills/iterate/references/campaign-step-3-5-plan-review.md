@@ -29,14 +29,15 @@ session. Real Codex-driven campaigns: trg-a27ab4d9.
 mkdir -p "{project_root}/.shipwright/planning/iterate/{run_id}"
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" --mode iterate \
   --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
-  --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
+  --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.stderr.txt"
 ```
 
 Read it back (canonical basename, trg-3b206c08) and parse `reviews.glm.feedback` +
 `reviews.openai.feedback` (`reviews.opus.feedback` under `--driver codex`; required,
 never hardcoded). Merge high/medium findings into the iterate ADR's
 `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
-`rejected-with-reason`, before Finalization.
+`rejected-with-reason`, before Finalization. A non-zero exit, a reply that is not
+the expected JSON, or `degraded: true` means the review did NOT run → *Unavailable* below.
 
 **Call 2 — the architecture review** (same step, same two models, no extra row and
 no marker of its own). It asks the one question the plan review cannot: *should this
@@ -103,6 +104,34 @@ non-blank: when the rejecting reviewer names none, write
 the shape; `autonomous_loop.py record` does not validate reason-code fields, so the
 runner is the enforcement point.
 
+### Unavailable — the run continues, loudly
+
+Operator decision (finalization-claims-hardening §5.2): an autonomous run MAY continue
+when the external review cannot run, never silently, and no env-var waiver exists.
+Applies to the plan call above and to the code call (runner Step 3.7 item 2).
+
+1. **Keep the capture.** Both redirects (`>` and `2>`) truncate on every call, so the
+   files hold the LAST attempt's output. They ARE the evidence: F11's review-record
+   check (and `record_review_pass.py record`) refuse `--reason-code unavailable` on
+   `plan` / `external_code` unless the raw file is the adapter's failure envelope
+   (`success: false` or `degraded: true`) or, when it holds no JSON, the `.stderr.txt`
+   is non-empty. A successful reply refuses the claim — record it `completed`. Stage
+   the capture with `reviews.json` at F6: it is read from the commit.
+2. **Record** the row `not_run --reason-code unavailable` (Recording below; no
+   `--marker-status`) and carry on with the build — no halt, no retry loop. At medium+
+   the code-review floor then waits for the delegated cascade: `external_code`
+   `unavailable` plus `code` `not_run --reason-code delegated-to-orchestrator` passes
+   F6-verify, because 3f-bis promotes `code` to `completed` before any merge (or stops).
+3. **Be loud**, once, after the last external pass of the run:
+   `uv run "{shared_root}/scripts/tools/review_unavailable_note.py" --project-root "{project_root}" --run-id "{run_id}" --file-triage`
+   prints the line and files ONE re-run triage card per run (idempotent; exit 1 = the
+   card was NOT filed — say so, never drop it). Put its line in `result.json`
+   `reviews.unavailable_note` (`"none"` when every pass ran); whoever opens the PR pastes
+   it into the body, and campaign-end step 5 prints it. F11's passing review-record line
+   names the passes too.
+
+The architecture call (Call 2) adds no row; its `unavailable` stays as described above.
+
 ### Branch B — `missing_keys`
 
 Autonomous; cannot prompt. Log, proceed, record the opt-out; the orchestrator
@@ -122,7 +151,7 @@ Every pass here records its row (`self` 3.6, `plan` + `plan_internal` +
 `architecture_internal` here, `code` + `doubt` 3.7, `external_code` cascade); F11
 STOPs while any is `pending` and refuses a `not_run` row without its `--reason-code`
 (Branch B → `missing-keys`, Branch C → `config-disabled`, a `uv run` / capability
-failure → `unavailable`; a `--disposition` is
+failure → `unavailable`, which needs its capture — *Unavailable* above; a `--disposition` is
 optional beside it). **The architecture call adds no row** — its verdicts live in the ADR section and
 in `result.json` `reviews.architecture`. Both internal-arm commands are in
 `iteration-reviews.md` → *Campaign sub-iterate rows*.

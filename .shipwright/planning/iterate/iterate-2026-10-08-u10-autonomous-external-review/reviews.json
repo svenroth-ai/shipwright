@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u10-autonomous-external-review",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:52:20.959465+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The artifact is validated by convention against canonical basenames (`external-plan-review-raw.json` etc.) with no schema field or hash pinning. If `external_review.py` is later renamed or the stdout-redirect pattern in the docs drifts, `record_review_pass.py` will start refusing writes for genuinely failed reviews — a silent workflow breakage whose cause is non-obvious.",
+          "suggestion": "Derive the basenames from a single constant shared with `external_review.py` (import, not duplicate string literals), and add one test asserting the constant matches the actual output filename used by the adapter script.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Non-JSON non-empty text\" is accepted as a valid artifact. A run where the adapter printed a Python traceback but the review actually succeeded via a retry, or where stdout contains only a progress line (\"calling provider...\") while the review completed elsewhere, would pass the gate on content that proves nothing. Conversely, a partially-written raw file (process killed mid-write) could contain a valid-looking failure envelope from a previous attempt in the same run dir if the file is overwritten per attempt — stale-artifact false positives.",
+          "suggestion": "Document the overwrite semantics: is the raw file truncated per invocation? If artifacts persist across retries within a run, the \"found an artifact\" check proves only that some attempt failed, which is arguably fine (unavailable is attempt-scoped) — but say so explicitly in the lib docstring so future readers don't \"fix\" it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The refusal case \"raw reply reports `success: true` and not degraded\" — what about `degraded: true` on a pass the operator recorded as completed rather than `unavailable`? The check as described only fires in the `unavailable` direction; a degraded review recorded as passed is not caught here. That may be out of scope (U-series sibling), but the plan should state it's intentionally one-directional.",
+          "suggestion": "One sentence in the design section noting the check is one-directional and degraded-but-recorded is handled elsewhere (or not).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "record_review_pass.py` is stated as \"net 0 lines\" while gaining a new validation path. Fitting a refusal branch plus a useful error message into zero added lines usually means compressing error text or folding it into an existing message, which hurts the operator's ability to understand why their write was refused.",
+          "suggestion": "Treat \"net 0\" as a soft target; a clear refusal message naming the expected artifact paths is worth 5–10 lines. Cap compliance is about the file not growing unboundedly, not literal zero.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan notes the U4 edge (edits `sub-iterate-runner.md`) but doesn't state whether the runner itself needs a code change: does the runner currently write the raw/stderr files at all on adapter failure, or does it only write them on success? If the runner today discards stderr or skips the redirect on early `uv run` failure, the artifact convention has no producer and every real failure will be refused for \"no artifact.\"",
+          "suggestion": "Confirm (and state in the plan) the existing runner already redirects stdout/stderr to those files unconditionally, or add producing them to scope. This is the most likely missing prerequisite.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Triage card idempotency is \"dedup per run_id\" — but the F12 summary line and PR note are per-run while a campaign has multiple sub-iterates per run. If two sub-iterates both hit unavailable on the same pass, is that one card (dedup by run_id) or two (by unit)? Ambiguity will surface as either duplicate cards or a missing second card.",
+          "suggestion": "Pin the dedup key (e.g., run_id + pass_name) in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The note tool prints artifact paths into PR bodies and triage cards. If raw stderr can contain provider API keys or internal URLs from a failing adapter, and the note tool ever embeds content rather than paths, that leaks into the PR. As described (paths only), fine.",
+          "suggestion": "Keep the note to paths; never embed raw file contents. Worth one line in the tool's docstring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "gitignored artifact path is accepted (\"must be in the commit unless gitignored\") — this recreates exactly the loophole the unit is closing: an operator can gitignore the artifact file and claim `unavailable` with no evidence. The gitignore exemption may exist for legitimate reasons (large stderr), but combined with this check it undermines the whole point.",
+          "suggestion": "Either require the artifact in the commit unconditionally, or require a size-capped excerpt (first N lines) be committed when the full file is ignored.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Non-empty stderr does not establish adapter failure: a successful review can emit warnings. Accepting arbitrary non-JSON text also allows unrelated output to justify `unavailable`. The precedence between successful raw JSON and non-empty stderr is unspecified.",
+          "suggestion": "Make a successful, non-degraded envelope reject `unavailable` regardless of stderr. For failures before JSON output, capture the invocation’s nonzero exit status alongside stderr and validate both. Test successful JSON plus stderr warnings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Canonical filenames identify a pass type but not its invocation. A retry within the same run can leave an earlier failure artifact that incorrectly supports a later `unavailable` record.",
+          "suggestion": "Replace or clear both capture files before each invocation and associate evidence with the current attempt using existing run/attempt metadata. Test failure followed by success and retries with stale stderr.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "“Artifact must be in [the commit] unless gitignored” leaves unclear whether verification examines committed contents or merely checks that the path exists there. A working-tree failure artifact could differ from a committed successful artifact; ignored evidence may disappear before another verifier runs.",
+          "suggestion": "With a commit supplied, validate the artifact bytes from that commit. Define where ignored evidence is retained and how finalization retrieves it; fail clearly when required evidence is unavailable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The loudness requirement relies on documentation and an optional `--file-triage` flag. The plan names no check ensuring an autonomous run actually includes the PR/F12 notice and creates its card. Card creation failure or a retry adding another unavailable pass is also unhandled.",
+          "suggestion": "Make this step mandatory in autonomous finalization and verify its outputs. Reuse one card per run, update it to cover every unavailable pass, and surface filing failures explicitly. Add an integration test covering both pass types and repeated finalization.  The shared helper and convention-based filenames are proportionate choices. The approach needs stronger invocation evidence and enforced notification behavior before it reliably satisfies “loud, not silent.”  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:52:22.455133+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  **Finding:** The artifact is validated by convention against canonical basenames (`external-plan-review-raw.json` etc.) with no schema field or hash pinning. If `external_review.py` is later renamed or the stdout-redirect pattern in the docs drifts, `record_review_pass.py` will start refusing writes for genuinely failed reviews — a silent workflow breakage whose cause is non-obvious.\n  **Suggestion:** Derive the basenames from a single constant shared with `external_review.py` (import, not duplicate string literals), and add one test asserting the constant matches the actual output filename used by the adapter script.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"Non-JSON non-empty text\" is accepted as a valid artifact. A run where the adapter printed a Python traceback but the review actually succeeded via a retry, or where stdout contains only a progress line (\"calling provider...\") while the review completed elsewhere, would pass the gate on content that proves nothing. Conversely, a partially-written raw file (process killed mid-write) could contain a valid-looking failure envelope from a *previous* attempt in the same run dir if the file is overwritten per attempt — stale-artifact false positives.\n  **Suggestion:** Document the overwrite semantics: is the raw file truncated per invocation? If artifacts persist across retries within a run, the \"found an artifact\" check proves only that *some* attempt failed, which is arguably fine (unavailable is attempt-scoped) — but say so explicitly in the lib docstring so future readers don't \"fix\" it.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** The refusal case \"raw reply reports `success: true` and not degraded\" — what about `degraded: true` on a pass the operator recorded as *completed* rather than `unavailable`? The check as described only fires in the `unavailable` direction; a degraded review recorded as passed is not  […truncated]\n\n[openai] Review based on the supplied specification and mini-plan; local file access was blocked, so I could not verify the full BRIEF or existing implementation.\n\n1. **Category: approach · Severity: high**\n   **Finding:** Non-empty stderr does not establish adapter failure: a successful review can emit warnings. Accepting arbitrary non-JSON text also allows unrelated output to justify `unavailable`. The precedence between successful raw JSON and non-empty stderr is unspecified.\n   **Suggestion:** Make a successful, non-degraded envelope reject `unavailable` regardless of stderr. For failures before JSON output, capture the invocation’s nonzero exit status alongside stderr and validate both. Test successful JSON plus stderr warnings.\n\n2. **Category: edge-case · Severity: medium**\n   **Finding:** Canonical filenames identify a pass type but not its invocation. A retry within the same run can leave an earlier failure artifact that incorrectly supports a later `unavailable` record.\n   **Suggestion:** Replace or clear both capture files before each invocation and associate evidence with the current attempt using existing run/attempt metadata. Test failure followed by success and retries with stale stderr.\n\n3. **Category: risk · Severity: medium**\n   **Finding:** “Artifact must be in [the commit] unless gitignored” leaves unclear whether verification examines committed contents or merely checks that the path exists there. A working-tree failure artifact could differ from a committed successful artifact; ignored evidence may disappear before another verifier runs.\n   **Suggestion:** With a commit supplied, validate the artifact bytes from that commit. Define where ignored evidence is retained and how finalization retrieves it; fail clearly when required evidence is unavailable.\n\n4. **Category: dependency · Severity: medium**\n   **Finding:** The loudness requirement relies on documentation and an optional `--file-triage` flag. The plan names no check ensuring an autono […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:52:23.979177+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:52:24.383101+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/review_unavailable_note.py (`_evidence` / `unavailable_rows`)",
+          "line": null,
+          "finding": "The note tool reads captures from the working tree only, while the F11 verifier reads from the commit when `reviews.json` is committed. If the working-tree capture is deleted or rewritten after commit, F12/PR line can name a path (or claim `NO CAPTURE`) that contradicts what the verifier saw from the commit.",
+          "suggestion": "Acceptable in practice (F12 runs before push), but consider reusing the commit-aware reader when a commit hash is available, or documenting that the note is worktree-snapshot semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/review_unavailable.py:artifact_problem",
+          "line": null,
+          "finding": "A raw JSON dict with a truthy-but-wrong-typed failure marker (e.g. `\"success\": \"false\"`, `\"degraded\": \"true\"` as strings) is treated as a successful reply and refuses the claim with \"DID run\". Strict `is False` / `is True` is defensible, but a partially-conforming adapter envelope would be misread as success.",
+          "suggestion": "Either accept the string forms of `false`/`true` or make the refusal message say \"not a recognized failure envelope\" rather than asserting the review ran.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/review_unavailable_note.py (`file_card`)",
+          "line": null,
+          "finding": "Idempotency fallback scans `read_all_items` for `item.get(\"dedupKey\") == _dedup_key(run_id)`. If the triage store persists the key under a different field name (or trims it), the fallback silently raises \"neither filed nor found\" even though a card exists — turning a dedup into a loud failure. This is fail-loud so behavior is safe, but the coupling to the field name is untested against the real triage schema.",
+          "suggestion": "Assert the field name against the triage module's writer in a test, or expose a lookup-by-dedup-key helper in `triage`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_review_unavailable_note.py (`test_note_says_none_when_every_pass_ran`)",
+          "line": null,
+          "finding": "This test only exercises the empty/no-rows path via `init`; it does not verify that a record with a pending row still prints something sane (it would print `none`, since `unavailable_rows` only looks at `reason_code`). Not a defect in the tool, but the \"none means every pass ran\" claim is only true given the record check passed elsewhere.",
+          "suggestion": "Optional — add an assertion or comment that the note tool is not itself a gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/record_review_pass.py (`_validate_record_args`)",
+          "line": null,
+          "finding": "write_time_error` now hard-fails `--reason-code unavailable` on `plan`/`external_code` when the stderr file is absent and stdout is non-JSON. Legacy sessions or any doc path that still redirects only stdout (`>` without `2>`) will produce exactly that state (non-JSON error text on stdout, no stderr file), making the row unrecordable. The diff updates the known runner references, but any other invocation site of `external_review.py` without the new `2>` redirect becomes a trap.",
+          "suggestion": "Either grep for all `external_review.py` invocation sites and add the `2>` redirect (the diff covers the runner, campaign-step-3-5, iteration-planning, iteration-reviews — verify there are no others), or accept non-JSON stdout as evidence when it's clearly a shell/uv error message.  Positive notes: the evidence precedence rule (envelope decides alone; non-JSON stdout alone proves nothing) is well-specified and well-tested; the commit-vs-worktree tests (`test_gate_reads_the_capture_from_the_commit_not_the_working_tree`, `test_committed_bytes_win_over_a_different_working_tree_copy`) are genuinely behavior-validating, not smoke tests; write-time and verify-time enforcement both exist per the spec; the loud surfaces (PR body, F12, campaign step 5, result.json `unavailable_note`) are all wired; no secrets leak (paths only, tested).  Overall: the unit implements the spec's ACs (evidence-backed `unavailable`, loud continuation, one idempotent triage card, write-time + verify-time enforcement) with strong tests. The findings are refinements except the medium legacy-redirect regression, which deserves a quick audit of remaining call sites.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/review_unavailable_note.py",
+          "line": 54,
+          "finding": "_evidence()` discards the error returned by `artifact_problem()`. If the capture is deleted after recording, the tool prints `NO CAPTURE` and exits successfully; if it is replaced with a successful reply, the tool labels that reply’s path as an “adapter error.” With `--file-triage`, it also files a card claiming the reviewer could not run despite the invalid evidence.",
+          "suggestion": "Propagate capture-validation failures to `main()`, print `INVALID - ...`, and exit 1 before filing a card. Add tests for deleted captures and captures overwritten with successful replies.  Ship-with-fixes: the evidence gate is implemented, but the reporting tool must enforce its validation result. Local execution was blocked, so the authoritative BRIEF and test results could not be verified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:52:22.975113+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/tools/review_unavailable_note.py (`_evidence` / `unavailable_rows`)\n  Finding: The note tool reads captures from the working tree only, while the F11 verifier reads from the commit when `reviews.json` is committed. If the working-tree capture is deleted or rewritten after commit, F12/PR line can name a path (or claim `NO CAPTURE`) that contradicts what the verifier saw from the commit.\n  Suggestion: Acceptable in practice (F12 runs before push), but consider reusing the commit-aware reader when a commit hash is available, or documenting that the note is worktree-snapshot semantics.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/review_unavailable.py:artifact_problem\n  Finding: A raw JSON dict with a truthy-but-wrong-typed failure marker (e.g. `\"success\": \"false\"`, `\"degraded\": \"true\"` as strings) is treated as a *successful* reply and refuses the claim with \"DID run\". Strict `is False` / `is True` is defensible, but a partially-conforming adapter envelope would be misread as success.\n  Suggestion: Either accept the string forms of `false`/`true` or make the refusal message say \"not a recognized failure envelope\" rather than asserting the review ran.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/review_unavailable_note.py (`file_card`)\n  Finding: Idempotency fallback scans `read_all_items` for `item.get(\"dedupKey\") == _dedup_key(run_id)`. If the triage store persists the key under a different field name (or trims it), the fallback silently raises \"neither filed nor found\" even though a card exists — turning a dedup into a loud failure. This is fail-loud so behavior is safe, but the coupling to the field name is untested against the real triage schema.\n  Suggestion: Assert the field name against the triage module's writer in a test, or expose a lookup-by-dedup-key helper in `triage`.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_review_ […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/review_unavailable_note.py:54\n- Finding: `_evidence()` discards the error returned by `artifact_problem()`. If the capture is deleted after recording, the tool prints `NO CAPTURE` and exits successfully; if it is replaced with a successful reply, the tool labels that reply’s path as an “adapter error.” With `--file-triage`, it also files a card claiming the reviewer could not run despite the invalid evidence.\n- Suggestion: Propagate capture-validation failures to `main()`, print `INVALID - ...`, and exit 1 before filing a card. Add tests for deleted captures and captures overwritten with successful replies.\n\nShip-with-fixes: the evidence gate is implemented, but the reporting tool must enforce its validation result. Local execution was blocked, so the authoritative BRIEF and test results could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:52:23.646435+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:52:25.181428+00:00",
+      "disposition": "the sub-iterate-runner has no Agent tool, so the internal plan-review arm cannot be spawned here (documented campaign gap)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:52:25.496240+00:00",
+      "disposition": "the sub-iterate-runner has no Agent tool, so the internal architecture-review arm cannot be spawned here (documented campaign gap)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

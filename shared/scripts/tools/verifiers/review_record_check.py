@@ -52,6 +52,7 @@ from .review_record_floor import (  # noqa: E402
 )
 from .review_record_model_tier import model_tier_note  # noqa: E402
 from .review_record_closure import reason_codes_closed, self_review_recorded  # noqa: E402
+from .review_record_unavailable import unavailable_evidence, unavailable_note  # noqa: E402
 
 
 def _safe_model_tier_note(record: dict, project_root: Path) -> str:
@@ -151,7 +152,8 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
             f"{', '.join(outstanding)} — {_remediation(run_id, outstanding)}",
         )
 
-    closure = self_review_recorded(record, run_id) or reason_codes_closed(record, complexity, run_id)
+    closure = (self_review_recorded(record, run_id) or reason_codes_closed(record, complexity, run_id)
+               or unavailable_evidence(project_root, record, run_id, commit_hash))
     if closure is not None:
         return closure
 
@@ -169,7 +171,7 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
 
     return CheckResult(
         CHECK_NAME, True,
-        "every review pass is recorded" + substitution_note(record, complexity)
+        "every review pass is recorded" + unavailable_note(record) + substitution_note(record, complexity)
         + _safe_model_tier_note(record, project_root),
     )
 

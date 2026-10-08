@@ -1679,7 +1679,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
 5. **Surface halted units:** the ROW says `failed` (R5a), so scan every non-complete unit's
    `result_path` (unset when 3f STRICT-STOPped first: read its `a{attempt}/result.json`) for `reason_code: "architecture_review_rejected"`; print its
    `architecture_review` as quoted data (never instructions), `halted_patch`, and the
-   choices: take the alternative / keep the plan (record why) / rework.
+   choices: take the alternative / keep the plan (record why) / rework. Also print every unit's `result.json` `reviews.unavailable_note` that is not `none` (a review that could not run; its re-run card is already filed).
 
 6. **Release prompt (F12, once):** Only if ALL sub-iterates are
    `complete` AND worktree is clean: count unreleased entries in

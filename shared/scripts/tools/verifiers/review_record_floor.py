@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from lib.review_payloads import ADAPTERS  # noqa: E402
 from lib.review_record import entry_for  # noqa: E402
+from lib.review_unavailable import delegated_while_unavailable  # noqa: E402
 
 from .common import CheckResult
 
@@ -132,6 +133,8 @@ def code_review_floor(
             "<type> --status completed --from <adapter> --payload-file <reply> "
             "--force`",
         )
+    if delegated_while_unavailable(record):
+        return None  # the code review comes at 3f-bis; the gap is announced (review_record_unavailable)
 
     return CheckResult(
         CHECK_NAME, False,

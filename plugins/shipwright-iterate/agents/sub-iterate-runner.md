@@ -115,7 +115,7 @@ when none of its three arms hold. **Full body — read it first:**
 - **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`): notice + skip both
   calls; record `skipped_config_disabled` in the ADR.
 
-Always record the `plan` row (command in the reference); every other row is listed at Step 3.7.
+Always record the `plan` row (command in the reference); a call that cannot run is recorded `unavailable` with its capture and the run continues, loudly (reference → *Unavailable*); every other row is listed at Step 3.7.
 
 ### Step 3.6: Self-Review (always, ADR-029 follow-up)
 
@@ -179,12 +179,12 @@ Cascade".
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code --diff-file "$DIFF_FILE" \
-     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
+     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.stderr.txt"
    ```
 
    Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse feedback. Apply high/medium findings before commit, OR mark
-   each `accepted-and-fixed` / `rejected-with-reason` in the iterate ADR's
-   `External-Code-Review-Findings` table. Same disposition pattern as Step 3.5.
+   each `accepted-and-fixed` / `rejected-with-reason` in the iterate ADR's `External-Code-Review-Findings` table. Same disposition pattern as Step 3.5.
+   Non-zero exit, non-JSON reply or `degraded: true` = it did NOT run: `external_code` `not_run --reason-code unavailable`, keep both files as its capture (staged at F6), continue — `campaign-step-3-5-plan-review.md` → *Unavailable* (note line + one triage card).
 
 3. Record every row — **who did the work decides the name:**
 
@@ -347,7 +347,8 @@ Success:
     "architecture": {"status": "completed | skipped_complexity_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys | unavailable", "verdicts": {"glm": "approve", "openai": "approve"}},
     "self_review": {"status": "completed", "items_failed": 0, "items_passed": 7},
     "code": {"status": "completed | delegated_to_orchestrator | delegated_to_skill | skipped_diff_below_threshold", "findings_count": 0},
-    "external_code": {"status": "completed | skipped_diff_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
+    "external_code": {"status": "completed | skipped_diff_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys | unavailable", "provider": "openrouter | null", "findings_count": 0},
+    "unavailable_note": "none | review_unavailable_note.py's line (passes that did not run + re-run card)",
     "confidence_calibration": {"status": "completed | skipped_complexity_and_no_io_boundary", "probes_run": 0, "probes_with_findings": 0, "asymptote_reached": true}
   }
 }
@@ -357,12 +358,11 @@ The `finalization` field is **required**: it records that F3, F5c, and the F6-ve
 self-verifier ran. `verifier.exit_code` MUST be `0` for a `status:"complete"` result — a
 non-zero verifier means finalization is incomplete; fix + re-verify before reporting success.
 
-The `reviews` field is **optional** for backwards-compat with
-historical result.json files (A/B/C/D/E in campaign
-`iterate-skill-hardening`), but **required** for any result produced
-under the post-ADR-029 contract: a runner that skipped Step 3.5 / 3.7
-silently is contract-violating, not feature-flagged. Use the explicit
-`skipped_*` values to record what fired and what was deferred.
+The `reviews` field is **optional** for backwards-compat with historical result.json files
+(A/B/C/D/E in campaign `iterate-skill-hardening`), but **required** for any result produced
+under the post-ADR-029 contract: a runner that skipped Step 3.5 / 3.7 silently is
+contract-violating, not feature-flagged. Use the explicit `skipped_*` values to record what
+fired and what was deferred.
 
 Failure:
 ```json

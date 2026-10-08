@@ -4713,8 +4713,23 @@ and record `driver`, `driver_requested`, `codextender_active` and, when coerced,
 `verifiers/review_record_closure.py`) STOPs the run at EVERY complexity while
 any is `pending`, while `self` is not `completed` with evidence, or while a
 `not_run` / `not_applicable` row lacks a closed-vocabulary `reason_code`
-(`trivial-auto` at trivial only; a per-type code from small up). Three
+(`trivial-auto` at trivial only; a per-type code from small up). Four
 properties beyond "no pending row":
+
+- **`unavailable` on an external pass needs the adapter's captured error.**
+  `plan` / `external_code` closed `reason_code: unavailable` must have, in the
+  run dir, the raw reply as the adapter's failure envelope (`success: false` or
+  `degraded: true`) or — when it holds no JSON — a non-empty
+  `<raw stem>.stderr.txt`; a successful reply refuses the claim. Read from the
+  commit when the record is committed (`lib/review_unavailable.py`,
+  `verifiers/review_record_unavailable.py`; `record_review_pass.py record`
+  refuses it at write time too). A passing line still names every
+  `unavailable` pass; `shared/scripts/tools/review_unavailable_note.py` prints
+  the PR-body / F12 line and, with `--file-triage`, files one re-run triage
+  card per run (an `iterate`-source card written to the triage store). At
+  medium+ the floor below accepts `external_code` `unavailable` with `code`
+  `not_run` `delegated-to-orchestrator` (the campaign runner's shape: 3f-bis
+  promotes `code` before any merge); every other both-not-run pair still fails.
 
 - **The floor demands evidence, not a status** (medium+). A `code` /
   `external_code` row recorded `completed` must carry a non-empty `findings`

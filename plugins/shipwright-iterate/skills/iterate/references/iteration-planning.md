@@ -458,7 +458,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --plugin-root "{plan_plugin_root}" \
      --project-root "{project_root}" --run-id "{run_id}" \
      --driver "{driver}" \
-     > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
+     > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.stderr.txt"
    ```
    (`--driver` is **required, no default** — `claude` when this session runs
    under Claude Code, `codex` when it runs under Codex CLI. It picks the
