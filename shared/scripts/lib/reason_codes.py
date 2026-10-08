@@ -42,7 +42,7 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "covered-by-existing-test",                    # already pinned by a named pre-existing test
     }),
     "surface_none": frozenset({
-        "docs-only",             # only prose / documentation changed
+        "docs-only-surface",     # only prose / documentation changed
         "test-only",             # only tests or test fixtures changed
         "build-config-only",     # only build, CI or dependency configuration changed
         "no-behavior-change",    # a rename / refactor no runnable path can observe

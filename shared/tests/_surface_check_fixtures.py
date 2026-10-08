@@ -18,7 +18,7 @@ from tools.verifiers.surface_check import check_surface_verification
 
 RUN = "iterate-2026-10-08-surface-probe"
 NONE_BLOCK = {"surface": "none", "runner": "", "exit_code": 0, "tests_run": 0,
-              "evidence_path": "", "timestamp": "now", "reason_code": "docs-only",
+              "evidence_path": "", "timestamp": "now", "reason_code": "docs-only-surface",
               "justification": "prose-only change, nothing to start"}
 
 

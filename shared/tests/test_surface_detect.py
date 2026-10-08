@@ -94,8 +94,8 @@ def test_runner_test_paths_keep_only_existing_test_paths(tmp_path):
 def test_producer_records_a_closed_reason_code_for_none(tmp_path):
     code, block = verify_surface(project_root=tmp_path, run_id="r", surface="none", runner=None,
                                  justification="docs only", tests_run_override=None,
-                                 reason_code="docs-only")
-    assert code == EXIT_OK and block["reason_code"] == "docs-only"
+                                 reason_code="docs-only-surface")
+    assert code == EXIT_OK and block["reason_code"] == "docs-only-surface"
 
 
 @pytest.mark.covers("FR-01.11/AC07")

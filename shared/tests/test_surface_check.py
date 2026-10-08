@@ -38,7 +38,7 @@ def test_none_with_a_closed_code_on_a_prose_only_diff_passes(tmp_path):
     write_entry(root, NONE_BLOCK)
     result = check(root, sha)
     assert result.ok, result.detail
-    assert "docs-only" in result.detail and "justification recorded" in result.detail
+    assert "docs-only-surface" in result.detail and "justification recorded" in result.detail
     assert "touches no runnable surface" in result.detail
 
 

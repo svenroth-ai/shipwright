@@ -14,7 +14,7 @@ record.
 
 `verifiers/surface_check.py` (re-exported from `iterate_checks.py`) refuses, at medium+:
 
-1. `none` without a closed `surface_none` reason code (`docs-only`, `test-only`,
+1. `none` without a closed `surface_none` reason code (`docs-only-surface`, `test-only`,
    `build-config-only`, `no-behavior-change`, `no-startable-surface`). The producer
    `surface_verification.py --reason-code` validates the code too.
 2. `none` while the merge-base diff touches a runnable surface. `_surface_detect.py`
