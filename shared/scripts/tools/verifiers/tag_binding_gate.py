@@ -22,7 +22,8 @@ gates — removal, integration coverage, CI supply chain — still SKIP there; t
 
 Exemptions are per test, read from the F5c entry's ``exemptions`` block
 (``lib.exemption_record``). The FRs the run's ``work_completed`` event names
-(``affected_frs`` + ``new_frs``) are the expected tag set; a new tag outside it WARNs.
+(``affected_frs`` + ``new_frs``) are the expected tag set; a new tag outside it WARNs, and
+no such event at all WARNs that the out-of-scope check did not run.
 """
 
 from __future__ import annotations
@@ -59,10 +60,12 @@ def _fail(detail: str) -> CheckResult:
     return CheckResult(CHECK_NAME, False, detail)
 
 
-def _expected_frs(project_root: Path, run_id: str) -> set[str]:
-    frs: set[str] = set()
+def _expected_frs(project_root: Path, run_id: str) -> set[str] | None:
+    """The run's Spec-Impact FRs; ``None`` when no ``work_completed`` event names the run."""
+    frs: set[str] | None = None
     for event in read_events_jsonl(project_root):
         if event.get("type") == "work_completed" and event.get("adr_id") == run_id:
+            frs = frs or set()
             for key in ("affected_frs", "new_frs"):
                 value = event.get(key) or []
                 frs |= {str(f) for f in value} if isinstance(value, list) else set()
@@ -70,8 +73,11 @@ def _expected_frs(project_root: Path, run_id: str) -> set[str]:
 
 
 def _changed_paths(project_root: Path, base_sha: str, head_sha: str) -> set[str] | None:
-    rc, out, _ = _run_git(project_root, "diff", "--no-renames", "--name-only", base_sha, head_sha)
-    return {ln.strip() for ln in out.splitlines() if ln.strip()} if rc == 0 else None
+    """Paths as the collector writes them: unquoted (a non-ASCII name stays itself) and
+    NUL-separated, so no file name can be mistaken for two or lost to quoting."""
+    rc, out, _ = _run_git(project_root, "-c", "core.quotePath=false", "diff", "--no-renames",
+                          "--name-only", "-z", base_sha, head_sha)
+    return {p for p in out.split("\0") if p} if rc == 0 else None
 
 
 def check_test_tag_binding(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:

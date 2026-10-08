@@ -14,10 +14,16 @@ gate's business. A finding is one of:
 * ``untagged-modified``  a legacy untagged test whose normalised body changed;
 * ``invalid-tag``        a malformed tag that is new at head;
 * ``unresolved-tag``     a tag that resolves to no live FR, even through the fold-map;
-* ``ambiguous-name``     an added/edited test whose name now occurs twice in one file: the
-                         manifest's ``<file>::<name>`` identity cannot tell them apart, so a
-                         tag on one would silently cover the other;
+* ``ambiguous-name``     an added/edited test whose name now occurs twice in one file while
+                         a same-named sibling is untagged or the siblings carry different
+                         tags: the manifest's ``<file>::<name>`` identity cannot tell them
+                         apart, so a tag on one would silently cover the other (siblings that
+                         all carry the SAME tags only WARN - the shared id is then honest);
 * ``bad-exemption``      an exemption that is per-diff, or whose code does not fit.
+
+Not findings: a legacy untagged test in a changed file that the identity layer cannot
+locate at EITHER side (a shape it does not parse) is treated as untouched; an untagged id
+whose file the diff did not touch (newly collected after a config widening) WARNs.
 
 ``touched`` is every test the diff added or edited (moves excluded) — the denominator of
 the exemption share F12 and the PR body print.
@@ -26,7 +32,9 @@ Exemptions are per test (``scope = <file>::<name>``, kind ``test_exemption``):
 ``fixture-or-helper`` holds only for a function pytest would not collect;
 ``mechanical-refactor`` only for an existing test whose body differs from base by renamed
 identifiers alone. A ``tag-removed``, ``invalid-tag`` or ``unresolved-tag`` finding is
-never exemptable. A tag at head pointing at an FR outside the run's expected set WARNs.
+never exemptable. A tag at head pointing at an FR outside the run's expected set WARNs;
+with no expected set at all (no ``work_completed`` event for the run) that check WARNs that
+it did not run.
 """
 
 from __future__ import annotations
@@ -35,13 +43,15 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable
 
-from ._tag_binding_identity import body_digests, mechanically_renamed, would_collect
+from ._tag_binding_identity import body_digests, mechanically_renamed, sibling_tag_sets, would_collect
 
 __all__ = ["TagVerdict", "evaluate", "manifest_tagged_ids"]
 
 #: ``(path, side) -> text``; ``""`` = absent at that side, ``None`` = unreadable.
 Reader = Callable[[str, str], "str | None"]
-_SCOPE_RE = re.compile(r"^[^*?\[\]:]+::[^*?\[\]]+$")
+#: One ``<file>::<test>``: no glob in the path; the name may hold brackets (a parametrised
+#: title), only a bare wildcard is refused. Backslashes are normalised before the match.
+_SCOPE_RE = re.compile(r"^[^*?\[\]:]+::(?![*?]+$).+$")
 _TEST_DIRS = frozenset({"tests", "test", "__tests__", "e2e", "integration-tests"})
 _EXEMPTABLE = frozenset({"untagged-added", "untagged-modified"})
 
@@ -147,6 +157,10 @@ def _flag(
         if test in base_tagged:
             v.findings.append(("tag-removed", test, "was tagged at base, untagged at head"))
             continue
+        if _split(test)[0] not in changed:
+            v.warnings.append(f"{test}: newly collected legacy test (its file is not in this diff; "
+                              "a widened test root or exclude_dirs) - tag it when it is next edited")
+            continue
         digests = _digests(read, test, "head")
         if digests is None:
             v.findings.append(("untagged-added", test, "cannot read the file at head"))
@@ -160,8 +174,12 @@ def _flag(
         if _split(test)[0] not in changed:
             continue
         before, after = _digests(read, test, "base"), _digests(read, test, "head")
-        if not before or not after:  # unreadable, or the manifest's test is not in the file
-            v.findings.append(("untagged-modified", test, "cannot read or locate the test to compare bodies"))
+        if before is None or after is None:
+            v.findings.append(("untagged-modified", test, "cannot read the file to compare bodies"))
+        elif not before and not after:
+            continue  # a shape the identity layer cannot locate at either side: untouched
+        elif not before or not after:
+            v.findings.append(("untagged-modified", test, "located at only one side, still no requirement tag"))
         elif before != after:
             v.findings.append(("untagged-modified", test, "body changed, still no requirement tag"))
 
@@ -185,7 +203,7 @@ def _flag_tags(base: dict, head: dict, v: TagVerdict) -> None:
 
 def evaluate(
     base: dict, head: dict, changed: set[str], read: Reader,
-    exemptions: list[dict], expected_frs: set[str],
+    exemptions: list[dict], expected_frs: set[str] | None,
 ) -> TagVerdict:
     v = TagVerdict()
     _flag(base, head, changed, read, v)
@@ -196,7 +214,7 @@ def evaluate(
     for item in exemptions:
         if item.get("kind") != "test_exemption":
             continue
-        scope = str(item.get("scope", ""))
+        scope = str(item.get("scope", "")).replace("\\", "/")
         if not _SCOPE_RE.match(scope):
             v.findings.append(("bad-exemption", scope, "per-diff or blanket exemption refused: scope must name one <file>::<test>"))
             continue
@@ -229,15 +247,29 @@ def _touch(base_ids: set[str], head: dict, changed: set[str], read: Reader, v: T
             continue
         v.touched.add(test)
         if len(after) > 1 and len(after) > len(before):
-            v.findings.append(("ambiguous-name", test, f"{len(after)} tests in one file share this name, so one "
-                               "tag would cover all of them - rename them apart"))
+            _ambiguous(test, len(after), read, v)
 
 
-def _expected_tags(base: dict, base_ids: set[str], head: dict, expected: set[str], v: TagVerdict) -> None:
+def _ambiguous(test: str, count: int, read: Reader, v: TagVerdict) -> None:
+    path, name = _split(test)
+    text = read(path, "head")
+    tags = sibling_tag_sets(text, path, name) if text else None
+    if tags and all(tags) and len(set(tags)) == 1:
+        v.warnings.append(f"{test}: {count} tests in one file share this name and carry the same tags, "
+                          "so the shared id is honest - still, rename them apart")
+        return
+    v.findings.append(("ambiguous-name", test, f"{count} tests in one file share this name and one is "
+                       "untagged or they carry different tags, so one tag would cover all - rename them apart"))
+
+
+def _expected_tags(base: dict, base_ids: set[str], head: dict, expected: set[str] | None, v: TagVerdict) -> None:
     """Every (FR, test) binding new at head; one outside the expected FRs WARNs."""
     before = set(_links(base))
     new_links = sorted({(fr, t) for fr, t in _links(head) if (fr, t) not in before and _is_test_id(t)})
     v.tagged_new = sorted({t for fr, t in new_links if t not in base_ids})
+    if expected is None:
+        v.warnings.append("no work_completed Spec-Impact FRs found; out-of-scope tag check not run")
+        return
     if not expected:
         return
     for fr, test in new_links:

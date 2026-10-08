@@ -46,7 +46,8 @@ def _commit(root: Path) -> str:
     return _git(root, "rev-parse", "HEAD")
 
 
-def _repo(tmp_path: Path, base: dict[str, str], head: dict[str, str], *, exemptions=None, branch=True) -> tuple[Path, str]:
+def _repo(tmp_path: Path, base: dict[str, str], head: dict[str, str], *, exemptions=None, branch=True,
+          events=True) -> tuple[Path, str]:
     clear_regen_cache()
     root = tmp_path / "repo"
     root.mkdir(parents=True)
@@ -63,6 +64,9 @@ def _repo(tmp_path: Path, base: dict[str, str], head: dict[str, str], *, exempti
     if exemptions is not None:
         entry["exemptions"] = {"count": len(exemptions), "items": exemptions}
     (root / "shipwright_run_config.json").write_text(json.dumps({"iterate_history": [entry]}), encoding="utf-8")
+    if events:
+        event = {"type": "work_completed", "adr_id": RUN, "affected_frs": ["FR-02.01"], "new_frs": []}
+        (root / "shipwright_events.jsonl").write_text(json.dumps(event) + "\n", encoding="utf-8")
     return root, _commit(root)
 
 
@@ -172,3 +176,40 @@ def test_an_unused_exemption_warns_without_blocking(tmp_path):
     root, head = _repo(tmp_path, _py_base(), {"tests/test_a.py": _OLD + tagged}, exemptions=stray)
     result = gate.check_test_tag_binding(root, RUN, head)
     assert result.severity == "warning" and result.strict_exempt and "unused" in result.detail
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_fixture_tree_is_excluded_by_the_gate_without_exclude_dirs(tmp_path):
+    base = {**_py_base(), "tests/fixtures/repo/tests/test_fake.py": "def test_fake():\n    pass\n"}
+    head = {"tests/fixtures/repo/tests/test_fake.py": "def test_fake():\n    pass\n\n\ndef test_more():\n    pass\n"}
+    root, sha = _repo(tmp_path, base, head)
+    result = gate.check_test_tag_binding(root, RUN, sha)
+    assert result.ok is True, result.detail
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_an_untagged_test_in_a_non_ascii_file_name_is_found_in_the_diff(tmp_path):
+    name = "tests/test_ärger.py"
+    root, head = _repo(tmp_path, {**_py_base(), name: _OLD}, {name: _OLD + "\n\ndef test_new():\n    pass\n"})
+    result = gate.check_test_tag_binding(root, RUN, head)
+    assert result.ok is False and result.severity != "warning"
+    assert f"{name}::test_new [untagged-added" in result.detail
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_a_tagged_playwright_test_with_steps_passes(tmp_path):
+    base = {".shipwright/planning/app/spec.md": _SPEC, "e2e/flow.spec.ts": "test('old', async () => {});\n"}
+    steps = ("test('checkout', { tag: ['@FR-02.01'] }, async ({ page }) => {\n"
+             "  await test.step('open cart', async () => {\n    await page.goto('/cart');\n  });\n"
+             "  // test('commented out', async () => {});\n});\n")
+    root, head = _repo(tmp_path, base, {"e2e/flow.spec.ts": base["e2e/flow.spec.ts"] + steps})
+    result = gate.check_test_tag_binding(root, RUN, head)
+    assert result.ok is True, result.detail
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_no_work_completed_event_warns_that_the_scope_check_did_not_run(tmp_path):
+    tagged = '\n\nimport pytest\n\n\n@pytest.mark.covers("FR-02.01")\ndef test_new():\n    pass\n'
+    root, head = _repo(tmp_path, _py_base(), {"tests/test_a.py": _OLD + tagged}, events=False)
+    result = gate.check_test_tag_binding(root, RUN, head)
+    assert result.severity == "warning" and "out-of-scope tag check not run" in result.detail

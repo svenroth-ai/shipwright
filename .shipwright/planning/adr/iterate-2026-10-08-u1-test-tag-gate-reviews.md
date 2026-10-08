@@ -58,6 +58,20 @@ External, `--mode architecture` over `architecture_brief.md`: GLM **approve**, G
 | GLM low | `pytestmark` binds helper-class methods | accepted-and-fixed: module and class marks reach only what pytest collects (`Test*` classes) + test |
 | GLM low | cached head returned by reference | rejected-with-reason: no consumer mutates it (documented at the cache); a deepcopy per read costs ~1 s for nothing |
 
+## Second review round (PR #841)
+
+Fixed: `mechanical-refactor` renames BINDINGS only (arguments/fixtures, assigned names, import aliases; a module-imported name compares by its import target) - attributes, keyword arguments and unbound calls stay literal (`assertTrue`->`assertFalse`, `is_ok`->`is_err`, `resp.ok`->`resp.failed`, `client.get`->`client.delete` refused, Python and TS); `ambiguous-name` STOPs only when a same-named sibling is untagged or the siblings' tags differ, identical tags WARN; a legacy test the identity layer cannot locate at either side is untouched; an untagged id whose file is outside the diff WARNs "newly collected legacy test"; `_changed_paths` uses `core.quotePath=false` + `-z`; the TS declaration matcher (shared `fr_tag_grammar._TEST_DECL_RE` and the gate's own) excludes `test.step` and hook/fixture calls and skips commented-out lines; exemption scopes normalise backslashes and allow brackets in the name (only a bare wildcard is refused); no `work_completed` event for the run WARNs that the out-of-scope check did not run; `would_collect` fails closed under a module-level `if`/`try`/`with` and for nested `Test*` classes. Identity split into `_tag_binding_py.py` / `_tag_binding_ts.py` behind `_tag_binding_identity.py`.
+
+## Accepted limits
+
+- (a) A data-driven TS test (`test.each(table)('title', ...)`) that is untagged is invisible: neither the collector nor the gate enumerates that shape (not added - it needs table-aware parsing).
+- (b) Head-side config can hide a new test: growing `traceability.exclude_dirs`, a `.gitattributes` `export-ignore`, or a new test root shrinks what head enumerates. Follow-up: build head with the base prune set, or STOP when `exclude_dirs` grows.
+- (c) The TS tokenizer does not know regex literals or JSX; a quote inside either can shift the body digest.
+- (d) Decorator edits (removing `skip`/`xfail`, replacing parametrize rows) and edits to helpers or fixtures the test calls are not body edits.
+- (e) `_is_test_id` is a path heuristic (`fixtures` trees, production `test_*.py` under `scripts`/`verifiers`), not the collector's configured roots.
+- (f) The gate recomputes the merge-base instead of consuming the base `regenerate_base_head` used; both use the same resolver today.
+- (g) `fixture-or-helper` is judged by pytest collection (`would_collect`), not by whether the compliance collector lists the function - a deliberate wording deviation from the spec, since the collector lists every `test*` function.
+
 ## Confidence Calibration
 
 Boundaries: the traceability manifest (collector -> gate) and the F5c `exemptions` block (writer -> gate). Probes, all through the real collector, real git and the real `append_iterate_entry.py`:
