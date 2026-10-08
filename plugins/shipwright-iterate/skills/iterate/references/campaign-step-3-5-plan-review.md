@@ -107,7 +107,8 @@ runner is the enforcement point.
 
 Autonomous; cannot prompt. Log, proceed, record the opt-out; the orchestrator
 surfaces it at campaign end. Neither call runs. (`uv run --project` failure ≠ this
-branch — `iteration-reviews.md`'s note: `--status not_run`, no `--marker-status`.)
+branch — `iteration-reviews.md`'s note: `--status not_run --reason-code unavailable`,
+no `--marker-status`.)
 
 ### Branch C — `user_disabled`
 
@@ -120,7 +121,8 @@ Always record the pass — writes the review record AND dual-writes the legacy m
 Every pass here records its row (`self` 3.6, `plan` + `plan_internal` +
 `architecture_internal` here, `code` + `doubt` 3.7, `external_code` cascade); F11
 STOPs while any is `pending` and refuses a `not_run` row without its `--reason-code`
-(Branch B → `missing-keys`, Branch C → `config-disabled`; a `--disposition` is
+(Branch B → `missing-keys`, Branch C → `config-disabled`, a `uv run` / capability
+failure → `unavailable`; a `--disposition` is
 optional beside it). **The architecture call adds no row** — its verdicts live in the ADR section and
 in `result.json` `reviews.architecture`. Both internal-arm commands are in
 `iteration-reviews.md` → *Campaign sub-iterate rows*.
@@ -131,7 +133,7 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --status "{completed | not_run}" --provider "{openrouter | null}" \
   --marker-status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
   [--from external-review-json --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"] \
-  [--reason-code "{missing-keys | config-disabled}"] [--disposition "{why}"]
+  [--reason-code "{missing-keys | config-disabled | unavailable}"] [--disposition "{why}"]
 ```
 
 ### What the orchestrator does with a halted unit

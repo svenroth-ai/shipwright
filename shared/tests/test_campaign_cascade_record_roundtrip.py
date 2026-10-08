@@ -183,19 +183,23 @@ def _doubt_did_not_fire(root: Path, *codes: str):
                     *codes, "--force", "--disposition", _DID_NOT_FIRE)
 
 
+def _promote_spec_and_code(root: Path, tmp_path: Path) -> None:
+    """3f-bis's Stage-1 and Stage-2 promotions, which precede the doubt re-record."""
+    for review_type, source, reply in (
+        ("spec", "spec-reviewer", SPEC_REVIEWER_PASS),
+        ("code", "code-reviewer", CODE_REVIEWER_REPLY),
+    ):
+        rc, out = _promote(root, tmp_path, review_type, source, reply)
+        assert rc == 0, f"3f-bis could not promote {review_type}: {out}"
+
+
 @pytest.mark.covers("FR-01.11")
 def test_doubt_did_not_fire_rerecord_keeps_the_gate_green(campaign_root: Path, tmp_path: Path):
     """Stage 3 is conditional: when it does not fire, 3f-bis re-records the
     runner's `doubt` row `not_applicable --force` WITH its code. The force
     rebuilds the row, so the runner's `delegated-to-orchestrator` code does not
     survive it — the re-record has to carry its own."""
-    for review_type, source, reply in (
-        ("spec", "spec-reviewer", SPEC_REVIEWER_PASS),
-        ("code", "code-reviewer", CODE_REVIEWER_REPLY),
-    ):
-        rc, out = _promote(campaign_root, tmp_path, review_type, source, reply)
-        assert rc == 0, f"3f-bis could not promote {review_type}: {out}"
-
+    _promote_spec_and_code(campaign_root, tmp_path)
     rc, out = _doubt_did_not_fire(campaign_root, "--reason-code", "diff-below-threshold")
     assert rc == 0, out
     result = check_review_record(campaign_root, RUN_ID)
@@ -205,11 +209,7 @@ def test_doubt_did_not_fire_rerecord_keeps_the_gate_green(campaign_root: Path, t
 @pytest.mark.covers("FR-01.11")
 def test_codeless_forced_rerecord_drops_the_runners_code(campaign_root: Path, tmp_path: Path):
     """Why the prose must name the code: a codeless `--force` re-record reds F11."""
-    for review_type, source, reply in (
-        ("spec", "spec-reviewer", SPEC_REVIEWER_PASS),
-        ("code", "code-reviewer", CODE_REVIEWER_REPLY),
-    ):
-        assert _promote(campaign_root, tmp_path, review_type, source, reply)[0] == 0
+    _promote_spec_and_code(campaign_root, tmp_path)
     rc, out = _doubt_did_not_fire(campaign_root)
     assert rc == 0, out
     result = check_review_record(campaign_root, RUN_ID)

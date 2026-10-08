@@ -386,7 +386,8 @@ makes `uv run` itself fail before any provider is reached. Treat a non-zero
 `uv run` exit, or stdout that is not the expected JSON, exactly like
 `shipwright-plan not installed` in [iteration-planning.md](iteration-planning.md)'s
 Internal Plan Review degraded handling — the pass did NOT run; record it
-`not_run` with that reason, never parsed as a completed review.
+`not_run --reason-code unavailable` with that reason as the disposition, never
+parsed as a completed review.
 
 (`--run-id` additively records this call as an `external_review` timing span,
 parent `review` — see [iterate-timings](iterate-timings.md).)
@@ -688,9 +689,10 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
   --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/external-code-review-raw.json" \
   --provider openrouter --marker-status completed
 
-# …or, when it did not run. `not_run` REQUIRES a disposition, and the marker
-# vocabulary is narrower than the result-JSON one — `skipped_diff_below_threshold`
-# is a valid result.json status but NOT a valid --marker-status.
+# …or, when it did not run. `not_run` REQUIRES a --reason-code (a disposition is
+# optional), and the marker vocabulary is narrower than the result-JSON one —
+# `skipped_diff_below_threshold` is a valid result.json status but NOT a valid
+# --marker-status.
 … --review-type external_code --status not_run --reason-code {config-disabled|user-opt-out|missing-keys} \
   --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
   --marker-status "{skipped_user_opt_out | skipped_config_disabled}"

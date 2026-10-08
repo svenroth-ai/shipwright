@@ -183,18 +183,18 @@ review for those.
    ```
 
    Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse feedback. Apply high/medium findings before commit, OR mark
-   each `accepted-and-fixed` / `rejected-with-reason` in the iterate
-   ADR's `External-Code-Review-Findings` table. Same disposition
-   pattern as Step 3.5.
+   each `accepted-and-fixed` / `rejected-with-reason` in the iterate ADR's
+   `External-Code-Review-Findings` table. Same disposition pattern as Step 3.5.
 
 3. Record every row — **who did the work decides the name:**
 
    | Review type | Actor | Status the RUNNER may write |
    |---|---|---|
-   | `self` (3.6), `plan` (3.5) | runner | `completed` / `not_run` + rule |
-   | `spec` (Stage 1), `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + rule |
-   | `external_code` | runner (item 2) | `completed` / `not_run` + rule (marker: `skipped_*`) |
-   | `plan_internal`/`architecture_internal` (3.5) | runner, permanently — never promoted | `not_run` ONLY + rule (documented gap) |
+   | `self` (3.6) | runner | `completed` ONLY (with evidence) |
+   | `plan` (3.5) | runner | `completed` / `not_run` + `--reason-code` |
+   | `spec` (Stage 1), `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + `--reason-code` (rule optional) |
+   | `external_code` | runner (item 2) | `completed` / `not_run` + `--reason-code` (rule optional; marker `skipped_*`) |
+   | `plan_internal`/`architecture_internal` (3.5) | runner, permanently — never promoted | `not_run` ONLY + `--reason-code` (rule optional; documented gap) |
 
    The runner may **never** write `code` or `doubt` as `completed`, nor `spec`
    (Stage 1): it performed none. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.

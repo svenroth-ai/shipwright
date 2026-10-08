@@ -12,6 +12,11 @@ that can write a skipped status carries no ``--reason-code``.
 
 A line documenting the OLD behaviour (a "before" example) may opt out with the
 inline marker ``codeless-ok`` anywhere in the command.
+
+Scope limits: only command-shaped text is scanned. A prose table cell or a
+sentence that says "record it ``not_run``" without a ``record`` / ``…`` command
+start is NOT seen, and neither is a command whose status comes from a shell
+variable; those stay a review responsibility.
 """
 
 from __future__ import annotations
@@ -75,8 +80,10 @@ def test_every_skipped_record_command_names_its_reason_code():
 def test_the_scan_sees_the_known_command_shapes():
     """Guard the guard: the scan must find the shapes it exists to police, or a
     regex drift would turn the sync test into a vacuous pass."""
-    total = sum(1 for path in _docs() for _ in _commands(path.read_text(encoding="utf-8").splitlines()))
-    assert total >= 10, f"only {total} record commands found — the start pattern has drifted"
+    cmds = [cmd for path in _docs() for _, cmd in _commands(path.read_text(encoding="utf-8").splitlines())]
+    assert len(cmds) >= 10, f"only {len(cmds)} record commands found — the start pattern has drifted"
+    skipped = sum(1 for cmd in cmds if _SKIPPED.search(cmd))
+    assert skipped >= 8, f"only {skipped} skipped-status commands found — the status pattern has drifted"
 
 
 @pytest.mark.covers("FR-01.11")
