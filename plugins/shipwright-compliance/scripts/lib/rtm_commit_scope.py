@@ -14,6 +14,9 @@ one's measurement cached for the hook).
 * A plain ``-C`` that resolves to no Shipwright project while the managed default
   root holds compliance data: a visible WARN (the reached directory is measured,
   and it usually has nothing to measure), never a silent allow.
+* Repos are told apart by :func:`repo_key` (resolved, ``normcase``), so ``x`` and
+  ``x/../x`` (or ``X`` on Windows) are one repo; on a multi-repo line every repo
+  not judged on still has its measurement WARNs carried, prefixed ``[<repo>]``.
 
 Reads project files and runs one ``git rev-parse`` per ``--work-tree`` target.
 """
@@ -79,7 +82,8 @@ def _has_compliance_data(root: str) -> bool:
 
 def _env_for(target: CommitTarget, warnings: list[str]) -> dict[str, str]:
     if target.git_dir is not None:
-        return {"GIT_DIR": str(target.git_dir), "GIT_WORK_TREE": str(target.project_root)}
+        tree = target.work_tree or target.project_root
+        return {"GIT_DIR": str(target.git_dir), "GIT_WORK_TREE": str(tree)}
     if target.work_tree is None:
         return {}
     git_dir, why = repo_git_dir(target.base)
@@ -91,9 +95,14 @@ def _env_for(target: CommitTarget, warnings: list[str]) -> dict[str, str]:
     return {"GIT_DIR": git_dir, "GIT_WORK_TREE": str(target.work_tree)}
 
 
+def repo_key(path: str | Path) -> str:
+    """One spelling per directory: resolved, and case-folded where the filesystem is."""
+    return os.path.normcase(str(Path(path).resolve()))
+
+
 def _no_project_warning(target: CommitTarget, default_root: str) -> str | None:
     root = str(target.project_root)
-    if target.found or root == default_root or _has_compliance_data(root):
+    if target.found or repo_key(root) == repo_key(default_root) or _has_compliance_data(root):
         return None
     if not _has_compliance_data(default_root):
         return None
@@ -127,28 +136,32 @@ def commit_scope(command: str, cwd: Any, default: Callable[[], str]) -> Scope:
         return memo[0]
 
     warnings: list[str] = []
-    roots: dict[str, dict[str, str]] = {}  # insertion-ordered, one entry per repo
+    roots: dict[str, tuple[str, dict[str, str]]] = {}  # repo_key -> (root, env), in order
     for target in commit_targets(command, cwd):
         if target is not None and not target.project_root.is_dir():
             warnings.append(f"the commit names {target.project_root}, which is not a "
                             f"directory; measured {default_root()} instead")
             target = None
         if target is None:
-            roots.setdefault(default_root(), {})
+            roots.setdefault(repo_key(default_root()), (default_root(), {}))
             continue
         warnings.extend(filter(None, [target.note, _no_project_warning(target, default_root())]))
         root = str(target.project_root)
-        if root not in roots:
-            roots[root] = _env_for(target, warnings)
+        if repo_key(root) not in roots:
+            roots[repo_key(root)] = (root, _env_for(target, warnings))
     if not roots:
         return Scope(default_root(), {}, warnings, [], None)
-    chosen = next(iter(roots))
+    chosen, env = next(iter(roots.values()))
     if len(roots) == 1:
-        return Scope(chosen, roots[chosen], warnings, [], None)
+        return Scope(chosen, env, warnings, [], None)
     cache: dict[str, Any] = {}
-    below = [root for root, env in roots.items() if _below(cache, root, env)]
+    below = [root for root, env in roots.values() if _below(cache, root, env)]
     chosen = below[0] if below else chosen
-    warnings.append(f"this command commits to {len(roots)} repos (" + ", ".join(roots)
+    names = [root for root, _env in roots.values()]
+    warnings.append(f"this command commits to {len(roots)} repos (" + ", ".join(names)
                     + f"); judged on {chosen}, the first below threshold or else the "
                     "first -- commit to each repo separately")
-    return Scope(chosen, roots[chosen], warnings, below, cache.get(chosen))
+    for root in names:  # the chosen repo's own WARNs travel with its cached measurement
+        if root != chosen:
+            warnings.extend(f"[{root}] {note}" for note in cache[root][1])
+    return Scope(chosen, roots[repo_key(chosen)][1], warnings, below, cache.get(chosen))

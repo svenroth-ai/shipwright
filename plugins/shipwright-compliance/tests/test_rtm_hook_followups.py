@@ -188,7 +188,7 @@ def test_heredoc_bodies_are_not_scanned(command):
     # a body fed to a shell or interpreter is commands, not data
     "bash <<EOF\ngit commit -m x\nEOF", "bash <<'EOF'\ngit commit -m x\nEOF",
     "ssh host <<EOF\ngit commit -m x\nEOF", "cat <<EOF | sh\ngit commit -m x\nEOF",
-    "pwsh.exe -NoProfile <<EOF\ngit commit -m x\nEOF", "runner -s <<EOF\ngit commit\nEOF",
+    "pwsh.exe -NoProfile <<EOF\ngit commit -m x\nEOF", "sudo -s <<EOF\ngit commit\nEOF",
     "cat <<A; bash <<B\nmessage\nA\ngit commit -m x\nB",  # data first, then commands
     "echo $((x<<y))\ngit commit -m x",  # a shift inside $((...)) is no heredoc
     "echo $((1<<2))\ngit commit -m x",  # nor is a delimiter starting with a digit

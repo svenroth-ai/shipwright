@@ -7,7 +7,9 @@ applies its global options in order -- each ``-C <path>`` changes directory
 ``--git-dir`` / ``--work-tree`` is resolved against the directory reached. With
 ``--work-tree`` that tree is the project (the commit still lands in the repo
 found from the directory reached, so its git dir is looked up there --
-``rtm_commit_scope``); with only ``--git-dir`` git treats the directory reached as
+``rtm_commit_scope``) and the project is resolved from it exactly as from a plain
+``-C`` below (a monorepo work tree with the project in a subdirectory descends into
+it; none found is :attr:`CommitTarget.found` False); with only ``--git-dir`` git treats the directory reached as
 the top of the work tree, so that directory is the project and the git dir must be
 handed to every git read (``GIT_DIR``). A plain ``-C`` names a directory the
 project is resolved from by the SHARED resolver (``shared/scripts/lib/project_root``
@@ -15,7 +17,7 @@ steps 2-4, the reached directory as cwd, ``SHIPWRIGHT_PROJECT_ROOT`` not consult
 for a named location): the directory itself, its single project subdirectory
 (``git -C <repo root> commit`` with the project in ``webui/``), or the nearest
 project above it, never above the repo root. A stray ``.shipwright/`` holding no
-``agent_docs/`` and no config marker is no project. When nothing resolves,
+``.shipwright/agent_docs`` and no config marker is no project. When nothing resolves,
 :attr:`CommitTarget.found` is False and the directory reached is measured.
 
 Not covered: ``cd <path> && git commit`` and ``env -C <path> git commit`` (the
@@ -129,6 +131,9 @@ def _locate(opts: tuple[str, ...], cwd: str | Path) -> CommitTarget | None:
     base = Path(os.path.normpath(base))
     tree = _under(base, work_tree) if work_tree else None
     gdir = _under(base, git_dir) if git_dir else None
+    if tree is not None and tree.is_dir():  # the work tree is resolved like a ``-C``
+        root, found, note = _project_dir(tree)
+        return CommitTarget(root, gdir, tree, base, found, note)
     if tree is None and gdir is None and base.is_dir():
         root, found, note = _project_dir(base)
         return CommitTarget(root, None, None, base, found, note)

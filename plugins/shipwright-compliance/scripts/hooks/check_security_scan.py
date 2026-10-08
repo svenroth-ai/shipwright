@@ -57,7 +57,7 @@ def _resolve_project_root() -> str:
 
 
 HOOK = "check_security_scan"
-# only when compliance_override itself cannot be loaded (the gate is unavailable then too)
+# only when the security gate itself cannot be loaded
 _STATIC_OVERRIDE = (
     "The user may say 'Continue anyway' to override this check. If they do, log the "
     "override to .shipwright/agent_docs/compliance_overrides.log with timestamp, hook "
@@ -130,18 +130,28 @@ def main() -> int:
         if str(lib_dir) not in sys.path:
             sys.path.insert(0, str(lib_dir))
         from security_gate import decide  # noqa: PLC0415
-
-        import compliance_override as override  # noqa: PLC0415
     except Exception as exc:  # noqa: BLE001
         return _hook_block(
             reason=("the security gate could not be loaded "
                     f"({type(exc).__name__}) — refusing to assume a clean scan"),
             details={"state": "gate-unavailable"},
         )
+    # The override reader is separate: losing it must not cost the gate decision.
+    try:
+        import compliance_override as override  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        override, override_error = None, type(exc).__name__
+    else:
+        override_error = ""
 
     blocked, reason, details = decide(project_root)
     if not blocked:
         return 0
+    if override is None:
+        return _hook_block(reason, {**details, "override": "unavailable"}, (
+            f"The override reader (lib/compliance_override) could not be loaded "
+            f"({override_error}), so no override is available for this block: fix the "
+            "reader or resolve the findings."))
     released, why_not = override.try_release(project_root, HOOK)
     if released is not None:  # a logged "Continue anyway", now used
         print(json.dumps({"hookSpecificOutput": {

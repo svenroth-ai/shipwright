@@ -3104,18 +3104,25 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   echo "a; git commit"`), and `git commit --dry-run` / `-h`. `git.exe` / `git.cmd`
 >   count as git. Here-document bodies (`<<EOF`, `<<'EOF'`, `<<-EOF`) are data and
 >   are not scanned (`lib/shell_heredoc.py`) -- unless the operator line's pipeline
->   feeds them to a shell or interpreter (`bash` `sh` `zsh` `dash` `ksh` `pwsh`
->   `powershell` `eval` `ssh`, or any command given `-s`: `bash <<EOF`, `cat <<EOF |
->   sh`), whose body is scanned as commands. An operator inside quotes (a quote
->   opened on an earlier line included), after a `#` comment or inside `$((...))`
->   starts nothing, a delimiter must start with a letter or `_`, and a body line of
+>   feeds them to a shell or interpreter (`bash` `sh` `zsh` `dash` `ksh` `fish`
+>   `pwsh` `powershell` `eval` `source` `ssh`, `.` as the command, or `-s` given to
+>   a shell or to `sudo` / `su` / `doas`: `bash <<EOF`, `cat <<EOF | sh`, `sudo -s
+>   <<EOF`; `git commit -s` is sign-off and feeds nothing), whose body is scanned as
+>   commands. The lexer tracks nesting: inside `"..."` a `$(` or a backtick opens a
+>   command substitution where quotes and operators are live again, so the canonical
+>   `git commit -m "$(cat <<'EOF'` ... `EOF` / `)"` message is stripped (an odd quote
+>   or a `<<WORD` in it is data). An operator inside single quotes, inside double
+>   quotes outside any `$(...)` (a quote opened on an earlier line included), after
+>   a `#` comment or inside `$((...))` starts nothing, a delimiter must start with a letter or `_`, and a body line of
 >   an unquoted delimiter holding `$(` or a backtick is kept, since the shell runs
 >   it. Not covered: user-configured git aliases (`git
 >   ci`), `merge`, `revert`, `cherry-pick`, `rebase` and `am`.
 > - *Which repo* (`lib/git_commit_target.py`): the one the commit goes to. git's
 >   global options apply in order from the hook payload's `cwd`: each `-C <path>`
 >   changes directory, a relative `--work-tree` / `--git-dir` resolves against the
->   result; `--work-tree` names the project and the index measured is that of the
+>   result; `--work-tree` names the directory the project is resolved from (like a
+>   plain `-C`, below: a monorepo work tree descends into its project subdirectory)
+>   and the index measured is that of the
 >   repo git finds from the directory reached (`GIT_DIR` from `git rev-parse
 >   --absolute-git-dir` there, `lib/rtm_commit_scope.py`), and with only `--git-dir`
 >   the directory reached is the work tree and `GIT_DIR` is handed to every git
@@ -3124,11 +3131,13 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   resolved by the shared `shared/scripts/lib/project_root.py` resolver (steps 2-4,
 >   the reached directory as cwd, the env override not consulted): the directory
 >   itself, its single project subdirectory, or the nearest project above it within
->   the repo -- a stray `.shipwright/` with no `agent_docs/` and no config marker is
+>   the repo -- a stray `.shipwright/` with no `.shipwright/agent_docs` and no config marker is
 >   no project. When it resolves to no project while the default root holds
 >   compliance data, a visible WARN says the gate is NOT evaluating that commit. A
 >   line committing to several repos is judged on the first one below its threshold
->   (else the first), with a WARN naming them all; when more than one is below, no
+>   (else the first), with a WARN naming them all and every other repo's own
+>   measurement WARNs (prefixed `[<repo>]`; repos are compared resolved and
+>   `normcase`d, so one repo spelled two ways is one repo); when more than one is below, no
 >   override releases it (commit to each repo separately).
 >   Not covered: `cd <path> && git commit`, `env -C`, `GIT_DIR=` in the command
 >   text, and a commit found only by a fallback (`env -S`, past the depth cap).
