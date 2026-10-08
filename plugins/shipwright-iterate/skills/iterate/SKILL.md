@@ -273,7 +273,7 @@ See [F0](references/F0.md). Leak-guard (`check_iterate_isolation.py --stage f0`)
 
 See [F0.5](references/F0.5.md). **Mandatory at medium+.** Safety-enforced at small with `touches_io_boundary` or UI. Advisory at trivial.
 
-Four fail-closed conditions enforced by `surface_verification.py` (orchestrator) + the post-commit audit `verify_iterate_finalization.py`: (1) `surface != "none"` AND `tests_run == 0`; (2) non-zero `exit_code` after the 3-retry cap; (3) `surface == "none"` without a `justification`; (4) `surface_verification` block missing at medium+ without an opt-out. Non-zero exit at F0.5 = STOP.
+Fail-closed conditions enforced by `surface_verification.py` (orchestrator) + the post-commit audit `verify_iterate_finalization.py`: (1) `surface != "none"` AND `tests_run == 0`; (2) non-zero `exit_code` after the 3-retry cap; (3) `surface == "none"` without a `justification` AND (medium+) a closed `--reason-code`; (4) `surface_verification` block missing at medium+ without an opt-out. At medium+ F11 also refuses `none` when the diff touches a UI / API route / SSE-WS / message-contract file, and checks `tests_run` / `exit_code` against this run's staged evidence (F5 staging; absent or stale fails). Non-zero exit at F0.5 = STOP.
 
 **Backend-affects-Frontend rule.** If the diff touches API routes, store mutations, SSE/WS handlers, message contracts, or any code consumed by the UI — `surface = web` is mandatory even when no `client/**` file changed. The matrix `always` cell at medium+ subsumes file-path detection. Spec-only authorship counts as no test (`tests_run = 0`).
 

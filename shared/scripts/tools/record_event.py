@@ -54,6 +54,7 @@ from lib.event_dedup import (  # noqa: E402,F401 — re-exported surface
 # test and existing `with _FileLock(...)` call sites.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
 from lib.jsonl_records import ends_without_newline  # noqa: E402
+from lib.reason_codes import family_codes  # noqa: E402
 # FR-classification SSOT (BP-1); gate predicates moved to lib/fr_gates.py.
 # `_NONE_REASON_MAX_LEN` remains re-exported and drift-pinned by its test so the
 # CLI's advertised cap stays equal to the enforced one.
@@ -233,12 +234,13 @@ def build_event(args: argparse.Namespace) -> dict:
             event["new_frs"] = [fr.strip() for fr in args.new_frs.split(",") if fr.strip()]
         if args.spec_updated:
             event["spec_updated"] = args.spec_updated
-        # Spec-impact classification (iterate-2026-05-16-spec-impact-gate).
-        # Enforced for feature/change iterates by _spec_impact_gate_error.
+        # Spec impact: enforced for feature/change/bug by lib.spec_impact_gate.
         if args.spec_impact:
             event["spec_impact"] = args.spec_impact
         if args.spec_impact_justification:
             event["spec_impact_justification"] = args.spec_impact_justification
+        if args.spec_impact_reason_code:
+            event["spec_impact_reason_code"] = args.spec_impact_reason_code
         # BP-2: per-FR behavior impact map (validated via the shared SSOT).
         if args.fr_impact:
             event["fr_impact"] = _normalize_fr_impact(json.loads(args.fr_impact))
@@ -600,13 +602,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="One-line reason a behavior-affecting FR event lacks --tests-total.")
     p.add_argument("--spec-updated", help="Path to updated spec file")
     p.add_argument("--spec-impact", choices=["add", "modify", "remove", "none"],
-                   help="Iterate spec-impact classification (feature/change): "
+                   help="Iterate spec-impact classification (feature/change/bug): "
                         "add=new FR appended, modify=existing FR changed, "
                         "remove=FR retired, none=no spec change (then "
                         "--spec-impact-justification is required).")
     p.add_argument("--spec-impact-justification",
-                   help="Why a feature/change iterate touches no FR. "
-                        "Required when --spec-impact is none.")
+                   help="Why the iterate touches no FR. Required when --spec-impact is none.")
+    p.add_argument("--spec-impact-reason-code", choices=sorted(family_codes("spec_impact_none")),
+                   help="Closed-vocabulary code for --spec-impact none (required with it).")
     p.add_argument("--fr-impact",
                    help="JSON {FR-id: add|modify|remove|none} per-FR behavior impact (BP-2)")
     p.add_argument("--adr-id", help="ADR reference (e.g. ADR-055)")
@@ -684,49 +687,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-
-
-
-
-def _spec_impact_gate_error(event: dict) -> dict | None:
-    """Return an error payload if a feature/change iterate work event is not
-    spec-impact-classified, else None.
-
-    Every FEATURE/CHANGE iterate either names the FRs it touched
-    (``affected_frs`` or ``new_frs``) or records ``spec_impact == "none"``
-    with a justification. Build events (``source != "iterate"``),
-    intent-less events, and BUG iterates are exempt — a bug fix need not
-    touch the spec. Origin: iterate-2026-05-16-spec-impact-gate.
-    """
-    if event.get("type") != "work_completed":
-        return None
-    if event.get("source") != "iterate":
-        return None
-    if str(event.get("intent", "")).lower() not in ("feature", "change"):
-        return None
-    if str(event.get("spec_impact", "")).lower() == "none":
-        if not event.get("spec_impact_justification"):
-            return {
-                "error": "spec_impact_none_requires_justification",
-                "detail": (
-                    "A feature/change iterate recording --spec-impact none "
-                    "must also pass --spec-impact-justification."
-                ),
-            }
-        return None
-    if not event.get("affected_frs") and not event.get("new_frs"):
-        return {
-            "error": "spec_impact_unclassified",
-            "detail": (
-                "A feature/change iterate work_completed event must record "
-                "--affected-frs or --new-frs (the FRs it added or modified), "
-                "or --spec-impact none with a --spec-impact-justification. "
-                "See SKILL.md Step 2 (ADD/MODIFY/REMOVE/NONE)."
-            ),
-        }
-    return None
-
-
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
@@ -740,22 +700,13 @@ def main(argv: list[str] | None = None) -> int:
                           "detail": str(exc)}, indent=2))
         return 1
 
-    # All three FR gates, in order (see lib.fr_gates.run_fr_gates): is this
-    # classified (Iterate C.1 / ADR-059), do the named ids exist (S0), is
-    # that classification evidenced (iterate-2026-08-16-fr-gate-test-evidence).
-    # One entry point so the CLI and the F5b worktree write path
-    # (finalize_iterate._record_event, same call) cannot drift apart.
+    # Every requirement gate, in order (see lib.fr_gates.run_fr_gates):
+    # classified (ADR-059), spec impact answered, a no-FR change_type covering
+    # the diff, ids exist (S0), evidenced. One entry point so the CLI and the
+    # F5b write path (finalize_iterate._record_event, same call) cannot drift.
     fr_gate_error = run_fr_gates(event, project_root, "record_event")
     if fr_gate_error is not None:
         print(json.dumps({"success": False, **fr_gate_error}, indent=2))
-        return 1
-
-    # Spec-impact gate: a FEATURE/CHANGE iterate must name the FRs it touched
-    # or explicitly record --spec-impact none with a justification. Fail
-    # closed (exit 1, nothing written) otherwise.
-    spec_impact_error = _spec_impact_gate_error(event)
-    if spec_impact_error is not None:
-        print(json.dumps({"success": False, **spec_impact_error}, indent=2))
         return 1
 
     # F14: the dedup scan (phase_completed / --deduplicate-by-commit) and the

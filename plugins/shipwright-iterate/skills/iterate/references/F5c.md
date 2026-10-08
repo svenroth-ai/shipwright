@@ -84,7 +84,7 @@ evidence sitting in this run's worktree, shaped exactly like this run's would be
 separable from it by nothing but `run_id`. (F11's integration used to *rewind* it
 mid-run on top of that; trg-ad29a709 now carries the bytes across the merge instead,
 which closes that route and not the one above.) `check_test_completeness_ledger`,
-`check_surface_verification` and the silent-revert declaration reader now refuse
+`check_surface_verification` (`verifiers/surface_check.py`) and the silent-revert declaration reader now refuse
 a block that does not name the run being verified, and all three read this
 per-run entry FIRST. The entry is not a derived snapshot, so the restore cannot
 reach it.

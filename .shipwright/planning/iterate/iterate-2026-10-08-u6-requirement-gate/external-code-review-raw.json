@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/lib/change_type_paths.py:46\n- Finding: Allowing `**/*.mdx` as documentation lets executable WebUI pages bypass FR linkage. For example, changing `src/app/page.mdx` can alter rendered product behavior while passing the `docs` exemption. The tests only check runtime files with `.tsx`, `.ts`, and `.py` extensions.\n- Suggestion: Classify MDX under runtime page directories as runtime code, even when its extension resembles documentation. Add a WebUI test showing that a docs-only event changing such a page is refused.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/spec_impact_gate.py:38\n- Finding: Coercing the justification through `str()` accepts JSON booleans, numbers, lists, and objects as explanations. An FR-linked F5b event with `spec_impact: \"none\"`, `spec_impact_justification: true`, and a valid reason code passes without the required one-line textual justification; multiline strings also pass.\n- Suggestion: Require a non-empty string with no line breaks before accepting the justification. Test malformed values through F5b as well as the shared gate.\n\nShip-with-fixes: the shared enforcement addresses the main bypasses, but these gaps still admit invalid exemptions or records. Repository access was blocked, so this assessment is limited to the supplied specification and diff; the referenced BRIEF and tests could not be independently checked.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/spec_impact_gate.py:43-46 (`spec_impact_gate_error`, the `spec_impact == \"none\"` early branch)\n  Finding: The `none` branch runs **before** the FR check and is unconditional: any event recording `spec_impact: \"none\"` must supply a justification and a reason code *even when `affected_frs`/`new_frs` are present*. The spec text (\"one that names no requirement and gives no reason is rejected\") and the new F5b.md / F7.md docs (\"A feature, change or bug **with no affected_frs/new_frs** must set spec_impact none + justification + code\") both scope the requirement to the no-FR case. The code is stricter than both. The diff itself shows this combination was common in practice \u2014 `test_fr_gate_test_evidence.py` and `test_finalize_test_evidence_gate.py` events had `spec_impact: none` + `affected_frs` with no justification and had to be patched to keep passing.\n  Suggestion: Either gate the `none` branch on `not (affected_frs or new_frs)` to match the documented contract, or update F5b.md/F7.md/spec AC03 to say the justification+code is required for *every* `spec_impact: none`. As written, code and docs disagree, and legitimate docs-only FR-linked iterates get refused.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/change_type_diff.py:47-53 (`_narrowest`)\n  Finding: If a `rev-list --count` call fails (non-zero return, empty stdout) for one of the trunk pairs, the comparison silently reads as \"not an ancestor,\" so two trunk refs that *are* ordered can be reported as \"share no ordering\" and the write is refused (`change_type_diff_unavailable`). Fail-closed, so not a bypass, but a transient git fault turns into a hard refusal with a misleading repair message.\n  Suggestion: Check `returncode != 0` on the `rev-list` calls and raise a `DiffUnavailable` with the actual stderr instead of the \"no ordering\" message.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/change_type_paths.py (`_BOOKKEEPING`, `_DOCS`)\n  Finding: `docs/**` is anchored at the root, so a nested `packages/foo/docs/` directory in a generic-shaped repo is not covered by the `docs` label (only `**/*.md` is). A pure-documentation change under `packages/foo/docs/` that also touches, e.g., `packages/foo/docs/requirements.txt` would be refused with no available label. Narrow but real for pnpm/Lerna-style layouts, which the WebUI-shape tests don't cover.\n  Suggestion: Add `**/docs/**` to `_DOCS` (it can't widen anything dangerous \u2014 it only covers markdown-ish trees), or document the limitation.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_requirement_gate_spec_impact.py (`test_a_collector_crash_on_present_specs_reads_as_found_not_absent`)\n  Finding: The collector-crash test monkeypatches `drift_parsers.collect_requirements_from_planning`, but the fail-closed behavior depends on `specs_found` being flipped to `True` *before* the patched call inside `collect_known_fr_ids` \u2014 code that is not visible in the diff (only the `specs_found = False` init and the final `except` are shown). If the ordering in the hidden body ever changes (e.g., the flag is set after collection succeeds), this test still passes via the re-imported patched symbol but the production guarantee silently inverts.\n  Suggestion: Also assert the positive path explicitly \u2014 a repo with a parseable spec returning a non-empty id set with `specs_found=True` \u2014 to pin the flag's set point.\n\n## Notes on things I checked and found sound\n\n- The five listed bypasses (bug exemption CLI/F11, free-text `none`, zero-parsed fail-open, F5b skipping the spec-impact gate, unverified `change_type`) are all closed, and both write paths go through the single `run_fr_gates` entry point, matching ADR-059.\n- `record_event.py` shrank; the gate lives in `lib/` \u2014 bloat-cap contract respected. Tests are tagged `pytest.mark.covers` from the first commit.\n- The `_narrowest` ancestor logic is directionally correct (`count(base..other)==0` \u27fa other is an ancestor of base \u27fa base is the most recent fork point), and the remote-trunks-first policy is correctly tested against the \"local main at HEAD\" trap.\n- Untracked, staged, committed-branch, rename-both-sides, and deletion cases are all exercised against real git repos \u2014 these are behavioral tests, not smoke tests.\n\n## Overall assessment\n\nShip-with-fixes: the core work is solid and well tested, but the spec-impact `none` branch enforces a stricter rule than the spec and the updated docs state (justification+code required even when FRs are named), which is a genuine contract mismatch that will over-reject legitimate FR-linked `none` events; fix that (or the docs) plus the two low-severity edge cases before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

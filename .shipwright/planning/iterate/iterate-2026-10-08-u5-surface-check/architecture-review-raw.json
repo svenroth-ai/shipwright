@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes\u2014option A should exist as an extension of the existing finalization gate; it makes an already-required verification depend on evidence rather than assertions.**\n\n2. **Smallest thing:** reuse the existing diff measurement, frontend detector, reason-code vocabulary, and staged-evidence reader. Add only the surface classification rules those facilities lack, refuse `none` when a runnable surface is detected, and compare reported results with evidence for the verified revision and detected surface.\n\n3. **Cost to keep:** verifier maintainers must update surface rules when routes, interfaces, or message contracts move or change, and maintain compatibility with the existing evidence format. This is a bounded maintenance obligation, with no new service, credential, schedule, or evidence store.\n\n4. **What it forecloses:** finalizing medium+ surface changes using unsupported claims or stale evidence. Moving surface files or introducing a new interface convention will also require updating detection rules.\n\n5. **No findings.**\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **Should it exist?** Yes, in roughly the proposed shape \u2014 this strengthens two existing finalization checks rather than adding a new service, but the new path-rule list deserves one trim.\n\n2. **The smallest thing that would do** Option A minus a new detector: derive \"surface touched\" from the *already existing* frontend-file detector plus the merge-base diff machinery, with the smallest closed set of path rules needed to cover API routes / SSE / WS / message contracts. Do not invent a second file-classification system alongside the one already used elsewhere.\n\n3. **What it costs to keep** The path-rule list is the real standing mechanism: every future route namespace, channel type, or contract location must be kept accurate or the check silently degrades into false \"none is fine.\" Also one new reason-code family in shared vocabulary.\n\n4. **What it forecloses** Minor: rule-based surface detection hard-codes the project's notion of \"user-visible,\" so genuinely novel surfaces (e.g. a CLI flag) start out misclassified as \"none\" until someone adds a rule. None identified beyond that.\n\n**Findings**\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: The brief says \"a list of path rules\" as if new, but a frontend-file detector already exists and is listed under existing machinery. Building a parallel rule list is the mechanism's main ongoing cost.\n- Suggestion: Make the existing detector the single source of surface classification; the new permanent surface is only the delta rules (API routes, SSE/WS, message contract paths) plus the closed-vocab \"none\" code and the evidence comparison. Option B (closed code only, trust the numbers) is materially weaker for a two-line cost and should stay rejected; Option C re-checks only one file and misses the stale-evidence case.\n\n- Category: ownership\n- Severity: low\n- Finding: Rule accuracy depends on maintainers noticing silent misclassification \u2014 a rule gone stale fails *open* (accepting \"none\" for a real surface), which nobody will notice until a bad claim slips through.\n- Suggestion: Have the check fail closed on unrecognized-but-changed top-level directories, or log a warning when changed files match no rule family, so drift is visible at run time rather than at incident time.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

@@ -15,6 +15,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from tools.verifiers._iterate_latest import (  # noqa: E402
@@ -150,6 +152,7 @@ def test_declared_removals_are_honoured_for_their_own_run(tmp_path):
 
 # --- AC-1b: the per-run entry is a home the restore cannot reach -------------
 
+@pytest.mark.covers("FR-01.11/AC07")
 def test_the_f5c_entry_carries_the_run_past_a_rewound_snapshot(tmp_path):
     """Both blocks in the per-run entry ⇒ green even when the shared file was
     rewound to another run. Without this, AC-1 turns a false green into a
@@ -161,16 +164,19 @@ def test_the_f5c_entry_carries_the_run_past_a_rewound_snapshot(tmp_path):
              surface_verification={"surface": "web", "tests_run": 0, "exit_code": 9})
 
     assert check_test_completeness_ledger(tmp_path, RUN).ok is True
-    assert check_surface_verification(tmp_path, RUN).ok is True
+    # this run's block is the one read (the evidence cross-check after it needs real git:
+    # test_surface_check.py)
+    assert "tests_run=22: stale: " in (d := check_surface_verification(tmp_path, RUN).detail) and "not a readable git work tree" in d
 
 
+@pytest.mark.covers("FR-01.11/AC07")
 def test_the_shared_file_still_works_when_it_names_this_run(tmp_path):
     _entry(tmp_path, RUN)
     _results(tmp_path, RUN,
              test_completeness=_GOOD_LEDGER, surface_verification=_GOOD_SURFACE)
 
     assert check_test_completeness_ledger(tmp_path, RUN).ok is True
-    assert check_surface_verification(tmp_path, RUN).ok is True
+    assert "tests_run=22: stale: " in (d := check_surface_verification(tmp_path, RUN).detail) and "not a readable git work tree" in d
 
 
 # --- AC-3: a missing F5c entry fails, it does not skip -----------------------

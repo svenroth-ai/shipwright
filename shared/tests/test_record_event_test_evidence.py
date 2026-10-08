@@ -79,7 +79,7 @@ class TestFrGateTestEvidenceCli:
             "--source", "iterate",
             "--intent", "change",
             "--affected-frs", "FR-01.01", "--spec-impact", "none",
-            "--spec-impact-justification", "docs-only iterate, no behavior change",
+            "--spec-impact-justification", "docs-only iterate, no behavior change", "--spec-impact-reason-code", "docs-only",
         ])
         assert rc == 0
         captured = capsys.readouterr()

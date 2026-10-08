@@ -222,7 +222,7 @@ class TestRunFrGatesOrdering:
         # No .shipwright/planning under tmp_path — existence gate degrades to
         # unverifiable/allow, so a fully-satisfied event passes cleanly.
         event = _iterate_event(
-            spec_impact="none", affected_frs=["FR-01.10"],
+            spec_impact="none", affected_frs=["FR-01.10"], spec_impact_justification="x", spec_impact_reason_code="behavior-preserving",
             tests={"passed": 1, "total": 1},
         )
         assert run_fr_gates(event, project_root=tmp_path, caller="test") is None

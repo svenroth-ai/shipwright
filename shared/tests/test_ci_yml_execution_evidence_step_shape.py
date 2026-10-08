@@ -13,6 +13,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -38,9 +39,11 @@ def _find(steps: list[dict], name: str) -> dict:
     raise AssertionError(f"no step named {name!r} in ci.yml python-checks job")
 
 
+@pytest.mark.covers("FR-01.17")
 def test_artifact_step_uses_upload_artifact_action():
+    # The action, not its major: Dependabot bumps the major, which must not break this.
     step = _find(_load_job()["steps"], _STEP_NAME)
-    assert step["uses"] == "actions/upload-artifact@v4"
+    assert step["uses"].startswith("actions/upload-artifact@")
 
 
 def test_artifact_step_name_matches_the_python_constant():

@@ -217,10 +217,14 @@ def main(argv: list[str] | None = None) -> int:
     resumed = published_resumed(run_dir)
     if resumed:
         resumed = with_unit_bases(run_dir, resumed)
-    prov = evidence_drop.stage_reports(
-        root, run_id=args.run_id, head_commit=args.head_commit, junit_reports=junit_reports,
-        provenance_extra={"resumed_local": resumed} if resumed else None,
-    )
+    try:
+        prov = evidence_drop.stage_reports(
+            root, run_id=args.run_id, head_commit=args.head_commit, junit_reports=junit_reports,
+            provenance_extra={"resumed_local": resumed} if resumed else None,
+        )
+    except evidence_drop.ReportsOlderThanCodeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return EXIT_ERROR
     print(json.dumps({
         "staged": len(prov.get("reports", {}).get("junit", [])),
         "run_id": prov.get("run_id"),

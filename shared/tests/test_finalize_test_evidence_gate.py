@@ -123,7 +123,7 @@ def test_finalize_docs_only_iterate_needs_no_evidence(project, monkeypatch):
 
     extras = {
         "intent": "change", "spec_impact": "none",
-        "spec_impact_justification": "no behavior change, references only",
+        "spec_impact_justification": "no behavior change, references only", "spec_impact_reason_code": "behavior-preserving",
         "affected_frs": ["FR-01.01"],
     }
     result = fi.run(project, run_id="test-evidence-docs-001", event_extras=extras)

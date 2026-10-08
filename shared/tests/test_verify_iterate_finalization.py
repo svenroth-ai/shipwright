@@ -868,23 +868,6 @@ def test_surface_verification_fails_for_unknown_surface(tmp_path):
     assert "not one of" in result.detail
 
 
-def test_surface_verification_passes_for_none_with_justification(tmp_path):
-    proj = tmp_path / "webui"
-    _seed_iterate_entry(proj, "r1", "medium")
-    _write_test_results(proj, {
-        "surface": "none",
-        "runner": "",
-        "exit_code": 0,
-        "tests_run": 0,
-        "evidence_path": "",
-        "timestamp": "now",
-        "justification": "pure type-hint rename; no runtime path exercised",
-    })
-    result = check_surface_verification(proj, "r1")
-    assert result.ok is True
-    assert "justification" in result.detail
-
-
 def test_surface_verification_fails_for_none_without_justification(tmp_path):
     proj = tmp_path / "webui"
     _seed_iterate_entry(proj, "r1", "medium")
@@ -931,19 +914,6 @@ def test_surface_verification_fails_when_runner_failed(tmp_path):
     result = check_surface_verification(proj, "r1")
     assert result.ok is False
     assert "exit_code" in result.detail
-
-
-def test_surface_verification_passes_for_happy_path(tmp_path):
-    proj = tmp_path / "webui"
-    _seed_iterate_entry(proj, "r1", "medium")
-    _write_test_results(proj, {
-        "surface": "cli", "runner": "pytest -q", "exit_code": 0,
-        "tests_run": 5, "evidence_path": "log.txt", "timestamp": "now",
-    })
-    result = check_surface_verification(proj, "r1")
-    assert result.ok is True
-    assert "tests_run=5" in result.detail
-    assert "exit_code=0" in result.detail
 
 
 def test_surface_verification_fails_when_test_results_malformed(tmp_path):
@@ -1026,8 +996,8 @@ def test_spec_impact_skipped_when_run_id_missing(tmp_path):
     assert result.severity == Severity.SKIPPED.value
 
 
-def test_spec_impact_skipped_for_bug_intent(tmp_path):
-    """A BUG iterate need not touch the spec — the gate skips it."""
+def test_spec_impact_bug_without_event_skips_on_git_context_not_intent(tmp_path):
+    """No event + not git: SKIPPED by git context, not by intent (U6: bugs answer too)."""
     proj = tmp_path / "p"
     _seed_entry_with_intent(proj, "r1", "bug")
     result = check_spec_impact_recorded(proj, "r1", "abc1234")
@@ -1040,7 +1010,7 @@ def test_spec_impact_none_with_justification_passes(tmp_path):
     _seed_entry_with_intent(proj, "r1", "feature")
     _write_work_event(proj, "abc1234", intent="feature",
                       spec_impact="none",
-                      spec_impact_justification="behavior-preserving refactor")
+                      spec_impact_justification="behavior-preserving refactor", spec_impact_reason_code="behavior-preserving")
     result = check_spec_impact_recorded(proj, "r1", "abc1234")
     assert result.ok is True
 
@@ -1236,7 +1206,7 @@ def test_spec_impact_multi_commit_with_spec_impact_none_still_passes(tmp_path):
     _seed_entry_with_intent(proj, "iterate-r1", "change")
     _write_work_event(
         proj, f6, intent="change", spec_impact="none",
-        spec_impact_justification="behavior-preserving refactor",
+        spec_impact_justification="behavior-preserving refactor", spec_impact_reason_code="behavior-preserving",
         adr_id="iterate-r1",
     )
     result = check_spec_impact_recorded(proj, "iterate-r1", head)

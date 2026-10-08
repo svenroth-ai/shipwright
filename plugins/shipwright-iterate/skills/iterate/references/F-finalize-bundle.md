@@ -80,7 +80,8 @@ none — no precedence ambiguity). It is the iterate **worktree** root.
   `--event-extras-json`. The **ADR-059 FR-gate still applies**: behavior-affecting
   changes (`spec_impact` add/modify/remove) must be FR-linked (`affected_frs`/
   `new_frs`); behavior-preserving (`spec_impact: none`) uses the No-FR branch
-  (`change_type` ∈ docs/tooling/compliance/infra + `none_reason`). **FR-linked
+  (`change_type` ∈ docs/tooling/compliance/infra + `none_reason`, checked against
+  the diff, plus `spec_impact_reason_code`; F5b.md). **FR-linked
   + behavior-affecting also needs test evidence**
   (iterate-2026-08-16-fr-gate-test-evidence) — `tests.total > 0`, normally
   folded in automatically from this run's F5 ledger, or `no_tests_reason` when

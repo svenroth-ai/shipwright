@@ -26,6 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 # Resolve the verifier path relative to this test file. The script is at
 # shared/scripts/tools/verify_iterate_finalization.py, two levels up.
@@ -163,31 +165,29 @@ def _reds(code: int, output: str) -> list[str]:
     return [f for f in fails if "test tag binding" not in f]
 
 
-# ---------------------------------------------------------------------------
-# Happy paths — no red but the tag gate's non-git STOP
-# ---------------------------------------------------------------------------
+# --- Happy path (exit 0) and the two claims the F0.5 audit now refuses (exit 1) ---
 
 
-def test_cli_passes_with_valid_surface_block(tmp_path):
+@pytest.mark.covers("FR-01.11/AC07")  # the CLI refuses a block no staged evidence backs
+def test_cli_fails_a_valid_looking_block_no_staged_evidence_backs(tmp_path):
     proj = tmp_path / "proj"
-    _seed(proj, "iterate-2026-05-06-cli-happy", surface_block={
+    _seed(proj, "iterate-2026-05-06-cli-unbacked", surface_block={
         "surface": "cli", "runner": "pytest", "exit_code": 0,
         "tests_run": 5, "evidence_path": "log.txt", "timestamp": "now",
     })
-    code, output = _run_verifier(proj, "iterate-2026-05-06-cli-happy")
-    assert _reds(code, output) == [], f"happy path must have no other red; output:\n{output}"
-    assert "F0.5 surface_verification" in output
+    code, output = _run_verifier(proj, "iterate-2026-05-06-cli-unbacked")
+    assert code == 1 and any("FAIL" in ln and ("absent" in ln or "stale" in ln) for ln in output.splitlines() if "F0.5 surface_verification" in ln), output
 
 
-def test_cli_passes_with_surface_none_and_justification(tmp_path):
+@pytest.mark.covers("FR-01.11/AC07")  # free text alone no longer answers surface=none
+def test_cli_fails_surface_none_with_only_a_free_text_justification(tmp_path):
     proj = tmp_path / "proj"
-    _seed(proj, "iterate-2026-05-06-none-ok", surface_block={
-        "surface": "none", "runner": "", "exit_code": 0,
-        "tests_run": 0, "evidence_path": "", "timestamp": "now",
-        "justification": "pure type-hint rename; no runtime path exercised",
+    _seed(proj, "iterate-2026-05-06-none-free-text", surface_block={
+        "surface": "none", "runner": "", "exit_code": 0, "tests_run": 0,
+        "evidence_path": "", "timestamp": "now", "justification": "pure type-hint rename",
     })
-    code, output = _run_verifier(proj, "iterate-2026-05-06-none-ok")
-    assert _reds(code, output) == [], output
+    code, output = _run_verifier(proj, "iterate-2026-05-06-none-free-text")
+    assert code == 1 and "reason_code" in output, output
 
 
 def test_cli_passes_at_trivial_complexity_skipping_audit(tmp_path):

@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-unpin-action-major-in-tests",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.557672+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.909656+00:00",
+      "disposition": "small test-only change: plan/architecture/external review are medium+ only; doubt-reviewer not triggered (no migrations, concurrency, cross-plugin imports or irreversible ops)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_codeql_config_query_filters.py",
+          "line": 139,
+          "finding": "A SHA-pinned or branch/suffixed ref makes int() raise ValueError instead of the assertion message; still fails, latent only (all current refs are vN tags).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_codeql_config_query_filters.py",
+          "line": 127,
+          "finding": "Test name says pin_v4 but now checks >= v4; kept to preserve the traceability test id.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.179082+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.909656+00:00",
+      "disposition": "small test-only change: plan/architecture/external review are medium+ only; doubt-reviewer not triggered (no migrations, concurrency, cross-plugin imports or irreversible ops)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.909656+00:00",
+      "disposition": "small test-only change: plan/architecture/external review are medium+ only; doubt-reviewer not triggered (no migrations, concurrency, cross-plugin imports or irreversible ops)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:17.951018+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.909656+00:00",
+      "disposition": "small test-only change: plan/architecture/external review are medium+ only; doubt-reviewer not triggered (no migrations, concurrency, cross-plugin imports or irreversible ops)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T19:28:18.909656+00:00",
+      "disposition": "small test-only change: plan/architecture/external review are medium+ only; doubt-reviewer not triggered (no migrations, concurrency, cross-plugin imports or irreversible ops)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

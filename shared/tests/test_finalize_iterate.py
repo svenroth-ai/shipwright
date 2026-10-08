@@ -231,7 +231,7 @@ def test_run_merges_event_extras_into_event(project, monkeypatch):
         "intent": "change",
         "description": "fix stale compliance MDs",
         "spec_impact": "none",
-        "spec_impact_justification": "Internal SDLC tooling change.",
+        "spec_impact_justification": "Internal SDLC tooling change.", "spec_impact_reason_code": "tooling-only",
         "change_type": "tooling",
         "none_reason": "Audit semantic shift — no FR touched.",
         "changed_files": ["audit_staleness.py", "finalize_iterate.py"],
@@ -357,7 +357,7 @@ def test_finalize_allows_event_with_change_type_pair(project, monkeypatch):
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
     fi = _import_finalize()
 
-    extras = {"intent": "change", "change_type": "tooling",
+    extras = {"intent": "change", "change_type": "tooling", "spec_impact": "none", "spec_impact_reason_code": "tooling-only",
               "none_reason": "internal tooling — no FR touched"}
     result = fi.run(project, run_id="test-gate-allow-002", event_extras=extras)
     assert result["steps"]["event"].get("id") is not None
@@ -390,7 +390,7 @@ def test_finalize_gate_preserves_idempotency_without_regating(project, monkeypat
     fi = _import_finalize()
 
     first = fi.run(project, run_id="test-gate-idem-001",
-                   event_extras={"intent": "change", "change_type": "tooling",
+                   event_extras={"intent": "change", "change_type": "tooling", "spec_impact": "none", "spec_impact_reason_code": "tooling-only",
                                  "none_reason": "first valid call"})
     event_id = first["steps"]["event"]["id"]
 

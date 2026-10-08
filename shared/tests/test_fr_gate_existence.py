@@ -168,11 +168,11 @@ class TestExistenceGate:
         assert _fr_existence_gate_error(
             self._event(affected_frs=["FR-99.99"]), frozenset(), specs_found=False) is None
 
-    def test_zero_parsed_requirements_does_not_block(self):
-        # The dangerous "blind scanner" case: specs exist but parse to nothing.
-        # It must not pass silently — the caller warns — but it must not block.
+    def test_zero_parsed_requirements_blocks_a_declared_id(self):
+        # The "blind scanner" case: specs exist but parse to nothing. U6: fail
+        # CLOSED for a declared id - it cannot be verified (FR-01.11/AC03).
         assert _fr_existence_gate_error(
-            self._event(affected_frs=["FR-99.99"]), frozenset(), specs_found=True) is None
+            self._event(affected_frs=["FR-99.99"]), frozenset(), specs_found=True)["error"] == "fr_gate_specs_unparsed"
 
 
 class TestCollectorDistinguishesTheThreeCases:
@@ -262,7 +262,7 @@ class TestWiringActuallyEnforces:
         # actually wired, not just present in the `or` chain unreachably.
         from lib.fr_gates import run_fr_gates
         root = _make_project(tmp_path)
-        event = self._iterate_event(spec_impact="none", affected_frs=["FR-99.99"])
+        event = self._iterate_event(spec_impact="none", affected_frs=["FR-99.99"], none_reason="x", spec_impact_reason_code="docs-only")
         err = run_fr_gates(event, root, "test")
         assert err is not None and err["error"] == "fr_gate_unknown_fr"
 

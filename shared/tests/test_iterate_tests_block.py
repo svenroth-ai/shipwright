@@ -271,7 +271,7 @@ class TestFinalizeIterateWiring:
                          "skipped": 0},
         ))
         event = self._finalize(
-            tmp_path, {"spec_impact": "none", "change_type": "tooling",
+            tmp_path, {"spec_impact": "none", "change_type": "tooling", "spec_impact_reason_code": "tooling-only",
                        "none_reason": "wiring probe"})
         assert event["tests"] == {
             "passed": 6857, "total": 6876, "skipped": 19, "e2e_run": False}
@@ -281,7 +281,7 @@ class TestFinalizeIterateWiring:
             unit={"status": "passed", "passed": 10, "total": 10, "skipped": 0},
         ))
         event = self._finalize(
-            tmp_path, {"spec_impact": "none", "change_type": "tooling",
+            tmp_path, {"spec_impact": "none", "change_type": "tooling", "spec_impact_reason_code": "tooling-only",
                        "none_reason": "wiring probe",
                        "tests": {"passed": 3, "total": 3}})
         assert event["tests"] == {"passed": 3, "total": 3}
@@ -295,6 +295,6 @@ class TestFinalizeIterateWiring:
             unit={"status": "passed", "passed": 999, "total": 999, "skipped": 0},
         ))
         event = self._finalize(
-            tmp_path, {"spec_impact": "none", "change_type": "tooling",
+            tmp_path, {"spec_impact": "none", "change_type": "tooling", "spec_impact_reason_code": "tooling-only",
                        "none_reason": "wiring probe"})
         assert "tests" not in event
