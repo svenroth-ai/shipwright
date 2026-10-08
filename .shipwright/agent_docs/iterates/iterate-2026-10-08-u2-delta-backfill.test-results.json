@@ -1,0 +1,51 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-u2-delta-backfill",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "not_run"
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "Measurement-only unit: no code, test or spec file changed (two deterministic engines wrote 0 tags); nothing testable was added. The mirrored merge gates ran green via scripts/verify_local.py."
+    },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "No runnable surface touched: the diff is an evidence document, a triage card and review records.",
+      "runner": "none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md",
+      "timestamp": "2026-10-08T00:00:00Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-u2-delta-backfill",
+    "commit": "1b3204b212b109b36ea0d63efad306195c788572",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

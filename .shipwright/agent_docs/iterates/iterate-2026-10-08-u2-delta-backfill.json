@@ -1,0 +1,25 @@
+{
+  "run_id": "iterate-2026-10-08-u2-delta-backfill",
+  "date": "2026-10-07T22:52:30.094937Z",
+  "event_at": "2026-10-07T21:04:01.510200+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U2",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-10-07-finalization-claims-hardening/sub-iterates/U2-delta-backfill.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u2-delta-backfill",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "Measurement-only unit: no code, test or spec file changed (two deterministic engines wrote 0 tags); nothing testable was added. The mirrored merge gates ran green via scripts/verify_local.py."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "No runnable surface touched: the diff is an evidence document, a triage card and review records.",
+    "runner": "none",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": ".shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md",
+    "timestamp": "2026-10-08T00:00:00Z"
+  }
+}

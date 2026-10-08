@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u2-delta-backfill",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T22:51:32.731447+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 3 asserts \"both engines yield zero, so no test file is edited.\" Zero output from the dry-run must be distinguished from an engine that failed to run (env issue, missing archive, wrong base ref, silently swallowed error). The entire plan collapses to \"do nothing\" if the zero is spurious, and the 1,440-test triage card would then be built on a broken measurement.",
+          "suggestion": "Sanity-check the zero before committing to it: confirm the dry-run report lists some delta candidates (even unmapped ones), cross-check the per-root count against the step-1 measurement, and record the dry-run's raw output in the PR body so a reviewer can see the engines actually processed the delta.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The brief's acceptance for \"manifest regenerates clean\" is `_layer_coverage_regen` on HEAD exiting 0 with `invalid_tags: 0`. The mini-plan's step 5 substitutes \"collector on HEAD gives invalid_tags 0\" — the collector check is only half of the contract and does not verify regen idempotence.",
+          "suggestion": "Run `_layer_coverage_regen` on HEAD and require both exit 0 and `invalid_tags: 0`, exactly as specified.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The brief (unit item 1) requires the measurement to be recorded in the PR body; the mini-plan commits a measurement doc instead. Both may be acceptable, but the stated AC is the PR body — a doc alone doesn't satisfy it.",
+          "suggestion": "Record the numbers in the PR body as the AC requires; the committed doc is optional extra.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The brief's item 2 explicitly requires planning for files at the bloat cap (same-line tags or one exception ADR) before writing, citing three files by name. The mini-plan skips this entirely on the assumption that no tags will be written. If the dry-run zero turns out to be wrong (see first finding), the plan has no fallback for the bloat-cap constraint, and iterating under pressure is exactly when cap violations get smuggled in.",
+          "suggestion": "Keep the bloat-cap decision (same-line tags vs. ADR list) documented in the plan as a contingency, even if unused.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 2 introduces `backfill_ac_provenance` (dry then `--write`), which is not part of the brief's unit text. Since step 3 claims no test files are edited, the `--write` pass may be a no-op — or it may write files outside the \"no file edited\" claim, contradicting the PR body.",
+          "suggestion": "Either drop the `--write` pass (dry-run only, given zero tags are expected) or explicitly account for whatever it writes in step 3's \"no file edited\" statement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The delta measurement (step 1) depends on \"tests added since 2026-09-16\" being determinable per pytest root, including tests moved or renamed between base and HEAD. Renames can inflate or deflate the delta count and thus the 1,440 figure on the triage card.",
+          "suggestion": "Note in the measurement doc whether the comparison is add-only or rename-aware, so the triage card's number is auditable later.  No security concerns specific to this change — it's read-heavy tooling with no new inputs or exposure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Step 5 substitutes a collector result for the explicitly required `_layer_coverage_regen` run. `invalid_tags: 0` alone does not establish that manifest regeneration succeeds.",
+          "suggestion": "Run `_layer_coverage_regen` on the final HEAD and record both exit code 0 and `invalid_tags: 0`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits the campaign’s required pre-push verification and does not explicitly enforce one pytest root per process.",
+          "suggestion": "Collect each root in a separate process and run `uv run scripts/verify_local.py` after the final changes, before pushing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The measurement method leaves the baseline revision and counting unit unspecified. A base-versus-HEAD comparison can count renamed tests as additions, while parametrized collection can inflate “tests” into multiple cases. Committing a measurement document also does not explicitly satisfy the PR-body requirement.",
+          "suggestion": "Record baseline and HEAD SHAs, define whether counts represent test definitions or collected cases, reconcile renames, and put the per-root untagged delta counts in the PR body. Ensure the 1,440 triaged tests reconcile to that delta.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Step 2 schedules `backfill_ac_provenance --write` before establishing that both engines yield zero candidates. The plan also omits review of the required bloat-cap report.",
+          "suggestion": "Inspect both dry-run reports first, including files at their caps. If there are zero eligible candidates, skip the write invocation; otherwise, plan same-line tags or the single exception ADR before writing and inspect the resulting diff.  The conservative tagging approach and single triage card are sound, with little application regression risk if no test files change. Revise the measurement evidence and validation steps before treating U2 as complete; no specific security concern is apparent from the supplied plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-07T22:47:43.270462+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: high**\n**Finding:** Step 3 asserts \"both engines yield zero, so no test file is edited.\" Zero output from the dry-run must be distinguished from an engine that failed to run (env issue, missing archive, wrong base ref, silently swallowed error). The entire plan collapses to \"do nothing\" if the zero is spurious, and the 1,440-test triage card would then be built on a broken measurement.\n**Suggestion:** Sanity-check the zero before committing to it: confirm the dry-run report lists *some* delta candidates (even unmapped ones), cross-check the per-root count against the step-1 measurement, and record the dry-run's raw output in the PR body so a reviewer can see the engines actually processed the delta.\n\n**Category: approach — Severity: medium**\n**Finding:** The brief's acceptance for \"manifest regenerates clean\" is `_layer_coverage_regen` on HEAD exiting 0 with `invalid_tags: 0`. The mini-plan's step 5 substitutes \"collector on HEAD gives invalid_tags 0\" — the collector check is only half of the contract and does not verify regen idempotence.\n**Suggestion:** Run `_layer_coverage_regen` on HEAD and require both exit 0 and `invalid_tags: 0`, exactly as specified.\n\n**Category: approach — Severity: medium**\n**Finding:** The brief (unit item 1) requires the measurement to be recorded **in the PR body**; the mini-plan commits a measurement doc instead. Both may be acceptable, but the stated AC is the PR body — a doc alone doesn't satisfy it.\n**Suggestion:** Record the numbers in the PR body as the AC requires; the committed doc is optional extra.\n\n**Category: approach — Severity: medium**\n**Finding:** The brief's item 2 explicitly requires planning for files at the bloat cap (same-line tags or one exception ADR) *before writing*, citing three files by name. The mini-plan skips this entirely on the assumption that no tags will be written. If the dry-run zero turns out to be wrong (see first finding), the plan has no fallb […truncated]\n\n[openai] Repository access was blocked by execution policy, so this review uses the supplied specification and mini-plan; the full authoritative brief could not be verified.\n\n1. **Category: approach · Severity: medium**\n   **Finding:** Step 5 substitutes a collector result for the explicitly required `_layer_coverage_regen` run. `invalid_tags: 0` alone does not establish that manifest regeneration succeeds.\n   **Suggestion:** Run `_layer_coverage_regen` on the final HEAD and record both exit code 0 and `invalid_tags: 0`.\n\n2. **Category: dependency · Severity: medium**\n   **Finding:** The plan omits the campaign’s required pre-push verification and does not explicitly enforce one pytest root per process.\n   **Suggestion:** Collect each root in a separate process and run `uv run scripts/verify_local.py` after the final changes, before pushing.\n\n3. **Category: edge-case · Severity: medium**\n   **Finding:** The measurement method leaves the baseline revision and counting unit unspecified. A base-versus-HEAD comparison can count renamed tests as additions, while parametrized collection can inflate “tests” into multiple cases. Committing a measurement document also does not explicitly satisfy the PR-body requirement.\n   **Suggestion:** Record baseline and HEAD SHAs, define whether counts represent test definitions or collected cases, reconcile renames, and put the per-root untagged delta counts in the PR body. Ensure the 1,440 triaged tests reconcile to that delta.\n\n4. **Category: risk · Severity: low**\n   **Finding:** Step 2 schedules `backfill_ac_provenance --write` before establishing that both engines yield zero candidates. The plan also omits review of the required bloat-cap report.\n   **Suggestion:** Inspect both dry-run reports first, including files at their caps. If there are zero eligible candidates, skip the write invocation; otherwise, plan same-line tags or the single exception ADR before writing and inspect the resulting diff.\n\nThe conservative tagging a […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "delta-measurement.md",
+          "line": null,
+          "finding": "AC4 regen evidence cites the branch base commit 1b3204b21; a promise to re-run on the final commit is not recorded as a result; regenerate_base_head has no exit code (returned without exception).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "decision-drops/iterate-2026-10-08-u2-delta-backfill_001.json",
+          "line": null,
+          "finding": "16,969-15,546=1,423 net growth vs 1,440 set-difference delta is unexplained (17 base-untagged ids tagged or removed).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "reviews.json",
+          "line": null,
+          "finding": "plan/external_code revise verdicts have no recorded disposition; mini-plan.md step 5 still names the superseded collector check.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "delta-measurement.md",
+          "line": null,
+          "finding": "AC1 per-root table must be in the PR body (done: PR #838 body updated by the orchestrator).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "delta-measurement.md",
+          "line": null,
+          "finding": "'absent from the baseline is under its cap' understates headroom risk once decorator lines are added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "risk_recheck.json",
+          "line": null,
+          "finding": "Records a pre-finalization snapshot (2 files, 203 loc, touches_auth) that does not match the final diff; harmless, escalation only goes up.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "iterates/iterate-2026-10-08-u2-delta-backfill.json",
+          "line": null,
+          "finding": "surface_verification.timestamp is a placeholder.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T05:18:27.808349+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T05:18:27.935120+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (docs/measurement only: no migrations, concurrency, cross-plugin imports or irreversible ops); Stage 2 passed at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": ".shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (\"Cross-check of the zero\" section, near end of file)",
+          "line": null,
+          "finding": "Internal contradiction. The engine-results section reports 14 proposals from `backfill_test_links --dry-run`, but the cross-check section asserts \"all 1,440 delta test ids appear in the dry-run report's `unmapped` list (0 in `proposals`, 0 missing)\". Those 14 proposals must map to some tests; either they are delta tests (then the cross-check is false and some delta tests did get proposals), or they are pre-existing tests (then the cross-check should say so explicitly. As written, the evidence used to justify \"0 auto-written is a real zero\" is self-contradictory — precisely the sanity check the plan review's high-severity finding demanded, and it fails its own audit.",
+          "suggestion": "Reconcile the 14 proposals against the delta ids; state explicitly that none of the 14 are delta tests (with ids), or correct the cross-check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (\"Manifest regenerates clean (step 4)\" section)",
+          "line": null,
+          "finding": "The unit's AC #4 defines \"manifest regenerates clean\" as `_layer_coverage_regen` run on HEAD exiting 0 with `invalid_tags: 0`. The doc claims only \"Collector run on HEAD exits 0 with invalid_tags: 0\" — the plan review flagged this exact substitution as medium severity, and the fix as-written still substitutes the collector for the regen run. This is the same half-measure the review rejected.",
+          "suggestion": "Run `_layer_coverage_regen` on HEAD and record its exit code and `invalid_tags` value verbatim, or state explicitly that the regen was run and its output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/triage.jsonl` (new entry `trg-067e08fa`) and delta-measurement.md generally",
+          "line": null,
+          "finding": "Unit item 1 requires the measurement recorded in the PR body; the diff only commits the measurement doc. The plan review flagged this (medium) and the mini-plan wasn't amended. The PR body isn't visible in this diff, so either the AC is unmet or it must be satisfied at PR-open time — worth confirming, since the committed doc alone doesn't satisfy the stated AC.",
+          "suggestion": "Ensure the per-root delta table (or its summary) is pasted into the PR body before opening; the committed doc is supplementary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": ".shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (delta table, shared/tests count 983)",
+          "line": null,
+          "finding": "The per-file table lists ~150 shared/tests files; a spot-check sum of listed shared/tests entries should equal 983. I did not find an explicit arithmetic reconciliation, and the doc itself admits renames inflate the count (\"upper bound\"). The triage card states \"1,440 tests\" flatly while the doc says it's an upper bound — the card may over-commit the number.",
+          "suggestion": "State in the triage card that 1,440 is an upper bound including renames, or reconcile renames before committing the number.  No correctness issues in the JSON artifacts; the triage JSONL entries are well-formed and the per-root table sums to 1,440 exactly.  Overall assessment: ship-with-fixes — the approach (conservative zero-write + one triage card) is sound, but the evidence doc contains a genuine self-contradiction in its zero-verification cross-check, and AC items 1 and 4 are only partially satisfied as recorded.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line — `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md",
+          "line": 37,
+          "finding": "Step 4 reports a collector run, with the measurement method identifying `_layer_coverage_regen._build`. Calling the collector does not establish that the required `_layer_coverage_regen` regeneration succeeds; failures in the regeneration path remain unchecked.",
+          "suggestion": "Run `_layer_coverage_regen` on final HEAD and record its exit code and `invalid_tags` count. Require exit 0 and `invalid_tags: 0` before marking this criterion complete.  Ship-with-fixes: the conservative zero-tag outcome and single delta triage card fit the specification, but regeneration validation remains incomplete. Repository access was blocked, so this review relies on the supplied diff and specification; the authoritative brief and PR-body evidence could not be verified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-07T22:51:28.203642+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] This diff is docs/metadata-only (planning docs, review JSON, triage entries) — no executable code, no tests, so no security, test-quality, or regression surface. The review focus shifts to spec compliance and internal consistency of the evidence.\n\n**Findings**\n\n- Category: bug — Severity: medium\n  File: `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (\"Cross-check of the zero\" section, near end of file)\n  Finding: Internal contradiction. The engine-results section reports **14 proposals** from `backfill_test_links --dry-run`, but the cross-check section asserts \"all 1,440 delta test ids appear in the dry-run report's `unmapped` list (**0 in `proposals`**, 0 missing)\". Those 14 proposals must map to *some* tests; either they are delta tests (then the cross-check is false and some delta tests did get proposals), or they are pre-existing tests (then the cross-check should say so explicitly. As written, the evidence used to justify \"0 auto-written is a real zero\" is self-contradictory — precisely the sanity check the plan review's high-severity finding demanded, and it fails its own audit.\n  Suggestion: Reconcile the 14 proposals against the delta ids; state explicitly that none of the 14 are delta tests (with ids), or correct the cross-check.\n\n- Category: spec — Severity: medium\n  File: `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md` (\"Manifest regenerates clean (step 4)\" section)\n  Finding: The unit's AC #4 defines \"manifest regenerates clean\" as `_layer_coverage_regen` run on HEAD exiting 0 with `invalid_tags: 0`. The doc claims only \"Collector run on HEAD exits 0 with invalid_tags: 0\" — the plan review flagged this exact substitution as medium severity, and the fix as-written still substitutes the collector for the regen run. This is the same half-measure the review rejected.\n  Suggestion: Run `_layer_coverage_regen` on HEAD and record its exit code and `invalid_tags` valu […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File:line — `.shipwright/planning/iterate/iterate-2026-10-08-u2-delta-backfill/delta-measurement.md:37`\n- Finding: Step 4 reports a collector run, with the measurement method identifying `_layer_coverage_regen._build`. Calling the collector does not establish that the required `_layer_coverage_regen` regeneration succeeds; failures in the regeneration path remain unchecked.\n- Suggestion: Run `_layer_coverage_regen` on final HEAD and record its exit code and `invalid_tags` count. Require exit 0 and `invalid_tags: 0` before marking this criterion complete.\n\nShip-with-fixes: the conservative zero-tag outcome and single delta triage card fit the specification, but regeneration validation remains incomplete. Repository access was blocked, so this review relies on the supplied diff and specification; the authoritative brief and PR-body evidence could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T05:58:36.177021+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T22:47:43.405901+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T22:47:43.534598+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet — a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
