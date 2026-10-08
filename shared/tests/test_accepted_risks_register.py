@@ -16,6 +16,8 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -128,6 +130,10 @@ def test_absent_register_without_suppressions_is_still_clean(tmp_path):
     assert result["entries"] == []
 
 
+# The semgrep leg of the per-channel premise below is the policy TOGGLE: the
+# wholesale rule-exclusion channel is no longer set in security.yml
+# (dependabot-missing-cooldown was dropped when github-actions went live).
+@pytest.mark.covers("FR-01.07")
 def test_deleting_the_register_cannot_silence_this_repos_gate(tmp_path):
     """The sharpened form of the finding, over THIS repo's real inputs.
 
@@ -160,7 +166,7 @@ def test_deleting_the_register_cannot_silence_this_repos_gate(tmp_path):
     # the semgrep channels alone, so once the Trivy entries lapse this test
     # would keep passing while silently no longer exercising the Trivy leg it
     # was written for — the exact rot the expiry filter makes possible.
-    for channel in (ar.TARGET_TRIVY_IGNORE, ar.TARGET_SEMGREP_RULE):
+    for channel in (ar.TARGET_TRIVY_IGNORE, ar.TARGET_SEMGREP_TOGGLE):
         assert live.get(channel), (
             f"premise gone for {channel}: this repo no longer has a live "
             "suppression on that channel, so a deleted register has nothing to "
