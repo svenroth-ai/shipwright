@@ -17,9 +17,9 @@ Fail-closed conditions (mirror of SKILL.md F0.5):
    :mod:`._surface_detect`. A diff that cannot be measured cannot confirm
    ``none`` either, so it fails too.
 6. ``surface != "none"`` whose numbers the staged evidence does not back:
-   absent, another run's, staged at a revision the verified commit does not
-   descend from or that later code commits superseded, missing the surface's
-   own report kind, or
+   absent, another run's, staged over code the verified commit does not carry
+   (the branch's own later writes count, a trunk merge's hunks do not:
+   :mod:`._surface_revision`), missing the surface's own report kind, or
    disagreeing with ``tests_run`` / ``exit_code`` (:mod:`._surface_evidence`).
 7. ``surface`` other than ``web`` while the diff touches a UI file: a UI
    change is driven in a browser. (Other detected kinds only refuse ``none``;
@@ -70,18 +70,25 @@ def _verified_commit(project_root: Path, commit_hash: str) -> tuple[str, str | N
     return (out.strip(), None) if rc == 0 and out.strip() else ("", "HEAD is unresolvable")
 
 
-def _touched(project_root: Path, commit_hash: str) -> tuple[dict[str, list[str]], str, str | None]:
-    """``(surfaces touched, base, error)`` for the branch diff merge-base..verified commit."""
-    commit, err = _verified_commit(project_root, commit_hash)
-    measure = measure_diff(project_root, commit) if commit else None
-    if err or measure is None or measure.error:
-        why = err or (measure.error if measure else "no commit")
-        return {}, "", (f"the diff is unmeasurable ({why}), so F11 cannot re-derive which runnable "
-                        "surfaces changed. Make the trunk resolvable (`git fetch origin <trunk>`)")
+class _Diff:
+    """The branch diff merge-base..verified commit: surfaces touched, changed paths, full base sha."""
+
+    def __init__(self, touched: dict[str, list[str]] | None = None, paths: list[str] | None = None,
+                 base: str = "", error: str | None = None) -> None:
+        self.touched, self.paths, self.base, self.error = touched or {}, paths or [], base, error
+
+
+def _touched(project_root: Path, commit: str) -> _Diff:
+    """The branch diff for an already resolved ``commit`` (:func:`_verified_commit`)."""
+    measure = measure_diff(project_root, commit)
+    if measure.error:
+        return _Diff(error=(f"the diff is unmeasurable ({measure.error}), so F11 cannot re-derive "
+                            "which runnable surfaces changed. Make the trunk resolvable "
+                            "(`git fetch origin <trunk>`)"))
     texts = surface_texts(project_root, measure.base, commit, measure.paths)
     if texts is None:
-        return {}, "", "git could not produce the branch's changed lines and file contents"
-    return detect_surfaces(measure.paths, texts), measure.base, None
+        return _Diff(error="git could not produce the branch's changed lines and file contents")
+    return _Diff(detect_surfaces(measure.paths, texts), measure.paths, measure.base)
 
 
 def _resolve_block(project_root: Path, run_id: str, entry: dict) -> tuple[dict | None, str | None]:
@@ -115,17 +122,18 @@ def _check_none(project_root: Path, block: dict, commit_hash: str) -> CheckResul
     bad = reason_code_error(_FAMILY, code, where="surface_verification.reason_code")
     if bad:
         return CheckResult(CHECK_NAME, False, bad)
-    touched, base, why = _touched(project_root, commit_hash)
-    if why:
-        return CheckResult(CHECK_NAME, False, f"surface=none cannot be confirmed: {why}")
-    if touched:
-        named = "; ".join(f"{kind}: {', '.join(paths[:3])}" for kind, paths in touched.items())
+    commit, err = _verified_commit(project_root, commit_hash)
+    diff = _touched(project_root, commit) if not err else _Diff(error=err)
+    if diff.error:
+        return CheckResult(CHECK_NAME, False, f"surface=none cannot be confirmed: {diff.error}")
+    if diff.touched:
+        named = "; ".join(f"{kind}: {', '.join(paths[:3])}" for kind, paths in diff.touched.items())
         return CheckResult(CHECK_NAME, False,
                            f"surface=none ({code}) refused: the diff touches a runnable surface "
                            f"({named}). Drive it through F0.5 with --surface web|api|cli")
     return CheckResult(CHECK_NAME, True,
                        f"surface=none ({code}), justification recorded ({len(justification)} "
-                       f"chars), diff vs {base} touches no runnable surface")
+                       f"chars), diff vs {diff.base[:8]} touches no runnable surface")
 
 
 def check_surface_verification(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
@@ -159,14 +167,14 @@ def check_surface_verification(project_root: Path, run_id: str, commit_hash: str
     if err:
         return CheckResult(CHECK_NAME, False, f"surface={surface}, tests_run={tests_run}: stale: {err}, "
                            "so the staged evidence cannot be tied to the verified revision")
-    touched, _, why = _touched(project_root, commit)
-    if why:
-        return CheckResult(CHECK_NAME, False, f"surface={surface}, tests_run={tests_run}: {why}")
-    if "ui" in touched and surface != "web":
+    diff = _touched(project_root, commit)
+    if diff.error:
+        return CheckResult(CHECK_NAME, False, f"surface={surface}, tests_run={tests_run}: {diff.error}")
+    if "ui" in diff.touched and surface != "web":
         return CheckResult(CHECK_NAME, False,
-                           f"surface={surface}, but the diff touches UI ({', '.join(touched['ui'][:3])}): "
+                           f"surface={surface}, but the diff touches UI ({', '.join(diff.touched['ui'][:3])}): "
                            "a UI change is driven in a browser. Re-run F0.5 with --surface web")
-    bad, summary = evidence_problem(project_root, run_id, commit, block, touched)
+    bad, summary = evidence_problem(project_root, run_id, commit, block, diff.touched, diff.paths)
     if bad:
         return CheckResult(CHECK_NAME, False, f"surface={surface}, tests_run={tests_run}: {bad}")
     return CheckResult(CHECK_NAME, True, f"surface={surface}, tests_run={tests_run}, exit_code=0; {summary}")

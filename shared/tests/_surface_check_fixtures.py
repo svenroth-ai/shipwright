@@ -54,21 +54,56 @@ def playwright(titles: list[str], file: str = "e2e/board.spec.ts") -> dict:
 
 
 def stage(root: Path, *, run_id: str = RUN, head: str | None = None,
-          cases: dict[str, str] | None = None, pw: dict | None = None) -> None:
-    """Stage reports through the production emit-side; ``head`` defaults to the trunk tip."""
+          cases: dict[str, str] | None = None, pw: dict | None = None, base: str = "",
+          retry: dict[str, str] | None = None) -> None:
+    """Stage reports through the production emit-side; ``head`` defaults to the trunk tip.
+
+    ``base`` is the JUnit report's root (a plugin-located runner); ``retry`` stages a
+    second JUnit report after the first, as a later attempt of the same tests.
+    """
     reports = root.parent / "reports"
     reports.mkdir(exist_ok=True)
     junit_path = reports / "junit.xml"
     junit_path.write_text(junit(cases if cases is not None else
                                 {"tests.test_a::test_x": "pass", "tests.test_a::test_y": "pass"}),
                           encoding="utf-8")
+    junit_reports = [(base, junit_path)]
+    if retry is not None:
+        (reports / "junit-retry.xml").write_text(junit(retry), encoding="utf-8")
+        junit_reports.append((base, reports / "junit-retry.xml"))
     pw_path = None
     if pw is not None:
         pw_path = reports / "playwright.json"
         pw_path.write_text(json.dumps(pw), encoding="utf-8")
     evidence_drop.stage_reports(root, run_id=run_id,
                                 head_commit=head if head is not None else git(root, "rev-parse", "main"),
-                                junit_reports=[("", junit_path)], playwright=pw_path)
+                                junit_reports=junit_reports, playwright=pw_path)
+
+
+def commit(root: Path, rel: str, text: str, message: str, *, amend: bool = False) -> str:
+    """Write ``rel`` and commit it (or amend HEAD with it); the new HEAD sha."""
+    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    (root / rel).write_text(text, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", *(("--amend", "--no-edit") if amend else ("-m", message)))
+    return git(root, "rev-parse", "HEAD")
+
+
+def land_branch(root: Path) -> None:
+    """Fast-forward the trunk (``main`` + ``origin/main``) to the branch, so its files are trunk files."""
+    git(root, "checkout", "-q", "main")
+    git(root, "merge", "-q", "--ff-only", "iterate/probe")
+    git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    git(root, "checkout", "-q", "iterate/probe")
+
+
+def advance_trunk(root: Path, rel: str, text: str) -> str:
+    """Another unit lands on the trunk (``main`` + ``origin/main``); the branch is checked out again."""
+    git(root, "checkout", "-q", "main")
+    sha = commit(root, rel, text, "another unit merged")
+    git(root, "update-ref", "refs/remotes/origin/main", sha)
+    git(root, "checkout", "-q", "iterate/probe")
+    return sha
 
 
 def check(root: Path, commit: str = ""):

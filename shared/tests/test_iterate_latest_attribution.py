@@ -166,7 +166,7 @@ def test_the_f5c_entry_carries_the_run_past_a_rewound_snapshot(tmp_path):
     assert check_test_completeness_ledger(tmp_path, RUN).ok is True
     # this run's block is the one read (the evidence cross-check after it needs real git:
     # test_surface_check.py)
-    assert check_surface_verification(tmp_path, RUN).detail.startswith("surface=cli, tests_run=22: stale")
+    assert "tests_run=22: stale: " in (d := check_surface_verification(tmp_path, RUN).detail) and "not a readable git work tree" in d
 
 
 @pytest.mark.covers("FR-01.11/AC07")
@@ -176,7 +176,7 @@ def test_the_shared_file_still_works_when_it_names_this_run(tmp_path):
              test_completeness=_GOOD_LEDGER, surface_verification=_GOOD_SURFACE)
 
     assert check_test_completeness_ledger(tmp_path, RUN).ok is True
-    assert check_surface_verification(tmp_path, RUN).detail.startswith("surface=cli, tests_run=22: stale")
+    assert "tests_run=22: stale: " in (d := check_surface_verification(tmp_path, RUN).detail) and "not a readable git work tree" in d
 
 
 # --- AC-3: a missing F5c entry fails, it does not skip -----------------------

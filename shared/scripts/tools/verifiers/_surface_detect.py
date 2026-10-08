@@ -6,21 +6,33 @@ checked against the diff: a change that touches one of the four surface kinds
 below has something to drive, so ``none`` is refused.
 
 ``ui``                a frontend source file (the same rule Browser Verify uses,
-                      ``lib/detect_frontend_changes``)
+                      ``lib/detect_frontend_changes``) or a server-rendered
+                      template (``.astro``, ``.hbs``, ``.ejs``, ``.erb``, ``.jinja``)
 ``api_route``         a code file under a route / API / controller / handler
                       directory, or named ``route(s)`` / ``router`` / ``urls`` /
                       ``endpoints`` / ``controller(s)``, or whose changed lines
                       declare an HTTP handler (``@app.get(``, ``APIRouter(``,
-                      ``express.Router(``, ``@Get(`` ...)
+                      ``express.Router(``, ``@Get(``, Spring ``@GetMapping``,
+                      Go ``http.HandleFunc(`` / gin ``r.GET(``, ASP.NET
+                      ``[HttpGet]`` / ``app.MapGet(``, Flask ``add_url_rule(``,
+                      Starlette ``Route(``, ``BaseHTTPRequestHandler.do_GET``;
+                      HTTP verbs match in any case)
 ``realtime``          a code file whose name or directory says SSE, WebSocket or
                       socket, or whose changed lines open one (``new WebSocket(``,
                       ``EventSource(``, ``text/event-stream``, ``socket.io``)
 ``message_contract``  an over-the-wire schema (``.proto``, GraphQL, Avro,
-                      OpenAPI / AsyncAPI / Swagger) or a code file under a
-                      ``contracts/`` or ``messages/`` directory
+                      OpenAPI / AsyncAPI / Swagger), a TypeScript declaration
+                      file (``.d.ts``), or a code / ``.json`` / ``.yaml`` /
+                      ``.yml`` file under a ``contracts/``, ``messages/`` or
+                      ``schemas/`` directory
 
-Never a surface: tests and fixtures, prose (``.md``, ``.rst``, ``.txt``),
-``docs/``, ``.github/``, and the iterate's own finalization records.
+Never a surface: tests and fixtures, prose (``.md``, ``.rst``, ``.txt``)
+wherever it lives, and the iterate's own finalization records. ``docs/`` and
+``.github/`` are not skipped as a whole: code there goes through the rules.
+
+Not a kind, on purpose: a command-line interface. An ``argparse`` / ``click``
+change may still record ``none`` with ``no-behavior-change`` (an accepted
+limit, recorded in the U5 ADR).
 
 **Conservative on purpose.** A false positive costs one real F0.5 run (``cli``
 is always available); a false negative is the bypass this module exists to
@@ -50,8 +62,8 @@ __all__ = ["SURFACE_KINDS", "detect_surfaces", "is_test_or_prose", "is_test_path
 SURFACE_KINDS = ("ui", "api_route", "realtime", "message_contract")
 
 _TEST_SEGMENTS = frozenset({"tests", "test", "__tests__", "__mocks__", "fixtures", "e2e"})
-_PROSE_SUFFIXES = (".md", ".mdx", ".rst", ".txt")
-_SKIP_PREFIXES = ("docs/", ".github/")
+_PROSE_SUFFIXES = (".md", ".rst", ".txt")
+_TEMPLATE_SUFFIXES = (".astro", ".hbs", ".ejs", ".erb", ".jinja", ".jinja2")
 _CODE_SUFFIXES = (".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rb",
                   ".java", ".kt", ".rs", ".php", ".cs", ".vue", ".svelte")
 _ROUTE_SEGMENTS = frozenset({"routes", "route", "api", "controllers", "endpoints",
@@ -62,15 +74,23 @@ _REALTIME_TOKENS = frozenset({"sse", "websocket", "websockets", "ws", "socket", 
                               "socketio", "eventsource", "eventstream"})
 _CONTRACT_SUFFIXES = (".proto", ".graphql", ".gql", ".avsc")
 _CONTRACT_STEMS = ("openapi", "asyncapi", "swagger")
-_CONTRACT_SEGMENTS = frozenset({"contracts", "messages"})
+_CONTRACT_SEGMENTS = frozenset({"contracts", "messages", "schemas"})
+_DATA_SUFFIXES = (".json", ".yaml", ".yml")
 _TOKEN = re.compile(r"[a-z0-9]+")
+_VERB = r"(?i:get|post|put|patch|delete|head|options)"
 _CONTENT_SIGNALS = {
     "api_route": re.compile(
-        r"@\w+\.(?:route|get|post|put|patch|delete|websocket)\(|\bAPIRouter\(|\bBlueprint\("
-        r"|express\.Router\(|\b(?:app|router|server)\.(?:get|post|put|patch|delete)\(\s*['\"`]/"
-        r"|@(?:Get|Post|Put|Patch|Delete|Controller)\("),
+        rf"@\w+\.(?:(?i:route|websocket)|{_VERB})\(|\bAPIRouter\(|\bBlueprint\("
+        rf"|express\.Router\(|\b(?:app|router|server|api|group|mux|r|g|e|v\d+)\.(?:{_VERB}|(?i:handle|handlefunc|any))\(\s*['\"`]/"
+        r"|\b\w+\.(?:GET|POST|PUT|PATCH|DELETE)\(\s*['\"`]/"  # gin / echo groups; an HTTP client's `.get(` is not a route
+        r"|@(?:Get|Post|Put|Patch|Delete|Controller)\("
+        r"|@(?:Get|Post|Put|Patch|Delete|Request)Mapping\b"  # Spring
+        r"|\bhttp\.Handle(?:Func)?\("  # Go net/http
+        r"|\[Http(?:Get|Post|Put|Patch|Delete)\b|\.Map(?:Get|Post|Put|Patch|Delete)\("  # ASP.NET
+        r"|\.add_url_rule\(|\b(?:Route|WebSocketRoute)\("  # Flask, Starlette
+        rf"|\bBaseHTTPRequestHandler\b|\bdef do_{_VERB}\("),  # http.server
     "realtime": re.compile(r"new WebSocket(?:Server)?\(|\bEventSource\(|text/event-stream"
-                           r"|socket\.io|\bwebsockets?\.serve\("),
+                           r"|socket\.io|\bwebsockets?\.serve\(|\bWebSocketRoute\("),
 }
 
 
@@ -93,7 +113,7 @@ def is_test_path(path: str) -> bool:
 def is_test_or_prose(path: str) -> bool:
     """True for a path that can never be a runnable surface."""
     norm = _norm(path).lower()
-    if not norm or not is_counted_path(norm) or norm.startswith(_SKIP_PREFIXES):
+    if not norm or not is_counted_path(norm):
         return True
     return norm.endswith(_PROSE_SUFFIXES) or is_test_path(norm)
 
@@ -124,7 +144,7 @@ def _kinds_of(norm: str, changed: str) -> list[str]:
     tokens = set(_TOKEN.findall(stem))
     is_code = lower.endswith(_CODE_SUFFIXES)
     kinds = []
-    if _is_frontend_path(norm):
+    if _is_frontend_path(norm) or lower.endswith(_TEMPLATE_SUFFIXES):
         kinds.append("ui")
     if is_code and (_ROUTE_SEGMENTS.intersection(dirs) or _ROUTE_TOKENS & tokens
                     or _CONTENT_SIGNALS["api_route"].search(changed)):
@@ -132,8 +152,9 @@ def _kinds_of(norm: str, changed: str) -> list[str]:
     if is_code and (_REALTIME_TOKENS & tokens or _REALTIME_TOKENS.intersection(dirs)
                     or _CONTENT_SIGNALS["realtime"].search(changed)):
         kinds.append("realtime")
-    if (lower.endswith(_CONTRACT_SUFFIXES) or stem.startswith(_CONTRACT_STEMS)
-            or (is_code and _CONTRACT_SEGMENTS.intersection(dirs))):
+    in_contract_dir = bool(_CONTRACT_SEGMENTS.intersection(dirs))
+    if (lower.endswith(_CONTRACT_SUFFIXES) or stem.startswith(_CONTRACT_STEMS) or lower.endswith(".d.ts")
+            or (in_contract_dir and (is_code or lower.endswith(_DATA_SUFFIXES)))):
         kinds.append("message_contract")
     return kinds
 

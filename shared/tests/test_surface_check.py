@@ -2,7 +2,8 @@
 
 Every case runs against a real git repo and evidence staged by the production
 emit-side (``_surface_check_fixtures``). Detection rules in isolation live in
-``test_surface_detect.py``.
+``test_surface_detect.py``; freshness against trunk merges, consolidation,
+strays, retries and the staging guard in ``test_surface_freshness.py``.
 """
 
 from __future__ import annotations
@@ -124,6 +125,7 @@ def test_absent_evidence_fails(tmp_path):
     write_entry(root, cli_block())
     result = check(root, sha)
     assert result.is_failure and "absent" in result.detail and "stage_f0_evidence.py" in result.detail
+    assert "To repair, re-run this run's tests (F0" in result.detail, "the fix is a test run, not a bare re-stage"
 
 
 @pytest.mark.covers("FR-01.11/AC07")
@@ -133,21 +135,6 @@ def test_evidence_staged_for_another_run_is_stale(tmp_path):
     stage(root, run_id="iterate-2026-01-01-someone-else")
     result = check(root, sha)
     assert result.is_failure and "stale" in result.detail and "someone-else" in result.detail
-
-
-@pytest.mark.covers("FR-01.11/AC07")
-def test_evidence_staged_at_a_revision_off_the_verified_line_is_stale(tmp_path):
-    root, sha = make_repo(tmp_path, {**TEST_FILE})
-    git(root, "checkout", "-q", "-b", "elsewhere", "main")
-    (root / "other.txt").write_text("x\n", encoding="utf-8")
-    git(root, "add", "-A")
-    git(root, "commit", "-q", "-m", "elsewhere")
-    foreign = git(root, "rev-parse", "HEAD")
-    git(root, "checkout", "-q", "iterate/probe")
-    write_entry(root, cli_block())
-    stage(root, head=foreign)
-    result = check(root, sha)
-    assert result.is_failure and "not the verified commit" in result.detail
 
 
 def _commit(root, rel, text, message):

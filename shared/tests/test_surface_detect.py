@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from surface_verification import EXIT_NONE_WITHOUT_JUSTIFICATION, EXIT_OK, verify_surface
-from tools.verifiers._surface_detect import detect_surfaces, split_patch
+from tools.verifiers._surface_detect import detect_surfaces, is_test_or_prose, split_patch
 from tools.verifiers._surface_evidence import runner_test_paths
 
 
@@ -105,3 +105,61 @@ def test_producer_refuses_a_reason_code_outside_the_vocabulary(tmp_path):
                                  reason_code="because")
     assert code == EXIT_NONE_WITHOUT_JUSTIFICATION
     assert "surface_none" in block["error"] and "reason_code" not in block
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+@pytest.mark.parametrize(("line", "kind"), [
+    ("@GetMapping(\"/tasks\")", "api_route"),                      # Spring
+    ("@RequestMapping(value = \"/v1\")", "api_route"),
+    ("http.HandleFunc(\"/tasks\", tasks)", "api_route"),           # Go net/http
+    ("r.GET(\"/tasks\", list)", "api_route"),                      # gin, upper-case verb
+    ("router.Post('/tasks', create)", "api_route"),                # mixed-case verb
+    ("[HttpGet(\"{id}\")]", "api_route"),                          # ASP.NET attribute
+    ("app.MapGet(\"/tasks\", () => tasks);", "api_route"),         # ASP.NET minimal API
+    ("bp.add_url_rule('/tasks', view_func=tasks)", "api_route"),  # Flask
+    ("routes = [Route('/tasks', tasks)]", "api_route"),           # Starlette
+    ("class H(BaseHTTPRequestHandler):", "api_route"),            # http.server
+    ("    def do_GET(self):", "api_route"),
+    ("WebSocketRoute('/ws', hub)", "realtime"),
+])
+def test_framework_route_signals_are_detected(line, kind):
+    patch = "\n".join(["diff --git a/svc/main.x b/svc/main.x", "--- a/svc/main.x", "+++ b/svc/main.x",
+                       "@@ -1,0 +2 @@", f"+{line}"])
+    for path in ("svc/main.py", "svc/Main.java", "svc/main.go", "svc/Program.cs"):
+        changed = {path: split_patch(patch)["svc/main.x"]}
+        assert path in detect_surfaces([path], changed).get(kind, []), (line, path)
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+@pytest.mark.parametrize(("path", "kind"), [
+    ("shared/schemas/run_config.json", "message_contract"),
+    ("api/contracts/task.yaml", "message_contract"),
+    ("server/messages/events.yml", "message_contract"),
+    ("types/api.d.ts", "message_contract"),
+    ("views/board.hbs", "ui"),
+    ("src/pages/index.astro", "ui"),
+    ("app/views/tasks/index.html.erb", "ui"),
+    ("templates/base.jinja", "ui"),
+    ("docs/site/routes/api.py", "api_route"),  # code under docs/ is code
+])
+def test_contract_data_files_templates_and_code_under_docs_are_detected(path, kind):
+    assert path in detect_surfaces([path]).get(kind, [])
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_prose_anywhere_and_mdx_rules():
+    assert detect_surfaces(["docs/site/routes/api.md", "server/routes/notes.rst"]) == {}
+    assert is_test_or_prose("docs/guide.md") and not is_test_or_prose("docs/site/page.mdx")
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_runner_test_paths_understand_directories_and_absolute_paths(tmp_path):
+    (tmp_path / "plugins" / "p" / "tests").mkdir(parents=True)
+    (tmp_path / "plugins" / "p" / "tests" / "test_c.py").write_text("", encoding="utf-8")
+    want = ["plugins/p/tests/test_c.py"]
+    assert runner_test_paths(tmp_path, "cd plugins/p && uv run pytest tests/test_c.py -q") == want
+    assert runner_test_paths(tmp_path, "uv run --directory plugins/p pytest tests/test_c.py") == want
+    assert runner_test_paths(tmp_path, "uv run --project=plugins/p pytest tests/test_c.py") == want
+    assert runner_test_paths(tmp_path, f"uv run pytest {tmp_path.as_posix()}/plugins/p/tests/test_c.py") == want
+    assert runner_test_paths(tmp_path, "cd /elsewhere && uv run pytest plugins/p/tests/test_c.py") == []
+    assert runner_test_paths(tmp_path, "uv run pytest plugins/p/tests") == ["plugins/p/tests"]

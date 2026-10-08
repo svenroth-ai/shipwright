@@ -35,10 +35,12 @@ from pathlib import Path
 try:  # flat import off shared/scripts/lib on sys.path (tool + tests).
     from _evidence_drop_cli import missing_named_sources as _missing_named_sources
     from _evidence_drop_cli import parse_junit_args as _parse_junit_args
+    from _evidence_drop_guard import ReportsOlderThanCodeError, check_reports_newer_than_code
     from worktree_tree import working_tree_id
 except ImportError:  # loaded as a package (lib.evidence_drop).
     from ._evidence_drop_cli import missing_named_sources as _missing_named_sources  # type: ignore
     from ._evidence_drop_cli import parse_junit_args as _parse_junit_args  # type: ignore
+    from ._evidence_drop_guard import ReportsOlderThanCodeError, check_reports_newer_than_code  # type: ignore
     from .worktree_tree import working_tree_id  # type: ignore
 
 _EVIDENCE_DIR = (".shipwright", "compliance", "evidence")  # artifact-path-canon: legacy
@@ -121,7 +123,14 @@ def stage_reports(
 
     ``provenance_extra`` adds top-level keys to the sidecar (never ``run_id`` /
     ``head_commit`` / ``reports``) - how a RESUMED F0 run says it was resumed.
+
+    Raises :class:`ReportsOlderThanCodeError` (nothing cleared, nothing staged)
+    when a path the branch changed was modified after the oldest report was
+    written (``_evidence_drop_guard``): older reports never vouch for newer code.
     """
+    named = [Path(src) for _, src in junit_reports or []]
+    named += [Path(src) for src in (junit, playwright, vitest) if src is not None]
+    check_reports_newer_than_code(Path(project_root), named)
     d = evidence_dir(project_root)
     d.mkdir(parents=True, exist_ok=True)
     clear_evidence_reports(project_root)
@@ -258,15 +267,20 @@ def main(argv: list[str] | None = None) -> int:
         print("ERROR: stage aborted — a named source that does not exist is a typo, "
               "never a silent skip. Nothing was staged.", file=sys.stderr)
         return 1
-    prov = stage_reports(
-        root, run_id=args.run_id, head_commit=args.head_commit,
-        junit_reports=junit_reports, playwright=args.playwright, vitest=args.vitest,
-    )
+    try:
+        prov = stage_reports(
+            root, run_id=args.run_id, head_commit=args.head_commit,
+            junit_reports=junit_reports, playwright=args.playwright, vitest=args.vitest,
+        )
+    except ReportsOlderThanCodeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     print(json.dumps({"staged": sorted(prov.get("reports", {})), "run_id": prov.get("run_id")}))
     return 0
 
 
 __all__ = [
+    "ReportsOlderThanCodeError",
     "REPORT_NAMES",
     "JUNIT_GLOB",
     "evidence_dir",

@@ -34,13 +34,29 @@ record.
    - fewer tests passed than `tests_run`, or a path named in the runner has no passing result.
 5. Stale evidence (`_surface_revision.py`). Staging records `tested_tree`, the git
    tree id of the working tree at staging (`lib/worktree_tree.py`, built in a
-   temporary index). A path changed by the branch, after filtering, is stale when
-   its content in the verified commit differs from `tested_tree` and either:
-   - its tested content differs from the staged head; or
-   - a non-merge first-parent commit after the staged head touched it.
-
-   Trunk merges and finalization records do not count. Evidence with no fingerprint
-   is stale.
+   temporary index). The branch owns the paths the tested tree changed against the
+   staged head plus those its own first-parent non-merge commits after that head
+   touched. For each owned path P, `tested_tree:P` must equal `L(P):P`, where L(P)
+   is the newest of those commits that touched P (the staged head if none did).
+   F11 merges the trunk (`ensure_current`) before it verifies, so the verified
+   commit may hold a sibling's hunks in a file this branch also edited. Comparing
+   with the branch's own last write leaves those hunks out, whichever side of its
+   own commit the unit staged on. A later fix commit or an amend is that last write,
+   so it still differs. Not counted: tests and prose, finalization records, and a
+   path only the tested tree has (absent at the staged head and the commit, e.g. a
+   stray untracked file; named in the pass detail). When the staged head is not an
+   ancestor (a soft-reset consolidation), the tested tree must equal the commit on
+   every branch-changed path. Evidence with no fingerprint is stale.
+6. Reports older than the code (`lib/_evidence_drop_guard.py`). `evidence_drop.stage`
+   refuses, and stages nothing, when a branch-changed file was modified after the
+   oldest report being staged was written. The F11 repair text says to re-run the
+   tests and then stage; it no longer offers the bare stage command as the fix.
+7. Result scope (`_surface_runner.py`). When the runner names test paths (a `cd <dir>
+   &&` prefix, `--directory` / `--project <dir>` and absolute paths under the project
+   are understood), the count and the "no failing result" rule look only at results
+   under them, and a later staged report's verdict for a test id replaces an earlier
+   one (a staged retry). A runner that names no path is checked over the whole staged
+   suite, fail-closed, and the detail says so.
 
 ## Rejected
 
@@ -55,6 +71,27 @@ record.
   complexity; F11 is the gate.
 - Letting an unmeasurable diff pass a non-`none` surface. Kept fail-closed: the
   surface binding needs the diff.
+
+## Accepted limits
+
+- The threat model is an honest agent taking a shortcut, not forgery. The staging
+  directory is gitignored and unauthenticated, so anyone who can write files can
+  write a provenance sidecar that passes.
+- The fingerprint is taken at staging, not when the tests ran. Decision 6 bounds the
+  gap: reports older than a branch-changed file are refused at staging. A deletion
+  has no mtime and is not seen there.
+- A command-line interface is not a detected surface kind. An `argparse` / `click`
+  change can still record `none` with `no-behavior-change`.
+- Submodule content is seen only as its gitlink (the commit it points to), never as
+  the files inside it.
+- A conflict resolution inside a trunk-merge commit is not a branch write, so it does
+  not make evidence stale.
+
+## Sequencing (campaign)
+
+After U5 merges, any sibling unit that commits a code fix after staging must re-run
+F0 and stage again. Re-staging the old reports is refused (decision 6), and the old
+evidence reads stale at F11 (decision 5).
 
 ## Consequences
 
@@ -83,6 +120,15 @@ detected.
 
   Rejected, with the reasons above: the producer `--require-reason-code`, and letting
   an unmeasurable diff pass a non-`none` surface.
+- **PR review (#846), all accepted:**
+  - freshness against trunk merges (decision 5);
+  - re-staged old reports (decision 6);
+  - stray tested-only paths and soft-reset consolidation (decision 5);
+  - result scope, retries and runner directories (decision 7);
+  - wider detector signals: framework routes, `.d.ts`, contract data files, templates;
+  - `cat-file` parsing that never splits a path.
+
+  CLI detection was declined and recorded as an accepted limit.
 
 ## Confidence calibration
 

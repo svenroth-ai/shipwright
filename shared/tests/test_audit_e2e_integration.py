@@ -179,7 +179,7 @@ def test_cli_fails_a_valid_looking_block_no_staged_evidence_backs(tmp_path):
         "tests_run": 5, "evidence_path": "log.txt", "timestamp": "now",
     })
     code, output = _run_verifier(proj, "iterate-2026-05-06-cli-unbacked")
-    assert code == 1 and "F0.5 surface_verification" in output, output
+    assert code == 1 and any("FAIL" in ln and ("absent" in ln or "stale" in ln) for ln in output.splitlines() if "F0.5 surface_verification" in ln), output
 
 
 @pytest.mark.covers("FR-01.11/AC07")  # free text alone no longer answers surface=none

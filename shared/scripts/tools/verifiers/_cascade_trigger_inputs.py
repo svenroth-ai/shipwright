@@ -216,4 +216,4 @@ def measure_diff(project_root: Path, commit: str) -> DiffMeasure:
         paths, lines = numstat_changed_lines(out)
     except ValueError as exc:
         return DiffMeasure(error=str(exc))
-    return DiffMeasure(paths, lines, base=base[:8])
+    return DiffMeasure(paths, lines, base=base)
