@@ -6,9 +6,9 @@ Two jobs, both for a pass closed with ``reason_code: unavailable``:
    ``external_code``) must carry the adapter's captured error
    (``lib.review_unavailable``). When the record itself is committed, the
    evidence is read from THAT commit, byte for byte — a working-tree file that
-   never ships, or one that differs from what ships, proves nothing. There is no
-   gitignore exemption of its own: the artifact is required exactly where the
-   record is.
+   never ships, or one that differs from what ships, proves nothing; a symlink
+   is refused on both sides. There is no gitignore exemption of its own: the
+   artifact is required exactly where the record is.
 2. :func:`unavailable_note` — a passing check still names every ``unavailable``
    pass in its detail line, so F11's output says "the external review did not
    run" instead of a bare "every review pass is recorded".
@@ -18,10 +18,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lib.review_unavailable import artifact_problem, unavailable_adapter_rows, unavailable_rows
+from lib.review_unavailable import artifact_problem, unavailable_adapter_rows, unavailable_rows, worktree_reader
 
 from .common import CheckResult
-from .git_blob_read import GitReadError, committed_bytes_reader, worktree_bytes_reader
+from .git_blob_read import GitReadError, committed_bytes_reader
 from .git_helpers import _run_git
 from .review_record_floor import CHECK_NAME
 
@@ -42,8 +42,8 @@ def unavailable_evidence(
     if not rows:
         return None
     committed = bool(commit_hash) and _record_is_committed(project_root, run_id, commit_hash)
-    read = (committed_bytes_reader(project_root, commit_hash) if committed
-            else worktree_bytes_reader(project_root))
+    read = (committed_bytes_reader(project_root, commit_hash) if committed  # a symlink blob raises
+            else worktree_reader(project_root))
     where = f" in commit {commit_hash[:8]}" if committed else " in the working tree"
     problems: list[str] = []
     for review_type in rows:

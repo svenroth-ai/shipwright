@@ -9,7 +9,8 @@ Paths only, never artifact content (stderr can carry provider URLs).
 
 ``--file-triage`` (autonomous runs) also files ONE triage card per run asking
 for the review to be re-run, idempotent on the run id: a second call finds the
-open card instead of adding one, and the line ends ``; re-run card <id>``. File
+card instead of adding one, and the line ends ``; re-run card <id>`` (plus its
+status, e.g. ``(dismissed)``, when that card is no longer open). File
 it once, after the run's last external pass. A filing failure exits 1 and says
 so - "loud, not silent" must not degrade into a card nobody filed.
 
@@ -18,6 +19,9 @@ adapter-backed ``unavailable`` row has no valid capture (the line then says
 ``INVALID - ...`` and no card is filed), or when the card could not be filed - so
 a PR body never claims ``none`` for a broken record, nor files a card for a
 claim the F11 check would refuse.
+
+A ``WARN`` on stderr names any ``.stderr.txt`` capture that backs no
+``unavailable`` row: F6 stages the whole run dir, so delete it before commit.
 
 Not itself a gate: ``none`` means no row says ``unavailable``; F11's
 review-record check is what proves every pass answered. It reads the WORKING
@@ -38,8 +42,10 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.review_record import ReviewRecordError, read_record  # noqa: E402
 from lib.review_unavailable import (  # noqa: E402
     ADAPTER_REVIEW_TYPES,
+    artifact_paths,
     artifact_problem,
     unavailable_rows,
+    worktree_reader,
 )
 
 _SOURCE = "iterate"
@@ -51,11 +57,7 @@ def _dedup_key(run_id: str) -> str:
 
 def _evidence(root: Path, run_id: str, rows: list[str]) -> tuple[list[str], list[str]]:
     """``(capture paths, problems)`` for the adapter-backed rows among ``rows``."""
-    def read(rel: str) -> bytes | None:
-        try:
-            return (root / rel).read_bytes()
-        except OSError:
-            return None
+    read = worktree_reader(root)
     paths, problems = [], []
     for review_type in rows:
         if review_type in ADAPTER_REVIEW_TYPES:
@@ -67,6 +69,12 @@ def _evidence(root: Path, run_id: str, rows: list[str]) -> tuple[list[str], list
     return paths, problems
 
 
+def stray_stderr(root: Path, run_id: str, rows: list[str]) -> list[str]:
+    """``.stderr.txt`` captures on disk that back no ``unavailable`` row (F6 stages the run dir)."""
+    errs = (artifact_paths(run_id, t)[1] for t in ADAPTER_REVIEW_TYPES if t not in rows)
+    return [e for e in errs if (root / e).exists() or (root / e).is_symlink()]
+
+
 def summary_line(rows: list[str], paths: list[str]) -> str:
     if not rows:
         return "none"
@@ -75,7 +83,7 @@ def summary_line(rows: list[str], paths: list[str]) -> str:
 
 
 def file_card(root: Path, run_id: str, rows: list[str]) -> str:
-    """The id of the run's re-run card — new, or the open one already filed."""
+    """The id of the run's re-run card — new, or the one already filed (its status when not open)."""
     from triage import append_triage_item_idempotent, read_all_items, should_route_to_outbox
 
     item_id = append_triage_item_idempotent(
@@ -93,7 +101,8 @@ def file_card(root: Path, run_id: str, rows: list[str]) -> str:
         return item_id
     for item in read_all_items(root):
         if item.get("source") == _SOURCE and item.get("dedupKey") == _dedup_key(run_id):
-            return str(item.get("id"))
+            status = item.get("status")
+            return str(item.get("id")) + (f" ({status})" if status and status != "triage" else "")
     raise RuntimeError("the card was neither filed nor found")
 
 
@@ -116,6 +125,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INVALID - no review record for {args.run_id}")
         return 1
     rows = unavailable_rows(record)
+    for err in stray_stderr(root, args.run_id, rows):
+        print(f"WARN - {err} backs no unavailable row: delete it before commit (F6 stages the run dir)",
+              file=sys.stderr)
     paths, problems = _evidence(root, args.run_id, rows)
     if problems:
         print(f"INVALID - `unavailable` without a valid capture ({'; '.join(problems)}); no card filed")

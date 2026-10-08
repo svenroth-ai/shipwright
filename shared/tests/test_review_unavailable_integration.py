@@ -32,7 +32,7 @@ from triage import read_all_items  # noqa: E402
 
 NOTE = str(_SHARED / "scripts" / "tools" / "review_unavailable_note.py")
 SPEC_PASS = json.dumps({"stage": "spec", "verdict": "PASS", "spec_citations": []})
-ENVELOPE = json.dumps({"review_schema": 2, "success": False, "degraded": True,
+ENVELOPE = json.dumps({"review_schema": 2, "success": False, "degraded": True, "mode": "code",
                        "degraded_reason": "provider=openrouter but 0/2 reviews succeeded"})
 
 
@@ -42,7 +42,10 @@ def _ok(result: tuple[int, str]) -> None:
 
 @pytest.mark.covers("FR-01.11")
 def test_campaign_runner_with_an_unavailable_external_review_finishes_loudly(tmp_path):
-    project = make_project(tmp_path)  # complexity medium
+    project = make_project(tmp_path)  # complexity medium; the entry is re-pointed at a campaign branch
+    entry_path = project / ".shipwright" / "agent_docs" / "iterates" / f"{RUN_ID}.json"
+    entry = json.loads(entry_path.read_text(encoding="utf-8"))
+    entry_path.write_text(json.dumps({**entry, "branch": "iterate/campaign-c--U1"}), encoding="utf-8")
     raw = project / artifact_paths(RUN_ID, "external_code")[0]
     raw.parent.mkdir(parents=True, exist_ok=True)
     raw.write_text(ENVELOPE, encoding="utf-8")  # what `> external-code-review-raw.json` captured

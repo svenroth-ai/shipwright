@@ -25,9 +25,11 @@ from tools.verifiers.review_record_check import check_review_record  # noqa: E40
 
 RUN = "iterate-2026-10-08-unavailable"
 WHY = "the phase matrix does not run this pass at this complexity"
-FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered"})
-DEGRADED = json.dumps({"review_schema": 2, "success": False, "degraded": True, "reviews": {}})
-SUCCEEDED = json.dumps({"review_schema": 2, "success": True, "degraded": False, "reviews": {}})
+FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered", "mode": "code"})
+DEGRADED = json.dumps({"review_schema": 2, "success": False, "degraded": True, "mode": "code",
+                       "degraded_reason": "provider=openrouter but 0/2 reviews succeeded", "reviews": {}})
+SUCCEEDED = json.dumps({"review_schema": 2, "success": True, "degraded": False, "mode": "code", "reviews": {}})
+CAMPAIGN_BRANCH = "iterate/campaign-2026-10-07-finalization-claims-hardening--U10"
 
 
 def _reader(files: dict[str, str | bytes]):
@@ -48,7 +50,7 @@ def _capture(raw: str | bytes | None = None, err: str | bytes | None = None,
     (FAILED, None, True),                    # the adapter's own failure envelope
     (DEGRADED, None, True),                  # keys present, no reviewer answered
     ("", "error: Failed to spawn: uv", True),  # `uv run` died before any JSON
-    (None, "Traceback (most recent call last)", True),
+    (None, "Traceback (most recent call last)", False),  # stderr counts only beside an existing raw file
     (SUCCEEDED, "warning: slow provider", False),  # the review DID run: stderr cannot rescue the claim
     ("calling provider...", None, False),    # stray non-JSON stdout alone proves nothing
     ("", "   \n", False),                    # whitespace is not a capture
@@ -66,18 +68,11 @@ def test_the_capture_decides_whether_unavailable_is_backed(raw, err, ok):
     assert (problem is None) is ok, problem
 
 
-@pytest.mark.covers("FR-01.11")
-def test_a_retry_that_succeeded_overwrites_the_failure_and_refuses_the_claim():
-    """Both redirects truncate per call, so the artifact speaks for the LAST attempt."""
-    problem, path = artifact_problem(RUN, "plan", _reader(_capture(SUCCEEDED, "", "plan")))
-    assert problem and "not a failure envelope" in problem and path.endswith("external-plan-review-raw.json")
-
-
-def _project(tmp_path: Path, complexity: str = "small") -> Path:
+def _project(tmp_path: Path, complexity: str = "small", branch: str = "iterate/x", spec: str | None = None) -> Path:
     d = tmp_path / ".shipwright" / "agent_docs" / "iterates"
-    d.mkdir(parents=True)
+    d.mkdir(parents=True, exist_ok=True)
     (d / f"{RUN}.json").write_text(json.dumps({
-        "run_id": RUN, "type": "change", "complexity": complexity, "branch": "iterate/x",
+        "run_id": RUN, "type": "change", "complexity": complexity, "branch": branch, "spec": spec,
         "tests_passed": True, "date": "2026-10-08T00:00:00+00:00"}), encoding="utf-8")
     return tmp_path
 
@@ -116,7 +111,7 @@ def test_gate_refuses_an_external_pass_closed_unavailable_without_a_capture(tmp_
 def test_gate_accepts_a_captured_failure_and_still_says_the_review_did_not_run(tmp_path):
     root = _project(tmp_path)
     _record(root, {"external_code": "unavailable", "plan": "unavailable"})
-    _write(root, {**_capture(FAILED), **_capture(None, "uv: command failed", "plan")})
+    _write(root, {**_capture(FAILED), **_capture("", "uv: command failed", "plan")})
     result = check_review_record(root, RUN)
     assert result.ok is True, result.detail
     assert "did NOT run (unavailable): plan, external_code" in result.detail
@@ -141,21 +136,50 @@ def test_gate_refuses_a_bare_not_run_on_the_external_pass(tmp_path):
 
 
 @pytest.mark.covers("FR-01.11")
+def test_a_retry_that_succeeded_overwrites_the_failure_and_refuses_the_claim(tmp_path):
+    """Both redirects truncate per call, so the artifact speaks for the LAST attempt."""
+    root = _project(tmp_path)
+    _record(root, {"external_code": "unavailable"})
+    _write(root, _capture(FAILED))
+    assert check_review_record(root, RUN).ok is True
+    _write(root, _capture(SUCCEEDED))  # the retry's `>` truncated the failure away
+    result = check_review_record(root, RUN)
+    assert result.ok is False and "not a failure envelope" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
 @pytest.mark.parametrize(("code", "ok"), [
     ("delegated-to-orchestrator", True),   # campaign runner: 3f-bis promotes `code` before any merge
     ("user-opt-out", False),               # nobody will run it: the medium floor still refuses
 ])
 def test_medium_floor_waits_for_the_delegated_cascade_only_when_external_was_unavailable(tmp_path, code, ok):
-    root = _project(tmp_path, "medium")
+    root = _project(tmp_path, "medium", branch=CAMPAIGN_BRANCH)
     _record(root, {"external_code": "unavailable", "code": code})
     _write(root, _capture(FAILED))
     result = check_review_record(root, RUN)
     assert result.ok is ok, result.detail
+    assert ok or "no code review ran" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize(("branch", "spec", "ok"), [
+    ("iterate/some-feature", None, False),  # not a campaign: nobody runs 3f-bis, the floor fails
+    ("iterate/campaign-runner-architecture-review", None, False),  # campaign-ish name, no `--U<n>`
+    ("iterate/x", ".shipwright/planning/iterate/campaigns/c/sub-iterates/U2-x.md", True),
+    (CAMPAIGN_BRANCH, None, True),
+])
+def test_floor_relaxation_needs_campaign_evidence_on_the_entry(tmp_path, branch, spec, ok):
+    root = _project(tmp_path, "medium", branch=branch, spec=spec)
+    _record(root, {"external_code": "unavailable", "code": "delegated-to-orchestrator"})
+    _write(root, _capture(FAILED))
+    result = check_review_record(root, RUN)
+    assert result.ok is ok, result.detail
+    assert ok or "no code review ran" in result.detail
 
 
 @pytest.mark.covers("FR-01.11")
 def test_medium_floor_still_refuses_delegated_code_when_external_was_merely_skipped(tmp_path):
-    root = _project(tmp_path, "medium")
+    root = _project(tmp_path, "medium", branch=CAMPAIGN_BRANCH)
     _record(root, {"external_code": "missing-keys", "code": "delegated-to-orchestrator"})
     result = check_review_record(root, RUN)
     assert result.ok is False and "no code review ran" in result.detail

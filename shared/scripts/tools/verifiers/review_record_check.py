@@ -157,7 +157,7 @@ def check_review_record(project_root: Path, run_id: str, commit_hash: str = "") 
     if closure is not None:
         return closure
 
-    floor = code_review_floor(record, complexity, run_id)
+    floor = code_review_floor(record, complexity, run_id, entry)
     if floor is not None:
         return floor
 

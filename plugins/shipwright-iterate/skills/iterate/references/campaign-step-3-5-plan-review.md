@@ -110,25 +110,25 @@ Operator decision (finalization-claims-hardening §5.2): an autonomous run MAY c
 when the external review cannot run, never silently, and no env-var waiver exists.
 Applies to the plan call above and to the code call (runner Step 3.7 item 2).
 
-1. **Keep the capture.** Both redirects (`>` and `2>`) truncate on every call, so the
-   files hold the LAST attempt's output. They ARE the evidence: F11's review-record
-   check (and `record_review_pass.py record`) refuse `--reason-code unavailable` on
-   `plan` / `external_code` unless the raw file is the adapter's failure envelope
-   (`success: false` or `degraded: true`) or, when it holds no JSON, the `.stderr.txt`
-   is non-empty. A successful reply refuses the claim — record it `completed`. Stage
-   the capture with `reviews.json` at F6: it is read from the commit.
-2. **Record** the row `not_run --reason-code unavailable` (Recording below; no
-   `--marker-status`) and carry on with the build — no halt, no retry loop. At medium+
-   the code-review floor then waits for the delegated cascade: `external_code`
-   `unavailable` plus `code` `not_run --reason-code delegated-to-orchestrator` passes
-   F6-verify, because 3f-bis promotes `code` to `completed` before any merge (or stops).
+1. **Keep the capture.** Both redirects (`>`, `2>`) truncate per call: the files hold the LAST
+   attempt. They ARE the evidence: F11's review-record check (and `record_review_pass.py
+   record`) refuse `unavailable` on `plan` / `external_code` unless the raw file is the
+   adapter's failure envelope (its `review_schema`, `success: false` or `degraded: true`, a
+   non-empty `error` / `degraded_reason`, a `mode` this pass runs) or — raw file present, no
+   JSON — the `.stderr.txt` is non-empty; no symlinks. A successful reply, or one whose every
+   leg was `skipped` (`missing-keys`), refuses it. Stage the capture with `reviews.json` at F6
+   (read from the commit); F6 stages the whole run dir, so delete a `<stem>.stderr.txt` that
+   backs no `unavailable` row before committing.
+2. **Record** `not_run --reason-code unavailable` (Recording below; no `--marker-status`), carry
+   on — no halt, no retry. At medium+ in a campaign unit (entry branch `iterate/campaign-*--U<n>`
+   or spec under `sub-iterates/`) `external_code` `unavailable` + `code` `not_run --reason-code
+   delegated-to-orchestrator` passes F6-verify: 3f-bis promotes `code` before any merge (or stops).
 3. **Be loud**, once, after the last external pass of the run:
    `uv run "{shared_root}/scripts/tools/review_unavailable_note.py" --project-root "{project_root}" --run-id "{run_id}" --file-triage`
-   prints the line and files ONE re-run triage card per run (idempotent; exit 1 = the
-   card was NOT filed — say so, never drop it). Put its line in `result.json`
-   `reviews.unavailable_note` (`"none"` when every pass ran); whoever opens the PR pastes
-   it into the body, and campaign-end step 5 prints it. F11's passing review-record line
-   names the passes too.
+   prints the line and files ONE re-run card per run (idempotent; exit 1 = NOT filed — say so).
+   Put its line in `result.json` `reviews.unavailable_note` (`"none"` when every pass ran). The
+   orchestrator re-runs the tool on the unit's committed record (its worktree) for the PR body
+   rather than trusting result.json; campaign-end step 5 prints it; F11 names the passes too.
 
 The architecture call (Call 2) adds no row; its `unavailable` stays as described above.
 

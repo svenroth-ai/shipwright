@@ -23,7 +23,8 @@ from _review_cli_harness import RUN_ID, make_project, run_tool  # noqa: E402
 from lib.review_unavailable import artifact_paths  # noqa: E402
 
 NOTE = str(_SHARED / "scripts" / "tools" / "review_unavailable_note.py")
-FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered"})
+FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered", "mode": "code"})
+PLAN_FAILED = FAILED.replace('"code"', '"iterate"')
 
 
 @pytest.fixture
@@ -68,7 +69,7 @@ def test_record_leaves_unavailable_on_an_internal_pass_alone(project):
 
 
 @pytest.mark.covers("FR-01.11")
-def test_note_says_none_when_every_pass_ran(project):
+def test_note_says_none_when_no_row_is_unavailable(project):
     run_tool(project, "init")
     result = _note(project)
     assert (result.returncode, result.stdout.strip()) == (0, "none")
@@ -77,7 +78,7 @@ def test_note_says_none_when_every_pass_ran(project):
 @pytest.mark.covers("FR-01.11")
 def test_note_names_each_unavailable_pass_and_its_capture_path_never_its_content(project):
     leaked = "https://internal.example/provider-route-42"
-    _capture(project, "plan", raw=FAILED)
+    _capture(project, "plan", raw=PLAN_FAILED)
     _capture(project, "external_code", raw="", err=f"error reaching {leaked}")
     assert _unavailable(project, "plan")[0] == 0
     assert _unavailable(project)[0] == 0
@@ -99,6 +100,28 @@ def test_file_triage_files_one_card_per_run_and_finds_it_again(project):
     appends = [json.loads(x) for x in lines if x.strip().startswith("{") and '"append"' in x]
     assert [a["id"] for a in appends] == [card]
     assert appends[0]["source"] == "iterate" and RUN_ID in appends[0]["title"]
+
+
+@pytest.mark.covers("FR-01.11")
+def test_a_card_found_again_but_no_longer_open_carries_its_status(project):
+    from triage import mark_status
+
+    _capture(project, "external_code", raw=FAILED)
+    assert _unavailable(project)[0] == 0
+    card = _note(project, "--file-triage").stdout.strip().rsplit("re-run card ", 1)[1]
+    mark_status(project, card, new_status="dismissed", by="operator", reason="re-run elsewhere")
+    again = _note(project, "--file-triage")
+    assert again.returncode == 0 and again.stdout.strip().endswith(f"re-run card {card} (dismissed)"), again.stdout
+
+
+@pytest.mark.covers("FR-01.11")
+def test_note_warns_about_a_stderr_capture_that_backs_no_unavailable_row(project):
+    """F6 stages the whole run dir, so a leftover capture would ship unless someone sees it."""
+    run_tool(project, "init")
+    _capture(project, "plan", raw="{}", err="warning: slow provider")
+    result = _note(project)
+    assert (result.returncode, result.stdout.strip()) == (0, "none")
+    assert "WARN" in result.stderr and "external-plan-review-raw.stderr.txt" in result.stderr
 
 
 @pytest.mark.covers("FR-01.11")

@@ -91,7 +91,7 @@ def substitution_note(record: dict, complexity: str) -> str:
 
 
 def code_review_floor(
-    record: dict, complexity: str, run_id: str,
+    record: dict, complexity: str, run_id: str, entry: dict | None = None,
 ) -> CheckResult | None:
     """At medium+, at least one code review must have actually run.
 
@@ -133,8 +133,8 @@ def code_review_floor(
             "<type> --status completed --from <adapter> --payload-file <reply> "
             "--force`",
         )
-    if delegated_while_unavailable(record):
-        return None  # the code review comes at 3f-bis; the gap is announced (review_record_unavailable)
+    if delegated_while_unavailable(record, entry):
+        return None  # a campaign unit: its code review comes at 3f-bis; the gap is announced
 
     return CheckResult(
         CHECK_NAME, False,

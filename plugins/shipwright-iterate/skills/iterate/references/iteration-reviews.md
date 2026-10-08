@@ -402,7 +402,7 @@ makes `uv run` itself fail before any provider is reached. Treat a non-zero
 `shipwright-plan not installed` in [iteration-planning.md](iteration-planning.md)'s
 Internal Plan Review degraded handling — the pass did NOT run; record it
 `not_run --reason-code unavailable` with that reason as the disposition, never parsed as a
-completed review; the two capture files are its required evidence (`campaign-step-3-5-plan-review.md` → *Unavailable*).
+completed review; the two capture files are its required evidence (`campaign-step-3-5-plan-review.md` → *Unavailable*). F6 stages the whole run dir: a `<stem>.stderr.txt` that backs no `unavailable` row is deleted before commit.
 
 (`--run-id` additively records this call as an `external_review` timing span,
 parent `review` — see [iterate-timings](iterate-timings.md).)
