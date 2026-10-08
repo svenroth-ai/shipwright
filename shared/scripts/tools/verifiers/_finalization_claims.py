@@ -25,6 +25,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from .cascade_trigger import check_cascade_trigger
 from .common import CheckResult
 from .exemption_record_check import check_exemption_record
 
@@ -33,6 +34,7 @@ __all__ = ["CLAIM_CHECKS", "run_claim_checks"]
 #: ``(project_root, run_id, commit_hash) -> CheckResult``, in report order.
 CLAIM_CHECKS: list[Callable[[Path, str, str], CheckResult]] = [
     check_exemption_record,
+    check_cascade_trigger,
 ]
 
 

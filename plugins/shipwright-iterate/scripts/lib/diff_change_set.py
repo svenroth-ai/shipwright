@@ -30,7 +30,12 @@ path is seen.
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
+
+if str(Path(__file__).resolve().parent) not in sys.path:  # importable by file path too
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from review_threshold_bridge import is_counted_path  # noqa: E402 - the counting rule's path filter
 
 
 def _count(field: str) -> int:
@@ -54,7 +59,6 @@ def parse_numstat_z(raw: str) -> tuple[list[str], int]:
         parts = token.split("\t", 2)
         if len(parts) < 2:
             continue
-        total += _count(parts[0]) + _count(parts[1])
         path = parts[2] if len(parts) > 2 else ""
         if not path:
             raise ValueError(
@@ -62,6 +66,8 @@ def parse_numstat_z(raw: str) -> tuple[list[str], int]:
                 "this parser requires --no-renames so both sides of a move are seen"
             )
         paths.append(path)
+        if is_counted_path(path):  # finalization records never count (review_diff_threshold)
+            total += _count(parts[0]) + _count(parts[1])
     return paths, total
 
 
@@ -115,6 +121,8 @@ def untracked_loc(root: Path, paths: list[str]) -> int:
     """
     total = 0
     for rel in paths:
+        if not is_counted_path(rel):
+            continue
         try:
             blob = (root / rel).read_bytes()
         except OSError:

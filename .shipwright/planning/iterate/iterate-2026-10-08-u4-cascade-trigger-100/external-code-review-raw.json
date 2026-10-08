@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py:112\n- Finding: When no trustworthy trunk merge-base is available, the verifier silently measures only the final commit. A branch containing several commits totaling more than 100 changed lines can therefore pass as quiet if its final commit is small and no risk flag is recorded. This loses the branch-wide measurement required by the specification.\n- Suggestion: Report an unknown measurement and fail closed when the merge-base is unavailable. Keep any commit-only handling for commits on trunk separate from the missing-base case, and add a multi-commit regression test.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/lib/review_diff_threshold.py:89\n- Finding: Replacing NUL delimiters with newlines corrupts valid `-z` records whose filenames contain literal newlines. For example, `1\\t0\\tsrc/a\\nb.py\\0` becomes two records, and the second raises `ValueError`. The parser explicitly promises to accept NUL-separated records, but does not preserve their filenames.\n- Suggestion: Split NUL-delimited input directly on `\"\\0\"` and preserve each record\u2019s path. Add a test containing a newline in the filename.\n\nShip-with-fixes: the core threshold and review-status enforcement are sound, but measurement needs these corrections. Local command execution was blocked, so I could not read the authoritative brief or run tests; this assessment covers the supplied specification and diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: `shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` \u2014 `measure_diff`, the `if base and base != head.strip():` / `elif _is_merge(...)` / `else: git show` chain\n- Finding: The merge-commit guard only runs in the `base` empty branch. When `base == head` (e.g. the iterate's branch was merged into `main` and F11 runs afterwards, so the merge-base of the run commit and the trunk is the commit itself), the code falls through to `git show --numstat` on that commit. For a merge commit, `git show --numstat` prints the combined diff, which is typically empty or only conflict resolutions \u2014 so a >100-line change measures as ~0 lines and the gate reports \"quiet\" and passes. That is exactly the false negative the gate exists to catch.\n- Suggestion: Run `_is_merge` whenever `base == head` too (or unconditionally), and report an error/unknown rather than `git show` when the commit being measured is a merge; a merge commit's true size must be measured against its first parent or rejected.\n\n- Category: edge-case\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/cascade_trigger.py` \u2014 `_trigger`, `commit = commit_hash; if not commit: rev-parse HEAD`\n- Finding: When `commit_hash` is empty (the default), HEAD at verification time is measured \u2014 which after further commits or a merge on the checked-out branch is an unrelated commit. The F11 measurement can then be taken against the wrong commit entirely.\n- Suggestion: When `commit_hash` is empty, prefer resolving the commit from the F5c entry (it already carries run metadata) or fail closed rather than blindly trusting HEAD.\n\n- Category: edge-case\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` \u2014 `measure_diff` docstring \"a commit that sits on the trunk: only the commit itself can be measured\"\n- Finding: The single-commit fallback (`git show` of one commit) silently undercounts multi-commit iterates whose tip happens to sit on the trunk or whose merge-base equals the commit. The spec says \"merge-base diff, added+removed lines\" \u2014 falling back to one commit is a different rule and can certify a 300-line change as \u2264100.\n- Suggestion: When no trustworthy trunk base exists and the run spans multiple commits, report `error` (unknown) instead of measuring only the tip commit; the flag-based arm already handles the fired case.\n\n- Category: regression / edge-case\n- Severity: low\n- File: `plugins/shipwright-iterate/scripts/lib/diff_change_set.py` \u2014 module-level `from review_threshold_bridge import is_counted_path`\n- Finding: `diff_change_set.py` now hard-depends on `review_threshold_bridge`, which executes a filesystem walk-and-load at import time and raises `ImportError` when no ancestor contains `shared/scripts/lib/review_diff_threshold.py`. Any consumer of `diff_change_set` that runs from a location without the shared tree (the \"no fallback, on purpose\" decision) now fails at import, not at threshold use \u2014 including callers that only wanted `parse_numstat_z`'s path list.\n- Suggestion: If such environments exist, defer the bridge load (call it inside the counting functions) or make the failure message name the consuming entry point; at minimum confirm the plugin cache layout actually contains `shared/` as the docstring claims.\n\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` \u2014 `DiffMeasure.diff_flags`\n- Finding: Cross-component / CI detectors run over `measure.paths`, which deliberately includes uncounted finalization-record paths (`.shipwright/...`, `CHANGELOG-unreleased.d/...`). Depending on the detectors' path heuristics, generated artifacts could raise `cross_component` on an otherwise quiet run \u2014 inconsistent with the \"finalization records never count\" rule the module otherwise enforces.\n- Suggestion: Either filter paths through `is_counted_path` before running the detectors, or document that risk flags, unlike line counts, do consider all changed paths.\n\nTest quality is good: real git repos, real merge-base measurement, boundary (100 vs 101), removed lines, renames, uncounted paths, closed-vocab refusals, corrupt-plan fail-closed, and registry registration are all covered. The main gap is that no test exercises the merged-to-trunk / merge-commit-at-HEAD state where the high-severity bug lives.\n\nOverall: the counting definition, bridge, and gate are implemented to spec with strong tests, but the trunk-resident/merge-commit measurement path produces false \"quiet\" verdicts and should be fixed before this ships.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

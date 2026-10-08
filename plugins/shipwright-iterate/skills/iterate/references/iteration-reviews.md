@@ -134,6 +134,18 @@ the ONLY review that runs, so it is the only thing the Review artifact can show.
 - Change touches **security-sensitive files** (auth, middleware, RLS policies, migrations)
 - Complexity = **medium+** (always)
 
+**How the 100 lines are counted** (one definition, `shared/scripts/lib/review_diff_threshold.py`):
+added + removed lines against the merge-base with the trunk (`git diff --numstat
+--no-renames <merge-base>`, untracked files included before the commit), without
+`.shipwright/`, `CHANGELOG-unreleased.d/`, `shipwright_events.jsonl` and
+`shipwright_test_results.json`. Strictly greater than 100: exactly 100 does not
+trigger. Not `git diff HEAD~1 | wc -l`, which counts headers and context lines
+and sees only the last commit. **Enforced at small:** F11's `check_cascade_trigger`
+re-measures the branch and re-reads the risk flags. The `code` row must then be
+`completed`, or `not_run` with a `--reason-code` from the closed `review_not_run`
+set (e.g. `unavailable`). A free-text disposition alone fails, and so do
+`diff-below-threshold`, `complexity-below-threshold` and `trivial-auto`.
+
 ### When Self-Review is Sufficient
 - Trivial/small complexity with no risk flags
 - Diff under 100 lines
@@ -682,7 +694,9 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 … --review-type spec --status not_run \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
 
-… --review-type code --status not_run \
+# `--reason-code` is load-bearing at small: F11's check_cascade_trigger refuses a
+# free-text-only `code` row when a risk flag is set or the diff is > 100 lines.
+… --review-type code --status not_run --reason-code delegated-to-orchestrator \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 
 # Stage 3 cannot precede Stage 2
