@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All four acceptance criteria met (monorepo default + workflow literal, webui mirror, Luna kept as override constant, tests updated). Non-blocking: webui provenance header should list the haiku run."}

@@ -245,6 +245,21 @@ existing drift-protection tests anchor on them. SKILL.md carries the
 governance-rule anchors (Test-Update-Klausel, Registry-driven SSoT,
 Silent-skip CI-discipline) inline; this file is reference prose only.
 
+### Tag each test with the requirement it proves
+
+Write the tag together with the test, never afterwards: `@pytest.mark.covers("FR-XX.YY/ACnn")`
+on the test function (or once on its `Test*` class), `{ tag: ['@FR-XX.YY'] }` or a preceding
+`// @covers FR-XX.YY` on a Playwright/Vitest test (a `describe` tag covers the tests inside it).
+Name the AC the test proves; a bare `FR-XX.YY` is allowed when no single AC fits. Write the id
+as a string literal: `covers(AC)` with a module constant is a malformed tag (`non_string_arg`),
+because the collector reads the source, not the running value. Tags should
+point at this iterate's Spec-Impact FRs; a tag outside them WARNs. **Enforced at F11** by
+`check_test_tag_binding`, at every complexity: an untagged added test, a stripped tag, an edited
+legacy untagged test, or a tag that resolves to no live FR STOPs the run. The two legitimate
+exceptions are recorded per test in the F5c `exemptions` block, never per diff:
+`fixture-or-helper` (a function pytest does not collect as a test) and `mechanical-refactor`
+(the body changed only by renamed identifiers, e.g. a fixture rename across legacy tests).
+
 ### Migration apply (if migration files were created during build)
 
 Read `migrations` config from the stack profile (loaded in Step B2).

@@ -28,7 +28,7 @@ from pathlib import Path
 from . import _test_links_fold as foldwire
 from . import _test_links_io as io
 from ._lib_loader import load_shared_lib
-from ._suite_tags import propagate_suite_tags
+from ._file_tags import parse_file
 from ._test_links_requirements import (
     assert_keys_derive_from_ids,
     build_requirement_index,
@@ -117,11 +117,10 @@ def build_manifest(
     layer_by_test: dict[str, str] = {}
     all_test_ids: set[str] = set()
     for abs_path, rel_path in io.iter_test_files(test_roots, project_root, prune_dirs or io._PRUNE_DIRS):
-        source = abs_path.read_text(encoding="utf-8", errors="ignore")
         layer = io.detect_layer(rel_path)
-        res = grammar.parse_source(rel_path, source)
-        suite_hits, suite_invalid = propagate_suite_tags(source, rel_path, grammar)
-        for h in list(res.hits) + suite_hits:  # per-test tags + enclosing-suite tags (AC2)
+        source, res, suite_hits, suite_invalid = parse_file(  # wrapped decls joined; class/suite tags
+            rel_path, abs_path.read_text(encoding="utf-8", errors="ignore"), grammar)
+        for h in list(res.hits) + suite_hits:  # per-test tags + enclosing-suite/class tags (AC2)
             hits.append(h)
             layer_by_test[h.test] = layer
         invalid.extend(res.invalid)

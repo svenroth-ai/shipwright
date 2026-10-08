@@ -4,7 +4,7 @@
 
 Reads the F5c entry's ``exemptions`` block (``lib.exemption_record``) and prints
 ``0`` or ``N (reason-code: n, ...)`` - e.g. ``2 (fixture-or-helper: 2)``. An entry
-that predates the block prints ``0``. Exit 0 on a readable entry, 1 when the run
+that predates the block prints ``not recorded (legacy entry)``, never ``0``. Exit 0 on a readable entry, 1 when the run
 has no entry or the block is malformed (the line then says ``INVALID - ...``),
 so a PR body never silently claims "0" for a run whose record is broken.
 """

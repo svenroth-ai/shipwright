@@ -3582,14 +3582,17 @@ section is the contract between them.
 size cap (ADR-125), so it cannot take new gates. Every gate that makes finalization enforce a documented
 claim registers in `verifiers/_finalization_claims.py` (`CLAIM_CHECKS`, ordered); `run_all_checks`
 splices the registry in once (`run_claim_checks`) after the historical list, and a check that raises
-reads RED instead of vanishing. A gate keeps its code in its own `verifiers/<name>.py`.
-`shared/tests/test_finalization_claims_registry.py` fails in both directions between this table and the
-registry. Adding a gate = write the check, append it to `CLAIM_CHECKS`, add one row here.
+reads RED instead of vanishing (a `SystemExit` included; only `KeyboardInterrupt` propagates), reported
+under the check module's `CHECK_NAME`. A gate keeps its code in its own `verifiers/<name>.py` and must
+**never import `iterate_checks`** - that module imports the registry at load time, so the reverse import
+is circular. `shared/tests/test_finalization_claims_registry.py` fails in both directions between this
+table and the registry. Adding a gate = write the check, append it to `CLAIM_CHECKS`, add one row here.
 
 <!-- claim-checks:start -->
 | Check | Module | What it enforces |
 |---|---|---|
 | `check_exemption_record` | `verifiers/exemption_record_check.py` | the F5c entry's `exemptions` block (`count` == `len(items)`, every item a path-safe `scope` plus a `reason_code` from an exemption family - today only `test_exemption` - in `lib/reason_codes.py`); absent = legacy, SKIPPED |
+| `check_test_tag_binding` | `verifiers/tag_binding_gate.py` | every test the diff adds or edits names the requirement it proves: regenerates base + head manifests through the compliance `test_links` collector (`_layer_coverage_regen`, memoised with the removal gate) and STOPs on an untagged added test, a stripped tag, an edited legacy untagged test, a new malformed or unresolvable tag, or a per-diff exemption; a move with an unchanged body, a docstring/comment-only edit and a parametrize-case addition pass; per-test `test_exemption` items (`fixture-or-helper`, `mechanical-refactor`) are verified, not trusted; a new tag outside the run's `affected_frs`/`new_frs` WARNs (no `work_completed` event: WARNs the check did not run), as do an untagged test in a file the diff did not touch (newly collected) and same-named siblings that all carry the same tags. Every complexity; every infra gap STOPs with a remediation, a non-git project included (no SKIP) |
 | `check_cascade_trigger` | `verifiers/cascade_trigger.py` | at `small`, when a risk flag is set (session plan, Step 3.4 record, or `cross_component` / CI paths recomputed from the diff) or the diff has more than 100 changed lines (`lib/review_diff_threshold.py`: added+removed vs the merge-base, finalization records excluded, exactly 100 does not trigger), the `code` row is `completed` with evidence, or `not_run` with `reason_code` `unavailable` / `delegated-to-orchestrator` / `user-opt-out` (an allowlist; `not_applicable` refused); an unmeasurable diff (incl. a trunk tip no remote trunk ref contains) or unreadable flag source counts as triggered; a missing complexity is in scope, the plan's higher complexity wins; medium+ and explicit trivial SKIPPED |
 <!-- claim-checks:end -->
 

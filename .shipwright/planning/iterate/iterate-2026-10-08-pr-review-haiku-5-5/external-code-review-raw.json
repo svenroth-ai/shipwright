@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The diff switches the workflow and shared default to `anthropic/claude-haiku-5.5`, preserves and exports `LUNA_MODEL` for operator overrides, and updates assertions to verify both requirements. No changed logic introduces an evident correctness, security, or compatibility issue.\n\nShip-as-is. This assessment covers the supplied monorepo diff; the separately mirrored webui is outside its scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: test\n- Severity: low\n- File: plugins/shipwright-security/tests/test_pr_review_openrouter.py (test_luna_model_constant_still_exists_for_the_operator_override)\n- Finding: The Luna-constant test only asserts the constant exists; unlike the GLM test pattern, nothing verifies Luna is still a *selectable* override (e.g., that setting SHIPWRIGHT_PR_REVIEW_MODEL=openai/gpt-6-luna resolves and bypasses ZDR routing). A regression that dropped Luna from the allowed override path while keeping the string constant would still pass.\n- Suggestion: Add a resolution test asserting the Luna override threads through main()/resolve_extra_body like the GLM/DeepSeek override tests do.\n\n- Category: spec\n- Severity: low\n- File: .github/workflows/pr-review-run.yml:249\n- Finding: The comment block above the env (lines ~245\u2013248, unchanged) still reads as if it describes Luna (\"if this model's own verdicts ever need bypassing\") and was written for the Luna default; it wasn't updated for Haiku. If \"webui mirrored separately\" means this workflow is one of multiple copies, the pinning test (test_model_env_matches_code_default) only covers this one \u2014 verify the webui copy is handled in the companion change.\n- Suggestion: Update the stale comment to be model-agnostic or Haiku-specific, and confirm the webui mirror swap lands in the paired change.\n\nOtherwise the change is correct: the workflow literal, DEFAULT_MODEL, imports/__all__, and pinning tests all move together, Luna stays as an override, and the ZDR gate logic is untouched (Haiku is outside deepseek/z-ai namespaces, so the empty-extra_body short-circuit still applies, as the updated test verifies). No security or correctness regressions.\n\nOverall: ship-as-is; the two items above are polish, not blockers.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

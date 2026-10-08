@@ -46,6 +46,10 @@ root-cause fix.
    - The test must fail for the *identified root cause*, not a side effect
    - If you can't write a targeted test, your root-cause analysis is
      incomplete — go back to step 3
+   - Tag it with the requirement the bug violates
+     (`@pytest.mark.covers("FR-XX.YY/ACnn")`, TS/JS `{ tag: ['@FR-XX.YY'] }`):
+     the regression test proves that requirement holds again. F11
+     `check_test_tag_binding` STOPs on an untagged added test, bug or not.
 5. Run the test to confirm it fails:
    ```bash
    npx vitest run --reporter=verbose {test_file}

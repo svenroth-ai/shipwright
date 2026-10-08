@@ -77,9 +77,8 @@ _COVERS_CANDIDATE_RE = re.compile(r"\bFR[\w.-]*")
 
 # TS/JS surface matchers (limited, documented reference forms).
 _COVERS_COMMENT_RE = re.compile(r"//\s*@covers\s+(?P<ids>[^\n]+)")
-# ``it(``/``test(`` (and modifiers like .skip/.only/.each) — but NOT ``test.describe(``,
-# which is a suite, not a binding target for the reference (describe is out of scope).
-_TEST_DECL_RE = re.compile(r"\b(?:it|test)(?:\.(?!describe\b)\w+)?\s*\(\s*(['\"`])(?P<title>.*?)\1")
+# ``it(``/``test(`` (+ .skip/.only) — NOT test.describe/test.step/a hook, nor a commented-out line.
+_TEST_DECL_RE = re.compile(r"^(?!\s*(?://|/\*|\*)).*?\b(?:it|test)(?:\.(?!(?:describe|step|beforeEach|afterEach|beforeAll|afterAll|use|extend)\b)\w+)?\s*\(\s*(['\"`])(?P<title>.*?)\1")
 # The documented "title suffix": one or more @FR tokens at the END of the title.
 _TITLE_SUFFIX_RE = re.compile(r"(?P<tags>(?:@FR[\w.-]*\s*)+)$")
 _TAG_ARRAY_RE = re.compile(r"tag\s*:\s*\[(?P<body>[^\]]*)\]")

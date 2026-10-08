@@ -46,7 +46,7 @@ def project(tmp_path):
 @pytest.mark.covers("FR-01.11")
 def test_absent_key_is_legacy_and_valid_but_explicit_null_is_malformed():
     assert entry_exemptions_error({}) is None
-    assert entry_summary_line({}) == "0"
+    assert entry_summary_line({}) == "not recorded (legacy entry)"  # never "0": that reads as a recorded zero
     assert exemption_counts(None) == {}
     assert entry_exemptions_error({"exemptions": None}) is not None
     assert entry_summary_line({"exemptions": None}).startswith("INVALID - ")
@@ -146,7 +146,10 @@ def test_summary_cli_prints_the_count_for_f12_and_the_pr_body(project):
 
 
 @pytest.mark.covers("FR-01.11")
-def test_summary_cli_prints_zero_for_a_legacy_entry_and_fails_loudly_without_one(project):
+def test_summary_cli_says_not_recorded_for_a_legacy_entry_and_fails_loudly_without_one(project):
     assert _summary(project)[0] == 1 and _summary(project)[1].startswith("INVALID - no iterate entry")
     append_iterate_entry(project, _entry())
-    assert _summary(project) == (0, "0")
+    assert _summary(project) == (0, "not recorded (legacy entry)")
+    append_iterate_entry(project, _entry(run_id="iterate-2026-10-08-zero", adr="iterate-2026-10-08-zero",
+                                         exemptions=_block()))
+    assert _summary(project, "iterate-2026-10-08-zero") == (0, "0")

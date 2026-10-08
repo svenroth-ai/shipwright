@@ -20,6 +20,7 @@ __all__ = [
     "DEFAULT_MODEL",
     "DEFAULT_TIMEOUT",
     "GLM_MODEL",
+    "HAIKU_MODEL",
     "LUNA_MODEL",
     "OPENROUTER_URL",
     "call_openrouter",
@@ -29,14 +30,16 @@ __all__ = [
 # match both read this, and test_pr_review_workflow_shape.py::
 # test_model_env_matches_code_default pins the workflow's literal env value
 # equal to it, so the three copies cannot drift apart. DeepSeek and GLM stay
-# available as SHIPWRIGHT_PR_REVIEW_MODEL operator overrides. Full swap
-# history and rationale (DeepSeek -> GLM 5.3 -> GPT-5.6 Luna; the GLM
-# availability defect; the Luna-vs-Sonnet benchmark/price check):
+# available as SHIPWRIGHT_PR_REVIEW_MODEL operator overrides, as does Luna.
+# Full swap history and rationale (DeepSeek -> GLM 5.3 -> GPT-6 Luna -> Claude
+# Haiku 5.5; the GLM availability defect; the Luna-vs-Sonnet benchmark/price
+# check; Haiku 5.5 judged better than Luna, slug live-verified on OpenRouter):
 # .shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md
 DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
 GLM_MODEL = "z-ai/glm-5.3"
 LUNA_MODEL = "openai/gpt-6-luna"
-DEFAULT_MODEL = LUNA_MODEL
+HAIKU_MODEL = "anthropic/claude-haiku-5.5"
+DEFAULT_MODEL = HAIKU_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ONE default for the whole tool — the CLI flag and the direct call share it.
