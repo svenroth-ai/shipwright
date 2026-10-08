@@ -35,6 +35,8 @@ def write_review_record(root: Path, complexity: str, *, code_row: dict | None = 
         if review_type == "self":
             entry = make_entry("self", self_status, recorded_by="self-review" if self_status == "completed" else None,
                                disposition=None if self_status == "completed" else _WHY)
+            if self_status != "completed" and reason_code is not None:  # break ONLY the `self` rule
+                entry["reason_code"] = reason_code
         elif (row := {"code": code_row, "external_code": external_row}.get(review_type)) is not None:
             entry = make_entry(review_type, row["status"], disposition=_WHY, recorded_by=row.get("recorded_by"))
             if row.get("provider"):

@@ -22,7 +22,7 @@ sys.path.append(str(Path(__file__).resolve().parent))  # after shared/scripts: t
 
 import pytest  # noqa: E402
 
-from _cascade_trigger_fixtures import commit_file, git, hermetic_git, init_repo, lines  # noqa: E402, F401
+from _cascade_trigger_fixtures import commit_file, git, hermetic_git, init_repo, lines  # noqa: E402, F401 - hermetic_git is an autouse fixture
 from _finalization_scenario_records import RUN, event, write_entry, write_review_record  # noqa: E402
 from _surface_check_fixtures import NONE_BLOCK, cli_block, stage  # noqa: E402
 from lib.fr_gates import run_fr_gates  # noqa: E402
@@ -118,15 +118,19 @@ def test_u1_an_untagged_added_test_is_the_only_red_gate(tmp_path):
 @pytest.mark.parametrize("complexity", ["trivial", "small", "medium"])
 def test_u3_a_record_with_no_self_review_is_the_only_red_gate(tmp_path, complexity):
     root, sha = scenario(tmp_path, complexity)
-    write_review_record(root, complexity, self_status="not_run")
-    assert_only(run_gates(root, sha), "U3", "`self`")
+    medium = complexity == "medium"  # keep the medium rows: only `self` may be broken
+    write_review_record(root, complexity, self_status="not_run",
+                        code_row=_DELEGATED if medium else None, external_row=_EXTERNAL if medium else None)
+    assert_only(run_gates(root, sha), "U3", "the Self-Review is the one pass that runs at EVERY")
 
 
 @pytest.mark.covers("FR-01.11")
-@pytest.mark.parametrize("complexity", ["trivial", "small"])
+@pytest.mark.parametrize("complexity", ["trivial", "small", "medium"])
 def test_u3_free_text_closures_are_the_only_red_gate(tmp_path, complexity):
     root, sha = scenario(tmp_path, complexity)
-    write_review_record(root, complexity, reason_code=None)
+    medium = complexity == "medium"
+    write_review_record(root, complexity, reason_code=None,
+                        code_row=_DELEGATED if medium else None, external_row=_EXTERNAL if medium else None)
     assert_only(run_gates(root, sha), "U3", "reason_code")
 
 
@@ -138,7 +142,7 @@ def test_u4_a_150_line_small_diff_with_a_vocab_code_that_denies_the_trigger_is_t
 
 
 @pytest.mark.covers("FR-01.11")
-def test_u4_the_same_diff_closed_with_a_vocabulary_code_passes(tmp_path):
+def test_u4_the_same_diff_closed_with_an_accepted_code_passes(tmp_path):
     root, sha = scenario(tmp_path, "small", extra={"src/big.py": lines(150)},
                          code_row={"status": "not_run", "reason_code": "delegated-to-orchestrator"})
     results = run_gates(root, sha)
@@ -162,7 +166,7 @@ def test_u5_a_claimed_run_with_no_staged_evidence_is_the_only_red_gate(tmp_path)
 @pytest.mark.covers("FR-01.11/AC07")
 def test_u5_evidence_for_other_tests_than_the_claim_is_the_only_red_gate(tmp_path):
     root, sha = scenario(tmp_path, "medium", surface=cli_block(tests_run=9))
-    assert_only(run_gates(root, sha), "U5", "tests_run=9")
+    assert_only(run_gates(root, sha), "U5", "the block records tests_run=9, but the staged evidence shows only")
 
 
 @pytest.mark.covers("FR-01.11/AC03")
