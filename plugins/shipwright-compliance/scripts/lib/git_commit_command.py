@@ -15,6 +15,7 @@ import shlex
 from pathlib import Path
 
 from shell_heredoc import strip_heredoc_bodies
+from shell_substitution import substitutions
 
 # git global options that consume the following token (``git -C <path> commit``).
 _GIT_OPTS_WITH_VALUE = frozenset({"-C", "-c", "--git-dir", "--work-tree", "--namespace"})
@@ -35,8 +36,33 @@ _POWERSHELLS = frozenset({"pwsh", "powershell"})
 # Closed set of shell reserved words that may precede a command in a segment.
 _RESERVED = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"})
 _MAX_SHELL_DEPTH = 3
+# the unparseable-text fallback: ``git`` then ``commit`` on one logical line
+_LOOSE_COMMIT = re.compile(r"\bgit(?:\.exe|\.cmd)?\b[^\n;&|]*\bcommit\b")
+# the same, with git's global options captured so the target repo survives (-C, --git-dir, ...)
+_LOOSE_OPTS = re.compile(
+    r"\bgit(?:\.exe|\.cmd)?\b((?>[ \t]+(?:-[Cc][ \t]+(?:\"[^\"\n]*\"|'[^'\n]*'|\S+)"
+    r"|--(?:git-dir|work-tree|namespace)(?:=|[ \t]+)(?:\"[^\"\n]*\"|'[^'\n]*'|\S+)"
+    r"|-{1,2}[A-Za-z][\w-]*))*)[ \t]+commit\b")
 # env's -S / --split-string: ONE string env splits into argv (``-S<str>``, ``-iS <str>`` too).
 _ENV_SPLIT_SHORT = re.compile(r"-[i0v]*S(.*)", re.DOTALL)
+
+
+def _loose_commits(text: str):
+    """Per line, a regex reading of ``git [global options] commit`` for text shlex rejects.
+
+    Keeps ``-C`` / ``--git-dir`` / ``--work-tree`` so the commit is still judged on its repo;
+    a line that mentions git and commit in some other shape yields ``()`` (over-fires).
+    """
+    for line in text.split("\n"):
+        matched = 0
+        for found in _LOOSE_OPTS.finditer(line):
+            matched += 1
+            try:
+                yield tuple(shlex.split(found.group(1)))
+            except ValueError:
+                yield tuple(word.strip("'\"") for word in found.group(1).split())
+        for _ in range(len(_LOOSE_COMMIT.findall(line)) - matched):
+            yield ()  # a commit only the looser pattern saw: judged on the default repo
 
 
 def _program(token: str) -> str:
@@ -83,15 +109,19 @@ def _skip_wrappers(tokens: list[str]) -> tuple[int, str | None]:
     return i, None
 
 
-def _env_split_is_commit(split: str, rest: list[str], depth: int) -> bool:
+def _env_split_commits(split: str, rest: list[str], depth: int):
     """``env -S '<split>' <rest>`` runs ``env <split words> <rest>``: parse that, depth-bounded."""
     if depth >= _MAX_SHELL_DEPTH:
-        return "git commit" in " ".join([split, *rest])  # too deep: over-fire, never fail open
+        if _LOOSE_COMMIT.search(" ".join([split, *rest])):  # too deep: over-fire, never fail open
+            yield ()
+        return
     try:
         words = shlex.split(split)
     except ValueError:
-        return "git commit" in split
-    return _segment_is_commit(["env", *words, *rest], depth + 1)
+        if _LOOSE_COMMIT.search(split):
+            yield ()
+        return
+    yield from _segment_commits(["env", *words, *rest], depth + 1)
 
 
 def _shell_command(tokens: list[str]) -> str | None:
@@ -103,6 +133,8 @@ def _shell_command(tokens: list[str]) -> str | None:
         elif not tokens[i].startswith("--") and "c" in tokens[i][1:]:
             has_c = True
         i += 1
+    if has_c and i < len(tokens) and tokens[i] == "--":
+        i += 1  # ``bash -c -- 'cmd'``
     return tokens[i] if has_c and i < len(tokens) else None
 
 
@@ -132,31 +164,36 @@ def _inner_command(tokens: list[str]) -> str | None:
     return None
 
 
-def _segment_commit(tokens: list[str], depth: int = 0) -> tuple[str, ...] | None:
-    """git's global options when the segment runs ``git ... commit`` (``()`` unparsed), else None."""
+def _segment_commits(tokens: list[str], depth: int = 0):
+    """git's global options for EACH ``git ... commit`` the segment runs (``()`` unparsed).
+
+    One for a plain ``git ... commit``; every inner commit of a ``sh -c`` / ``eval`` /
+    ``pwsh -Command`` / ``cmd /c`` string; one for an ``env -S`` string.
+    """
     start, split = _skip_wrappers(tokens)
     if split is not None:
-        return () if _env_split_is_commit(split, tokens[start:], depth) else None
+        yield from _env_split_commits(split, tokens[start:], depth)
+        return
     tokens = tokens[start:]
     if not tokens or tokens[0].startswith("#"):
-        return None  # empty, or a comment: # git commit
+        return  # empty, or a comment: # git commit
     if _program(tokens[0]) in (*_SHELLS, *_POWERSHELLS, "eval", "cmd"):
         inner = _inner_command(tokens)
         if inner is None:
-            return None
+            return
         if depth >= _MAX_SHELL_DEPTH:  # too deep to parse: over-fire, never fail open
-            return () if "git commit" in inner else None
-        return find_git_commit(inner, depth + 1)
+            if _LOOSE_COMMIT.search(inner):
+                yield ()
+            return
+        yield from iter_git_commits(inner, depth + 1)
+        return
     if _program(tokens[0]) != "git":
-        return None
+        return
     i = 1
     while i < len(tokens) and tokens[i].startswith("-"):
         i += 2 if tokens[i] in _GIT_OPTS_WITH_VALUE else 1
-    return tuple(tokens[1:i]) if i < len(tokens) and tokens[i] == "commit" else None
-
-
-def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
-    return _segment_commit(tokens, depth) is not None
+    if i < len(tokens) and tokens[i] == "commit":
+        yield tuple(tokens[1:i])
 
 
 def is_git_commit(command: str, _depth: int = 0) -> bool:
@@ -166,8 +203,9 @@ def is_git_commit(command: str, _depth: int = 0) -> bool:
     are skipped, as are leading reserved words (``if then else elif do while until
     ! { }``), ``VAR=val`` prefixes and a closed set of wrappers (``env``, ``sudo``,
     ``timeout 60``, ``nohup``, ...); ``sh|bash -c``, ``eval``, ``pwsh -Command`` and
-    ``cmd /c`` strings and ``env -S`` / ``--split-string`` strings (split into
-    env's argv, so their words are one segment) are parsed recursively; past the depth cap the substring test
+    ``cmd /c`` strings, command substitutions (``$(...)``, backticks) and ``env -S`` /
+    ``--split-string`` strings (split into env's argv, so their words are one segment)
+    are parsed recursively, every inner commit counting; past the depth cap the substring test
     decides (over-fires rather than fails open). ``git -c k=v diff``,
     ``rg "git commit"``, ``echo git commit``, ``# git commit`` and ``git log --grep
     'git commit'`` are not commits. ``#`` is not a comment character to the lexer
@@ -194,24 +232,37 @@ def find_git_commit(command: str, _depth: int = 0) -> tuple[str, ...] | None:
 
 
 def iter_git_commits(command: str, _depth: int = 0):
-    """The global options of every top-level ``git ... commit`` segment, in order."""
+    """The global options of every ``git ... commit`` in *command*, in order.
+
+    Top-level segments first, then those inside command substitutions (``$(...)``,
+    backticks, ``<(...)``: :mod:`shell_substitution`), each parsed as a command line.
+    A commit written both ways in one line may be yielded twice.
+    """
     text = strip_heredoc_bodies(command)
-    flat = text.replace("\\\r\n", " ").replace("\\\n", " ")
+    flat = text  # continuations are already joined outside bodies (shell_heredoc)
     try:
         lexer = shlex.shlex(flat.replace("\n", " ; "), posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
         lexer.commenters = ""  # a '#' must not swallow the rest of the flattened line
         tokens = list(lexer)
-    except ValueError:
-        if "git commit" in text:
-            yield ()
+    except ValueError:  # unparseable (a stray quote): over-fire on any git ... commit
+        yield from _loose_commits(text)
         return
     segment: list[str] = []
     for token in [*tokens, ";"]:
         if token and set(token) <= _SEPARATOR_CHARS:
-            found = _segment_commit(segment, _depth)
-            if found is not None:
-                yield found
+            yield from _segment_commits(segment, _depth)
             segment = []
         else:
             segment.append(token)
+    try:
+        inners = substitutions(flat)
+    except RecursionError:  # absurdly nested: over-fire, never fail open
+        inners = [flat] if _LOOSE_COMMIT.search(flat) else []
+        _depth = _MAX_SHELL_DEPTH
+    for inner in inners:
+        if _depth >= _MAX_SHELL_DEPTH:  # too deep to parse: over-fire, never fail open
+            if _LOOSE_COMMIT.search(inner):
+                yield ()
+        else:
+            yield from iter_git_commits(inner, _depth + 1)

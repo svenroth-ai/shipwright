@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-u13-hook-command-shapes",
+  "date": "2026-10-09",
+  "section": "Iterate — change: commit-hook command shapes",
+  "title": "Hook reads more command shapes; one override per hook run",
+  "context": "The commit hook misread heredocs, nested shells, substitutions and the shell cwd, and its override could be revived or double-spent.",
+  "decision": "One override releases one hook run; an O_EXCL marker arbitrates; the lexer over-fires on every shape it cannot prove safe.",
+  "consequences": "Fewer unseen commits and no revived overrides; accepted shell-quoting limits are listed in the spec file.",
+  "rationale": "Over-firing costs a re-run, under-firing skips the coverage gate; a marker is atomic where the log lock is not.",
+  "rejected": "One override per commit (uncountable before it runs); a full shell parser (not stdlib-sized).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-08-u13-hook-command-shapes-parser-and-override.md"
+}

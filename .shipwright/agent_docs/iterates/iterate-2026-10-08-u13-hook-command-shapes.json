@@ -1,0 +1,122 @@
+{
+  "run_id": "iterate-2026-10-08-u13-hook-command-shapes",
+  "date": "2026-10-08T23:26:48.241606Z",
+  "event_at": "2026-10-08T20:51:39.114586+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/u13-hook-command-shapes",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-08-u13-hook-command-shapes.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u13-hook-command-shapes",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a continuation-split heredoc delimiter hides its body; a backslash ending a quoted body line stays literal (AC-1)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_a_continued_operator_line_still_hides_its_body + test_continuations_inside_a_quoted_body_are_literal PASSED"
+      },
+      {
+        "behavior": "odd, unclosed or non-exact heredoc delimiters keep the body visible (AC-2)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_an_odd_or_unclosed_delimiter_keeps_the_body_visible PASSED"
+      },
+      {
+        "behavior": "every commit of a nested shell call is listed with its own -C location (AC-3)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_each_wrapper_lists_the_exact_inner_locations + test_env_split_string_lists_every_inner_commit PASSED"
+      },
+      {
+        "behavior": "a commit inside $(...), backticks, <(...) or arithmetic fires; quoted/escaped mentions do not; absurd nesting over-fires (AC-4)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_a_commit_inside_a_substitution_fires + test_text_that_only_mentions_a_commit_does_not_fire + test_absurd_nesting_over_fires_instead_of_crashing PASSED"
+      },
+      {
+        "behavior": "$((cmd) ...) and quoted-paren shapes are substitutions (bash's second-paren rule), $((1+2)) is arithmetic (AC-4)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_a_commit_inside_a_substitution_fires[$((git commit -m x) && (true))] PASSED"
+      },
+      {
+        "behavior": "unparseable text still finds each commit and keeps its -C / --git-dir location; no commit does not fire (AC-5, AC-11)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_unparseable_text_keeps_the_commit_location + test_every_commit_on_an_unparseable_line_keeps_its_own_location + test_unparseable_text_without_a_commit_does_not_fire PASSED"
+      },
+      {
+        "behavior": "the fallback pattern does not backtrack catastrophically",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_the_fallback_option_pattern_does_not_backtrack_catastrophically PASSED"
+      },
+      {
+        "behavior": "a plain commit is judged on the payload cwd's project, with the documented precedence and WARNs (AC-6)",
+        "disposition": "tested",
+        "evidence": "test_hook_shell_cwd_scope.py::test_a_plain_commit_uses_the_payload_directory_not_the_hook_process + test_a_project_without_compliance_data_defers_with_a_warn + test_a_project_found_below_the_shell_directory_is_not_the_commits_repo PASSED"
+      },
+      {
+        "behavior": "a stale lock is broken atomically by exactly one waiter; an unrenameable one times out without spinning (AC-7)",
+        "disposition": "tested",
+        "evidence": "test_hook_override_lock.py::test_a_stale_lock_is_broken_by_exactly_one_of_two_waiters + test_an_unrenameable_stale_lock_times_out_instead_of_spinning PASSED"
+      },
+      {
+        "behavior": "one override releases one hook run holding several commits, the next command is blocked (AC-8)",
+        "disposition": "tested",
+        "evidence": "test_hook_override_lock.py::test_one_override_releases_one_command_however_many_commits_it_holds PASSED"
+      },
+      {
+        "behavior": "a restored log or swept/unreadable marker never revives a used override; a lost marker race does not release (AC-9)",
+        "disposition": "tested",
+        "evidence": "test_hook_override_lock.py::test_a_restored_log_does_not_revive_a_consumed_override + test_a_lost_marker_race_does_not_release + test_an_unreadable_marker_means_used_not_released PASSED"
+      },
+      {
+        "behavior": "review-round comment/arithmetic/option shapes over-fire (AC-10)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_review_round_shapes_fire + test_the_depth_cap_fallback_reads_git_dash_c_commit_too PASSED"
+      },
+      {
+        "behavior": "a displaced lock holder never unlinks the new owner's lock; old markers are swept; a read-only dir fails closed after the wait (AC-12)",
+        "disposition": "tested",
+        "evidence": "test_hook_override_lock.py::test_a_lock_re_taken_by_another_owner_is_not_removed_by_the_displaced_one + test_old_markers_are_swept_but_a_live_one_is_not + test_a_read_only_directory_fails_closed_after_the_wait_without_spinning PASSED"
+      },
+      {
+        "behavior": "a continuation inside a quoted heredoc body fed to a shell joins (doubt fix)",
+        "disposition": "tested",
+        "evidence": "test_hook_command_shapes.py::test_a_continuation_in_a_shell_fed_quoted_body_joins PASSED"
+      },
+      {
+        "behavior": "the real security hook stays blocked after one release and a log restore (AC-13)",
+        "disposition": "tested",
+        "evidence": "test_hook_override_lock.py::test_the_security_hook_stays_blocked_after_the_log_is_restored PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "the real coverage hook script, run against real repos, reads the new shapes and shell cwd end to end",
+        "disposition": "tested",
+        "evidence": "test_rtm_coverage_hook_committed.py (hook subprocess cases) + test_rtm_hook_followups.py PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 16,
+      "tested": 16,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 13,
+      "covered_acs": 13
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-compliance --extra dev pytest tests/test_hook_command_shapes.py tests/test_hook_override_lock.py tests/test_hook_shell_cwd_scope.py tests/test_rtm_coverage_hook_committed.py tests/test_compliance_override.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 89,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-08-u13-hook-command-shapes/surface_verification.log",
+    "timestamp": "2026-10-08T23:26:13.705Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
