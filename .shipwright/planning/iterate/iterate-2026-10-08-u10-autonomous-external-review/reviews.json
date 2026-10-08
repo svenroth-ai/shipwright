@@ -141,29 +141,103 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": null,
+          "finding": "floor relaxation was not limited to campaign runs. FIXED: needs a campaign-shaped entry (branch iterate/campaign-*--U<n> or a sub-iterates spec path); non-campaign entries fail the floor.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_unavailable.py",
+          "line": null,
+          "finding": "capture check was easy to fake. FIXED: envelope needs review_schema, mode, success false / degraded true and a non-empty error or degraded_reason; stderr-only needs the raw file; symlinks refused; all-skipped reply refused (points to missing-keys).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": null,
+          "finding": "stderr captures are committed with the run dir. FIXED in part: the note tool WARNs about stderr files that back no unavailable row and the procedure says to delete them; redaction is an accepted limit.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_review_unavailable.py",
+          "line": null,
+          "finding": "test naming and weak assertions; duplicated reader. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T13:52:23.979177+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T15:52:48.156418+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/review_record_floor.py",
+          "line": null,
+          "finding": "Claim under doubt: the floor pair only lets a campaign runner continue — a standalone medium+ run recorded the pair and passed with no code review",
+          "suggestion": "FIXED in b5ee30656 (campaign-shaped entry required, negative test). Residual: the guard is entry evidence, not cryptographic - ADR limit 1.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/review_unavailable.py",
+          "line": null,
+          "finding": "Claim under doubt: unavailable is only accepted with the tool's own failure — hand-written capture or a self-inflicted failure such as --diff-file /nonexistent",
+          "suggestion": "Hardened in b5ee30656 (schema, mode, error text, raw file must exist, symlinks refused). Residual: shape-plus-schema checked, not provenance-checked - ADR limit 2.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": null,
+          "finding": "Claim under doubt: stderr paths only, never content — F6 stages the whole run dir so stderr is committed",
+          "suggestion": "Mitigated (WARN + delete-before-commit prose); redaction accepted limit 6.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/review_unavailable_note.py",
+          "line": null,
+          "finding": "Claim under doubt: one re-run card per run and a closed card is not reopened — dismissed card returned without status",
+          "suggestion": "FIXED: status is printed with the card id.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T13:52:24.383101+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T15:52:48.394731+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -238,16 +312,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T13:52:23.646435+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T15:52:47.945106+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
