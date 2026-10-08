@@ -123,29 +123,130 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/spec_impact_gate.py",
+          "line": null,
+          "finding": "FR-presence used truthiness. FIXED: is_non_empty_fr_list.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "closed-code rule was opt-in via intent. FIXED: intent stamped from the iterate entry type, mismatch refused.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/change_type_diff.py",
+          "line": null,
+          "finding": "remote-first rule fell through to local main; missing git read as not-a-repo; ls-files without --full-name lost untracked files in a subdirectory project. FIXED, real-git tests.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/change_type_paths.py",
+          "line": null,
+          "finding": "monorepo docs covered runtime prompts; generic **/docs globs covered runtime trees; shape read from the working tree. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/spec_impact_gate.py",
+          "line": null,
+          "finding": "reason code never compared with change_type; no compliance-only code. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "stale docs, F11 drift, dead re-export, test names. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T13:17:34.781289+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T16:05:31.242445+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/change_type_diff.py",
+          "line": null,
+          "finding": "Claim under doubt: untracked files are part of the diff — ls-files without --full-name drops them for a project in a repo subdirectory",
+          "suggestion": "FIXED in 3606fba4c (--full-name, real-git test).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/change_type_paths.py",
+          "line": null,
+          "finding": "Claim under doubt: generic projects keep runtime code outside every label — src/app/docs/page.tsx passes under docs",
+          "suggestion": "FIXED (runtime roots win over docs/test/sbom globs).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/change_type_paths.py",
+          "line": null,
+          "finding": "Claim under doubt: a no-FR label cannot cover a requirement change — .shipwright/** is bookkeeping for every label, so a docs label can edit spec.md",
+          "suggestion": "ACCEPTED limit in the ADR; follow-up: exclude planning spec files from bookkeeping.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "Claim under doubt: the label is checked against what the iterate changed — checked once at F5b; the idempotent early return in finalize_iterate skips the gate on re-run; a stale plugin cache bypasses it",
+          "suggestion": "ACCEPTED limits 5-6 in the ADR; F11 WARNs on a none event without a closed code.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/change_type_diff.py",
+          "line": null,
+          "finding": "Claim under doubt: stacked campaign branches measure only this unit — fork point is always trunk",
+          "suggestion": "ACCEPTED limit (fails closed, names the paths).",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T13:17:34.891626+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T16:05:31.444019+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -220,16 +321,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T13:17:34.685709+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T16:05:31.140102+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
