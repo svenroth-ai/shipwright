@@ -1,0 +1,61 @@
+{
+  "run_id": "iterate-2026-10-08-pr-review-haiku-5-5",
+  "date": "2026-10-08T14:25:20.480510Z",
+  "event_at": "2026-10-08T10:19:09.024800+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/pr-review-haiku-5-5",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-pr-review-haiku-5-5",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "monorepo DEFAULT_MODEL is anthropic/claude-haiku-5.5 and equals HAIKU_MODEL",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_openrouter.py::test_default_model_is_haiku + test_pr_review_script.py PASSED"
+      },
+      {
+        "behavior": "workflow SHIPWRIGHT_PR_REVIEW_MODEL literal equals DEFAULT_MODEL (no drift)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_workflow_shape.py::test_model_env_matches_code_default PASSED"
+      },
+      {
+        "behavior": "default model threads empty extra_body (no ZDR pin); Luna/DeepSeek/GLM remain overrides",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py + test_luna_model_constant_still_exists_for_the_operator_override PASSED"
+      },
+      {
+        "behavior": "webui mirror: DEFAULT_MODEL haiku, workflow literal, Luna override kept",
+        "disposition": "tested",
+        "evidence": "shipwright-webui scripts/ci/tests (test_pr_review_openrouter/script/orchestration/workflow_shape) 56 passed"
+      },
+      {
+        "behavior": "slug exists on the real provider and answers with json_object",
+        "disposition": "tested",
+        "evidence": "live OpenRouter ping anthropic/claude-haiku-5.5 returned {\"ok\":true}, context_length 1000000 (2026-10-08)"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-security pytest plugins/shipwright-security/tests/test_pr_review_openrouter.py plugins/shipwright-security/tests/test_pr_review_script.py plugins/shipwright-security/tests/test_pr_review_deepseek_routing.py plugins/shipwright-security/tests/test_pr_review_workflow_shape.py -q",
+    "exit_code": 0,
+    "tests_run": 66,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\pr-review-haiku-5-5\\.shipwright\\runs\\iterate-2026-10-08-pr-review-haiku-5-5\\surface_verification.log",
+    "timestamp": "2026-10-08T14:23:41.925Z",
+    "attempts": 1
+  }
+}

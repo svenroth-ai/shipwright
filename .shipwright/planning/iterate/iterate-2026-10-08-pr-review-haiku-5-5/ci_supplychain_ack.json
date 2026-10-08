@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-pr-review-haiku-5-5",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-10-08-pr-review-haiku-5-5",
+    "paths_fingerprint": "2a558eaca7d8597ed764277f3e94fd25d4629df8b3bb46f8be983a0b68611335",
+    "consistent_with": "iterate-2026-09-24-model-version-bump",
+    "statement": "Swaps only the literal SHIPWRIGHT_PR_REVIEW_MODEL value (openai/gpt-6-luna -> anthropic/claude-haiku-5.5) and its comment in .github/workflows/pr-review-run.yml, matching the new DEFAULT_MODEL in pr_review_openrouter.py. No change to trust boundaries, permissions, triggers, checkout refs, action pins or secrets handling; same mechanism as the prior model swaps.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}
