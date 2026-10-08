@@ -1,0 +1,116 @@
+{
+  "run_id": "iterate-2026-10-08-u13-rtm-hook-followups",
+  "date": "2026-10-08T15:09:02.236114Z",
+  "event_at": "2026-10-08T15:08:34.864563+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U13",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u13-rtm-hook-followups",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a requirement whose every linked test is not_run leaves the figure and is counted as not measured",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_unrun_requirements_leave_the_figure_and_are_counted + test_one_executed_link_makes_a_requirement_measured PASSED"
+      },
+      {
+        "behavior": "the hook WARNs 'N of M requirements not measured' and gates on the measured rest",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_hook_warns_with_the_count_and_gates_on_the_measured_rest + test_nothing_executed_stays_unmeasurable PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "check_rtm_coverage names the exact override line, honours it once, then blocks again",
+        "disposition": "tested",
+        "evidence": "test_compliance_override.py::test_rtm_hook_names_the_line_then_honours_it PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "check_security_scan names the exact override line, honours it once, then blocks again",
+        "disposition": "tested",
+        "evidence": "test_compliance_override.py::test_security_hook_names_the_line_then_honours_it PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "an override is valid only within 30 minutes, with a reason, not pre-dated, and only once",
+        "disposition": "tested",
+        "evidence": "test_compliance_override.py::test_an_entry_is_honoured_inside_its_window_only + test_expired_predated_reasonless_or_malformed_entries_are_ignored + test_an_override_is_used_once PASSED"
+      },
+      {
+        "behavior": "an override whose use cannot be recorded is not applied (block stands)",
+        "disposition": "tested",
+        "evidence": "test_compliance_override.py::test_rtm_hook_keeps_the_block_when_the_use_cannot_be_recorded + test_an_unwritable_log_says_the_override_stays_valid PASSED"
+      },
+      {
+        "behavior": "the printed printf line, run by bash, writes an entry the reader honours (round trip)",
+        "disposition": "tested",
+        "evidence": "test_compliance_override.py::test_the_instructed_line_written_by_bash_is_honoured PASSED"
+      },
+      {
+        "behavior": "an editor's BOM / CRLF in the override log keeps the first entry",
+        "disposition": "tested",
+        "evidence": "test_compliance_override.py::test_a_bom_and_crlf_from_an_editor_keep_the_first_entry PASSED"
+      },
+      {
+        "behavior": "git -C / --work-tree / --git-dir commits are measured in the target repo (real git repos)",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_dash_c_and_work_tree_name_the_measured_repo + test_a_bare_git_dir_is_read_through_git_dir PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "-C naming a subdirectory measures the project; a multi-repo line is judged on its failing repo",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_dash_c_naming_a_subdirectory_measures_the_project + test_a_line_committing_to_two_repos_is_judged_on_the_failing_one PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "heredoc bodies (incl. unterminated, tab-stripped) are not scanned; commits around them still fire",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_heredoc_bodies_are_not_scanned + test_commits_around_heredocs_still_fire PASSED"
+      },
+      {
+        "behavior": "ACs under a sub-heading of an FR section stay in its inventory",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_ac_inventory_keeps_acs_under_sub_headings PASSED"
+      },
+      {
+        "behavior": "the legacy-path block has no staging hint on either stream and override advice on stderr",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_legacy_block_has_override_advice_and_no_staging_hint PASSED"
+      },
+      {
+        "behavior": "git.cmd / git.exe / command git are commits; a user alias is documented as not covered",
+        "disposition": "tested",
+        "evidence": "test_rtm_hook_followups.py::test_git_cmd_exe_and_command_git_are_commits + test_a_user_alias_is_documented_as_not_covered PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 14,
+      "tested": 14,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-compliance --extra dev pytest tests/test_rtm_hook_followups.py tests/test_compliance_override.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 46,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-08-u13-rtm-hook-followups/surface_verification.log",
+    "timestamp": "2026-10-08T14:07:30.361Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

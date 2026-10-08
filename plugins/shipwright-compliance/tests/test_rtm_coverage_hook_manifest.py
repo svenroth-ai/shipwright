@@ -27,7 +27,7 @@ def _manifest(root: Path, passing: int, total: int, generated_at=None):
     reqs = {}
     for i in range(total):
         link = {"id": f"t{i}", "layer": "unit", "status": "enabled",
-                "executed": "pass" if i < passing else "not_run"}
+                "executed": "pass" if i < passing else "fail"}  # not_run = not measured
         reqs[f"01::FR-01.{i:02d}"] = {"id": f"FR-01.{i:02d}", "status": "active",
                                       "tests": {"unit": [link]}, "acs": {}}
     path = root / ".shipwright" / "compliance" / "test-traceability.json"
@@ -250,11 +250,7 @@ def test_inproc_legacy_section_line_and_unevaluable_warn(tmp_path, monkeypatch, 
     mod = _load_hook()
     d = tmp_path / ".shipwright" / "compliance"
     d.mkdir(parents=True)
-    (d / "traceability-matrix.md").write_text("| Traceability coverage | 40% |\n", encoding="utf-8")
-    rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
-    assert rc == 2 and "RTM build-section coverage 40%" in out and "uncovered_sections" in out
-    assert "share of build sections with a commit; no requirement manifest" in out
-    assert "staging_hint" not in out  # the staging limit concerns the manifest only
+    # the blocking leg (both streams, no staging hint): test_rtm_hook_followups
     (d / "traceability-matrix.md").write_text("| Traceability coverage | 90% |\n", encoding="utf-8")
     rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
     assert rc == 0 and "RTM build-section coverage 90% (share of build sections" in out

@@ -19,7 +19,8 @@ sections with a commit). Cases that cannot be measured emit a visible WARN
 (``additionalContext``) instead of allowing silently.
 
 Fires only for a real ``git ... commit`` invocation (:func:`is_git_commit`), not for
-any command whose text merely contains "git commit".
+any command whose text merely contains "git commit". It measures the repo the commit
+lands in: ``git -C <path>`` / ``--work-tree`` / ``--git-dir`` (``git_commit_target``).
 
 **Ordering limit.** PreToolUse runs BEFORE the Bash command, so the index is read as
 it stands then: a manifest staged by the same command (``git add <manifest> && git
@@ -32,8 +33,9 @@ Exit codes:
   0 = allow (no compliance data yet, coverage sufficient, or unmeasurable + WARN)
   2 = soft-block (user can say "Continue anyway", gets logged)
 
-The user can override by saying "Continue anyway". If they do, Claude should
-log the override to .shipwright/agent_docs/compliance_overrides.log.
+The user can override by saying "Continue anyway": the block names the exact line to
+append to .shipwright/agent_docs/compliance_overrides.log, which lets the next blocked
+commit through once within 30 minutes, with a visible WARN (``lib/compliance_override``).
 """
 
 from __future__ import annotations
@@ -106,20 +108,16 @@ RATCHET_HINT = (
     "enforcement.rtm_coverage_baseline in shipwright_compliance_config.json; "
     "the gate then ratchets from there. The hook never writes it."
 )
-OVERRIDE_HINT = (
-    "The user may say 'Continue anyway' to override this check. "
-    "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
-    "with timestamp, hook name 'check_rtm_coverage', and reason."
-)
+HOOK = "check_rtm_coverage"
 
 
-def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
+def _hook_block(reason: str, details: dict[str, Any], override: str) -> dict[str, Any]:
     """Build soft-block hook output with override support."""
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                f"BLOCKED: {reason}\n\n{OVERRIDE_HINT}\n\n"
+                f"BLOCKED: {reason}\n\n{override}\n\n"
                 "Note: Coverage gap will be flagged again at next compliance checkpoint."
             ),
             "blocked": True,
@@ -127,6 +125,12 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
             "details": details,
         }
     }
+
+
+def _target_root(command: str, cwd: Any) -> tuple[str, dict[str, str], list[str]]:
+    """The repo the commit lands in (``git -C`` / ``--git-dir`` / ``--work-tree``), else
+    the managed project root, plus the ``GIT_DIR`` env its git reads need."""
+    return _lib().target_root(command, cwd, _resolve_project_root)
 
 
 def _read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
@@ -162,11 +166,10 @@ def main() -> int:
     if not isinstance(command, str) or not is_git_commit(command):
         return 0
 
-    # Resolve the managed project root (auto-descends in subdir layouts).
-    project_root = _resolve_project_root()
-
     try:
-        measure, warnings = _measure(project_root)
+        project_root, git_env, warnings = _target_root(command, payload.get("cwd"))
+        with _lib().git_env(git_env):
+            measure, measured_warnings = _measure(project_root)
         threshold, config_warnings, baseline = _read_threshold(project_root)
     except Exception as exc:  # noqa: BLE001 - a broken gate must say so, then allow
         _warn_output([
@@ -174,7 +177,7 @@ def main() -> int:
             "the 80% commit gate is NOT evaluating"
         ])
         return 0
-    warnings += config_warnings
+    warnings += measured_warnings + config_warnings
     if measure is None:
         if warnings:
             _warn_output(warnings)
@@ -202,10 +205,15 @@ def main() -> int:
         else:
             details["uncovered_sections"] = lib.find_uncovered_sections(project_root)
         reason = f"{lib.describe(measure)} < {threshold_pct}% threshold"
-        print(json.dumps(_hook_block(reason=reason, details=details)))
+        found = lib.override.active_override(project_root, HOOK)
+        unmarked = found and lib.override.consume(project_root, HOOK, found)
+        if found is not None and not unmarked:  # a logged "Continue anyway", now used
+            _warn_output(warnings, info=lib.override.notice(HOOK, found, reason))
+            return 0
+        advice = "\n".join(filter(None, [unmarked, lib.override.instruction(project_root, HOOK)]))
+        print(json.dumps(_hook_block(reason=reason, details=details, override=advice)))
         # exit 2: Claude Code shows the model STDERR and ignores the stdout JSON
-        print("\n".join([f"BLOCKED (check_rtm_coverage): {reason}", *hints, OVERRIDE_HINT]),
-              file=sys.stderr)
+        print("\n".join([f"BLOCKED ({HOOK}): {reason}", *hints, advice]), file=sys.stderr)
         return 2
 
     if baseline is not None and lib.above_baseline(measure, baseline):

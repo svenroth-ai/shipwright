@@ -2178,7 +2178,7 @@ its result. The only session-lifecycle hook left in this area is:
 | `suggest_iterate.py` | UserPromptSubmit | Multilingual phase router; auto-suggests `/shipwright-iterate` for post-test code changes |
 | `write_terminal_marker.py` | SessionStart | Writes a terminal marker the WebUI Command Center watches |
 
-Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `.shipwright/agent_docs/compliance_overrides.log` and flagged at the next checkpoint.
+Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `.shipwright/agent_docs/compliance_overrides.log` and flagged at the next checkpoint. For the coverage and security gates, the block message names the exact line to log; that entry lets the same hook's next blocked command through once, within 30 minutes.
 
 **Viewing measured context cost.** `track_context_cost.py` writes the file above on every turn; a plugin cannot wire it into anything Claude Code shows you automatically (it can no more edit your personal `~/.claude/settings.json` than it can set `autoCompactWindow` for you), so these are opt-in, operator-run:
 

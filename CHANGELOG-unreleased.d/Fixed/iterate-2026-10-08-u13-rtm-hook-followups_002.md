@@ -1,0 +1,1 @@
+shipwright-compliance: the commit coverage gate measures the repo the commit goes to (git -C / --work-tree / --git-dir), leaves requirements whose tests were not run out of the figure with a 'not measured' warning, ignores here-document bodies, keeps ACs under a sub-heading of their requirement, and recognises git.cmd

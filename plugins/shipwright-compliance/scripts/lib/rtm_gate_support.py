@@ -2,7 +2,8 @@
 
 Threshold/baseline config, the measurement cascade (manifest first, legacy RTM
 section line only when no manifest file exists), the legacy RTM readers and the
-exact-rational gate comparison. Pure apart from reading project files.
+exact-rational gate comparison, and which repo a commit command targets. Pure apart
+from reading project files (and scoping ``GIT_DIR`` around a measurement).
 """
 
 from __future__ import annotations
@@ -10,11 +11,14 @@ from __future__ import annotations
 import json
 import os
 import re
+from contextlib import contextmanager
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
+import compliance_override as override  # noqa: F401 - the hook reaches it as lib.override
 import rtm_manifest_coverage as manifest_cov
+from git_commit_target import commit_targets
 
 DEFAULT_THRESHOLD = 0.80
 _RTM_RELPATH = Path(".shipwright/compliance/traceability-matrix.md")
@@ -53,6 +57,62 @@ def find_uncovered_sections(project_root: str) -> list[str]:
     except OSError:
         pass
     return uncovered
+
+
+@contextmanager
+def git_env(env: dict[str, str]):
+    """``GIT_DIR`` / ``GIT_WORK_TREE`` for the git reads inside the block, then restored."""
+    saved = {key: os.environ.get(key) for key in env}
+    os.environ.update(env)
+    try:
+        yield
+    finally:
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def _below_threshold(root: str, env: dict[str, str]) -> bool:
+    with git_env(env):
+        measured, _warnings = measure(root)
+    return measured is not None and not meets(measured, read_threshold(root)[0])
+
+
+def target_root(command: str, cwd: Any,
+                default: Callable[[], str]) -> tuple[str, dict[str, str], list[str]]:
+    """``(project root, git env, warnings)`` for the repo *command* commits to.
+
+    *default* (the managed project root) for a commit naming no location
+    (``git_commit_target``) or a directory that does not exist (WARN). The git env
+    carries ``GIT_DIR`` / ``GIT_WORK_TREE`` for a ``--git-dir`` commit. A command
+    committing to several repos is judged on the first one below its threshold
+    (else the first), with a WARN naming them all.
+    """
+    cwd = cwd if isinstance(cwd, str) and cwd else os.getcwd()
+    warnings: list[str] = []
+    roots: dict[str, dict[str, str]] = {}  # insertion-ordered, one entry per repo
+    for target in commit_targets(command, cwd):
+        if target is not None and not target.project_root.is_dir():
+            warnings.append(f"the commit names {target.project_root}, which is not a "
+                            f"directory; measured {default()} instead")
+            target = None
+        if target is None:
+            roots.setdefault(default(), {})
+        else:
+            roots.setdefault(str(target.project_root), {} if target.git_dir is None else {
+                "GIT_DIR": str(target.git_dir), "GIT_WORK_TREE": str(target.project_root)})
+    if not roots:
+        return default(), {}, warnings
+    chosen = next(iter(roots))
+    if len(roots) > 1:
+        chosen = next((root for root, env in roots.items() if _below_threshold(root, env)),
+                      chosen)
+        warnings.append(f"this command commits to {len(roots)} repos ("
+                        + ", ".join(roots) + f"); judged on {chosen}, the first below "
+                        "threshold or else the first -- commit to each repo separately")
+    return chosen, roots[chosen], warnings
 
 
 def read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
@@ -115,7 +175,13 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
         stale = manifest_cov.staleness_warning(manifest, project_root)
         if stale:
             warnings.append(stale)
-        if cov["fr"]["pct"] is None:
+        unmeasured = cov["fr"]["not_measured"]
+        if unmeasured and cov["fr"]["total"]:
+            warnings.append(
+                f"{unmeasured} of {unmeasured + cov['fr']['total']} requirements not measured "
+                "(every linked test not_run in the last evidence run); left out of the "
+                "figure, neither covered nor uncovered")
+        if cov["fr"]["pct"] is None and not unmeasured:
             warnings.append(
                 "traceability manifest lists no active requirements; nothing to measure "
                 f"({_NOT_EVALUATING})"
@@ -172,5 +238,7 @@ def describe(m: dict[str, Any]) -> str:
         f"Requirement coverage {fr['pct']}% ({fr['covered']}/{fr['total']} active requirements "
         f"have an executed-passing bound test; ACs {ac['covered']}/{ac['total']}"
         + (f" = {ac['pct']}%" if ac["pct"] is not None else "")
-        + f", AC inventory from {ac.get('source', 'manifest')})"
+        + f", AC inventory from {ac.get('source', 'manifest')}"
+        + (f"; {fr['not_measured']} more not measured" if fr.get("not_measured") else "")
+        + ")"
     )
