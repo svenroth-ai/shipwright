@@ -124,14 +124,14 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 4,
       "findings": [
         {
           "severity": "medium",
           "category": "correctness",
-          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "file": "plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py",
           "line": null,
-          "finding": "The stderr block (what the model sees on exit 2) omits the override-logging instruction that exists only in the ignored stdout additionalContext. Non-blocking: the override mechanism is pre-existing, shared with check_security_scan.py, and tracked in triage.",
+          "finding": "The legacy-path test checks staging_hint absence only in stdout JSON, not stderr (the text the model sees on exit 2). Test gap, non-blocking; tracked in triage.",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -140,40 +140,31 @@
           "category": "correctness",
           "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
           "line": null,
-          "finding": "Past the depth cap the substring test decides: plain 'git commit' fires, git global options before 'commit' do not; docs word it as over-fire. Negligible (needs four nested shells).",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "architecture",
-          "file": "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
-          "line": null,
-          "finding": "measure() branches on a note prefix (UNREADABLE) instead of structured data; pinned by a test.",
+          "finding": "shlex does not reproduce env -S escapes (backslash-underscore separator, ${VAR} expansion); known under-fire, rare.",
           "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
           "line": null,
-          "finding": "Over-long docstring line in measure().",
+          "finding": "Depth-cap and unbalanced-quote fallbacks check slightly different text; docstring line over-long.",
           "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "file": "plugins/shipwright-compliance/tests/test_git_commit_command.py",
           "line": null,
-          "finding": "staging_hint is also emitted on the legacy sections path where no manifest exists.",
+          "finding": "No end-to-end nested env -S case through is_git_commit at the depth cap.",
           "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-08T07:24:59.443100+00:00",
+      "completed_at": "2026-10-08T08:20:15.363350+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
