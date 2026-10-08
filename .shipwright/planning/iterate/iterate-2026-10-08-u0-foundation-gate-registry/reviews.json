@@ -69,29 +69,121 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "_cmd_repair_markers passes reason=args.disposition; a bare --reason-code record re-run through the repair path leaves a marker with reason=null while the record holds the synthesised disposition.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "reason_code is attached after make_entry() in two different ways instead of being a make_entry parameter, so make_entry's own checks never see it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_finalization_claims.py",
+          "line": null,
+          "finding": "A crashed claim check is reported under check.__name__ instead of its CHECK_NAME.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md",
+          "line": null,
+          "finding": "The Exemptions line replaced the blank line before Run-ID in the PR-body template, so git-native trailer parsing no longer sees Run-ID.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/exemption_record.py",
+          "line": null,
+          "finding": "Absolute-path check only covers the part before the first '::'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/append_iterate_entry.py",
+          "line": null,
+          "finding": "validate_iterate_entry(...)[1] indexing relies on err being falsy exactly when ok is True.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-07T23:28:59.155536+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the code reviewer; delegated to the campaign orchestrator at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T05:23:16.312047+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/exemption_record.py",
+          "line": null,
+          "finding": "Claim under doubt: A missing exemptions key prints as 0, like a recorded zero. — Rebutted for U0: U0 only provides the registry and nothing produces exemptions yet, so nothing is hidden. U1 is the first producer and carries the fix (render 'not recorded (legacy entry)' or require the key on new entries); written into the U1 sub-iterate spec.",
+          "suggestion": "U1 renders a missing key distinctly.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/tools/verifiers/_finalization_claims.py",
+          "line": null,
+          "finding": "Claim under doubt: A later registered check importing iterate_checks would break at import time. — Carried to U1 (docstring + docs rule); no registered check does it today.",
+          "suggestion": "Rule in the registry docstring and docs preamble.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/verifiers/_finalization_claims.py",
+          "line": null,
+          "finding": "Claim under doubt: run_claim_checks catches Exception only; SystemExit would let F11 exit 0. — Carried to U1 (catch SystemExit + test); no registered check can raise it today.",
+          "suggestion": "Catch SystemExit and turn it RED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_finalization_claims.py",
+          "line": null,
+          "finding": "Claim under doubt: A crashed check is reported under check.__name__, not CHECK_NAME. — Carried to U1 and filed on the U0 follow-up triage card.",
+          "suggestion": "Use the module's CHECK_NAME.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-07T23:28:59.266372+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the doubt reviewer; delegated to the campaign orchestrator at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T05:28:42.643387+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -175,12 +267,12 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-07T23:39:33.639424+00:00",
-      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: BRIEF U0.3 (L73) vs F12.md:45-47 -> the diff's docs count reviews closed without running as exemptions, but this run's own F5c entry records exemptions.count=0 despite two delegated not_run rows, so the printed count is wrong. Fix: narrow F12.md/F5c.md:27 to per-test exemptions OR record the two rows as review_not_run items. Delivery stopped; PR left open.",
+      "completed_at": "2026-10-08T05:20:14.202588+00:00",
+      "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
