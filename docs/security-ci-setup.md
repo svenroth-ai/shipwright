@@ -215,18 +215,41 @@ names.
 
 #### Accepted-risk rule tailoring (Semgrep)
 
-Two Semgrep rules fire on this repo every scan but map to **accepted-risk /
-by-design** postures, not actionable findings. Rather than dismiss them in
-Triage every week (they re-surface from each fresh scan), they are suppressed
-at the **producer** — filtered in the Semgrep normalizer, keyed off two opt-in
-env vars set in the scan step of `.github/workflows/security.yml`. Both default
-**off** in the plugin, so adopted repos are unaffected and decide their own
-posture.
+One Semgrep rule fires on this repo every scan but maps to an **accepted-risk /
+by-design** posture, not an actionable finding. Rather than dismiss it in
+Triage every week (it re-surfaces from each fresh scan), it is suppressed
+at the **producer** — filtered in the Semgrep normalizer, keyed off an opt-in
+env var set in the scan step of `.github/workflows/security.yml`. The
+plugin has two such channels (a wholesale rule exclusion,
+`SHIPWRIGHT_SEMGREP_EXCLUDE_RULES`, and the owner-scoped toggle below); both
+default **off**, so adopted repos are unaffected and decide their own posture.
+This repo sets only the toggle.
 
 | Rule (`check_id`) | Count | Why accepted | Channel |
 |---|---|---|---|
-| `…dependabot-missing-cooldown…` | 14 low | `.github/dependabot.yml` is DORMANT (`open-pull-requests-limit: 0` on every ecosystem) — a cooldown on a config that opens zero PRs is meaningless. | `SHIPWRIGHT_SEMGREP_EXCLUDE_RULES` (exact `check_id`, wholesale drop) |
-| `…github-actions-mutable-action-tag…` | 12 medium | GitHub-owned actions (`actions/*`, `github/*`) are deliberately not SHA-pinned (decision 2026-06-30 — Scorecard weights pinned-deps 8:2 and pinning GitHub-owned actions needs Dependabot to avoid tag-rot). | `SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS` (owner-scoped) |
+| `…github-actions-mutable-action-tag…` | 12 medium | GitHub-owned actions (`actions/*`, `github/*`) stay on mutable tags by choice (decision 2026-06-30 — Scorecard weights pinned-deps 8:2). Since 2026-10-08 this repo runs Dependabot for `github-actions`, which would keep SHA pins fresh, so the tags are no longer kept out of necessity; the adopter-facing posture is unchanged (the framework ships no updater config). | `SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS` (owner-scoped) |
+
+`dependabot-missing-cooldown` is **not** excluded any more: every entry in
+`.github/dependabot.yml` carries a `cooldown`, so the rule stays live and flags
+a future entry added without one.
+
+#### Dependabot in this repo
+
+- **Version updates: `github-actions` only** — weekly, minor/patch bumps grouped
+  into one PR, major bumps as separate PRs, 7-day cooldown, `/` and
+  `/.github/actions/*`. All `pip` ecosystems stay **dormant**
+  (`open-pull-requests-limit: 0`): Trivy covers Python CVEs.
+- **Repo settings (not in the file):** Dependabot alerts and Dependabot
+  *security updates* are on, so a vulnerable dependency gets a fix PR regardless
+  of the `pip` limit. Secret scanning and push protection are on too.
+- **Dependabot PRs and `PR Review`:** Dependabot PRs get Dependabot secrets, not
+  Actions secrets, and they change workflow files — so the required `PR Review`
+  check is red on them and they are merged by the maintainer (admin merge) after
+  the other checks are green. Adding `OPENROUTER_API_KEY` as a Dependabot secret
+  would remove the first cause, not the sensitive-path rule.
+- **Tests must not pin an action's major.** A test that reads the live workflows
+  asserts the action, or a minimum version, never an exact major — otherwise a
+  Dependabot bump turns the PR red.
 
 **The mutable-tag channel is owner-scoped, not wholesale.** It suppresses the
 finding *only* when the matched `uses:` line points at a GitHub-owned owner
