@@ -43,7 +43,7 @@ jobs:
         # native-Windows verification exactly.
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         # GitHub-owned action, mutable tag by decision (mirrors ci.yml) —
         # third-party actions below are SHA-pinned instead.
         with:
