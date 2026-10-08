@@ -145,8 +145,9 @@ re-measures the branch and re-reads the risk flags. The `code` row must then be
 `completed`, or `not_run` with a `--reason-code` from the closed `review_not_run`
 set that this gate accepts: `unavailable`, `delegated-to-orchestrator` or
 `user-opt-out`. A free-text disposition alone fails, and so does every other
-code. A diff F11 cannot measure (no trustworthy trunk base) or an unreadable
-risk-flag source counts as triggered, never as quiet.
+code. A diff F11 cannot measure (no trustworthy trunk base, or a trunk tip no
+remote trunk ref contains) or an unreadable risk-flag source counts as triggered,
+never as quiet. A missing complexity in the F5c entry is in scope, not a skip.
 
 ### When Self-Review is Sufficient
 - Trivial/small complexity with no risk flags

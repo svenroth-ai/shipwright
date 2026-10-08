@@ -24,13 +24,21 @@ unreadable (corrupt plan, foreign ``risk_recheck.json``), the run is read as
 triggered and the record decides. A reviewed run passes; an unanswered one fails
 with a repair for the input as well as for the row.
 
+The single exception is a git failure on the work tree itself (``git_error``):
+it fails outright, because then even the risk detectors recomputed from the diff
+cannot run, and "fix git" is the one repair that clears every input at once.
+
 A campaign sub-iterate records ``delegated-to-orchestrator`` and passes. The
 orchestrator's 3f-bis cascade later promotes the row.
 
-Scope: ``small`` only. Trivial runs no cascade. At medium+ the stricter
-``code_review_floor`` already requires a review that happened. A missing F5c
-entry or review record SKIPs here, because ``check_review_record`` already
-fails it and one fault should give one message.
+Scope: everything the medium+ ``code_review_floor`` does not cover. The F5c
+entry's complexity is raised to the session plan's when that plan is readable
+and ranks higher. A missing or unrecognised complexity is IN scope, never a
+skip. Trivial skips only when stated explicitly and not contradicted by the
+plan. An entry that says medium+ skips, because the stricter floor already
+requires a review that happened. A missing F5c entry or review record SKIPs
+here, because ``check_review_record`` already fails it and one fault should give
+one message.
 """
 
 from __future__ import annotations
@@ -47,7 +55,7 @@ from lib.reason_codes import reason_code_error  # noqa: E402
 from lib.review_diff_threshold import DIFF_LOC_THRESHOLD, exceeds_diff_threshold  # noqa: E402
 from lib.review_record import ReviewRecordError, entry_for, read_record  # noqa: E402
 
-from ._cascade_trigger_inputs import measure_diff, recorded_risk_flags  # noqa: E402
+from ._cascade_trigger_inputs import measure_diff, read_plan, recorded_risk_flags  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _run_git, git_context  # noqa: E402
 from .review_record_floor import carries_evidence  # noqa: E402
@@ -68,14 +76,38 @@ _REFUSED_WHY = {
 
 _TOOL = "shared/scripts/tools/record_review_pass.py"
 
-_DIFF_REPAIR = ("To let F11 measure the diff instead, give it a trunk base it can trust "
-                "(e.g. `git fetch origin main` so `main` and `origin/main` agree) and re-run F11. ")
+_DIFF_REPAIR = ("To let F11 measure the diff instead, make the trunk branch resolvable: fetch the "
+                "remote trunk (`git fetch origin <trunk>`), unshallow a shallow clone "
+                "(`git fetch --unshallow`), or record the code review. ")
 _FLAGS_REPAIR = ("To clear the input instead, regenerate or remove the unreadable file named above "
                  "and re-run F11. ")
+
+_RANK = {"trivial": 0, "small": 1, "medium": 2, "large": 3}
 
 
 def _skip(detail: str) -> CheckResult:
     return CheckResult(CHECK_NAME, True, f"skipped ({detail})", severity=Severity.SKIPPED.value)
+
+
+def _label(value: object) -> str:
+    return str(value or "").strip().lower()
+
+
+def _scope(project_root: Path, run_id: str, entry: dict) -> tuple[bool, str]:
+    """``(in_scope, complexity label)`` from the F5c entry raised to the session plan's."""
+    stated = _label(entry.get("complexity"))
+    if stated in ("medium", "large"):
+        return False, f"complexity={stated}; the medium+ code_review_floor enforces this"
+    plan, err = read_plan(project_root, run_id)
+    planned = _label(plan.get("complexity")) if plan else ""
+    if stated == "trivial" and not err and (plan is None or planned == "trivial"):
+        return False, "complexity=trivial; trivial runs no cascade"
+    known = [c for c in (stated, planned) if c in _RANK]
+    label = max(known, key=_RANK.__getitem__) if known else ""
+    if not label or label == "trivial":
+        label = "small"
+    sources = f"entry {stated or 'missing'}, plan {planned or ('unreadable' if err else 'absent')}"
+    return True, f"{label} ({sources})"
 
 
 def _trigger(project_root: Path, run_id: str, commit_hash: str) -> tuple[str, str, str]:
@@ -132,9 +164,9 @@ def check_cascade_trigger(project_root: Path, run_id: str, commit_hash: str = ""
         entry = None
     if not isinstance(entry, dict):
         return _skip(f"no F5c entry for {run_id}; check_review_record reports that")
-    complexity = str(entry.get("complexity", "")).strip().lower()
-    if complexity != "small":
-        return _skip(f"complexity={complexity or 'unknown'}; this gate applies at small only")
+    in_scope, scope = _scope(project_root, run_id, entry)
+    if not in_scope:
+        return _skip(scope)
 
     state, why, repair = _trigger(project_root, run_id, commit_hash)
     if state == "not_git":

@@ -52,10 +52,23 @@ def _load():
     return module
 
 
+def _require(module, name: str):
+    """``module.<name>``, or a named ``ImportError`` when the shared tree predates it.
+
+    The plugin cache can carry a newer iterate plugin next to an older ``shared/``
+    tree; a bare ``AttributeError`` would not say which side is stale.
+    """
+    try:
+        return getattr(module, name)
+    except AttributeError:
+        raise ImportError(f"{_REL.as_posix()} has no `{name}`: shared tree older than the "
+                          "iterate plugin - run update-marketplace.sh") from None
+
+
 _shared = _load()
 
 SHARED_SOURCE: Path = Path(_shared.__file__)
-PLAN_REVIEW_DIFF_LOC_THRESHOLD: int = _shared.PLAN_REVIEW_DIFF_LOC_THRESHOLD
-exceeds_diff_threshold = _shared.exceeds_diff_threshold
-is_counted_path = _shared.is_counted_path
-numstat_changed_lines = _shared.numstat_changed_lines
+PLAN_REVIEW_DIFF_LOC_THRESHOLD: int = _require(_shared, "PLAN_REVIEW_DIFF_LOC_THRESHOLD")
+exceeds_diff_threshold = _require(_shared, "exceeds_diff_threshold")
+is_counted_path = _require(_shared, "is_counted_path")
+numstat_changed_lines = _require(_shared, "numstat_changed_lines")

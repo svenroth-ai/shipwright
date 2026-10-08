@@ -17,6 +17,7 @@ import pytest  # noqa: E402
 from _cascade_trigger_fixtures import (  # noqa: E402, F401 - hermetic_git is an autouse fixture
     REVIEWED,
     check,
+    commit_file,
     git,
     hermetic_git,
     lines,
@@ -163,6 +164,31 @@ def test_other_complexities_are_skipped(tmp_path, complexity):
 
 
 @pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("complexity", [None, "", "weird"])
+def test_a_missing_or_unknown_complexity_is_in_scope(tmp_path, complexity):
+    """A missing key must not skip the gate: 150 lines with a free-text not_run fails."""
+    root, sha = make_repo(tmp_path, {"src/a.py": lines(150)})
+    write_run(root, complexity=complexity)
+    result = check(root, sha)
+    assert not result.ok and "150 changed lines" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("plan_complexity", ["small", "medium", "large"])
+def test_the_plan_complexity_raises_an_entry_that_says_trivial(tmp_path, plan_complexity):
+    root, sha = make_repo(tmp_path, {"src/a.py": lines(150)})
+    write_run(root, complexity="trivial", plan_complexity=plan_complexity)
+    assert not check(root, sha).ok
+
+
+@pytest.mark.covers("FR-01.11")
+def test_trivial_skips_when_entry_and_plan_both_say_trivial(tmp_path):
+    root, sha = make_repo(tmp_path, {"src/a.py": lines(150)})
+    write_run(root, complexity="trivial", plan_complexity="trivial")
+    assert check(root, sha).detail.startswith("skipped (complexity=trivial")
+
+
+@pytest.mark.covers("FR-01.11")
 def test_complexity_label_is_compared_trimmed_and_case_folded(tmp_path):
     root, sha = make_repo(tmp_path, {"src/a.py": lines(150)})
     write_run(root, complexity=" Small ")
@@ -188,6 +214,19 @@ def test_a_multi_commit_branch_is_measured_whole_not_by_its_tip(tmp_path):
     write_run(root)
     result = check(root, git(root, "rev-parse", "HEAD"))
     assert not result.ok and "151 changed lines" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("n,quiet", [(5, True), (150, False)])
+def test_a_squash_merged_tip_in_origin_main_is_measured_alone(tmp_path, n, quiet):
+    """``base == head`` and ``origin/main`` contains it: the tip-only view is valid."""
+    root, _ = make_repo(tmp_path, {"src/other.py": lines(300)})
+    git(root, "checkout", "-q", "main")
+    sha = commit_file(root, "src/a.py", lines(n), "squash")
+    git(root, "update-ref", "refs/remotes/origin/main", sha)
+    write_run(root)
+    result = check(root, sha)
+    assert result.ok is quiet and f"{n} changed lines" in result.detail
 
 
 @pytest.mark.covers("FR-01.11")

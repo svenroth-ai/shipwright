@@ -8,16 +8,19 @@ Added + removed lines against the merge-base with the trunk, `git diff --numstat
 
 ## Unknown is triggered, never quiet
 
-When F11 cannot measure the diff (no trustworthy trunk base: a remote without the trunk ref, a trunk named `develop`, a shallow clone; a merge commit on the trunk) or a risk-flag source is unreadable (corrupt or foreign `plan.json`, foreign or malformed `risk_recheck.json`), the run counts as triggered with reason `diff size unknown: <why>` / `risk flags unknown: <why>`, and the review record decides. `code` completed with evidence, or `not_run` with an accepted code, passes; anything else fails and the message names the repair for the input as well as for the row. A repo with no remote at all and one local `main`/`master` (greenfield) trusts that lone merge-base. Only a git failure on the work tree itself fails outright. A triggered `code` row accepts an allowlist: `unavailable`, `delegated-to-orchestrator`, `user-opt-out`; `missing-keys` and `config-disabled` describe the external leg and are refused.
+When F11 cannot measure the diff (no trustworthy trunk base: a remote without the trunk ref, a trunk named `develop`, a shallow clone; a merge commit on the trunk) or a risk-flag source is unreadable (corrupt or foreign `plan.json`, foreign or malformed `risk_recheck.json`), the run counts as triggered with reason `diff size unknown: <why>` / `risk flags unknown: <why>`, and the review record decides. `code` completed with evidence, or `not_run` with an accepted code, passes; anything else fails and the message names the repair for the input as well as for the row. A repo with no remote at all and one local `main`/`master` (greenfield) trusts that lone merge-base when the branch has left it. When the commit already sits on the trunk (`base == head`), its own diff is measured only if a remote trunk ref (`origin/main`, `origin/master`) contains it, the squash-merged-PR shape; a tip that only a local trunk contains (unpushed commits on `main`, a remote-less trunk) is unknown, since it may be the last of several commits. A missing or unrecognised complexity in the F5c entry is in scope; a readable session plan with a higher complexity raises it; trivial skips only when stated and not contradicted by the plan. Only a git failure on the work tree itself fails outright: then not even the recomputed detectors can run, and "fix git" clears every input at once. A triggered `code` row accepts an allowlist: `unavailable`, `delegated-to-orchestrator`, `user-opt-out`; `missing-keys` and `config-disabled` describe the external leg and are refused.
 
 ## Accepted limits (no code change)
 
-1. A run labelled `trivial` skips this gate by design (the spec scopes it to `small`), so the complexity label is the trigger's weakest point.
+1. A run labelled `trivial` in both the F5c entry and the session plan (or in the entry with no plan) skips this gate by design, so the complexity label is still the trigger's weakest point.
 2. `.shipwright/` is excluded from the count wholesale, not file by file.
 3. Base resolution differs: Step 3.4 uses one `base_ref` (its fork point), F11 the narrowest merge-base of several trunk names. The counting rule is shared; the base is not.
-4. When `base == head` the tip commit alone is measured, which assumes squash-merged PRs.
+4. When `base == head` and a remote trunk ref contains the commit, the tip alone is measured. That is right for a squash-merged PR; a rebase-merged PR already pushed to `origin/main` is measured by its last commit.
 5. `delegated-to-orchestrator` is not proven to come from a campaign context; the gate takes the code at its word.
 6. Self-reported flags other than `cross_component` and the CI paths are not recomputed. Recomputing the path-based detectors (e.g. auth, migrations) from the diff is a follow-up.
+7. (g) A standalone run with neither `plan.json` nor `risk_recheck.json` has unknown self-reported path-based flags, and they read as not triggered. The diff-size leg and the recomputed detectors (`cross_component`, CI paths) still apply. Follow-up card: a durable `risk_flags` field in the F5c entry, so F11 does not depend on sidecar files.
+8. (h) `delegated-to-orchestrator` is a trust boundary: it is accepted without a campaign marker. The downstream gate is the campaign's 3f-bis cascade, which must promote the row before the unit merges.
+9. (i) A trunk named `develop` or `trunk`, and a shallow clone, read "diff size unknown", which counts as triggered: fail-closed by design, and the review record decides.
 
 ## Architecture Review
 

@@ -19,8 +19,10 @@ from _cascade_trigger_fixtures import (  # noqa: E402, F401 - hermetic_git is an
     REVIEWED,
     RUN,
     check,
+    commit_file,
     git,
     hermetic_git,
+    init_repo,
     lines,
     make_repo,
     write_run,
@@ -48,7 +50,31 @@ def test_an_unmeasurable_diff_is_triggered_and_free_text_fails(tmp_path, shape):
     write_run(root)
     result = check(root, sha)
     assert not result.ok
-    assert "diff size unknown" in result.detail and "git fetch origin main" in result.detail
+    assert "diff size unknown" in result.detail and "git fetch origin <trunk>" in result.detail
+    assert "git fetch --unshallow" in result.detail
+
+
+def _local_trunk_repo(tmp_path: Path, shape: str) -> tuple[Path, str]:
+    """145 lines over two commits on a local ``main`` no remote trunk contains; 5-line tip."""
+    root = tmp_path / "repo"
+    init_repo(root)
+    commit_file(root, "base.txt", "b\n", "base")
+    if shape == "unpushed-main":
+        git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    commit_file(root, "src/a.py", lines(140), "bulk")
+    return root, commit_file(root, "src/b.py", lines(5), "tiny tip")
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("shape", ["remote-less", "unpushed-main"])
+def test_a_tip_on_a_local_only_trunk_is_unknown_not_measured_alone(tmp_path, shape):
+    root, sha = _local_trunk_repo(tmp_path, shape)
+    write_run(root)
+    result = check(root, sha)
+    assert not result.ok and "diff size unknown" in result.detail
+    assert "5 changed lines" not in result.detail
+    write_run(root, code=REVIEWED)
+    assert check(root, sha).ok
 
 
 @pytest.mark.covers("FR-01.11")
@@ -95,6 +121,10 @@ def _plan_is_a_directory(root: Path) -> None:
     _plan_path(root).mkdir()
 
 
+def _plan_without_run_id(root: Path) -> None:
+    _plan_path(root).write_text(json.dumps({"risk_flags": []}), encoding="utf-8")
+
+
 def _foreign_recheck(root: Path) -> None:
     path = root / ".shipwright" / "planning" / "iterate" / RUN / "risk_recheck.json"
     path.write_text(json.dumps({"schema_version": 1, "run_id": "iterate-2026-01-01-someone-else",
@@ -106,6 +136,7 @@ _BAD_INPUTS = [
     (_corrupt_plan, "unreadable"),
     (_foreign_plan, "belongs to another run"),
     (_plan_is_a_directory, "not a regular file"),
+    (_plan_without_run_id, "carries no `run_id`"),
     (_foreign_recheck, "another run"),
 ]
 
@@ -143,6 +174,22 @@ def test_a_symlinked_plan_is_refused(tmp_path):
         pytest.skip("this platform cannot create a symlink here")
     result = check(root, sha)
     assert not result.ok and "symlink" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+def test_a_plan_read_through_a_symlinked_directory_is_refused(tmp_path):
+    root = tmp_path / "proj"
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / f"{RUN}.plan.json").write_text(json.dumps({"run_id": RUN, "risk_flags": []}),
+                                                encoding="utf-8")
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True)
+    try:
+        (root / ".shipwright" / "agent_docs" / "iterates").symlink_to(elsewhere, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("this platform cannot create a symlink here")
+    data, err = inputs.read_plan(root, RUN)
+    assert data is None and "resolves outside" in err
 
 
 @pytest.mark.covers("FR-01.11")

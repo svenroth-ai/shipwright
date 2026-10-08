@@ -35,6 +35,13 @@ def test_the_bridge_loads_the_shared_module_not_a_copy():
 
 
 @pytest.mark.covers("FR-01.11")
+def test_a_shared_tree_missing_a_name_raises_a_named_import_error():
+    stale = type(sys)("stale_shared")
+    with pytest.raises(ImportError, match="shared tree older than the iterate plugin - run update-marketplace.sh"):
+        bridge._require(stale, "numstat_changed_lines")
+
+
+@pytest.mark.covers("FR-01.11")
 def test_no_local_threshold_literal_left_in_the_plugin_lib():
     text = (LIB / "diff_risk_recheck.py").read_text(encoding="utf-8")
     assert "PLAN_REVIEW_DIFF_LOC_THRESHOLD = " not in text

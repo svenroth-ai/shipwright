@@ -10,7 +10,6 @@ runs hermetically: no inherited ``GIT_DIR``-family variable, no commit signing.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 from pathlib import Path
 
@@ -21,21 +20,39 @@ from lib.review_record_schema import RECORDABLE_TYPES
 from tools.verifiers.cascade_trigger import check_cascade_trigger
 
 RUN = "iterate-2026-10-08-cascade-probe"
-LEAKY_GIT_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR")
+LEAKY_GIT_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
+                 "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES")
 REVIEWED = {"status": "completed", "recorded_by": "code-reviewer"}
+_UNSET = object()
 
 
 @pytest.fixture(autouse=True)
 def hermetic_git(monkeypatch):
-    """The gate's own git calls must not see the enclosing checkout either."""
+    """Neither the fixture's git calls nor the gate's own may see the enclosing checkout."""
     for name in LEAKY_GIT_ENV:
         monkeypatch.delenv(name, raising=False)
 
 
 def git(root: Path, *args: str) -> str:
-    env = {k: v for k, v in os.environ.items() if k not in LEAKY_GIT_ENV}
-    return subprocess.run(["git", "-C", str(root), *args], check=True, env=env,
+    return subprocess.run(["git", "-C", str(root), *args], check=True,
                           capture_output=True, text=True).stdout.strip()
+
+
+def init_repo(root: Path, trunk: str = "main") -> None:
+    root.mkdir()
+    git(root, "init", "-q", "-b", trunk)
+    for key, value in (("user.email", "t@example.com"), ("user.name", "t"),
+                       ("core.autocrlf", "false"), ("commit.gpgsign", "false")):
+        git(root, "config", key, value)
+
+
+def commit_file(root: Path, rel: str, text: str, message: str = "change") -> str:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", message)
+    return git(root, "rev-parse", "HEAD")
 
 
 def make_repo(tmp_path: Path, files: dict[str, str], removed: list[str] = (),
@@ -43,14 +60,8 @@ def make_repo(tmp_path: Path, files: dict[str, str], removed: list[str] = (),
               trunk: str = "main") -> tuple[Path, str]:
     """Trunk with ``base.txt`` (200 lines) + a branch commit applying ``files``/``removed``/``moved``."""
     root = tmp_path / "repo"
-    root.mkdir()
-    git(root, "init", "-q", "-b", trunk)
-    for key, value in (("user.email", "t@example.com"), ("user.name", "t"),
-                       ("core.autocrlf", "false"), ("commit.gpgsign", "false")):
-        git(root, "config", key, value)
-    (root / "base.txt").write_text("".join(f"b{i}\n" for i in range(200)), encoding="utf-8")
-    git(root, "add", "-A")
-    git(root, "commit", "-q", "-m", "base")
+    init_repo(root, trunk)
+    commit_file(root, "base.txt", "".join(f"b{i}\n" for i in range(200)), "base")
     if origin:
         git(root, "update-ref", f"refs/remotes/origin/{trunk}", "HEAD")
     git(root, "checkout", "-q", "-b", "iterate/probe")
@@ -71,16 +82,24 @@ def lines(n: int) -> str:
     return "".join(f"line {i}\n" for i in range(n))
 
 
-def write_run(root: Path, *, complexity: str = "small", code: dict | None = None,
-              plan_flags: list[str] | None = None, recheck_flags: list[str] | None = None) -> None:
-    """Untracked bookkeeping for the run: F5c entry, review record, optional flag sources."""
+def write_run(root: Path, *, complexity=_UNSET, code: dict | None = None,
+              plan_flags: list[str] | None = None, recheck_flags: list[str] | None = None,
+              plan_complexity: str | None = None) -> None:
+    """Untracked bookkeeping for the run: F5c entry, review record, optional flag sources.
+
+    ``complexity=None`` writes an entry without the key; the default is ``small``.
+    """
     iterates = root / ".shipwright" / "agent_docs" / "iterates"
     iterates.mkdir(parents=True, exist_ok=True)
-    (iterates / f"{RUN}.json").write_text(json.dumps({"run_id": RUN, "complexity": complexity}),
-                                          encoding="utf-8")
-    if plan_flags is not None:
-        (iterates / f"{RUN}.plan.json").write_text(json.dumps({"run_id": RUN, "risk_flags": plan_flags}),
-                                                   encoding="utf-8")
+    entry = {"run_id": RUN}
+    if complexity is not None:
+        entry["complexity"] = "small" if complexity is _UNSET else complexity
+    (iterates / f"{RUN}.json").write_text(json.dumps(entry), encoding="utf-8")
+    if plan_flags is not None or plan_complexity is not None:
+        plan = {"run_id": RUN, "risk_flags": plan_flags or []}
+        if plan_complexity is not None:
+            plan["complexity"] = plan_complexity
+        (iterates / f"{RUN}.plan.json").write_text(json.dumps(plan), encoding="utf-8")
     run_dir = root / ".shipwright" / "planning" / "iterate" / RUN
     run_dir.mkdir(parents=True, exist_ok=True)
     if recheck_flags is not None:
