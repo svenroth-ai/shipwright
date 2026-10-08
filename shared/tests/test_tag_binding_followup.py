@@ -37,7 +37,7 @@ def _digest(text: str, name: str, path: str = TS):
     ("it.skip.each([1])('skipped table', () => {", "skipped table"),
     ("test.each`a | b`('template %s', () => {", "template %s"),
     ("it.each(cases.map((c) => c.id))('nested call', () => {", "nested call"),
-])
+], ids=lambda _v: "c")
 def test_a_data_driven_declaration_is_one_test_titled_by_its_literal_title(line, title):
     match = _TEST_DECL_RE.search(line)
     assert match and match.group("title") == title
@@ -49,7 +49,7 @@ def test_a_data_driven_declaration_is_one_test_titled_by_its_literal_title(line,
     "test.describe.each([1])('suite', () => {",
     "// it.each([1])('commented', () => {",
     "test.step('a step', async () => {",
-])
+], ids=lambda _v: "c")
 def test_suites_steps_and_comments_stay_non_declarations(line):
     assert _TEST_DECL_RE.search(line) is None
 
@@ -166,7 +166,7 @@ _CFG = "shipwright_compliance_config.json"
     ("it.each([1, 2])('adds %i', (n) => { expect(n).toBe(n); });\n", False),
     ("it.each([\n  [1, 2],\n  [3, 4],\n])('wrapped %i', (a, b) => {\n  expect(a).toBe(a);\n});\n", False),
     ("it.each([1, 2])('adds %i', { tag: ['@FR-02.01'] }, (n) => { expect(n).toBe(n); });\n", True),
-])
+], ids=lambda _v: "c")
 def test_an_untagged_data_driven_ts_test_stops_and_a_tagged_one_passes(tmp_path, head_test, ok):
     base = {**_py_base(), "tests/legacy.test.ts": "test('legacy', () => { expect(1).toBe(1); });\n"}
     root, sha = _repo(tmp_path, base, {"tests/legacy.test.ts": base["tests/legacy.test.ts"] + head_test})
@@ -285,7 +285,7 @@ def test_consecutive_each_tests_keep_their_own_table_and_tags():
 
 
 @pytest.mark.covers("FR-01.11/AC42")
-@pytest.mark.parametrize("pathological", ["${`" * 40, "<b>{" * 40, "`${" * 200])
+@pytest.mark.parametrize("pathological", ["${`" * 40, "<b>{" * 40, "`${" * 200], ids=["templates", "elements", "dollars"])
 def test_unclosed_nesting_lexes_in_bounded_time(pathological):
     import time
     started = time.perf_counter()
