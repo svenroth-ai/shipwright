@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -19,12 +18,15 @@ from pathlib import Path
 
 import pytest
 
+if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
+    sys.path.insert(0, str(Path(__file__).parent))
+from rtm_hook_test_support import hook_env  # noqa: E402
+
 pytestmark = pytest.mark.covers("FR-01.10")
 
 PLUGIN = Path(__file__).parent.parent
 HOOK = PLUGIN / "scripts" / "hooks" / "check_rtm_coverage.py"
 REL = Path(".shipwright") / "compliance" / "test-traceability.json"
-_GIT_ENV_DROP = ("SHIPWRIGHT_PROJECT_ROOT", "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")
 
 
 def _collector_manifest(passing: int, total: int, *, executed_rest="not_run",
@@ -57,13 +59,9 @@ def _write(root: Path, manifest: dict) -> None:
     path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _env() -> dict:
-    return {k: v for k, v in os.environ.items() if k not in _GIT_ENV_DROP}
-
-
 def _git(root: Path, *args: str) -> None:
     subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True,
-                   env=_env(), timeout=30)
+                   env=hook_env(), timeout=30)
 
 
 def _repo(root: Path) -> None:
@@ -82,7 +80,7 @@ def _commit_all(root: Path) -> None:
 def _run(root: Path, command: str = "git commit -m x"):
     r = subprocess.run([sys.executable, str(HOOK)],
                        input=json.dumps({"tool_input": {"command": command}}),
-                       capture_output=True, text=True, cwd=str(root), env=_env(), timeout=60)
+                       capture_output=True, text=True, cwd=str(root), env=hook_env(), timeout=60)
     return r.returncode, r.stdout.strip()
 
 
@@ -182,6 +180,14 @@ def test_epoch_or_zero_sha_reads_as_provenance_unknown(tmp_path, stamp):
     "git add . ; git --no-pager commit",
     "FOO=1 git commit --amend --no-edit",
     "git add x\ngit commit -m y",
+    'sh -c "git commit -m x"',
+    "bash -lc 'git commit -m x'",
+    "timeout 60 git commit -m x",
+    "env FOO=1 git commit",
+    "sudo git commit",
+    "git -C repo \\\n  commit -m x",
+    "nice -n 5 nohup git commit -m x",
+    "/usr/bin/git.exe commit",
 ])
 def test_real_commit_invocations_are_evaluated(tmp_path, command):
     _write(tmp_path, _collector_manifest(3, 10, executed_rest="fail"))
@@ -194,6 +200,9 @@ def test_real_commit_invocations_are_evaluated(tmp_path, command):
     "git log --grep 'git commit'",
     "echo git commit",
     "git commit-tree HEAD^{tree}",
+    "bash -c 'echo git commit'",
+    "sh script.sh git commit",
+    "timeout 60 git status",
 ])
 def test_commands_that_merely_mention_git_commit_are_not_evaluated(tmp_path, command):
     _write(tmp_path, _collector_manifest(3, 10, executed_rest="fail"))
@@ -209,6 +218,39 @@ def test_is_git_commit_inproc_including_unbalanced_quote_fallback():
     assert not mod.is_git_commit("git")
     assert mod.is_git_commit('git commit -m "unbalanced')
     assert not mod.is_git_commit('rg "unbalanced')
+    assert mod.is_git_commit("git commit \\\r\n  -m x")
+    assert mod.is_git_commit("bash -c 'sh -c \"git commit\"'")  # nested shells
+    import git_commit_command as gcc  # noqa: PLC0415 - on sys.path once the hook ran
+    assert gcc._segment_is_commit(["sh", "-c", "git commit"], 0)
+    assert not gcc._segment_is_commit(["sh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH)
+    assert not gcc._segment_is_commit(["bash", "-o", "pipefail", "script.sh"])
+
+
+def test_parser_import_failure_falls_back_to_the_substring_test(monkeypatch):
+    spec = importlib.util.spec_from_file_location("check_rtm_coverage_noparser", HOOK)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setitem(sys.modules, "git_commit_command", None)  # import -> ImportError
+    assert mod.is_git_commit("echo git commit")  # degraded: over-fires, never fails open
+    assert not mod.is_git_commit("git status")
+
+
+@needs_git
+def test_unborn_head_warns_that_the_working_tree_copy_is_read(tmp_path):
+    _repo(tmp_path)
+    _write(tmp_path, _collector_manifest(10, 10))
+    rc, out = _run(tmp_path)
+    assert rc == 0 and "reading working-tree manifest: HEAD has no commit yet" in out
+
+
+@needs_git
+def test_head_without_the_file_reads_the_working_tree_without_a_warn(tmp_path):
+    _repo(tmp_path)
+    (tmp_path / "README").write_text("x", encoding="utf-8")
+    _commit_all(tmp_path)
+    _write(tmp_path, _collector_manifest(10, 10))
+    rc, out = _run(tmp_path)
+    assert rc == 0 and "reading working-tree manifest" not in out
 
 
 def test_schema_version_mirrors_the_group_d_reader():

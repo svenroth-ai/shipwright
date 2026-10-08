@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -198,9 +199,54 @@ def test_read_manifest_non_object_and_undecodable(tmp_path):
     assert "not a JSON object" in rmc.read_manifest(tmp_path)[1]
 
 
-def test_committed_bytes_is_none_when_git_is_missing(tmp_path, monkeypatch):
-    def no_git(*_a, **_k):
-        raise FileNotFoundError("git")
+def _working_tree_manifest(tmp_path):
+    path = tmp_path / rmc.MANIFEST_RELPATH
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"requirements": {}}), encoding="utf-8")
 
-    monkeypatch.setattr(rmc.subprocess, "run", no_git)
-    assert rmc._committed_bytes(tmp_path) is None
+
+@pytest.mark.parametrize("error, reason", [
+    (FileNotFoundError("git"), "git is not runnable (FileNotFoundError)"),
+    (subprocess.TimeoutExpired("git", 5), "git show HEAD timed out after 5 s"),
+])
+def test_a_failed_head_read_says_why_and_warns_on_the_working_tree_read(
+        tmp_path, monkeypatch, error, reason):
+    def broken(*_a, **_k):
+        raise error
+
+    monkeypatch.setattr(rmc.subprocess, "run", broken)
+    assert rmc._committed_bytes(tmp_path) == (None, reason)
+    assert rmc.read_manifest_noted(tmp_path) == (None, None, [])  # nothing to fall back to
+    _working_tree_manifest(tmp_path)
+    data, problem, notes = rmc.read_manifest_noted(tmp_path)
+    assert data == {"requirements": {}} and problem is None
+    assert notes == [f"reading working-tree manifest: {reason}"]
+
+
+@pytest.mark.parametrize("stderr, reason, warns", [
+    (b"fatal: not a git repository (or any of the parent directories): .git",
+     "not a git repo", False),
+    (b"fatal: path 'x' does not exist in 'HEAD'", "HEAD has no such file", False),
+    (b"fatal: path 'x' exists on disk, but not in 'HEAD'", "HEAD has no such file", False),
+    (b"fatal: invalid object name 'HEAD'.", "HEAD has no commit yet", True),
+    (b"fatal: something odd", "git show HEAD failed (fatal: something odd)", True),
+    (b"", "git show HEAD failed (exit 128)", True),
+])
+def test_git_failure_reasons_are_classified(tmp_path, monkeypatch, stderr, reason, warns):
+    monkeypatch.setattr(rmc.subprocess, "run", lambda *_a, **_k: subprocess.CompletedProcess(
+        [], 128, stdout=b"", stderr=stderr))
+    assert rmc._committed_bytes(tmp_path) == (None, reason)
+    _working_tree_manifest(tmp_path)
+    assert bool(rmc.read_manifest_noted(tmp_path)[2]) is warns
+
+
+def test_spec_path_outside_the_project_root_is_never_read(tmp_path):
+    root = tmp_path / "proj"
+    root.mkdir()
+    (tmp_path / "outside.md").write_text(_SPEC, encoding="utf-8")
+    assert rmc.spec_ac_inventory(root, "../outside.md") is None
+    assert rmc.spec_ac_inventory(root, str(tmp_path / "outside.md")) is None
+    m = _spec_project(root)
+    m["requirements"]["01::FR-01.01"]["spec_path"] = "../outside.md"
+    cov = rmc.compute_coverage(m, root)
+    assert cov["ac"]["source"] == "manifest" and cov["ac"]["total"] == 2

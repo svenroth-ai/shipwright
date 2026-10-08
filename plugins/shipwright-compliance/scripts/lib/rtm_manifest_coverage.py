@@ -6,7 +6,8 @@ commit was allowed, silently). This module computes requirement coverage from
 ``.shipwright/compliance/test-traceability.json`` as committed at ``HEAD``. The
 working-tree copy is not trusted (the local pipeline regenerates it fail-closed,
 every link ``not_run``, which would read as 0%); it is read only outside a repo or
-when HEAD has no such file. Never regenerated here. A non-current schema or a
+when HEAD has no such file -- or, with a WARN naming why, when the HEAD read fails
+(``rtm_manifest_read``). Never regenerated here. A non-current schema or a
 manifest with no executed result is *unmeasurable* (WARN), never 0%:
 
 * **FR metric** -- counting unit: an *active* requirement. Covered when at least
@@ -27,17 +28,23 @@ Pure apart from reading project files and the ``git`` probes.
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-MANIFEST_RELPATH = Path(".shipwright") / "compliance" / "test-traceability.json"
+# The HEAD-first read lives in its own module; re-exported so callers keep one import.
+from rtm_manifest_read import (  # noqa: F401
+    _GIT_TIMEOUT_S,
+    MANIFEST_RELPATH,
+    _committed_bytes,
+    read_manifest,
+    read_manifest_noted,
+)
+
 # Mirrors audit/_group_d_manifest.MANIFEST_SCHEMA_VERSION (drift-guarded by a test).
 MANIFEST_SCHEMA_VERSION = 4
-_GIT_TIMEOUT_S = 5
 STALE_AFTER_DAYS = 14
 STALE_AFTER_COMMITS = 300
 
@@ -74,9 +81,15 @@ def spec_ac_inventory(project_root: str | Path, spec_path: str) -> dict[str, set
 
     The manifest only carries an ``acs`` node for criteria some test is tagged
     to, so an untagged AC is absent from it -- the spec is the full inventory.
+    A ``spec_path`` resolving outside the project root (``..``, absolute) is never
+    read: ``None``, so the caller falls back to the manifest's inventory.
     """
     try:
-        text = (Path(project_root) / spec_path).read_text(encoding="utf-8-sig")
+        root = Path(project_root).resolve()
+        spec = (root / spec_path).resolve()
+        if not spec.is_relative_to(root):
+            return None
+        text = spec.read_text(encoding="utf-8-sig")
     except (OSError, ValueError):
         return None
     inventory: dict[str, set[str]] = {}
@@ -162,49 +175,6 @@ def compute_coverage(manifest: dict[str, Any],
     }
 
 
-def _committed_bytes(project_root: str | Path) -> bytes | None:
-    """HEAD's copy of the manifest; ``None`` outside a repo or when HEAD has none.
-
-    ``HEAD:./<path>`` resolves relative to ``-C`` (a subdirectory project works).
-    List args, no shell: nothing for MSYS path conversion to rewrite.
-    """
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(project_root), "show",
-             f"HEAD:./{MANIFEST_RELPATH.as_posix()}"],
-            capture_output=True, timeout=_GIT_TIMEOUT_S, check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return out.stdout if out.returncode == 0 else None
-
-
-def read_manifest(project_root: str | Path) -> tuple[dict[str, Any] | None, str | None]:
-    """``(manifest, None)``, ``(None, None)`` when absent, ``(None, reason)`` when unreadable.
-
-    Committed (HEAD) copy first; the working-tree file only as the fallback.
-    """
-    label = MANIFEST_RELPATH.as_posix()
-    raw = _committed_bytes(project_root)
-    if raw is None:
-        path = Path(project_root) / MANIFEST_RELPATH
-        if not path.is_file():
-            return None, None
-        try:
-            raw = path.read_bytes()
-        except OSError as exc:
-            return None, f"cannot read {label}: {type(exc).__name__}"
-    else:
-        label = f"HEAD:{label}"
-    try:
-        data = json.loads(raw.decode("utf-8-sig"))
-    except ValueError as exc:
-        return None, f"cannot read {label}: {type(exc).__name__}"
-    if not isinstance(data, dict):
-        return None, f"{label} is not a JSON object"
-    return data, None
-
-
 def _links(manifest: dict[str, Any]):
     """Every link dict bound to a requirement or to one of its ACs."""
     reqs = manifest.get("requirements")
@@ -246,7 +216,7 @@ def commits_behind(project_root: str | Path, source_commit: str) -> int | None:
     try:
         out = subprocess.run(
             ["git", "-C", str(project_root), "rev-list", "--count", f"{source_commit}..HEAD"],
-            capture_output=True, text=True, timeout=5, check=False,
+            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S, check=False,
         )
         return int(out.stdout.strip()) if out.returncode == 0 else None
     except (OSError, ValueError, subprocess.SubprocessError):

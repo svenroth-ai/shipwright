@@ -3067,7 +3067,7 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks a real `git [-C <path>|-c k=v ...] commit` invocation (shlex-tokenised, split on `&&` / `;` / `|`; `git -c k=v diff`, `rg "git commit"` and `git log --grep "git commit"` are not evaluated) if **requirement coverage** < 80% threshold: the share of active requirements with an executed-passing bound test, read from the COMMITTED `.shipwright/compliance/test-traceability.json` (`git show HEAD:`, 5 s timeout; the working-tree copy -- which the local pipeline regenerates fail-closed as all `not_run` -- is read only outside a git repo or when HEAD has no such file; never regenerated here; binding-to-result join by commit is the collector's, not re-verified here; AC coverage is reported separately, its inventory taken from the spec so an untagged AC counts as uncovered; a manifest older than 14 days or 300 commits WARNs, an epoch `generated_at` / all-zero `source_commit` WARNs as provenance unknown). Falls back to the RTM's legacy section-commit line only when no manifest exists. Unmeasurable cases (corrupt manifest, `schema_version` not the current 4, a manifest with no executed `pass`/`fail` result at all, no active requirements, compliance data but no figure, invalid threshold config) print a visible `WARN` instead of allowing silently. Optional `enforcement.rtm_coverage_baseline` ratchets the threshold down for a project far below 80%. Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
+| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks a real `git ... commit` invocation when **requirement coverage** (active requirements with an executed-passing bound test, from the COMMITTED `.shipwright/compliance/test-traceability.json`) is below the 80% threshold; unmeasurable cases print a visible `WARN` instead of allowing silently. Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen`. Details: see the `check_rtm_coverage` note below. |
 | PreToolUse | `Bash` | `check_security_scan.py` | Soft-blocks **deploy** commands from `.shipwright/compliance/ci-security.json`: blocks when open criticals (`by_severity.critical`, else the `critical_gate` verdict) exceed `enforcement.allowed_critical_findings`, when the scan is `degraded`, or when the summary is present-but-unusable. Allows only when the summary is genuinely **absent** (never scanned). Until 2026-07-28 it read the RTM row `Unresolved findings` — code-review findings, not a scan (trg-17f53a39). Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
 
 > **Fail-open invocation (both Bash gates).** These two hooks fire on **every**
@@ -3083,6 +3083,35 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 > deliberate soft-block (`return 2` + the "Continue anyway" override context) is
 > a normal return value and is unaffected. Integration coverage:
 > `integration-tests/test_compliance_hook_failopen.py`.
+>
+> **`check_rtm_coverage` in detail.**
+> - *What counts as a commit* (`lib/git_commit_command.py`): the command is
+>   shlex-tokenised and split on `&&` / `;` / `|`, after backslash-newline
+>   continuations are joined. `git [-C <path>|-c k=v ...] commit` fires; so do
+>   `VAR=val` prefixes, the wrappers `env`, `command`, `exec`, `time`, `nice`,
+>   `nohup`, `sudo`, `xargs` and `timeout <duration>`, and `sh|bash|zsh|dash -c
+>   '<cmd>'` (parsed recursively, depth-capped). `git -c k=v diff`,
+>   `rg "git commit"`, `echo git commit` and `git log --grep "git commit"` are not
+>   evaluated. Unparseable text (an unbalanced quote) falls back to the substring test.
+> - *Which manifest*: the COMMITTED copy (`git show HEAD:`, 5 s timeout). The
+>   working-tree copy -- which the local pipeline regenerates fail-closed as all
+>   `not_run` -- is read silently only outside a git repo or when HEAD has no such
+>   file; when the HEAD read fails for any other reason (git missing, timeout,
+>   unborn HEAD) the working-tree read is announced as a `WARN` naming the reason.
+>   The manifest is never regenerated here.
+> - *What is measured*: the binding-to-result join by commit is the collector's,
+>   not re-verified here. AC coverage is reported separately, its inventory taken
+>   from the spec so an untagged AC counts as uncovered; a `spec_path` resolving
+>   outside the project root is never read (the manifest's AC inventory is used).
+>   A manifest older than 14 days or 300 commits WARNs; an epoch `generated_at` /
+>   all-zero `source_commit` WARNs as provenance unknown.
+> - *Fallback and WARNs*: the RTM's legacy section-commit line is used only when no
+>   manifest exists. Unmeasurable cases (corrupt manifest, `schema_version` not the
+>   current 4, a manifest with no executed `pass`/`fail` result at all, no active
+>   requirements, compliance data but no figure, invalid threshold config) print a
+>   visible `WARN` instead of allowing silently. Optional
+>   `enforcement.rtm_coverage_baseline` ratchets the threshold down for a project
+>   far below 80%.
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 

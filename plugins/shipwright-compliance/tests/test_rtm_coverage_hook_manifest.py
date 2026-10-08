@@ -5,13 +5,16 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
-import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+
+if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
+    sys.path.insert(0, str(Path(__file__).parent))
+from rtm_hook_test_support import hook_env  # noqa: E402
 
 pytestmark = pytest.mark.covers("FR-01.10")
 
@@ -40,9 +43,8 @@ def _config(root: Path, **enforcement):
 
 
 def _run(root: Path):
-    env = {k: v for k, v in os.environ.items() if k != "SHIPWRIGHT_PROJECT_ROOT"}
     r = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(COMMIT),
-                       capture_output=True, text=True, cwd=str(root), env=env, timeout=60)
+                       capture_output=True, text=True, cwd=str(root), env=hook_env(), timeout=60)
     return r.returncode, r.stdout.strip()
 
 

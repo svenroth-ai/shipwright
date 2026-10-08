@@ -102,7 +102,8 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     silently says why in a WARN -- except a project with no compliance data at all.
     """
     warnings: list[str] = []
-    manifest, problem = manifest_cov.read_manifest(project_root)
+    manifest, problem, notes = manifest_cov.read_manifest_noted(project_root)
+    warnings.extend(notes)  # a working-tree read taken because the HEAD read failed
     if problem:
         warnings.append(problem)
     if manifest is not None:

@@ -32,8 +32,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
-import shlex
 import sys
 from pathlib import Path
 from typing import Any
@@ -74,47 +72,19 @@ def _lib():
     return rtm_gate_support
 
 
-# git global options that consume the following token (``git -C <path> commit``).
-_GIT_OPTS_WITH_VALUE = frozenset({"-C", "-c", "--git-dir", "--work-tree", "--namespace"})
-_SEPARATOR_CHARS = frozenset(";|&()")
-_ENV_ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
-
-
-def _segment_is_commit(tokens: list[str]) -> bool:
-    i = 0
-    while i < len(tokens) and _ENV_ASSIGNMENT.match(tokens[i]):
-        i += 1  # FOO=bar git commit
-    if i >= len(tokens) or Path(tokens[i]).name.lower() not in ("git", "git.exe"):
-        return False
-    i += 1
-    while i < len(tokens) and tokens[i].startswith("-"):
-        i += 2 if tokens[i] in _GIT_OPTS_WITH_VALUE else 1
-    return i < len(tokens) and tokens[i] == "commit"
-
-
 def is_git_commit(command: str) -> bool:
-    """True when some ``&&`` / ``;`` / ``|``-separated segment runs ``git ... commit``.
+    """True for a real ``git ... commit`` invocation (``lib/git_commit_command``).
 
-    Global options before the subcommand (``-C <path>``, ``-c k=v``, ``--no-pager``)
-    are skipped; ``git -c k=v diff``, ``rg "git commit"`` and
-    ``git log --grep 'git commit'`` are not commits. Unparseable shell text (an
-    unbalanced quote) falls back to the substring test so the gate still fires.
+    If the parser module cannot be imported, the substring test keeps the gate firing.
     """
     try:
-        lexer = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=True)
-        lexer.whitespace_split = True
-        tokens = list(lexer)
-    except ValueError:
+        lib_dir = Path(__file__).resolve().parent.parent / "lib"
+        if str(lib_dir) not in sys.path:
+            sys.path.insert(0, str(lib_dir))
+        import git_commit_command  # noqa: PLC0415
+    except Exception:  # noqa: BLE001 - never let the parser's import hard-block Bash
         return "git commit" in command
-    segment: list[str] = []
-    for token in [*tokens, ";"]:
-        if token and set(token) <= _SEPARATOR_CHARS:
-            if _segment_is_commit(segment):
-                return True
-            segment = []
-        else:
-            segment.append(token)
-    return False
+    return git_commit_command.is_git_commit(command)
 
 
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
