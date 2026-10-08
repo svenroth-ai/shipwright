@@ -159,29 +159,121 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_identity.py",
+          "line": null,
+          "finding": "mechanical rename accepted any consistent rename incl. attributes and calls. FIXED: bindings only.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py",
+          "line": null,
+          "finding": "ambiguous-name STOPped tagged same-named siblings. FIXED: STOP only when one is untagged or tags differ, else WARN.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py",
+          "line": null,
+          "finding": "unlocatable legacy test in a changed file STOPped. FIXED: untouched unless located and changed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py",
+          "line": null,
+          "finding": "newly collected legacy tests in untouched files STOPped. FIXED: WARN.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/tag_binding_gate.py",
+          "line": null,
+          "finding": "quotepath hid non-ASCII paths; missing work_completed silently disabled the FR check; scope backslash/bracket handling. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T09:49:35.001811+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T12:17:59.337795+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/fr_tag_grammar.py",
+          "line": null,
+          "finding": "Claim under doubt: an untagged added test cannot pass — it.each/test.each data-driven TS tests are invisible to enumeration",
+          "suggestion": "ACCEPTED limit (a) in the ADR; follow-up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py",
+          "line": null,
+          "finding": "Claim under doubt: the head manifest sees every added test — head-side exclude_dirs growth, export-ignore or a new test root hides new tests",
+          "suggestion": "ACCEPTED limit (b) in the ADR; follow-up: build head with the base prune set.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_identity.py",
+          "line": null,
+          "finding": "Claim under doubt: mechanical-refactor only covers renamed identifiers — single-occurrence call swap passed",
+          "suggestion": "FIXED in 49ddf1eda (bindings only, refusal tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/fr_tag_grammar.py",
+          "line": null,
+          "finding": "Claim under doubt: Playwright WebUI projects get no false STOP — test.step, titled hooks and commented-out test( read as untagged tests",
+          "suggestion": "FIXED in 49ddf1eda (declaration pattern excludes them).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_ts.py",
+          "line": null,
+          "finding": "Claim under doubt: TS body changes are always detected — regex literals and JSX text confuse the tokenizer; decorator edits are not body edits",
+          "suggestion": "ACCEPTED limits (c)(d) in the ADR.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T09:49:35.096661+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T12:17:59.464684+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -319,16 +411,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:49:34.891286+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T12:17:59.217216+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
@@ -336,11 +428,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:49:35.206980+00:00",
-      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "completed_at": "2026-10-08T12:17:59.587755+00:00",
+      "disposition": "campaign sub-iterate: no spawn site for the plan_internal reviewer; the delegated cascade runs at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
     },
     "architecture_internal": {
       "review_type": "architecture_internal",
@@ -348,11 +441,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:49:35.317521+00:00",
-      "disposition": "campaign sub-iterates have no internal architecture-review arm yet - a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "completed_at": "2026-10-08T12:17:59.703961+00:00",
+      "disposition": "campaign sub-iterate: no spawn site for the architecture_internal reviewer; the delegated cascade runs at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
     }
   }
 }
