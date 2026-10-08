@@ -1,0 +1,105 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-u9-rtm-80-hook",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 1752,
+      "total": 1757
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-compliance --extra dev pytest tests/test_rtm_coverage_hook_manifest.py -q",
+      "exit_code": 0,
+      "tests_run": 22,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-08-u9-rtm-80-hook/surface_verification.log",
+      "timestamp": "2026-10-07T22:55:07.508Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "FR and AC coverage computed separately from active requirements, skipped/failed/missing results not covered",
+          "disposition": "tested",
+          "evidence": "test_rtm_manifest_coverage.py::test_fr_and_ac_are_separate_metrics + test_skipped_failed_missing_or_malformed_results_are_not_covered PASSED"
+        },
+        {
+          "behavior": "hook soft-blocks on requirement coverage and prints the definition; adopted shape without an RTM line no longer fails open",
+          "disposition": "tested",
+          "evidence": "test_rtm_coverage_hook_manifest.py::test_blocks_on_requirement_coverage_and_prints_the_definition + test_adopted_shape_without_rtm_line_no_longer_fails_open PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "unmeasurable cases (corrupt manifest, zero active requirements, data without figure, bad config) emit a visible WARN, never fall back to the section line",
+          "disposition": "tested",
+          "evidence": "test_rtm_coverage_hook_manifest.py::test_corrupt_manifest_is_a_visible_warn + test_unreadable_manifest_never_falls_back_to_the_section_line PASSED"
+        },
+        {
+          "behavior": "stale manifest warns by age and commits behind; hook never regenerates",
+          "disposition": "tested",
+          "evidence": "test_rtm_manifest_coverage.py::test_staleness_by_age_and_unreadable_timestamp + test_staleness_by_commits_behind PASSED"
+        },
+        {
+          "behavior": "baseline ratchet lowers the threshold, never raises it, and prompts to raise when coverage exceeds it",
+          "disposition": "tested",
+          "evidence": "test_rtm_coverage_hook_manifest.py::test_baseline_ratchets_the_threshold_down_from_measured_value + test_measured_above_baseline_prompts_to_raise_it PASSED"
+        },
+        {
+          "behavior": "BOM and CRLF manifests read as valid (boundary probe)",
+          "disposition": "tested",
+          "evidence": "test_rtm_manifest_coverage.py::test_read_manifest_tolerates_utf8_bom_and_crlf PASSED"
+        },
+        {
+          "behavior": "untagged AC counts as uncovered (AC inventory from the spec, not the manifest)",
+          "disposition": "tested",
+          "evidence": "test_rtm_manifest_coverage.py::test_untagged_ac_counts_as_uncovered_via_the_spec_inventory PASSED"
+        },
+        {
+          "behavior": "unexpected measurement error is a visible WARN, not a silent allow",
+          "disposition": "tested",
+          "evidence": "test_rtm_coverage_hook_manifest.py::test_inproc_unexpected_error_is_a_visible_warn_not_a_silent_allow PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-u9-rtm-80-hook",
+    "commit": "c0eac61e4bd4b34cf91e73e249ad32cfd4eb2317",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

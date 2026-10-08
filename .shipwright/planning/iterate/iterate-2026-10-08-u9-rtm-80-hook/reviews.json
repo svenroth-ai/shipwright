@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u9-rtm-80-hook",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T22:56:36.585893+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Commits behind HEAD (>300, best effort git)\" is a weak staleness signal and the age check (>14 d) can be permanently stale-but-green for an actively developed repo if the manifest is regenerated rarely. More importantly, a manifest can be fresh by these measures yet reference test IDs/requirements that no longer exist, so the measured % quietly diverges from reality.",
+          "suggestion": "Also treat \"manifest references bindings whose test IDs don't match the current test tree\" (or at least a checksum of binding IDs vs a hash stored in the manifest) as a staleness WARN trigger. If that's too costly for a commit hook, note it explicitly as accepted risk.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Zero denominator is 'unmeasurable'\" — but what does the hook do on unmeasurable? The spec says fail-open cases become visible WARN; make sure zero-active-requirements in a compliance-enabled project emits the WARN (it currently silently passes) and that the legacy section-line path also handles it. Also: AC metric denominator is \"same rule per AC\" — a project with FRs but no ACs at all is a legitimate 246/247-style case; confirm empty-AC is \"unmeasurable\" not 0%.",
+          "suggestion": "Enumerate the exact unmeasurable conditions in the tests (no manifest, empty manifest, zero active FRs, zero ACs) and assert exit 0 + WARN + no block for each.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "\"effective threshold = min(min-config, baseline)\" makes the baseline a one-way floor relaxer, but nothing here records a new baseline after coverage rises. The ratchet only ratchets down... never up. A project that measures 40% and later reaches 78% still blocks at 40%-adjacent thresholds indefinitely unless someone manually edits the baseline — which they won't.",
+          "suggestion": "At minimum, have the hook's WARN/context print the current measured value and suggest updating `rtm_coverage_baseline` (or auto-write a ratchet-up on measured > baseline), so the ratchet is a ratchet and not a permanent amnesty.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Legacy section line only when there is no usable manifest\" — the definition of \"usable\" determines whether existing projects that do have build sections keep their old behavior. If a project has both a manifest and build sections, the manifest wins; if the manifest is corrupt, do you fall back to the section line or fail-open-with-WARN? The plan says corrupt manifest → WARN, but doesn't say whether the legacy gate is then re-applied.",
+          "suggestion": "Specify the precedence: corrupt manifest → WARN and fall back to legacy section check if present; valid manifest → manifest only. Test both mixed states.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Joining bindings to execution results \"by commit\" needs the execution-results store to be reachable from the hook. If results are recorded per CI run keyed by commit SHA, a local commit that has never been pushed/run has no results for its own SHA — so the FR metric for the commit being gated is measured against prior commits' results. That's correct for a pre-commit gate but should be stated, and a manifest whose bindings reference test IDs absent from the latest results (renamed tests) must count as not-passing, not as skipped-and-ignored.",
+          "suggestion": "Add a test for the \"binding's test ID has no result at the joined commit\" case and assert it counts against coverage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "over-production",
+          "file": null,
+          "line": null,
+          "finding": "Staleness \"commits behind HEAD\" via git subprocess in a hook that runs on every commit adds a subprocess spawn and parsing fragility for a marginal signal (age in days is already there). If the manifest stores its own commit at generation time, `git rev-list <manifest-commit>..HEAD --count` is one call — but consider whether the age check alone suffices and the commit-count is worth it.",
+          "suggestion": "Fine to keep if the manifest records its origin commit; otherwise drop the commit-count check and rely on age + the ID-drift check above.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "status=enabled` and `executed=pass` do not establish the required commit-matched execution evidence. The plan omits the join rules for results, skipped tests, and parametrized tests, so historical passes or a single passing parameter could inflate coverage.",
+          "suggestion": "Define the commit join explicitly. Missing, mismatched, or skipped results must not count as passes; define when a parametrized test qualifies. Deduplicate by FR ID and AC ID, and test these cases before trusting the reported baseline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "An optional baseline with `min(configured threshold, baseline)` lowers the gate but does not describe a ratchet. Projects without a baseline still face the original permanent block, while a fixed low baseline never advances.",
+          "suggestion": "Initialize the baseline from the measured coverage through F11/CI or an explicit configuration step. Define how it increases toward the configured target without automatically decreasing when coverage regresses. Keep persistence outside the commit hook.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Falling back to build-section coverage whenever a manifest is “unusable” can silently restore the metric this change is meant to replace. A corrupt manifest could therefore produce an apparently valid gate based on unrelated evidence.",
+          "suggestion": "Restrict legacy fallback to manifest absence for legacy projects. For present but invalid or unmeasurable manifests, emit the specified WARN and fail open explicitly; do not label section coverage as requirement coverage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Reads the committed manifest” leaves the source unresolved: HEAD, the Git index, and the working tree can contain different versions during a commit. The plan also does not say whether FR alone controls blocking or whether AC coverage independently blocks.",
+          "suggestion": "Specify the Git source and use it consistently for manifest reads and commit comparisons. Add a subprocess test with differing staged and unstaged manifests. State the gating metric explicitly and test a passing FR metric with a failing AC metric.  The cached-manifest approach and extracted measurement module are appropriate for this change. The evidence rules, baseline lifecycle, and fallback behavior need clarification before implementation can reliably enforce the intended contract.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-07T22:56:36.722243+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"Commits behind HEAD (>300, best effort git)\" is a weak staleness signal and the age check (>14 d) can be permanently stale-but-green for an actively developed repo if the manifest is regenerated rarely. More importantly, a manifest can be *fresh* by these measures yet reference test IDs/requirements that no longer exist, so the measured % quietly diverges from reality.\n  **Suggestion:** Also treat \"manifest references bindings whose test IDs don't match the current test tree\" (or at least a checksum of binding IDs vs a hash stored in the manifest) as a staleness WARN trigger. If that's too costly for a commit hook, note it explicitly as accepted risk.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"Zero denominator is 'unmeasurable'\" — but what does the *hook* do on unmeasurable? The spec says fail-open cases become visible WARN; make sure zero-active-requirements in a compliance-enabled project emits the WARN (it currently silently passes) and that the legacy section-line path also handles it. Also: AC metric denominator is \"same rule per AC\" — a project with FRs but no ACs at all is a legitimate 246/247-style case; confirm empty-AC is \"unmeasurable\" not 0%.\n  **Suggestion:** Enumerate the exact unmeasurable conditions in the tests (no manifest, empty manifest, zero active FRs, zero ACs) and assert exit 0 + WARN + no block for each.\n\n- **Category: approach — Severity: medium**\n  **Finding:** \"effective threshold = min(min-config, baseline)\" makes the baseline a one-way *floor relaxer*, but nothing here records a new baseline after coverage rises. The ratchet only ratchets down... never up. A project that measures 40% and later reaches 78% still blocks at 40%-adjacent thresholds indefinitely unless someone manually edits the baseline — which they won't.\n  **Suggestion:** At minimum, have the hook's WARN/context print the current measured value and suggest updating `r […truncated]\n\n[openai] I could not inspect the authoritative BRIEF or repository because local command execution was blocked by policy. This review is based on the supplied specification and mini-plan.\n\n1. **Category: approach | Severity: high**\n   **Finding:** `status=enabled` and `executed=pass` do not establish the required commit-matched execution evidence. The plan omits the join rules for results, skipped tests, and parametrized tests, so historical passes or a single passing parameter could inflate coverage.\n   **Suggestion:** Define the commit join explicitly. Missing, mismatched, or skipped results must not count as passes; define when a parametrized test qualifies. Deduplicate by FR ID and AC ID, and test these cases before trusting the reported baseline.\n\n2. **Category: approach | Severity: medium**\n   **Finding:** An optional baseline with `min(configured threshold, baseline)` lowers the gate but does not describe a ratchet. Projects without a baseline still face the original permanent block, while a fixed low baseline never advances.\n   **Suggestion:** Initialize the baseline from the measured coverage through F11/CI or an explicit configuration step. Define how it increases toward the configured target without automatically decreasing when coverage regresses. Keep persistence outside the commit hook.\n\n3. **Category: risk | Severity: medium**\n   **Finding:** Falling back to build-section coverage whenever a manifest is “unusable” can silently restore the metric this change is meant to replace. A corrupt manifest could therefore produce an apparently valid gate based on unrelated evidence.\n   **Suggestion:** Restrict legacy fallback to manifest absence for legacy projects. For present but invalid or unmeasurable manifests, emit the specified WARN and fail open explicitly; do not label section coverage as requirement coverage.\n\n4. **Category: edge-case | Severity: medium**\n   **Finding:** “Reads the committed manifest” leaves the source unresolved: HEAD, the Git in […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py",
+          "line": null,
+          "finding": "The legacy-path test checks staging_hint absence only in stdout JSON, not stderr (the text the model sees on exit 2). Test gap, non-blocking; tracked in triage.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "shlex does not reproduce env -S escapes (backslash-underscore separator, ${VAR} expansion); known under-fire, rare.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Depth-cap and unbalanced-quote fallbacks check slightly different text; docstring line over-long.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_git_commit_command.py",
+          "line": null,
+          "finding": "No end-to-end nested env -S case through is_git_commit at the depth cap.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T08:34:24.276431+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_manifest_read.py",
+          "line": null,
+          "finding": "Claim under doubt: the index is the copy being committed — PreToolUse runs before the Bash line, so a manifest staged in the same command (git add && git commit, commit -a) is measured from its previous index/HEAD copy.",
+          "suggestion": "Resolved by documentation + pinned test + staging_hint in the block (f1fdec596); mechanism deliberately unchanged.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: the block reason reaches the agent — Exit 2 shows stderr to the model; the hook wrote only stdout JSON.",
+          "suggestion": "Resolved: reason, ratchet hint and staging hint are also written to stderr (f1fdec596). Override-log instruction still stdout-only: triage.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
+          "line": null,
+          "finding": "Claim under doubt: an unexecuted manifest is only a transient WARN state — An all-not_run regen swept into a commit turns the gate into WARN+allow until CI regenerates.",
+          "suggestion": "Accepted risk, recorded in the decision drop.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Claim under doubt: the parser leaves no obvious commit form that silently fails open — git aliases, git.cmd, merge/revert/cherry-pick/rebase/am are not detected; --dry-run/-h over-fire.",
+          "suggestion": "Documented as deliberately not covered.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T07:24:59.553044+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py — `_measure`, legacy fallback after \"no active requirements\" warning",
+          "line": null,
+          "finding": "The docs and spec say the RTM legacy fallback fires \"only when no usable manifest exists,\" but `_measure` falls back to `get_coverage_from_rtm` whenever `cov[\"fr\"][\"pct\"] is None` — including when a manifest exists and simply reports zero active requirements (or requirements that are all non-dict/malformed). In that state the hook can soft-block on the legacy build-sections metric, which the spec explicitly moved away from, while simultaneously warning \"nothing to measure.\"",
+          "suggestion": "Only fall back to the legacy line when `manifest is None` (absent or unreadable). When the manifest is readable but has zero active requirements, emit the WARN and allow.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_manifest_coverage.py — `read_manifest",
+          "line": null,
+          "finding": "Spec says the hook reads the \"committed/cached\" manifest; `read_manifest` reads the working-tree file. A developer can hand-edit (or not stage) `test-traceability.json` to inflate coverage and the hook will gate on the uncommitted value, exactly the bypass the \"committed\" wording closes.",
+          "suggestion": "Read the staged/committed version (e.g., `git show :.shipwright/compliance/test-traceability.json` falling back to `HEAD:` when not staged), or at minimum document that worktree is accepted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py — `main`, `coverage < threshold_pct",
+          "line": null,
+          "finding": "Threshold comparison truncates both sides to integer percent. E.g. threshold `0.795` becomes 79, so 79% measured coverage passes a nominally 79.5% threshold. Same for baseline. Fractional config values silently round in the permissive direction (for the threshold side it rounds the threshold down).",
+          "suggestion": "Compare `coverage / 100 < threshold` in float, or round the threshold up (`math.ceil(threshold  100)`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py — `_read_threshold",
+          "line": null,
+          "finding": "If `enforcement` is a dict but `rtm_coverage_min` is valid and `rtm_coverage_baseline` is invalid, the warning is emitted but the gate still uses `rtm_coverage_min` — that's fine. However when `rtm_coverage_min` itself is invalid, the code falls back to `DEFAULT_THRESHOLD` (0.80) rather than blocking or being conservative; a project whose baseline is 0.4 with a typo'd `rtm_coverage_min` now gets the full 80% gate back, which the spec's \"override noise\" concern was about. Minor, but worth a WARN-only nuance at most. (Also note `_read_threshold` parses `json.load(f)` and calls `.get` — a top-level JSON list raises `AttributeError`, which is caught; good.)",
+          "suggestion": "Consider also honoring a valid baseline when `rtm_coverage_min` is invalid, or document that the default wins.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py — `test_baseline_ratchets_the_threshold_down_from_measured_value",
+          "line": null,
+          "finding": "The first assertion (`assert _run(tmp_path)[0] == 2` with no config) runs before any baseline exists, so the ratchet test itself is fine, but no test covers the invalid baseline path (`rtm_coverage_baseline=\"high\"`), and no test covers fractional thresholds or the worktree-vs-commited manifest question. The parametrized non-passing-link tests in `test_rtm_manifest_coverage.py` are good and would catch a wrong `_passing` implementation.",
+          "suggestion": "Add a case for an invalid `rtm_coverage_baseline` and a fractional-threshold boundary.  No security issues: the git subprocess uses fixed argv, and JSON parsing failures are contained. Existing callers of `get_threshold` are preserved with the same signature.  Overall: ship-with-fixes — the implementation is substantially correct and well-tested, but the legacy-fallback-after-usable-manifest path contradicts the documented contract and the \"committed manifest\" wording isn't actually enforced.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_manifest_coverage.py",
+          "line": 104,
+          "finding": "The hook reads the working-tree manifest, despite promising the committed/cached manifest. An unstaged edit can change the gate’s decision, and deleting the working-tree file triggers legacy fallback even when a committed manifest exists. The tests only use uncommitted files, so they miss this distinction.",
+          "suggestion": "Read the intended Git snapshot explicitly. Add a repository-based test where the committed manifest and working-tree file disagree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": 233,
+          "finding": "Successful measurements are never reported unless another warning exists. At sufficient coverage, the hook returns silently; users cannot see the current FR or AC metrics required by “compute … coverage … and report it.” The tests explicitly expect this silence.",
+          "suggestion": "Emit the FR and AC measurement through `additionalContext` on successful evaluation, and assert both metrics in the passing-path tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": 123,
+          "finding": "Without an explicitly configured baseline, a project measured far below 80% still receives the default 80% gate on every commit. This implements an optional manual threshold reduction, but does not establish the measured starting threshold required by the specification.",
+          "suggestion": "Establish the baseline from the initial measurement in the appropriate setup or regeneration workflow, and have the hook consume it. Test initial adoption below 80% without a pre-existing baseline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": 137,
+          "finding": "The code assumes `enforcement` supports membership and keyed access. Valid JSON such as `{\"enforcement\": null}` raises `TypeError` outside the handler; `{\"enforcement\": [\"rtm_coverage_min\"]}` also crashes. These configurations bypass the promised invalid-config warning and default-threshold evaluation.",
+          "suggestion": "Validate that `enforcement` is a dictionary before iterating its keys; otherwise return the default threshold with a warning. Add tests for null, scalar, and list values.  Ship-with-fixes: the measurement structure is reasonable, but snapshot selection, reporting, baseline establishment, and malformed-config handling need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-07T22:56:36.866652+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py — `_measure`, legacy fallback after \"no active requirements\" warning\n  Finding: The docs and spec say the RTM legacy fallback fires \"only when no usable manifest exists,\" but `_measure` falls back to `get_coverage_from_rtm` whenever `cov[\"fr\"][\"pct\"] is None` — including when a manifest exists and simply reports zero active requirements (or requirements that are all non-dict/malformed). In that state the hook can soft-block on the legacy *build-sections* metric, which the spec explicitly moved away from, while simultaneously warning \"nothing to measure.\"\n  Suggestion: Only fall back to the legacy line when `manifest is None` (absent or unreadable). When the manifest is readable but has zero active requirements, emit the WARN and allow.\n\n- Category: spec\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/rtm_manifest_coverage.py — `read_manifest`\n  Finding: Spec says the hook reads the \"committed/cached\" manifest; `read_manifest` reads the working-tree file. A developer can hand-edit (or not stage) `test-traceability.json` to inflate coverage and the hook will gate on the uncommitted value, exactly the bypass the \"committed\" wording closes.\n  Suggestion: Read the staged/committed version (e.g., `git show :.shipwright/compliance/test-traceability.json` falling back to `HEAD:` when not staged), or at minimum document that worktree is accepted.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py — `main`, `coverage < threshold_pct`\n  Finding: Threshold comparison truncates both sides to integer percent. E.g. threshold `0.795` becomes 79, so 79% measured coverage passes a nominally 79.5% threshold. Same for baseline. Fractional config values silently round in the permissive direction (for the threshold side it rounds the threshold down).\n  Suggestion: Compare `coverage / […truncated]\n\n[openai] The review environment blocked filesystem access, so I could not read the authoritative BRIEF or run tests. These findings are based on the supplied specification and diff.\n\n- Category: spec\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/rtm_manifest_coverage.py:104\n- Finding: The hook reads the working-tree manifest, despite promising the committed/cached manifest. An unstaged edit can change the gate’s decision, and deleting the working-tree file triggers legacy fallback even when a committed manifest exists. The tests only use uncommitted files, so they miss this distinction.\n- Suggestion: Read the intended Git snapshot explicitly. Add a repository-based test where the committed manifest and working-tree file disagree.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:233\n- Finding: Successful measurements are never reported unless another warning exists. At sufficient coverage, the hook returns silently; users cannot see the current FR or AC metrics required by “compute … coverage … and report it.” The tests explicitly expect this silence.\n- Suggestion: Emit the FR and AC measurement through `additionalContext` on successful evaluation, and assert both metrics in the passing-path tests.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:123\n- Finding: Without an explicitly configured baseline, a project measured far below 80% still receives the default 80% gate on every commit. This implements an optional manual threshold reduction, but does not establish the measured starting threshold required by the specification.\n- Suggestion: Establish the baseline from the initial measurement in the appropriate setup or regeneration workflow, and have the hook consume it. Test initial adoption below 80% without a pre-existing baseline.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/hooks […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T07:22:55.391606+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T22:56:45.348862+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-07T22:56:45.564012+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet - a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

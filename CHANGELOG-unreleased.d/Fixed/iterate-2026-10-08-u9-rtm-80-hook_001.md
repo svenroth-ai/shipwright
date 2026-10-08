@@ -1,0 +1,1 @@
+shipwright-compliance: the pre-commit coverage gate now measures requirement coverage (active requirements with an executed-passing bound test, from the committed traceability manifest, AC coverage reported separately) instead of silently allowing every commit on projects without build sections; unmeasurable cases print a visible warning

@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. No new standing mechanism is needed; changing the existing hook to read the committed manifest is proportionate, and I would choose A.\n2. The smallest thing: compute separate FR and AC coverage from that manifest in the existing hook, warn when measurement is unavailable or stale, and retain the existing soft-block and override.\n3. What it costs to keep: maintaining the manifest-to-execution interpretation and keeping the gate\u2019s reported metrics consistent with F11/CI; the legacy fallback adds a second interpretation to maintain.\n4. What it forecloses: none identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes, in roughly the proposed shape: no new standing mechanism is created \u2014 an existing pre-commit hook (check_rtm_coverage) is redirected to read the committed manifest, which is the smallest change that makes the existing gate actually function on adopted projects.\n\n2. **The smallest thing that would do** Option A: the hook already runs on every commit; changing its input from the RTM line to the committed/cached manifest adds only a pure module and no new trigger, credential, or data store. I would drop the \"keep the old RTM line as fallback\" only if the RTM line is genuinely dead after this \u2014 a permanent fallback path is a second thing to reason about forever. If the RTM is retained elsewhere, the fallback is defensible; if not, cut it.\n\n3. **What it costs to keep** The FR/AC coverage computation must stay correct against the manifest schema: every future manifest change, and every change to how tests are bound/skipped/parametrized, must reason about this join. Plus a staleness WARN behavior that someone must notice when manifests rot. That is real but proportionate \u2014 it is the cost of the gate finally doing what it was already claiming to do.\n\n4. **What it forecloses** Minor: commit-time enforcement depends on the manifest format staying stable-ish; schema churn in the manifest now has a second consumer. Option C (document-only) forecloses nothing but leaves a gate that silently never fires \u2014 worse, because a dead gate that looks alive is a standing liability itself.\n\n5. **Findings**\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: The permanent RTM fallback in Option A is a second read path the project must keep explaining; if the manifest is now authoritative, a fallback is mostly a way for stale RTM numbers to leak into a gate.\n- Suggestion: Either drop the fallback and fail the hook loudly when the manifest is absent, or keep it only with an explicit \"legacy path\" WARN so it is visibly scheduled for deletion.\n\n- Category: ownership\n- Severity: low\n- Finding: The staleness WARN and the fail-open-as-WARN behavior both rely on a human noticing a log line at commit time; nothing keeps them alive.\n- Suggestion: Make the hook's own output state the coverage number and staleness on every run (not only when below threshold), so drift is visible without anyone going looking.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

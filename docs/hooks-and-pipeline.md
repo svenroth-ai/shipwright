@@ -3067,7 +3067,7 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks `git commit` if RTM coverage < 80% threshold. Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
+| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks a real `git ... commit` invocation when **requirement coverage** (active requirements with an executed-passing bound test, from the `.shipwright/compliance/test-traceability.json` being COMMITTED -- staged copy, else HEAD's) is below the 80% threshold; unmeasurable cases print a visible `WARN` instead of allowing silently. Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen`. Details: see the `check_rtm_coverage` note below. |
 | PreToolUse | `Bash` | `check_security_scan.py` | Soft-blocks **deploy** commands from `.shipwright/compliance/ci-security.json`: blocks when open criticals (`by_severity.critical`, else the `critical_gate` verdict) exceed `enforcement.allowed_critical_findings`, when the scan is `degraded`, or when the summary is present-but-unusable. Allows only when the summary is genuinely **absent** (never scanned). Until 2026-07-28 it read the RTM row `Unresolved findings` — code-review findings, not a scan (trg-17f53a39). Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
 
 > **Fail-open invocation (both Bash gates).** These two hooks fire on **every**
@@ -3083,6 +3083,61 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 > deliberate soft-block (`return 2` + the "Continue anyway" override context) is
 > a normal return value and is unaffected. Integration coverage:
 > `integration-tests/test_compliance_hook_failopen.py`.
+>
+> **`check_rtm_coverage` in detail.**
+> - *What counts as a commit* (`lib/git_commit_command.py`): the command is
+>   shlex-tokenised (`#` is not a comment character to the lexer; a segment that
+>   starts with `#` is a comment) and split on `&&` / `||` / `;` / `|` / `&` / `(` /
+>   `)` / newlines, after backslash-newline continuations are joined.
+>   `git [-C <path>|-c k=v ...] commit` fires; so do leading shell reserved words (`if then else elif do while until !
+>   { }`), `VAR=val` prefixes, the wrappers `env`, `command`, `exec`, `time`, `nice`,
+>   `nohup`, `sudo`, `xargs` and `timeout <duration>`, and the command strings of
+>   `sh|bash|zsh|dash -c '<cmd>'`, `eval "<cmd>"`, `pwsh|powershell [...] -Command
+>   "<cmd>"` and `cmd /c <cmd>` (parsed recursively; past the depth cap of 3 the
+>   substring test decides -- it over-fires rather than fails open). `git -c k=v diff`,
+>   `rg "git commit"`, `echo git commit`, `# git commit`, `eval "echo git commit"`
+>   and `git log --grep "git commit"` are not evaluated. Unparseable text (an
+>   unbalanced quote) falls back to the substring test, as does the hook when the
+>   parser module cannot be imported. Known over-fires: a trailing comment holding
+>   `;` / `&&` (`echo hi # ; git commit` -- `#` is no lexer comment), a quoted
+>   separator that `eval` / `-Command` / `cmd /c` re-join without its quotes (`eval
+>   echo "a; git commit"`), and `git commit --dry-run` / `-h`. Not covered: git
+>   aliases (`git ci`), `merge`, `revert`, `cherry-pick`, `rebase` and `am`.
+> - *Which manifest*: the copy being COMMITTED -- the staged (index) copy
+>   (`git cat-file blob :./<path>`), so committing a corrected or regenerated manifest
+>   is measured on what is committed; only when the index has no such path, the one
+>   at `HEAD` (5 s timeout each). The working-tree copy -- which the local pipeline
+>   regenerates fail-closed as all `not_run` -- is read silently only outside a git
+>   repo or when git has no such file; when the git read fails for any other reason
+>   (git missing, timeout, unborn HEAD) the working-tree read is announced as one
+>   `WARN` naming the reason. With no working-tree copy either, that is the WARN
+>   `committed manifest unreadable: <why>` and the gate is NOT evaluating (never the
+>   legacy section line) -- except an unborn HEAD with nothing staged, which is simply
+>   no manifest. The manifest is never regenerated here.
+> - *Ordering limit*: PreToolUse runs BEFORE the Bash command, so the index is read
+>   as it stands then. A manifest staged by the same command (`git add <manifest> &&
+>   git commit`, `git commit -a`, `git commit <pathspec>`, `-o`, `-i`) is measured
+>   from its previous index / HEAD copy -- stage the corrected manifest in a separate
+>   command first (the block says so, in `details.staging_hint` and on stderr). The
+>   soft-block writes its reason and clearing advice to STDERR as well as the stdout
+>   JSON, since Claude Code shows the model stderr on exit 2.
+> - *What is measured*: the binding-to-result join by commit is the collector's,
+>   not re-verified here. AC coverage is reported separately, its inventory taken
+>   from the spec so an untagged AC counts as uncovered; a `spec_path` resolving
+>   outside the project root is never read (the manifest's AC inventory is used).
+>   A manifest older than 14 days or 300 commits WARNs, as does a `source_commit`
+>   that `git cat-file -e` reports missing from local history while HEAD exists
+>   (commit distance unknown; an unborn HEAD or any other git error is silent); an
+>   epoch `generated_at` / all-zero `source_commit` WARNs as provenance unknown.
+> - *Fallback and WARNs*: the RTM's legacy section-commit line is used only when no
+>   manifest exists. Unmeasurable cases (corrupt manifest, `schema_version` not the
+>   current 4, a manifest with no executed `pass`/`fail` result at all, no active
+>   requirements, compliance data but no figure, invalid threshold config) print a
+>   visible `WARN` instead of allowing silently. Accepted risk: an all-`not_run`
+>   manifest swept into a commit (e.g. `git commit -a` after a fail-closed local
+>   regeneration) switches the gate to WARN + allow until CI regenerates it. Optional
+>   `enforcement.rtm_coverage_baseline` ratchets the threshold down for a project
+>   far below 80%.
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
