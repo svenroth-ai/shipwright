@@ -28,13 +28,26 @@ Untagged tests added since 2026-09-16: **1440** in **160** files.
 
 - `backfill_test_links.py --dry-run` (all 12 test roots, 18,085 tests scanned): **auto_written 0**, proposals 14 (all `commit_set` confidence 0.4 fanning to 4-21 FRs, so not high-confidence), orphans: 13 confirmed + 1 possible, all in deliberately tag-bearing `fixtures/` trees (not real orphans), unmapped 16,987.
 - `backfill_ac_provenance.py --write` (mechanical Run-ID -> added-test-file join): 6 candidate files overlapping the delta (FR-01.11 AC30/AC31), **0 tags written**: the tool declines 6x `ambiguous_multiple_untagged_tests_in_file` and 2x `ambiguous_multiple_bare_tags_same_fr`. No file changed.
-- Bloat: no test file was edited, so no file crossed its cap and no exception ADR is needed. Files at or near the cap that WOULD need one for decorator lines (the U1 gate will force this later): `test_verify_iterate_finalization.py`, `shared/tests/test_record_event.py`, `test_rtm_generator.py`.
+- Bloat: no test file was edited, so no file crossed its cap and no exception ADR is needed. The delta files at or over their cap are listed in the next section (derived from the delta, not from examples).
 - Counting unit: test definitions (function-level ids, as the collector reports them), not collected pytest cases. Baseline SHA 8daa50b22, HEAD SHA 1b3204b21.
 - Result: the deterministic engines find no high-confidence tag for any of the delta. Hand-mapping 1,440 tests to FRs would be guessing; per the unit contract the rest goes to ONE triage card. Nothing is deleted.
 
 ## Manifest regenerates clean (step 4)
 
 `_layer_coverage_regen.regenerate_base_head(project_root, HEAD, with_evidence=False)` run on HEAD 1b3204b21 (the commit this unit branches from; the unit adds only docs and a triage card, no test or spec file): exit 0, returned base and head manifests, `invalid_tags: []` for both, 16,969 untagged at head (equal to the measurement above). The regeneration is re-run on the final unit commit before the handback.
+
+## Delta files in `shipwright_bloat_baseline.json` (at or over their cap)
+
+Derived from the 160-file delta table below crossed with the baseline (6 files). Adding a decorator line to any of these needs a same-line tag or an exception ADR; a delta file absent from the baseline is under its cap. This is the list the later tag backfill (trg-067e08fa) must plan around.
+
+| File | Untagged added | current / limit | state | ADR / plan |
+|---|---|---|---|---|
+| shared/scripts/tools/tests/test_codex_hooks_sync.py | 10 | 323 / 300 | grandfathered | - |
+| shared/tests/test_campaign_graph.py | 36 | 325 / 300 | exception | ADR-pending: .shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-test-campaign-graph-bloat.md |
+| shared/tests/test_campaign_step_3f_bis.py | 28 | 1079 / 300 | exception | ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md |
+| shared/tests/test_review_attribution.py | 35 | 640 / 300 | exception | ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md |
+| shared/tests/test_review_marker_companion_verdicts.py | 3 | 311 / 300 | grandfathered | - |
+| shared/tests/test_test_gate_e2e_specs_generated.py | 16 | 340 / 300 | grandfathered | - |
 
 ## Untagged delta by file (for the triage card)
 
