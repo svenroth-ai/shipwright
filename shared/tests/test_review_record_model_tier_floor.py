@@ -19,7 +19,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from lib.review_record import (  # noqa: E402
     REVIEW_TYPES,
     STATUS_COMPLETED,
-    STATUS_NOT_RUN,
     make_entry,
     new_record,
     upsert_review,
@@ -27,6 +26,9 @@ from lib.review_record import (  # noqa: E402
 )
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
 from tools.verifiers.review_record_model_tier import model_tier_note  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _review_background_row import background_row  # noqa: E402
 
 RUN = "iterate-2026-07-29-tier-floor"
 WHY = "not needed for this test's floor scenario"
@@ -57,8 +59,7 @@ def _record(root: Path, code_model_tier: str | None, spec_model_tier: str | None
         # `spec` is set explicitly below (Stage-1-before-Stage-2 HARD-GATE:
         # a completed `code` row requires a completed+evidenced `spec` row).
         if review_type not in ("code", "spec"):
-            record = upsert_review(record, make_entry(
-                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+            record = upsert_review(record, background_row(review_type, WHY), force=True)
     spec_kwargs = {"recorded_by": "spec-reviewer"}
     if spec_model_tier is not None:
         spec_kwargs["model_tier"] = spec_model_tier
@@ -176,8 +177,7 @@ def _record_plan_internal(root: Path, model_tier: str | None) -> None:
     record = new_record(RUN)
     for review_type in REVIEW_TYPES:
         if review_type not in ("code", "spec", "plan_internal"):
-            record = upsert_review(record, make_entry(
-                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+            record = upsert_review(record, background_row(review_type, WHY), force=True)
     record = upsert_review(record, make_entry(
         "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
     record = upsert_review(record, make_entry(
@@ -229,8 +229,7 @@ def test_plan_review_floor_does_not_read_external_plan_row(tmp_path: Path) -> No
     record = new_record(RUN)
     for review_type in REVIEW_TYPES:
         if review_type not in ("plan", "code", "spec"):
-            record = upsert_review(record, make_entry(
-                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+            record = upsert_review(record, background_row(review_type, WHY), force=True)
     record = upsert_review(record, make_entry(
         "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
     record = upsert_review(record, make_entry(
@@ -253,8 +252,7 @@ def _record_architecture_internal(
     record = new_record(RUN)
     for review_type in REVIEW_TYPES:
         if review_type not in ("code", "spec", "architecture_internal"):
-            record = upsert_review(record, make_entry(
-                review_type, STATUS_NOT_RUN, disposition=WHY), force=True)
+            record = upsert_review(record, background_row(review_type, WHY), force=True)
     record = upsert_review(record, make_entry(
         "spec", STATUS_COMPLETED, recorded_by="spec-reviewer", model_tier="opus"))
     record = upsert_review(record, make_entry(

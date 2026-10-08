@@ -1,0 +1,1 @@
+Finalization: the review record and the test-completeness ledger are now checked at every complexity. A trivial change records its Self-Review and closes the remaining passes with one `close-missing --reason-code trivial-auto` plus a default ledger row; from small up every skipped review names its own closed reason code, and a record with every pass `not_run` fails at any size.

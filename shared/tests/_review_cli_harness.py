@@ -25,6 +25,13 @@ sys.path.insert(0, str(_SHARED / "scripts"))
 TOOL = str(_SHARED / "scripts" / "tools" / "record_review_pass.py")
 RUN_ID = "iterate-2026-07-21-review-record"
 REASON = "docs-only diff; the doubt pass is conditional per iteration-reviews.md"
+#: The campaign runner's skipped rows and their closed-vocabulary codes, as
+#: iteration-reviews.md -> "Campaign sub-iterate rows" prescribes (U3).
+RUNNER_REASON_CODES = {
+    "spec": "delegated-to-orchestrator", "code": "delegated-to-orchestrator",
+    "doubt": "delegated-to-orchestrator",
+    "plan_internal": "no-spawn-site", "architecture_internal": "no-spawn-site",
+}
 
 CODE_REVIEWER_REPLY = """\
 Here is my review.

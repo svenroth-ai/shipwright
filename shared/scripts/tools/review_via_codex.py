@@ -39,7 +39,8 @@ Review` section instead. `--role architecture_internal` is the same shape
 brief) + `--spec-file` (the sanitized spec copy) — never a plan or diff. On `status: "error"`, `reason` names the concrete
 failure — either fall back to an ordinary Agent-tool spawn (then record
 `--transport agent --transport-note "<reason>"`) or, when no fallback
-exists, record `--status not_run --disposition "<reason>"`. See
+exists, record `--status not_run --reason-code unavailable --disposition
+"<reason>"`. See
 `codex_review_transport.py`'s own docstring for the full design and its
 Internal Plan Review findings, and `shared/prompts/codex_review_dispatch.md`
 for the complete runnable procedure.

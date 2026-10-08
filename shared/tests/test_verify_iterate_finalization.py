@@ -12,6 +12,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 
 
 # Linked worktrees come from the shared ``make_worktree`` fixture
@@ -1350,15 +1352,13 @@ def test_completeness_fails_when_the_f5c_entry_is_missing(tmp_path):
     assert "F5c" in result.detail
 
 
-def test_completeness_skipped_for_trivial(tmp_path):
-    """Trivial iterates get an auto n/a, no hard gate (graduated coverage)."""
+@pytest.mark.covers("FR-01.11")
+def test_completeness_trivial_without_a_row_fails(tmp_path):
+    """U3: trivial is no longer skipped — it owes the one recorded default row."""
     from tools.verifiers.iterate_checks import check_test_completeness_ledger
-    proj = tmp_path / "webui"
-    _seed_iterate_entry(proj, "r1", "trivial")
-    _write_completeness(proj, None)  # no block — still must not fail at trivial
-    result = check_test_completeness_ledger(proj, "r1")
-    assert result.is_skipped
-    assert "trivial" in result.detail
+    _seed_iterate_entry(proj := tmp_path / "webui", "r1", "trivial")
+    _write_completeness(proj, None)  # no block — a finding now, not an exemption
+    assert (r := check_test_completeness_ledger(proj, "r1")).is_failure and "trivial-auto" in r.detail
 
 
 def test_completeness_fails_when_results_missing_at_small(tmp_path):

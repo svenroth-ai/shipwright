@@ -252,7 +252,8 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    applicable) and **continue to step 1 as normal** — do not fall back yet.
    Do not record `plan_internal`'s review-record row here: SKILL.md Step 7's
    mandatory sweep closes every still-`pending` type before F11, including
-   this one, with a `--disposition` naming the same failure reason.
+   this one — `not_run --reason-code unavailable` with a `--disposition`
+   naming the same failure reason.
    This pass is additive, layered alongside the mandatory self-review (line
    189 above) and the external review below, not a trigger for either —
    iterate's self-review runs unconditionally at every complexity regardless
@@ -397,8 +398,9 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    symlink, or filesystem failure preparing the sanitized copy — the tool's
    stderr names which): record `Ran: no` (reason as applicable) and
    **continue to step 1** without blocking. Do not record the review-record
-   row here — SKILL.md Step 7's mandatory sweep closes it with a matching
-   `--disposition`.
+   row here — SKILL.md Step 7's mandatory sweep closes it as
+   `not_run --reason-code unavailable` with a `--disposition` naming the
+   failure reason.
 
    **Triage every finding** — fix (integrate into mini-plan/spec now),
    disclose (known limitation, recorded below), or decline (with a reason;
@@ -620,8 +622,12 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --provider "{openrouter | null}" \
      [--from external-review-json --payload-file \
        "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"] \
-     [--disposition "{why it did not run — required for not_run}"]
+     [--reason-code "{missing-keys | user-opt-out | config-disabled | unavailable}"] \
+     [--disposition "{the rule that applies — optional beside the code}"]
    ```
+   `not_run` REQUIRES the `--reason-code` (Branch B → `missing-keys`, Option 2 →
+   `user-opt-out`, Branch C → `config-disabled`, a `uv run` / capability failure
+   → `unavailable`); F11 refuses a codeless row.
    This writes the run's review record AND dual-writes the legacy
    `external_review_state.json` marker — once under the run-scoped planning dir
    `.shipwright/planning/iterate/{run_id}/` (what the Mission view reads) and

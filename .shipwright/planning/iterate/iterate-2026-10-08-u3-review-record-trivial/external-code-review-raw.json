@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: plugins/shipwright-iterate/skills/iterate/SKILL.md:142\n- Finding: The override table still classifies the trivial Test Completeness Ledger as **Advisory / Freely skippable**, although this diff makes its recorded row mandatory and F11 fail without it. Following the table\u2019s explicit skip permission now produces a blocked finalization.\n- Suggestion: Move the trivial ledger\u2019s default-row requirement into the mandatory category. Update the adjacent mandatory Review Record entry from \u201csmall+\u201d to every complexity so the table matches the new gates.\n\nOverall assessment: ship-with-fixes. The supplied diff implements the core verifier behavior, but its authoring instructions retain contradictory skip permissions; workspace policy prevented reading the authoritative brief or running tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: spec / edge-case\n  Severity: medium\n  File: shared/scripts/tools/verifiers/review_record_closure.py:100\u2013116 (with iteration-reviews.md:645\u2013650)\n  Finding: The docs state \"rows in already-merged records are legacy and are never re-verified,\" but `reason_codes_closed` has no cutoff \u2014 it fails any `not_run`/`not_applicable` row without a `reason_code`, including rows written before this change. Since `_no_entry_detail` (in `_entry_details.py`) explicitly contemplates re-verifying *older* runs from the tree, re-running F11 on any pre-U3 run whose rows are within the retention window will now fail on legacy codeless rows \u2014 contradicting the documented contract.\n  Suggestion: Either gate `reason_codes_closed` on a cutoff (e.g. skip rows whose run predates this change, or consult the `commit_hash` param already threaded into `check_review_record`), or soften the doc claim to \"the current F11 run is not re-run on merged records.\"\n\n- Category: spec\n  Severity: low\n  File: shared/scripts/tools/verifiers/review_record_closure.py:63\u201399 (with iteration-reviews.md:654\u2013659)\n  Finding: The docs say from `small` up \"each type names its OWN code\" (e.g. `plan_internal` \u2192 `complexity-below-threshold`), but the enforcement only checks (a) a code is present and (b) it isn't `trivial-auto`. A uniform `close-missing --reason-code diff-below-threshold` applied to all seven types \u2014 including `plan` and `external_code`, for which the docs prescribe other codes \u2014 passes the gate. The tests themselves rely on this (`test_record_review_pass_cli_floor._close_missing` defaults every type to `diff-below-threshold` at small and asserts `.ok`), so the enforced contract is weaker than the documented one.\n  Suggestion: Either add a per-type code map to `reason_codes_closed` (at least for the types with an unambiguous code), or state in the docs that any non-`trivial-auto` code is accepted from small up.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_review_record_closure.py:100\u2013107\n  Finding: `test_an_evidence_free_self_row_fails` uses `make_entry(\"self\", \"completed\", recorded_by=\"none\")`. Whether this actually fails depends on `carries_evidence` treating the literal string `\"none\"` as non-evidence \u2014 a magic value not documented in the diff. If `carries_evidence` only checks non-blankness, this test would fail for the wrong reason (or the implementation needs a special case). Worth pinning the intended semantics.\n  Suggestion: Either record the self row with `recorded_by=None` (the actual \"nobody earned it\" shape the module docstring describes) or document that `\"none\"` is a recognized null adapter in `carries_evidence`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/review_record_closure.py:33\u201356\n  Finding: When the `self` row is absent entirely, `entry_for(record, \"self\")` presumably yields an empty/pending row; if the earlier pending check does not materialize `self` as pending (it was described as materialized \"up front\" for live runs, but hand-built fixtures may omit it), `self_review_recorded` reports `` `self` is '' `` \u2014 a confusing empty-status message. Minor, but the message should distinguish \"absent\" from a status.\n  Suggestion: Branch on an absent row and say \"`self` has no row\" before formatting the status.\n\nEverything else checks out: the extraction from `iterate_checks.py` preserves the public import surface (and a test pins it), the ledger trivial-row logic correctly refuses `trivial-auto` above trivial and accepts justification-or-enumeration at trivial, `close-missing`-cannot-complete-self is exercised, campaign roundtrip tests were updated with the new codes, and new tests are tagged `pytest.mark.covers` per the campaign contract. No security issues introduced \u2014 all inputs are file-backed JSON validated against closed vocabularies.\n\nOverall: ship-with-fixes \u2014 the core U3 behavior is correctly implemented and well-tested; the doc-vs-enforcement gaps above (especially the legacy-record promise) should be reconciled before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

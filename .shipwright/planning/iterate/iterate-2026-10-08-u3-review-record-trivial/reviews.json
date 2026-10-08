@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u3-review-record-trivial",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T09:26:59.423315+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan describes validating and documenting the trivial one-command closure, but does not identify the writer change that records the default row. Keeping the existing CLI permissive does not itself implement this behavior. Without that change, trivial records could newly fail F11 while still requiring users to populate individual review types.",
+          "suggestion": "Specify the writer command and persisted representation for the single `trivial-auto` default. Add a CLI round-trip proving that recording `self` and the default closes the remaining types without seven individual codes, and that the default cannot satisfy `self`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 says each skipped row needs a `reason_code`, but does not explicitly require that code to be valid for that review type from `small` upward. Global vocabulary membership alone would allow a legitimate code on an inappropriate type; adding `no-spawn-site` makes its permitted scope particularly important.",
+          "suggestion": "Explicitly validate type/code compatibility using the shared vocabulary. Define where `no-spawn-site` is allowed, and test unknown codes, valid codes attached to the wrong type, and rejection of `trivial-auto` at every complexity above trivial.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Adding completed `self` rows to existing fixtures can mask whether all-`not_run` records actually fail across the full complexity range—the central regression this unit must prevent. The test outline does not explicitly preserve that negative case.",
+          "suggestion": "Add a parameterized all-`not_run` rejection test for every supported complexity, independent of the background-row helper. Include missing `self`, completed `self` without evidence, and the accepted trivial default-row case. Tag tests from their first commit, run pytest roots separately, and include `uv run scripts/verify_local.py` before push.  The gate changes and ledger extraction are directionally sound and proportionate. Clarify the default-row writer path, enforce per-type code validity, and make the central regression cases explicit before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T09:24:01.637150+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: risk — Severity: high**\n  Step 3 bundles two unrelated changes: the behavioral change (trivial ledger row, reason-code enforcement) and a large mechanical refactor (moving ~230 lines out of `iterate_checks.py` into new `verifiers/_*.py` modules with re-exports). Doing both in one diff makes bisecting regressions hard and violates the spirit of a single-unit change. The campaign contract says \"do NOT grow iterate_checks.py\" — moving code is one option, but the refactor should be a separate, behavior-neutral commit (or the plan should explicitly sequence it as such) so the U3 behavioral diff can be reviewed in isolation.\n\n- **Category: edge-case — Severity: high**\n  The plan says all-`not_run` fails at every complexity but doesn't specify how `not_applicable` interacts with the trivial close. Is a record at trivial that is a mix of `not_run` + `not_applicable` rows closable with the single `trivial-auto` row, or does `not_applicable` require per-type codes even at trivial? Step 1 says closure rules apply to `not_run`/`not_applicable` rows and \"at trivial any closed code\" — clarify whether \"any closed code\" includes non-default codes at trivial (i.e., is `trivial-auto` mandatory or just the default?). Ambiguity here will surface as test disagreement.\n\n- **Category: edge-case — Severity: medium**\n  Legacy/intermediate state: records written under the old rules (trivial records with no rows, or SKIP ledger entries) will now fail the new gates when re-verified. The plan mentions legacy `gates.spec` rows are held to the same rule via `entry_for`, but doesn't say whether existing records in the repo's history get migrated, grandfathered, or will start failing verify on old iterations. If verification runs over historical records, this is a breaking change needing a migration or explicit cutover boundary.\n\n- **Category: edge-case — Severity: medium**\n  Step 2 places closure rules \"after the pending check and before the medium+ floor\"  […truncated]\n\n[openai] Review limited to the supplied specification and mini-plan: local command access was blocked, so I could not inspect the authoritative BRIEF or existing implementation.\n\n1. **Category: dependency · Severity: high**  \n   **Finding:** The plan describes validating and documenting the trivial one-command closure, but does not identify the writer change that records the default row. Keeping the existing CLI permissive does not itself implement this behavior. Without that change, trivial records could newly fail F11 while still requiring users to populate individual review types.  \n   **Suggestion:** Specify the writer command and persisted representation for the single `trivial-auto` default. Add a CLI round-trip proving that recording `self` and the default closes the remaining types without seven individual codes, and that the default cannot satisfy `self`.\n\n2. **Category: approach · Severity: medium**  \n   **Finding:** Step 1 says each skipped row needs a `reason_code`, but does not explicitly require that code to be valid **for that review type** from `small` upward. Global vocabulary membership alone would allow a legitimate code on an inappropriate type; adding `no-spawn-site` makes its permitted scope particularly important.  \n   **Suggestion:** Explicitly validate type/code compatibility using the shared vocabulary. Define where `no-spawn-site` is allowed, and test unknown codes, valid codes attached to the wrong type, and rejection of `trivial-auto` at every complexity above trivial.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** Adding completed `self` rows to existing fixtures can mask whether all-`not_run` records actually fail across the full complexity range—the central regression this unit must prevent. The test outline does not explicitly preserve that negative case.  \n   **Suggestion:** Add a parameterized all-`not_run` rejection test for every supported complexity, independent of the background-row helper. Include missing `sel […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": null,
+          "finding": "external_code not_run template lacked `unavailable` and its marker rule. FIXED in 2128b5371.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "3f-bis REJECT paragraph lost the `--mode ship` qualifier. FIXED in 2128b5371.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "B1 replay-check treated self not_run as terminal. FIXED in 2b6704d99.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T11:25:40.795123+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: a Stage-1 REJECT is held by the disposition, not by the carried reason code — the machine-readable code says delegated-to-orchestrator although 3f-bis ran Stage 1",
+          "suggestion": "ACCEPTED limit in the ADR: no reader groups by reason_code today; a `stage-1-rejected` code is a follow-up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+          "line": null,
+          "finding": "Claim under doubt: uv-run failures map to unavailable everywhere — shipwright-build code-review.md still named no code",
+          "suggestion": "FIXED in 2b6704d99.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: every doc names a reason code for a skipped row — SKILL.md Step 8 and iteration-reviews.md escalation ladder gave a disposition only",
+          "suggestion": "FIXED in 2b6704d99 (each blocker mapped to a code).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "Claim under doubt: record --force can repair a plan/external_code not_run row — the marker rule blocks a forced re-record for missing-keys / unavailable",
+          "suggestion": "ACCEPTED limit in the ADR; relaxing the marker rule is a follow-up.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T11:25:40.925309+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec / edge-case",
+          "file": "shared/scripts/tools/verifiers/review_record_closure.py:100–116 (with iteration-reviews.md:645–650)",
+          "line": null,
+          "finding": "The docs state \"rows in already-merged records are legacy and are never re-verified,\" but `reason_codes_closed` has no cutoff — it fails any `not_run`/`not_applicable` row without a `reason_code`, including rows written before this change. Since `_no_entry_detail` (in `_entry_details.py`) explicitly contemplates re-verifying older runs from the tree, re-running F11 on any pre-U3 run whose rows are within the retention window will now fail on legacy codeless rows — contradicting the documented contract.",
+          "suggestion": "Either gate `reason_codes_closed` on a cutoff (e.g. skip rows whose run predates this change, or consult the `commit_hash` param already threaded into `check_review_record`), or soften the doc claim to \"the current F11 run is not re-run on merged records.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/review_record_closure.py:63–99 (with iteration-reviews.md:654–659)",
+          "line": null,
+          "finding": "The docs say from `small` up \"each type names its OWN code\" (e.g. `plan_internal` → `complexity-below-threshold`), but the enforcement only checks (a) a code is present and (b) it isn't `trivial-auto`. A uniform `close-missing --reason-code diff-below-threshold` applied to all seven types — including `plan` and `external_code`, for which the docs prescribe other codes — passes the gate. The tests themselves rely on this (`test_record_review_pass_cli_floor._close_missing` defaults every type to `diff-below-threshold` at small and asserts `.ok`), so the enforced contract is weaker than the documented one.",
+          "suggestion": "Either add a per-type code map to `reason_codes_closed` (at least for the types with an unambiguous code), or state in the docs that any non-`trivial-auto` code is accepted from small up.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_review_record_closure.py:100–107",
+          "line": null,
+          "finding": "test_an_evidence_free_self_row_fails` uses `make_entry(\"self\", \"completed\", recorded_by=\"none\")`. Whether this actually fails depends on `carries_evidence` treating the literal string `\"none\"` as non-evidence — a magic value not documented in the diff. If `carries_evidence` only checks non-blankness, this test would fail for the wrong reason (or the implementation needs a special case). Worth pinning the intended semantics.",
+          "suggestion": "Either record the self row with `recorded_by=None` (the actual \"nobody earned it\" shape the module docstring describes) or document that `\"none\"` is a recognized null adapter in `carries_evidence`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/review_record_closure.py:33–56",
+          "line": null,
+          "finding": "When the `self` row is absent entirely, `entry_for(record, \"self\")` presumably yields an empty/pending row; if the earlier pending check does not materialize `self` as pending (it was described as materialized \"up front\" for live runs, but hand-built fixtures may omit it), `self_review_recorded` reports `` `self` is '' `` — a confusing empty-status message. Minor, but the message should distinguish \"absent\" from a status.",
+          "suggestion": "Branch on an absent row and say \"`self` has no row\" before formatting the status.  Everything else checks out: the extraction from `iterate_checks.py` preserves the public import surface (and a test pins it), the ledger trivial-row logic correctly refuses `trivial-auto` above trivial and accepts justification-or-enumeration at trivial, `close-missing`-cannot-complete-self is exercised, campaign roundtrip tests were updated with the new codes, and new tests are tagged `pytest.mark.covers` per the campaign contract. No security issues introduced — all inputs are file-backed JSON validated against closed vocabularies.  Overall: ship-with-fixes — the core U3 behavior is correctly implemented and well-tested; the doc-vs-enforcement gaps above (especially the legacy-record promise) should be reconciled before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": 142,
+          "finding": "The override table still classifies the trivial Test Completeness Ledger as Advisory / Freely skippable, although this diff makes its recorded row mandatory and F11 fail without it. Following the table’s explicit skip permission now produces a blocked finalization.",
+          "suggestion": "Move the trivial ledger’s default-row requirement into the mandatory category. Update the adjacent mandatory Review Record entry from “small+” to every complexity so the table matches the new gates.  Overall assessment: ship-with-fixes. The supplied diff implements the core verifier behavior, but its authoring instructions retain contradictory skip permissions; workspace policy prevented reading the authoritative brief or running tests.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T09:26:59.289320+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec / edge-case\n  Severity: medium\n  File: shared/scripts/tools/verifiers/review_record_closure.py:100–116 (with iteration-reviews.md:645–650)\n  Finding: The docs state \"rows in already-merged records are legacy and are never re-verified,\" but `reason_codes_closed` has no cutoff — it fails any `not_run`/`not_applicable` row without a `reason_code`, including rows written before this change. Since `_no_entry_detail` (in `_entry_details.py`) explicitly contemplates re-verifying *older* runs from the tree, re-running F11 on any pre-U3 run whose rows are within the retention window will now fail on legacy codeless rows — contradicting the documented contract.\n  Suggestion: Either gate `reason_codes_closed` on a cutoff (e.g. skip rows whose run predates this change, or consult the `commit_hash` param already threaded into `check_review_record`), or soften the doc claim to \"the current F11 run is not re-run on merged records.\"\n\n- Category: spec\n  Severity: low\n  File: shared/scripts/tools/verifiers/review_record_closure.py:63–99 (with iteration-reviews.md:654–659)\n  Finding: The docs say from `small` up \"each type names its OWN code\" (e.g. `plan_internal` → `complexity-below-threshold`), but the enforcement only checks (a) a code is present and (b) it isn't `trivial-auto`. A uniform `close-missing --reason-code diff-below-threshold` applied to all seven types — including `plan` and `external_code`, for which the docs prescribe other codes — passes the gate. The tests themselves rely on this (`test_record_review_pass_cli_floor._close_missing` defaults every type to `diff-below-threshold` at small and asserts `.ok`), so the enforced contract is weaker than the documented one.\n  Suggestion: Either add a per-type code map to `reason_codes_closed` (at least for the types with an unambiguous code), or state in the docs that any non-`trivial-auto` code is accepted from small up.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_re […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: plugins/shipwright-iterate/skills/iterate/SKILL.md:142\n- Finding: The override table still classifies the trivial Test Completeness Ledger as **Advisory / Freely skippable**, although this diff makes its recorded row mandatory and F11 fail without it. Following the table’s explicit skip permission now produces a blocked finalization.\n- Suggestion: Move the trivial ledger’s default-row requirement into the mandatory category. Update the adjacent mandatory Review Record entry from “small+” to every complexity so the table matches the new gates.\n\nOverall assessment: ship-with-fixes. The supplied diff implements the core verifier behavior, but its authoring instructions retain contradictory skip permissions; workspace policy prevented reading the authoritative brief or running tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T09:55:46.263701+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T09:27:00.059610+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T09:27:00.236429+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet - a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}
