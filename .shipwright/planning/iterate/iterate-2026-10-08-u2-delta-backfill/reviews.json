@@ -123,27 +123,93 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "delta-measurement.md",
+          "line": null,
+          "finding": "AC4 regen evidence cites the branch base commit 1b3204b21; a promise to re-run on the final commit is not recorded as a result; regenerate_base_head has no exit code (returned without exception).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "decision-drops/iterate-2026-10-08-u2-delta-backfill_001.json",
+          "line": null,
+          "finding": "16,969-15,546=1,423 net growth vs 1,440 set-difference delta is unexplained (17 base-untagged ids tagged or removed).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "reviews.json",
+          "line": null,
+          "finding": "plan/external_code revise verdicts have no recorded disposition; mini-plan.md step 5 still names the superseded collector check.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "delta-measurement.md",
+          "line": null,
+          "finding": "AC1 per-root table must be in the PR body (done: PR #838 body updated by the orchestrator).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "delta-measurement.md",
+          "line": null,
+          "finding": "'absent from the baseline is under its cap' understates headroom risk once decorator lines are added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "risk_recheck.json",
+          "line": null,
+          "finding": "Records a pre-finalization snapshot (2 files, 203 loc, touches_auth) that does not match the final diff; harmless, escalation only goes up.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "iterates/iterate-2026-10-08-u2-delta-backfill.json",
+          "line": null,
+          "finding": "surface_verification.timestamp is a placeholder.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-07T22:47:43.793240+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T05:18:27.808349+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-07T22:47:43.922019+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "completed_at": "2026-10-08T05:18:27.935120+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (docs/measurement only: no migrations, concurrency, cross-plugin imports or irreversible ops); Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -209,15 +275,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-07T22:47:43.664811+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T05:16:43.775944+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
