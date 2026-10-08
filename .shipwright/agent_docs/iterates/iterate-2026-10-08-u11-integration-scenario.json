@@ -1,0 +1,57 @@
+{
+  "run_id": "iterate-2026-10-08-u11-integration-scenario",
+  "date": "2026-10-08T20:19:04.174517Z",
+  "event_at": "2026-10-08T20:16:11.284613+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U11",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-10-07-finalization-claims-hardening/sub-iterates/U11-integration-scenario.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u11-integration-scenario",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a compliant run passes U1/U3/U4/U5/U6 at trivial, small and medium",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalization_claims_scenario.py::test_a_compliant_run_passes_every_gate_at_every_complexity PASSED"
+      },
+      {
+        "behavior": "each gate fails with its own diagnostic while every other gate stays green",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalization_claims_scenario.py::test_u1_* + test_u3_* + test_u4_* + test_u5_* + test_u6_* PASSED"
+      },
+      {
+        "behavior": "all small-scope claims broken at once are each reported; U5 stays out of scope at small",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalization_claims_scenario.py::test_breaking_every_small_claim_at_once_reports_each_gate_red_independently PASSED"
+      },
+      {
+        "behavior": "F11 run_all_checks wires U1/U4/U5 under their own names",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalization_claims_scenario.py::test_f11_entry_point_reports_each_broken_gate_under_its_own_name PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-08T00:00:00+00:00",
+    "reason_code": "test-only",
+    "justification": "test-only change; no runnable surface"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

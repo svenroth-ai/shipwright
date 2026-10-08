@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** approach \u00b7 **Severity:** high  \n   **Finding:** U7 is explicitly required by U11, but the plan lists no isolated U7 failure case. Asserting U7 stays green in other cases does not prove its check exists or rejects invalid claims.  \n   **Suggestion:** Add a U7-specific mutation with its own expected diagnostic and assertions that the other gates pass.\n\n2. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** The plan builds a compliant baseline but does not explicitly assert that it passes before mutation. Without that check, fixture defects can undermine the isolation assertions or produce misleading failures.  \n   **Suggestion:** Verify the baseline passes every required gate, then give each mutation a fresh baseline. In the combined-failure case, assert every applicable gate\u2019s diagnostic individually.\n\n3. **Category:** approach \u00b7 **Severity:** medium  \n   **Finding:** The invocation path is unspecified. Calling gate helpers alone would not establish that the integrated verifier actually invokes them or retains their diagnostics when multiple gates fail.  \n   **Suggestion:** Run the scenario through the existing verifier entry point against the temporary repository, using its real records and diff inputs.\n\n4. **Category:** dependency \u00b7 **Severity:** medium  \n   **Finding:** The plan omits the campaign\u2019s explicit validation requirements: one pytest root per process and `uv run scripts/verify_local.py` before push.  \n   **Suggestion:** Include both in the validation steps, and ensure any nested pytest invocation runs in a separate process against only the temporary root.\n\nThe temporary-repository approach is sound and has limited production risk, but the missing U7 case and integration assertions need addressing. Filesystem reads were blocked by execution policy, so this review relies on the supplied excerpts rather than the full authoritative BRIEF.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: dependency \u2014 Severity: medium**\n  The plan assumes U1, U3, U4, U5, U6, U7 gates all exist and emit stable diagnostics before U11 lands. If this ships concurrently with (or before) any of those units, the isolation assertions (\"every other gate stays green\") will fail against absent gates.\n  **Suggestion:** Confirm in the BRIEF that U11 is sequenced last, or gate the test with skips/marks when a gate isn't importable yet \u2014 but prefer strict sequencing; silent skips would mask the very coverage U11 exists to prove.\n\n- **Category: edge-case \u2014 Severity: medium**\n  Asserting \"the owning gate's diagnostic\" risks coupling tests to prose in error messages. Any rewording of a diagnostic in U3\u2013U7 breaks U11 even when behavior is correct, and worse, a *missed* diagnostic can pass if the assertion is a loose substring match.\n  **Suggestion:** Assert on stable diagnostic codes/identifiers if the gates emit them; if not, assert on the most specific stable token (e.g., the rule name or claim field), not full sentences. If gates lack stable identifiers, that's a missing dependency worth one small extraction into a shared constant module rather than duplicating strings.\n\n- **Category: edge-case \u2014 Severity: low**\n  Building a real git repo in tmp at runtime requires `git` on PATH and write access to the temp dir; some CI images lack git or sandbox it. Also, per-case repo construction cost \u2014 six-plus cases \u00d7 full repo setup \u2014 can make this the slowest test in the suite.\n  **Suggestion:** Use pytest `tmp_path` fixtures (the plan implies this \u2014 confirm), add a session-scoped `skipif` for git availability, and reuse a single `build_compliant_run()` helper across cases, breaking one claim per test via parameterization rather than copying setup.\n\n- **Category: approach \u2014 Severity: low**\n  The isolation design (\"break one claim, assert its gate fires AND all others stay green\") multiplies assertions per case. For the medium-complexity U5/U6 cases this is right, but for trivial U3 cases a full isolation matrix may be over-produced.\n  **Suggestion:** Keep per-case isolation for the gates whose claims could plausibly interact (U4 count/complexity, U5, U6), and rely on the single converse test (all small-scope claims broken at once) to cover cross-gate independence for the trivial cases. This trims a lot of duplicated assertion code without losing coverage.\n\n- **Category: approach \u2014 Severity: low**\n  The mini-plan doesn't mention the campaign contract's `verifiers/_*.py` extraction rule or `scripts/verify_local.py`. If scenario-building logic grows, it must live in the helper file under `shared/tests/`, not in `iterate_checks.py`.\n  **Suggestion:** State explicitly that no changes touch `iterate_checks.py`, and that the records helper is the only new non-test file.\n\n- **Category: risk \u2014 Severity: low**\n  \"No production code changes\" is the main safety property \u2014 keep it strictly true. If a case reveals a gate bug, the fix belongs in a follow-up, not smuggled into this unit.\n  **Suggestion:** Note an explicit escape hatch: if a gate fails the scenario, stop and file against the owning unit rather than patching the gate here.\n\n## Overall assessment\n\nThe approach is sound: test-only, fixture built at runtime (correctly avoiding the U1 self-blocking trap), and the isolation-plus-converse coverage model is the right shape for verifying gate independence. Main revisions are sequencing/dependency confirmation, stable diagnostic identifiers, and trimming the isolation matrix for trivial cases.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

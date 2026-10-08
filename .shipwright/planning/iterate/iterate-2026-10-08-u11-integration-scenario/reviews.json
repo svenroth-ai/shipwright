@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u11-integration-scenario",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:15:28.539356+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Confirm in the BRIEF that U11 is sequenced last, or gate the test with skips/marks when a gate isn't importable yet — but prefer strict sequencing; silent skips would mask the very coverage U11 exists to prove.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Assert on stable diagnostic codes/identifiers if the gates emit them; if not, assert on the most specific stable token (e.g., the rule name or claim field), not full sentences. If gates lack stable identifiers, that's a missing dependency worth one small extraction into a shared constant module rather than duplicating strings.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Use pytest `tmp_path` fixtures (the plan implies this — confirm), add a session-scoped `skipif` for git availability, and reuse a single `build_compliant_run()` helper across cases, breaking one claim per test via parameterization rather than copying setup.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Keep per-case isolation for the gates whose claims could plausibly interact (U4 count/complexity, U5, U6), and rely on the single converse test (all small-scope claims broken at once) to cover cross-gate independence for the trivial cases. This trims a lot of duplicated assertion code without losing coverage.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "State explicitly that no changes touch `iterate_checks.py`, and that the records helper is the only new non-test file.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Note an explicit escape hatch: if a gate fails the scenario, stop and file against the owning unit rather than patching the gate here.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "U7 is explicitly required by U11, but the plan lists no isolated U7 failure case. Asserting U7 stays green in other cases does not prove its check exists or rejects invalid claims.",
+          "suggestion": "Add a U7-specific mutation with its own expected diagnostic and assertions that the other gates pass.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan builds a compliant baseline but does not explicitly assert that it passes before mutation. Without that check, fixture defects can undermine the isolation assertions or produce misleading failures.",
+          "suggestion": "Verify the baseline passes every required gate, then give each mutation a fresh baseline. In the combined-failure case, assert every applicable gate’s diagnostic individually.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The invocation path is unspecified. Calling gate helpers alone would not establish that the integrated verifier actually invokes them or retains their diagnostics when multiple gates fail.",
+          "suggestion": "Run the scenario through the existing verifier entry point against the temporary repository, using its real records and diff inputs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits the campaign’s explicit validation requirements: one pytest root per process and `uv run scripts/verify_local.py` before push.",
+          "suggestion": "Include both in the validation steps, and ensure any nested pytest invocation runs in a separate process against only the temporary root.  The temporary-repository approach is sound and has limited production risk, but the missing U7 case and integration assertions need addressing. Filesystem reads were blocked by execution policy, so this review relies on the supplied excerpts rather than the full authoritative BRIEF.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T20:15:28.666094+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: dependency — Severity: medium**\n  The plan assumes U1, U3, U4, U5, U6, U7 gates all exist and emit stable diagnostics before U11 lands. If this ships concurrently with (or before) any of those units, the isolation assertions (\"every other gate stays green\") will fail against absent gates.\n  **Suggestion:** Confirm in the BRIEF that U11 is sequenced last, or gate the test with skips/marks when a gate isn't importable yet — but prefer strict sequencing; silent skips would mask the very coverage U11 exists to prove.\n\n- **Category: edge-case — Severity: medium**\n  Asserting \"the owning gate's diagnostic\" risks coupling tests to prose in error messages. Any rewording of a diagnostic in U3–U7 breaks U11 even when behavior is correct, and worse, a *missed* diagnostic can pass if the assertion is a loose substring match.\n  **Suggestion:** Assert on stable diagnostic codes/identifiers if the gates emit them; if not, assert on the most specific stable token (e.g., the rule name or claim field), not full sentences. If gates lack stable identifiers, that's a missing dependency worth one small extraction into a shared constant module rather than duplicating strings.\n\n- **Category: edge-case — Severity: low**\n  Building a real git repo in tmp at runtime requires `git` on PATH and write access to the temp dir; some CI images lack git or sandbox it. Also, per-case repo construction cost — six-plus cases × full repo setup — can make this the slowest test in the suite.\n  **Suggestion:** Use pytest `tmp_path` fixtures (the plan implies this — confirm), add a session-scoped `skipif` for git availability, and reuse a single `build_compliant_run()` helper across cases, breaking one claim per test via parameterization rather than copying setup.\n\n- **Category: approach — Severity: low**\n  The isolation design (\"break one claim, assert its gate fires AND all others stay green\") multiplies assertions per case. For the medium-complexity U5/U6 cases this […truncated]\n\n[openai] 1. **Category:** approach · **Severity:** high  \n   **Finding:** U7 is explicitly required by U11, but the plan lists no isolated U7 failure case. Asserting U7 stays green in other cases does not prove its check exists or rejects invalid claims.  \n   **Suggestion:** Add a U7-specific mutation with its own expected diagnostic and assertions that the other gates pass.\n\n2. **Category:** edge-case · **Severity:** medium  \n   **Finding:** The plan builds a compliant baseline but does not explicitly assert that it passes before mutation. Without that check, fixture defects can undermine the isolation assertions or produce misleading failures.  \n   **Suggestion:** Verify the baseline passes every required gate, then give each mutation a fresh baseline. In the combined-failure case, assert every applicable gate’s diagnostic individually.\n\n3. **Category:** approach · **Severity:** medium  \n   **Finding:** The invocation path is unspecified. Calling gate helpers alone would not establish that the integrated verifier actually invokes them or retains their diagnostics when multiple gates fail.  \n   **Suggestion:** Run the scenario through the existing verifier entry point against the temporary repository, using its real records and diff inputs.\n\n4. **Category:** dependency · **Severity:** medium  \n   **Finding:** The plan omits the campaign’s explicit validation requirements: one pytest root per process and `uv run scripts/verify_local.py` before push.  \n   **Suggestion:** Include both in the validation steps, and ensure any nested pytest invocation runs in a separate process against only the temporary root.\n\nThe temporary-repository approach is sound and has limited production risk, but the missing U7 case and integration assertions need addressing. Filesystem reads were blocked by execution policy, so this review relies on the supplied excerpts rather than the full authoritative BRIEF.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:15:29.572155+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the internal cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:15:29.717251+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the internal cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_finalization_claims_scenario.py:59 (`GATES = (\"U1\", \"U3\", \"U4\", \"U5\", \"U6\")`)",
+          "line": null,
+          "finding": "The unit text says the scenario must cross \"U1/U3/U4/U5/U6/U7\", but U7 is absent from `GATES`, from `run_gates`, from `assert_only` isolation checks, and from the F11 entry-point test. Six of the seven gates named in the spec are covered; U7 has no test here at all.",
+          "suggestion": "Add U7's verifier to `run_gates`/`GATES` (so isolation assertions cover it) and at least one dedicated U7 case with its own diagnostic needle, or document in the test docstring why U7 is exercised elsewhere.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_finalization_claims_scenario.py:186–189 (`test_u4_the_same_diff_closed_with_a_vocabulary_code_passes`)",
+          "line": null,
+          "finding": "This \"positive control\" only asserts U4 passes; it never asserts the other gates are green, so it doesn't actually verify that \"delegated-to-orchestrator\" closes the trigger rather than, e.g., the diff not reaching the 100-line threshold in the run the gate sees. If the diff-size computation were broken, the test would still pass.",
+          "suggestion": "Add `assert all(ok for g, (ok, _) in run_gates(root, sha).items() if g == \"U4\")`-style full-gate check, or assert U4's detail mentions the changed-line count so the pass is confirmed to be for the vocabulary code, not a missed trigger.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/tests/test_finalization_claims_scenario.py:59 / :147 (`test_u3_free_text_closures_...` parametrized `[\"trivial\", \"small\"]`)",
+          "line": null,
+          "finding": "The free-text-closure isolation case never runs at medium, the only complexity where the scenario actually has `code`/`external_code` rows (via `_DELEGATED`/`_EXTERNAL`). The medium default row is `\"not_run\"` with a reason_code, so the free-text-negative path for run-reviews is only exercised via the U4 test's `code_row`, which asserts U4 not U3.",
+          "suggestion": "Parametrize the free-text case over medium too (with `code_row={\"status\": \"not_run\"}` i.e. no reason_code) so U3's rejection of a free-text-closed code review is asserted in isolation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/_finalization_scenario_records.py:50–53 (`event(fields)` with `none_reason=\"prose only\"`)",
+          "line": null,
+          "finding": "In the docs-label test, `none_reason` is injected into the event dict. If `run_fr_gates` ignores unknown keys rather than rejecting them, this test would silently pass with the wrong justification field, and if it validates strictly it's fine — either way the test's meaning depends on unverifiable lenience in `run_fr_gates`. Worth confirming the gate actually reads this key.",
+          "suggestion": "Confirm the U6 gate consumes `none_reason` (or whatever its real name is in the event schema); if the key is wrong the test still passes only because `change_type` mismatch fires first, weakening the diagnostic assertion.  No security issues: the scenario builds fixtures in `tmp_path`, uses hermetic git helpers, and processes no untrusted input. The `sys.path.append` self-registration is fragile but consistent with the sibling fixture modules' presumed pattern.  Overall assessment: the tests are genuinely behavioral (break one claim, assert one gate red with its own diagnostic — a strong pattern that would catch missing checks), and I found no correctness bugs inside the diff itself. The material gap is the missing U7 gate the unit text explicitly names; fix that (and ideally the U4 positive-control assertion) before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": 51,
+          "finding": "U11 explicitly requires crossing U1/U3/U4/U5/U6/U7, but `GATES` and `run_gates()` omit U7 entirely. No case breaks a U7 claim or asserts its diagnostic independently, so removing or disabling U7 would leave this scenario passing.",
+          "suggestion": "Include U7 in the scenario runner and add an isolated failure case that checks its diagnostic while every other gate remains green. Also assert U7 passes in the compliant baseline.  Overall assessment: ship-with-fixes; the required U7 coverage is missing. Review was limited to the supplied diff and specification because execution policy blocked reading the authoritative BRIEF and running checks.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T20:15:28.914681+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings\n\n- Category: spec\n  Severity: medium\n  File: shared/tests/test_finalization_claims_scenario.py:59 (`GATES = (\"U1\", \"U3\", \"U4\", \"U5\", \"U6\")`)\n  Finding: The unit text says the scenario must cross \"U1/U3/U4/U5/U6/U7\", but U7 is absent from `GATES`, from `run_gates`, from `assert_only` isolation checks, and from the F11 entry-point test. Six of the seven gates named in the spec are covered; U7 has no test here at all.\n  Suggestion: Add U7's verifier to `run_gates`/`GATES` (so isolation assertions cover it) and at least one dedicated U7 case with its own diagnostic needle, or document in the test docstring why U7 is exercised elsewhere.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_finalization_claims_scenario.py:186–189 (`test_u4_the_same_diff_closed_with_a_vocabulary_code_passes`)\n  Finding: This \"positive control\" only asserts U4 passes; it never asserts the other gates are green, so it doesn't actually verify that \"delegated-to-orchestrator\" closes the trigger rather than, e.g., the diff not reaching the 100-line threshold in the run the gate sees. If the diff-size computation were broken, the test would still pass.\n  Suggestion: Add `assert all(ok for g, (ok, _) in run_gates(root, sha).items() if g == \"U4\")`-style full-gate check, or assert U4's detail mentions the changed-line count so the pass is confirmed to be for the vocabulary code, not a missed trigger.\n\n- Category: edge-case\n  Severity: low\n  File: shared/tests/test_finalization_claims_scenario.py:59 / :147 (`test_u3_free_text_closures_...` parametrized `[\"trivial\", \"small\"]`)\n  Finding: The free-text-closure isolation case never runs at medium, the only complexity where the scenario actually has `code`/`external_code` rows (via `_DELEGATED`/`_EXTERNAL`). The medium default row is `\"not_run\"` with a reason_code, so the free-text-negative path for run-reviews is only exercised via the U4 test's `code_row`, which asserts U4 not U3.\n  Suggestion: Parametrize the free-text ca […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/tests/test_finalization_claims_scenario.py:51\n- Finding: U11 explicitly requires crossing U1/U3/U4/U5/U6/U7, but `GATES` and `run_gates()` omit U7 entirely. No case breaks a U7 claim or asserts its diagnostic independently, so removing or disabling U7 would leave this scenario passing.\n- Suggestion: Include U7 in the scenario runner and add an isolated failure case that checks its diagnostic while every other gate remains green. Also assert U7 passes in the compliant baseline.\n\nOverall assessment: ship-with-fixes; the required U7 coverage is missing. Review was limited to the supplied diff and specification because execution policy blocked reading the authoritative BRIEF and running checks.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:15:29.436916+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the internal cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:15:29.858990+00:00",
+      "disposition": "the sub-iterate-runner has no Agent tool, so this internal arm has no spawn site (documented gap)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:15:29.990883+00:00",
+      "disposition": "the sub-iterate-runner has no Agent tool, so this internal arm has no spawn site (documented gap)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

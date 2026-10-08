@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"One tmp-dir-built scenario crosses U1 tag, U3 review record (trivial/small/medium), U4 cascade (small), U5 surface (medium), U6 requirement gates; each gate asserted with its own diagnostic and every other gate asserted green. U7 was cut from the campaign and is not covered."},
+{"name":"Error Handling","verdict":"pass","note":"Test-only; fixtures raise on git failure (check=True); no production code touched."},
+{"name":"Security Basics","verdict":"pass","note":"No shell, git through argument arrays in tmp_path repos; no secrets; no network."},
+{"name":"Test Quality","verdict":"pass","note":"Baseline passes at 3 complexities; each case breaks one claim and fails if a second gate is red (masking) or the owning gate accepts; converse all-broken case; F11 entry-point wiring case. Mutations confirmed red during development (U3 medium needed a real review row)."},
+{"name":"Performance Basics","verdict":"pass","note":"20 cases in ~25 s; each builds a small real git repo."},
+{"name":"Naming & Structure","verdict":"pass","note":"test file 211 lines, helper 58 lines, both under 300; iterate_checks.py untouched; helper has no test_* function."},
+{"name":"Affected Boundaries","verdict":"pass","note":"The scenario IS the round-trip probe: records written in production shapes (review record via lib.review_record, evidence via evidence_drop.stage_reports, F5c entry) are read back by the real verifiers."}
+]}
