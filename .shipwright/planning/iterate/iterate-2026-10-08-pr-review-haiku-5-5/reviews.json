@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-pr-review-haiku-5-5",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:35:35.783457+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:38:58.295863+00:00",
+      "disposition": "small complexity CHANGE; no plan phase below medium per the Phase Matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py",
+          "line": 36,
+          "finding": "MAX_DIFF_CHARS 1M justified by 1M-token context; Haiku 5.5 context not re-checked.",
+          "suggestion": "Check OpenRouter context_length (resolved: 1000000 for anthropic/claude-haiku-5.5, verified live 2026-10-08; cap unchanged).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "webui scripts/ci/pr_review_openrouter.py",
+          "line": 63,
+          "finding": "Webui Luna override slug differs from monorepo.",
+          "suggestion": "Resolved: comment added stating the difference is intentional; openai/gpt-5.6-luna still listed on OpenRouter.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "webui .github/workflows/pr-review-run.yml",
+          "line": 250,
+          "finding": "Comment cites the Luna run-id.",
+          "suggestion": "Resolved: cites this run plus history.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "tests (both repos)",
+          "line": 92,
+          "finding": "Test comment credits old run-id.",
+          "suggestion": "Resolved.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_model_policy.py",
+          "line": 5,
+          "finding": "Docstring calls z-ai the default.",
+          "suggestion": "Resolved.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T13:38:46.580736+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:38:57.611076+00:00",
+      "disposition": "pure model-slug literal swap; no migrations, concurrency, cross-plugin imports or irreversible ops, so Stage 3 does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_openrouter.py (test_luna_model_constant_still_exists_for_the_operator_override)",
+          "line": null,
+          "finding": "The Luna-constant test only asserts the constant exists; unlike the GLM test pattern, nothing verifies Luna is still a selectable override (e.g., that setting SHIPWRIGHT_PR_REVIEW_MODEL=openai/gpt-6-luna resolves and bypasses ZDR routing). A regression that dropped Luna from the allowed override path while keeping the string constant would still pass.",
+          "suggestion": "Add a resolution test asserting the Luna override threads through main()/resolve_extra_body like the GLM/DeepSeek override tests do.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".github/workflows/pr-review-run.yml",
+          "line": 249,
+          "finding": "The comment block above the env (lines ~245–248, unchanged) still reads as if it describes Luna (\"if this model's own verdicts ever need bypassing\") and was written for the Luna default; it wasn't updated for Haiku. If \"webui mirrored separately\" means this workflow is one of multiple copies, the pinning test (test_model_env_matches_code_default) only covers this one — verify the webui copy is handled in the companion change.",
+          "suggestion": "Update the stale comment to be model-agnostic or Haiku-specific, and confirm the webui mirror swap lands in the paired change.  Otherwise the change is correct: the workflow literal, DEFAULT_MODEL, imports/__all__, and pinning tests all move together, Luna stays as an override, and the ZDR gate logic is untouched (Haiku is outside deepseek/z-ai namespaces, so the empty-extra_body short-circuit still applies, as the updated test verifies). No security or correctness regressions.  Overall: ship-as-is; the two items above are polish, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:39:44.846204+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] - Category: test\n- Severity: low\n- File: plugins/shipwright-security/tests/test_pr_review_openrouter.py (test_luna_model_constant_still_exists_for_the_operator_override)\n- Finding: The Luna-constant test only asserts the constant exists; unlike the GLM test pattern, nothing verifies Luna is still a *selectable* override (e.g., that setting SHIPWRIGHT_PR_REVIEW_MODEL=openai/gpt-6-luna resolves and bypasses ZDR routing). A regression that dropped Luna from the allowed override path while keeping the string constant would still pass.\n- Suggestion: Add a resolution test asserting the Luna override threads through main()/resolve_extra_body like the GLM/DeepSeek override tests do.\n\n- Category: spec\n- Severity: low\n- File: .github/workflows/pr-review-run.yml:249\n- Finding: The comment block above the env (lines ~245–248, unchanged) still reads as if it describes Luna (\"if this model's own verdicts ever need bypassing\") and was written for the Luna default; it wasn't updated for Haiku. If \"webui mirrored separately\" means this workflow is one of multiple copies, the pinning test (test_model_env_matches_code_default) only covers this one — verify the webui copy is handled in the companion change.\n- Suggestion: Update the stale comment to be model-agnostic or Haiku-specific, and confirm the webui mirror swap lands in the paired change.\n\nOtherwise the change is correct: the workflow literal, DEFAULT_MODEL, imports/__all__, and pinning tests all move together, Luna stays as an override, and the ZDR gate logic is untouched (Haiku is outside deepseek/z-ai namespaces, so the empty-extra_body short-circuit still applies, as the updated test verifies). No security or correctness regressions.\n\nOverall: ship-as-is; the two items above are polish, not blockers.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] No concrete defects found. The diff switches the workflow and shared default to `anthropic/claude-haiku-5.5`, preserves and exports `LUNA_MODEL` for operator overrides, and updates assertions to verify both requirements. No changed logic introduces an evident correctness, security, or compatibility issue.\n\nShip-as-is. This assessment covers the supplied monorepo diff; the separately mirrored webui is outside its scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:36:37.798150+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:38:58.486596+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:38:58.706298+00:00",
+      "disposition": "internal architecture review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

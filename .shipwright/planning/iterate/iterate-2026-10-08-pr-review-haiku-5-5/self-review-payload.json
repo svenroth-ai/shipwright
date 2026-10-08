@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Default PR-review model swapped openai/gpt-6-luna -> anthropic/claude-haiku-5.5 in pr_review_openrouter.py (HAIKU_MODEL, DEFAULT_MODEL) and the workflow env literal; Luna kept as operator-override constant; webui mirrored in its own worktree."},
+{"name":"Error Handling","verdict":"pass","note":"No error paths touched; anthropic/ is outside deepseek/z-ai so resolve_extra_body returns {} (test pinned)."},
+{"name":"Security Basics","verdict":"pass","note":"Only a model-slug literal in the workflow env changes; no permissions, checkout refs or secrets handling touched."},
+{"name":"Test Quality","verdict":"pass","note":"Tests assert DEFAULT_MODEL == HAIKU_MODEL == literal slug, Luna constant still present, empty extra_body for default; workflow-shape test pins workflow literal == DEFAULT_MODEL."},
+{"name":"Performance Basics","verdict":"pass","note":"No loops or I/O changed."},
+{"name":"Naming & Structure","verdict":"pass","note":"HAIKU_MODEL added to __all__ and re-export in pr_review.py; no file grew meaningfully."},
+{"name":"Affected Boundaries","verdict":"pass","note":"OpenRouter request boundary unchanged in shape; slug live-pinged with response_format json_object -> valid JSON from anthropic/claude-haiku-5.5 (provider Claude Platform on AWS)."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"to be run at F0."}
+]}

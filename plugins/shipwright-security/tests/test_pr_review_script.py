@@ -13,6 +13,7 @@ boundaries are monkeypatched, so the suite runs fully offline.
 
 from __future__ import annotations
 
+import pytest
 import json
 import sys
 from pathlib import Path
@@ -49,13 +50,14 @@ class TestFileContract:
             "script must not reference ANTHROPIC_API_KEY — OpenRouter is the single provider"
         )
 
+    @pytest.mark.covers("FR-01.07")
     def test_every_re_exported_name_resolves(self):
         # The lib modules are reachable through `pr_review.<symbol>` — that is
         # the contract the workflow and every monkeypatching test rely on, and
         # a module split is exactly what silently breaks it.
         for name in pr_review.__all__:
             assert hasattr(pr_review, name), f"__all__ names {name}, which does not resolve"
-        assert pr_review.DEFAULT_MODEL == pr_review.LUNA_MODEL
+        assert pr_review.DEFAULT_MODEL == pr_review.HAIKU_MODEL
 
 
 # --- main() orchestration — boundaries monkeypatched ---
