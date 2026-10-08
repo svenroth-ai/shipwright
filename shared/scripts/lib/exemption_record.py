@@ -1,9 +1,10 @@
 """The per-exemption record carried by the F5c iterate entry.
 
-Every gate that accepts an exemption (an untagged test, a review that did not
-run, a surface declared absent ...) records it *individually* under the entry's
-``exemptions`` key, so the number is countable and printable instead of being
-buried in prose::
+Every gate that accepts a per-test exemption (an untagged test, a mechanical
+refactor ...) records it *individually* under the entry's ``exemptions`` key, so
+the number is countable and printable instead of being buried in prose. A review
+pass closed ``not_run`` is NOT an exemption: it explains itself through its own
+``reason_code`` in ``reviews.json``::
 
     "exemptions": {
         "count": 2,
