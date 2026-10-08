@@ -13,8 +13,10 @@ are anonymised: callback parameters (fixtures), ``const``/``let``/``var`` names 
 destructuring targets, ``function`` and ``catch`` names. A property (``resp.ok``), an object
 key and any name the test does not bind (``expect``, an imported helper) must stay identical.
 
-Known limits: the tokenizer does not know regex literals or JSX, and a data-driven
-``test.each(table)('title', ...)`` is a declaration neither here nor in the collector.
+A data-driven ``it.each(table)('title', ...)`` / ``test.each`table`('title', ...)`` is a test
+too (one id, the title text, like the collector's); its callee - modifier and table - is part of
+the digest, so editing a table row or turning ``test`` into ``test.skip`` is an edit. Regex literals
+and JSX are lexed by :mod:`._tag_binding_ts_lex`.
 """
 
 from __future__ import annotations
@@ -22,18 +24,16 @@ from __future__ import annotations
 import hashlib
 import re
 
+from ._tag_binding_ts_lex import lex
+
 __all__ = ["ts_shapes", "ts_tag_sets"]
 
 _NOT_TESTS = r"(?:describe|step|beforeEach|afterEach|beforeAll|afterAll|use|extend)\b"
-_TOKEN_RE = re.compile(
-    r"//[^\n]*|/\*.*?\*/"                      # comments (dropped)
-    r"|(?P<str>'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`)"
-    r"|(?P<id>[A-Za-z_$][\w$]*)"
-    r"|(?P<num>\d[\w.]*)"
-    r"|(?P<ws>\s+)"
-    r"|(?P<punct>=>|\.\.\.|.)",
-    re.DOTALL,
-)
+#: ``.each(table)`` / ``.each`table``: the table is lazily bounded so a multi-line array or
+#: template table reaches the call that follows it (the title quote anchors the match).
+_EACH = r"(?:\.each\s*(?:\([\s\S]{0,20000}?\)|`[^`]{0,20000}?`))"
+_CALLEE = (r"(?P<callee>\b(?:it|test)(?:\.(?!" + _NOT_TESTS + r"|each\b)\w+)?" + _EACH + r"?)"
+           r"\s*\(\s*(?P<q>['\"`])")
 _KEYWORDS = frozenset({
     "async", "await", "const", "let", "var", "function", "return", "if", "else", "for",
     "while", "of", "in", "new", "true", "false", "null", "undefined", "throw", "try",
@@ -42,6 +42,7 @@ _KEYWORDS = frozenset({
 })
 _DECLARE = frozenset({"const", "let", "var"})
 _OPEN, _CLOSE = ("(", "[", "{"), (")", "]", "}")
+_JSX_SUFFIXES = (".tsx", ".jsx", ".js")
 _STR_RE = re.compile(r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`")
 _CALLBACK_RE = re.compile(r"=>|\bfunction\b")
 _TAG_ARRAY_RE = re.compile(r"tag\s*:\s*\[([^\]]*)\]")
@@ -53,33 +54,52 @@ def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _decls(text: str, title: str):
-    return re.finditer(
-        r"(?m)^(?!\s*(?://|/\*|\*))[^\n]*?\b(?:it|test)(?:\.(?!" + _NOT_TESTS + r")\w+)?"
-        r"\s*\(\s*(['\"`])" + re.escape(title) + r"\1", text)
+def _table_is_own(callee: str, jsx: bool) -> bool:
+    """Is the ``.each`` table in ``callee`` exactly ONE argument that closes at the callee's end?
+    The lazy table pattern would otherwise run from an earlier ``.each`` call to a later title."""
+    idx = callee.find(".each")
+    if idx == -1:
+        return True
+    table = callee[idx + len(".each"):].strip()
+    if table.startswith("`"):
+        return table.count("`") == 2 and table.endswith("`")
+    toks, close = lex(table, 1, jsx, stop=True)
+    return table.startswith("(") and close == len(table) - 1
 
 
-def _call_tail(text: str, start: int) -> str | None:
+def _decls(text: str, title: str, jsx: bool = True):
+    """Declarations titled ``title``; a candidate whose ``.each`` table spans past its own closing
+    paren (an earlier test's table running into a later title) is skipped and the scan resumes on the
+    next line."""
+    pattern = re.compile(
+        r"(?m)^(?!\s*(?://|/\*|\*))[^\n]*?" + _CALLEE + re.escape(title) + r"(?P=q)")
+    bare = re.compile(_CALLEE + re.escape(title) + r"(?P=q)")
+    pos = 0
+    while (m := pattern.search(text, pos)):
+        while m and not _table_is_own(m.group("callee"), jsx):
+            # Run-on from an earlier test: retry later on the same line (a second test may sit there).
+            nl = text.find("\n", m.start())
+            nl = len(text) if nl == -1 else nl
+            nxt = bare.search(text, m.start("callee") + 1, nl)
+            if not nxt:
+                pos = nl + 1
+            m = nxt
+        if m is None:
+            continue
+        yield m
+        pos = m.end()
+
+
+def _call_tail(text: str, start: int, jsx: bool) -> str | None:
     """Text from ``start`` up to the close paren of the call ``start`` is inside."""
-    depth = 1
-    for m in _TOKEN_RE.finditer(text, start):
-        ch = m.group("punct")
-        if ch in _OPEN:
-            depth += 1
-        elif ch in _CLOSE:
-            depth -= 1
-            if depth == 0:
-                return text[start:m.start()]
-    return None
+    toks, end = lex(text, start, jsx, stop=True)
+    return text[start:end] if end < len(text) and text[end] == ")" else None
 
 
-def _tokens(chunk: str) -> list[tuple[bool, str]]:
+def _tokens(chunk: str, jsx: bool) -> list[tuple[bool, str]]:
     """``(is_identifier, text)`` per significant token."""
-    out: list[tuple[bool, str]] = []
-    for m in _TOKEN_RE.finditer(chunk):
-        if m.group("ws") is None and not m.group(0).startswith(("//", "/*")):
-            out.append((m.group("id") is not None, m.group(0)))
-    return out
+    return [(t.kind == "id", " ".join(t.text.split()) if t.kind == "jsx" else t.text)
+            for t in lex(chunk, 0, jsx)[0]]
 
 
 def _close(toks: list[tuple[bool, str]], i: int) -> int:
@@ -140,8 +160,8 @@ def _is_key_or_member(toks: list[tuple[bool, str]], i: int) -> bool:
     return prev == "." or (prev in ("{", ",") and nxt == ":")
 
 
-def _normalise(chunk: str, anonymise: bool) -> tuple[str, list[str]]:
-    toks = _tokens(chunk)
+def _normalise(chunk: str, anonymise: bool, jsx: bool) -> tuple[str, list[str]]:
+    toks = _tokens(chunk, jsx)
     bound = _bound(toks) if anonymise else set()
     out: list[str] = []
     seen: list[str] = []
@@ -155,14 +175,18 @@ def _normalise(chunk: str, anonymise: bool) -> tuple[str, list[str]]:
     return " ".join(kept), seen
 
 
-def ts_shapes(text: str, title: str, anonymise: bool) -> list[tuple[str, list[str]]]:
-    """``[(digest, bound names)]`` per declaration titled ``title``."""
+def ts_shapes(text: str, title: str, anonymise: bool, path: str = "") -> list[tuple[str, list[str]]]:
+    """``[(digest, bound names)]`` per declaration titled ``title``. The digest covers the
+    callee (``test.skip``, an ``.each`` table) and the call after the title; ``path`` decides
+    whether JSX is lexed (not in a ``.ts`` file, where ``<T>x`` is a type assertion)."""
+    jsx = not path or path.lower().endswith(_JSX_SUFFIXES)
     out: list[tuple[str, list[str]]] = []
-    for m in _decls(text, title):
-        tail = _call_tail(text, m.end())
+    for m in _decls(text, title, jsx):
+        tail = _call_tail(text, m.end(), jsx)
         if tail is not None:
-            norm, seen = _normalise(tail, anonymise)
-            out.append((_sha(norm), seen))
+            callee, _ = _normalise(re.sub(r"^it(?![\w$])", "test", m.group("callee")), False, jsx)
+            norm, seen = _normalise(tail, anonymise, jsx)
+            out.append((_sha(callee + " | " + norm), seen))
     return out
 
 

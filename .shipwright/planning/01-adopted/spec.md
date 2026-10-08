@@ -971,6 +971,13 @@ _Where the work detail lives_ at the end of this document.
   changed, still counts as the same test, and tests the change did not touch are
   left as they are.
   (iterate-2026-10-08-u1-test-tag-gate)
+- (E) [AC42] Given a change adds or edits a test that runs from a table of cases, changes
+  whether an existing test is skipped or which cases it runs, or adds a test folder that
+  the project's own settings then leave out of the scan, when the change is finished, then
+  each of those counts as an added or edited test and needs a requirement name like any
+  other; a quote inside a pattern or inside page markup does not hide an edit to the rest
+  of the test.
+  (iterate-2026-10-08-tag-gate-followup)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

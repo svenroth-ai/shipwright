@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 sys.path.append(str(Path(__file__).resolve().parent))  # after shared/scripts: tests/ has its own `tools`
 
@@ -48,6 +49,16 @@ _UNTAGGED = "\n\ndef test_new():\n    pass\n"
 _DELEGATED = {"status": "not_run", "reason_code": "delegated-to-orchestrator"}
 _EXTERNAL = {"status": "completed", "provider": "openrouter"}  # medium+ needs a review that ran
 GATES = ("U1", "U3", "U4", "U5", "U6")
+#: Gates whose own scope does not reach a complexity SKIP there (ok=True, severity SKIPPED). A skip is
+#: not a pass: the compliant run must skip exactly this set, so a gate that silently stops running
+#: (or starts running where it should not) fails the scenario instead of reading green.
+EXPECTED_SKIPS = {"trivial": {"U4", "U5"}, "small": {"U5"}, "medium": {"U4"}}
+
+
+class Gate(NamedTuple):
+    ok: bool
+    detail: str
+    skipped: bool = False
 
 
 def scenario(tmp_path: Path, complexity: str, *, tagged: bool = True, extra: dict | None = None,
@@ -81,22 +92,23 @@ def scenario(tmp_path: Path, complexity: str, *, tagged: bool = True, extra: dic
     return root, git(root, "rev-parse", "HEAD")
 
 
-def run_gates(root: Path, sha: str, ev: dict | None = None) -> dict[str, tuple[bool, str]]:
-    """Every gate once -> ``{gate: (ok, diagnostic)}``; a gate's result never gates another."""
+def run_gates(root: Path, sha: str, ev: dict | None = None) -> dict[str, Gate]:
+    """Every gate once -> ``{gate: Gate(ok, diagnostic, skipped)}``; a gate's result never gates another."""
     err = run_fr_gates(ev or event(), root, "scenario")
     others = {"U1": check_test_tag_binding(root, RUN, sha), "U3": check_review_record(root, RUN),
               "U4": check_cascade_trigger(root, RUN, sha), "U5": check_surface_verification(root, RUN, sha)}
-    out = {gate: (result.ok, result.detail) for gate, result in others.items()}
-    out["U6"] = (err is None, "" if err is None else f"{err['error']}: {err['detail']}")
+    out = {gate: Gate(bool(result.ok), result.detail, result.is_skipped) for gate, result in others.items()}
+    out["U6"] = Gate(err is None, "" if err is None else f"{err['error']}: {err['detail']}")
     return out
 
 
 def assert_only(results: dict, broken: str, *needles: str) -> None:
     """``broken`` fails with each needle in its diagnostic; every other gate is green."""
-    assert not results[broken][0], f"{broken} accepted a broken claim: {results[broken][1]}"
+    assert not results[broken].ok, f"{broken} accepted a broken claim: {results[broken].detail}"
     for needle in needles:
-        assert needle in results[broken][1], f"{broken} diagnostic lacks {needle!r}: {results[broken][1]}"
-    masked = {g: d for g, (ok, d) in results.items() if g != broken and not ok}
+        assert needle in results[broken].detail, f"{broken} diagnostic lacks {needle!r}: {results[broken].detail}"
+    assert not results[broken].skipped, f"{broken} was skipped, not run: {results[broken].detail}"
+    masked = {g: r.detail for g, r in results.items() if g != broken and not r.ok}
     assert not masked, f"{broken} is not isolated, other gates also failed: {masked}"
 
 
@@ -105,7 +117,8 @@ def assert_only(results: dict, broken: str, *needles: str) -> None:
 def test_a_compliant_run_passes_every_gate_at_every_complexity(tmp_path, complexity):
     root, sha = scenario(tmp_path, complexity)
     results = run_gates(root, sha)
-    assert {g: ok for g, (ok, _) in results.items()} == dict.fromkeys(GATES, True), results
+    assert {g: r.ok for g, r in results.items()} == dict.fromkeys(GATES, True), results
+    assert {g for g, r in results.items() if r.skipped} == EXPECTED_SKIPS[complexity], results
 
 
 @pytest.mark.covers("FR-01.11/AC41")
@@ -146,8 +159,9 @@ def test_u4_the_same_diff_closed_with_an_accepted_code_passes(tmp_path):
     root, sha = scenario(tmp_path, "small", extra={"src/big.py": lines(150)},
                          code_row={"status": "not_run", "reason_code": "delegated-to-orchestrator"})
     results = run_gates(root, sha)
-    assert all(ok for ok, _ in results.values()), results
-    assert "delegated-to-orchestrator" in results["U4"][1]
+    assert all(r.ok for r in results.values()), results
+    assert "delegated-to-orchestrator" in results["U4"].detail
+    assert not results["U4"].skipped
 
 
 @pytest.mark.covers("FR-01.11/AC07")
@@ -199,8 +213,9 @@ def test_breaking_every_small_claim_at_once_reports_each_gate_red_independently(
     ev = event()
     del ev["spec_impact_reason_code"]
     results = run_gates(root, sha, ev)
-    assert [g for g, (ok, _) in results.items() if not ok] == ["U1", "U3", "U4", "U6"], results
-    assert results["U5"][0], results["U5"][1]
+    assert [g for g, r in results.items() if not r.ok] == ["U1", "U3", "U4", "U6"], results
+    assert results["U5"].ok and results["U5"].skipped, results["U5"]
+    assert not any(results[g].skipped for g in ("U1", "U3", "U4", "U6")), results
 
 
 @pytest.mark.covers("FR-01.11")
