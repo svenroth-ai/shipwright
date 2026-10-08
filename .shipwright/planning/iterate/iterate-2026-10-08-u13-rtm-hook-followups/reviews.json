@@ -1,0 +1,362 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u13-rtm-hook-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:43:23.757719+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Item 3 (target repo) handles `--git-dir` by exporting `GIT_DIR`/`GIT_WORK_TREE` for the hook's own git calls, but doesn't state what directory is used for manifest/config/spec lookups in that case. With `--git-dir` alone (no `--work-tree`), git treats the cwd as the work tree — but the plan's `target_root` appears to derive a root from the `--git-dir` path, which is typically `.git`'s parent or even a bare location, not the project the commit belongs to.",
+          "suggestion": "Define lookups explicitly: `--work-tree` if given, else cwd when only `--git-dir` is given, else the accumulated `-C` path. Also decide what happens when `-C <path>` points at a subdirectory of a repo whose manifest lives at the repo root — walking up to find the manifest (or at least documenting that `-C` must name the project root) avoids a confusing \"manifest not found\" WARN.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The override helper parses a free-text log written by the agent, and `instruction()` prints a `printf ... >> log` line the agent copies verbatim. If the reason (or hook-generated default) contains quotes, `%`, or newline/ANSI sequences, the printf line breaks or the WARN echoing the reason becomes a terminal-escape injection vector. The log is also inside the repo, so it can end up committed with entries whose reason text is later rendered by hooks.",
+          "suggestion": "Have `instruction()` emit the reason shell-quoted (`shlex.quote`) or use a fixed canonical reason string; strip control characters from reasons when parsing/echoing, and note in docs that the log should be gitignored (or add it to the ignore list in this change).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The 30-minute window check tolerates 1 minute of future skew but the plan doesn't state the behavior for an unparseable/malformed log line. A single bad line (agent typo, since the agent hand-writes the line) shouldn't disable override functionality or crash the hook.",
+          "suggestion": "Specify \"skip unparseable lines silently\" (or with a debug note) in the helper and cover it with one test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Item 1 changes `compute_coverage`'s output contract (new `fr.not_measured` key, requirements leaving the figures). Any other consumer of the manifest-coverage figures (reports, docs reconcile in U12) may read the old shape. The plan updates tests but doesn't inventory other callers.",
+          "suggestion": "Grep for callers of `compute_coverage`/`measure` output keys and confirm none breaks on the new field; note it explicitly for U12 since that unit is next and docs-reconciles.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Heredoc stripping: the plan handles quoted/unquoted delimiters and keeps `$(...)` in unquoted bodies, but doesn't mention `<<-EOF` tab-stripped terminators with trailing tabs, or a heredoc whose terminator never appears (truncated/interactive command). A missing terminator that swallows the rest of the command buffer could hide a real `git commit`.",
+          "suggestion": "For a missing terminator, treat the remainder as inside the heredoc (strip it) or not stripped — either is defensible; pick one, document it, and test the truncated case so behavior is pinned.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "New single-purpose modules `lib/compliance_override.py`, `lib/git_commit_target.py`, `lib/shell_heredoc.py` each exist to keep files under the 300-line cap. That's fine and per the acceptance criteria (\"extract rather than grow\"), but `git_commit_target` duplicating option-parsing that `find_git_commit` already does (returning global options) risks the two parsers drifting.",
+          "suggestion": "Have `find_git_commit` return the structured global options and make `git_commit_target` a pure consumer of that structure — the mini-plan implies this, but make it explicit so the parsing logic exists once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The override authorizes every matching hook invocation for 30 minutes, while the binding decision authorizes the next commit within that window. The alternative explicitly rejects single-use behavior, so this needs resolution before implementation.",
+          "suggestion": "Implement a shared mechanism that claims the override for one commit attempt, with a defined retry policy for failed commits. If repeated authorization is intended, obtain and record an amended operator decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Resolving only the first commit leaves compound commands unhandled. For example, `git -C repoA commit && git -C repoB commit` could check repo A’s evidence while also allowing a commit to repo B. Falling back to cwd when a target cannot be resolved likewise checks unrelated evidence.",
+          "suggestion": "Resolve and evaluate every detected commit target. If a target cannot be resolved, report that explicitly and require the established override instead of treating cwd coverage as valid evidence. Add real-repo tests for compound commands and unresolved targets.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Keeping an entire heredoc line whenever it contains `$(` or a backtick reintroduces false positives. An unquoted heredoc containing `Example: git commit $(date)` executes `date`, but does not execute `git commit`.",
+          "suggestion": "Scan only executable command-substitution contents from unquoted heredocs. Test literal commit text beside an unrelated substitution, an actual commit inside a substitution, quoted delimiters, and tab-stripped terminators.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan omits two explicit acceptance deliverables: recording decisions 1 and 2 in the U13 decision drop, and closing the U9 triage card with its ID in the PR body.",
+          "suggestion": "Add both to the completion checklist, and verify the under-300-line limit for every touched file, including tests.  The coverage exclusion and heading-depth changes are sound and appropriately scoped. The override semantics and commit-target handling need specific corrections before this approach meets the specification.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:42:04.616435+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  Finding: Item 3 (target repo) handles `--git-dir` by exporting `GIT_DIR`/`GIT_WORK_TREE` for the hook's own git calls, but doesn't state what directory is used for *manifest/config/spec lookups* in that case. With `--git-dir` alone (no `--work-tree`), git treats the cwd as the work tree — but the plan's `target_root` appears to derive a root from the `--git-dir` path, which is typically `.git`'s parent or even a bare location, not the project the commit belongs to.\n  Suggestion: Define lookups explicitly: `--work-tree` if given, else cwd when only `--git-dir` is given, else the accumulated `-C` path. Also decide what happens when `-C <path>` points at a *subdirectory* of a repo whose manifest lives at the repo root — walking up to find the manifest (or at least documenting that `-C` must name the project root) avoids a confusing \"manifest not found\" WARN.\n\n- **Category: security — Severity: medium**\n  Finding: The override helper parses a free-text log written by the agent, and `instruction()` prints a `printf ... >> log` line the agent copies verbatim. If the reason (or hook-generated default) contains quotes, `%`, or newline/ANSI sequences, the printf line breaks or the WARN echoing the reason becomes a terminal-escape injection vector. The log is also inside the repo, so it can end up committed with entries whose reason text is later rendered by hooks.\n  Suggestion: Have `instruction()` emit the reason shell-quoted (`shlex.quote`) or use a fixed canonical reason string; strip control characters from reasons when parsing/echoing, and note in docs that the log should be gitignored (or add it to the ignore list in this change).\n\n- **Category: edge-case — Severity: low**\n  Finding: The 30-minute window check tolerates 1 minute of future skew but the plan doesn't state the behavior for an unparseable/malformed log line. A single bad line (agent typo, since the agent hand-writes the line) shouldn' […truncated]\n\n[openai] 1. **Category: approach | Severity: high**  \n   **Finding:** The override authorizes every matching hook invocation for 30 minutes, while the binding decision authorizes the **next commit** within that window. The alternative explicitly rejects single-use behavior, so this needs resolution before implementation.  \n   **Suggestion:** Implement a shared mechanism that claims the override for one commit attempt, with a defined retry policy for failed commits. If repeated authorization is intended, obtain and record an amended operator decision.\n\n2. **Category: risk | Severity: high**  \n   **Finding:** Resolving only the first commit leaves compound commands unhandled. For example, `git -C repoA commit && git -C repoB commit` could check repo A’s evidence while also allowing a commit to repo B. Falling back to cwd when a target cannot be resolved likewise checks unrelated evidence.  \n   **Suggestion:** Resolve and evaluate every detected commit target. If a target cannot be resolved, report that explicitly and require the established override instead of treating cwd coverage as valid evidence. Add real-repo tests for compound commands and unresolved targets.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** Keeping an entire heredoc line whenever it contains `$(` or a backtick reintroduces false positives. An unquoted heredoc containing `Example: git commit $(date)` executes `date`, but does not execute `git commit`.  \n   **Suggestion:** Scan only executable command-substitution contents from unquoted heredocs. Test literal commit text beside an unrelated substitution, an actual commit inside a substitution, quoted delimiters, and tab-stripped terminators.\n\n4. **Category: dependency | Severity: low**  \n   **Finding:** The mini-plan omits two explicit acceptance deliverables: recording decisions 1 and 2 in the U13 decision drop, and closing the U9 triage card with its ID in the PR body.  \n   **Suggestion:** Add both to the completion checklist […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py",
+          "line": null,
+          "finding": "warnings of non-chosen repos dropped on multi-repo lines. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "$(...) inside double quotes not tracked; canonical git commit -m \"$(cat <<'EOF'...)\" form unstripped. FIXED + docs.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "-s treated as shell for any program (git commit -s). FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py",
+          "line": null,
+          "finding": "repo keys unnormalised. FIXED (repo_key).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".gitignore",
+          "line": null,
+          "finding": "override log lock file not ignored. FIXED (gitignore + template).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py",
+          "line": null,
+          "finding": "override import shared a try with the gate. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_target.py",
+          "line": null,
+          "finding": "--work-tree target skipped project resolution. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T18:52:46.391957+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py",
+          "line": null,
+          "finding": "Claim under doubt: an unreadable or odd override log never lets a block through — timestamp that overflows UTC conversion crashed try_release outside the WARN guard -> silent unlimited allow",
+          "suggestion": "FIXED in 57dce2803 (_when rejects it, tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "Claim under doubt: heredoc stripping only drops data bash does not run — stripping runs before backslash-continuation joining; exotic delimiters differ from bash",
+          "suggestion": "ACCEPTED limit in the ADR (follow-up: join continuations first); source/./fish added to interpreters.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Claim under doubt: every commit target on a line is judged — bash -c / eval wrappers judge only the first inner commit",
+          "suggestion": "ACCEPTED limit in the ADR.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py",
+          "line": null,
+          "finding": "Claim under doubt: the lock guarantees one release — stat-then-unlink stale-lock break; one override releases one command not one commit; CONSUMED lost to git restore",
+          "suggestion": "ACCEPTED limits in the ADR.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T18:52:46.489318+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py` (main, legacy RTM path not shown in diff) The override-consume logic (`active_override` → `consume` → return 0) was added only to the requirement-coverage block site. The hook's legacy RTM section-line path (the one exercised by `test_legacy_block_has_override_advice_and_no_staging_hint`) blocks via `_hook_block` with  […truncated]",
+          "line": null,
+          "finding": "route the legacy block through the same `active_override`/`consume`/`notice` flow, and add one test (per spec item 2: \"one test per hook\") asserting a logged entry lets a legacy-path block through exactly once.  2. Category: security / edge-case — Severity: low",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/.../scripts/lib/git_commit_command.py`, `_segment_commit` env-split / depth-cap branches Both branches return `()` (no options), so the commit still gates, but its location is lost: `env VAR=1 git -C ../other commit` and any command past the shell-depth cap are measured against the default repo, not the commit target. The docs list `env -C` and `GIT_DIR=` as not covered, but n […truncated]",
+          "line": null,
+          "finding": "in the env-split branch, still parse the post-assignment tokens for `-C`/`--work-tree`/`--git-dir`; or at minimum WARN when a commit was found via a path that loses its options (like the multi-repo WARN).  4. Category: edge-case — Severity: low",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_target.py",
+          "line": 75,
+          "finding": "A `-C` directory is treated as the project root without resolving the repository root. For `git -C repo/src commit`, Git commits to `repo`, but the hook looks for manifests, configuration and specs under `repo/src`. Missing compliance data can therefore allow a commit that should be blocked.",
+          "suggestion": "Resolve the repository’s work-tree root using Git with the parsed target options before performing compliance lookups. Add a real-repository test where `-C` names a subdirectory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_target.py",
+          "line": 85,
+          "finding": "Only the first commit’s repository is evaluated. A command such as `git -C passing_repo commit && git -C failing_repo commit` allows the second commit despite its insufficient coverage; naming it in a warning does not enforce the gate. Item 3 requires measuring the repository receiving the commit.",
+          "suggestion": "Evaluate every distinct commit target and block if any target fails, or require separate commands before allowing a command containing multiple targets.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": 55,
+          "finding": "Heredoc operators inside shell comments are recognized as real operators. For example, `echo hello # <<EOF` followed by `git commit -m x` causes the actual commit line to be stripped as a heredoc body, so the coverage hook does not fire.",
+          "suggestion": "Exclude operators occurring inside shell comments when collecting heredocs. Add a regression test with a commented operator followed by a real commit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": 212,
+          "finding": "The hook allows the override even when recording its consumption fails. The security hook does the same. A readable but unwritable log consequently permits repeated blocked commands throughout the 30-minute window, contradicting the promised single-use override.",
+          "suggestion": "Allow the command only after consumption has been successfully recorded; otherwise retain the block and explain the write failure. Test both hooks against a readable log whose consumption write fails.  Overall assessment: ship-with-fixes. The target-resolution and heredoc defects can bypass coverage enforcement, and override consumption does not reliably enforce single use.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T13:56:49.544871+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: spec / bug — Severity: high**\nFile: `plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py` (main, legacy RTM path not shown in diff)\nThe override-consume logic (`active_override` → `consume` → return 0) was added only to the requirement-coverage block site. The hook's legacy RTM section-line path (the one exercised by `test_legacy_block_has_override_advice_and_no_staging_hint`) blocks via `_hook_block` with the override *advice* — the test only asserts the advice appears on stderr, never that a logged entry actually releases a legacy-path block. Since the diff shows no `active_override`/`consume` call for that path, the printed instruction is very likely a no-op there — which is precisely the U9 defect (a logged override that changes nothing) that item 2 was supposed to fix, reproduced on the legacy leg.\nSuggestion: route the legacy block through the same `active_override`/`consume`/`notice` flow, and add one test (per spec item 2: \"one test per hook\") asserting a logged entry lets a legacy-path block through exactly once.\n\n**2. Category: security / edge-case — Severity: low**\nFile: `plugins/.../scripts/lib/compliance_override.py`, `instruction()` (~line 100)\nThe log path is interpolated into a double-quoted shell snippet: `>> \"{log}\"`. A project root containing `\"`, `$`, or a backtick breaks the suggested command or injects into it when the agent runs it verbatim (the round-trip test only uses a pytest-safe path). Suggestion: single-quote the path (and escape embedded single quotes) in the emitted printf line.\n\n**3. Category: edge-case — Severity: medium**\nFile: `plugins/.../scripts/lib/git_commit_command.py`, `_segment_commit` env-split / depth-cap branches\nBoth branches return `()` (no options), so the commit still gates, but its location is lost: `env VAR=1 git -C ../other commit` and any command past the shell-depth cap are measured against the *default* repo, not the commit target. The docs list `env -C` an […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/git_commit_target.py:75\n- Finding: A `-C` directory is treated as the project root without resolving the repository root. For `git -C repo/src commit`, Git commits to `repo`, but the hook looks for manifests, configuration and specs under `repo/src`. Missing compliance data can therefore allow a commit that should be blocked.\n- Suggestion: Resolve the repository’s work-tree root using Git with the parsed target options before performing compliance lookups. Add a real-repository test where `-C` names a subdirectory.\n\n- Category: spec\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/git_commit_target.py:85\n- Finding: Only the first commit’s repository is evaluated. A command such as `git -C passing_repo commit && git -C failing_repo commit` allows the second commit despite its insufficient coverage; naming it in a warning does not enforce the gate. Item 3 requires measuring the repository receiving the commit.\n- Suggestion: Evaluate every distinct commit target and block if any target fails, or require separate commands before allowing a command containing multiple targets.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/lib/shell_heredoc.py:55\n- Finding: Heredoc operators inside shell comments are recognized as real operators. For example, `echo hello # <<EOF` followed by `git commit -m x` causes the actual commit line to be stripped as a heredoc body, so the coverage hook does not fire.\n- Suggestion: Exclude operators occurring inside shell comments when collecting heredocs. Add a regression test with a commented operator followed by a real commit.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:212\n- Finding: The hook allows the override even when recording its consumption fails. The security hook does the same. A readable but unwritable log consequently perm […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:03:32.049459+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:42:04.806553+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:42:05.069142+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet - a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

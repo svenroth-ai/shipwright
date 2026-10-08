@@ -144,6 +144,9 @@
 # `agent_docs/` is re-included wholesale, so a hard-killed refresh would leave
 # its temp file committed.
 /.shipwright/agent_docs/*.tmp
+# The override log's exclusive lock (`lib/compliance_override`), held only while a
+# hook reads and consumes an entry; a hard kill can leave it behind.
+/.shipwright/agent_docs/*.log.lock
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===
 
 # === BEGIN Shipwright superseded .shipwright artifact-ignore rules (managed) ===

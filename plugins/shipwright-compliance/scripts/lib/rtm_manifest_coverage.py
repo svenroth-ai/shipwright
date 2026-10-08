@@ -19,8 +19,12 @@ never 0%:
   requirement, covered under the same rule. Reported next to the FR metric, never
   mixed into it.
 
-A skipped, never-run, failed or result-less test counts as NOT covered; a
-parametrized test is one function-level link whose ``executed`` folds its cases.
+A skipped, failed or result-less test counts as NOT covered; a parametrized test
+is one function-level link whose ``executed`` folds its cases. A requirement whose
+every linked test (its own and its ACs') is ``not_run`` -- not executed in the
+evidence run, e.g. a partial run -- is **not measured**: left out of both figures
+and counted in ``fr.not_measured`` (the hook WARNs with the count), never counted
+as covered or as uncovered. A requirement with no linked test at all is uncovered.
 
 **Accepted risk.** The binding-to-result join *by commit* is the collector's; this
 module does NOT re-verify it, so an older result reads as passing until the
@@ -83,7 +87,8 @@ def spec_ac_inventory(project_root: str | Path, spec_path: str) -> dict[str, set
     """``{FR id: {AC ids}}`` read from a spec file, or ``None`` when unreadable.
 
     The manifest only carries an ``acs`` node for criteria some test is tagged
-    to, so an untagged AC is absent from it -- the spec is the full inventory.
+    to, so an untagged AC is absent from it -- the spec is the full inventory. An
+    AC under a deeper sub-heading of the FR section still belongs to that FR.
     A ``spec_path`` resolving outside the project root (``..``, absolute) is never
     read: ``None``, so the caller falls back to the manifest's inventory.
     """
@@ -97,6 +102,7 @@ def spec_ac_inventory(project_root: str | Path, spec_path: str) -> dict[str, set
         return None
     inventory: dict[str, set[str]] = {}
     current: set[str] | None = None
+    depth = 0  # heading level of the FR section being read
     fenced = False
     for line in text.splitlines():
         if line.lstrip().startswith("```"):
@@ -106,8 +112,12 @@ def spec_ac_inventory(project_root: str | Path, spec_path: str) -> dict[str, set
             continue
         heading = _HEADING.match(line)
         if heading:
+            level = len(line) - len(line.lstrip("#"))
             fr = re.match(r"(FR-[\w.\-]+?)(?:\s|$|[:—-]\s)", heading.group(1))
-            current = inventory.setdefault(fr.group(1), set()) if fr else None
+            if fr:
+                current, depth = inventory.setdefault(fr.group(1), set()), level
+            elif level <= depth:  # a sibling or parent heading ends the FR section
+                current, depth = None, 0
             continue
         ac = _AC_LINE.match(line)
         if ac and current is not None:
@@ -129,7 +139,7 @@ def compute_coverage(manifest: dict[str, Any],
     ``pct`` is ``None`` when the denominator is zero: nothing to measure is not
     100%, and the caller must say so rather than pass silently.
     """
-    fr_total = fr_cov = ac_total = ac_cov = excluded = 0
+    fr_total = fr_cov = ac_total = ac_cov = excluded = unmeasured = 0
     sources: set[str] = set()
     uncovered: list[str] = []
     specs: dict[str, dict[str, set[str]] | None] = {}
@@ -141,6 +151,9 @@ def compute_coverage(manifest: dict[str, Any],
             continue
         if req.get("status") != "active":
             excluded += 1
+            continue
+        if _not_measured(req):  # neither covered nor uncovered: left out, counted apart
+            unmeasured += 1
             continue
         fr_total += 1
         fr_id = str(req.get("id") or key)
@@ -170,7 +183,8 @@ def compute_coverage(manifest: dict[str, Any],
                 ac_cov += 1
     source = "spec" if sources == {"spec"} else "manifest" if sources <= {"manifest"} else "mixed"
     return {
-        "fr": {"covered": fr_cov, "total": fr_total, "pct": _pct(fr_cov, fr_total)},
+        "fr": {"covered": fr_cov, "total": fr_total, "pct": _pct(fr_cov, fr_total),
+               "not_measured": unmeasured},
         "ac": {"covered": ac_cov, "total": ac_total, "pct": _pct(ac_cov, ac_total),
                "source": source},
         "excluded_inactive": excluded,
@@ -178,18 +192,28 @@ def compute_coverage(manifest: dict[str, Any],
     }
 
 
+def _req_links(req: dict[str, Any]):
+    """Every link dict bound to *req* or to one of its ACs."""
+    acs = req.get("acs")
+    for node in [req, *(acs.values() if isinstance(acs, dict) else ())]:
+        tests = node.get("tests") if isinstance(node, dict) else None
+        for links in tests.values() if isinstance(tests, dict) else ():
+            if isinstance(links, list):
+                yield from (link for link in links if isinstance(link, dict))
+
+
+def _not_measured(req: dict[str, Any]) -> bool:
+    """Linked tests exist and none was executed in the evidence run (every one ``not_run``)."""
+    links = list(_req_links(req))
+    return bool(links) and all(link.get("executed") == "not_run" for link in links)
+
+
 def _links(manifest: dict[str, Any]):
-    """Every link dict bound to a requirement or to one of its ACs."""
+    """Every link dict bound to an ACTIVE requirement or to one of its ACs."""
     reqs = manifest.get("requirements")
     for req in reqs.values() if isinstance(reqs, dict) else ():
-        if not isinstance(req, dict):
-            continue
-        acs = req.get("acs")
-        for node in [req, *(acs.values() if isinstance(acs, dict) else ())]:
-            tests = node.get("tests") if isinstance(node, dict) else None
-            for links in tests.values() if isinstance(tests, dict) else ():
-                if isinstance(links, list):
-                    yield from (link for link in links if isinstance(link, dict))
+        if isinstance(req, dict) and req.get("status") == "active":
+            yield from _req_links(req)
 
 
 def schema_problem(manifest: dict[str, Any]) -> str | None:
@@ -204,7 +228,9 @@ def schema_problem(manifest: dict[str, Any]) -> str | None:
 
 
 def execution_problem(manifest: dict[str, Any]) -> str | None:
-    """A WARN when no link carries an executed result (no ``pass`` and no ``fail``)."""
+    """A WARN when no link of an active requirement carries an executed result.
+
+    An inactive requirement's executed link says nothing about the measured set."""
     if any(link.get("executed") in ("pass", "fail") for link in _links(manifest)):
         return None
     return (

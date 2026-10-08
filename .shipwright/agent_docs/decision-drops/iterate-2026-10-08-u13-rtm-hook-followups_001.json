@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-u13-rtm-hook-followups",
+  "date": "2026-10-08",
+  "section": "Iterate - change: compliance soft-block override and commit-target measurement",
+  "title": "A logged override is honoured once within 30 minutes; the coverage gate measures the commit's repo",
+  "context": "U9 left seven gaps in the commit coverage hook. Neither soft-block hook read the override log it asked for, a partial test run counted requirements as uncovered, and git -C commits were measured in the cwd. Unit U13 of the finalization-claims-hardening campaign.",
+  "decision": "Operator decisions 1 and 2 (2026-10-08). A requirement whose every linked test is not_run is not measured: left out of the figure, WARN N of M. A logged override lets that hook's next block through once within 30 min (CONSUMED line; not applied if unwritable), one shared helper for check_rtm_coverage and check_security_scan. The gate measures the repo named by -C/--work-tree/--git-dir.",
+  "consequences": "compliance_overrides.log is now gate input as well as an audit trail. A multi-repo commit line is judged on its first failing repo. Heredoc bodies and commented heredoc operators are not scanned; git.cmd counts as git; user aliases, cd && git commit and env -S stay uncovered.",
+  "rationale": "An override the gate never reads is no escape hatch, and an unexecuted test proves nothing either way. Single use follows the operator's 'next commit' wording; one appended line in the existing append-only log is the smallest way to record use.",
+  "rejected": "A 30-minute window with unlimited passes (broader than the decision). An audit-only log. git rev-parse --show-toplevel as the target (returns the monorepo root for a subdirectory project). Counting not_run tests as uncovered.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-08-u13-rtm-hook-followups-override-and-target.md"
+}

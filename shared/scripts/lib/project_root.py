@@ -82,7 +82,7 @@ def _git_root(start: Path) -> Path | None:
         current = parent
 
 
-def resolve_project_root(*, allow_env: bool = True) -> Path:
+def resolve_project_root(*, allow_env: bool = True, cwd: Path | None = None) -> Path:
     """Resolve Shipwright project root with deterministic fallback chain.
 
     Priority:
@@ -104,6 +104,10 @@ def resolve_project_root(*, allow_env: bool = True) -> Path:
       5. cwd fallback (standalone / not-yet-initialized project, or no git
          repository found)
 
+    *cwd* replaces the process cwd as the starting directory for steps 2-5 (a
+    caller resolving a directory it was told about, e.g. ``git -C <path> commit``,
+    passes it with ``allow_env=False``).
+
     Raises :class:`ValueError` when step 3 finds multiple candidates of the
     same tier — better to fail loudly than silently pick the wrong project.
     """
@@ -114,7 +118,7 @@ def resolve_project_root(*, allow_env: bool = True) -> Path:
             if env_path.is_dir() and is_shipwright_project(env_path):
                 return env_path
 
-    cwd = Path.cwd()
+    cwd = Path.cwd() if cwd is None else Path(cwd)
 
     if is_shipwright_project(cwd):
         return cwd
