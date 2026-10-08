@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u12-docs-reconcile",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "claude",
+      "completed_at": "2026-10-08T20:50:49.827864+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:50:49.938186+00:00",
+      "disposition": "small docs-only change: no mini-plan external review below medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "override log reader named a non-existent checkpoint. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "code-review trigger placed in the external-review clause; degraded-mode wording understated. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T21:00:38.153647+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "Claim under doubt: no stale small-vs-medium or bug-exempt sentence remains — run-summary example, complexity table row, FR-linkage sentence, ledger opening",
+          "suggestion": "FIXED in 1df1fb4ec.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Claim under doubt: the claim-gate index points every gate at the right place — surface pointer and above/below wrong, U9 absent",
+          "suggestion": "FIXED in 1df1fb4ec.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "Claim under doubt: item 0.7 describes F11 accurately — requirement record is enforced at write time, F11 warns",
+          "suggestion": "FIXED.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T21:00:38.249146+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:50:55.452623+00:00",
+      "disposition": "no risk flag and a 20-line docs diff, below the 100-line trigger",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T21:00:38.052194+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:50:51.111376+00:00",
+      "disposition": "campaign sub-iterates have no internal plan_internal arm yet, a documented gap, not delegated to the orchestrator",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T20:50:51.226007+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture_internal arm yet, a documented gap, not delegated to the orchestrator",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}
