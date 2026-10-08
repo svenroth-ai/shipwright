@@ -19,6 +19,8 @@ Families
                    test: ``shared/tests/test_untestable_vocab_doc_sync.py``).
 ``review_not_run`` why a review pass closed ``not_run`` / ``not_applicable``.
 ``test_exemption`` why a newly added test carries no requirement tag.
+``surface_none``   why a medium+ run's F0.5 records ``surface: none``; the F11
+                   check re-derives from the diff whether that is true.
 ``spec_impact_none`` why an iterate recording ``spec_impact: none`` leaves every
                    requirement untouched (``lib/spec_impact_gate.py``).
 """
@@ -38,6 +40,13 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "requires-manual-visual-judgment",             # human visual/aesthetic call
         "requires-interactive-tty",                    # interactive terminal/login the harness can't drive
         "covered-by-existing-test",                    # already pinned by a named pre-existing test
+    }),
+    "surface_none": frozenset({
+        "docs-only-surface",     # only prose / documentation changed
+        "test-only",             # only tests or test fixtures changed
+        "build-config-only",     # only build, CI or dependency configuration changed
+        "no-behavior-change",    # a rename / refactor no runnable path can observe
+        "no-startable-surface",  # code with no entry point a person can start or call
     }),
     "review_not_run": frozenset({
         "unavailable",                 # the reviewer could not run (adapter error captured)

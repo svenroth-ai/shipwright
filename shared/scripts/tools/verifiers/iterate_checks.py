@@ -43,8 +43,7 @@ from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa
 from lib.spec_impact_gate import SPEC_IMPACT_INTENTS, none_record_problem  # noqa: E402
 
 from ._finalization_claims import run_claim_checks  # noqa: E402
-from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402 — re-exported
-from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
+from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402, F401 — re-exported
 # The Test Completeness gate lives in its own module (size cap); re-exported here.
 from ._ledger_completeness import (  # noqa: E402, F401 — re-exported surface
     UNTESTABLE_REASON_CODES,
@@ -86,6 +85,7 @@ from ._migration_check import check_migration_quarantine_empty  # noqa: E402, F4
 from .layer_coverage import check_cross_layer_coverage, check_removal_coverage  # noqa: E402, F401
 from .layer_coverage_binding import check_binding_completeness  # noqa: E402, F401
 from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F401
+from .surface_check import check_surface_verification  # noqa: E402 — F0.5 audit, re-exported
 
 
 SPEC_IMPACT_CHECK_NAME = "spec impact recorded (feature/change/bug)"
@@ -484,94 +484,6 @@ def check_conventions_reviewed(
     )
 
 
-def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
-    """F0.5 audit — ``shipwright_test_results.json.iterate_latest`` carries a
-    well-formed ``surface_verification`` block.
-
-    The post-commit second layer behind the production-time gate in
-    ``shared/scripts/surface_verification.py``. Skipped at trivial/small
-    complexity (the gate's safety floor enforces those at the prose level).
-    Severity ERROR — fails ``--strict`` and default both.
-
-    Fail-closed conditions (mirror of SKILL.md F0.5):
-
-    1. medium+ iterate but no ``surface_verification`` block (silent regression).
-    2. ``surface != "none"`` and ``tests_run == 0`` (greedy-filter trap).
-    3. ``surface != "none"`` and ``exit_code != 0`` (runner failed after retries).
-    4. ``surface == "none"`` with empty / missing ``justification``.
-
-    A missing or malformed ``shipwright_test_results.json`` at medium+ is
-    itself a failure — the F5 step is mandatory and produces the file.
-    """
-    name = "F0.5 surface_verification block valid"
-
-    entry = find_entry_by_run_id(project_root, run_id)
-    if entry is None:
-        return CheckResult(name, False, _no_entry_detail(run_id))
-    complexity = entry.get("complexity", "")
-    if complexity not in ("medium", "large"):
-        return CheckResult(
-            name, True,
-            f"skipped (complexity={complexity or 'unknown'})",
-            severity=Severity.SKIPPED.value,
-        )
-
-    # Per-run entry FIRST, exactly as the ledger check does: the shared results
-    # file is a derived snapshot the F11 integration rewinds to HEAD, so a block
-    # found there may belong to whatever run main last committed.
-    block = entry.get("surface_verification")
-    if block is not None and not isinstance(block, dict):
-        return CheckResult(name, False, _wrong_shape_detail("surface_verification", block))
-    if not isinstance(block, dict):
-        latest = read_iterate_latest(project_root, run_id)
-        if not latest.is_current:
-            return CheckResult(
-                name, False, stale_detail(latest, run_id, "surface_verification"),
-            )
-        block = (latest.block or {}).get("surface_verification")
-    if not isinstance(block, dict):
-        return CheckResult(
-            name, False,
-            "iterate_latest.surface_verification missing for medium+ iterate",
-        )
-
-    surface = block.get("surface")
-    if surface not in ("web", "cli", "api", "none"):
-        return CheckResult(
-            name, False,
-            f"surface={surface!r} not one of web/cli/api/none",
-        )
-
-    if surface == "none":
-        justification = (block.get("justification") or "").strip()
-        if not justification:
-            return CheckResult(
-                name, False,
-                "surface=none requires non-empty justification",
-            )
-        return CheckResult(
-            name, True,
-            f"surface=none, justification recorded ({len(justification)} chars)",
-        )
-
-    exit_code = block.get("exit_code")
-    tests_run = block.get("tests_run")
-    if not isinstance(tests_run, int) or tests_run <= 0:
-        return CheckResult(
-            name, False,
-            f"surface={surface}, tests_run={tests_run!r} (must be > 0)",
-        )
-    if exit_code != 0:
-        return CheckResult(
-            name, False,
-            f"surface={surface}, exit_code={exit_code!r} (runner failed after retries)",
-        )
-    return CheckResult(
-        name, True,
-        f"surface={surface}, tests_run={tests_run}, exit_code=0",
-    )
-
-
 # ---------------------------------------------------------------------------
 # Spec-impact gate — a FEATURE/CHANGE iterate must change the spec or
 # explicitly justify why not (iterate-2026-05-16-spec-impact-gate)
@@ -814,7 +726,7 @@ def run_all_checks(
         check_changelog_unreleased(project_root, run_id=run_id),
         check_session_handoff_fresh(project_root, run_id),
         check_build_dashboard_has_run_id(project_root, run_id, commit_hash=commit_hash or None),
-        check_surface_verification(project_root, run_id),
+        check_surface_verification(project_root, run_id, commit_hash),
         check_test_completeness_ledger(project_root, run_id),
         check_spec_impact_recorded(project_root, run_id, commit_hash) if commit_hash else CheckResult(
             SPEC_IMPACT_CHECK_NAME, True,

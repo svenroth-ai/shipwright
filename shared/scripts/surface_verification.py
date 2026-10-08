@@ -8,7 +8,8 @@ exits non-zero on any of the four fail-closed conditions:
     1  unknown surface or invalid arguments
     2  tests_run == 0 (greedy filter mismatch — Playwright's silent killer)
     3  exit_code != 0 after the 3-retry cap
-    4  surface == "none" without --justification
+    4  surface == "none" without --justification (or with a --reason-code
+       outside the closed ``surface_none`` vocabulary, ``lib/reason_codes.py``)
 
 A non-zero exit is STOP — F1+ of the iterate finalization MUST NOT proceed.
 The post-commit audit in ``shared/scripts/tools/verifiers/iterate_checks.py``
@@ -29,7 +30,7 @@ For ``surface=none`` (no startable surface) a justification is mandatory::
     uv run shared/scripts/surface_verification.py \\
         --project-root . \\
         --run-id iterate-2026-05-06-bar \\
-        --surface none \\
+        --surface none --reason-code no-behavior-change \\
         --justification "pure type-hint rename; no runtime path exercised"
 
 The orchestrator deliberately does NOT manage the dev_server lifecycle for
@@ -50,6 +51,8 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+from lib.reason_codes import reason_code_error
 
 # Exit codes — line-up 1:1 with the four fail-closed conditions documented in
 # SKILL.md F0.5. Tests in shared/tests/test_surface_verification.py rely on
@@ -278,6 +281,7 @@ def verify_surface(
     justification: str | None,
     tests_run_override: int | None,
     retry_cap: int = DEFAULT_RETRY_CAP,
+    reason_code: str | None = None,
 ) -> tuple[int, dict]:
     """Run the gate. Returns ``(exit_code, evidence_block)``.
 
@@ -299,27 +303,24 @@ def verify_surface(
         return EXIT_INVALID_ARGS, block
 
     if surface == "none":
-        if not justification or not justification.strip():
+        # F11 (verifiers/surface_check.py) requires the closed code at medium+ and
+        # re-derives from the diff that no runnable surface changed.
+        bad_code = reason_code is not None and reason_code_error("surface_none", reason_code)
+        if not justification or not justification.strip() or bad_code:
             block = build_block(
-                surface=surface,
-                runner="",
-                exit_code=EXIT_NONE_WITHOUT_JUSTIFICATION,
-                tests_run=0,
-                evidence_path="",
-                justification=justification,
-                attempts=0,
+                surface=surface, runner="", exit_code=EXIT_NONE_WITHOUT_JUSTIFICATION,
+                tests_run=0, evidence_path="", justification=justification, attempts=0,
             )
+            if bad_code:
+                block["error"] = bad_code
             return EXIT_NONE_WITHOUT_JUSTIFICATION, block
 
         block = build_block(
-            surface=surface,
-            runner="",
-            exit_code=0,
-            tests_run=0,
-            evidence_path="",
-            justification=justification.strip(),
-            attempts=0,
+            surface=surface, runner="", exit_code=0, tests_run=0,
+            evidence_path="", justification=justification.strip(), attempts=0,
         )
+        if reason_code is not None:
+            block["reason_code"] = reason_code
         return EXIT_OK, block
 
     runner_repr: str
@@ -406,27 +407,15 @@ def main(argv: list[str] | None = None) -> int:
         choices=VALID_SURFACES,
         help="Behavior surface: web (Playwright) | cli (pytest/CLI) | api (HTTP) | none",
     )
-    parser.add_argument(
-        "--runner",
-        default=None,
-        help="Shell command to execute (required unless --surface=none).",
-    )
-    parser.add_argument(
-        "--justification",
-        default=None,
-        help="Required when --surface=none.",
-    )
-    parser.add_argument(
-        "--tests-run",
-        type=int,
-        default=None,
-        help="Override tests_run count (skip stdout parsing).",
-    )
-    parser.add_argument(
-        "--retry-cap",
-        type=int,
-        default=DEFAULT_RETRY_CAP,
-    )
+    parser.add_argument("--runner", default=None,
+                        help="Shell command to execute (required unless --surface=none).")
+    parser.add_argument("--justification", default=None, help="Required when --surface=none.")
+    parser.add_argument("--reason-code", default=None,
+                        help="surface=none: a code from the closed surface_none vocabulary "
+                             "(required by F11 at medium+).")
+    parser.add_argument("--tests-run", type=int, default=None,
+                        help="Override tests_run count (skip stdout parsing).")
+    parser.add_argument("--retry-cap", type=int, default=DEFAULT_RETRY_CAP)
     args = parser.parse_args(argv)
 
     project_root = args.project_root.resolve()
@@ -439,6 +428,7 @@ def main(argv: list[str] | None = None) -> int:
         justification=args.justification,
         tests_run_override=args.tests_run,
         retry_cap=args.retry_cap,
+        reason_code=args.reason_code,
     )
 
     evidence_path = write_evidence(project_root, args.run_id, block)
