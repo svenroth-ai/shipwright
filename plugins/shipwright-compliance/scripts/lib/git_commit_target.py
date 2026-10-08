@@ -9,8 +9,8 @@ applies its global options in order -- each ``-C <path>`` changes directory
 found from the directory reached, so its git dir is looked up there --
 ``rtm_commit_scope``) and the project is resolved from it exactly as from a plain
 ``-C`` below (a monorepo work tree with the project in a subdirectory descends into
-it; none found is :attr:`CommitTarget.found` False); with only ``--git-dir`` git treats the directory reached as
-the top of the work tree, so that directory is the project and the git dir must be
+it; none found is :attr:`CommitTarget.found` False); with only ``--git-dir`` git
+treats the directory reached as the top of the work tree, so that directory is the project and the git dir must be
 handed to every git read (``GIT_DIR``). A plain ``-C`` names a directory the
 project is resolved from by the SHARED resolver (``shared/scripts/lib/project_root``
 steps 2-4, the reached directory as cwd, ``SHIPWRIGHT_PROJECT_ROOT`` not consulted
