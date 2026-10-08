@@ -21,7 +21,7 @@ _ENV_ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 # Closed set of wrappers that run their argument as a command, with the options of
 # each that consume the next token (``nice -n 5 git commit``, ``sudo -u x git commit``).
 _WRAPPERS: dict[str, frozenset[str]] = {
-    "env": frozenset({"-u", "--unset", "-C", "--chdir", "-S"}),
+    "env": frozenset({"-u", "--unset", "-C", "--chdir"}),
     "command": frozenset(), "exec": frozenset({"-a"}), "time": frozenset({"-f", "-o"}),
     "nice": frozenset({"-n", "--adjustment"}), "nohup": frozenset(),
     "sudo": frozenset({"-u", "-g", "-h", "-p", "-C", "-D", "-r", "-t", "-U"}),
@@ -33,6 +33,8 @@ _POWERSHELLS = frozenset({"pwsh", "powershell"})
 # Closed set of shell reserved words that may precede a command in a segment.
 _RESERVED = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"})
 _MAX_SHELL_DEPTH = 3
+# env's -S / --split-string: ONE string env splits into argv (``-S<str>``, ``-iS <str>`` too).
+_ENV_SPLIT_SHORT = re.compile(r"-[i0v]*S(.*)", re.DOTALL)
 
 
 def _program(token: str) -> str:
@@ -40,8 +42,25 @@ def _program(token: str) -> str:
     return name[:-4] if name.endswith(".exe") else name
 
 
-def _skip_wrappers(tokens: list[str]) -> int:
-    """Index of the real program after reserved words, ``VAR=val`` and wrappers (+ args)."""
+def _env_split_string(tokens: list[str], i: int) -> tuple[str | None, int]:
+    """``(string, tokens consumed)`` when ``tokens[i]`` is env's split-string option, else ``(None, 0)``."""
+    token = tokens[i]
+    if token.startswith("--split-string="):
+        return token[len("--split-string="):], 1
+    attached = _ENV_SPLIT_SHORT.fullmatch(token)
+    if token == "--split-string" or attached:
+        if attached and attached.group(1):
+            return attached.group(1), 1
+        return (tokens[i + 1], 2) if i + 1 < len(tokens) else (None, 0)
+    return None, 0
+
+
+def _skip_wrappers(tokens: list[str]) -> tuple[int, str | None]:
+    """Index of the real program after reserved words, ``VAR=val`` and wrappers (+ args).
+
+    The second value is the string of ``env -S <string>``: the index then points
+    past it, at the arguments env appends to the split argv.
+    """
     i = 0
     while i < len(tokens):
         if tokens[i] in _RESERVED or _ENV_ASSIGNMENT.match(tokens[i]):
@@ -49,13 +68,28 @@ def _skip_wrappers(tokens: list[str]) -> int:
             continue
         name = _program(tokens[i])
         if name not in _WRAPPERS:
-            return i
+            return i, None
         i += 1
         while i < len(tokens) and tokens[i].startswith("-"):
+            if name == "env":
+                split, used = _env_split_string(tokens, i)
+                if split is not None:
+                    return i + used, split
             i += 2 if tokens[i] in _WRAPPERS[name] else 1
         if name == "timeout" and i < len(tokens):
             i += 1  # the duration: timeout 60 git commit
-    return i
+    return i, None
+
+
+def _env_split_is_commit(split: str, rest: list[str], depth: int) -> bool:
+    """``env -S '<split>' <rest>`` runs ``env <split words> <rest>``: parse that, depth-bounded."""
+    if depth >= _MAX_SHELL_DEPTH:
+        return "git commit" in " ".join([split, *rest])  # too deep: over-fire, never fail open
+    try:
+        words = shlex.split(split)
+    except ValueError:
+        return "git commit" in split
+    return _segment_is_commit(["env", *words, *rest], depth + 1)
 
 
 def _shell_command(tokens: list[str]) -> str | None:
@@ -97,7 +131,10 @@ def _inner_command(tokens: list[str]) -> str | None:
 
 
 def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
-    tokens = tokens[_skip_wrappers(tokens):]
+    start, split = _skip_wrappers(tokens)
+    if split is not None:
+        return _env_split_is_commit(split, tokens[start:], depth)
+    tokens = tokens[start:]
     if not tokens or tokens[0].startswith("#"):
         return False  # empty, or a comment: # git commit
     if _program(tokens[0]) in (*_SHELLS, *_POWERSHELLS, "eval", "cmd"):
@@ -122,7 +159,8 @@ def is_git_commit(command: str, _depth: int = 0) -> bool:
     are skipped, as are leading reserved words (``if then else elif do while until
     ! { }``), ``VAR=val`` prefixes and a closed set of wrappers (``env``, ``sudo``,
     ``timeout 60``, ``nohup``, ...); ``sh|bash -c``, ``eval``, ``pwsh -Command`` and
-    ``cmd /c`` strings are parsed recursively; past the depth cap the substring test
+    ``cmd /c`` strings and ``env -S`` / ``--split-string`` strings (split into
+    env's argv, so their words are one segment) are parsed recursively; past the depth cap the substring test
     decides (over-fires rather than fails open). ``git -c k=v diff``,
     ``rg "git commit"``, ``echo git commit``, ``# git commit`` and ``git log --grep
     'git commit'`` are not commits. ``#`` is not a comment character to the lexer

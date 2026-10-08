@@ -66,6 +66,7 @@ def test_block_reason_and_clearing_advice_reach_stderr(tmp_path):
     assert r.returncode == 2
     assert "BLOCKED (check_rtm_coverage): Requirement coverage 30% (3/10" in r.stderr
     assert "rtm_coverage_baseline" in r.stderr and "separate command first" in r.stderr
+    assert "compliance_overrides.log" in r.stderr and "Continue anyway" in r.stderr
     hso = json.loads(r.stdout)["hookSpecificOutput"]  # stdout JSON kept for compatibility
     assert hso["blocked"] and "separate command first" in hso["details"]["staging_hint"]
 
@@ -253,6 +254,7 @@ def test_inproc_legacy_section_line_and_unevaluable_warn(tmp_path, monkeypatch, 
     rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
     assert rc == 2 and "RTM build-section coverage 40%" in out and "uncovered_sections" in out
     assert "share of build sections with a commit; no requirement manifest" in out
+    assert "staging_hint" not in out  # the staging limit concerns the manifest only
     (d / "traceability-matrix.md").write_text("| Traceability coverage | 90% |\n", encoding="utf-8")
     rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
     assert rc == 0 and "RTM build-section coverage 90% (share of build sections" in out

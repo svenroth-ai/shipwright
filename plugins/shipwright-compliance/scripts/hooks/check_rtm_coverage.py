@@ -106,6 +106,11 @@ RATCHET_HINT = (
     "enforcement.rtm_coverage_baseline in shipwright_compliance_config.json; "
     "the gate then ratchets from there. The hook never writes it."
 )
+OVERRIDE_HINT = (
+    "The user may say 'Continue anyway' to override this check. "
+    "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
+    "with timestamp, hook name 'check_rtm_coverage', and reason."
+)
 
 
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
@@ -114,10 +119,7 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                f"BLOCKED: {reason}\n\n"
-                "The user may say 'Continue anyway' to override this check. "
-                "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
-                "with timestamp, hook name 'check_rtm_coverage', and reason.\n\n"
+                f"BLOCKED: {reason}\n\n{OVERRIDE_HINT}\n\n"
                 "Note: Coverage gap will be flagged again at next compliance checkpoint."
             ),
             "blocked": True,
@@ -187,9 +189,12 @@ def main() -> int:
             "metric": measure["kind"],
             "warnings": warnings,
             "ratchet_hint": RATCHET_HINT,
-            "staging_hint": STAGING_HINT,
         }
+        # the ordering limit concerns the staged manifest: the legacy RTM line has none
+        hints = [RATCHET_HINT]
         if measure["kind"] == "requirements":
+            details["staging_hint"] = STAGING_HINT
+            hints.append(STAGING_HINT)
             details["fr"] = measure["coverage"]["fr"]
             details["ac"] = measure["coverage"]["ac"]
             details["source_commit"] = measure["source_commit"]
@@ -199,10 +204,8 @@ def main() -> int:
         reason = f"{lib.describe(measure)} < {threshold_pct}% threshold"
         print(json.dumps(_hook_block(reason=reason, details=details)))
         # exit 2: Claude Code shows the model STDERR and ignores the stdout JSON
-        print("\n".join([
-            f"BLOCKED (check_rtm_coverage): {reason}", RATCHET_HINT, STAGING_HINT,
-            "The user may say 'Continue anyway' to override.",
-        ]), file=sys.stderr)
+        print("\n".join([f"BLOCKED (check_rtm_coverage): {reason}", *hints, OVERRIDE_HINT]),
+              file=sys.stderr)
         return 2
 
     if baseline is not None and lib.above_baseline(measure, baseline):
