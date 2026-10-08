@@ -3103,20 +3103,33 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   separator that `eval` / `-Command` / `cmd /c` re-join without its quotes (`eval
 >   echo "a; git commit"`), and `git commit --dry-run` / `-h`. `git.exe` / `git.cmd`
 >   count as git. Here-document bodies (`<<EOF`, `<<'EOF'`, `<<-EOF`) are data and
->   are not scanned (`lib/shell_heredoc.py`); an operator inside quotes starts
->   nothing, and a body line of an unquoted delimiter holding `$(` or a backtick is
->   kept, since the shell runs it. Not covered: user-configured git aliases (`git
+>   are not scanned (`lib/shell_heredoc.py`) -- unless the operator line's pipeline
+>   feeds them to a shell or interpreter (`bash` `sh` `zsh` `dash` `ksh` `pwsh`
+>   `powershell` `eval` `ssh`, or any command given `-s`: `bash <<EOF`, `cat <<EOF |
+>   sh`), whose body is scanned as commands. An operator inside quotes (a quote
+>   opened on an earlier line included), after a `#` comment or inside `$((...))`
+>   starts nothing, a delimiter must start with a letter or `_`, and a body line of
+>   an unquoted delimiter holding `$(` or a backtick is kept, since the shell runs
+>   it. Not covered: user-configured git aliases (`git
 >   ci`), `merge`, `revert`, `cherry-pick`, `rebase` and `am`.
 > - *Which repo* (`lib/git_commit_target.py`): the one the commit goes to. git's
 >   global options apply in order from the hook payload's `cwd`: each `-C <path>`
 >   changes directory, a relative `--work-tree` / `--git-dir` resolves against the
->   result; `--work-tree` names the project, and with only `--git-dir` the directory
->   reached is the work tree and `GIT_DIR` is handed to every git read. A named
->   location wins over `SHIPWRIGHT_PROJECT_ROOT`; one that is not a directory WARNs
->   and falls back. A plain `-C` naming a subdirectory measures the nearest
->   directory above it holding `.shipwright/` or a `shipwright_*_config.json`,
->   never above the repo root. A line committing to several repos is judged on the
->   first one below its threshold (else the first), with a WARN naming them all.
+>   result; `--work-tree` names the project and the index measured is that of the
+>   repo git finds from the directory reached (`GIT_DIR` from `git rev-parse
+>   --absolute-git-dir` there, `lib/rtm_commit_scope.py`), and with only `--git-dir`
+>   the directory reached is the work tree and `GIT_DIR` is handed to every git
+>   read. A named location wins over `SHIPWRIGHT_PROJECT_ROOT`; one that is not a
+>   directory WARNs and falls back. A plain `-C` (`git -C <dir>`, `git -C .`) is
+>   resolved by the shared `shared/scripts/lib/project_root.py` resolver (steps 2-4,
+>   the reached directory as cwd, the env override not consulted): the directory
+>   itself, its single project subdirectory, or the nearest project above it within
+>   the repo -- a stray `.shipwright/` with no `agent_docs/` and no config marker is
+>   no project. When it resolves to no project while the default root holds
+>   compliance data, a visible WARN says the gate is NOT evaluating that commit. A
+>   line committing to several repos is judged on the first one below its threshold
+>   (else the first), with a WARN naming them all; when more than one is below, no
+>   override releases it (commit to each repo separately).
 >   Not covered: `cd <path> && git commit`, `env -C`, `GIT_DIR=` in the command
 >   text, and a commit found only by a fallback (`env -S`, past the depth cap).
 > - *Which manifest*: the copy being COMMITTED -- the staged (index) copy
@@ -3152,8 +3165,9 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   epoch `generated_at` / all-zero `source_commit` WARNs as provenance unknown.
 > - *Fallback and WARNs*: the RTM's legacy section-commit line is used only when no
 >   manifest exists. Unmeasurable cases (corrupt manifest, `schema_version` not the
->   current 4, a manifest with no executed `pass`/`fail` result at all, no active
->   requirements, compliance data but no figure, invalid threshold config) print a
+>   current 4, a manifest with no executed `pass`/`fail` result on an active
+>   requirement, no active requirement measured, more than half of them (`MAX_UNMEASURED_SHARE`)
+>   not measured, compliance data but no figure, invalid threshold config) print a
 >   visible `WARN` instead of allowing silently. Accepted risk: an all-`not_run`
 >   manifest swept into a commit (e.g. `git commit -a` after a fail-closed local
 >   regeneration) switches the gate to WARN + allow until CI regenerates it. Optional
@@ -3164,6 +3178,14 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   30 minutes of its timestamp; the hook appends `<ts> | check_rtm_coverage |
 >   CONSUMED | <entry ts>`, so a commit that then fails has still used it; when
 >   that line cannot be written the override is not applied (the block stands).
+>   The read, check and append run under an `O_EXCL` lock file beside the log (a
+>   lock older than 30 s is broken; the log is re-read once the lock is held). A
+>   matching entry outside its window or dated in the future is named in the block.
+>   The model can write the OVERRIDE line itself (the operator chose approval in the
+>   log): the log gives after-the-fact attribution, not a human gate. The log is
+>   git-tracked, so OVERRIDE / CONSUMED lines can ride along with `git commit -a`.
+>   `.shipwright/compliance/compliance_overrides.log` (Sec2's input) is a different
+>   path.
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 

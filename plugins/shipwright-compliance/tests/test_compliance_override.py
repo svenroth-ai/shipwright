@@ -5,8 +5,11 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
+import shutil
 import subprocess
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -22,10 +25,12 @@ from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
 
 if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
     sys.path.insert(0, str(Path(__file__).parent))
-from rtm_hook_test_support import collector_manifest, hook_env, write_manifest  # noqa: E402
+from rtm_hook_test_support import (  # noqa: E402
+    collector_manifest, commit_all, hook_env, init_repo, write_manifest)
 from rtm_hook_test_support import scrub_git_env  # noqa: E402,F401 - autouse
 
 pytestmark = pytest.mark.covers("FR-01.10")
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
 
 HOOKS = Path(__file__).parent.parent / "scripts" / "hooks"
 NOW = datetime(2026, 10, 8, 12, 0, tzinfo=timezone.utc)
@@ -92,7 +97,7 @@ def test_rtm_hook_keeps_the_block_when_the_use_cannot_be_recorded(tmp_path, monk
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     monkeypatch.setattr(mod, "_resolve_project_root", lambda: str(tmp_path))
-    assert mod._lib().override is co  # the hook's compliance_override is this test's module
+    assert mod._override() is co  # the hook's compliance_override is this test's module
     monkeypatch.setattr(co, "consume", lambda *_a, **_k: "the log is read-only")
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"tool_input": {
         "command": "git commit -m x"}})))
@@ -176,3 +181,100 @@ def test_security_hook_names_the_line_then_honours_it(tmp_path, monkeypatch, cap
     assert "OVERRIDDEN once" in capsys.readouterr().out
     monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
     assert mod.main() == 2  # used once
+
+
+# --- U13 review fixes: the lock, the named stale entry, the quoting, the multi-repo line ---
+
+def test_a_held_lock_keeps_the_block_and_says_why(tmp_path, monkeypatch):
+    _log(tmp_path, f"{_stamp(NOW - timedelta(minutes=1))} | check_rtm_coverage | OVERRIDE | ok")
+    lock = tmp_path / ".shipwright" / "agent_docs" / "compliance_overrides.log.lock"
+    lock.write_text("", encoding="utf-8")
+    monkeypatch.setattr(co, "LOCK_WAIT_S", 0.1)
+    released, why = co.try_release(tmp_path, "check_rtm_coverage", NOW)
+    assert released is None and "could not be locked" in why and "NOT applied" in why
+    assert "CONSUMED" not in (tmp_path / co.LOG_RELPATH).read_text("utf-8")
+
+
+def test_a_stale_lock_is_broken_and_released_after_use(tmp_path):
+    _log(tmp_path, f"{_stamp(NOW - timedelta(minutes=1))} | check_rtm_coverage | OVERRIDE | ok")
+    lock = tmp_path / ".shipwright" / "agent_docs" / "compliance_overrides.log.lock"
+    lock.write_text("", encoding="utf-8")
+    old = lock.stat().st_mtime - co.STALE_LOCK_S - 5
+    os.utime(lock, (old, old))
+    released, why = co.try_release(tmp_path, "check_rtm_coverage", NOW)
+    assert released.reason == "ok" and why is None and not lock.exists()
+
+
+def test_the_log_is_re_read_once_the_lock_is_held(tmp_path, monkeypatch):
+    """A concurrent hook consumed the entry between the first read and the lock."""
+    entry = NOW - timedelta(minutes=1)
+    _log(tmp_path, f"{_stamp(entry)} | check_rtm_coverage | OVERRIDE | ok")
+
+    @contextmanager
+    def racing(_log_path):
+        _log(tmp_path, f"{_stamp(NOW)} | check_rtm_coverage | CONSUMED | {entry.isoformat()}")
+        yield
+
+    monkeypatch.setattr(co, "_locked", racing)
+    released, why = co.try_release(tmp_path, "check_rtm_coverage", NOW)
+    assert released is None and "concurrent command" in why
+
+
+@pytest.mark.parametrize("age, expected", [
+    (timedelta(minutes=40), "older than the 30-minute window"),
+    (-timedelta(minutes=10), "in the future"),
+])
+def test_an_entry_outside_its_window_is_named_in_the_block(tmp_path, age, expected):
+    _log(tmp_path, f"{_stamp(NOW - age)} | check_security_scan | OVERRIDE | late")
+    released, why = co.try_release(tmp_path, "check_security_scan", NOW)
+    assert released is None and f"of {_stamp(NOW - age)} was NOT applied" in why
+    assert expected in why
+
+
+def test_the_printed_line_quotes_the_reason_and_says_how_to_escape(tmp_path):
+    skip_or_fail_on_missing_binary("bash", "Git for Windows ships bash; CI ubuntu has it.")
+    text = co.instruction(tmp_path, "check_rtm_coverage")
+    assert "'<the reason the user gave>'" in text and "replace any single quote" in text
+    command = text.splitlines()[-1].replace("'<the reason the user gave>'", r"'it'\''s ok'")
+    (tmp_path / co.LOG_RELPATH).parent.mkdir(parents=True)
+    subprocess.run(["bash", "-c", command], check=True, timeout=30)
+    assert co.active_override(tmp_path, "check_rtm_coverage").reason == "it's ok"
+
+
+def test_security_hook_keeps_the_block_when_the_use_cannot_be_recorded(tmp_path, monkeypatch,
+                                                                         capsys):
+    summary = tmp_path / ".shipwright" / "compliance" / "ci-security.json"
+    summary.parent.mkdir(parents=True)
+    summary.write_text(json.dumps({
+        "schema": 1, "scan_date": "2026-07-28T07:51:37Z", "source": "security.yml#1",
+        "by_severity": {"critical": 1, "high": 0, "medium": 0, "low": 0}, "total": 1,
+        "open_high_critical": 1, "critical_gate": "fail", "prompt_injection": 0,
+        "degraded": False}), encoding="utf-8")
+    _log(tmp_path, f"{_stamp(datetime.now(timezone.utc))} | check_security_scan | OVERRIDE | go")
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(co, "consume", lambda *_a, **_k: "the log is read-only")
+    mod = _security_hook()
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"tool_input": {
+        "command": "deploy to jelastic"}})))
+    assert mod.main() == 2 and "the log is read-only" in capsys.readouterr().err
+
+
+@needs_git
+def test_one_override_never_releases_two_repos_below_threshold(tmp_path):
+    repos = []
+    for name in ("a", "b"):
+        repo = tmp_path / name
+        repo.mkdir()
+        init_repo(repo)
+        write_manifest(repo, collector_manifest(3, 10, executed_rest="fail"))
+        (repo / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
+        commit_all(repo)
+        _log(repo, f"{_stamp(datetime.now(timezone.utc))} | check_rtm_coverage | OVERRIDE | go")
+        repos.append(repo.as_posix())
+    command = f'git -C "{repos[0]}" commit -m a && git -C "{repos[1]}" commit -m b'
+    r = subprocess.run(
+        [sys.executable, str(HOOKS / "check_rtm_coverage.py")], capture_output=True, text=True,
+        input=json.dumps({"tool_input": {"command": command}, "cwd": str(tmp_path)}),
+        cwd=str(tmp_path), env=hook_env(tmp_path), timeout=60)
+    assert r.returncode == 2 and "no override releases such a line" in r.stderr

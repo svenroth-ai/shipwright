@@ -142,14 +142,13 @@ def main() -> int:
     blocked, reason, details = decide(project_root)
     if not blocked:
         return 0
-    found = override.active_override(project_root, HOOK)
-    unmarked = found and override.consume(project_root, HOOK, found)
-    if found is not None and not unmarked:  # a logged "Continue anyway", now used
+    released, why_not = override.try_release(project_root, HOOK)
+    if released is not None:  # a logged "Continue anyway", now used
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "additionalContext": override.notice(HOOK, found, reason)}}))
+            "additionalContext": override.notice(HOOK, released, reason)}}))
         return 0
-    advice = "\n".join(filter(None, [unmarked, override.instruction(project_root, HOOK)]))
+    advice = "\n".join(filter(None, [why_not, override.instruction(project_root, HOOK)]))
     return _hook_block(reason, details, advice)
 
 

@@ -5,24 +5,31 @@ hook happens to run in: ``git -C ../other commit`` commits to ``../other``. git
 applies its global options in order -- each ``-C <path>`` changes directory
 (relative to the previous one; an empty path is a no-op), and a relative
 ``--git-dir`` / ``--work-tree`` is resolved against the directory reached. With
-``--work-tree`` that tree is the project; with only ``--git-dir`` git treats the
-directory reached as the top of the work tree, so that directory is the project
-and the git dir must be handed to every git read (``GIT_DIR``). A plain ``-C``
-may name a subdirectory (``git -C repo/src commit`` commits to ``repo``): the
-project is the nearest directory at or above it holding ``.shipwright/`` or a
-``shipwright_*_config.json``, never above the repo root (the first ``.git``); with
-neither, the directory reached.
+``--work-tree`` that tree is the project (the commit still lands in the repo
+found from the directory reached, so its git dir is looked up there --
+``rtm_commit_scope``); with only ``--git-dir`` git treats the directory reached as
+the top of the work tree, so that directory is the project and the git dir must be
+handed to every git read (``GIT_DIR``). A plain ``-C`` names a directory the
+project is resolved from by the SHARED resolver (``shared/scripts/lib/project_root``
+steps 2-4, the reached directory as cwd, ``SHIPWRIGHT_PROJECT_ROOT`` not consulted
+for a named location): the directory itself, its single project subdirectory
+(``git -C <repo root> commit`` with the project in ``webui/``), or the nearest
+project above it, never above the repo root. A stray ``.shipwright/`` holding no
+``agent_docs/`` and no config marker is no project. When nothing resolves,
+:attr:`CommitTarget.found` is False and the directory reached is measured.
 
 Not covered: ``cd <path> && git commit`` and ``env -C <path> git commit`` (the
 command's own directory changes), a ``GIT_DIR`` / ``GIT_WORK_TREE`` set in the
 command text, and a commit found only by a fallback (``env -S``, past the shell
-depth cap), which carries no options. Pure apart from ``stat`` calls.
+depth cap), which carries no options. Pure apart from ``stat`` / ``iterdir`` calls.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import re
+import sys
 from pathlib import Path
 from typing import NamedTuple
 
@@ -31,10 +38,18 @@ from git_commit_command import iter_git_commits
 _MSYS_DRIVE = re.compile(r"^/([A-Za-z])(?=/|$)")
 
 
+_SHARED_PROJECT_ROOT = (Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+                        / "project_root.py")
+_RESOLVER_MODULE = "_shipwright_shared_project_root"  # a sentinel name: never ``lib.*`` (ADR-045)
+
+
 class CommitTarget(NamedTuple):
     project_root: Path
     git_dir: Path | None
     work_tree: Path | None
+    base: Path  # the directory git reached (``-C`` applied): where the repo is found
+    found: bool = True  # False: no Shipwright project resolved from a plain ``-C``
+    note: str | None = None  # why the resolution is uncertain (WARN text)
 
 
 def _native(value: str) -> str:
@@ -62,21 +77,40 @@ def _options(opts: tuple[str, ...]) -> list[tuple[str, str]]:
     return found
 
 
-def _is_project(directory: Path) -> bool:
-    return (directory / ".shipwright").is_dir() or any(directory.glob("shipwright_*_config.json"))
+def _resolver():
+    """The shared ``project_root`` module, loaded by file under a sentinel name.
+
+    The hook loads ``lib.project_root`` after a ``sys.path`` insert; in-process
+    (tests) ``lib`` may already be this plugin's own package, so a by-name import
+    would be inert. Registered in ``sys.modules`` before it executes.
+    """
+    module = sys.modules.get(_RESOLVER_MODULE)
+    if module is None:
+        spec = importlib.util.spec_from_file_location(_RESOLVER_MODULE, _SHARED_PROJECT_ROOT)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"cannot load {_SHARED_PROJECT_ROOT}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[_RESOLVER_MODULE] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            sys.modules.pop(_RESOLVER_MODULE, None)
+            raise
+    return module
 
 
-def _project_dir(start: Path) -> Path:
-    """The project between *start* and its repo root (the first ``.git`` above), else
-    that root; *start* itself when no repo encloses it."""
-    chain = [start, *start.parents]
+def _project_dir(start: Path) -> tuple[Path, bool, str | None]:
+    """``(project, found, note)`` resolved from *start* (shared resolver, no env override)."""
     try:
-        top = next((i for i, d in enumerate(chain) if (d / ".git").exists()), None)
-        if top is None:
-            return start
-        return next((d for d in chain[:top + 1] if _is_project(d)), chain[top])
-    except OSError:
-        return start
+        shared = _resolver()
+    except Exception as exc:  # noqa: BLE001 - the gate must WARN, never crash
+        return start, False, (f"the shared project resolver could not be loaded "
+                              f"({type(exc).__name__}); measured {start}")
+    try:
+        root = shared.resolve_project_root(allow_env=False, cwd=start)
+    except (ValueError, OSError) as exc:
+        return start, False, f"{str(exc)[:200]} -- measured {start}"
+    return root, shared.is_shipwright_project(root), None
 
 
 def _locate(opts: tuple[str, ...], cwd: str | Path) -> CommitTarget | None:
@@ -94,9 +128,11 @@ def _locate(opts: tuple[str, ...], cwd: str | Path) -> CommitTarget | None:
             work_tree = value
     base = Path(os.path.normpath(base))
     tree = _under(base, work_tree) if work_tree else None
-    if tree is None and git_dir is None and base.is_dir():
-        base = _project_dir(base)
-    return CommitTarget(tree or base, _under(base, git_dir) if git_dir else None, tree)
+    gdir = _under(base, git_dir) if git_dir else None
+    if tree is None and gdir is None and base.is_dir():
+        root, found, note = _project_dir(base)
+        return CommitTarget(root, None, None, base, found, note)
+    return CommitTarget(tree or base, gdir, tree, base)
 
 
 def commit_targets(command: str, cwd: str | Path) -> list[CommitTarget | None]:

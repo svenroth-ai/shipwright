@@ -11,8 +11,17 @@ Run: `iterate-2026-10-08-u13-rtm-hook-followups` (campaign `2026-10-07-finalizat
 
 - `rtm_manifest_coverage.compute_coverage`: `fr.not_measured`; AC inventory tracks FR heading depth (a sub-heading keeps its ACs; a heading at the FR's level or higher ends the section).
 - `git_commit_command`: heredoc bodies stripped first (`lib/shell_heredoc.py`; an operator inside quotes or a `#` comment starts nothing; an unquoted-delimiter body line holding `$(`/backtick is kept); `git.cmd` like `git.exe`; `iter_git_commits` returns each commit's global options.
-- `lib/git_commit_target.py`: `-C` in order, `--work-tree`, `--git-dir` (relative to the dir reached, MSYS `/c/` on Windows); a plain `-C` subdirectory walks up to the project, never above the repo root. `rtm_gate_support.target_root` judges a multi-repo line on the first repo below threshold and WARNs; `GIT_DIR`/`GIT_WORK_TREE` are scoped around the measurement (`git_env`).
+- `lib/git_commit_target.py`: `-C` in order, `--work-tree`, `--git-dir` (relative to the dir reached, MSYS `/c/` on Windows); a plain `-C` is resolved to its project (see the review fixes below). `rtm_commit_scope.commit_scope` judges a multi-repo line on the first repo below threshold and WARNs; `GIT_DIR`/`GIT_WORK_TREE` are scoped around the measurement (`git_env`).
 - Both hooks print the block to stderr (the security hook printed stdout JSON only).
+
+## PR review fixes (PR #847)
+
+- **Project resolution is the shared resolver.** A plain `-C` is resolved by `shared/scripts/lib/project_root.resolve_project_root(allow_env=False, cwd=<reached dir>)` (new `cwd` keyword; steps 2-4), loaded by file under a sentinel module name (ADR-045). `git -C <markerless repo root> commit` and `git -C . commit` descend into the single project subdirectory again; a stray `.shipwright/` (no `agent_docs/`, no config marker) no longer captures the target. Resolving to no project while the default root holds compliance data is a visible WARN, never a silent allow.
+- **`--work-tree` alone** measures the index of the repo git finds from the reached directory (`GIT_DIR` from `git rev-parse --absolute-git-dir`), in the new `lib/rtm_commit_scope.py` (which also caches each repo's measurement on a multi-repo line).
+- **Heredocs:** a body fed to a shell or interpreter (`bash sh zsh dash ksh pwsh powershell eval ssh`, or `-s`, anywhere in the operator's pipeline) is scanned as commands; a delimiter must start with a letter or `_`; `<<` inside `$((...))` is a shift; quote state carries across lines.
+- **Measurement:** no active requirement measured is never a figure (N-of-M WARN + NOT evaluating); more than half not measured (`MAX_UNMEASURED_SHARE = 1/2`) is unmeasurable; `execution_problem` counts only active requirements; `meets()` runs inside the hook's WARN guard, so a raising comparison WARNs.
+- **Override:** read -> check -> append under an `O_EXCL` lock beside the log (stale after 30 s, re-read once held), via `compliance_override.try_release` in both hooks; a matching entry outside its window or future-dated is named in the block; the printed `printf` line `shlex.quote`s the reason and says how to escape a single quote; a line with more than one repo below threshold is never released by an override.
+- **Attribution, not a human gate.** The operator chose "Freigabe im Protokoll" (approval in the log). The model can write the OVERRIDE line itself; the log gives after-the-fact attribution of who released which block and why, not proof that a human approved. The log is git-tracked, so OVERRIDE / CONSUMED lines may ride along with `git commit -a`. `.shipwright/compliance/compliance_overrides.log` (the Sec2 verifier's input) is a different path, not read by these hooks.
 
 ## Architecture Review
 

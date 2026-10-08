@@ -16,7 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts" / "lib"))
 import git_commit_command as gcc  # noqa: E402
 import git_commit_target as gct  # noqa: E402
-import rtm_gate_support as rgs  # noqa: E402
+import rtm_commit_scope as rcs  # noqa: E402
 import rtm_manifest_coverage as rmc  # noqa: E402
 
 if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
@@ -89,6 +89,7 @@ def _repo(root: Path, passing: int) -> Path:
     root.mkdir(parents=True)
     init_repo(root)
     write_manifest(root, collector_manifest(passing, 10, executed_rest="fail"))
+    (root / "shipwright_run_config.json").write_text("{}", encoding="utf-8")  # a project
     commit_all(root)
     return root
 
@@ -125,7 +126,7 @@ def test_commit_target_applies_git_option_order(tmp_path):
     assert gct.commit_target("git -C a status", base) is None
     assert gct.commit_target("git -C a -C '' -C b commit", base).project_root == base / "a" / "b"
     target = gct.commit_target("git -C a --git-dir g --work-tree=w commit", base)
-    assert target == (base / "a" / "w", base / "a" / "g", base / "a" / "w")
+    assert target[:4] == (base / "a" / "w", base / "a" / "g", base / "a" / "w", base / "a")
     assert gct.commit_target("git -c k=v -C x commit", base).project_root == base / "x"
 
 
@@ -135,8 +136,9 @@ def test_a_line_committing_to_two_repos_is_judged_on_the_failing_one(tmp_path):
     command = f'git -C "{high.as_posix()}" commit -m a && git -C "{low.as_posix()}" commit -m b'
     r = _run(high, command, tmp_path)
     assert r.returncode == 2 and "(3/10 active" in r.stderr
-    root, _env, warnings = rgs.target_root(command, str(tmp_path), str)
-    assert Path(root) == low and "commits to 2 repos" in warnings[0]
+    scope = rcs.commit_scope(command, str(tmp_path), str)
+    assert Path(scope.root) == low and "commits to 2 repos" in scope.warnings[0]
+    assert scope.below == [str(low)] and scope.measured[0]["coverage"]["fr"]["covered"] == 3
 
 
 @needs_git
@@ -156,11 +158,11 @@ def test_git_bash_drive_paths_are_native_on_windows_only(monkeypatch):
 
 
 def test_a_missing_target_falls_back_with_a_warn(tmp_path):
-    root, env, warnings = rgs.target_root(f'git -C "{tmp_path / "nope"}" commit', str(tmp_path),
-                                          lambda: "DEFAULT")
-    assert (root, env) == ("DEFAULT", {}) and "not a directory" in warnings[0]
-    root, env, _ = rgs.target_root(f'git --git-dir="{tmp_path}" commit', str(tmp_path), str)
-    assert root == str(tmp_path) and env["GIT_DIR"] == str(tmp_path)
+    scope = rcs.commit_scope(f'git -C "{tmp_path / "nope"}" commit', str(tmp_path),
+                             lambda: "DEFAULT")
+    assert scope[:2] == ("DEFAULT", {}) and "not a directory" in scope.warnings[0]
+    scope = rcs.commit_scope(f'git --git-dir="{tmp_path}" commit', str(tmp_path), str)
+    assert scope.root == str(tmp_path) and scope.env["GIT_DIR"] == str(tmp_path)
 
 
 # --- item 4: heredoc bodies are data -------------------------------------------------------
@@ -183,6 +185,15 @@ def test_heredoc_bodies_are_not_scanned(command):
     "echo hi # <<EOF\ngit commit -m x",  # nor does one inside a comment
     "cat <<EOF\n$(git commit -m x)\nEOF",  # unquoted delimiter: the shell runs it
     "cat <<<x\ngit commit -m y",  # a here-string is not a heredoc
+    # a body fed to a shell or interpreter is commands, not data
+    "bash <<EOF\ngit commit -m x\nEOF", "bash <<'EOF'\ngit commit -m x\nEOF",
+    "ssh host <<EOF\ngit commit -m x\nEOF", "cat <<EOF | sh\ngit commit -m x\nEOF",
+    "pwsh.exe -NoProfile <<EOF\ngit commit -m x\nEOF", "runner -s <<EOF\ngit commit\nEOF",
+    "cat <<A; bash <<B\nmessage\nA\ngit commit -m x\nB",  # data first, then commands
+    "echo $((x<<y))\ngit commit -m x",  # a shift inside $((...)) is no heredoc
+    "echo $((1<<2))\ngit commit -m x",  # nor is a delimiter starting with a digit
+    'echo "first\n<<EOF"\ngit commit -m x',  # quoted across lines
+    "echo 'first\n<<EOF'\ngit commit -m x",
 ])
 def test_commits_around_heredocs_still_fire(command):
     assert gcc.is_git_commit(command)
@@ -243,6 +254,5 @@ def test_git_cmd_exe_and_command_git_are_commits(command):
     assert gcc.is_git_commit(command)
 
 
-def test_a_user_alias_is_documented_as_not_covered():
+def test_a_user_alias_is_not_covered():
     assert not gcc.is_git_commit("git ci -m x")
-    assert "alias" in gcc.is_git_commit.__doc__

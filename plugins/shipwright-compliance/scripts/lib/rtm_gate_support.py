@@ -2,8 +2,8 @@
 
 Threshold/baseline config, the measurement cascade (manifest first, legacy RTM
 section line only when no manifest file exists), the legacy RTM readers and the
-exact-rational gate comparison, and which repo a commit command targets. Pure apart
-from reading project files (and scoping ``GIT_DIR`` around a measurement).
+exact-rational gate comparison. Which repo a commit command targets lives in
+``rtm_commit_scope``. Pure apart from reading project files and the git probes.
 """
 
 from __future__ import annotations
@@ -11,18 +11,19 @@ from __future__ import annotations
 import json
 import os
 import re
-from contextlib import contextmanager
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-import compliance_override as override  # noqa: F401 - the hook reaches it as lib.override
 import rtm_manifest_coverage as manifest_cov
-from git_commit_target import commit_targets
 
 DEFAULT_THRESHOLD = 0.80
 _RTM_RELPATH = Path(".shipwright/compliance/traceability-matrix.md")
-_NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
+NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
+#: More than this share of the active requirements not measured (their linked tests
+#: all ``not_run``): the figure from the few that ran would speak for the rest, so the
+#: manifest is unmeasurable instead. Exactly half is still evaluated.
+MAX_UNMEASURED_SHARE = Fraction(1, 2)
 
 
 def pct_text(value: float) -> str:
@@ -57,62 +58,6 @@ def find_uncovered_sections(project_root: str) -> list[str]:
     except OSError:
         pass
     return uncovered
-
-
-@contextmanager
-def git_env(env: dict[str, str]):
-    """``GIT_DIR`` / ``GIT_WORK_TREE`` for the git reads inside the block, then restored."""
-    saved = {key: os.environ.get(key) for key in env}
-    os.environ.update(env)
-    try:
-        yield
-    finally:
-        for key, value in saved.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
-
-
-def _below_threshold(root: str, env: dict[str, str]) -> bool:
-    with git_env(env):
-        measured, _warnings = measure(root)
-    return measured is not None and not meets(measured, read_threshold(root)[0])
-
-
-def target_root(command: str, cwd: Any,
-                default: Callable[[], str]) -> tuple[str, dict[str, str], list[str]]:
-    """``(project root, git env, warnings)`` for the repo *command* commits to.
-
-    *default* (the managed project root) for a commit naming no location
-    (``git_commit_target``) or a directory that does not exist (WARN). The git env
-    carries ``GIT_DIR`` / ``GIT_WORK_TREE`` for a ``--git-dir`` commit. A command
-    committing to several repos is judged on the first one below its threshold
-    (else the first), with a WARN naming them all.
-    """
-    cwd = cwd if isinstance(cwd, str) and cwd else os.getcwd()
-    warnings: list[str] = []
-    roots: dict[str, dict[str, str]] = {}  # insertion-ordered, one entry per repo
-    for target in commit_targets(command, cwd):
-        if target is not None and not target.project_root.is_dir():
-            warnings.append(f"the commit names {target.project_root}, which is not a "
-                            f"directory; measured {default()} instead")
-            target = None
-        if target is None:
-            roots.setdefault(default(), {})
-        else:
-            roots.setdefault(str(target.project_root), {} if target.git_dir is None else {
-                "GIT_DIR": str(target.git_dir), "GIT_WORK_TREE": str(target.project_root)})
-    if not roots:
-        return default(), {}, warnings
-    chosen = next(iter(roots))
-    if len(roots) > 1:
-        chosen = next((root for root, env in roots.items() if _below_threshold(root, env)),
-                      chosen)
-        warnings.append(f"this command commits to {len(roots)} repos ("
-                        + ", ".join(roots) + f"); judged on {chosen}, the first below "
-                        "threshold or else the first -- commit to each repo separately")
-    return chosen, roots[chosen], warnings
 
 
 def read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
@@ -159,7 +104,9 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     Requirement coverage from the committed manifest; the legacy section line only
     when there is no manifest at all (an unexpected git failure with no working-tree
     copy is "unreadable", not "absent": WARN, never the section line). A non-current schema or a manifest with no
-    executed result is unmeasurable (WARN), never 0%. Every case that used to allow
+    executed result (on an active requirement) is unmeasurable (WARN), never 0%, as is
+    one where no active requirement, or more than :data:`MAX_UNMEASURED_SHARE` of them,
+    is measured (the N-of-M WARN says how many). Every case that used to allow
     silently says why in a WARN -- except a project with no compliance data at all.
     """
     warnings: list[str] = []
@@ -170,32 +117,36 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     if manifest is not None:
         schema = manifest_cov.schema_problem(manifest)
         if schema:  # never relabel a stale-shape read as coverage, nor fall back
-            return None, [*warnings, schema, _NOT_EVALUATING]
+            return None, [*warnings, schema, NOT_EVALUATING]
         cov = manifest_cov.compute_coverage(manifest, project_root)
         stale = manifest_cov.staleness_warning(manifest, project_root)
         if stale:
             warnings.append(stale)
-        unmeasured = cov["fr"]["not_measured"]
-        if unmeasured and cov["fr"]["total"]:
+        unmeasured, total = cov["fr"]["not_measured"], cov["fr"]["total"]
+        if unmeasured:
             warnings.append(
-                f"{unmeasured} of {unmeasured + cov['fr']['total']} requirements not measured "
+                f"{unmeasured} of {unmeasured + total} requirements not measured "
                 "(every linked test not_run in the last evidence run); left out of the "
                 "figure, neither covered nor uncovered")
-        if cov["fr"]["pct"] is None and not unmeasured:
-            warnings.append(
-                "traceability manifest lists no active requirements; nothing to measure "
-                f"({_NOT_EVALUATING})"
-            )
-            return None, warnings
         unexecuted = manifest_cov.execution_problem(manifest)
+        if total == 0:  # whatever the unmeasured count: never a figure over zero
+            if not unmeasured:
+                return None, [*warnings, "traceability manifest lists no active "
+                              f"requirements; nothing to measure ({NOT_EVALUATING})"]
+            return None, [*warnings, *filter(None, [unexecuted]), NOT_EVALUATING]
+        if Fraction(unmeasured, unmeasured + total) > MAX_UNMEASURED_SHARE:
+            return None, [*warnings, (
+                f"more than {int(MAX_UNMEASURED_SHARE * 100)}% of the active requirements "
+                "are not measured, so coverage is unmeasurable (a figure from the few "
+                "that ran would speak for the rest)"), NOT_EVALUATING]
         if unexecuted:
-            return None, [*warnings, unexecuted, _NOT_EVALUATING]
+            return None, [*warnings, unexecuted, NOT_EVALUATING]
         return {"kind": "requirements", "pct": cov["fr"]["pct"], "coverage": cov,
                 "source_commit": manifest.get("source_commit")}, warnings
     if problem or any(n.startswith(manifest_cov.UNREADABLE) for n in notes):
         # present but unreadable, or git failed unexpectedly with no working-tree copy:
         # never relabel build-section coverage as the answer
-        warnings.append(_NOT_EVALUATING)
+        warnings.append(NOT_EVALUATING)
         return None, warnings
     legacy = get_coverage_from_rtm(project_root)
     if legacy is not None:
@@ -205,7 +156,7 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
         warnings.append(
             "compliance data exists but no coverage figure could be read "
             "(no manifest requirements, no RTM 'Traceability coverage' line); "
-            "the 80% commit gate is NOT evaluating"
+            f"{NOT_EVALUATING}"
         )
     return None, warnings
 

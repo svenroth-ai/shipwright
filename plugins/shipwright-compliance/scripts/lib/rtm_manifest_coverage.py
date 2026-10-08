@@ -209,10 +209,10 @@ def _not_measured(req: dict[str, Any]) -> bool:
 
 
 def _links(manifest: dict[str, Any]):
-    """Every link dict bound to a requirement or to one of its ACs."""
+    """Every link dict bound to an ACTIVE requirement or to one of its ACs."""
     reqs = manifest.get("requirements")
     for req in reqs.values() if isinstance(reqs, dict) else ():
-        if isinstance(req, dict):
+        if isinstance(req, dict) and req.get("status") == "active":
             yield from _req_links(req)
 
 
@@ -228,7 +228,9 @@ def schema_problem(manifest: dict[str, Any]) -> str | None:
 
 
 def execution_problem(manifest: dict[str, Any]) -> str | None:
-    """A WARN when no link carries an executed result (no ``pass`` and no ``fail``)."""
+    """A WARN when no link of an active requirement carries an executed result.
+
+    An inactive requirement's executed link says nothing about the measured set."""
     if any(link.get("executed") in ("pass", "fail") for link in _links(manifest)):
         return None
     return (
