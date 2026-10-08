@@ -60,29 +60,94 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": null,
+          "finding": "external_code not_run template lacked `unavailable` and its marker rule. FIXED in 2128b5371.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "3f-bis REJECT paragraph lost the `--mode ship` qualifier. FIXED in 2128b5371.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "B1 replay-check treated self not_run as terminal. FIXED in 2b6704d99.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T09:26:59.714834+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T11:25:40.795123+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: a Stage-1 REJECT is held by the disposition, not by the carried reason code — the machine-readable code says delegated-to-orchestrator although 3f-bis ran Stage 1",
+          "suggestion": "ACCEPTED limit in the ADR: no reader groups by reason_code today; a `stage-1-rejected` code is a follow-up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+          "line": null,
+          "finding": "Claim under doubt: uv-run failures map to unavailable everywhere — shipwright-build code-review.md still named no code",
+          "suggestion": "FIXED in 2b6704d99.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: every doc names a reason code for a skipped row — SKILL.md Step 8 and iteration-reviews.md escalation ladder gave a disposition only",
+          "suggestion": "FIXED in 2b6704d99 (each blocker mapped to a code).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "Claim under doubt: record --force can repair a plan/external_code not_run row — the marker rule blocks a forced re-record for missing-keys / unavailable",
+          "suggestion": "ACCEPTED limit in the ADR; relaxing the marker rule is a follow-up.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T09:26:59.856710+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T11:25:40.925309+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -148,16 +213,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T09:26:59.590276+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T09:55:46.263701+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
