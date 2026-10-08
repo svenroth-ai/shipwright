@@ -61,6 +61,7 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "tests-only",                   # only tests changed
         "tooling-only",                 # developer / build tooling, no product behaviour
         "infra-only",                   # CI, deploy, dependency pins
+        "compliance-only",              # scanner config, SBOM, security policy
     }),
 })
 

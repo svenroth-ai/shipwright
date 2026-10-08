@@ -61,6 +61,11 @@ its two reds.
 
 **Release propagation:** a released (twice-red) unit releases its dependents with it; U12 documents only what merged.
 
+**After U6 merges:** every sibling that finalizes later records `spec_impact_reason_code` (closed `spec_impact_none`
+family) on any `spec_impact: none` event, bug fixes included, or its F5b/F7 write is refused
+(`spec_impact_none_requires_reason_code`). Rebase onto main and re-sync the plugin cache before finalizing: a stale
+cache still runs the old gate (F11 only WARNs on a missing code).
+
 ## 2. Unit specs
 
 ### U0 - Foundation
@@ -147,9 +152,14 @@ or stale evidence fails (test both).
 ### U6 - Requirement gate
 Bug iterates are not exempt; `spec_impact: none` needs a closed-vocab reason; `check_fr_existence` fails closed when
 specs are expected but parse to zero requirements; the spec-impact gate also runs at F5b. A `change_type` exemption is
-checked against the diff using a **project-aware path classification per change_type** (in this monorepo `tooling`
-and `infra` ARE `shared/scripts/**` and `scripts/**`; a global "no runtime code" rule would refuse every legitimate
-tooling change). Diff = merge-base to **working tree incl. untracked** (the event is written before the commit).
+checked against the diff using a **project-aware path classification per change_type** (in this monorepo `tooling`,
+`infra` and `compliance` cover the whole product tree - `plugins/**`, `shared/**`, `scripts/**`, `integration-tests/**`
+and the root config - not just `shared/scripts/**` and `scripts/**`; a global "no runtime code" rule would refuse every
+legitimate tooling change). **Operator decision 2026-10-08 (binding): the broad monorepo rule stays.** Replaying 167
+historical no-FR events, the narrow `shared/scripts/**` + `scripts/**` set refused 82 (49%), nearly all for
+`plugins/*/scripts/**`, so in this monorepo the diff check chiefly constrains `docs` (which never covers code or the
+runtime prompts); in a generic project it keeps runtime code outside every label. Diff = merge-base to **working
+tree incl. untracked** (the event is written before the commit).
 Cover mixed diffs, renames, unknown paths; test monorepo and WebUI shapes.
 
 ### U7 - Baseline freshness (narrowed)

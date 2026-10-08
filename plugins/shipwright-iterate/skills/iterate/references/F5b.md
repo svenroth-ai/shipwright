@@ -37,10 +37,14 @@ placeholder such as `"change_type": "{docs|…}"` is itself a rejection (a prese
   covers only those. Generic projects keep runtime code (`src/**`,
   `server/**`, …) outside every label; in the Shipwright monorepo
   `tooling`/`infra`/`compliance` also cover `plugins/**`, `shared/**`,
-  `scripts/**` (rules: `lib/change_type_paths.py`; no per-project
+  `scripts/**`, while `docs` never covers the runtime prompts (skills,
+  agents, `shared/prompts/**`, `shared/constitution.md`); under `src/**`,
+  `app/**`, `server/**`, `pages/**` a `docs`/`test`/`e2e`/`sbom` directory
+  name covers nothing (rules: `lib/change_type_paths.py`; no per-project
   override — a path no rule covers needs its FR linked). Refusals:
   `change_type_not_covered_by_diff` (names the paths) and
-  `change_type_diff_unavailable` (git present, no trunk ref; not a git
+  `change_type_diff_unavailable` (git present, no trunk ref or one sharing
+  no history with HEAD; not a git
   repo only warns).
 
 **Every intent answers the spec impact — fixes too.** A feature, change or
@@ -48,10 +52,16 @@ bug with no `affected_frs`/`new_frs` must set `spec_impact: "none"`, a
 one-line `spec_impact_justification` (or `none_reason`) **and**
 `spec_impact_reason_code` ∈ `{behavior-preserving,
 restores-specified-behavior, docs-only, tests-only, tooling-only,
-infra-only}` (closed vocabulary, `lib/reason_codes.py`). A fix that brings
-code back to what the spec already says uses `restores-specified-behavior`.
-**Every** recorded `spec_impact: "none"` carries both, with or without FRs
-alongside it (the justification: one line of text, max 280 chars).
+infra-only, compliance-only}` (closed vocabulary, `lib/reason_codes.py`);
+without it the event is refused with `spec_impact_none_requires_reason_code`.
+A fix that brings code back to what the spec already says uses
+`restores-specified-behavior`. **Every** recorded `spec_impact: "none"`
+carries both, with or without FRs alongside it (the justification: one line
+of text, max 280 chars). A `*-only` code next to a `change_type` must name the
+same label (`docs-only` with `docs`, ...;
+`spec_impact_reason_code_contradicts_change_type`). Leaving `intent` out does
+not skip the rule: F5b takes it from this run's iterate entry `type`, and an
+`intent` that contradicts the entry is refused (`spec_impact_intent_mismatch`).
 Specs that exist but parse to zero requirements refuse any declared FR id
 (`fr_gate_specs_unparsed`).
 

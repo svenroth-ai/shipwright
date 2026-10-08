@@ -1026,7 +1026,7 @@ def test_spec_impact_skipped_when_run_id_missing(tmp_path):
     assert result.severity == Severity.SKIPPED.value
 
 
-def test_spec_impact_skipped_for_bug_intent(tmp_path):
+def test_spec_impact_bug_without_event_skips_on_git_context_not_intent(tmp_path):
     """No event + not git: SKIPPED by git context, not by intent (U6: bugs answer too)."""
     proj = tmp_path / "p"
     _seed_entry_with_intent(proj, "r1", "bug")
@@ -1040,7 +1040,7 @@ def test_spec_impact_none_with_justification_passes(tmp_path):
     _seed_entry_with_intent(proj, "r1", "feature")
     _write_work_event(proj, "abc1234", intent="feature",
                       spec_impact="none",
-                      spec_impact_justification="behavior-preserving refactor")
+                      spec_impact_justification="behavior-preserving refactor", spec_impact_reason_code="behavior-preserving")
     result = check_spec_impact_recorded(proj, "r1", "abc1234")
     assert result.ok is True
 
@@ -1236,7 +1236,7 @@ def test_spec_impact_multi_commit_with_spec_impact_none_still_passes(tmp_path):
     _seed_entry_with_intent(proj, "iterate-r1", "change")
     _write_work_event(
         proj, f6, intent="change", spec_impact="none",
-        spec_impact_justification="behavior-preserving refactor",
+        spec_impact_justification="behavior-preserving refactor", spec_impact_reason_code="behavior-preserving",
         adr_id="iterate-r1",
     )
     result = check_spec_impact_recorded(proj, "iterate-r1", head)

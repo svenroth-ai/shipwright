@@ -73,9 +73,6 @@ from lib.fr_gates import (  # noqa: E402,F401 — re-exported
     fr_or_change_type_gate_error as _fr_or_change_type_gate_error,
     run_fr_gates,
 )
-from lib.spec_impact_gate import (  # noqa: E402,F401 — re-exported; run_fr_gates runs it
-    spec_impact_gate_error as _spec_impact_gate_error,
-)
 
 SCHEMA_VERSION = 1
 
@@ -605,7 +602,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="One-line reason a behavior-affecting FR event lacks --tests-total.")
     p.add_argument("--spec-updated", help="Path to updated spec file")
     p.add_argument("--spec-impact", choices=["add", "modify", "remove", "none"],
-                   help="Iterate spec-impact classification (feature/change): "
+                   help="Iterate spec-impact classification (feature/change/bug): "
                         "add=new FR appended, modify=existing FR changed, "
                         "remove=FR retired, none=no spec change (then "
                         "--spec-impact-justification is required).")

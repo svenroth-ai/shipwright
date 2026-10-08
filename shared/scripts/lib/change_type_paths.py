@@ -17,7 +17,18 @@ real project needs one (architecture review of U6).
 
 **Every label covers** documentation, tests (not product behaviour; a tooling
 change that updates its doc and its tests is still a tooling change) and
-Shipwright's own finalization records. ``docs`` covers only those.
+Shipwright's own finalization records. ``docs`` covers only those. Operator
+decision 2026-10-08: the broad monorepo rule stays (a replay of 167 historical
+no-FR events refused 82 under ``shared/scripts/**`` + ``scripts/**`` alone), so
+in this monorepo the diff check chiefly constrains ``docs``.
+
+**Two carve-outs, because Markdown can be code.** In the monorepo the runtime
+prompts (skills, agents, ``shared/prompts/**``, ``shared/constitution.md``) are
+what the product executes, so ``docs`` does not cover them. Under a runtime root
+(``src/**``, ``app/**``, ``server/**``, ``pages/**``, ``**/src/**``) a directory
+name proves nothing - ``src/app/docs/page.tsx`` is a route - so there the
+``**/docs/**``, ``**/test(s)/**``, ``**/e2e/**`` and ``**/sbom*`` globs do not
+apply; non-executable extensions and real test file names still do.
 
 Patterns are repo-relative POSIX globs: ``**`` spans directories, ``*`` and
 ``?`` stay inside one segment, and a pattern without ``**/`` is anchored at the
@@ -33,7 +44,7 @@ from pathlib import Path
 from lib.fr_classification import CHANGE_TYPE_VALUES
 
 __all__ = [
-    "SHAPE_GENERIC", "SHAPE_SHIPWRIGHT_MONOREPO",
+    "SHAPE_GENERIC", "SHAPE_MARKERS", "SHAPE_SHIPWRIGHT_MONOREPO",
     "allowed_patterns", "detect_shape", "matches", "unclassified_paths",
 ]
 
@@ -78,6 +89,14 @@ _COMPLIANCE = (
     ".github/workflows/**", ".github/codeql/**", "THIRD_PARTY*", "**/sbom*",
     "shipwright_*.json", "shipwright_*.yaml", "audit_config.json",
 )
+#: Runtime trees: a path under one is covered only by file-name evidence.
+_RUNTIME_ROOTS = ("src/**", "app/**", "server/**", "pages/**", "**/src/**")
+#: Directory-name globs that say nothing about a file under a runtime root.
+_DIRECTORY_GLOBS = frozenset({"**/docs/**", "**/tests/**", "**/test/**", "**/e2e/**", "**/sbom*"})
+#: Monorepo Markdown the product executes as prompts: never ``docs``.
+_RUNTIME_PROMPTS = (
+    "plugins/**/skills/**", "plugins/**/agents/**", "shared/prompts/**", "shared/constitution.md",
+)
 #: In the Shipwright monorepo the plugins and shared scripts ARE the tooling.
 _MONOREPO_PRODUCT = (
     "plugins/**", "shared/**", "scripts/**", "integration-tests/**",
@@ -101,11 +120,15 @@ _MONOREPO_EXTRA = {
 }
 
 
+#: What marks a Shipwright-monorepo-shaped tree: (path, must be a directory).
+SHAPE_MARKERS = (("shared/scripts", True), (".claude-plugin/marketplace.json", False))
+
+
 def detect_shape(project_root) -> str:
-    """``shipwright-monorepo`` for a repo shaped like this one, else ``generic``."""
+    """Shape of the tree ON DISK. :mod:`lib.change_type_diff` reads the fork point instead."""
     root = Path(project_root)
     try:
-        if (root / "shared" / "scripts").is_dir() and (root / ".claude-plugin" / "marketplace.json").is_file():
+        if all((root / rel).is_dir() if is_dir else (root / rel).is_file() for rel, is_dir in SHAPE_MARKERS):
             return SHAPE_SHIPWRIGHT_MONOREPO
     except OSError:
         pass
@@ -147,6 +170,15 @@ def matches(path: str, pattern: str) -> bool:
     return _compile(pattern).match(path) is not None
 
 
+def _covered(path: str, change_type: str, shape: str, patterns) -> bool:
+    if shape == SHAPE_SHIPWRIGHT_MONOREPO and change_type == _DOCS_CT and any(
+            matches(path, p) for p in _RUNTIME_PROMPTS):
+        return False
+    if any(matches(path, root) for root in _RUNTIME_ROOTS):
+        patterns = [p for p in patterns if p not in _DIRECTORY_GLOBS]
+    return any(matches(path, p) for p in patterns)
+
+
 def unclassified_paths(paths, change_type: str, shape: str) -> list[str]:
     """The paths ``change_type`` does NOT cover, sorted and de-duplicated."""
     patterns = allowed_patterns(change_type, shape)
@@ -155,6 +187,6 @@ def unclassified_paths(paths, change_type: str, shape: str) -> list[str]:
         path = str(raw).replace("\\", "/").strip()
         while path.startswith("./"):
             path = path[2:]
-        if path and not any(matches(path, p) for p in patterns):
+        if path and not _covered(path, change_type, shape, patterns):
             out.add(path)
     return sorted(out)

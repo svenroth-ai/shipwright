@@ -4,9 +4,9 @@ Campaign `2026-10-07-finalization-claims-hardening`, unit U6. FR-01.11 (AC03, AC
 
 ## The rules
 
-1. **Spec impact, every intent.** A feature, change or bug names its FRs or records `spec_impact: none`. Every recorded `none`, with or without FRs, carries a one-line justification (`spec_impact_justification`, else `none_reason`; one line of text, max 280 chars, same validator as `none_reason`) and a `spec_impact_reason_code` from the closed `spec_impact_none` family: `behavior-preserving`, `restores-specified-behavior`, `docs-only`, `tests-only`, `tooling-only`, `infra-only`. Intent-less events are not asked to classify.
+1. **Spec impact, every intent.** A feature, change or bug names its FRs or records `spec_impact: none`. Every recorded `none`, with or without FRs, carries a one-line justification (`spec_impact_justification`, else `none_reason`; one line of text, max 280 chars, same validator as `none_reason`) and a `spec_impact_reason_code` from the closed `spec_impact_none` family: `behavior-preserving`, `restores-specified-behavior`, `docs-only`, `tests-only`, `tooling-only`, `infra-only`, `compliance-only`. A `*-only` code next to a no-FR `change_type` must name the same label (`spec_impact_reason_code_contradicts_change_type`); `tests-only`, `behavior-preserving` and `restores-specified-behavior` name none. F5b stamps `intent` from the run's iterate entry `type` when the extras omit it and refuses a contradiction (`spec_impact_intent_mismatch`). Intent-less events are not asked to classify.
 2. **FR existence.** Specs present but zero requirements parsed: a declared id is refused (`fr_gate_specs_unparsed`). A collector crash on present specs reads as "found, nothing parsed", not "no specs". No planning specs at all still allows.
-3. **No-FR label vs the diff.** Only when no FR is named. Diff = narrowest merge-base among remote trunk names (`origin/HEAD`, `origin/main`, `origin/master`), local `main`/`master` only when no remote name resolves, to the working tree, with untracked files and `-M` (both sides of a rename and every deletion judged). Every label covers docs, tests and Shipwright's records. `docs` covers only those (not `.mdx`, which is executable). Generic projects keep runtime code outside every label. In the Shipwright monorepo (`shared/scripts` + `.claude-plugin/marketplace.json`), `tooling`/`infra`/`compliance` also cover `plugins/**`, `shared/**`, `scripts/**`. Not a git repo: WARN and allow. git present but no trunk, or git fails: refused (`change_type_diff_unavailable`).
+3. **No-FR label vs the diff.** Only when no FR is named. Diff = narrowest merge-base among remote trunk names (`origin/HEAD`, `origin/main`, `origin/master`), local `main`/`master` only when no remote name resolves, to the working tree, with untracked files and `-M` (both sides of a rename and every deletion judged). Every label covers docs, tests and Shipwright's records. `docs` covers only those (not `.mdx`, which is executable). Generic projects keep runtime code outside every label. In the Shipwright monorepo (`shared/scripts` + `.claude-plugin/marketplace.json`, read from the fork-point tree, so the diff cannot widen its own shape), `tooling`/`infra`/`compliance` also cover `plugins/**`, `shared/**`, `scripts/**` (operator decision 2026-10-08: the broad rule stays; the diff check chiefly constrains `docs` here), and `docs` never covers the runtime prompts (skills, agents, `shared/prompts/**`, `shared/constitution.md`). Under a runtime root (`src/**`, `app/**`, `server/**`, `pages/**`, `**/src/**`) the `**/docs/**`, `**/test(s)/**`, `**/e2e/**`, `**/sbom*` globs do not apply. `ls-files --full-name` keeps untracked paths of a project inside a larger repo. Not a git repo (and no `.git` at or above the root when the git binary is missing): WARN and allow. git present but no trunk, a trunk sharing no history with HEAD, or git failing: refused (`change_type_diff_unavailable`).
 
 ## Accepted limits
 
@@ -14,6 +14,10 @@ Campaign `2026-10-07-finalization-claims-hardening`, unit U6. FR-01.11 (AC03, AC
 2. Old events are not re-gated (forward-only). Sibling units that finalize after this merges must add `spec_impact_reason_code` to a `spec_impact: none` event.
 3. There is no per-project override. A consumer layout the built-in rules do not cover must link its FR (architecture review).
 4. Markdown under a runtime tree (e.g. a content collection rendered as pages) counts as docs.
+5. The gates run when the event is written. Edits after F5b, and a re-run of F5b (`finalize_iterate._record_event` returns the run's existing event early, idempotent per `run_id`), are not re-gated.
+6. A stale plugin cache runs the old write-time rules; F11 `check_spec_impact_recorded` WARNs on a `none` with no closed code, and fails one with no one-line justification.
+7. Campaign siblings that finalize after U6 must pass `spec_impact_reason_code` (BRIEF sequencing note).
+8. Stacked strategy: the fork point is the trunk, so a predecessor unit's committed paths count against this unit's label. It fails closed and the refusal names the paths; resolving the stacked parent is not cheap (it is not a trunk name).
 
 ## Architecture Review
 
@@ -64,3 +68,19 @@ Boundaries: the event JSON (`spec_impact_reason_code`, producer CLI + F5b, consu
 | GLM low | `rev-list` failure read as "no ordering" | accepted-and-fixed: a non-zero `rev-list` raises `DiffUnavailable` with git's stderr |
 | GLM low | Nested `packages/*/docs/` not covered | accepted-and-fixed: `**/docs/**` added; test |
 | GLM low | Collector-crash test should pin the positive path | accepted-and-fixed: asserts the parsed id set before patching |
+
+## PR Review Findings (PR #845)
+
+| Finding | Disposition |
+|---|---|
+| `affected_frs: [""]` / a string answered the spec impact | accepted-and-fixed: `is_non_empty_fr_list`; parametrized test |
+| Omitting `intent` at F5b skipped the classify rule | accepted-and-fixed: stamped from the iterate entry; mismatch refused |
+| Orphaned `origin/main` fell through to a local `main` at HEAD | accepted-and-fixed: a resolving trunk without merge-base refuses |
+| Missing git binary read as "not a repo" inside a repo | accepted-and-fixed: `.git` at or above the root refuses |
+| `ls-files` paths dropped for a project in a subdirectory | accepted-and-fixed: `--full-name` (also in `requirement_impact_git`) |
+| Runtime prompts and runtime-root files passed as `docs`/`compliance` | accepted-and-fixed: carve-outs above; tests |
+| A `*-only` code could contradict `change_type` | accepted-and-fixed: consistency rule; `compliance-only` added |
+| Shape read from the working tree | accepted-and-fixed: fork-point tree |
+| F11 compared intent case-sensitively, accepted multi-line text | accepted-and-fixed: lowercase, `is_valid_none_reason`, WARN on no code |
+| Monorepo labels broader than the brief | rejected-with-reason: operator decision 2026-10-08, BRIEF amended (82/167 replay) |
+| Stacked-branch base | accepted (documented): limit 8 |
