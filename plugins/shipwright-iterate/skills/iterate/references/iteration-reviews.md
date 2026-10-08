@@ -657,7 +657,11 @@ written before this rule carries codeless legacy rows and would fail if it were 
   Any other closed code is accepted too, when a more specific one applies.
 - **Small and up:** each type names a code that fits IT — `trivial-auto` is refused. The gate checks
   that a code is present and is not the trivial default; which code fits is the reviewable claim in
-  the diff (no type-to-code matrix is re-encoded in the verifier). The usual ones:
+  the diff — codes are context-free by decision (no type-to-code matrix in the verifier), so
+  `delegated-to-orchestrator` / `no-spawn-site` describe the campaign-runner context only and are
+  never to be read as approval. Likewise `self`'s "evidence" is attribution (`recorded_by` /
+  `provider`), not proof the Self-Review was done. `record --force` rebuilds a row, so a forced
+  rewrite of a skipped row must pass its `--reason-code` again. The usual ones:
   `complexity-below-threshold` (`plan`, `plan_internal`, `architecture_internal` below medium),
   `diff-below-threshold` (`code`/`spec`/`doubt`/`external_code` with no risk flag and a small diff),
   `user-opt-out` / `config-disabled` / `missing-keys` (an external pass the operator, config or keys

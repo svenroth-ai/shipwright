@@ -26,11 +26,24 @@ as if it were a decision.
 The schema already refuses a code outside the vocabulary when the record is
 read, so this module only has to ask whether one is present and fits the
 complexity.
+
+What this does NOT prove, stated so nobody reads more into a green result:
+
+- ``self``'s "evidence" is ATTRIBUTION — a ``recorded_by`` adapter or a
+  ``provider`` naming who wrote the row — not proof that the Self-Review
+  happened or was any good. It stops a bare ``--status completed``; it cannot
+  stop an agent that names the adapter without doing the work.
+- Reason codes are context-free BY DECISION: the gate checks that a code is
+  present, is in the vocabulary and is not ``trivial-auto`` above trivial, and
+  nothing more — there is no type-to-code (or context-to-code) matrix. In
+  particular ``no-spawn-site`` and ``delegated-to-orchestrator`` describe the
+  campaign-runner context (a runner with no Agent tool); outside it they are an
+  unverified claim, and in no context are they an approval of the change.
 """
 
 from __future__ import annotations
 
-from lib.reason_codes import TRIVIAL_AUTO as TRIVIAL_DEFAULT_CODE  # noqa: E402
+from lib.reason_codes import TRIVIAL_AUTO
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
     STATUS_COMPLETED,
@@ -42,7 +55,7 @@ from lib.review_record import (  # noqa: E402
 from .common import CheckResult
 from .review_record_floor import CHECK_NAME, carries_evidence
 
-__all__ = ["TRIVIAL_DEFAULT_CODE", "reason_codes_closed", "self_review_recorded"]
+__all__ = ["reason_codes_closed", "self_review_recorded"]
 
 _CLOSED = frozenset({STATUS_NOT_RUN, STATUS_NOT_APPLICABLE})
 _TOOL = "shared/scripts/tools/record_review_pass.py"
@@ -87,7 +100,7 @@ def reason_codes_closed(record: dict, complexity: str, run_id: str) -> CheckResu
         code = entry.get("reason_code")
         if code is None:
             missing.append(review_type)
-        elif code == TRIVIAL_DEFAULT_CODE and not trivial:
+        elif code == TRIVIAL_AUTO and not trivial:
             misplaced.append(review_type)
     if not missing and not misplaced:
         return None
@@ -99,21 +112,21 @@ def reason_codes_closed(record: dict, complexity: str, run_id: str) -> CheckResu
             CHECK_NAME, False,
             f"{len(missing)} review type(s) closed without a reason_code: "
             f"{', '.join(missing)} — a trivial iterate closes every pass it did not "
-            f"run with the ONE default code {TRIVIAL_DEFAULT_CODE!r}, not free text. "
+            f"run with the ONE default code {TRIVIAL_AUTO!r}, not free text. "
             f"For the next run: `uv run {_TOOL} close-missing --run-id {run_id} "
-            f"--status not_applicable --reason-code {TRIVIAL_DEFAULT_CODE}` right "
+            f"--status not_applicable --reason-code {TRIVIAL_AUTO}` right "
             f"after `self` is recorded; to repair these rows: {fix_one}",
         )
     parts = []
     if missing:
         parts.append(f"closed without a reason_code: {', '.join(missing)}")
     if misplaced:
-        parts.append(f"closed {TRIVIAL_DEFAULT_CODE!r} at {complexity}: {', '.join(misplaced)}")
+        parts.append(f"closed {TRIVIAL_AUTO!r} at {complexity}: {', '.join(misplaced)}")
     return CheckResult(
         CHECK_NAME, False,
         f"from `small` up every pass that did not run names its OWN closed-vocabulary "
         f"code (lib/reason_codes.py, review_not_run) — {'; '.join(parts)}. "
-        f"{TRIVIAL_DEFAULT_CODE!r} is the trivial default only. Re-record each row "
+        f"{TRIVIAL_AUTO!r} is the trivial default only. Re-record each row "
         f"with the code that applies: {fix_one} (the codes and when each applies: "
         "iteration-reviews.md → \"Recording each review pass\")",
     )

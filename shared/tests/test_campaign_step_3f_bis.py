@@ -832,8 +832,8 @@ def test_step_3f_bis_record_calls_are_unit_scoped_and_checked():
         "--review-type spec --status completed",
         "--review-type code --status completed",
         "--review-type doubt --status completed",
-        "--review-type doubt --status not_applicable",
-        "--review-type spec --status not_run",
+        "--review-type doubt --status not_applicable --reason-code diff-below-threshold",
+        "--review-type spec --status not_run --force \\ --recorded-by spec-reviewer --reason-code delegated-to-orchestrator",
     )
     positions = []
     for marker in markers:

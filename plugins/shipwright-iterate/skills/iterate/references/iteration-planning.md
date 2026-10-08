@@ -620,8 +620,11 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --provider "{openrouter | null}" \
      [--from external-review-json --payload-file \
        "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"] \
-     [--disposition "{why it did not run — required for not_run}"]
+     [--reason-code "{missing-keys | user-opt-out | config-disabled}"] \
+     [--disposition "{the rule that applies — optional beside the code}"]
    ```
+   `not_run` REQUIRES the `--reason-code` (Branch B → `missing-keys`, Option 2 →
+   `user-opt-out`, Branch C → `config-disabled`); F11 refuses a codeless row.
    This writes the run's review record AND dual-writes the legacy
    `external_review_state.json` marker — once under the run-scoped planning dir
    `.shipwright/planning/iterate/{run_id}/` (what the Mission view reads) and

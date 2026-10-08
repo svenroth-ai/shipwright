@@ -15,6 +15,7 @@ trivial, where ``n/a`` keeps needing a justification.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from lib.iterate_entry import find_entry_by_run_id
@@ -24,11 +25,7 @@ from ._entry_details import _no_entry_detail, _wrong_shape_detail
 from ._iterate_latest import read_iterate_latest, stale_detail
 from .common import CheckResult, Severity
 
-__all__ = [
-    "TRIVIAL_DEFAULT_CODE",
-    "UNTESTABLE_REASON_CODES",
-    "check_test_completeness_ledger",
-]
+__all__ = ["UNTESTABLE_REASON_CODES", "check_test_completeness_ledger"]
 
 #: The closed set of *structural*, falsifiable reasons a behavior may be left
 #: UNTESTABLE. "Could-test-but-didn't" is NOT in this set — that escape hatch is
@@ -36,18 +33,15 @@ __all__ = [
 #: (reverse-drift test: ``shared/tests/test_untestable_vocab_doc_sync.py``).
 UNTESTABLE_REASON_CODES: frozenset[str] = REASON_CODES["untestable"]
 
-#: The one default row a trivial run closes the ledger with (and every review
-#: type it did not run). Taken from the vocabulary, never re-spelled.
-TRIVIAL_DEFAULT_CODE = TRIVIAL_AUTO
-
-# Full enumeration is owed at these complexities; trivial owes the recorded row.
-_COMPLETENESS_ENFORCED_COMPLEXITIES: frozenset[str] = frozenset({"small", "medium", "large"})
+# The four values F5c validates. Small+ owes full enumeration; trivial owes the recorded row.
+_KNOWN_COMPLEXITIES: frozenset[str] = frozenset({"trivial", "small", "medium", "large"})
 # The only two honest dispositions for a behavior. Any other value (e.g.
 # "deferred", "untested", "acceptable") IS the escape hatch and fails.
 _COMPLETENESS_VALID_DISPOSITIONS: frozenset[str] = frozenset({"tested", "untestable"})
 
 _NAME = "test completeness ledger"
-_TRIVIAL_ROW = '"test_completeness": {"status": "n/a", "reason_code": "trivial-auto"}'
+#: The one default row a trivial run closes the ledger with, spelled from the vocabulary.
+_TRIVIAL_ROW = '"test_completeness": ' + json.dumps({"status": "n/a", "reason_code": TRIVIAL_AUTO})
 
 
 def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResult:
@@ -78,7 +72,7 @@ def check_test_completeness_ledger(project_root: Path, run_id: str) -> CheckResu
     if not entry:
         return CheckResult(_NAME, False, _no_entry_detail(run_id))
     complexity = str(entry.get("complexity", "")).lower()
-    if complexity != "trivial" and complexity not in _COMPLETENESS_ENFORCED_COMPLEXITIES:
+    if complexity not in _KNOWN_COMPLEXITIES:
         # Unreachable for a real entry (F5c validates the four values); kept for
         # hand-built legacy fixtures, exactly as before.
         return CheckResult(
@@ -137,21 +131,21 @@ def _not_applicable(block: dict, complexity: str) -> CheckResult:
         )
     code = block.get("reason_code")
     if code is not None:
-        if code != TRIVIAL_DEFAULT_CODE:
+        if code != TRIVIAL_AUTO:
             return CheckResult(
                 _NAME, False,
                 f"test_completeness.reason_code={code!r} — the only code an n/a "
-                f"ledger takes is {TRIVIAL_DEFAULT_CODE!r} (trivial's default row)",
+                f"ledger takes is {TRIVIAL_AUTO!r} (trivial's default row)",
             )
         if complexity != "trivial":
             return CheckResult(
                 _NAME, False,
-                f"reason_code {TRIVIAL_DEFAULT_CODE!r} closes the ledger of a TRIVIAL "
+                f"reason_code {TRIVIAL_AUTO!r} closes the ledger of a TRIVIAL "
                 f"iterate only — a {complexity} run's n/a names why in a "
                 "`justification` (e.g. 'markdown-only edit; no executable behavior "
                 "changed'), or enumerates its behaviors",
             )
-        return CheckResult(_NAME, True, f"n/a, trivial default row recorded ({TRIVIAL_DEFAULT_CODE})")
+        return CheckResult(_NAME, True, f"n/a, trivial default row recorded ({TRIVIAL_AUTO})")
     justification = str(block.get("justification", "")).strip()
     if not justification:
         return CheckResult(

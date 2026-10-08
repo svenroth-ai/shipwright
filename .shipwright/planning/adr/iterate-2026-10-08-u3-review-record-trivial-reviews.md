@@ -47,3 +47,9 @@ External, `--mode architecture` over `architecture_brief.md`: GLM **approve**, G
 ## Confidence Calibration
 
 Boundaries: the F5c entry's `test_completeness` block and the review record's `reason_code`. Probes: (1) a trivial F5c entry carrying the default row written through the real `append_iterate_entry.py`, read back by the ledger gate - passes, not skipped; (2) `record_review_pass.py` self + `close-missing --reason-code trivial-auto` as real subprocesses read by the gate - passes, and the same without `self` fails at all four complexities; (3) a whitespace-padded or non-trivial ledger code - refused with a message naming the one valid code. 3 probes, 0 findings: asymptote reached. Not probed: the webui consumer (reason_code is an additive row key since U0).
+
+## Tightening and migration
+
+- **Intended tightening of the ledger gate:** `_ledger_completeness` now refuses ANY `reason_code` other than `trivial-auto` on an `n/a` ledger (and `trivial-auto` above trivial). Before this change an `n/a` ledger's code was not read at all; an `n/a` above trivial keeps its free-text `justification` route.
+- **In-flight runs:** a run whose review record was written before this merge carries codeless `not_run` / `not_applicable` rows and fails F11. Repair each row with `record_review_pass.py record --review-type <type> --status <not_run|not_applicable> --reason-code <code> --force` (`--force` rebuilds the row, so the code must be passed explicitly). Sequence the plugin-cache sync (`scripts/update-marketplace.sh`) after the in-flight campaign units have passed F11, so their runtime gate does not change under them mid-run.
+- **Honesty limits:** `self`'s evidence is attribution (`recorded_by` / `provider`), not proof; reason codes are context-free by decision (no type-to-code matrix), and `no-spawn-site` / `delegated-to-orchestrator` describe the campaign-runner context and are not an approval.

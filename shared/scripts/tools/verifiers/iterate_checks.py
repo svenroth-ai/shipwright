@@ -46,8 +46,6 @@ from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402 
 from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 # The Test Completeness gate lives in its own module (size cap); re-exported here.
 from ._ledger_completeness import (  # noqa: E402, F401 — re-exported surface
-    _COMPLETENESS_ENFORCED_COMPLEXITIES,
-    _COMPLETENESS_VALID_DISPOSITIONS,
     UNTESTABLE_REASON_CODES,
     check_test_completeness_ledger,
 )

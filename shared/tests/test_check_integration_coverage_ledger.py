@@ -60,7 +60,7 @@ def _commit_change(wt: Path, path: str, msg: str) -> str:
 def test_the_cheap_remedy_actually_works_below_medium(complexity, git_origin_repo, make_worktree):
     """The remedy text promises that recording the behavior in THIS run's F5c entry
     clears the gate at any tier — including `trivial`, where the Test Completeness
-    Ledger is otherwise auto-`n/a`. Pinned because an earlier draft of that text
+    Ledger is otherwise the one `n/a`/`trivial-auto` row. Pinned because an earlier draft of that text
     claimed escalation to `medium` was the ONLY route, which would have sent a
     trivial run to buy a spec, mini-plan, approval gate and external plan review it
     did not need. If this ever stops holding, the shipped remedy becomes a lie and
