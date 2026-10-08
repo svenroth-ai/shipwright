@@ -134,9 +134,24 @@ the ONLY review that runs, so it is the only thing the Review artifact can show.
 - Change touches **security-sensitive files** (auth, middleware, RLS policies, migrations)
 - Complexity = **medium+** (always)
 
+**How the 100 lines are counted** (one definition, `shared/scripts/lib/review_diff_threshold.py`):
+added + removed lines against the merge-base with the trunk (`git diff --numstat
+--no-renames <merge-base>`, untracked files included before the commit), without
+`.shipwright/`, `CHANGELOG-unreleased.d/`, `shipwright_events.jsonl` and
+`shipwright_test_results.json`. Strictly greater than 100: exactly 100 does not
+trigger. Not `git diff HEAD~1 | wc -l`, which counts headers and context lines
+and sees only the last commit. **Enforced at small:** F11's `check_cascade_trigger`
+re-measures the branch and re-reads the risk flags. The `code` row must then be
+`completed`, or `not_run` with a `--reason-code` from the closed `review_not_run`
+set that this gate accepts: `unavailable`, `delegated-to-orchestrator` or
+`user-opt-out`. A free-text disposition alone fails, and so does every other
+code. A diff F11 cannot measure (no trustworthy trunk base, or a trunk tip no
+remote trunk ref contains) or an unreadable risk-flag source counts as triggered,
+never as quiet. A missing complexity in the F5c entry is in scope, not a skip.
+
 ### When Self-Review is Sufficient
 - Trivial/small complexity with no risk flags
-- Diff under 100 lines
+- Diff of at most 100 changed lines
 - No security-sensitive files touched
 
 ### Invocation
@@ -198,14 +213,14 @@ internal reviewer, evaluated independently:
 - complexity = medium+
 
 A trivial/small iterate that meets **none** of the three — no risk flag, no
-security-sensitive file, diff under 100 lines — does NOT run the cascade, even
+security-sensitive file, diff of at most 100 changed lines — does NOT run the cascade, even
 if API keys are present. Self-review is the only review for those.
 
 Note that this is an exemption for *quiet* small runs, not for small runs as
 such: a small iterate that touches auth or ships a 200-line diff satisfies a
 threshold above and the cascade **does** fire. That mirrors the internal
 reviewer's own rule ("When Self-Review is Sufficient" — small **and** no risk
-flags **and** under 100 lines), which is what makes the two routes genuinely
+flags **and** at most 100 changed lines), which is what makes the two routes genuinely
 symmetric rather than merely both present.
 
 **It is NOT conditional on the internal `code-reviewer` having fired.** It used
@@ -703,6 +718,8 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 … --review-type spec --status not_run --reason-code delegated-to-orchestrator \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
 
+# `--reason-code` is load-bearing at small: F11's check_cascade_trigger refuses a
+# free-text-only `code` row when a risk flag is set or the diff is > 100 lines.
 … --review-type code --status not_run --reason-code delegated-to-orchestrator \
   --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 

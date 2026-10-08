@@ -151,11 +151,11 @@ Cascade".
   `touches_rls`, `touches_migrations`, `touches_billing`,
   `touches_shared_infra`, `touches_public_api`, `touches_build`,
   `cross_split`), OR
-- Diff size > 100 lines (`git -C "{project_root}" diff HEAD~1 | wc -l`).
+- Diff > 100 changed lines = Step 3.4's `diff_loc`: added+removed vs the merge-base, working tree + untracked, finalization records excluded (`shared/scripts/lib/review_diff_threshold.py`).
 
-**Skip** when none of the above hold. Trivial/small + no risk flag +
-diff < 100 LOC may skip the cascade. Self-Review remains the only
-review for those.
+**Skip** when none hold; exactly 100 lines does not trigger. At small, F11's
+`check_cascade_trigger` re-measures the branch: record `code` `not_run` with
+`--reason-code delegated-to-orchestrator` (Step 3.7.3). Self-Review stays the only review of a quiet run.
 
 **Procedure** when triggered:
 

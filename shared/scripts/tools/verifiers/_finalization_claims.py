@@ -33,6 +33,7 @@ import sys
 from pathlib import Path
 from typing import Callable
 
+from .cascade_trigger import check_cascade_trigger
 from .common import CheckResult
 from .exemption_record_check import check_exemption_record
 from .tag_binding_gate import check_test_tag_binding
@@ -43,6 +44,7 @@ __all__ = ["CLAIM_CHECKS", "run_claim_checks"]
 CLAIM_CHECKS: list[Callable[[Path, str, str], CheckResult]] = [
     check_exemption_record,
     check_test_tag_binding,
+    check_cascade_trigger,
 ]
 
 

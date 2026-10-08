@@ -1,0 +1,362 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u4-cascade-trigger-100",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T09:37:54.288913+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "numstat_changed_lines` \"raises\" on rename records. Renames are routine in refactors (and `git diff` reports them by default unless `--no-renames`), so a legitimate merge-base diff containing a rename will make the gate crash rather than evaluate — and per item 3, an exception in a claim check likely fails the whole verify run, blocking unrelated claims.",
+          "suggestion": "Count a rename as its added/removed lines from the numstat output (`git diff -M` already reports added/removed for renamed files), or force `--no-renames` in the diff command so renames degrade to delete+add, which is countable. Only raise on genuinely unparseable rows.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "is_counted_path` excludes finalization records by name, but only some are listed (`shipwright_events.jsonl`, `shipwright_test_results.json`). If verify_local or the runner writes other artifacts before the gate runs (e.g. `risk_recheck.json`, plan files, log files), the count can creep over 100 spuriously, triggering the cascade on bookkeeping noise.",
+          "suggestion": "Confirm the write-order claim (\"finalization records written after the trigger is decided\") by checking when the merge-base diff is snapshotted vs. when those files are committed; if any excluded-class artifact can appear in the diff, exclude the full set (or count only tracked-at-plan-time paths).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Unmeasurable diff with no flag fails closed\" is a behavior change for existing in-flight sessions: a repo where the merge base can't be resolved (shallow clone in CI, detached HEAD, no common ancestor) previously passed `small` iterates and will now hard-fail. This can break currently-green CI on legacy sessions/branches.",
+          "suggestion": "Scope the fail-closed to new sessions (e.g., gate only runs when the run metadata declares the U4 contract), or verify `_branch_base_commit` handles shallow clones and provide a documented fallback (commit-count heuristic) with an explicit reason code in the failure message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The spec says the doc definition is `git diff HEAD~1 | wc -l` but the plan implements \"numstat added+removed vs merge-base\" — a different definition (no context lines, different base). The plan acknowledges the discrepancy and redefines, which is fine, but the doc update in item 4 must be the authoritative rewrite, and any other doc/site stating `wc -l` needs a sweep (grep for `wc -l` / `HEAD~1` across `.shipwright/`).",
+          "suggestion": "Add an explicit step: grep the repo for the old definition and update all mentions in the same change, so the \"defined once\" claim holds.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The bridge module registered \"before exec\" with \"no local fallback\" means `diff_risk_recheck.py` hard-depends on the shared file existing at a known relative path. If the plugin repo is used standalone (checked out without `shared/`), existing risk-recheck functionality breaks.",
+          "suggestion": "Verify the plugin is never run outside the monorepo layout, or keep a guarded import error message pointing at the packaging fix (ADR-044/045 follow-up) rather than an opaque ImportError at collection time.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Trigger inputs union risk flags from the session plan, `risk_recheck.json`, and recomputed `cross_component`/CI paths. Contradictions (plan says flagged, recheck cleared it) are unhandled — does the union win, or does the later recheck clear?",
+          "suggestion": "State the precedence explicitly (probably: recheck supersedes plan for the same flag; recomputed diff facts always count) and add the contradicting-flags case to the gate tests alongside the contradicting reason codes already listed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "review_not_run` reason codes are a closed vocabulary checked by string membership; `diff-below-threshold` is a self-attested reason. A session that didn't compute the diff can claim it. The recompute-from-diff in item 3 covers `cross_component`/CI but apparently not the diff-size reason itself.",
+          "suggestion": "When reason_code is `diff-below-threshold`, have the gate verify the recomputed count is actually ≤ 100 rather than trusting the code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The gate accepts `not_applicable`, but the supplied U4 contract permits only `completed` or `not_run` with a closed-vocabulary code when triggered. This expands the permitted outcomes.",
+          "suggestion": "Reject `not_applicable` for triggered standalone `small` runs. Add a regression test showing that a valid reason code does not make that status acceptable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Excluding all of `.shipwright/` because finalization records are generated there also excludes planning inputs and any other substantive changes in that directory. Applying this filter to `diff_change_set.py` changes existing diff measurement beyond the new gate.",
+          "suggestion": "Exclude only the specific generated finalization artifacts, or establish that the broader exclusion is explicitly required by the authoritative contract. Test that substantive `.shipwright/` changes remain counted and check existing consumers of `diff_change_set.py`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Unmeasurable diff with no flag fails closed” covers unavailable diff data, but leaves missing or malformed risk inputs unspecified. If those inputs become an empty flag set, a measurable diff of 100 lines or fewer can pass despite an unknown risk state.",
+          "suggestion": "Distinguish valid empty flags from unavailable or invalid records. Define which artifacts are required for standalone versus delegated runs, and fail when a required risk source cannot be evaluated. Test missing, malformed, and mismatched-run records.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Rejecting rename records makes normal renamed-and-edited files an unsupported input. Since Git can detect renames automatically, this can block otherwise valid finalization.",
+          "suggestion": "Specify a consistent Git invocation for both consumers: either disable rename detection and count additions plus deletions, or parse rename records safely using NUL-delimited output. Test a renamed file with edits across the threshold.  The shared counting implementation and separate U0 claim check are sensible and proportional. Revise the permitted statuses and input/counting rules before implementation so the gate enforces the supplied contract consistently.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-08T09:37:54.437538+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `numstat_changed_lines` \"raises\" on rename records. Renames are routine in refactors (and `git diff` reports them by default unless `--no-renames`), so a legitimate merge-base diff containing a rename will make the gate crash rather than evaluate — and per item 3, an exception in a claim check likely fails the whole verify run, blocking unrelated claims.\n  **Suggestion:** Count a rename as its added/removed lines from the numstat output (`git diff -M` already reports added/removed for renamed files), or force `--no-renames` in the diff command so renames degrade to delete+add, which is countable. Only raise on genuinely unparseable rows.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `is_counted_path` excludes finalization records by name, but only some are listed (`shipwright_events.jsonl`, `shipwright_test_results.json`). If verify_local or the runner writes other artifacts before the gate runs (e.g. `risk_recheck.json`, plan files, log files), the count can creep over 100 spuriously, triggering the cascade on bookkeeping noise.\n  **Suggestion:** Confirm the write-order claim (\"finalization records written after the trigger is decided\") by checking when the merge-base diff is snapshotted vs. when those files are committed; if any excluded-class artifact can appear in the diff, exclude the full set (or count only tracked-at-plan-time paths).\n\n- **Category: risk — Severity: medium**\n  **Finding:** \"Unmeasurable diff with no flag fails closed\" is a behavior change for existing in-flight sessions: a repo where the merge base can't be resolved (shallow clone in CI, detached HEAD, no common ancestor) previously passed `small` iterates and will now hard-fail. This can break currently-green CI on legacy sessions/branches.\n  **Suggestion:** Scope the fail-closed to new sessions (e.g., gate only runs when the run metadata declares the U4 contract), or verify `_branch_base_com […truncated]\n\n[openai] Repository reads were blocked by execution policy, so this review is based on the supplied specification and mini-plan; the referenced BRIEF and existing code remain unverified.\n\n1. **Category: approach | Severity: medium**\n   **Finding:** The gate accepts `not_applicable`, but the supplied U4 contract permits only `completed` or `not_run` with a closed-vocabulary code when triggered. This expands the permitted outcomes.\n   **Suggestion:** Reject `not_applicable` for triggered standalone `small` runs. Add a regression test showing that a valid reason code does not make that status acceptable.\n\n2. **Category: risk | Severity: medium**\n   **Finding:** Excluding all of `.shipwright/` because finalization records are generated there also excludes planning inputs and any other substantive changes in that directory. Applying this filter to `diff_change_set.py` changes existing diff measurement beyond the new gate.\n   **Suggestion:** Exclude only the specific generated finalization artifacts, or establish that the broader exclusion is explicitly required by the authoritative contract. Test that substantive `.shipwright/` changes remain counted and check existing consumers of `diff_change_set.py`.\n\n3. **Category: edge-case | Severity: medium**\n   **Finding:** “Unmeasurable diff with no flag fails closed” covers unavailable diff data, but leaves missing or malformed risk inputs unspecified. If those inputs become an empty flag set, a measurable diff of 100 lines or fewer can pass despite an unknown risk state.\n   **Suggestion:** Distinguish valid empty flags from unavailable or invalid records. Define which artifacts are required for standalone versus delegated runs, and fail when a required risk source cannot be evaluated. Test missing, malformed, and mismatched-run records.\n\n4. **Category: edge-case | Severity: medium**\n   **Finding:** Rejecting rename records makes normal renamed-and-edited files an unsupported input. Since Git can detect renames automaticall […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "round 1: an unmeasurable diff, corrupt plan or foreign recheck failed before the review record was read. FIXED in daaff919f: unknown counts as triggered and the record decides.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "round 1: denylist of reason codes. FIXED: ACCEPTED_CODES allowlist {unavailable, delegated-to-orchestrator, user-opt-out}.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "round 2: tip-only measurement when base == head is a quiet pass for unpushed commits on local main. FIXED in 02260266e: tip-only only when the commit is contained in a remote trunk ref, else unknown (triggered).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "round 2: plan reader lacked parent containment and run_id presence check. FIXED (read_plan).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/_cascade_trigger_fixtures.py",
+          "line": null,
+          "finding": "round 2: partial and duplicated hermetic git env. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T11:14:56.940681+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: base == head means a squash-merged commit — unpushed or rebase-merged multi-commit work on local main measured only by its tip",
+          "suggestion": "FIXED in 02260266e (remote-trunk containment). Remaining: a rebase-merged PR already on origin/main is still measured by its last commit - accepted limit 4 in the ADR.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "Claim under doubt: a missing or trivial complexity label cannot skip the gate — F5c entry without complexity or labelled trivial skipped the gate",
+          "suggestion": "FIXED in 02260266e: a missing or unknown complexity is in scope; the higher of entry and plan.json wins.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "Claim under doubt: delegated-to-orchestrator is only used by campaign runs — a standalone run can record the code and pass",
+          "suggestion": "ACCEPTED limit (h) in the ADR: trust boundary; the campaign 3f-bis promotion is the downstream gate.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: missing plan.json and risk_recheck.json still triggers on risk flags — a small run without either file reads as no flags",
+          "suggestion": "ACCEPTED limit (g) in the ADR: the diff-size leg and recomputed detectors remain; durable F5c risk_flags is a follow-up card.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T11:14:57.057469+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` — `measure_diff`, the `if base and base != head.strip():` / `elif _is_merge(...)` / `else: git show` chain",
+          "line": null,
+          "finding": "The merge-commit guard only runs in the `base` empty branch. When `base == head` (e.g. the iterate's branch was merged into `main` and F11 runs afterwards, so the merge-base of the run commit and the trunk is the commit itself), the code falls through to `git show --numstat` on that commit. For a merge commit, `git show --numstat` prints the combined diff, which is typically empty or only conflict resolutions — so a >100-line change measures as ~0 lines and the gate reports \"quiet\" and passes. That is exactly the false negative the gate exists to catch.",
+          "suggestion": "Run `_is_merge` whenever `base == head` too (or unconditionally), and report an error/unknown rather than `git show` when the commit being measured is a merge; a merge commit's true size must be measured against its first parent or rejected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py` — `_trigger`, `commit = commit_hash; if not commit: rev-parse HEAD",
+          "line": null,
+          "finding": "When `commit_hash` is empty (the default), HEAD at verification time is measured — which after further commits or a merge on the checked-out branch is an unrelated commit. The F11 measurement can then be taken against the wrong commit entirely.",
+          "suggestion": "When `commit_hash` is empty, prefer resolving the commit from the F5c entry (it already carries run metadata) or fail closed rather than blindly trusting HEAD.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` — `measure_diff` docstring \"a commit that sits on the trunk: only the commit itself can be measured\"",
+          "line": null,
+          "finding": "The single-commit fallback (`git show` of one commit) silently undercounts multi-commit iterates whose tip happens to sit on the trunk or whose merge-base equals the commit. The spec says \"merge-base diff, added+removed lines\" — falling back to one commit is a different rule and can certify a 300-line change as ≤100.",
+          "suggestion": "When no trustworthy trunk base exists and the run spans multiple commits, report `error` (unknown) instead of measuring only the tip commit; the flag-based arm already handles the fired case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression / edge-case",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_change_set.py` — module-level `from review_threshold_bridge import is_counted_path",
+          "line": null,
+          "finding": "diff_change_set.py` now hard-depends on `review_threshold_bridge`, which executes a filesystem walk-and-load at import time and raises `ImportError` when no ancestor contains `shared/scripts/lib/review_diff_threshold.py`. Any consumer of `diff_change_set` that runs from a location without the shared tree (the \"no fallback, on purpose\" decision) now fails at import, not at threshold use — including callers that only wanted `parse_numstat_z`'s path list.",
+          "suggestion": "If such environments exist, defer the bridge load (call it inside the counting functions) or make the failure message name the consuming entry point; at minimum confirm the plugin cache layout actually contains `shared/` as the docstring claims.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` — `DiffMeasure.diff_flags",
+          "line": null,
+          "finding": "Cross-component / CI detectors run over `measure.paths`, which deliberately includes uncounted finalization-record paths (`.shipwright/...`, `CHANGELOG-unreleased.d/...`). Depending on the detectors' path heuristics, generated artifacts could raise `cross_component` on an otherwise quiet run — inconsistent with the \"finalization records never count\" rule the module otherwise enforces.",
+          "suggestion": "Either filter paths through `is_counted_path` before running the detectors, or document that risk flags, unlike line counts, do consider all changed paths.  Test quality is good: real git repos, real merge-base measurement, boundary (100 vs 101), removed lines, renames, uncounted paths, closed-vocab refusals, corrupt-plan fail-closed, and registry registration are all covered. The main gap is that no test exercises the merged-to-trunk / merge-commit-at-HEAD state where the high-severity bug lives.  Overall: the counting definition, bridge, and gate are implemented to spec with strong tests, but the trunk-resident/merge-commit measurement path produces false \"quiet\" verdicts and should be fixed before this ships.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": 112,
+          "finding": "When no trustworthy trunk merge-base is available, the verifier silently measures only the final commit. A branch containing several commits totaling more than 100 changed lines can therefore pass as quiet if its final commit is small and no risk flag is recorded. This loses the branch-wide measurement required by the specification.",
+          "suggestion": "Report an unknown measurement and fail closed when the merge-base is unavailable. Keep any commit-only handling for commits on trunk separate from the missing-base case, and add a multi-commit regression test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/review_diff_threshold.py",
+          "line": 89,
+          "finding": "Replacing NUL delimiters with newlines corrupts valid `-z` records whose filenames contain literal newlines. For example, `1\\t0\\tsrc/a\\nb.py\\0` becomes two records, and the second raises `ValueError`. The parser explicitly promises to accept NUL-separated records, but does not preserve their filenames.",
+          "suggestion": "Split NUL-delimited input directly on `\"\\0\"` and preserve each record’s path. Add a test containing a newline in the filename.  Ship-with-fixes: the core threshold and review-status enforcement are sound, but measurement needs these corrections. Local command execution was blocked, so I could not read the authoritative brief or run tests; this assessment covers the supplied specification and diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-08T09:37:54.680256+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: bug\n- Severity: high\n- File: `shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` — `measure_diff`, the `if base and base != head.strip():` / `elif _is_merge(...)` / `else: git show` chain\n- Finding: The merge-commit guard only runs in the `base` empty branch. When `base == head` (e.g. the iterate's branch was merged into `main` and F11 runs afterwards, so the merge-base of the run commit and the trunk is the commit itself), the code falls through to `git show --numstat` on that commit. For a merge commit, `git show --numstat` prints the combined diff, which is typically empty or only conflict resolutions — so a >100-line change measures as ~0 lines and the gate reports \"quiet\" and passes. That is exactly the false negative the gate exists to catch.\n- Suggestion: Run `_is_merge` whenever `base == head` too (or unconditionally), and report an error/unknown rather than `git show` when the commit being measured is a merge; a merge commit's true size must be measured against its first parent or rejected.\n\n- Category: edge-case\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/cascade_trigger.py` — `_trigger`, `commit = commit_hash; if not commit: rev-parse HEAD`\n- Finding: When `commit_hash` is empty (the default), HEAD at verification time is measured — which after further commits or a merge on the checked-out branch is an unrelated commit. The F11 measurement can then be taken against the wrong commit entirely.\n- Suggestion: When `commit_hash` is empty, prefer resolving the commit from the F5c entry (it already carries run metadata) or fail closed rather than blindly trusting HEAD.\n\n- Category: edge-case\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_cascade_trigger_inputs.py` — `measure_diff` docstring \"a commit that sits on the trunk: only the commit itself can be measured\"\n- Finding: The single-commit fallback (`git show` of one commit) silently undercounts multi-commit iterates whose tip happens to sit on the t […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py:112\n- Finding: When no trustworthy trunk merge-base is available, the verifier silently measures only the final commit. A branch containing several commits totaling more than 100 changed lines can therefore pass as quiet if its final commit is small and no risk flag is recorded. This loses the branch-wide measurement required by the specification.\n- Suggestion: Report an unknown measurement and fail closed when the merge-base is unavailable. Keep any commit-only handling for commits on trunk separate from the missing-base case, and add a multi-commit regression test.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/lib/review_diff_threshold.py:89\n- Finding: Replacing NUL delimiters with newlines corrupts valid `-z` records whose filenames contain literal newlines. For example, `1\\t0\\tsrc/a\\nb.py\\0` becomes two records, and the second raises `ValueError`. The parser explicitly promises to accept NUL-separated records, but does not preserve their filenames.\n- Suggestion: Split NUL-delimited input directly on `\"\\0\"` and preserve each record’s path. Add a test containing a newline in the filename.\n\nShip-with-fixes: the core threshold and review-status enforcement are sound, but measurement needs these corrections. Local command execution was blocked, so I could not read the authoritative brief or run tests; this assessment covers the supplied specification and diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T10:27:14.522377+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T12:15:36.488133+00:00",
+      "disposition": "campaign sub-iterate: no spawn site for the plan_internal reviewer; the delegated cascade runs at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T12:15:36.671067+00:00",
+      "disposition": "campaign sub-iterate: no spawn site for the architecture_internal reviewer; the delegated cascade runs at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

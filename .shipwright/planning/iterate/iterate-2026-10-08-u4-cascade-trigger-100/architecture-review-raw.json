@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes, but it is barely a new mechanism \u2014 Option A is one more entry in an existing check registry plus a shared constant, and that is the right shape.\n\n2. **The smallest thing that would do.** Option A: a registered F11 check reusing the existing `CLAIM_CHECKS` extension point, plus moving the threshold constant to `shared/scripts/lib` with the counting logic defined once. No new workflow, service, scheduled job, or data store is introduced.\n\n3. **What it costs to keep.** The ongoing obligation is small and already owned: F11 maintainers keep one more check correct, and Step 3.4 plus the check must agree on the count \u2014 which is exactly what the shared module buys, converting a three-way drift risk into a one-place definition. The ADR-044/045 re-export shim is a permanent wrinkle worth a one-line ADR note, not a mechanism.\n\n4. **What it forecloses.** None identified; a registered check can be removed by unregistering.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: Option B (extending the medium+ floor down to small) is the only competing mechanism shape, and it is worse: it makes code review mandatory for *every* small change rather than the flagged/large subset, which is a permanent cost multiplier for a check that only needs to fire conditionally.\n- Suggestion: Keep Option A's conditional trigger; do not take B.\n\nOption C (doc-only) fixes the definitional drift but leaves the trigger unenforced, which is the unit's stated purpose \u2014 enforcement here is cheap because it rides the existing registry, so C buys too little. D solves nothing.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. Yes\u2014option A is proportionate: it enforces an existing conditional review obligation through the existing finalization verifier.\n\n2. The smallest thing that would do is one small-only registered check, using the same shared merge-base added-plus-removed count as Step 3.4, with a strict `> 100` boundary. Require the existing code-review row to contain completion or an allowed reason for not running.\n\n3. The ongoing cost is maintaining agreement between the runner and verifier on risk flags, counting semantics, and acceptable review outcomes. Existing verifier maintainers own that obligation; no separate service or monitoring process is needed.\n\n4. It makes future changes to review policy require coordinated runner and verifier updates. Extending the medium+ floor to every small change would impose a broader recurring review burden; documentation alone would leave the existing obligation unenforced.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
