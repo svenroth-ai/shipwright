@@ -123,29 +123,94 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "U3 self case at medium also broke the code floor. FIXED: medium rows kept; medium free-text case added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "misleading test name, undocumented hermetic_git import. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "skipped gates count as green. ACCEPTED: documented per case; dedicated red cases cover scope.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T20:15:29.572155+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the internal cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T20:29:15.585789+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "Claim under doubt: the trivial U3 self case proves the self rule — reason-code message also contains the needle",
+          "suggestion": "FIXED: self row carries a valid code; needle unique to the self rule.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "Claim under doubt: each case breaks exactly one claim — medium rewrite dropped the delegated/external rows",
+          "suggestion": "FIXED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "Claim under doubt: the tests_run needle is specific — prefix shared by every U5 failure",
+          "suggestion": "FIXED: asserts the mismatch text.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_finalization_claims_scenario.py",
+          "line": null,
+          "finding": "Claim under doubt: isolation asserts evaluated gates, not skipped ones — SKIPPED results are ok=True; multi-break checks only which gates are red",
+          "suggestion": "ACCEPTED limit: dedicated red cases cover scope; follow-up to assert skip sets.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T20:15:29.717251+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the internal cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T20:29:15.683964+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -211,16 +276,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T20:15:29.436916+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the internal cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T20:29:15.354187+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
