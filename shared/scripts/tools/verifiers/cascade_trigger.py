@@ -11,11 +11,18 @@ must be one of two things:
 
 * ``completed`` with evidence, to the same bar as the medium+ floor
   (:func:`review_record_floor.carries_evidence`);
-* ``not_run`` with a ``reason_code`` from the closed ``review_not_run``
-  vocabulary. A code that claims the trigger did not fire
-  (``diff-below-threshold``, ``complexity-below-threshold``, ``trivial-auto``)
-  is refused, because the measurement says otherwise. ``not_applicable`` is
-  refused too: a fired trigger is exactly what makes the review applicable.
+* ``not_run`` with a ``reason_code`` from :data:`ACCEPTED_CODES`, an allowlist
+  inside the closed ``review_not_run`` vocabulary. Codes that say the trigger did
+  not fire are refused because the measurement says otherwise; ``missing-keys``
+  and ``config-disabled`` are refused because they describe the external leg,
+  not the code-reviewer cascade. ``not_applicable`` is refused too: a fired
+  trigger is exactly what makes the review applicable.
+
+**Unknown is triggered, never quiet.** When the diff cannot be measured (no
+trustworthy trunk base, a merge commit on the trunk) or a risk-flag source is
+unreadable (corrupt plan, foreign ``risk_recheck.json``), the run is read as
+triggered and the record decides. A reviewed run passes; an unanswered one fails
+with a repair for the input as well as for the row.
 
 A campaign sub-iterate records ``delegated-to-orchestrator`` and passes. The
 orchestrator's 3f-bis cascade later promotes the row.
@@ -47,45 +54,74 @@ from .review_record_floor import carries_evidence  # noqa: E402
 
 CHECK_NAME = "code review at small (risk flag or diff > 100 lines)"
 
-#: Codes that say the trigger did not fire. Contradicted by a fired trigger.
-CONTRADICTED_CODES = frozenset({"diff-below-threshold", "complexity-below-threshold", "trivial-auto"})
+#: The only ``not_run`` codes a triggered ``code`` row may carry.
+ACCEPTED_CODES = frozenset({"unavailable", "delegated-to-orchestrator", "user-opt-out"})
+
+#: Why a vocabulary code outside :data:`ACCEPTED_CODES` does not answer a fired trigger.
+_REFUSED_WHY = {
+    "diff-below-threshold": "says the trigger did not fire, but it did",
+    "complexity-below-threshold": "says the trigger did not fire, but it did",
+    "trivial-auto": "says the trigger did not fire, but it did",
+    "missing-keys": "describes the external review leg, not the code-reviewer cascade",
+    "config-disabled": "describes the external review leg, not the code-reviewer cascade",
+}
 
 _TOOL = "shared/scripts/tools/record_review_pass.py"
+
+_DIFF_REPAIR = ("To let F11 measure the diff instead, give it a trunk base it can trust "
+                "(e.g. `git fetch origin main` so `main` and `origin/main` agree) and re-run F11. ")
+_FLAGS_REPAIR = ("To clear the input instead, regenerate or remove the unreadable file named above "
+                 "and re-run F11. ")
 
 
 def _skip(detail: str) -> CheckResult:
     return CheckResult(CHECK_NAME, True, f"skipped ({detail})", severity=Severity.SKIPPED.value)
 
 
-def _trigger(project_root: Path, run_id: str, commit_hash: str) -> tuple[str, str]:
-    """``(state, detail)``: ``fired`` (detail says why), ``quiet``, ``not_git`` or ``error``."""
+def _trigger(project_root: Path, run_id: str, commit_hash: str) -> tuple[str, str, str]:
+    """``(state, detail, repair)``; state is ``fired``, ``quiet``, ``not_git`` or ``error``."""
     flags, err = recorded_risk_flags(project_root, run_id)
     if err:
-        return "error", err
+        return "fired", f"risk flags unknown: {err}", _FLAGS_REPAIR
     flagged = f"risk flag(s) {', '.join(flags)}"
     ctx = git_context(project_root)
     if ctx == "not_git":
-        return ("fired", flagged) if flags else ("not_git", "")
+        return ("fired", flagged, "") if flags else ("not_git", "", "")
     if ctx != "work_tree":
-        return "error", "git could not answer whether this is a work tree; the diff size is unknown"
+        return "error", ("git could not answer whether this is a work tree, so the diff size is "
+                         "unknown. Fix git first (a stale `.git/index.lock`, git missing from PATH, "
+                         "a corrupt repository), then re-run F11"), ""
     commit = commit_hash
     if not commit:
         rc, out, _ = _run_git(project_root, "rev-parse", "HEAD", timeout=10.0)
         commit = out.strip() if rc == 0 else ""
     measure = measure_diff(project_root, commit) if commit else None
     if measure is None or measure.error:
-        if flags:
-            return "fired", flagged
         reason = measure.error if measure else "HEAD is unresolvable"
-        return "error", (f"cannot measure the diff ({reason}); refusing to certify it as "
-                         f"<= {DIFF_LOC_THRESHOLD} changed lines")
+        reasons = [flagged] if flags else []
+        return "fired", " and ".join(reasons + [f"diff size unknown: {reason}"]), _DIFF_REPAIR
     flags = sorted(set(flags) | set(measure.diff_flags()))
     reasons = [f"risk flag(s) {', '.join(flags)}"] if flags else []
     if exceeds_diff_threshold(measure.lines or 0):
         reasons.append(f"{measure.lines} changed lines > {DIFF_LOC_THRESHOLD}")
     if reasons:
-        return "fired", " and ".join(reasons)
-    return "quiet", f"no risk flag, {measure.lines} changed lines <= {DIFF_LOC_THRESHOLD}"
+        return "fired", " and ".join(reasons), ""
+    return "quiet", f"no risk flag, {measure.lines} changed lines <= {DIFF_LOC_THRESHOLD}", ""
+
+
+def _not_run_problem(status: str, code: object) -> str | None:
+    """Why a ``not_run`` / ``not_applicable`` row does not answer a fired trigger, or ``None``."""
+    if code is None:
+        return "it has a free-text disposition and no `reason_code`"
+    bad = reason_code_error("review_not_run", code)
+    if bad is not None:
+        return bad
+    if status == "not_applicable":
+        return "a fired trigger makes the review applicable; record it `not_run` with its code"
+    if code in ACCEPTED_CODES:
+        return None
+    why = _REFUSED_WHY.get(str(code), "is not accepted for a triggered `code` row")
+    return f"reason_code {code!r} {why} (accepted: {', '.join(sorted(ACCEPTED_CODES))})"
 
 
 def check_cascade_trigger(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
@@ -96,11 +132,11 @@ def check_cascade_trigger(project_root: Path, run_id: str, commit_hash: str = ""
         entry = None
     if not isinstance(entry, dict):
         return _skip(f"no F5c entry for {run_id}; check_review_record reports that")
-    complexity = str(entry.get("complexity", "")).lower()
+    complexity = str(entry.get("complexity", "")).strip().lower()
     if complexity != "small":
         return _skip(f"complexity={complexity or 'unknown'}; this gate applies at small only")
 
-    state, why = _trigger(project_root, run_id, commit_hash)
+    state, why, repair = _trigger(project_root, run_id, commit_hash)
     if state == "not_git":
         return _skip("not a git work tree and no risk flag recorded")
     if state == "quiet":
@@ -122,26 +158,22 @@ def check_cascade_trigger(project_root: Path, run_id: str, commit_hash: str = ""
         return CheckResult(
             CHECK_NAME, False,
             f"triggered ({why}); `code` is recorded completed but carries no evidence "
-            f"(no findings, provider, excerpt or adapter). Re-record it: `{_TOOL} record "
+            f"(no findings, provider, excerpt or adapter). {repair}Re-record it: `{_TOOL} record "
             f"--run-id {run_id} --review-type code --status completed --from code-reviewer "
             "--payload-file <reply> --force`",
         )
     if status in ("not_run", "not_applicable"):
         code = row.get("reason_code")
-        bad = reason_code_error("review_not_run", code) if code is not None else (
-            "it has a free-text disposition and no `reason_code`")
-        if bad is None and status == "not_applicable":
-            bad = "a fired trigger makes the review applicable; record it `not_run` with its code"
-        if bad is None and code in CONTRADICTED_CODES:
-            bad = f"reason_code {code!r} says the trigger did not fire, but it did"
+        bad = _not_run_problem(status, code)
         if bad is None:
             return CheckResult(CHECK_NAME, True, f"triggered ({why}); `code` {status} ({code})")
         return CheckResult(
             CHECK_NAME, False,
-            f"triggered ({why}); `code` is {status} but {bad}. Run the code-reviewer cascade, "
-            f"or re-record the row with a closed code: `{_TOOL} record --run-id {run_id} "
-            f"--review-type code --status not_run --reason-code <unavailable|delegated-to-orchestrator|"
-            "user-opt-out> --disposition \"<rule>\" --force`",
+            f"triggered ({why}); `code` is {status} but {bad}. {repair}Run the code-reviewer "
+            f"cascade, or re-record the row with a closed code: `{_TOOL} record --run-id {run_id} "
+            f"--review-type code --status not_run --reason-code <{'|'.join(sorted(ACCEPTED_CODES))}> "
+            "--disposition \"<rule>\" --force`",
         )
     return CheckResult(CHECK_NAME, False,
-                       f"triggered ({why}); `code` is {status}, so the code review is unanswered")
+                       f"triggered ({why}); `code` is {status}, so the code review is unanswered. "
+                       f"{repair}Run the code-reviewer cascade and record it with `{_TOOL} record`")

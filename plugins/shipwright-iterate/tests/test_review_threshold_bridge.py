@@ -31,6 +31,7 @@ def test_the_bridge_loads_the_shared_module_not_a_copy():
     assert drr.PLAN_REVIEW_DIFF_LOC_THRESHOLD == shared.DIFF_LOC_THRESHOLD == 100
     assert drr.exceeds_diff_threshold is shared.exceeds_diff_threshold
     assert dcs.is_counted_path is shared.is_counted_path
+    assert dcs.numstat_changed_lines is shared.numstat_changed_lines
 
 
 @pytest.mark.covers("FR-01.11")

@@ -35,40 +35,18 @@ from pathlib import Path
 
 if str(Path(__file__).resolve().parent) not in sys.path:  # importable by file path too
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-from review_threshold_bridge import is_counted_path  # noqa: E402 - the counting rule's path filter
-
-
-def _count(field: str) -> int:
-    """numstat counts; binary files report `-`."""
-    return int(field) if field.isdigit() else 0
+from review_threshold_bridge import is_counted_path, numstat_changed_lines  # noqa: E402 - the shared counting rule
 
 
 def parse_numstat_z(raw: str) -> tuple[list[str], int]:
     """Parse `git diff --numstat --no-renames -z` into (paths, added+deleted).
 
-    `-z` so a newline in a filename is data, not a record separator.
-    ``--no-renames`` is assumed, making every record ``added TAB deleted TAB path
-    NUL``; the rename shape (``… TAB NUL old NUL new NUL``, reporting ONLY the new
-    path) cannot occur. An empty path therefore means rename detection was left on
-    — which hides a workflow moved OUT of the CI boundary — so this raises."""
-    paths: list[str] = []
-    total = 0
-    for token in raw.split("\0"):
-        if not token:
-            continue
-        parts = token.split("\t", 2)
-        if len(parts) < 2:
-            continue
-        path = parts[2] if len(parts) > 2 else ""
-        if not path:
-            raise ValueError(
-                "numstat record has no path — rename detection appears to be on; "
-                "this parser requires --no-renames so both sides of a move are seen"
-            )
-        paths.append(path)
-        if is_counted_path(path):  # finalization records never count (review_diff_threshold)
-            total += _count(parts[0]) + _count(parts[1])
-    return paths, total
+    The shared counting rule (``review_diff_threshold.numstat_changed_lines``,
+    via the bridge): `-z` so a newline in a filename is data, binary `-` counts
+    0, finalization records are listed but not counted. ``--no-renames`` is
+    assumed; an empty path means rename detection was left on (which hides a
+    workflow moved OUT of the CI boundary), so this raises ``ValueError``."""
+    return numstat_changed_lines(raw)
 
 
 def parse_untracked_z(raw: str) -> list[str]:

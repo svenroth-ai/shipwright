@@ -58,3 +58,4 @@ SHARED_SOURCE: Path = Path(_shared.__file__)
 PLAN_REVIEW_DIFF_LOC_THRESHOLD: int = _shared.PLAN_REVIEW_DIFF_LOC_THRESHOLD
 exceeds_diff_threshold = _shared.exceeds_diff_threshold
 is_counted_path = _shared.is_counted_path
+numstat_changed_lines = _shared.numstat_changed_lines

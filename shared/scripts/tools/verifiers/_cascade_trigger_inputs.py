@@ -11,11 +11,14 @@ must then say.
 * Step 3.4's ``risk_recheck.json``, which a campaign sub-iterate leaves;
 * the two detectors that shared/ already carries, recomputed from the branch diff
   (``cross_component`` and ``touches_ci_supplychain``). A flag the agent did not
-  record still counts.
+  record still counts. The other flags are taken as self-reported.
 
 **Diff size** follows ``lib/review_diff_threshold.py`` exactly: added+removed lines
 of ``git diff --numstat --no-renames <merge-base>..<commit>``, without the
 finalization records, ``> 100``.
+
+An input that cannot be read is reported as an error string, never as "no flag"
+or "0 lines". The gate reads such a run as triggered.
 """
 
 from __future__ import annotations
@@ -40,17 +43,33 @@ __all__ = ["DiffMeasure", "measure_diff", "recorded_risk_flags"]
 
 _GIT_TIMEOUT = 30.0
 
+#: Local trunk names a remote-less (greenfield) repo may carry.
+_LOCAL_TRUNKS = ("main", "master")
+
 
 def _plan_flags(project_root: Path, run_id: str) -> tuple[list[str], str | None]:
-    """``risk_flags`` from the Stage-1 session plan. Absence is ``([], None)``."""
+    """``risk_flags`` from the Stage-1 session plan. Absence is ``([], None)``.
+
+    Hardened like :func:`risk_recheck_recording._read_recheck_record`: a symlink or
+    a non-regular file is malformed, never absence, and a plan naming another run
+    cannot vouch for this one.
+    """
     path = Path(project_root) / ".shipwright" / "agent_docs" / "iterates" / f"{run_id}.plan.json"
+    if path.is_symlink():
+        return [], f"{path.name} is a symlink, not a regular file"
     if not path.exists():
         return [], None
+    if not path.is_file():
+        return [], f"{path.name} exists but is not a regular file"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         return [], f"{path.name} is unreadable ({exc}); a corrupt plan cannot vouch for 'no risk flag'"
-    flags = data.get("risk_flags") if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        return [], f"{path.name} is not a JSON object"
+    if "run_id" in data and data["run_id"] != run_id:
+        return [], f"{path.name} belongs to another run ({str(data['run_id'])[:60]!r})"
+    flags = data.get("risk_flags")
     if not isinstance(flags, list):
         return [], f"{path.name} carries no `risk_flags` list"
     return [f for f in flags if isinstance(f, str) and f.strip()], None
@@ -92,9 +111,30 @@ class DiffMeasure:
         return flags
 
 
-def _is_merge(project_root: Path, commit: str) -> bool:
+def _is_merge(project_root: Path, commit: str) -> bool | None:
+    """``True`` for a merge commit, ``False`` for a single-parent one, ``None`` if git failed."""
     rc, out, _ = _run_git(project_root, "rev-list", "--parents", "-n", "1", commit, timeout=_GIT_TIMEOUT)
-    return rc != 0 or len(out.split()) > 2
+    if rc != 0 or not out.strip():
+        return None
+    return len(out.split()) > 2
+
+
+def _greenfield_base(project_root: Path, commit: str) -> str | None:
+    """No remote at all and exactly one local trunk name: trust that one merge-base.
+
+    ``_branch_base_commit`` wants two agreeing names, because a lone REMOTE name may
+    be a stale ``origin/master`` after a rename. A repo with no remote has nothing
+    that can go stale that way, so its one local ``main`` (or ``master``) is the trunk.
+    """
+    rc, remotes, _ = _run_git(project_root, "remote", timeout=_GIT_TIMEOUT)
+    if rc != 0 or remotes.strip():
+        return None
+    bases = []
+    for name in _LOCAL_TRUNKS:
+        rc, mb, _ = _run_git(project_root, "merge-base", name, commit, timeout=_GIT_TIMEOUT)
+        if rc == 0 and mb.strip():
+            bases.append(mb.strip())
+    return bases[0] if len(bases) == 1 else None
 
 
 def measure_diff(project_root: Path, commit: str) -> DiffMeasure:
@@ -103,22 +143,27 @@ def measure_diff(project_root: Path, commit: str) -> DiffMeasure:
     No trustworthy trunk base is UNKNOWN, never "the last commit": a branch of
     several commits would otherwise be measured by its tip alone. A commit that
     already sits on the trunk (``base == commit``) has no branch range, so the
-    commit itself is measured, unless it is a merge commit, whose own numstat
-    shows nothing; that case is unknown too.
+    commit itself is measured (this assumes a squash-merged PR), unless it is a
+    merge commit, whose own numstat shows nothing; that case is unknown too.
     """
-    base = _branch_base_commit(project_root, commit)
     rc, head, _ = _run_git(project_root, "rev-parse", commit, timeout=_GIT_TIMEOUT)
     head = head.strip()
     if rc != 0 or not head:
         return DiffMeasure(error=f"cannot resolve {commit[:12]!r}")
+    base = _branch_base_commit(project_root, head) or _greenfield_base(project_root, head)
     if not base:
-        return DiffMeasure(error=f"no trustworthy trunk merge-base for {head[:8]} "
-                                 "(needs two agreeing trunk names, e.g. main + origin/main)")
+        return DiffMeasure(error=f"no trustworthy trunk merge-base for {head[:8]} (needs two "
+                                 "agreeing trunk names, e.g. main + origin/main, or a remote-less "
+                                 "repo with one local main/master)")
     if base != head:
         args = ["diff", "--numstat", "--no-renames", f"{base}..{head}"]
-    elif _is_merge(project_root, head):
-        return DiffMeasure(error=f"{head[:8]} is a merge commit already on the trunk; its size is unknown")
     else:
+        merge = _is_merge(project_root, head)
+        if merge is None:
+            return DiffMeasure(error=f"git could not list the parents of {head[:8]}, so whether "
+                                     "it is a merge commit is unknown")
+        if merge:
+            return DiffMeasure(error=f"{head[:8]} is a merge commit already on the trunk; its size is unknown")
         args = ["show", "--numstat", "--no-renames", "--format=", head]
     rc, out, err = _run_git(project_root, "-c", "core.quotePath=false", *args, timeout=_GIT_TIMEOUT)
     if rc != 0:

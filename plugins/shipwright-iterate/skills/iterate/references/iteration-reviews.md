@@ -143,12 +143,14 @@ trigger. Not `git diff HEAD~1 | wc -l`, which counts headers and context lines
 and sees only the last commit. **Enforced at small:** F11's `check_cascade_trigger`
 re-measures the branch and re-reads the risk flags. The `code` row must then be
 `completed`, or `not_run` with a `--reason-code` from the closed `review_not_run`
-set (e.g. `unavailable`). A free-text disposition alone fails, and so do
-`diff-below-threshold`, `complexity-below-threshold` and `trivial-auto`.
+set that this gate accepts: `unavailable`, `delegated-to-orchestrator` or
+`user-opt-out`. A free-text disposition alone fails, and so does every other
+code. A diff F11 cannot measure (no trustworthy trunk base) or an unreadable
+risk-flag source counts as triggered, never as quiet.
 
 ### When Self-Review is Sufficient
 - Trivial/small complexity with no risk flags
-- Diff under 100 lines
+- Diff of at most 100 changed lines
 - No security-sensitive files touched
 
 ### Invocation
@@ -210,14 +212,14 @@ internal reviewer, evaluated independently:
 - complexity = medium+
 
 A trivial/small iterate that meets **none** of the three — no risk flag, no
-security-sensitive file, diff under 100 lines — does NOT run the cascade, even
+security-sensitive file, diff of at most 100 changed lines — does NOT run the cascade, even
 if API keys are present. Self-review is the only review for those.
 
 Note that this is an exemption for *quiet* small runs, not for small runs as
 such: a small iterate that touches auth or ships a 200-line diff satisfies a
 threshold above and the cascade **does** fire. That mirrors the internal
 reviewer's own rule ("When Self-Review is Sufficient" — small **and** no risk
-flags **and** under 100 lines), which is what makes the two routes genuinely
+flags **and** at most 100 changed lines), which is what makes the two routes genuinely
 symmetric rather than merely both present.
 
 **It is NOT conditional on the internal `code-reviewer` having fired.** It used
