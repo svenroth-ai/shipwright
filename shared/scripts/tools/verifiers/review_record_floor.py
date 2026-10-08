@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from lib.review_payloads import ADAPTERS  # noqa: E402
 from lib.review_record import entry_for  # noqa: E402
+from lib.review_unavailable import delegated_while_unavailable  # noqa: E402
 
 from .common import CheckResult
 
@@ -90,7 +91,7 @@ def substitution_note(record: dict, complexity: str) -> str:
 
 
 def code_review_floor(
-    record: dict, complexity: str, run_id: str,
+    record: dict, complexity: str, run_id: str, entry: dict | None = None,
 ) -> CheckResult | None:
     """At medium+, at least one code review must have actually run.
 
@@ -132,6 +133,8 @@ def code_review_floor(
             "<type> --status completed --from <adapter> --payload-file <reply> "
             "--force`",
         )
+    if delegated_while_unavailable(record, entry):
+        return None  # a campaign unit: its code review comes at 3f-bis; the gap is announced
 
     return CheckResult(
         CHECK_NAME, False,

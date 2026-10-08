@@ -9,10 +9,10 @@ invokes:
     uv run shared/scripts/tools/verify_iterate_finalization.py \\
         --run-id ... --project-root ... --commit ...
 
-Each test seeds a tmp project with a different state and asserts:
-
-- exit code 0 on green / skipped (only WARNs)
-- exit code 1 when the F0.5 audit reports an ERROR
+Each test seeds a tmp project (not a git repo) with a different state and asserts
+the reds ``_reds`` returns: none on a happy path, the F0.5 ERROR on a fail-closed
+one. The test-tag gate's non-git STOP (U1: an unobtainable diff never SKIPs) is the
+one red every seed has, so ``_reds`` requires it and then sets it aside.
 
 These tests are slower than the unit tests because each one spawns a
 subprocess; the trade-off is they catch CLI regressions (argparse,
@@ -153,19 +153,16 @@ def _seed(
 
 def _run_verifier(proj: Path, run_id: str, commit: str = "abc123def456") -> tuple[int, str]:
     """Invoke the verifier as a subprocess. Returns (exit_code, stdout+stderr)."""
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(VERIFIER),
-            "--run-id", run_id,
-            "--project-root", str(proj),
-            "--commit", commit,
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    cmd = [sys.executable, str(VERIFIER), "--run-id", run_id, "--project-root", str(proj), "--commit", commit]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     return result.returncode, (result.stdout or "") + (result.stderr or "")
+
+
+def _reds(code: int, output: str) -> list[str]:
+    """The FAIL lines other than the test-tag gate's non-git STOP, which must be there."""
+    fails = [ln for ln in output.splitlines() if "FAIL" in ln]
+    assert code == 1 and any("test tag binding" in f and "not a git work tree" in f for f in fails), output
+    return [f for f in fails if "test tag binding" not in f]
 
 
 # --- Happy path (exit 0) and the two claims the F0.5 audit now refuses (exit 1) ---
@@ -200,7 +197,7 @@ def test_cli_passes_at_trivial_complexity_skipping_audit(tmp_path):
     _seed(proj, "iterate-2026-05-06-trivial",
           complexity="trivial", surface_block=None)
     code, output = _run_verifier(proj, "iterate-2026-05-06-trivial")
-    assert code == 0, output
+    assert _reds(code, output) == [], output
     assert "skipped" in output.lower()
 
 
@@ -215,8 +212,7 @@ def test_cli_fails_when_block_missing_at_medium(tmp_path):
     proj = tmp_path / "proj"
     _seed(proj, "iterate-2026-05-06-missing-block", surface_block=None)
     code, output = _run_verifier(proj, "iterate-2026-05-06-missing-block")
-    assert code == 1, f"missing block must fail; output:\n{output}"
-    assert "surface_verification" in output
+    assert any("surface_verification" in r for r in _reds(code, output)), f"missing block must fail:\n{output}"
 
 
 def test_cli_fails_on_zero_tests(tmp_path):
@@ -228,8 +224,7 @@ def test_cli_fails_on_zero_tests(tmp_path):
         "tests_run": 0, "evidence_path": "log.txt", "timestamp": "now",
     })
     code, output = _run_verifier(proj, "iterate-2026-05-06-zero")
-    assert code == 1, f"zero tests must fail; output:\n{output}"
-    assert "tests_run" in output
+    assert any("tests_run" in r for r in _reds(code, output)), f"zero tests must fail; output:\n{output}"
 
 
 def test_cli_fails_on_runner_failure(tmp_path):
@@ -241,8 +236,7 @@ def test_cli_fails_on_runner_failure(tmp_path):
         "tests_run": 5, "evidence_path": "report.html", "timestamp": "now",
     })
     code, output = _run_verifier(proj, "iterate-2026-05-06-runner-failed")
-    assert code == 1, output
-    assert "exit_code" in output
+    assert any("exit_code" in r for r in _reds(code, output)), output
 
 
 def test_cli_fails_on_surface_none_without_justification(tmp_path):
@@ -255,8 +249,7 @@ def test_cli_fails_on_surface_none_without_justification(tmp_path):
         # justification deliberately absent
     })
     code, output = _run_verifier(proj, "iterate-2026-05-06-none-bad")
-    assert code == 1, output
-    assert "justification" in output
+    assert any("justification" in r for r in _reds(code, output)), output
 
 
 def test_cli_fails_when_test_results_missing_at_medium(tmp_path):
@@ -266,7 +259,7 @@ def test_cli_fails_when_test_results_missing_at_medium(tmp_path):
     proj = tmp_path / "proj"
     _seed(proj, "iterate-2026-05-06-no-results", include_test_results=False)
     code, output = _run_verifier(proj, "iterate-2026-05-06-no-results")
-    assert code == 1, output
+    assert _reds(code, output), output
 
 
 def test_cli_fails_on_testable_but_untested_behavior(tmp_path):
@@ -290,8 +283,7 @@ def test_cli_fails_on_testable_but_untested_behavior(tmp_path):
         },
     )
     code, output = _run_verifier(proj, "iterate-2026-05-06-untested")
-    assert code == 1, f"testable-but-untested must fail; output:\n{output}"
-    assert "completeness" in output.lower()
+    assert any("completeness" in r.lower() for r in _reds(code, output)), f"testable-but-untested must fail:\n{output}"
 
 
 # ---------------------------------------------------------------------------

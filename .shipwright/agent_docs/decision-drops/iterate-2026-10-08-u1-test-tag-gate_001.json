@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-u1-test-tag-gate",
+  "date": "2026-10-08",
+  "section": "Iterate — change: test-tag gate at finalization",
+  "title": "Finalization stops on an added or edited test that names no requirement",
+  "context": "Only 6% of monorepo tests carry a requirement tag; nothing at finalization requires one, because the existing tag rules fire only on new or reworded acceptance criteria.",
+  "decision": "New F11 claim check check_test_tag_binding: regenerate base+head manifests through the compliance collector (evidence-free head memoised with the removal gate), STOP on untagged added/edited tests, stripped, malformed or unresolvable tags and per-diff exemptions; per-test test_exemption codes are verified against the code. A non-git directory STOPs too (no SKIP).",
+  "consequences": "Every iterate must tag the tests it adds or edits; legacy untagged tests stay untouched until edited. Collector binds wrapped Playwright heads, class/module marks, BOM files (+273 links). Accepted limits (reviews ADR): untagged test.each TS tests unseen; head config (exclude_dirs, export-ignore, new root) can hide new tests; TS tokenizer ignores regex/JSX; decorator/helper edits are not body edits; _is_test_id is a path heuristic; merge-base recomputed; fixture-or-helper = pytest collection.",
+  "rationale": "Reuses the production collector and regeneration the removal gate already pays for, so no second parser and no second regeneration; diff-only ratchet semantics per the operator decision of 2026-10-07. The body digest is its own (_tag_binding_identity.py): _test_body_suspects.py digests verbatim source and covers only AC-bound tests, so it cannot ignore docstring/comment-only edits or token-normalise TS bodies.",
+  "rejected": "Reference grammar parser (cannot bind wrapped Playwright or suite tags); committed base manifest (stale, would false-STOP); advisory-only; repo-wide baseline file; instructions only; gate added tests only (architecture review GPT revise).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-08-u1-test-tag-gate-reviews.md"
+}

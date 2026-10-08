@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-dependabot-actions-only",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-10-08-dependabot-actions-only",
+    "paths_fingerprint": "e64dd4d5db675acf4894eee5b211d96d2dd8231fcc02d9ffc7a6e56da9052dd0",
+    "consistent_with": "iterate-2026-10-08-dependabot-actions-only",
+    "statement": "Operator decision 2026-10-08 (supersedes the dormant posture of 2026-05-22): Dependabot version updates go live for the github-actions ecosystem only (weekly, minor/patch grouped, majors separate, 7-day cooldown); all 13 pip ecosystems stay dormant; GitHub-owned actions stay on mutable tags and third-party stay SHA-pinned (unchanged). The wholesale Semgrep exclusion dependabot-missing-cooldown and its register entry are removed because every entry now carries a cooldown.",
+    "ci_paths": [
+      ".github/dependabot.yml",
+      ".github/workflows/security.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}

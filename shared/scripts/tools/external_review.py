@@ -45,7 +45,7 @@ Output (JSON):
         "review_schema": 2,  // v1 was implicit and used gemini/openai
         "success": true/false,
         "provider": "openrouter" | "direct" | "codex" | "claude_cli" | "none",
-        "driver": "claude" | "codex",
+        "driver": "claude" | "codex", "mode": "<--mode>",
         "skipped": "empty_diff",  // optional, code-mode only
         "reviews": {
             "glm": { "status": "success|error|skipped", "feedback": "..." },
@@ -299,8 +299,10 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Enforced, not trusted; the record rides in every envelope for the F11 check.
+    # Enforced, not trusted; the record rides in every envelope for the F11 check —
+    # with `mode`, so an `unavailable` capture names the pass it came from.
     args.driver, driver_record = resolve_effective_driver(args.driver, announce=True)
+    driver_record["mode"] = args.mode
 
     # Mode-specific validation lives in lib/external_review_modes (a foreign
     # flag first, then a missing one — see there for why the order matters).

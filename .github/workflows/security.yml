@@ -118,13 +118,15 @@ jobs:
           # Accepted-risk Semgrep rules for THIS repo's posture — suppressed at
           # the normalizer (robust across semgrep versions), NOT via a CLI flag.
           # Both channels are opt-in and default-off in the plugin, so adopted
-          # repos get neither and decide their own posture. Register + rationale:
+          # repos get neither and decide their own posture. (The channels this
+          # repo sets are listed below; "Both" describes the plugin.) Register + rationale:
           # docs/security-ci-setup.md (§ Accepted-risk rule tailoring)
           #
-          # dependabot-missing-cooldown (14 low): .github/dependabot.yml is
-          # inert (open-pull-requests-limit: 0 on every ecosystem) — a cooldown
-          # on a config that opens zero PRs is meaningless. Exact (doubled) id.
-          SHIPWRIGHT_SEMGREP_EXCLUDE_RULES: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
+          # (No rule is excluded wholesale any more: dependabot-missing-cooldown
+          # was dropped when github-actions went live — every entry in
+          # .github/dependabot.yml now carries a cooldown, so the rule stays
+          # live and would flag a new entry added without one.)
+          #
           # mutable-action-tag on GitHub-owned actions (actions/*, github/*)
           # (12 medium): declined SHA-pin (decision 2026-06-30 — Scorecard
           # weights pinned-deps 8:2 + tag-rot). Owner-scoped: an unpinned

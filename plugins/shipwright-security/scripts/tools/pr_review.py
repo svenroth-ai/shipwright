@@ -67,8 +67,8 @@ from pr_review_gh import (  # noqa: E402
     post_pr_review_state,
 )
 from pr_review_openrouter import (  # noqa: E402
-    DEEPSEEK_MODEL, DEFAULT_MODEL, DEFAULT_TIMEOUT, GLM_MODEL, LUNA_MODEL,
-    OPENROUTER_URL, call_openrouter,
+    DEEPSEEK_MODEL, DEFAULT_MODEL, DEFAULT_TIMEOUT, GLM_MODEL, HAIKU_MODEL,
+    LUNA_MODEL, OPENROUTER_URL, call_openrouter,
 )
 # The one place this tool reaches into shared/scripts/lib — see the module
 # docstring for why it isn't wired inside pr_review_openrouter.py instead.
@@ -95,7 +95,7 @@ __all__ = [
     "parse_review_response", "post_pr_comment", "post_pr_review_state",
     "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body", "truncate_diff",
     "call_openrouter", "DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "GLM_MODEL",
-    "LUNA_MODEL", "OPENROUTER_URL", "DeepSeekRoutingPolicyError", "GlmRoutingPolicyError",
+    "HAIKU_MODEL", "LUNA_MODEL", "OPENROUTER_URL", "DeepSeekRoutingPolicyError", "GlmRoutingPolicyError",
     "resolve_extra_body", "post_verdict", "finish_decision", "EXIT_USAGE",
     "build_local_diff", "log_files_sent", "post_local_result", "read_diff_file",
     "resolve_diff_mode", "handle_empty_diff", "handle_truncated_diff"]
@@ -159,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     model = os.environ.get("SHIPWRIGHT_PR_REVIEW_MODEL", DEFAULT_MODEL)
     # Resolved BEFORE anything else network-bound: for a model outside the deepseek/ or
     # z-ai/ namespaces this never touches shared/config/external_review.json (see
-    # pr_review_model_policy). DEFAULT_MODEL is Luna (openai/), so on the everyday path
+    # pr_review_model_policy). DEFAULT_MODEL is Haiku 5.5 (anthropic/), so on the everyday path
     # this returns {} without touching that config — the config load, and the fail-closed
     # guarantee below, matter on the DeepSeek/GLM operator-override paths, where a
     # missing/malformed routing block must still fail this REQUIRED gate closed, before
