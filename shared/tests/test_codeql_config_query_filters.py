@@ -122,6 +122,7 @@ def _init_step() -> dict:
     return matches[0]
 
 
+@pytest.mark.covers("FR-01.17")
 @pytest.mark.parametrize("step_name", ["init", "autobuild", "analyze"])
 def test_codeql_action_steps_pin_v4(step_name: str) -> None:
     """CodeQL Action v3 is deprecated December 2026 and drops Node.js 20
@@ -134,9 +135,11 @@ def test_codeql_action_steps_pin_v4(step_name: str) -> None:
         f"expected exactly one github/codeql-action/{step_name} step in "
         f"codeql.yml, found {len(matches)}"
     )
-    assert matches[0]["uses"] == f"github/codeql-action/{step_name}@v4", (
+    # v4 or newer: Dependabot bumps the major, only a fall back below v4 is a regression.
+    major = int(matches[0]["uses"].rpartition("@v")[2].split(".")[0])
+    assert major >= 4, (
         f"codeql.yml {step_name} step uses={matches[0]['uses']!r}, "
-        f"expected 'github/codeql-action/{step_name}@v4'"
+        f"expected 'github/codeql-action/{step_name}@v4' or newer"
     )
 
 
