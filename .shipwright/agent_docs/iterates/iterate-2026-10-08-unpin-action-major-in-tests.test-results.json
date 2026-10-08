@@ -1,0 +1,80 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-unpin-action-major-in-tests",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "skipped"
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "upload-artifact evidence step test tolerates a major bump of the action",
+          "disposition": "tested",
+          "evidence": "ci.yml set to upload-artifact@v6: test_ci_yml_execution_evidence_step_shape.py PASSED"
+        },
+        {
+          "behavior": "codeql step test passes on v4 or newer (v5 probe)",
+          "disposition": "tested",
+          "evidence": "codeql.yml at @v5: test_codeql_config_query_filters.py 3 parametrized PASSED"
+        },
+        {
+          "behavior": "codeql step test still fails on a regression below v4",
+          "disposition": "tested",
+          "evidence": "one step set to @v3: 1 failed, 27 passed"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-08T19:41:54.557Z",
+      "attempts": 0,
+      "justification": "Test-only change with no startable surface. Verified by: the two edited tests pass; with ci.yml at upload-artifact@v6 and codeql.yml at @v5 all 28 related tests still pass; with one codeql step regressed to @v3 one fails; workflows restored; full F0 suite green."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-unpin-action-major-in-tests",
+    "commit": "4518bfdd40c590d6049e3e3901e3a8f5560a4ab1",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

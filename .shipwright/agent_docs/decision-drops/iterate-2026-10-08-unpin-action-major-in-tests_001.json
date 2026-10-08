@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-unpin-action-major-in-tests",
+  "date": "2026-10-08",
+  "section": "Iterate — change: tests tolerate Dependabot major bumps",
+  "title": "Version-pinning CI tests accept a newer action major",
+  "context": "Dependabot now proposes GitHub Actions majors. Two tests pinned an exact major (upload-artifact@v4, codeql-action@v4) and turned PR #850 red.",
+  "decision": "The upload-artifact test asserts the action path; the codeql test asserts major >= 4 (keeps its guard against falling back to v3). Both are bound to FR-01.17.",
+  "consequences": "Future major bumps of these two actions no longer fail the suite. A SHA-pinned or branch ref in codeql.yml would raise ValueError instead of the assertion message (latent; all refs are tags today).",
+  "rationale": "The tests guard the action and a minimum version, not an exact major; Dependabot owns the major.",
+  "rejected": "Closing the Dependabot PR (the next major breaks the same tests again).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
