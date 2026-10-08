@@ -102,3 +102,41 @@ def test_an_unloadable_gate_blocks_rather_than_assuming_clean(
     out = json.loads(capsys.readouterr().out)["hookSpecificOutput"]
     assert out["details"]["state"] == "gate-unavailable"
     assert "refusing to assume a clean scan" in out["reason"]
+
+
+def _without_override_reader(monkeypatch):
+    monkeypatch.delitem(sys.modules, "compliance_override", raising=False)
+    real_import = __import__
+
+    def boom(name, *a, **kw):
+        if name == "compliance_override":
+            raise ImportError("simulated")
+        return real_import(name, *a, **kw)
+
+    monkeypatch.setattr("builtins.__import__", boom)
+
+
+def test_an_unloadable_override_reader_keeps_the_gate_and_offers_no_override(
+    monkeypatch, tmp_path: Path, capsys,
+):
+    mod = _load_hook()
+    _write_summary(tmp_path, critical=2)
+    _stdin(monkeypatch, RELEASE_CMD)
+    _at(monkeypatch, tmp_path)
+    _without_override_reader(monkeypatch)
+    assert mod.main() == 2
+    captured = capsys.readouterr()
+    out = json.loads(captured.out)["hookSpecificOutput"]
+    assert out["details"]["override"] == "unavailable"
+    assert "gate-unavailable" not in json.dumps(out["details"])
+    assert "override reader" in out["additionalContext"] and "ImportError" in captured.err
+    assert "Continue anyway" not in captured.out + captured.err
+
+
+def test_an_unloadable_override_reader_still_allows_a_clean_scan(monkeypatch, tmp_path: Path):
+    mod = _load_hook()
+    _write_summary(tmp_path)
+    _stdin(monkeypatch, RELEASE_CMD)
+    _at(monkeypatch, tmp_path)
+    _without_override_reader(monkeypatch)
+    assert mod.main() == 0

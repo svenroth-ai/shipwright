@@ -19,7 +19,9 @@ sections with a commit). Cases that cannot be measured emit a visible WARN
 (``additionalContext``) instead of allowing silently.
 
 Fires only for a real ``git ... commit`` invocation (:func:`is_git_commit`), not for
-any command whose text merely contains "git commit".
+any command whose text merely contains "git commit". It measures the repo the commit
+lands in: ``git -C <path>`` / ``--work-tree`` / ``--git-dir`` (``git_commit_target``,
+``rtm_commit_scope``).
 
 **Ordering limit.** PreToolUse runs BEFORE the Bash command, so the index is read as
 it stands then: a manifest staged by the same command (``git add <manifest> && git
@@ -32,8 +34,11 @@ Exit codes:
   0 = allow (no compliance data yet, coverage sufficient, or unmeasurable + WARN)
   2 = soft-block (user can say "Continue anyway", gets logged)
 
-The user can override by saying "Continue anyway". If they do, Claude should
-log the override to .shipwright/agent_docs/compliance_overrides.log.
+The user can override by saying "Continue anyway": the block names the exact line to
+append to .shipwright/agent_docs/compliance_overrides.log, which lets the next blocked
+commit through once within 30 minutes, with a visible WARN (``lib/compliance_override``).
+A line committing to more than one repo below its threshold is never released by an
+override: commit to each repo separately.
 """
 
 from __future__ import annotations
@@ -67,17 +72,34 @@ def _resolve_project_root() -> str:
         return env_root if env_root else os.getcwd()
 
 
-def _lib():
-    """Import the sibling support module lazily, inside ``main()``'s own try/except.
-
-    A top-level import failure would crash the hook process and hard-block every
-    Bash call; here it surfaces as a visible WARN and an ALLOW."""
+def _on_path() -> None:
+    """Put the sibling ``scripts/lib`` on ``sys.path``; its modules load lazily, inside
+    ``main()``'s own try/except: a top-level import failure would crash the hook process
+    and hard-block every Bash call; there it surfaces as a visible WARN and an ALLOW."""
     lib_dir = Path(__file__).resolve().parent.parent / "lib"
     if str(lib_dir) not in sys.path:
         sys.path.insert(0, str(lib_dir))
+
+
+def _lib():
+    _on_path()
     import rtm_gate_support  # noqa: PLC0415
 
     return rtm_gate_support
+
+
+def _commit_scope():
+    _on_path()
+    import rtm_commit_scope  # noqa: PLC0415
+
+    return rtm_commit_scope
+
+
+def _override():
+    _on_path()
+    import compliance_override  # noqa: PLC0415
+
+    return compliance_override
 
 
 def is_git_commit(command: str) -> bool:
@@ -106,20 +128,16 @@ RATCHET_HINT = (
     "enforcement.rtm_coverage_baseline in shipwright_compliance_config.json; "
     "the gate then ratchets from there. The hook never writes it."
 )
-OVERRIDE_HINT = (
-    "The user may say 'Continue anyway' to override this check. "
-    "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
-    "with timestamp, hook name 'check_rtm_coverage', and reason."
-)
+HOOK = "check_rtm_coverage"
 
 
-def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
+def _hook_block(reason: str, details: dict[str, Any], override: str) -> dict[str, Any]:
     """Build soft-block hook output with override support."""
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                f"BLOCKED: {reason}\n\n{OVERRIDE_HINT}\n\n"
+                f"BLOCKED: {reason}\n\n{override}\n\n"
                 "Note: Coverage gap will be flagged again at next compliance checkpoint."
             ),
             "blocked": True,
@@ -127,6 +145,12 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
             "details": details,
         }
     }
+
+
+def _scope(command: str, cwd: Any):
+    """The repo the commit lands in (``git -C`` / ``--git-dir`` / ``--work-tree``), else
+    the managed project root, plus the ``GIT_DIR`` env its git reads need."""
+    return _commit_scope().commit_scope(command, cwd, _resolve_project_root)
 
 
 def _read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
@@ -162,53 +186,36 @@ def main() -> int:
     if not isinstance(command, str) or not is_git_commit(command):
         return 0
 
-    # Resolve the managed project root (auto-descends in subdir layouts).
-    project_root = _resolve_project_root()
-
-    try:
-        measure, warnings = _measure(project_root)
+    try:  # everything that can raise -- meets() included -- WARNs, never allows silently
+        lib = _lib()
+        scope = _scope(command, payload.get("cwd"))
+        project_root, warnings = scope.root, list(scope.warnings)
+        if scope.measured is None:
+            with _commit_scope().git_env(scope.env):
+                measure, measured_warnings = _measure(project_root)
+        else:
+            measure, measured_warnings = scope.measured
         threshold, config_warnings, baseline = _read_threshold(project_root)
+        below = measure is not None and not lib.meets(measure, threshold)
+        above = (measure is not None and not below and baseline is not None
+                 and lib.above_baseline(measure, baseline))
+        override = _override() if below else None
     except Exception as exc:  # noqa: BLE001 - a broken gate must say so, then allow
         _warn_output([
             f"coverage measurement failed ({type(exc).__name__}: {str(exc)[:120]}); "
             "the 80% commit gate is NOT evaluating"
         ])
         return 0
-    warnings += config_warnings
+    warnings += measured_warnings + config_warnings
     if measure is None:
         if warnings:
             _warn_output(warnings)
         return 0
 
-    lib = _lib()
     threshold_pct = lib.pct_text(threshold)
-    if not lib.meets(measure, threshold):
-        details: dict[str, Any] = {
-            "coverage_pct": measure["pct"],
-            "threshold_pct": float(threshold_pct),
-            "metric": measure["kind"],
-            "warnings": warnings,
-            "ratchet_hint": RATCHET_HINT,
-        }
-        # the ordering limit concerns the staged manifest: the legacy RTM line has none
-        hints = [RATCHET_HINT]
-        if measure["kind"] == "requirements":
-            details["staging_hint"] = STAGING_HINT
-            hints.append(STAGING_HINT)
-            details["fr"] = measure["coverage"]["fr"]
-            details["ac"] = measure["coverage"]["ac"]
-            details["source_commit"] = measure["source_commit"]
-            details["uncovered_requirements"] = measure["coverage"]["uncovered_requirements"]
-        else:
-            details["uncovered_sections"] = lib.find_uncovered_sections(project_root)
-        reason = f"{lib.describe(measure)} < {threshold_pct}% threshold"
-        print(json.dumps(_hook_block(reason=reason, details=details)))
-        # exit 2: Claude Code shows the model STDERR and ignores the stdout JSON
-        print("\n".join([f"BLOCKED (check_rtm_coverage): {reason}", *hints, OVERRIDE_HINT]),
-              file=sys.stderr)
-        return 2
-
-    if baseline is not None and lib.above_baseline(measure, baseline):
+    if below:
+        return _block(lib, override, measure, threshold_pct, warnings, project_root, scope.below)
+    if above:
         warnings.append(
             f"measured {measure['pct']}% is above the recorded rtm_coverage_baseline "
             f"({lib.pct_text(baseline)}%); raise it in shipwright_compliance_config.json "
@@ -217,6 +224,44 @@ def main() -> int:
     # the number and its definition are visible on every evaluated commit
     _warn_output(warnings, info=f"{lib.describe(measure)} >= {threshold_pct}% threshold")
     return 0
+
+
+def _block(lib: Any, override: Any, measure: dict[str, Any], threshold_pct: str,
+           warnings: list[str], project_root: str, below: list[str]) -> int:
+    """Soft-block (exit 2), unless one logged override releases this single-repo commit."""
+    details: dict[str, Any] = {
+        "coverage_pct": measure["pct"],
+        "threshold_pct": float(threshold_pct),
+        "metric": measure["kind"],
+        "warnings": warnings,
+        "ratchet_hint": RATCHET_HINT,
+    }
+    # the ordering limit concerns the staged manifest: the legacy RTM line has none
+    hints = [RATCHET_HINT]
+    if measure["kind"] == "requirements":
+        details["staging_hint"] = STAGING_HINT
+        hints.append(STAGING_HINT)
+        details["fr"] = measure["coverage"]["fr"]
+        details["ac"] = measure["coverage"]["ac"]
+        details["source_commit"] = measure["source_commit"]
+        details["uncovered_requirements"] = measure["coverage"]["uncovered_requirements"]
+    else:
+        details["uncovered_sections"] = lib.find_uncovered_sections(project_root)
+    reason = f"{lib.describe(measure)} < {threshold_pct}% threshold"
+    if len(below) > 1:  # one override never releases several repos' commits
+        why_not = (f"{len(below)} repos this command commits to are below their threshold ("
+                   + ", ".join(below) + "); no override releases such a line -- commit to "
+                   "each repo separately")
+    else:
+        released, why_not = override.try_release(project_root, HOOK)
+        if released is not None:  # a logged "Continue anyway", now used
+            _warn_output(warnings, info=override.notice(HOOK, released, reason))
+            return 0
+    advice = "\n".join(filter(None, [why_not, override.instruction(project_root, HOOK)]))
+    print(json.dumps(_hook_block(reason=reason, details=details, override=advice)))
+    # exit 2: Claude Code shows the model STDERR and ignores the stdout JSON
+    print("\n".join([f"BLOCKED ({HOOK}): {reason}", *hints, advice]), file=sys.stderr)
+    return 2
 
 
 def _run() -> int:

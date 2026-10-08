@@ -2,7 +2,8 @@
 
 Threshold/baseline config, the measurement cascade (manifest first, legacy RTM
 section line only when no manifest file exists), the legacy RTM readers and the
-exact-rational gate comparison. Pure apart from reading project files.
+exact-rational gate comparison. Which repo a commit command targets lives in
+``rtm_commit_scope``. Pure apart from reading project files and the git probes.
 """
 
 from __future__ import annotations
@@ -18,7 +19,10 @@ import rtm_manifest_coverage as manifest_cov
 
 DEFAULT_THRESHOLD = 0.80
 _RTM_RELPATH = Path(".shipwright/compliance/traceability-matrix.md")
-_NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
+NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
+#: More than this share of the active requirements not measured (their linked tests
+#: all ``not_run``): the figure from the few that ran would speak for the rest, so the
+#: manifest is unmeasurable instead. Exactly half is still evaluated.
 
 
 def pct_text(value: float) -> str:
@@ -99,7 +103,9 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     Requirement coverage from the committed manifest; the legacy section line only
     when there is no manifest at all (an unexpected git failure with no working-tree
     copy is "unreadable", not "absent": WARN, never the section line). A non-current schema or a manifest with no
-    executed result is unmeasurable (WARN), never 0%. Every case that used to allow
+    executed result (on an active requirement) is unmeasurable (WARN), never 0%, as is
+    one where no active requirement
+    is measured (the N-of-M WARN says how many). Every case that used to allow
     silently says why in a WARN -- except a project with no compliance data at all.
     """
     warnings: list[str] = []
@@ -110,26 +116,31 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     if manifest is not None:
         schema = manifest_cov.schema_problem(manifest)
         if schema:  # never relabel a stale-shape read as coverage, nor fall back
-            return None, [*warnings, schema, _NOT_EVALUATING]
+            return None, [*warnings, schema, NOT_EVALUATING]
         cov = manifest_cov.compute_coverage(manifest, project_root)
         stale = manifest_cov.staleness_warning(manifest, project_root)
         if stale:
             warnings.append(stale)
-        if cov["fr"]["pct"] is None:
+        unmeasured, total = cov["fr"]["not_measured"], cov["fr"]["total"]
+        if unmeasured:
             warnings.append(
-                "traceability manifest lists no active requirements; nothing to measure "
-                f"({_NOT_EVALUATING})"
-            )
-            return None, warnings
+                f"{unmeasured} of {unmeasured + total} requirements not measured "
+                "(every linked test not_run in the last evidence run); left out of the "
+                "figure, neither covered nor uncovered")
         unexecuted = manifest_cov.execution_problem(manifest)
+        if total == 0:  # whatever the unmeasured count: never a figure over zero
+            if not unmeasured:
+                return None, [*warnings, "traceability manifest lists no active "
+                              f"requirements; nothing to measure ({NOT_EVALUATING})"]
+            return None, [*warnings, *filter(None, [unexecuted]), NOT_EVALUATING]
         if unexecuted:
-            return None, [*warnings, unexecuted, _NOT_EVALUATING]
+            return None, [*warnings, unexecuted, NOT_EVALUATING]
         return {"kind": "requirements", "pct": cov["fr"]["pct"], "coverage": cov,
                 "source_commit": manifest.get("source_commit")}, warnings
     if problem or any(n.startswith(manifest_cov.UNREADABLE) for n in notes):
         # present but unreadable, or git failed unexpectedly with no working-tree copy:
         # never relabel build-section coverage as the answer
-        warnings.append(_NOT_EVALUATING)
+        warnings.append(NOT_EVALUATING)
         return None, warnings
     legacy = get_coverage_from_rtm(project_root)
     if legacy is not None:
@@ -139,7 +150,7 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
         warnings.append(
             "compliance data exists but no coverage figure could be read "
             "(no manifest requirements, no RTM 'Traceability coverage' line); "
-            "the 80% commit gate is NOT evaluating"
+            f"{NOT_EVALUATING}"
         )
     return None, warnings
 
@@ -172,5 +183,7 @@ def describe(m: dict[str, Any]) -> str:
         f"Requirement coverage {fr['pct']}% ({fr['covered']}/{fr['total']} active requirements "
         f"have an executed-passing bound test; ACs {ac['covered']}/{ac['total']}"
         + (f" = {ac['pct']}%" if ac["pct"] is not None else "")
-        + f", AC inventory from {ac.get('source', 'manifest')})"
+        + f", AC inventory from {ac.get('source', 'manifest')}"
+        + (f"; {fr['not_measured']} more not measured" if fr.get("not_measured") else "")
+        + ")"
     )

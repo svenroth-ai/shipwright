@@ -1,0 +1,1 @@
+shipwright-compliance: saying 'Continue anyway' to the coverage or security soft-block now works - the block names the exact line to log, and that entry lets the next blocked command through once within 30 minutes (previously the hooks never read the log, so the next attempt was blocked again)

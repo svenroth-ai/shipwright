@@ -1,0 +1,9 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "All 7 numbered items built with tests tagged FR-01.10; item 2 is single-use within 30 minutes per 'allows the next commit ... for 30 minutes'; docs rows + detail note updated."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Unreadable override log -> no override; unwritable CONSUMED line -> visible WARN; a commit target that is not a directory -> WARN + default root; malformed log lines skipped."},
+  {"name": "Security Basics", "verdict": "pass", "note": "Override reasons are stripped of control characters before echo; the printf instruction passes the reason as a separate %s argument; future-dated entries ignored so an override cannot be pre-dated."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Real temp git repos for -C / --work-tree / --git-dir (negative probe: disabling the GIT_DIR hand-off fails the bare git-dir test); bash round-trip of the printed instruction; single-use proven by a second blocked run."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One extra small file read on a blocked command only; the commit parser lexes the command once more for other_targets - negligible next to the git subprocesses."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Three focused new lib modules (heredoc, commit target, override) instead of growing the hook; every touched file under 300 lines."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "compliance_overrides.log: producers = agent printf line and override_logger, consumer = compliance_override; round-trip probed (bash printf -> reader; CONSUMED write -> reader). compute_coverage output consumer is only rtm_gate_support (grep)."}
+]}

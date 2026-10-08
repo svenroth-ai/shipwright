@@ -14,6 +14,8 @@ import re
 import shlex
 from pathlib import Path
 
+from shell_heredoc import strip_heredoc_bodies
+
 # git global options that consume the following token (``git -C <path> commit``).
 _GIT_OPTS_WITH_VALUE = frozenset({"-C", "-c", "--git-dir", "--work-tree", "--namespace"})
 _SEPARATOR_CHARS = frozenset(";|&()")
@@ -39,7 +41,7 @@ _ENV_SPLIT_SHORT = re.compile(r"-[i0v]*S(.*)", re.DOTALL)
 
 def _program(token: str) -> str:
     name = Path(token).name.lower()
-    return name[:-4] if name.endswith(".exe") else name
+    return name[:-4] if name.endswith((".exe", ".cmd")) else name  # git.exe, git.cmd
 
 
 def _env_split_string(tokens: list[str], i: int) -> tuple[str | None, int]:
@@ -130,26 +132,31 @@ def _inner_command(tokens: list[str]) -> str | None:
     return None
 
 
-def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
+def _segment_commit(tokens: list[str], depth: int = 0) -> tuple[str, ...] | None:
+    """git's global options when the segment runs ``git ... commit`` (``()`` unparsed), else None."""
     start, split = _skip_wrappers(tokens)
     if split is not None:
-        return _env_split_is_commit(split, tokens[start:], depth)
+        return () if _env_split_is_commit(split, tokens[start:], depth) else None
     tokens = tokens[start:]
     if not tokens or tokens[0].startswith("#"):
-        return False  # empty, or a comment: # git commit
+        return None  # empty, or a comment: # git commit
     if _program(tokens[0]) in (*_SHELLS, *_POWERSHELLS, "eval", "cmd"):
         inner = _inner_command(tokens)
         if inner is None:
-            return False
-        if depth >= _MAX_SHELL_DEPTH:
-            return "git commit" in inner  # too deep to parse: over-fire, never fail open
-        return is_git_commit(inner, depth + 1)
+            return None
+        if depth >= _MAX_SHELL_DEPTH:  # too deep to parse: over-fire, never fail open
+            return () if "git commit" in inner else None
+        return find_git_commit(inner, depth + 1)
     if _program(tokens[0]) != "git":
-        return False
+        return None
     i = 1
     while i < len(tokens) and tokens[i].startswith("-"):
         i += 2 if tokens[i] in _GIT_OPTS_WITH_VALUE else 1
-    return i < len(tokens) and tokens[i] == "commit"
+    return tuple(tokens[1:i]) if i < len(tokens) and tokens[i] == "commit" else None
+
+
+def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
+    return _segment_commit(tokens, depth) is not None
 
 
 def is_git_commit(command: str, _depth: int = 0) -> bool:
@@ -170,22 +177,41 @@ def is_git_commit(command: str, _depth: int = 0) -> bool:
     falls back to the substring test so the gate still fires. Known over-fires: a
     trailing comment holding a separator (``echo hi # ; git commit``), a quoted
     separator that ``eval`` / ``-Command`` / ``cmd /c`` re-join without its quotes
-    (``eval echo "a; git commit"``), and ``git commit --dry-run`` / ``-h``.
+    (``eval echo "a; git commit"``), and ``git commit --dry-run`` / ``-h``. Here-document
+    bodies are data, not commands (``shell_heredoc``). ``git.exe`` / ``git.cmd`` and
+    ``command git`` are git; a user-configured git alias (``git ci``) is NOT covered.
     """
-    text = command.replace("\\\r\n", " ").replace("\\\n", " ")
+    return find_git_commit(command, _depth) is not None
+
+
+def find_git_commit(command: str, _depth: int = 0) -> tuple[str, ...] | None:
+    """The global options of the first ``git ... commit`` in *command* (:func:`is_git_commit`).
+
+    ``()`` when it has none, or when only the substring fallback found the commit
+    (unparseable text, past the depth cap); ``None`` when *command* runs no commit.
+    """
+    return next(iter_git_commits(command, _depth), None)
+
+
+def iter_git_commits(command: str, _depth: int = 0):
+    """The global options of every top-level ``git ... commit`` segment, in order."""
+    text = strip_heredoc_bodies(command)
+    flat = text.replace("\\\r\n", " ").replace("\\\n", " ")
     try:
-        lexer = shlex.shlex(text.replace("\n", " ; "), posix=True, punctuation_chars=True)
+        lexer = shlex.shlex(flat.replace("\n", " ; "), posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
         lexer.commenters = ""  # a '#' must not swallow the rest of the flattened line
         tokens = list(lexer)
     except ValueError:
-        return "git commit" in command
+        if "git commit" in text:
+            yield ()
+        return
     segment: list[str] = []
     for token in [*tokens, ";"]:
         if token and set(token) <= _SEPARATOR_CHARS:
-            if _segment_is_commit(segment, _depth):
-                return True
+            found = _segment_commit(segment, _depth)
+            if found is not None:
+                yield found
             segment = []
         else:
             segment.append(token)
-    return False

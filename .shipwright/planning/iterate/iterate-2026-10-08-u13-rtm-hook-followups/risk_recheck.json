@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u13-rtm-hook-followups",
+  "risk_recheck": {
+    "changed_file_count": 14,
+    "diff_loc": 859,
+    "risk_flags": [
+      "cross_component"
+    ],
+    "diff_risk_flags": [
+      "cross_component"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "small",
+    "effective_complexity": "medium",
+    "upgraded": true,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

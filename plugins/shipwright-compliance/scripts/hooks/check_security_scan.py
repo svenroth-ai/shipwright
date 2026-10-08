@@ -20,8 +20,9 @@ fail-open wrapper. **The gate itself is `lib/security_gate.decide`** — read it
 docstring for the branch table, the fail-closed posture, and why the threshold is
 compared against `by_severity.critical` rather than `open_high_critical`.
 
-Exit codes: 0 = allow (no summary, or clean within threshold);
-2 = soft-block (user can say "Continue anyway", gets logged).
+Exit codes: 0 = allow (no summary, clean within threshold, or an unused logged
+override inside its 30-minute window, with a visible WARN -- ``lib/compliance_override``);
+2 = soft-block (the user can say "Continue anyway"; the block names the log line).
 """
 
 from __future__ import annotations
@@ -55,23 +56,31 @@ def _resolve_project_root() -> str:
         return env_root if env_root else os.getcwd()
 
 
-def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
-    """Build soft-block hook output with override support."""
-    return {
+HOOK = "check_security_scan"
+# only when the security gate itself cannot be loaded
+_STATIC_OVERRIDE = (
+    "The user may say 'Continue anyway' to override this check. If they do, log the "
+    "override to .shipwright/agent_docs/compliance_overrides.log with timestamp, hook "
+    f"name '{HOOK}', and reason."
+)
+
+
+def _hook_block(reason: str, details: dict[str, Any], override: str = _STATIC_OVERRIDE) -> int:
+    """Print the soft-block (stdout JSON, and STDERR, which Claude Code shows on exit 2)."""
+    print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                f"BLOCKED: {reason}\n\n"
-                "The user may say 'Continue anyway' to override this check. "
-                "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
-                "with timestamp, hook name 'check_security_scan', and reason.\n\n"
+                f"BLOCKED: {reason}\n\n{override}\n\n"
                 "Note: Security findings will be flagged again before production deploy."
             ),
             "blocked": True,
             "reason": reason,
             "details": details,
         }
-    }
+    }))
+    print(f"BLOCKED ({HOOK}): {reason}\n{override}", file=sys.stderr)
+    return 2
 
 
 # Command families this gate soft-blocks (the actual deploy CLIs / scripts).
@@ -122,18 +131,35 @@ def main() -> int:
             sys.path.insert(0, str(lib_dir))
         from security_gate import decide  # noqa: PLC0415
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps(_hook_block(
+        return _hook_block(
             reason=("the security gate could not be loaded "
                     f"({type(exc).__name__}) — refusing to assume a clean scan"),
             details={"state": "gate-unavailable"},
-        )))
-        return 2
+        )
+    # The override reader is separate: losing it must not cost the gate decision.
+    try:
+        import compliance_override as override  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        override, override_error = None, type(exc).__name__
+    else:
+        override_error = ""
 
     blocked, reason, details = decide(project_root)
     if not blocked:
         return 0
-    print(json.dumps(_hook_block(reason=reason, details=details)))
-    return 2
+    if override is None:
+        return _hook_block(reason, {**details, "override": "unavailable"}, (
+            f"The override reader (lib/compliance_override) could not be loaded "
+            f"({override_error}), so no override is available for this block: fix the "
+            "reader or resolve the findings."))
+    released, why_not = override.try_release(project_root, HOOK)
+    if released is not None:  # a logged "Continue anyway", now used
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": override.notice(HOOK, released, reason)}}))
+        return 0
+    advice = "\n".join(filter(None, [why_not, override.instruction(project_root, HOOK)]))
+    return _hook_block(reason, details, advice)
 
 
 def _run() -> int:

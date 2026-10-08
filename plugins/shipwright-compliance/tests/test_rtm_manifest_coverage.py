@@ -36,18 +36,18 @@ def _req(tests, acs=None, status="active"):
 def test_fr_and_ac_are_separate_metrics():
     m = {"requirements": {"a": _req([_link()], {"AC01": [_link()], "AC02": [_link("fail")]})}}
     cov = rmc.compute_coverage(m)
-    assert cov["fr"] == {"covered": 1, "total": 1, "pct": 100}
+    assert cov["fr"] == {"covered": 1, "total": 1, "pct": 100, "not_measured": 0}
     assert cov["ac"] == {"covered": 1, "total": 2, "pct": 50, "source": "manifest"}
 
 
-@pytest.mark.parametrize("link", [
-    _link("not_run"), _link("fail"), _link(status="skipped"),
+@pytest.mark.parametrize("link", [  # all-not_run is "not measured" (U13), not uncovered
+    _link("fail"), _link(status="skipped"),
     {"id": "t::y", "status": "enabled"},  # missing result
     "garbage",
 ])
 def test_skipped_failed_missing_or_malformed_results_are_not_covered(link):
     cov = rmc.compute_coverage({"requirements": {"a": _req([link])}})
-    assert cov["fr"] == {"covered": 0, "total": 1, "pct": 0}
+    assert cov["fr"] == {"covered": 0, "total": 1, "pct": 0, "not_measured": 0}
     assert cov["uncovered_requirements"] == ["FR-01.01"]
 
 
