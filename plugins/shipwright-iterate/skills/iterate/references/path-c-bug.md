@@ -15,9 +15,10 @@ typically NONE. Classify it anyway:
 - **NONE** (default) — the fix restores behavior the spec already
   describes correctly. No FR change.
 
-BUG iterates are NOT gated by the F11 spec-impact verifier — a bug fix
-need not touch the spec. Record the classification in the iterate ADR;
-ADD does not apply to bug fixes.
+BUG iterates are gated like features (no exemption): record the FR the
+fix restores in `affected_frs`, or `spec_impact: none` with a one-line
+`spec_impact_justification` and `spec_impact_reason_code:
+restores-specified-behavior` (F5b.md). ADD does not apply to bug fixes.
 
 ## Step 3: Investigate & Reproduce
 

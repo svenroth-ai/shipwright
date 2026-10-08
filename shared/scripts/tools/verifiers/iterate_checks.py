@@ -40,6 +40,7 @@ from lib.architecture_doc import (  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
 from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
+from lib.spec_impact_gate import SPEC_IMPACT_INTENTS, none_record_problem  # noqa: E402
 
 from ._finalization_claims import run_claim_checks  # noqa: E402
 from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402, F401 — re-exported
@@ -86,6 +87,8 @@ from .layer_coverage_binding import check_binding_completeness  # noqa: E402, F4
 from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F401
 from .surface_check import check_surface_verification  # noqa: E402 — F0.5 audit, re-exported
 
+
+SPEC_IMPACT_CHECK_NAME = "spec impact recorded (feature/change/bug)"
 
 # ---------------------------------------------------------------------------
 # Individual checks (iterate-specific — do NOT use the generic C1-C5 helpers)
@@ -555,24 +558,25 @@ def check_spec_impact_recorded(
     run_id: str,
     commit_hash: str,
 ) -> CheckResult:
-    """Spec-impact gate — a FEATURE/CHANGE iterate must change the spec or
+    """Spec-impact gate — a FEATURE/CHANGE/BUG iterate must change the spec or
     explicitly record ``spec_impact=none`` with a justification.
 
     Two sources of truth, checked in order:
 
-    1. The F7 ``work_completed`` event's ``spec_impact`` classification.
-       ``none`` + a justification (``spec_impact_justification`` OR the FR-gate's
-       equivalent ``none_reason``) → PASS; ``none`` without one → FAIL.
+    1. The F7 ``work_completed`` event's ``spec_impact`` classification, read by
+       :func:`lib.spec_impact_gate.none_record_problem`: ``none`` + a one-line
+       justification (``spec_impact_justification`` OR ``none_reason``) → PASS;
+       without one → FAIL; justified but no closed ``spec_impact_reason_code``
+       → WARN (an older or stale-cached writer; the write-time gate demands it).
     2. Otherwise (``add``/``modify``/``remove`` or a legacy event with no
        ``spec_impact``): the iterate's WORK up to ``event_commit`` — via
        :func:`_iterate_changed_paths`, NOT one commit — must touch a planning spec.md.
 
-    BUG iterates, intent-less entries, and runs whose entry is absent are
-    SKIPPED — a bug fix need not touch the spec. ``git_context`` SKIPs on
-    ``not_git``, fails CLOSED on any other fault (trg-4183acd3). Severity ERROR
-    on failure (blocks default exit and ``--strict``). Origin: iterate-2026-05-16-spec-impact-gate.
+    Intent (case-insensitive) outside feature/change/bug, or no entry: SKIPPED;
+    fixes answer too (U6). ``git_context`` SKIPs on ``not_git``, fails CLOSED on
+    any other fault (trg-4183acd3). Origin: iterate-2026-05-16-spec-impact-gate.
     """
-    name = "spec impact recorded (feature/change)"
+    name = SPEC_IMPACT_CHECK_NAME
 
     entry = find_entry_by_run_id(project_root, run_id)
     if not entry:
@@ -580,49 +584,31 @@ def check_spec_impact_recorded(
             name, True, f"skipped (run_id={run_id} not in history)",
             severity=Severity.SKIPPED.value,
         )
-    intent = entry.get("intent", entry.get("type", ""))
-    if intent not in ("feature", "change"):
+    intent = str(entry.get("intent", entry.get("type", "")) or "").strip().lower()
+    if intent not in SPEC_IMPACT_INTENTS:
         return CheckResult(
             name, True, f"skipped (intent={intent or 'unknown'})",
             severity=Severity.SKIPPED.value,
         )
 
-    # Look up the F7 event by run_id first (primary, iterate-identity); fall
-    # back to commit_hash for legacy single-commit iterates whose F7 event
-    # carries no adr_id. This is what makes multi-commit iterates work — the
-    # caller passes HEAD as commit_hash, but the event references the F6
-    # commit (earlier on the branch).
+    # The F7 event by run_id first (iterate identity, survives multi-commit
+    # iterates); the commit_hash lookup is the legacy single-commit fallback.
     event = _find_work_event_by_run_id(project_root, run_id)
     if event is None:
         event = _find_work_event_by_commit(project_root, commit_hash)
-    # The commit the event references — used downstream for the spec.md
-    # path check. Defaults to the caller-supplied commit_hash when no event
-    # was found (matches the original behavior).
+    # The commit the event references (for the spec.md path check); the
+    # caller-supplied commit_hash when no event was found.
     event_commit = str((event or {}).get("commit", "") or "") or commit_hash
     spec_impact = str((event or {}).get("spec_impact", "")).lower()
 
     if spec_impact == "none":
-        # `spec_impact_justification` and the FR-gate's `none_reason` are the
-        # same semantic field ("why spec_impact=none"); the FR-gate already
-        # REQUIRES none_reason for a none-impact event, and it is the only field
-        # finalize_iterate's --event-extras-json documents. Accept either so a
-        # caller that recorded only none_reason isn't falsely failed.
-        event_d = event or {}
-        justification = str(
-            event_d.get("spec_impact_justification")
-            or event_d.get("none_reason")
-            or ""
-        ).strip()
-        if justification:
-            return CheckResult(
-                name, True,
-                f"spec_impact=none, justified ({len(justification)} chars)",
-            )
-        return CheckResult(
-            name, False,
-            "spec_impact=none recorded WITHOUT a justification — a "
-            "feature/change iterate claiming no spec impact must justify it",
-        )
+        problem = none_record_problem(event)
+        if problem is None:
+            return CheckResult(name, True, "spec_impact=none, justified, closed reason code")
+        level, why = problem
+        if level == "warning":
+            return CheckResult(name, False, why, severity=Severity.WARNING.value)
+        return CheckResult(name, False, why)
 
     # spec_impact add|modify|remove, or a legacy event with no spec_impact:
     # the branch this iterate built must have touched a planning spec.md.
@@ -743,7 +729,7 @@ def run_all_checks(
         check_surface_verification(project_root, run_id, commit_hash),
         check_test_completeness_ledger(project_root, run_id),
         check_spec_impact_recorded(project_root, run_id, commit_hash) if commit_hash else CheckResult(
-            "spec impact recorded (feature/change)", True,
+            SPEC_IMPACT_CHECK_NAME, True,
             "skipped (no --commit supplied)", severity=Severity.SKIPPED.value,
         ),
         check_architecture_documented(project_root, run_id),

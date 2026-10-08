@@ -315,10 +315,9 @@ def _record_event(
         except ValueError as exc:
             raise FinalizeGateError(f"'tests' block malformed: {exc}", code="fr_gate_malformed_tests_block") from exc
 
-        # FR-gate parity (ADR-059): closes the bypass that let FR-less events
-        # reach the log via this direct caller. run_fr_gates applies all three
-        # gates (classified, ids-exist, evidenced) so none can be forgotten.
-        gate_error = run_fr_gates(event, project_root, "finalize_iterate")
+        # FR-gate parity (ADR-059): run_fr_gates runs every requirement gate; intent comes from the entry first.
+        from lib.spec_impact_gate import stamp_intent_from_history
+        gate_error = stamp_intent_from_history(event, project_root) or run_fr_gates(event, project_root, "finalize_iterate")
         if gate_error is not None:
             raise FinalizeGateError(gate_error.get("detail", "FR-gate rejected the event"), code=gate_error.get("error", "fr_gate_unclassified"))
 

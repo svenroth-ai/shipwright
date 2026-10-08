@@ -1,0 +1,142 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-u6-requirement-gate",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 21004,
+      "total": 21004
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 574,
+      "total": 574
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_requirement_gate_spec_impact.py shared/tests/test_requirement_gate_change_type_diff.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 47,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-08-u6-requirement-gate/surface_verification.log",
+      "timestamp": "2026-10-08T13:25:29.663Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "bug iterates are not exempt from the spec-impact rule",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_spec_impact.py::test_a_bug_iterate_naming_nothing_is_refused PASSED; shared/tests/test_requirement_gate_spec_impact.py::test_f11_no_longer_skips_a_bug_iterate PASSED"
+        },
+        {
+          "behavior": "spec_impact none needs a one-line justification and a closed reason code",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_spec_impact.py::test_none_without_a_closed_code_is_refused PASSED; shared/tests/test_requirement_gate_spec_impact.py::test_a_justification_that_is_not_one_line_of_text_is_refused PASSED"
+        },
+        {
+          "behavior": "FR existence fails closed when specs exist but parse to zero requirements",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_spec_impact.py::test_specs_that_parse_to_zero_requirements_refuse_a_declared_id PASSED; shared/tests/test_fr_gate_existence.py::TestFrExistenceGate::test_zero_parsed_requirements_blocks_a_declared_id PASSED"
+        },
+        {
+          "behavior": "a collector crash on present specs reads as found-with-no-ids",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_spec_impact.py::test_a_collector_crash_on_present_specs_reads_as_found_not_absent PASSED"
+        },
+        {
+          "behavior": "the spec-impact gate also runs at F5b",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_spec_impact.py::test_the_f5b_write_path_runs_the_spec_impact_gate PASSED; shared/tests/test_requirement_gate_spec_impact.py::test_the_f5b_path_refuses_a_non_text_justification PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "the record_event CLI accepts --spec-impact-reason-code and refuses an unclassified bug",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_spec_impact.py::test_the_cli_refuses_an_unclassified_bug_and_accepts_the_reason_code PASSED"
+        },
+        {
+          "behavior": "no-FR change_type is checked against a mixed diff, naming only uncovered paths",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_mixed_webui_diff_under_docs_is_refused_naming_only_the_uncovered_paths PASSED"
+        },
+        {
+          "behavior": "untracked files are part of the diff",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_an_untracked_runtime_file_is_seen PASSED"
+        },
+        {
+          "behavior": "renames are judged on both sides",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_a_rename_out_of_runtime_code_is_judged_on_both_sides PASSED"
+        },
+        {
+          "behavior": "unknown paths are refused",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_unknown_paths_are_refused_and_reported_once PASSED"
+        },
+        {
+          "behavior": "monorepo shape: tooling/infra cover shared/scripts and scripts",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_monorepo_shape_tooling_and_infra_are_the_shared_and_top_level_scripts PASSED; shared/tests/test_requirement_gate_change_type_diff.py::test_a_monorepo_tooling_change_to_shared_scripts_passes PASSED"
+        },
+        {
+          "behavior": "WebUI shape keeps runtime code outside every label",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_webui_shape_keeps_runtime_code_outside_every_label PASSED; shared/tests/test_requirement_gate_change_type_diff.py::test_a_covered_webui_tooling_change_passes PASSED"
+        },
+        {
+          "behavior": "diff measured from the remote-first fork point, committed work included",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_committed_branch_work_is_measured_from_the_fork_point PASSED; shared/tests/test_requirement_gate_change_type_diff.py::test_a_local_main_advanced_to_head_does_not_hide_committed_work PASSED"
+        },
+        {
+          "behavior": "git present without a trunk ref refuses; not a git repo warns",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_no_trunk_ref_fails_closed PASSED; shared/tests/test_requirement_gate_change_type_diff.py::test_not_a_git_repo_warns_and_allows PASSED"
+        },
+        {
+          "behavior": "run_fr_gates (both write paths) reaches the change_type arm",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_gate_change_type_diff.py::test_run_fr_gates_reaches_the_change_type_arm PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 15,
+        "tested": 15,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-u6-requirement-gate",
+    "commit": "8f2700352e37f3fdd023f3e3ccf77e6feb3df052",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

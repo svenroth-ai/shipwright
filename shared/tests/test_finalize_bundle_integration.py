@@ -71,7 +71,7 @@ def _payload(run_id: str = _RUN_ID) -> dict:
                 "description": "finalize_bundle orchestrator",
                 "summary": "the finalize phase now runs as one bundled call",
                 "spec_impact": "none",
-                "spec_impact_justification": "artifacts byte-identical; only turn-taking collapses",
+                "spec_impact_justification": "artifacts byte-identical; only turn-taking collapses", "spec_impact_reason_code": "behavior-preserving",
                 "change_type": "tooling",
                 "none_reason": "behavior-preserving finalization orchestration",
                 "tests": {"passed": 1, "total": 1, "e2e_run": False},
