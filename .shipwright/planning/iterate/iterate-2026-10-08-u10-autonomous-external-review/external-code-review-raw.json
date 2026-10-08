@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/review_unavailable_note.py:54\n- Finding: `_evidence()` discards the error returned by `artifact_problem()`. If the capture is deleted after recording, the tool prints `NO CAPTURE` and exits successfully; if it is replaced with a successful reply, the tool labels that reply\u2019s path as an \u201cadapter error.\u201d With `--file-triage`, it also files a card claiming the reviewer could not run despite the invalid evidence.\n- Suggestion: Propagate capture-validation failures to `main()`, print `INVALID - ...`, and exit 1 before filing a card. Add tests for deleted captures and captures overwritten with successful replies.\n\nShip-with-fixes: the evidence gate is implemented, but the reporting tool must enforce its validation result. Local execution was blocked, so the authoritative BRIEF and test results could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/tools/review_unavailable_note.py (`_evidence` / `unavailable_rows`)\n  Finding: The note tool reads captures from the working tree only, while the F11 verifier reads from the commit when `reviews.json` is committed. If the working-tree capture is deleted or rewritten after commit, F12/PR line can name a path (or claim `NO CAPTURE`) that contradicts what the verifier saw from the commit.\n  Suggestion: Acceptable in practice (F12 runs before push), but consider reusing the commit-aware reader when a commit hash is available, or documenting that the note is worktree-snapshot semantics.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/review_unavailable.py:artifact_problem\n  Finding: A raw JSON dict with a truthy-but-wrong-typed failure marker (e.g. `\"success\": \"false\"`, `\"degraded\": \"true\"` as strings) is treated as a *successful* reply and refuses the claim with \"DID run\". Strict `is False` / `is True` is defensible, but a partially-conforming adapter envelope would be misread as success.\n  Suggestion: Either accept the string forms of `false`/`true` or make the refusal message say \"not a recognized failure envelope\" rather than asserting the review ran.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/review_unavailable_note.py (`file_card`)\n  Finding: Idempotency fallback scans `read_all_items` for `item.get(\"dedupKey\") == _dedup_key(run_id)`. If the triage store persists the key under a different field name (or trims it), the fallback silently raises \"neither filed nor found\" even though a card exists \u2014 turning a dedup into a loud failure. This is fail-loud so behavior is safe, but the coupling to the field name is untested against the real triage schema.\n  Suggestion: Assert the field name against the triage module's writer in a test, or expose a lookup-by-dedup-key helper in `triage`.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_review_unavailable_note.py (`test_note_says_none_when_every_pass_ran`)\n  Finding: This test only exercises the empty/no-rows path via `init`; it does not verify that a record with a *pending* row still prints something sane (it would print `none`, since `unavailable_rows` only looks at `reason_code`). Not a defect in the tool, but the \"none means every pass ran\" claim is only true given the record check passed elsewhere.\n  Suggestion: Optional \u2014 add an assertion or comment that the note tool is not itself a gate.\n\n- Category: regression\n  Severity: medium\n  File: shared/scripts/tools/record_review_pass.py (`_validate_record_args`)\n  Finding: `write_time_error` now hard-fails `--reason-code unavailable` on `plan`/`external_code` when the stderr file is absent and stdout is non-JSON. Legacy sessions or any doc path that still redirects only stdout (`>` without `2>`) will produce exactly that state (non-JSON error text on stdout, no stderr file), making the row unrecordable. The diff updates the known runner references, but any other invocation site of `external_review.py` without the new `2>` redirect becomes a trap.\n  Suggestion: Either grep for all `external_review.py` invocation sites and add the `2>` redirect (the diff covers the runner, campaign-step-3-5, iteration-planning, iteration-reviews \u2014 verify there are no others), or accept non-JSON stdout as evidence when it's clearly a shell/uv error message.\n\nPositive notes: the evidence precedence rule (envelope decides alone; non-JSON stdout alone proves nothing) is well-specified and well-tested; the commit-vs-worktree tests (`test_gate_reads_the_capture_from_the_commit_not_the_working_tree`, `test_committed_bytes_win_over_a_different_working_tree_copy`) are genuinely behavior-validating, not smoke tests; write-time and verify-time enforcement both exist per the spec; the loud surfaces (PR body, F12, campaign step 5, result.json `unavailable_note`) are all wired; no secrets leak (paths only, tested).\n\nOverall: the unit implements the spec's ACs (evidence-backed `unavailable`, loud continuation, one idempotent triage card, write-time + verify-time enforcement) with strong tests. The findings are refinements except the medium legacy-redirect regression, which deserves a quick audit of remaining call sites.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -4713,8 +4713,23 @@ and record `driver`, `driver_requested`, `codextender_active` and, when coerced,
 `verifiers/review_record_closure.py`) STOPs the run at EVERY complexity while
 any is `pending`, while `self` is not `completed` with evidence, or while a
 `not_run` / `not_applicable` row lacks a closed-vocabulary `reason_code`
-(`trivial-auto` at trivial only; a per-type code from small up). Three
+(`trivial-auto` at trivial only; a per-type code from small up). Four
 properties beyond "no pending row":
+
+- **`unavailable` on an external pass needs the adapter's captured error.**
+  `plan` / `external_code` closed `reason_code: unavailable` need, in the run
+  dir, the adapter's failure envelope (its `review_schema`, `success: false` or
+  `degraded: true`, a non-empty `error` / `degraded_reason`, the pass's `mode`)
+  or — raw file present, no JSON — a non-empty `<raw stem>.stderr.txt`; symlinks,
+  successful and all-legs-`skipped` replies refuse it. Read from the commit when
+  the record is committed (`lib/review_unavailable.py`,
+  `verifiers/review_record_unavailable.py`; `record_review_pass.py record` too).
+  A passing line names every `unavailable` pass; `shared/scripts/tools/review_unavailable_note.py`
+  prints the PR-body / F12 line (WARNs on a stray `.stderr.txt`) and, with
+  `--file-triage`, files one `iterate`-source re-run card per run. At medium+ a
+  CAMPAIGN entry (branch `iterate/campaign-*--U<n>` or a `sub-iterates/` spec)
+  passes the floor below with `external_code` `unavailable` + `code` `not_run`
+  `delegated-to-orchestrator` (3f-bis promotes `code` before any merge).
 
 - **The floor demands evidence, not a status** (medium+). A `code` /
   `external_code` row recorded `completed` must carry a non-empty `findings`
