@@ -43,7 +43,8 @@ def test_spec_impact_none_with_none_reason_passes(tmp_path):
     proj = tmp_path / "p"
     _seed_entry_with_intent(proj, "r1", "feature")
     _write_work_event(proj, "abc1234", intent="feature", spec_impact="none",
-                      none_reason="plugin-internal tooling; no target-app FR")
+                      none_reason="plugin-internal tooling; no target-app FR",
+                      spec_impact_reason_code="tooling-only")
     result = check_spec_impact_recorded(proj, "r1", "abc1234")
     assert result.ok is True
 
@@ -55,6 +56,7 @@ def test_spec_impact_none_prefers_explicit_justification(tmp_path):
     _seed_entry_with_intent(proj, "r1", "change")
     _write_work_event(proj, "abc1234", intent="change", spec_impact="none",
                       spec_impact_justification="explicit reason",
-                      none_reason="fallback reason")
+                      none_reason="fallback reason",
+                      spec_impact_reason_code="behavior-preserving")
     result = check_spec_impact_recorded(proj, "r1", "abc1234")
     assert result.ok is True

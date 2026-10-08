@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes, the gate should exist \u2014 A is the right family \u2014 but the \"detected project shape + per-project extension key\" layer is a standing mechanism the project does not need yet and should not acquire now.\n\n2. **The smallest thing that would do.** One static per-label glob map in a single `verifiers/_` module: for each no-FR label, the list of path prefixes it may touch (with `tooling`/`infra` mapping to `scripts/**` and `shared/scripts/**` in this monorepo's map \u2014 that is just what the list contains, not a detected \"shape\"). Same diff, both write paths, closed reason code, fix exemption removed, fail-closed on zero parsed requirements. No shape detection, no extension key, no config surface.\n\n3. **What it costs to keep.** The glob map itself (fine \u2014 it is data, checked into one file). The proposed version instead costs: a shape-detection code path that must stay correct across repo moves, a documented config key, and a rule that consumer projects must discover, set, and keep correct \u2014 plus maintainers fielding \"why did my change fail in project X\" against two classification sources.\n\n4. **What it forecloses.** Once the extension key exists and projects depend on it, tightening or unifying the default globs becomes a breaking change in every consumer \u2014 the config surface freezes today's guess about what \"tooling\" means. The static map forecloses nothing: adding a key later, when a real second project with a real different shape exists, is a small additive change.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: medium\n- Finding: Shape detection plus a per-project extension key is mechanism built for consumer projects that have not asked for it; the known monorepo shape is the only shape with evidence.\n- Suggestion: Hard-code the per-label glob map (including the `scripts/**` / `shared/scripts/**` entries) in one module; defer the config key until a consumer project actually needs different globs.\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option B is correctly avoided (a global \"no runtime code\" rule fails every legitimate tooling change here), but the per-label map already subsumes what shape detection buys.\n- Suggestion: If a second shape ever matters, add a second map keyed by a simple config value then \u2014 not detection now.\n\nEverything else in A (closed vocab, fix-exemption removal, fail-closed, identical gates on both paths, diff at event-write time) is small, uses existing machinery, and should proceed as proposed.\n\nSHIPWREIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014take A, but omit the permanent per-project extension key until a concrete project needs it.\n\n2. **Smallest thing that would do:** Apply the spec-impact gate through the existing shared gate entry point; remove the bug exemption, require closed reasons, and fail closed when expected specs yield zero requirements. Validate no-FR labels using built-in, per-label rules for the two required project shapes and shared git evidence covering the fork point through the working tree, including untracked files.\n\n3. **What it costs to keep:** Framework maintainers must keep path classifications aligned with project structure and reason codes meaningful. A configuration extension adds consumer-owned policy that can become stale without anyone noticing.\n\n4. **What it forecloses:** Path rules make repository reorganizations require classification updates. A configurable exemption policy also makes future enforcement changes harder because projects may depend on their exceptions.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: The optional extension key creates a permanent configuration contract and distributed maintenance obligation without a demonstrated need beyond the two required project shapes.\nSuggestion: Ship built-in classifications first. When those cannot establish an exemption, require the ordinary requirement-impact declaration; add customization only for a demonstrated legitimate use case.\n\nThe referenced contract could not be read because command execution was blocked; this assessment uses the supplied brief.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "glm": "unknown",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "verdict could not be read for: glm (glm=unknown, openai=revise)"
+  }
+}

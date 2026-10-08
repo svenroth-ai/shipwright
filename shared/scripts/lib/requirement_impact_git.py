@@ -207,7 +207,7 @@ def _worktree_paths(root: Path, prefix: str = "") -> dict:
         # Unborn HEAD: nothing is committed yet, so everything present counts as
         # changed. Diffing against HEAD here would fail and make a greenfield
         # design phase impossible to finish.
-        listed = _run(root, ["ls-files", "--cached", "--others",
+        listed = _run(root, ["ls-files", "--full-name", "--cached", "--others",
                              "--exclude-standard", "-z"])
         if listed.returncode != 0:
             raise _GitBroke(f"git ls-files failed: {_stderr(listed)}")
@@ -218,7 +218,7 @@ def _worktree_paths(root: Path, prefix: str = "") -> dict:
     diff = _run(root, ["diff", "--name-status", "-z", "HEAD", "--"])
     if diff.returncode != 0:
         raise _GitBroke(f"git diff against HEAD failed: {_stderr(diff)}")
-    untracked = _run(root, ["ls-files", "--others", "--exclude-standard", "-z"])
+    untracked = _run(root, ["ls-files", "--full-name", "--others", "--exclude-standard", "-z"])
     if untracked.returncode != 0:
         # Swallowing this would hide a newly CREATED spec.md from the touch
         # check while still reporting source="git" — a false verified result.
@@ -231,7 +231,7 @@ def _worktree_paths(root: Path, prefix: str = "") -> dict:
 
 
 def _listed_paths(stdout: str, prefix: str) -> list[str]:
-    """NUL-separated ``ls-files`` output, rebased onto the project root."""
+    """NUL-separated ``ls-files --full-name`` output (repo-relative), rebased onto the project root."""
     return [
         path for path in (
             rebase(to_repo_relative_posix(raw), prefix)

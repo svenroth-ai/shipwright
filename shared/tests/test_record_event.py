@@ -254,7 +254,7 @@ class TestFrOrChangeTypeGate:
 
     def test_bug_iterate_still_gated(self):
         """BUG iterates aren't exempt — they classify as tooling/compliance
-        when no FR is tied (unlike spec_impact gate which exempts BUG)."""
+        when no FR is tied (the spec_impact gate covers BUG too since U6)."""
         event = self._iterate_event(intent="bug")
         err = _fr_or_change_type_gate_error(event)
         assert err is not None
@@ -325,7 +325,7 @@ class TestFrOrChangeTypeGate:
             "--source", "iterate",
             "--intent", "bug",
             "--change-type", "tooling",
-            "--none-reason", "fix flaky CI",
+            "--none-reason", "fix flaky CI", "--spec-impact", "none", "--spec-impact-reason-code", "tooling-only",
         ])
         assert rc == 0
         captured = capsys.readouterr()
