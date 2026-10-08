@@ -87,18 +87,6 @@ acceptances:
       Re-fix when lighthouse ships an OTel-2.x dependency tree. Operational entry
       lives in .trivyignore.yaml (Trivy's --ignorefile input).
 
-  - id: ar-2026-07-03-dependabot-cooldown-inert-config
-    target: semgrep-rule-exclusion
-    rule: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
-    expires: 2027-01-03
-    rationale_ref: ADR-271
-    statement: >-
-      .github/dependabot.yml is DORMANT by decision (open-pull-requests-limit: 0
-      on every ecosystem), so it opens zero pull requests. A cooldown window on a
-      config that never proposes an update is meaningless, and the rule fires 14
-      times per scan. Suppressed at the producer rather than dismissed weekly in
-      triage, because a dismissal re-surfaces from each fresh scan.
-
   - id: ar-2026-07-03-gh-owned-mutable-action-tags
     target: semgrep-policy-toggle
     rule: SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS
@@ -112,7 +100,11 @@ acceptances:
       GitHub-owned actions (actions/*, github/*) stay on mutable major tags by
       framework decision; SHA-pinning them requires a hosted dependency updater to
       avoid tag rot, and the framework declines hosted services for PORTABILITY,
-      not cost. Re-affirmed 2026-07-18 by the webui ADR
+      not cost. UPDATE 2026-10-08: THIS repo now runs Dependabot for the
+      github-actions ecosystem only (operator decision, run
+      iterate-2026-10-08-dependabot-actions-only), so tags here are kept by
+      choice, not by necessity; the adopter-facing posture is unchanged (the
+      framework still ships no updater config). Re-affirmed 2026-07-18 by the webui ADR
       iterate-2026-07-18-unpin-actions-no-dependabot after PR #285 reversed it
       unnoticed. The channel is OWNER-SCOPED: an unpinned THIRD-PARTY action is
       still flagged, which is the supply-chain guard the rule exists for.

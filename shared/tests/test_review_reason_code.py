@@ -60,22 +60,22 @@ def test_a_completed_row_cannot_carry_a_reason_code():
 @pytest.mark.covers("FR-01.11")
 def test_cli_records_a_code_and_synthesises_a_rule_naming_disposition(project):
     code, out = run_tool(project, "record", "--review-type", "external_code",
-                         "--status", "not_run", "--reason-code", "unavailable")
+                         "--status", "not_run", "--reason-code", "user-opt-out")
     assert code == 0, out
     shown = json.loads(run_tool(project, "show")[1])
     row = shown["reviews"]["external_code"]
-    assert row["reason_code"] == "unavailable"
-    assert row["disposition"] == default_disposition("unavailable")
+    assert row["reason_code"] == "user-opt-out"
+    assert row["disposition"] == default_disposition("user-opt-out")
 
 
 @pytest.mark.covers("FR-01.11")
 def test_bare_code_synthesised_disposition_reaches_the_companion_marker(project):
     code, out = run_tool(project, "record", "--review-type", "external_code", "--status", "not_run",
-                         "--reason-code", "unavailable", "--marker-status", "skipped_user_opt_out")
+                         "--reason-code", "user-opt-out", "--marker-status", "skipped_user_opt_out")
     assert code == 0, out
     markers = list((project / ".shipwright" / "planning" / "iterate" / RUN_ID).glob("external_*review_state.json"))
     assert markers, "no run-scoped marker written"
-    assert default_disposition("unavailable") in markers[0].read_text(encoding="utf-8")
+    assert default_disposition("user-opt-out") in markers[0].read_text(encoding="utf-8")
 
 
 @pytest.mark.covers("FR-01.11")

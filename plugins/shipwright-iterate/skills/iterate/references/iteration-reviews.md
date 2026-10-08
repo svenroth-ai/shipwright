@@ -352,7 +352,7 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   --plugin-root "{plan_plugin_root}" \
   --project-root "{project_root}" --run-id "$RUN_ID" \
   --driver "{driver}" \
-  > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
+  > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.stderr.txt"
 ```
 
 (`--driver` is **required, no default** — the harness actually driving this
@@ -401,8 +401,8 @@ makes `uv run` itself fail before any provider is reached. Treat a non-zero
 `uv run` exit, or stdout that is not the expected JSON, exactly like
 `shipwright-plan not installed` in [iteration-planning.md](iteration-planning.md)'s
 Internal Plan Review degraded handling — the pass did NOT run; record it
-`not_run --reason-code unavailable` with that reason as the disposition, never
-parsed as a completed review.
+`not_run --reason-code unavailable` with that reason as the disposition, never parsed as a
+completed review; the two capture files are its required evidence (`campaign-step-3-5-plan-review.md` → *Unavailable*). F6 stages the whole run dir: a `<stem>.stderr.txt` that backs no `unavailable` row is deleted before commit.
 
 (`--run-id` additively records this call as an `external_review` timing span,
 parent `review` — see [iterate-timings](iterate-timings.md).)

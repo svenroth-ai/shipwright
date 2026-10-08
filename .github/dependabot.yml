@@ -1,10 +1,18 @@
 # Shipwright Dependabot configuration
 #
-# DORMANT MODE: open-pull-requests-limit is set to 0 for all ecosystems
-# until Phase B (Go-Live). Dependabot builds its internal dependency graph
-# but opens zero PRs, so it does not spam the maintainer during active
-# development. To activate: change all `open-pull-requests-limit: 0`
-# entries to `5` (or your preferred limit).
+# Only the github-actions ecosystem is ACTIVE (weekly; minor/patch bumps
+# grouped into one PR, majors separate; 7-day cooldown so a freshly published
+# tag is not adopted the day it ships).
+# Every pip ecosystem stays DORMANT (open-pull-requests-limit: 0): Python CVEs
+# are caught by Trivy in security.yml. Dependabot *security updates* are a
+# repo setting (Settings -> Code security), independent of this file; this
+# repo has it ON, so a vulnerable dep still gets a fix PR regardless of the
+# limit below. To activate a pip ecosystem, change its
+# `open-pull-requests-limit: 0` to `5`.
+#
+# Every entry carries a `cooldown` so Semgrep's dependabot-missing-cooldown
+# rule stays live (it is no longer excluded in security.yml) and would flag a
+# future entry added without one.
 
 version: 2
 updates:
@@ -17,6 +25,8 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "python"
@@ -32,6 +42,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -42,6 +54,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -52,6 +66,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -62,6 +78,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -72,6 +90,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -82,6 +102,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -92,6 +114,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -102,6 +126,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -112,6 +138,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -122,6 +150,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -132,6 +162,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin", "security"]
     commit-message:
       prefix: "chore(deps)"
@@ -142,6 +174,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
     labels: ["dependencies", "python", "plugin"]
     commit-message:
       prefix: "chore(deps)"
@@ -154,12 +188,25 @@ updates:
   # ------------------------------------------------------------------
   # GitHub Actions
   # ------------------------------------------------------------------
+  # `directories` (not `directory`) so the composite action under
+  # .github/actions/ is bumped together with the workflows that pin the same
+  # action. Minor/patch bumps share ONE weekly PR; a major bump is left out of
+  # the group and arrives as its own PR, so one breaking major cannot hold the
+  # safe bumps hostage. No `labels` (the repo has no `dependencies`/`ci`
+  # label) and no `include: scope` (it would append "(deps)" to the prefix and
+  # break the Conventional Commit title).
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 0
-    labels: ["dependencies", "ci"]
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
     commit-message:
       prefix: "chore(ci)"
-      include: "scope"

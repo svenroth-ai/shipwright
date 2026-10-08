@@ -180,6 +180,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Required-check presence and PR execution](iterate-2026-09-28-fix-required-check-conditional-pr-required-check-drift.md)
 - [Finalization gate registry and shared reason codes (campaign unit U0)](iterate-2026-10-08-u0-foundation-gate-registry-reviews.md)
 - [Test-tag gate at finalization (campaign unit U1)](iterate-2026-10-08-u1-test-tag-gate-reviews.md)
+- [External review that could not run: captured, announced, re-run (campaign unit U10)](iterate-2026-10-08-u10-autonomous-external-review-reviews.md)
 - [Compliance soft-block override and commit-target measurement](iterate-2026-10-08-u13-rtm-hook-followups-override-and-target.md)
 - [Review record and ledger enforced at every complexity (campaign unit U3)](iterate-2026-10-08-u3-review-record-trivial-reviews.md)
 - [Small-iterate code-review trigger, one diff-size rule (campaign unit U4)](iterate-2026-10-08-u4-cascade-trigger-100-reviews.md)

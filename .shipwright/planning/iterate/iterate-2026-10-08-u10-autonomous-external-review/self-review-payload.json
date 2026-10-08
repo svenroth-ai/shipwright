@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"plan/external_code closed unavailable need the adapter's captured error (F11 + record-time); a bare not_run still fails (U3); review_unavailable_note.py gives the PR/F12 line and one re-run card; the medium floor waits for the delegated cascade only in the unavailable+delegated shape; no new prompts in either mode."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable committed capture fails closed (GitReadError); the note tool exits 1 with INVALID on a missing record, an invalid capture (no card filed) or a failed card filing; a cp1252 console no longer crashes it."},
+{"name":"Security Basics","verdict":"pass","note":"Notes and cards carry paths, never capture content; run_id path-safety checked before any capture read at write time; git invoked via argument arrays."},
+{"name":"Test Quality","verdict":"pass","note":"33 behaviour tests: envelope/degraded/stderr/success precedence, retry overwrite, commit-vs-working-tree bytes, internal rows untouched, medium floor both ways, CLI refusal, note paths-only, idempotent card, stale capture refuses the card; all tagged FR-01.11."},
+{"name":"Performance Basics","verdict":"pass","note":"At most two small file reads (or two git blob reads) per unavailable row, only when such a row exists."},
+{"name":"Naming & Structure","verdict":"pass","note":"lib/review_unavailable.py (pure rule), verifiers/review_record_unavailable.py (gate half), tools/review_unavailable_note.py (surface); record_review_pass.py stays 397 lines, sub-iterate-runner.md 510, iteration-reviews.md 815, campaign-mode.md 1708, F11.md 398."},
+{"name":"Affected Boundaries","verdict":"pass","note":"external_review.py stdout/stderr -> capture files -> artifact_problem probed on real adapter output (total failure accepted, one-leg success refused, uv run failure accepted); UTF-16/CRLF/leading and trailing noise probes found two misreads, both fixed and pinned; triage.jsonl round-trip via read_all_items."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --files on the three touched test files: no findings."}
+]}

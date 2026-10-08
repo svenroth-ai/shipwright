@@ -123,29 +123,130 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py",
+          "line": null,
+          "finding": "warnings of non-chosen repos dropped on multi-repo lines. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "$(...) inside double quotes not tracked; canonical git commit -m \"$(cat <<'EOF'...)\" form unstripped. FIXED + docs.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "-s treated as shell for any program (git commit -s). FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py",
+          "line": null,
+          "finding": "repo keys unnormalised. FIXED (repo_key).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".gitignore",
+          "line": null,
+          "finding": "override log lock file not ignored. FIXED (gitignore + template).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py",
+          "line": null,
+          "finding": "override import shared a try with the gate. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_target.py",
+          "line": null,
+          "finding": "--work-tree target skipped project resolution. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T13:56:48.782610+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T18:52:46.391957+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py",
+          "line": null,
+          "finding": "Claim under doubt: an unreadable or odd override log never lets a block through — timestamp that overflows UTC conversion crashed try_release outside the WARN guard -> silent unlimited allow",
+          "suggestion": "FIXED in 57dce2803 (_when rejects it, tests).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "Claim under doubt: heredoc stripping only drops data bash does not run — stripping runs before backslash-continuation joining; exotic delimiters differ from bash",
+          "suggestion": "ACCEPTED limit in the ADR (follow-up: join continuations first); source/./fish added to interpreters.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Claim under doubt: every commit target on a line is judged — bash -c / eval wrappers judge only the first inner commit",
+          "suggestion": "ACCEPTED limit in the ADR.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py",
+          "line": null,
+          "finding": "Claim under doubt: the lock guarantees one release — stat-then-unlink stale-lock break; one override releases one command not one commit; CONSUMED lost to git restore",
+          "suggestion": "ACCEPTED limits in the ADR.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-08T13:56:49.048787+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T18:52:46.489318+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -220,16 +321,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-08T13:56:48.596153+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T18:52:46.169987+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
