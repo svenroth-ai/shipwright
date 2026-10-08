@@ -66,9 +66,9 @@ from risk_recheck_record import write_recheck_record  # noqa: E402, F401 — re-
 #: `check_ci_supplychain_ack` exists to prevent.
 CI_ESCALATION_REASON_CODE = "ci_supplychain_requires_operator"
 
-#: Step 3.7's diff-size arm, mirrored onto Step 3.5 (AC5). Strictly greater-than,
-#: matching the contract's "> 100" wording exactly.
-PLAN_REVIEW_DIFF_LOC_THRESHOLD = 100
+#: Step 3.7's diff-size arm, mirrored onto Step 3.5 (AC5). Defined once in
+#: shared/scripts/lib/review_diff_threshold.py; re-exported here.
+from review_threshold_bridge import PLAN_REVIEW_DIFF_LOC_THRESHOLD, exceeds_diff_threshold  # noqa: E402, F401
 
 #: Canonical run_id shape — SSoT: shared/scripts/lib/iterate_entry.py RUN_ID_STRICT.
 #: Copied local (same reason as session_plan.RUN_ID_STRICT: this plugin-lib
@@ -181,7 +181,7 @@ def recheck(
         "plan_review_required": (
             _rank(effective) >= _rank("medium")
             or bool(flags)
-            or diff_loc > PLAN_REVIEW_DIFF_LOC_THRESHOLD
+            or exceeds_diff_threshold(diff_loc)
         ),
         # `paths` and the flag are reported even once acked — the operator's
         # answer clears the STOP, it does not un-touch the trust boundary.

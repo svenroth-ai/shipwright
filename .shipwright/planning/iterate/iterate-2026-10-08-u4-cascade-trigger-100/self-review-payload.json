@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Small + (risk flag or > 100 changed lines) now requires code completed-with-evidence or not_run + closed-vocab code; constant moved to shared/scripts/lib and re-exported by diff_risk_recheck.py; counting defined once and stated in sub-iterate-runner.md Step 3.7."},
+{"name":"Error Handling","verdict":"pass","note":"Unmeasurable diff, missing trunk base, merge commit on trunk, corrupt plan or foreign risk_recheck all fail closed unless a flag already fires; a raising check reads RED via run_claim_checks."},
+{"name":"Security Basics","verdict":"pass","note":"No user input, secrets or shell; git invoked via argument arrays; run_id path-safety checked before any file read."},
+{"name":"Test Quality","verdict":"pass","note":"Real git repos per case: 100/101 boundary, removed lines, rename both sides, multi-commit branch, finalization exclusion, cross_component recompute, closed/contradicting/not_applicable codes, evidence bar."},
+{"name":"Performance Basics","verdict":"pass","note":"A handful of bounded git calls (30 s timeouts) per F11 run, only at small complexity."},
+{"name":"Naming & Structure","verdict":"pass","note":"Gate in its own verifiers/cascade_trigger.py + _cascade_trigger_inputs.py, registered in CLAIM_CHECKS; iterate_checks.py untouched; diff_risk_recheck.py stays 305, sub-iterate-runner.md stays 510."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Consumers of plan.json (classify_complexity) and risk_recheck.json (diff_risk_recheck) probed on this run's real artifacts: both read, flags ['touches_auth']; numstat parsing round-tripped against real git output in tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

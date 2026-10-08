@@ -3590,6 +3590,7 @@ registry. Adding a gate = write the check, append it to `CLAIM_CHECKS`, add one 
 | Check | Module | What it enforces |
 |---|---|---|
 | `check_exemption_record` | `verifiers/exemption_record_check.py` | the F5c entry's `exemptions` block (`count` == `len(items)`, every item a path-safe `scope` plus a `reason_code` from an exemption family - today only `test_exemption` - in `lib/reason_codes.py`); absent = legacy, SKIPPED |
+| `check_cascade_trigger` | `verifiers/cascade_trigger.py` | at `small`, when a risk flag is set (session plan, Step 3.4 record, or `cross_component` / CI paths recomputed from the diff) or the diff has more than 100 changed lines (`lib/review_diff_threshold.py`: added+removed vs the merge-base, finalization records excluded, exactly 100 does not trigger), the `code` row is `completed` with evidence, or `not_run` with `reason_code` `unavailable` / `delegated-to-orchestrator` / `user-opt-out` (an allowlist; `not_applicable` refused); an unmeasurable diff (incl. a trunk tip no remote trunk ref contains) or unreadable flag source counts as triggered; a missing complexity is in scope, the plan's higher complexity wins; medium+ and explicit trivial SKIPPED |
 <!-- claim-checks:end -->
 
 Closed vocabularies live in `shared/scripts/lib/reason_codes.py` (one frozen set per family:

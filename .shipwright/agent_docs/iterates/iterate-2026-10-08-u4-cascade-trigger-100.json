@@ -1,0 +1,100 @@
+{
+  "run_id": "iterate-2026-10-08-u4-cascade-trigger-100",
+  "date": "2026-10-08T10:19:39.405075Z",
+  "event_at": "2026-10-08T10:19:09.024800+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U4",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-10-07-finalization-claims-hardening/sub-iterates/U4-cascade-trigger-100.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u4-cascade-trigger-100",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "small run with no risk flag and <= 100 changed lines is not triggered",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_quiet_small_run_is_not_triggered PASSED"
+      },
+      {
+        "behavior": "boundary: exactly 100 lines does not trigger, 101 does (free-text not_run fails naming the count)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_exactly_100_lines_does_not_trigger + test_101_lines_with_free_text_not_run_fails_naming_the_count PASSED"
+      },
+      {
+        "behavior": "added + removed count: deletions and a pure rename (both sides) count",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_removed_lines_count_too + test_a_pure_rename_counts_both_sides PASSED"
+      },
+      {
+        "behavior": "branch measured whole vs merge-base, not by its tip; no trustworthy base / merge commit on trunk = unknown, fail closed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_a_multi_commit_branch_is_measured_whole_not_by_its_tip + test_no_trustworthy_trunk_base_is_unknown_not_the_tip + test_a_merge_commit_on_the_trunk_is_unknown PASSED"
+      },
+      {
+        "behavior": "triggered: not_run with a closed review_not_run code passes; a code denying the trigger and not_applicable are refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_closed_vocab_not_run_passes + test_a_code_that_denies_the_trigger_is_refused + test_not_applicable_is_refused_even_with_a_closed_code PASSED"
+      },
+      {
+        "behavior": "triggered: completed code with evidence passes, without evidence fails",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_completed_code_with_evidence_passes_and_without_fails PASSED"
+      },
+      {
+        "behavior": "risk flags: session plan, campaign risk_recheck, and cross_component recomputed from the diff all trigger",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_recorded_risk_flag_triggers_on_a_tiny_diff + test_campaign_recheck_flag_with_delegation_code_passes + test_cross_component_is_recomputed_from_the_diff PASSED"
+      },
+      {
+        "behavior": "finalization records are not counted",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_finalization_records_are_not_counted PASSED"
+      },
+      {
+        "behavior": "corrupt plan / foreign risk_recheck fail closed; other complexities skipped; gate registered",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_cascade_trigger.py::test_corrupt_session_plan_fails_closed + test_a_foreign_risk_recheck_record_fails_closed + test_other_complexities_are_skipped + test_gate_is_registered_in_the_claim_registry PASSED"
+      },
+      {
+        "behavior": "shared rule: > 100 boundary, numstat added+removed, binary 0, NUL paths with newline, exclusions, rename record raises",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_diff_threshold.py (11 tests) PASSED"
+      },
+      {
+        "behavior": "Step 3.4 re-exports the shared constant/function (no local copy) and counts with the same path filter",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_review_threshold_bridge.py (4 tests) PASSED"
+      },
+      {
+        "behavior": "registry and docs claim-checks table agree in both directions with the new check",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalization_claims_registry.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_cascade_trigger.py shared/tests/test_review_diff_threshold.py shared/tests/test_finalization_claims_registry.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 46,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-08-u4-cascade-trigger-100/surface_verification.json",
+    "timestamp": "2026-10-08T10:17:48.882Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
