@@ -100,7 +100,7 @@ jobs:
       - name: Install uv
         # Third-party action pinned to a full commit SHA (supply-chain
         # hardening), identical pin to ci.yml's "Install uv" step.
-        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
           enable-cache: true
 
