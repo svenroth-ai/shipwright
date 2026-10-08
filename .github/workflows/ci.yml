@@ -32,7 +32,7 @@ jobs:
     name: Python (lint + test)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Diff-coverage roadmap Phase 1: the "Diff coverage" step compares the
           # working tree against origin/main, so it needs the merge-base. The
