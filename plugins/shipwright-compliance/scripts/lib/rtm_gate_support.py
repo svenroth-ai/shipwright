@@ -160,7 +160,10 @@ def above_baseline(m: dict[str, Any], baseline: float) -> bool:
 
 def describe(m: dict[str, Any]) -> str:
     if m["kind"] != "requirements":
-        return f"RTM coverage {m['pct']}%"
+        return (
+            f"RTM build-section coverage {m['pct']}% (share of build sections with a "
+            "commit; no requirement manifest)"
+        )
     fr, ac = m["coverage"]["fr"], m["coverage"]["ac"]
     return (
         f"Requirement coverage {fr['pct']}% ({fr['covered']}/{fr['total']} active requirements "

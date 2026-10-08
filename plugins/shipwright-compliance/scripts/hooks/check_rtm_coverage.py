@@ -220,11 +220,8 @@ def main() -> int:
             f"({lib.pct_text(baseline)}%); raise it in shipwright_compliance_config.json "
             "so the ratchet only moves up"
         )
-    if measure["kind"] == "requirements":
-        # the number and its definition are visible on every evaluated commit
-        _warn_output(warnings, info=f"{lib.describe(measure)} >= {threshold_pct}% threshold")
-    elif warnings:
-        _warn_output(warnings)
+    # the number and its definition are visible on every evaluated commit
+    _warn_output(warnings, info=f"{lib.describe(measure)} >= {threshold_pct}% threshold")
     return 0
 
 

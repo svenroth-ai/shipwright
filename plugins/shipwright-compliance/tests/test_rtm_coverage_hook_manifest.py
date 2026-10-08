@@ -237,7 +237,11 @@ def test_inproc_legacy_section_line_and_unevaluable_warn(tmp_path, monkeypatch, 
     d.mkdir(parents=True)
     (d / "traceability-matrix.md").write_text("| Traceability coverage | 40% |\n", encoding="utf-8")
     rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
-    assert rc == 2 and "RTM coverage 40%" in out and "uncovered_sections" in out
+    assert rc == 2 and "RTM build-section coverage 40%" in out and "uncovered_sections" in out
+    assert "share of build sections with a commit; no requirement manifest" in out
+    (d / "traceability-matrix.md").write_text("| Traceability coverage | 90% |\n", encoding="utf-8")
+    rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
+    assert rc == 0 and "RTM build-section coverage 90% (share of build sections" in out
     (d / "traceability-matrix.md").write_text("# nothing\n", encoding="utf-8")
     rc, out = _main_inproc(mod, monkeypatch, tmp_path, capsys)
     assert rc == 0 and "NOT evaluating" in out
