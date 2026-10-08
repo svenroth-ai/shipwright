@@ -130,9 +130,6 @@ def test_absent_register_without_suppressions_is_still_clean(tmp_path):
     assert result["entries"] == []
 
 
-# The semgrep leg of the per-channel premise below is the policy TOGGLE: the
-# wholesale rule-exclusion channel is no longer set in security.yml
-# (dependabot-missing-cooldown was dropped when github-actions went live).
 @pytest.mark.covers("FR-01.07")
 def test_deleting_the_register_cannot_silence_this_repos_gate(tmp_path):
     """The sharpened form of the finding, over THIS repo's real inputs.
