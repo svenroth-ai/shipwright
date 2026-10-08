@@ -123,27 +123,112 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": null,
+          "finding": "The stderr block (what the model sees on exit 2) omits the override-logging instruction that exists only in the ignored stdout additionalContext. Non-blocking: the override mechanism is pre-existing, shared with check_security_scan.py, and tracked in triage.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Past the depth cap the substring test decides: plain 'git commit' fires, git global options before 'commit' do not; docs word it as over-fire. Negligible (needs four nested shells).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
+          "line": null,
+          "finding": "measure() branches on a note prefix (UNREADABLE) instead of structured data; pinned by a test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
+          "line": null,
+          "finding": "Over-long docstring line in measure().",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": null,
+          "finding": "staging_hint is also emitted on the legacy sections path where no manifest exists.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-07T22:56:44.563566+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T07:24:59.443100+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_manifest_read.py",
+          "line": null,
+          "finding": "Claim under doubt: the index is the copy being committed — PreToolUse runs before the Bash line, so a manifest staged in the same command (git add && git commit, commit -a) is measured from its previous index/HEAD copy.",
+          "suggestion": "Resolved by documentation + pinned test + staging_hint in the block (f1fdec596); mechanism deliberately unchanged.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: the block reason reaches the agent — Exit 2 shows stderr to the model; the hook wrote only stdout JSON.",
+          "suggestion": "Resolved: reason, ratchet hint and staging hint are also written to stderr (f1fdec596). Override-log instruction still stdout-only: triage.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
+          "line": null,
+          "finding": "Claim under doubt: an unexecuted manifest is only a transient WARN state — An all-not_run regen swept into a commit turns the gate into WARN+allow until CI regenerates.",
+          "suggestion": "Accepted risk, recorded in the decision drop.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Claim under doubt: the parser leaves no obvious commit form that silently fails open — git aliases, git.cmd, merge/revert/cherry-pick/rebase/am are not detected; --dry-run/-h over-fire.",
+          "suggestion": "Documented as deliberately not covered.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-07T22:56:44.840048+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T07:24:59.553044+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -245,15 +330,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-07T22:56:44.389451+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-08T07:22:55.391606+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
