@@ -101,3 +101,47 @@ def test_iterate_checks_did_not_grow():
     """The cap is the reason this registry exists: a regression here re-opens the problem."""
     lines = len((_REPO / "shared/scripts/tools/verifiers/iterate_checks.py").read_text(encoding="utf-8").splitlines())
     assert lines <= 1086, f"iterate_checks.py grew to {lines} lines (1086 before the registry landed; cap ADR-125)"
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_a_check_calling_sys_exit_reads_red_instead_of_ending_f11_silently(tmp_path, monkeypatch):
+    def quits(project_root, run_id, commit_hash=""):
+        raise SystemExit(0)
+
+    monkeypatch.setattr(claims, "CLAIM_CHECKS", [quits, claims.CLAIM_CHECKS[0]])
+    results = claims.run_claim_checks(tmp_path, "iterate-2026-10-08-none", "")
+    assert [r.ok for r in results][0] is False and "SystemExit" in results[0].detail
+    assert len(results) == 2
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_keyboard_interrupt_still_reaches_the_operator(tmp_path, monkeypatch):
+    def interrupted(project_root, run_id, commit_hash=""):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(claims, "CLAIM_CHECKS", [interrupted])
+    with pytest.raises(KeyboardInterrupt):
+        claims.run_claim_checks(tmp_path, "iterate-2026-10-08-none", "")
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_a_crashed_check_is_reported_under_its_module_check_name(tmp_path, monkeypatch):
+    from tools.verifiers import exemption_record_check as module
+
+    def broken(project_root, run_id, commit_hash=""):
+        raise RuntimeError("kaput")
+
+    broken.__module__ = module.__name__
+    monkeypatch.setattr(claims, "CLAIM_CHECKS", [broken])
+    (result,) = claims.run_claim_checks(tmp_path, "iterate-2026-10-08-none", "")
+    assert result.name == module.CHECK_NAME and result.ok is False
+
+
+@pytest.mark.covers("FR-01.11/AC41")
+def test_no_registered_check_module_imports_iterate_checks():
+    """iterate_checks imports the registry at load time: the reverse import is circular."""
+    for check in claims.CLAIM_CHECKS:
+        source = Path(inspect.getfile(check)).read_text(encoding="utf-8")
+        assert not re.search(r"^\s*(from\s+\S*iterate_checks\s+import|import\s+\S*iterate_checks)", source, re.M), (
+            f"{check.__module__} imports iterate_checks (circular - see _finalization_claims docstring)"
+        )

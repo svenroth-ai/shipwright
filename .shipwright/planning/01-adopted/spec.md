@@ -954,6 +954,13 @@ _Where the work detail lives_ at the end of this document.
   protection off, or any failure of the protection itself leaves work
   unhindered.
   (iterate-2026-10-01-claude-worktree-gate)
+- (E) [AC41] Given a change adds a test or edits an existing one, when the change is
+  finished, then finishing fails unless each such test names the requirement it
+  proves, or carries an exemption recorded for that one test with a reason from a
+  fixed list. A test that only moved, or whose comments or description alone
+  changed, still counts as the same test, and tests the change did not touch are
+  left as they are.
+  (iterate-2026-10-08-u1-test-tag-gate)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

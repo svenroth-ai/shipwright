@@ -19,8 +19,9 @@ pass closed ``not_run`` is NOT an exemption: it explains itself through its own
 what was exempted and must be a path-safe string (no absolute path, no ``..``
 segment, no control character). ``count`` repeats ``len(items)`` on purpose: a
 reader that only wants the number does not parse the list, and a writer that
-cannot keep the two consistent is refused. An entry without the key is legacy
-and reads as zero exemptions.
+cannot keep the two consistent is refused. An entry without the key is legacy:
+it validates, and its summary line says ``not recorded (legacy entry)`` - never
+``0``, which would be indistinguishable from a recorded zero.
 """
 
 from __future__ import annotations
@@ -34,11 +35,13 @@ try:
 except ImportError:  # loaded with lib/ itself on sys.path
     from reason_codes import EXEMPTION_FAMILIES, reason_code_error  # type: ignore[no-redef]
 
-__all__ = ["entry_exemptions_error", "entry_summary_line", "exemption_counts", "exemptions_error", "format_summary_line"]
+__all__ = ["LEGACY_SUMMARY", "entry_exemptions_error", "entry_summary_line", "exemption_counts", "exemptions_error", "format_summary_line"]
 
 _MAX_SCOPE_CHARS = 300
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 _ITEM_KEYS = frozenset({"kind", "scope", "reason_code"})
+#: What F12 / the PR body print for an entry that predates the ``exemptions`` block.
+LEGACY_SUMMARY = "not recorded (legacy entry)"
 
 
 def _scope_error(scope: Any) -> str | None:
@@ -96,8 +99,8 @@ def entry_exemptions_error(entry: dict[str, Any]) -> str | None:
 
 
 def entry_summary_line(entry: dict[str, Any]) -> str:
-    """:func:`format_summary_line` for a whole entry (missing key = legacy = ``0``)."""
-    return format_summary_line(entry["exemptions"]) if "exemptions" in entry else "0"
+    """:func:`format_summary_line` for a whole entry; a missing key prints :data:`LEGACY_SUMMARY`."""
+    return format_summary_line(entry["exemptions"]) if "exemptions" in entry else LEGACY_SUMMARY
 
 
 def exemption_counts(block: Any) -> dict[str, int]:

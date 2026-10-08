@@ -493,9 +493,9 @@ def test_run_all_checks_returns_green_on_happy_path(tmp_path):
     proj.mkdir()
     seed_project(proj, "iterate-foo", "abcd1234", adr="ADR-999")
     results = run_all_checks(proj, run_id="iterate-foo", commit_hash="abcd1234")
-    assert all(r.ok is not False for r in results), [  # None = deliberate skip, not red
-        f"{r.name}: {r.detail}" for r in results if r.ok is False
-    ]
+    red = [f"{r.name}: {r.detail}" for r in results if r.ok is False]  # None = deliberate skip, not red
+    # Only the tag gate's non-git STOP may be red (U1: an unobtainable diff never SKIPs).
+    assert len(red) == 1 and red[0].startswith("test tag binding") and "not a git work tree" in red[0], red
 
 
 def test_run_all_checks_returns_red_when_run_id_missing(tmp_path):
@@ -558,10 +558,10 @@ def test_run_all_checks_green_under_drop_directory_model(tmp_path):
     )
 
     results = run_all_checks(proj, run_id="iterate-foo", commit_hash="abcd1234")
-    failures = [r for r in results if r.ok is False]  # None = deliberate skip, not red
-    assert not failures, [
-        f"{r.name}: {r.detail}" for r in failures
-    ]
+    failures = [f"{r.name}: {r.detail}" for r in results if r.ok is False]  # None = deliberate skip
+    # Only the tag gate's non-git STOP may be red (U1: an unobtainable diff never SKIPs).
+    assert len(failures) == 1 and failures[0].startswith("test tag binding"), failures
+    assert "not a git work tree" in failures[0], failures
 
 
 # ──────────────────────────────────────────────────────────────────────

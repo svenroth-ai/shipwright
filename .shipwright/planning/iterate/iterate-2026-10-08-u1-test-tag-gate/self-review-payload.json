@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"ACs 1-9 each have a test; 4 U0 carry-overs done; documented deviations: regenerated base, own body digest in _tag_binding_identity.py (_test_body_suspects.py digests verbatim source and only AC-bound tests, so cannot ignore docstring/comment edits or token-normalise TS); the non-git SKIP was removed, a non-git dir STOPs per spec"},
+{"name":"Error Handling","verdict":"pass","note":"non-git dir, no commit, no merge-base, collector/archive failure, unlistable diff, malformed manifest, crash all STOP with remediation"},
+{"name":"Security Basics","verdict":"pass","note":"exemption scopes path-safe and per-test only; git invoked with argument lists; archive extraction unchanged"},
+{"name":"Test Quality","verdict":"pass","note":"pure-dict rule tests plus real-git integration through the production collector and the full F11 list"},
+{"name":"Performance Basics","verdict":"pass","note":"evidence-free head memoised with the base, file reads and AST parses cached; about 36s on this repo, regen already paid by the removal gate"},
+{"name":"Naming & Structure","verdict":"pass","note":"new modules under 300 lines, iterate_checks untouched, test_links shrank, F0.md held at 400"},
+{"name":"Affected Boundaries","verdict":"pass","note":"collector manifest producer to gate consumer and F5c writer to gate round-tripped with CRLF, BOM and non-ASCII probes; BOM bug found and fixed"}]}

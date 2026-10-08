@@ -96,9 +96,7 @@ def _rename_map(project_root: Path, base_sha: str, head_sha: str) -> dict[str, s
     (external-review escape). ``git diff -M --name-status`` emits ``R<score>\\told\\tnew``.
     Best-effort: any git failure yields an empty map (the gate then treats a moved test as
     absent → the pre-existing untagged/orphan checks still catch an in-place strip)."""
-    rc, out, _ = _run_git(
-        project_root, "diff", "-M", "--name-status", f"{base_sha}..{head_sha}",
-    )
+    rc, out, _ = _run_git(project_root, "diff", "-M", "--name-status", f"{base_sha}..{head_sha}")
     renames: dict[str, str] = {}
     if rc != 0:
         return renames
@@ -165,10 +163,8 @@ def _archive_tree(project_root: Path, sha: str, dest: Path) -> bool:
     """``git archive`` the tracked tree at ``sha`` into ``dest`` (tracked files only —
     ``.worktrees`` / gitignored churn are excluded). Returns False on any git failure."""
     try:
-        proc = subprocess.run(
-            ["git", "-C", str(project_root), "archive", "--format=tar", sha],
-            capture_output=True, timeout=180,
-        )
+        proc = subprocess.run(["git", "-C", str(project_root), "archive", "--format=tar", sha],
+                              capture_output=True, timeout=180)
     except (OSError, subprocess.SubprocessError):
         return False
     if proc.returncode != 0 or not proc.stdout:
@@ -229,15 +225,17 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
     )
 
 
-# Process-level base cache (SHOULD-FIX 8): the evidence-INDEPENDENT base manifest + rename map
-# are identical for both gates on the same commit, so build them ONCE per (root, commit) rather
-# than re-archiving the base for each. Small dicts keyed by (root, commit); a fresh verify
-# subprocess starts empty. Cleared by tests via ``clear_regen_cache``.
+# Process-level caches (SHOULD-FIX 8), keyed by (root, commit); a fresh verify subprocess starts
+# empty, tests clear them via ``clear_regen_cache``. The base manifest + rename map are evidence-
+# INDEPENDENT, so every gate shares one build; so is an evidence-FREE head (the removal and the
+# test-tag gate both read it), so it is built once per run too. Callers must not mutate either.
 _BASE_CACHE: dict[tuple[str, str], tuple[dict, dict[str, str]] | None] = {}
+_HEAD_CACHE: dict[tuple[str, str], dict] = {}
 
 
 def clear_regen_cache() -> None:
     _BASE_CACHE.clear()
+    _HEAD_CACHE.clear()
 
 
 def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
@@ -260,18 +258,13 @@ def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
 
 
 def regenerate_base_head(
-    project_root: Path,
-    commit_hash: str,
-    *,
-    with_evidence: bool,
-    run_id: str = "",
+    project_root: Path, commit_hash: str, *, with_evidence: bool, run_id: str = "",
 ) -> tuple[dict, dict, dict[str, str]] | None:
     """Regenerate ``(base_manifest, head_manifest, rename_map)`` from the base + head
     checkouts (R3). The base manifest + rename map are memoized per (root, commit) and shared
     between the two gates (SHOULD-FIX 8); only the HEAD manifest is rebuilt per call so the
-    cross-layer gate can fold in this run's evidence (``with_evidence``). Returns ``None`` when
-    git is unavailable (:func:`~.git_helpers.git_context`), no base ref resolves, the collector
-    cannot load, or an archive fails — an infra gap the caller renders as a blocking ERROR."""
+    cross-layer gate can fold in this run's evidence (``with_evidence``). ``None`` = an infra gap
+    (git unavailable, no base ref, collector or archive failure) the caller renders as an ERROR."""
     if not commit_hash or git_context(project_root) != "work_tree":
         return None
     loaded = _load_collector()
@@ -282,6 +275,9 @@ def regenerate_base_head(
     if br is None:
         return None
     base, rename_map = br
+    head_key = (str(project_root), commit_hash)
+    if not with_evidence and head_key in _HEAD_CACHE:
+        return base, _HEAD_CACHE[head_key], rename_map
     evidence = fresh_evidence(project_root, run_id, commit_hash, evio) if with_evidence else {}
     try:
         with tempfile.TemporaryDirectory(prefix="sw-trace-head-") as hd:
@@ -294,6 +290,8 @@ def regenerate_base_head(
             head = _build(test_links, io, head_root, evidence, commit_hash, extra_roots=extra)
     except (OSError, ValueError):
         return None
+    if not with_evidence:
+        _HEAD_CACHE[head_key] = head
     return base, head, rename_map
 
 

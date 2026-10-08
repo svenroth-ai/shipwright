@@ -1,0 +1,206 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-u1-test-tag-gate",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 21470,
+      "total": 21563
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 9,
+      "total": 9
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 untagged added test STOPs naming file::test",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_gate_integration.py::test_untagged_added_test_stops_naming_file_and_test PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC2 tagged test under an unchanged AC passes and is linked in the regenerated manifest",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_gate_integration.py::test_tagged_test_under_an_unchanged_ac_passes_and_is_linked PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC3 docstring/comment-only edit is not a modification",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_docstring_and_comment_only_edit_is_not_a_modification PASSED"
+        },
+        {
+          "behavior": "AC4 valid per-test exemption passes; per-diff and free-text exemptions STOP",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_gate_integration.py::test_per_test_exemption_passes_and_a_per_diff_one_stops + test_free_text_exemption_stops PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC5 no merge-base / collector unavailable / no commit STOP, never SKIP",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_gate_integration.py::test_no_merge_base_or_no_collector_stops_never_skips PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC6 multi-line Playwright test and a describe-inheriting test bind",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_file_tags.py::test_multi_line_playwright_test_binds_its_native_tag + test_a_test_inheriting_a_describe_tag_binds PASSED"
+        },
+        {
+          "behavior": "AC7 WebUI-shaped project gets the gate through the F11 check list",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_gate_integration.py::test_webui_shaped_project_gets_the_gate_through_the_f11_check_list PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "AC8 parametrize case, unchanged-body move, class mark, fixtures edit, production test_*.py: no false STOP",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_parametrize_case_addition_is_not_a_new_or_modified_test + test_move_to_another_file_with_unchanged_body_is_matched_by_digest + test_fixture_and_production_test_modules_are_not_tests; shared/tests/test_tag_binding_gate_integration.py::test_class_mark_fixture_edit_and_docstring_edit_do_not_stop PASSED"
+        },
+        {
+          "behavior": "AC9 mechanical rename of 200 legacy tests passes with per-test mechanical-refactor",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_mechanical_rename_of_200_legacy_tests_passes_with_per_test_exemptions PASSED"
+        },
+        {
+          "behavior": "mechanical-refactor refuses swaps, renames onto used names, call replacement, real body change",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_mechanical_refactor_refuses_anything_but_a_consistent_rename + test_mechanical_refactor_is_refused_when_the_body_really_changed PASSED"
+        },
+        {
+          "behavior": "editing a legacy untagged test body STOPs; stripping a tag STOPs and is not exemptable",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_editing_a_legacy_untagged_test_body_stops + test_stripping_a_tag_stops_and_cannot_be_exempted PASSED"
+        },
+        {
+          "behavior": "new malformed / unresolvable tags STOP, legacy ones do not; fixture-repo tags ignored",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_new_malformed_and_unresolvable_tags_stop_but_legacy_ones_do_not + test_fixture_repo_malformed_and_orphan_tags_are_not_findings PASSED"
+        },
+        {
+          "behavior": "a name made ambiguous inside one file STOPs",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_a_name_made_ambiguous_inside_one_file_stops PASSED"
+        },
+        {
+          "behavior": "one vanished test explains only one moved copy",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_one_vanished_test_explains_only_one_moved_copy PASSED"
+        },
+        {
+          "behavior": "new tag outside the run's Spec-Impact FRs WARNs (new test and new binding on an existing test); WARN is non-blocking",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_new_tag_outside_the_expected_frs_warns_and_inside_does_not + test_a_new_binding_on_an_existing_test_outside_the_expected_frs_warns; shared/tests/test_tag_binding_gate_integration.py::test_an_unused_exemption_warns_without_blocking PASSED"
+        },
+        {
+          "behavior": "share denominator counts every added or edited test",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_touched_counts_edited_tagged_tests_so_the_share_denominator_is_honest PASSED"
+        },
+        {
+          "behavior": "fixture-or-helper only for functions pytest would not collect",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_valid_per_test_fixture_or_helper_exemption_passes + test_fixture_or_helper_on_a_collected_test_is_refused + test_would_collect_follows_pytest_rules + test_a_test_class_with_an_init_is_not_collected_so_its_methods_are_helpers PASSED"
+        },
+        {
+          "behavior": "TS digest ignores comments, whitespace, trailing commas and the title",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py::test_ts_body_digest_ignores_comments_whitespace_and_the_title PASSED"
+        },
+        {
+          "behavior": "UTF-8 BOM files are enumerated and digested",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_file_tags.py::test_a_utf8_bom_file_is_still_enumerated; shared/tests/test_tag_binding_core.py::test_a_bom_does_not_hide_a_test_from_the_digest PASSED"
+        },
+        {
+          "behavior": "collector: class-level and module-level covers marks bind only what pytest collects, no duplicate links",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_file_tags.py::test_class_level_covers_mark_applies_to_every_test_method + test_module_level_pytestmark_applies_to_every_test + test_pytestmark_and_class_marks_skip_what_pytest_would_not_collect PASSED"
+        },
+        {
+          "behavior": "collector: wrapped head join is string- and comment-aware",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_file_tags.py::test_a_title_containing_function_or_arrow_does_not_end_the_head_early + test_join_leaves_single_line_and_unusual_shapes_untouched + test_multi_line_untagged_playwright_test_is_enumerated_as_untagged PASSED"
+        },
+        {
+          "behavior": "carry-over 2: SystemExit in a check reads RED, KeyboardInterrupt propagates",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalization_claims_registry.py::test_a_check_calling_sys_exit_reads_red_instead_of_ending_f11_silently + test_keyboard_interrupt_still_reaches_the_operator PASSED"
+        },
+        {
+          "behavior": "carry-over 3: no registered check imports iterate_checks",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalization_claims_registry.py::test_no_registered_check_module_imports_iterate_checks PASSED"
+        },
+        {
+          "behavior": "carry-over 4: a crashed check is reported under its module CHECK_NAME",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalization_claims_registry.py::test_a_crashed_check_is_reported_under_its_module_check_name PASSED"
+        },
+        {
+          "behavior": "carry-over 1: a legacy entry prints 'not recorded (legacy entry)', a recorded zero prints 0",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_exemption_record.py::test_absent_key_is_legacy_and_valid_but_explicit_null_is_malformed + test_summary_cli_says_not_recorded_for_a_legacy_entry_and_fails_loudly_without_one PASSED"
+        },
+        {
+          "behavior": "gate registered and documented (registry both-direction meta-test)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalization_claims_registry.py::test_every_registered_check_is_documented + test_every_documented_check_is_registered PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 26,
+        "tested": 26,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_tag_binding_gate_integration.py shared/tests/test_tag_binding_core.py shared/tests/test_finalization_claims_registry.py shared/tests/test_exemption_record.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 86,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-08-u1-test-tag-gate/surface_verification.log",
+      "timestamp": "2026-10-08T09:54:28.548Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-u1-test-tag-gate",
+    "commit": "f046b11c48529a1d05ea8df91576610e3923bd5a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
