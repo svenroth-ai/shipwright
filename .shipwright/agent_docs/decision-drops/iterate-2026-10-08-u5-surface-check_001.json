@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-u5-surface-check",
+  "date": "2026-10-08",
+  "section": "Iterate — change: F0.5 surface check not bypassable",
+  "title": "F11 re-derives the F0.5 surface claim from the diff and staged evidence",
+  "context": "At medium+ F11 checked only the shape of the F0.5 block: surface=none with free text passed even when the diff added an API route, and tests_run/exit_code were typed numbers nothing compared with an execution record.",
+  "decision": "verifiers/surface_check.py: medium+ none needs a closed surface_none reason_code and a diff that touches no UI / API route / SSE-WS / message contract (paths + changed lines + full file content); UI must be web; other surfaces must be backed by this run's staged evidence, fresh by the new tested_tree fingerprint, with no failing test, enough passes, and the runner's test paths passing.",
+  "consequences": "A code fix committed after staging (e.g. a 3f-bis review fix) reads stale until F0 is re-run and evidence re-staged; detection is conservative (router.py counts); a surface reached only through an untouched file is a documented blind spot.",
+  "rationale": "Parent-only and commit-walk freshness both failed on real campaign units (fix commits, record commits, trunk merges) or missed an amend after staging; comparing the tested tree with the verified commit per branch-changed path is exact and needs no commit-shape assumption.",
+  "rejected": "Parent-only freshness (breaks every campaign unit); commit-walk freshness (misses an amend after staging); a producer --require-reason-code (producer does not know complexity); letting an unmeasurable diff pass a non-none surface.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-08-u5-surface-check-surface-claim.md"
+}

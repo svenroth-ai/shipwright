@@ -35,9 +35,11 @@ from pathlib import Path
 try:  # flat import off shared/scripts/lib on sys.path (tool + tests).
     from _evidence_drop_cli import missing_named_sources as _missing_named_sources
     from _evidence_drop_cli import parse_junit_args as _parse_junit_args
+    from worktree_tree import working_tree_id
 except ImportError:  # loaded as a package (lib.evidence_drop).
     from ._evidence_drop_cli import missing_named_sources as _missing_named_sources  # type: ignore
     from ._evidence_drop_cli import parse_junit_args as _parse_junit_args  # type: ignore
+    from .worktree_tree import working_tree_id  # type: ignore
 
 _EVIDENCE_DIR = (".shipwright", "compliance", "evidence")  # artifact-path-canon: legacy
 _PROVENANCE_NAME = "_provenance.json"
@@ -171,6 +173,8 @@ def stage_reports(
         "head_commit": head_commit,
         "staged_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "reports": staged,
+        # The content the reports describe (the uncommitted tree F0 tested), not just its base.
+        "tested_tree": working_tree_id(project_root),
     }
     for key, value in (provenance_extra or {}).items():
         provenance.setdefault(key, value)

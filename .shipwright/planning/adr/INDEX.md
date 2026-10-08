@@ -181,3 +181,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Finalization gate registry and shared reason codes (campaign unit U0)](iterate-2026-10-08-u0-foundation-gate-registry-reviews.md)
 - [Review record and ledger enforced at every complexity (campaign unit U3)](iterate-2026-10-08-u3-review-record-trivial-reviews.md)
 - [Small-iterate code-review trigger, one diff-size rule (campaign unit U4)](iterate-2026-10-08-u4-cascade-trigger-100-reviews.md)
+- [The F0.5 surface claim is re-derived from the diff and the staged evidence](iterate-2026-10-08-u5-surface-check-surface-claim.md)

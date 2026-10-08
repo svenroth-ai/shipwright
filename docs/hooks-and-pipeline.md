@@ -4654,9 +4654,13 @@ triggers `surface = web` even when no `client/**` file changed. Step 9
 (Browser Verify) at iterate-time is now **early signal** at medium+; the
 production-time chokepoint is `shared/scripts/surface_verification.py`,
 and the post-commit audit is `check_surface_verification` in
-`shared/scripts/tools/verifiers/iterate_checks.py`. Both layers fail-closed
-on the same four conditions: missing block, `tests_run == 0`,
-`exit_code != 0` after retry cap, `surface == "none"` without justification.
+`shared/scripts/tools/verifiers/surface_check.py` (re-exported by `iterate_checks.py`).
+Both layers fail-closed on the same four conditions: missing block, `tests_run == 0`,
+`exit_code != 0` after retry cap, `surface == "none"` without justification. The
+audit adds two at medium+: `none` needs a closed `surface_none` reason code and is
+refused when the branch diff touches a UI / API-route / SSE-WS / message-contract
+file (`_surface_detect.py`); a real surface's numbers must be backed by this run's
+staged evidence at the verified revision (`_surface_evidence.py`; absent or stale fails).
 
 **Every `iterate_latest` reader must say whose run it is.** Since an iterate no
 longer commits `shipwright_test_results.json`, whatever sits at `HEAD` is

@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u5-surface-check",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:51:52.822072+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Path-based surface detection in `_surface_detect.py` with string rules (excluding singular `route`/`router`) is heuristic and repo-calibrated. The BRIEF says the verifier \"re-derives from the diff,\" and this satisfies it, but path heuristics will misclassify renames (e.g., a new file named `routes.py` under a tooling dir vs. a real API route added inside an existing handler file with no path signal), and any false negative is a bypass — the exact bug this unit exists to fix.",
+          "suggestion": "Document the known-blind-spot set (changes inside an already-surface-touched file whose path alone doesn't indicate it, e.g., edits to an existing route handler body when the file isn't name-matched) in the module docstring and, if cheap, add a content-level signal (e.g., decorator scan `@app.route|@router|websocket|emit`) for non-excluded files. If content scanning is out of scope, at minimum note it as a residual risk in the unit notes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "_surface_evidence.py` failing on \"fewer passes than `tests_run`\" and \"a runner-named test path without a passing result\" conflates evidence-index coverage with per-path bookkeeping. Depending on how `fresh_evidence` records results (aggregated vs. per-path), the per-path check may be under-specified here and is the most likely source of false failures on legitimately passing runs.",
+          "suggestion": "Before writing code, confirm the evidence index actually records per-test-path results; if it only records suite-level counts, drop or weaken the per-path check rather than inventing a mapping, and note it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"head_commit not an ancestor of the verified commit\" — if the verified commit is head, or the branch was rebased (evidence produced on a commit that was subsequently rebased away but content-identical), the ancestor check will fail stale evidence that is arguably valid. Also unhandled: no merge-base case (unrelated histories) and shallow clones.",
+          "suggestion": "Decide and test: same-commit evidence is valid; rebased evidence fails (acceptable strictness, but say so); merge-base failure = unmeasurable = fail closed. Add these as explicit test cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `none` refusal path handles \"unmeasurable diff or non-git tree\" by refusing — good — but `commit_hash=\"\"` is the default in the moved `check_surface_verification`. Other call sites (or older saved scripts) that don't pass the commit will silently take the unmeasurable path and fail everything at medium+, a behavior change for existing callers.",
+          "suggestion": "Audit all `run_all_checks`/direct callers of the check to ensure commit is threaded through; consider making `commit_hash` required (no default) to fail loudly at integration time rather than at medium+ runs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Moving `check_surface_verification` out of `iterate_checks.py` with re-export is the right call per the bloat cap, but \"net lines <= 0 (grandfathered at 463; argparse compacted)\" invites contorting the producer CLI to hit a line budget. Compacting argparse at the cost of readable flags/error messages is over-optimization of a metric.",
+          "suggestion": "Keep the compaction honest — helper-table argparse patterns are fine; don't degrade `--help` or error messages to shave lines. If the cap can't be met cleanly, raise it in the plan rather than distort the code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Deleting superseded positive-path tests in `test_verify_iterate_finalization.py` (at cap) while adding coverage in new files is fine, but the plan doesn't mention checking that nothing else imports the moved check from `iterate_checks` (re-export covers it, but only if it's a true re-export of the same symbol including default-arg behavior change).",
+          "suggestion": "Add a grep/import check for `check_surface_verification` across the repo and scripts as a step in the mini-plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Closed-vocab `surface_none` codes include `no-startable-surface`, which seems to overlap with the diff-based detection refusing `none` when a surface is touched. If detection says a runnable surface is touched but the reason code is `no-startable-surface`, the two rules disagree — which wins isn't specified.",
+          "suggestion": "Specify precedence explicitly (detection wins; the reason code is only a claim) and test the conflict case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Accepting evidence when `head_commit` is an ancestor of the verified commit allows stale evidence through. Tests from commit A remain acceptable after commit B changes the surface, provided the run ID matches.",
+          "suggestion": "Require evidence for the exact verified revision, or prove that the tested tree matches it using an existing tree/content identity mechanism. Test same-run evidence from an ancestor followed by a surface change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Path-only detection, particularly the explicit exclusion of singular `route`/`router` names, leaves a practical bypass. Real API handlers commonly use these names, and message contracts can live in ordinary model files. Calibration against this tooling repository does not establish coverage for application repositories.",
+          "suggestion": "Use project/framework context and relevant diff content to distinguish tooling dispatch from runnable routes and contracts. Treat ambiguous executable changes conservatively. Add representative application fixtures, including `route.ts`, `router.py`, and a contract change outside a specially named directory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The proposed evidence checks establish passing results and counts, but do not explicitly bind those results to the detected surface. A Playwright report selected because the block claims `web`, or unrelated passing tests satisfying `tests_run`, does not meet the stated contract. Leaving `cli` versus detected UI entirely unchecked preserves this gap.",
+          "suggestion": "Derive evidence requirements from detected surface kinds and require corresponding staged runner results. This can remain a verifier-only change without expanding producer-side detection. Test detected UI with a `cli` claim and only CLI evidence, plus API/realtime changes with unrelated passing tests.  The extraction and fail-closed direction are sound and proportionate. Revision freshness, detection coverage, and evidence-to-surface binding need explicit fixes before this satisfies U5.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-08T13:51:53.160721+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach** — **Severity: medium**\n  Finding: Path-based surface detection in `_surface_detect.py` with string rules (excluding singular `route`/`router`) is heuristic and repo-calibrated. The BRIEF says the verifier \"re-derives from the diff,\" and this satisfies it, but path heuristics will misclassify renames (e.g., a new file named `routes.py` under a tooling dir vs. a real API route added inside an existing handler file with no path signal), and any false negative is a bypass — the exact bug this unit exists to fix.\n  Suggestion: Document the known-blind-spot set (changes inside an already-surface-touched file whose path alone doesn't indicate it, e.g., edits to an existing route handler body when the file isn't name-matched) in the module docstring and, if cheap, add a content-level signal (e.g., decorator scan `@app.route|@router|websocket|emit`) for non-excluded files. If content scanning is out of scope, at minimum note it as a residual risk in the unit notes.\n\n- **Category: approach** — **Severity: medium**\n  Finding: `_surface_evidence.py` failing on \"fewer passes than `tests_run`\" and \"a runner-named test path without a passing result\" conflates evidence-index coverage with per-path bookkeeping. Depending on how `fresh_evidence` records results (aggregated vs. per-path), the per-path check may be under-specified here and is the most likely source of false failures on legitimately passing runs.\n  Suggestion: Before writing code, confirm the evidence index actually records per-test-path results; if it only records suite-level counts, drop or weaken the per-path check rather than inventing a mapping, and note it.\n\n- **Category: edge-case** — **Severity: medium**\n  Finding: \"head_commit not an ancestor of the verified commit\" — if the verified commit *is* head, or the branch was rebased (evidence produced on a commit that was subsequently rebased away but content-identical), the ancestor check will fail stale evidence th […truncated]\n\n[openai] I could not read the referenced BRIEF or repository files because local command execution was blocked by policy. This review is based on the supplied specification and mini-plan.\n\n1. **Category: risk | Severity: high**\n   **Finding:** Accepting evidence when `head_commit` is an ancestor of the verified commit allows stale evidence through. Tests from commit A remain acceptable after commit B changes the surface, provided the run ID matches.\n   **Suggestion:** Require evidence for the exact verified revision, or prove that the tested tree matches it using an existing tree/content identity mechanism. Test same-run evidence from an ancestor followed by a surface change.\n\n2. **Category: approach | Severity: high**\n   **Finding:** Path-only detection, particularly the explicit exclusion of singular `route`/`router` names, leaves a practical bypass. Real API handlers commonly use these names, and message contracts can live in ordinary model files. Calibration against this tooling repository does not establish coverage for application repositories.\n   **Suggestion:** Use project/framework context and relevant diff content to distinguish tooling dispatch from runnable routes and contracts. Treat ambiguous executable changes conservatively. Add representative application fixtures, including `route.ts`, `router.py`, and a contract change outside a specially named directory.\n\n3. **Category: approach | Severity: high**\n   **Finding:** The proposed evidence checks establish passing results and counts, but do not explicitly bind those results to the **detected** surface. A Playwright report selected because the block claims `web`, or unrelated passing tests satisfying `tests_run`, does not meet the stated contract. Leaving `cli` versus detected UI entirely unchecked preserves this gap.\n   **Suggestion:** Derive evidence requirements from detected surface kinds and require corresponding staged runner results. This can remain a verifier-only change without expanding pr […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:51:55.007615+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:51:56.126479+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_surface_evidence.py` (`_revision_problem`) The loop `for later in out.split()[1:]` unconditionally skips the first commit in `head..commit` on the assumption that `[0]` is the F6 commit — i.e., that evidence was staged at the pre-F6 trunk tip. But the repair guidance (and `stage_f0_evidence.py` usage shown in `_STAGE`) stages with `--head-commit \"$(git  […truncated]",
+          "line": null,
+          "finding": "only skip `[0]` when it is demonstrably the F6 commit (e.g. skip only commits whose diff is records-only, or record the tested tree commit in the provenance sidecar and compare against it); add a test that stages at the F6 commit and then lands a code fix.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_surface_detect.py",
+          "line": 137,
+          "finding": "Detection examines only changed lines for files without surface-related names. Editing an existing handler’s body in `src/app.py`, while leaving its `@app.get(...)` decorator unchanged, detects no surface and allows medium+ `surface=\"none\"`. This leaves the central bypass open.",
+          "suggestion": "Inspect the full source of changed files for surface declarations, or map changed hunks to existing handlers. Add a test that changes only an existing handler’s body.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_surface_evidence.py",
+          "line": 95,
+          "finding": "Revision validation unconditionally exempts the first commit after staging. Evidence staged at commit A therefore passes for commit B even when B changes executable code that the reports never tested. Assuming B is the F6 commit does not establish that its code matches the tested revision.",
+          "suggestion": "Record a fingerprint of the tested code tree when staging and compare it with the verified revision, excluding permitted finalization records. Test that code changed between staging and F6 invalidates evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_surface_evidence.py",
+          "line": 57,
+          "finding": "Only `web` requires surface-specific evidence; `api` and `cli` accept any staged passing results. An API route change with `runner=\"curl ...\"` and `tests_run=1` can pass using an unrelated unit-test report, because the runner names no test path. The evidence is tied to the run but does not substantiate execution against the detected surface.",
+          "suggestion": "Require staged evidence identifying the actual surface runner and its results, and validate that association against the detected surface. Add a rejection test for an API claim backed solely by unrelated unit tests.  Overall assessment: ship-with-fixes. The extraction and added checks are useful, but surface detection and evidence binding still permit the bypasses U5 is intended to close.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-08T13:51:54.049608+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: bug — Severity: medium**\nFile: `shared/scripts/tools/verifiers/_surface_evidence.py` (`_revision_problem`)\nThe loop `for later in out.split()[1:]` unconditionally skips the first commit in `head..commit` on the assumption that `[0]` is the F6 commit — i.e., that evidence was staged at the pre-F6 trunk tip. But the repair guidance (and `stage_f0_evidence.py` usage shown in `_STAGE`) stages with `--head-commit \"$(git rev-parse HEAD)\"`, which is frequently the F6 commit itself (or later). In that case `[0]` in `head..commit` is the *next* commit, and a code-changing commit immediately after the staging point escapes the staleness check entirely — exactly the bypass this unit exists to close. The one test that exercises the post-commit sequence (`test_a_code_commit_after_the_f6_commit_makes_the_evidence_stale`) always stages at the trunk tip, so it never covers this shape.\nSuggestion: only skip `[0]` when it is demonstrably the F6 commit (e.g. skip only commits whose diff is records-only, or record the tested tree commit in the provenance sidecar and compare against it); add a test that stages at the F6 commit and then lands a code fix.\n\n**Category: test — Severity: medium**\nFile: `shared/tests/test_iterate_latest_attribution.py` (changed assertions)\n`assert check_surface_verification(tmp_path, RUN).detail.startswith(\"surface=cli, tests_run=22\")` no longer asserts `.ok`. `tmp_path` is not a git work tree, so `_verified_commit` returns an error and the check now **fails** (\"stale: … not a readable git work tree\"), yet the assertion passes because the detail string still starts with the same prefix. The test's original purpose (per-run entry is the block that's read) is still meaningful, but the assertion as written would also pass for a completely broken implementation. Suggestion: assert on the entry-resolution portion explicitly (e.g. that the failure detail is the git-work-tree one and not the \"missing block\" one), or build a mini […truncated]\n\n[openai] Local command execution was blocked, so this review is based on the supplied diff and specification excerpt; I could not read the full BRIEF or run tests.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/verifiers/_surface_detect.py:137\n- Finding: Detection examines only changed lines for files without surface-related names. Editing an existing handler’s body in `src/app.py`, while leaving its `@app.get(...)` decorator unchanged, detects no surface and allows medium+ `surface=\"none\"`. This leaves the central bypass open.\n- Suggestion: Inspect the full source of changed files for surface declarations, or map changed hunks to existing handlers. Add a test that changes only an existing handler’s body.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/verifiers/_surface_evidence.py:95\n- Finding: Revision validation unconditionally exempts the first commit after staging. Evidence staged at commit A therefore passes for commit B even when B changes executable code that the reports never tested. Assuming B is the F6 commit does not establish that its code matches the tested revision.\n- Suggestion: Record a fingerprint of the tested code tree when staging and compare it with the verified revision, excluding permitted finalization records. Test that code changed between staging and F6 invalidates evidence.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/verifiers/_surface_evidence.py:57\n- Finding: Only `web` requires surface-specific evidence; `api` and `cli` accept any staged passing results. An API route change with `runner=\"curl ...\"` and `tests_run=1` can pass using an unrelated unit-test report, because the runner names no test path. The evidence is tied to the run but does not substantiate execution against the detected surface.\n- Suggestion: Require staged evidence identifying the actual surface runner and its results, and validate that association against the detected surface. Add a rejection test for an API c […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:51:54.382572+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:51:56.457428+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T13:51:57.502299+00:00",
+      "disposition": "campaign sub-iterates have no internal architecture-review arm yet — a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

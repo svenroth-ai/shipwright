@@ -1,0 +1,132 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-u5-surface-check",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 21016,
+      "total": 21111
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 574,
+      "total": 574
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "medium+ none passes only with a closed surface_none code; missing or out-of-vocabulary code fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_none_with_a_closed_code_on_a_prose_only_diff_passes + test_none_without_a_reason_code_fails_even_with_a_justification + test_none_with_a_code_outside_the_vocabulary_fails PASSED"
+        },
+        {
+          "behavior": "none refused when the diff touches a route / UI / SSE / message contract, by path, changed lines or a handler body under an unchanged decorator; the diff wins over the code",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_none_is_refused_when_the_diff_touches_a_runnable_surface + test_the_diff_wins_over_the_reason_code + test_none_is_refused_when_only_the_changed_lines_reveal_a_route + test_none_is_refused_when_a_handler_body_changes_under_an_unchanged_decorator PASSED"
+        },
+        {
+          "behavior": "an unmeasurable diff or a non-git root cannot confirm none (fail closed)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_none_cannot_be_confirmed_when_the_diff_is_unmeasurable + test_none_fails_closed_outside_a_git_work_tree PASSED"
+        },
+        {
+          "behavior": "fresh staged evidence matching tests_run/exit_code passes; absent evidence fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_fresh_matching_evidence_passes + test_absent_evidence_fails PASSED"
+        },
+        {
+          "behavior": "stale evidence fails: another run, off-line head, a code commit after staging, an amend after staging, no fingerprint; records-only commits and trunk merges stay fresh",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_evidence_staged_for_another_run_is_stale + test_evidence_staged_at_a_revision_off_the_verified_line_is_stale + test_a_code_commit_after_the_f6_commit_makes_the_evidence_stale + test_an_edit_after_staging_folded_into_the_f6_commit_is_caught + test_evidence_without_a_tested_tree_fingerprint_is_stale PASSED"
+        },
+        {
+          "behavior": "tested_tree fingerprint equals the working tree and leaves the real index alone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_the_tested_tree_fingerprint_is_the_working_tree_and_leaves_the_index_alone PASSED"
+        },
+        {
+          "behavior": "evidence bound to the surface: UI must be web, web needs Playwright and counts only its results, a detected surface needs a runner naming test files",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_a_ui_change_must_be_driven_as_web + test_web_needs_a_staged_playwright_report_and_counts_only_its_results + test_a_detected_surface_needs_a_runner_that_names_its_test_files PASSED"
+        },
+        {
+          "behavior": "evidence disagreeing with the block fails: failing staged test, too few passes, a runner path without a pass",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_check.py::test_a_failing_staged_test_contradicts_exit_code_zero + test_tests_run_above_the_staged_passes_fails + test_a_runner_test_path_with_no_staged_pass_fails PASSED"
+        },
+        {
+          "behavior": "surface detector: each kind, never-surface paths, normalisation, content signals, split_patch, runner test paths",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_detect.py (6 detector tests) PASSED"
+        },
+        {
+          "behavior": "producer surface_verification.py --reason-code records a closed code and refuses an unknown one",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_detect.py::test_producer_records_a_closed_reason_code_for_none + test_producer_refuses_a_reason_code_outside_the_vocabulary PASSED"
+        },
+        {
+          "behavior": "run_all_checks hands the verified commit (not HEAD) to the surface check",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_surface_check.py::test_run_all_checks_hands_the_commit_to_the_surface_check PASSED"
+        },
+        {
+          "behavior": "the real verify_iterate_finalization.py CLI fails a valid-looking block no staged evidence backs and a none with only free text",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_audit_e2e_integration.py::test_cli_fails_a_valid_looking_block_no_staged_evidence_backs + test_cli_fails_surface_none_with_only_a_free_text_justification PASSED"
+        },
+        {
+          "behavior": "attribution: a block naming this run but without fresh evidence reads stale, not passed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_latest_attribution.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_surface_check.py shared/tests/test_surface_detect.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 61,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-08-u5-surface-check/surface_verification.log",
+      "timestamp": "2026-10-08T15:03:41.736Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-u5-surface-check",
+    "commit": "8f2700352e37f3fdd023f3e3ccf77e6feb3df052",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
