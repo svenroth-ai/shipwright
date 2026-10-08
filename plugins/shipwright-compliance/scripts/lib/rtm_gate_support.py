@@ -18,6 +18,7 @@ import rtm_manifest_coverage as manifest_cov
 
 DEFAULT_THRESHOLD = 0.80
 _RTM_RELPATH = Path(".shipwright") / "compliance" / "traceability-matrix.md"
+_NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
 
 
 def pct_text(value: float) -> str:
@@ -95,30 +96,37 @@ def read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
 def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     """``(measurement, warnings)``; measurement is ``None`` when nothing is measurable.
 
-    Requirement coverage from the manifest; the legacy section line only when
-    there is no manifest FILE. Every case that used to allow silently now says why
-    in a WARN -- except a project with no compliance data at all (early pipeline).
+    Requirement coverage from the committed manifest; the legacy section line only
+    when there is no manifest at all. A non-current schema or a manifest with no
+    executed result is unmeasurable (WARN), never 0%. Every case that used to allow
+    silently says why in a WARN -- except a project with no compliance data at all.
     """
     warnings: list[str] = []
     manifest, problem = manifest_cov.read_manifest(project_root)
     if problem:
         warnings.append(problem)
     if manifest is not None:
+        schema = manifest_cov.schema_problem(manifest)
+        if schema:  # never relabel a stale-shape read as coverage, nor fall back
+            return None, [*warnings, schema, _NOT_EVALUATING]
         cov = manifest_cov.compute_coverage(manifest, project_root)
         stale = manifest_cov.staleness_warning(manifest, project_root)
         if stale:
             warnings.append(stale)
-        if cov["fr"]["pct"] is not None:
-            return {"kind": "requirements", "pct": cov["fr"]["pct"], "coverage": cov,
-                    "source_commit": manifest.get("source_commit")}, warnings
-        warnings.append(
-            "traceability manifest lists no active requirements; nothing to measure "
-            "(the 80% commit gate is NOT evaluating)"
-        )
-        return None, warnings
+        if cov["fr"]["pct"] is None:
+            warnings.append(
+                "traceability manifest lists no active requirements; nothing to measure "
+                f"({_NOT_EVALUATING})"
+            )
+            return None, warnings
+        unexecuted = manifest_cov.execution_problem(manifest)
+        if unexecuted:
+            return None, [*warnings, unexecuted, _NOT_EVALUATING]
+        return {"kind": "requirements", "pct": cov["fr"]["pct"], "coverage": cov,
+                "source_commit": manifest.get("source_commit")}, warnings
     if problem:
         # present but unreadable: never relabel build-section coverage as the answer
-        warnings.append("the 80% commit gate is NOT evaluating")
+        warnings.append(_NOT_EVALUATING)
         return None, warnings
     legacy = get_coverage_from_rtm(project_root)
     if legacy is not None:

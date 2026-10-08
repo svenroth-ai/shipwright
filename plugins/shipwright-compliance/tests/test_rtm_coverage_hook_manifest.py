@@ -29,6 +29,7 @@ def _manifest(root: Path, passing: int, total: int, generated_at=None):
     path = root / ".shipwright" / "compliance" / "test-traceability.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
+        "schema_version": 4,
         "generated_at": generated_at or datetime.now(timezone.utc).isoformat(),
         "source_commit": "", "requirements": reqs}), encoding="utf-8")
 

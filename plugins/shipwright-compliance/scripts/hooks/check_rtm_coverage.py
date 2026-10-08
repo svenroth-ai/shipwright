@@ -7,12 +7,18 @@
 
 Measures REQUIREMENT coverage -- the share of active requirements (and, reported
 separately, acceptance criteria) with an executed-passing bound test -- from the
-working-tree copy of the committed/cached
-``.shipwright/compliance/test-traceability.json``. It never regenerates
-the manifest (it fires on every ``git commit``); a stale manifest is a WARN. Only
-when no usable manifest exists does it fall back to the RTM's legacy "Traceability
-coverage" line (build sections with a commit). Cases that cannot be measured emit
-a visible WARN (``additionalContext``) instead of allowing silently.
+COMMITTED ``.shipwright/compliance/test-traceability.json`` (``git show HEAD:``;
+the working-tree copy, which the local pipeline regenerates fail-closed as all
+``not_run``, is read only outside a repo or when HEAD has no such file). It never
+regenerates the manifest (it fires on every ``git commit``); a stale or
+provenance-unknown manifest is a WARN, and a non-current schema or a manifest with
+no executed result is unmeasurable (WARN + allow), never 0%. Only when no manifest
+exists does it fall back to the RTM's legacy "Traceability coverage" line (build
+sections with a commit). Cases that cannot be measured emit a visible WARN
+(``additionalContext``) instead of allowing silently.
+
+Fires only for a real ``git ... commit`` invocation (:func:`is_git_commit`), not for
+any command whose text merely contains "git commit".
 
 Exit codes:
   0 = allow (no compliance data yet, coverage sufficient, or unmeasurable + WARN)
@@ -26,6 +32,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shlex
 import sys
 from pathlib import Path
 from typing import Any
@@ -64,6 +72,49 @@ def _lib():
     import rtm_gate_support  # noqa: PLC0415
 
     return rtm_gate_support
+
+
+# git global options that consume the following token (``git -C <path> commit``).
+_GIT_OPTS_WITH_VALUE = frozenset({"-C", "-c", "--git-dir", "--work-tree", "--namespace"})
+_SEPARATOR_CHARS = frozenset(";|&()")
+_ENV_ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+
+
+def _segment_is_commit(tokens: list[str]) -> bool:
+    i = 0
+    while i < len(tokens) and _ENV_ASSIGNMENT.match(tokens[i]):
+        i += 1  # FOO=bar git commit
+    if i >= len(tokens) or Path(tokens[i]).name.lower() not in ("git", "git.exe"):
+        return False
+    i += 1
+    while i < len(tokens) and tokens[i].startswith("-"):
+        i += 2 if tokens[i] in _GIT_OPTS_WITH_VALUE else 1
+    return i < len(tokens) and tokens[i] == "commit"
+
+
+def is_git_commit(command: str) -> bool:
+    """True when some ``&&`` / ``;`` / ``|``-separated segment runs ``git ... commit``.
+
+    Global options before the subcommand (``-C <path>``, ``-c k=v``, ``--no-pager``)
+    are skipped; ``git -c k=v diff``, ``rg "git commit"`` and
+    ``git log --grep 'git commit'`` are not commits. Unparseable shell text (an
+    unbalanced quote) falls back to the substring test so the gate still fires.
+    """
+    try:
+        lexer = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        tokens = list(lexer)
+    except ValueError:
+        return "git commit" in command
+    segment: list[str] = []
+    for token in [*tokens, ";"]:
+        if token and set(token) <= _SEPARATOR_CHARS:
+            if _segment_is_commit(segment):
+                return True
+            segment = []
+        else:
+            segment.append(token)
+    return False
 
 
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
@@ -114,9 +165,8 @@ def main() -> int:
     except (json.JSONDecodeError, Exception):
         return 0  # Can't parse payload, allow
 
-    # Only check Bash tool calls containing git commit
     command = payload.get("tool_input", {}).get("command", "")
-    if "git commit" not in command and "git -c" not in command:
+    if not isinstance(command, str) or not is_git_commit(command):
         return 0
 
     # Resolve the managed project root (auto-descends in subdir layouts).

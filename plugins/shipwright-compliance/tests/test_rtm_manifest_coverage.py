@@ -166,3 +166,41 @@ def test_non_hex_source_commit_never_reaches_git(tmp_path, monkeypatch):
     monkeypatch.setattr(rmc, "commits_behind", lambda *a: called.append(a) or 999)
     m = {"generated_at": now.isoformat(), "source_commit": "--upload-pack=evil"}
     assert rmc.staleness_warning(m, tmp_path, now) is None and not called
+
+
+def test_zero_sha_is_provenance_unknown_and_never_reaches_git(tmp_path, monkeypatch):
+    called = []
+    monkeypatch.setattr(rmc, "commits_behind", lambda *a: called.append(a) or 999)
+    m = {"generated_at": datetime.now(timezone.utc).isoformat(), "source_commit": "0" * 40}
+    assert "provenance is unknown" in rmc.staleness_warning(m, tmp_path) and not called
+    epoch = {"generated_at": "1970-01-01T00:00:00+00:00", "source_commit": "abcdef0"}
+    assert "provenance is unknown" in rmc.staleness_warning(epoch, tmp_path) and not called
+
+
+def test_schema_and_execution_problems():
+    ok = {"schema_version": 4, "requirements": {"a": _req([_link("fail")])}}
+    assert rmc.schema_problem(ok) is None and rmc.execution_problem(ok) is None
+    assert "not the current 4" in rmc.schema_problem({"schema_version": 3})
+    assert rmc.schema_problem({"schema_version": True}) is not None
+    unrun = {"requirements": {"a": _req([_link("not_run")], {"AC01": [_link("not_run")]}),
+                              "b": "junk", "c": {"tests": [], "acs": []}}}
+    assert "no executed test result" in rmc.execution_problem(unrun)
+    ac_only = {"requirements": {"a": _req([_link("not_run")], {"AC01": [_link("pass")]})}}
+    assert rmc.execution_problem(ac_only) is None
+
+
+def test_read_manifest_non_object_and_undecodable(tmp_path):
+    path = tmp_path / rmc.MANIFEST_RELPATH
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"\xff\xfe{")
+    assert "cannot read" in rmc.read_manifest(tmp_path)[1]
+    path.write_text("[]", encoding="utf-8")
+    assert "not a JSON object" in rmc.read_manifest(tmp_path)[1]
+
+
+def test_committed_bytes_is_none_when_git_is_missing(tmp_path, monkeypatch):
+    def no_git(*_a, **_k):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(rmc.subprocess, "run", no_git)
+    assert rmc._committed_bytes(tmp_path) is None

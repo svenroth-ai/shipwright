@@ -1,14 +1,13 @@
-"""Requirement coverage read from the working-tree copy of the committed manifest.
+"""Requirement coverage read from the COMMITTED (HEAD) traceability manifest.
 
-The ``check_rtm_coverage`` commit hook used to gate on the RTM's
-"Traceability coverage" line, which is the share of *build sections that have a
-commit* -- not requirement coverage. An adopted project has no build sections, so
-the RTM carries no such line at all and the hook allowed every commit, silently.
-
-This module computes the number the hook's name promises, from
-``.shipwright/compliance/test-traceability.json`` (the manifest the collector
-commits; the hook reads the working-tree copy of that committed/cached file as-is
-and never regenerates it -- the hook fires on every ``git commit``):
+The commit hook used to gate on the RTM's "Traceability coverage" line -- the
+share of build sections with a commit, absent for an adopted project (so every
+commit was allowed, silently). This module computes requirement coverage from
+``.shipwright/compliance/test-traceability.json`` as committed at ``HEAD``. The
+working-tree copy is not trusted (the local pipeline regenerates it fail-closed,
+every link ``not_run``, which would read as 0%); it is read only outside a repo or
+when HEAD has no such file. Never regenerated here. A non-current schema or a
+manifest with no executed result is *unmeasurable* (WARN), never 0%:
 
 * **FR metric** -- counting unit: an *active* requirement. Covered when at least
   one test bound to it is ``status == "enabled"`` AND ``executed == "pass"``.
@@ -16,19 +15,14 @@ and never regenerates it -- the hook fires on every ``git commit``):
   requirement, covered under the same rule. Reported next to the FR metric, never
   mixed into it.
 
-"Passing" is the manifest's own join of binding to execution result: a skipped
-test (``status != "enabled"``), a test that never ran or failed, and a test whose
-result is missing all count as NOT covered. A parametrized test is a single
-function-level link whose ``executed`` already folds its cases.
+A skipped, never-run, failed or result-less test counts as NOT covered; a
+parametrized test is one function-level link whose ``executed`` folds its cases.
 
-**Accepted risk.** The join of a binding to its execution result *by commit* is
-done by the traceability collector when it builds the manifest; this module does
-NOT re-verify it. A result recorded for an older commit therefore reads as
-passing until the manifest is regenerated (F11 / CI). The staleness WARN
-(:func:`staleness_warning`) is the mitigation, not a proof.
+**Accepted risk.** The binding-to-result join *by commit* is the collector's; this
+module does NOT re-verify it, so an older result reads as passing until the
+manifest is regenerated (F11 / CI). The staleness WARN mitigates, it does not prove.
 
-Pure apart from reading project files and the optional ``git`` probe in
-:func:`commits_behind`.
+Pure apart from reading project files and the ``git`` probes.
 """
 
 from __future__ import annotations
@@ -41,6 +35,9 @@ from pathlib import Path
 from typing import Any
 
 MANIFEST_RELPATH = Path(".shipwright") / "compliance" / "test-traceability.json"
+# Mirrors audit/_group_d_manifest.MANIFEST_SCHEMA_VERSION (drift-guarded by a test).
+MANIFEST_SCHEMA_VERSION = 4
+_GIT_TIMEOUT_S = 5
 STALE_AFTER_DAYS = 14
 STALE_AFTER_COMMITS = 300
 
@@ -165,18 +162,83 @@ def compute_coverage(manifest: dict[str, Any],
     }
 
 
-def read_manifest(project_root: str | Path) -> tuple[dict[str, Any] | None, str | None]:
-    """``(manifest, None)``, ``(None, None)`` when absent, ``(None, reason)`` when unreadable."""
-    path = Path(project_root) / MANIFEST_RELPATH
-    if not path.is_file():
-        return None, None
+def _committed_bytes(project_root: str | Path) -> bytes | None:
+    """HEAD's copy of the manifest; ``None`` outside a repo or when HEAD has none.
+
+    ``HEAD:./<path>`` resolves relative to ``-C`` (a subdirectory project works).
+    List args, no shell: nothing for MSYS path conversion to rewrite.
+    """
     try:
-        data = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError) as exc:
-        return None, f"cannot read {MANIFEST_RELPATH.as_posix()}: {type(exc).__name__}"
+        out = subprocess.run(
+            ["git", "-C", str(project_root), "show",
+             f"HEAD:./{MANIFEST_RELPATH.as_posix()}"],
+            capture_output=True, timeout=_GIT_TIMEOUT_S, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+def read_manifest(project_root: str | Path) -> tuple[dict[str, Any] | None, str | None]:
+    """``(manifest, None)``, ``(None, None)`` when absent, ``(None, reason)`` when unreadable.
+
+    Committed (HEAD) copy first; the working-tree file only as the fallback.
+    """
+    label = MANIFEST_RELPATH.as_posix()
+    raw = _committed_bytes(project_root)
+    if raw is None:
+        path = Path(project_root) / MANIFEST_RELPATH
+        if not path.is_file():
+            return None, None
+        try:
+            raw = path.read_bytes()
+        except OSError as exc:
+            return None, f"cannot read {label}: {type(exc).__name__}"
+    else:
+        label = f"HEAD:{label}"
+    try:
+        data = json.loads(raw.decode("utf-8-sig"))
+    except ValueError as exc:
+        return None, f"cannot read {label}: {type(exc).__name__}"
     if not isinstance(data, dict):
-        return None, f"{MANIFEST_RELPATH.as_posix()} is not a JSON object"
+        return None, f"{label} is not a JSON object"
     return data, None
+
+
+def _links(manifest: dict[str, Any]):
+    """Every link dict bound to a requirement or to one of its ACs."""
+    reqs = manifest.get("requirements")
+    for req in reqs.values() if isinstance(reqs, dict) else ():
+        if not isinstance(req, dict):
+            continue
+        acs = req.get("acs")
+        for node in [req, *(acs.values() if isinstance(acs, dict) else ())]:
+            tests = node.get("tests") if isinstance(node, dict) else None
+            for links in tests.values() if isinstance(tests, dict) else ():
+                if isinstance(links, list):
+                    yield from (link for link in links if isinstance(link, dict))
+
+
+def schema_problem(manifest: dict[str, Any]) -> str | None:
+    """A WARN when the manifest is not the current schema (mirrors Group D's read)."""
+    version = manifest.get("schema_version")
+    if type(version) is int and version == MANIFEST_SCHEMA_VERSION:
+        return None
+    return (
+        f"traceability manifest schema_version {version!r} is not the current "
+        f"{MANIFEST_SCHEMA_VERSION}; coverage is not measurable -- regenerate it (F11 / CI)"
+    )
+
+
+def execution_problem(manifest: dict[str, Any]) -> str | None:
+    """A WARN when no link carries an executed result (no ``pass`` and no ``fail``)."""
+    if any(link.get("executed") in ("pass", "fail") for link in _links(manifest)):
+        return None
+    return (
+        "traceability manifest records no executed test result (every link is "
+        "not_run, e.g. a fail-closed local regeneration); coverage is not measurable, "
+        "not 0% -- regenerate it from a real test run (F11 / CI)"
+    )
 
 
 def commits_behind(project_root: str | Path, source_commit: str) -> int | None:
@@ -191,9 +253,26 @@ def commits_behind(project_root: str | Path, source_commit: str) -> int | None:
         return None
 
 
+_ZERO_SHA = re.compile(r"0{7,64}")
+
+
+def _provenance_unknown(manifest: dict[str, Any]) -> bool:
+    """Epoch ``generated_at`` or an all-zero ``source_commit``: a placeholder stamp."""
+    source = manifest.get("source_commit")
+    return str(manifest.get("generated_at")).startswith("1970-01-01") or (
+        isinstance(source, str) and _ZERO_SHA.fullmatch(source) is not None)
+
+
 def staleness_warning(manifest: dict[str, Any], project_root: str | Path,
                       now: datetime | None = None) -> str | None:
     """A WARN sentence when the manifest is old, or ``None`` when it is fresh enough."""
+    if _provenance_unknown(manifest):
+        # no git probe: an all-zero SHA names no commit
+        return (
+            "traceability manifest provenance is unknown (epoch generated_at or "
+            "all-zero source_commit); its age cannot be told -- regenerate it in "
+            "F11 / CI (this hook never does)"
+        )
     now = now or datetime.now(timezone.utc)
     reasons: list[str] = []
     try:
