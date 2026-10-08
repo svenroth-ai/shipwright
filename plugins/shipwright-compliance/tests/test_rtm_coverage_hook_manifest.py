@@ -15,6 +15,7 @@ import pytest
 if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
     sys.path.insert(0, str(Path(__file__).parent))
 from rtm_hook_test_support import hook_env  # noqa: E402
+from rtm_hook_test_support import scrub_git_env  # noqa: E402,F401 - autouse
 
 pytestmark = pytest.mark.covers("FR-01.10")
 
@@ -42,10 +43,10 @@ def _config(root: Path, **enforcement):
         json.dumps({"enforcement": enforcement}), encoding="utf-8")
 
 
-def _run(root: Path):
-    r = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(COMMIT),
-                       capture_output=True, text=True, cwd=str(root), env=hook_env(), timeout=60)
-    return r.returncode, r.stdout.strip()
+def _run(root: Path, *, full: bool = False):
+    r = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(COMMIT), capture_output=True,
+                       text=True, cwd=str(root), env=hook_env(root), timeout=60)
+    return r if full else (r.returncode, r.stdout.strip())
 
 
 def test_blocks_on_requirement_coverage_and_prints_the_definition(tmp_path):
@@ -56,6 +57,17 @@ def test_blocks_on_requirement_coverage_and_prints_the_definition(tmp_path):
     assert "Requirement coverage 30% (3/10 active requirements" in hso["reason"]
     assert hso["details"]["metric"] == "requirements"
     assert len(hso["details"]["uncovered_requirements"]) == 7
+
+
+def test_block_reason_and_clearing_advice_reach_stderr(tmp_path):
+    """On exit 2 Claude Code shows the model STDERR, not the stdout JSON."""
+    _manifest(tmp_path, 3, 10)
+    r = _run(tmp_path, full=True)
+    assert r.returncode == 2
+    assert "BLOCKED (check_rtm_coverage): Requirement coverage 30% (3/10" in r.stderr
+    assert "rtm_coverage_baseline" in r.stderr and "separate command first" in r.stderr
+    hso = json.loads(r.stdout)["hookSpecificOutput"]  # stdout JSON kept for compatibility
+    assert hso["blocked"] and "separate command first" in hso["details"]["staging_hint"]
 
 
 def test_allows_when_requirement_coverage_sufficient(tmp_path):

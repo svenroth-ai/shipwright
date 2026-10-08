@@ -102,7 +102,11 @@ def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
         return False  # empty, or a comment: # git commit
     if _program(tokens[0]) in (*_SHELLS, *_POWERSHELLS, "eval", "cmd"):
         inner = _inner_command(tokens)
-        return inner is not None and depth < _MAX_SHELL_DEPTH and is_git_commit(inner, depth + 1)
+        if inner is None:
+            return False
+        if depth >= _MAX_SHELL_DEPTH:
+            return "git commit" in inner  # too deep to parse: over-fire, never fail open
+        return is_git_commit(inner, depth + 1)
     if _program(tokens[0]) != "git":
         return False
     i = 1
@@ -112,19 +116,23 @@ def _segment_is_commit(tokens: list[str], depth: int = 0) -> bool:
 
 
 def is_git_commit(command: str, _depth: int = 0) -> bool:
-    """True when some ``&&`` / ``;`` / ``|``-separated segment runs ``git ... commit``.
+    """True when some segment (split on ``&&`` ``||`` ``;`` ``|`` ``&`` ``(`` ``)``) runs ``git ... commit``.
 
     Global options before the subcommand (``-C <path>``, ``-c k=v``, ``--no-pager``)
     are skipped, as are leading reserved words (``if then else elif do while until
     ! { }``), ``VAR=val`` prefixes and a closed set of wrappers (``env``, ``sudo``,
     ``timeout 60``, ``nohup``, ...); ``sh|bash -c``, ``eval``, ``pwsh -Command`` and
-    ``cmd /c`` strings are parsed recursively (depth-capped). ``git -c k=v diff``,
+    ``cmd /c`` strings are parsed recursively; past the depth cap the substring test
+    decides (over-fires rather than fails open). ``git -c k=v diff``,
     ``rg "git commit"``, ``echo git commit``, ``# git commit`` and ``git log --grep
     'git commit'`` are not commits. ``#`` is not a comment character to the lexer
     (``http://h/#a`` stays one word; a line comment ends at its newline, which is a
     separator); a segment starting with ``#`` is a comment. Backslash-newline
     continuations are joined first. Unparseable shell text (an unbalanced quote)
-    falls back to the substring test so the gate still fires.
+    falls back to the substring test so the gate still fires. Known over-fires: a
+    trailing comment holding a separator (``echo hi # ; git commit``), a quoted
+    separator that ``eval`` / ``-Command`` / ``cmd /c`` re-join without its quotes
+    (``eval echo "a; git commit"``), and ``git commit --dry-run`` / ``-h``.
     """
     text = command.replace("\\\r\n", " ").replace("\\\n", " ")
     try:

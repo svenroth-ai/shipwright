@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts" / "lib"))
+import rtm_commit_distance as rcd  # noqa: E402
 import rtm_manifest_coverage as rmc  # noqa: E402
 
 if str(Path(__file__).parent) not in sys.path:  # sibling support module; tests/ is no package root
@@ -84,7 +86,31 @@ def test_staleness_by_commits_behind(tmp_path, monkeypatch):
 
 
 def test_commits_behind_is_none_outside_a_repo(tmp_path):
-    assert rmc.commits_behind(tmp_path, "deadbeef") is None
+    assert rcd.commits_behind(tmp_path, "deadbeef") is None
+
+
+@needs_git
+def test_commits_behind_is_none_for_an_unborn_head_and_counts_a_known_commit(tmp_path):
+    init_repo(tmp_path)
+    assert rcd.commits_behind(tmp_path, "deadbeef" * 5) is None  # unborn: silent
+    (tmp_path / "f").write_text("x", encoding="utf-8")
+    git(tmp_path, "add", "-A")
+    git(tmp_path, "commit", "-q", "-m", "c")
+    sha = subprocess.run(["git", "-C", str(tmp_path), "rev-parse", "HEAD"], capture_output=True,
+                         text=True, check=True).stdout.strip()
+    assert rcd.commits_behind(tmp_path, sha) == 0
+
+
+def test_commits_behind_other_git_errors_are_silent(tmp_path, monkeypatch):
+    monkeypatch.setattr(rcd.subprocess, "run", lambda *_a, **_k: subprocess.CompletedProcess(
+        [], 128, stdout="", stderr="fatal: index file corrupt"))
+    assert rcd.commits_behind(tmp_path, "deadbeef") is None
+
+    def boom(*_a, **_k):
+        raise subprocess.TimeoutExpired("git", 5)
+
+    monkeypatch.setattr(rcd.subprocess, "run", boom)
+    assert rcd.commits_behind(tmp_path, "deadbeef") is None
 
 
 @needs_git
@@ -93,7 +119,7 @@ def test_a_source_commit_missing_from_local_history_warns_distance_unknown(tmp_p
     (tmp_path / "f").write_text("x", encoding="utf-8")
     git(tmp_path, "add", "-A")
     git(tmp_path, "commit", "-q", "-m", "c")
-    assert rmc.commits_behind(tmp_path, "deadbeef" * 5) == rmc.NOT_IN_HISTORY
+    assert rcd.commits_behind(tmp_path, "deadbeef" * 5) == rcd.NOT_IN_HISTORY
     now = datetime(2026, 10, 8, tzinfo=timezone.utc)
     m = {"generated_at": now.isoformat(), "source_commit": "deadbeef" * 5}
     warn = rmc.staleness_warning(m, tmp_path, now)

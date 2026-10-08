@@ -6,9 +6,12 @@ commit was allowed, silently). This module computes requirement coverage from
 ``.shipwright/compliance/test-traceability.json`` as staged in the index (else as
 committed at ``HEAD``). The working-tree copy is not trusted (the local pipeline
 regenerates it fail-closed, every link ``not_run``, which would read as 0%); it is
-read only outside a repo or when git has no such file -- or, with a WARN naming
-why, when the git read fails (``rtm_manifest_read``). Never regenerated here. A non-current schema or a
-manifest with no executed result is *unmeasurable* (WARN), never 0%:
+read silently only outside a repo or when git has no such file, and with one WARN
+naming why for any other git failure (``rtm_manifest_read``, which also states the
+PreToolUse ordering limit: a manifest staged by the commit command itself is
+measured from its previous index / HEAD copy). Never regenerated here. A
+non-current schema or a manifest with no executed result is *unmeasurable* (WARN),
+never 0%:
 
 * **FR metric** -- counting unit: an *active* requirement. Covered when at least
   one test bound to it is ``status == "enabled"`` AND ``executed == "pass"``.
@@ -28,18 +31,17 @@ Pure apart from reading project files and the ``git`` probes.
 
 from __future__ import annotations
 
-import os
 import re
-import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from rtm_commit_distance import NOT_IN_HISTORY, commits_behind
+
 # The index-then-HEAD read lives in its own module; re-exported so callers keep one import.
 from rtm_manifest_read import (  # noqa: F401
-    _GIT_TIMEOUT_S,
     MANIFEST_RELPATH,
-    _committed_bytes,
+    UNREADABLE,
     read_manifest,
     read_manifest_noted,
 )
@@ -210,29 +212,6 @@ def execution_problem(manifest: dict[str, Any]) -> str | None:
         "not_run, e.g. a fail-closed local regeneration); coverage is not measurable, "
         "not 0% -- regenerate it from a real test run (F11 / CI)"
     )
-
-
-NOT_IN_HISTORY = -1  # commits_behind: git ran in a repo, but rev-list could not count
-
-
-def commits_behind(project_root: str | Path, source_commit: str) -> int | None:
-    """Commits between the manifest's ``source_commit`` and HEAD.
-
-    ``None`` when git cannot answer at all (not a repo, git missing, a timeout);
-    :data:`NOT_IN_HISTORY` when rev-list fails inside a repo (the commit is not in
-    local history -- a shallow clone, a rewritten branch).
-    """
-    env = {**os.environ, "LC_ALL": "C", "LANGUAGE": "C"}
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(project_root), "rev-list", "--count", f"{source_commit}..HEAD"],
-            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S, check=False, env=env,
-        )
-        if out.returncode == 0:
-            return int(out.stdout.strip())
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return None
-    return None if "not a git repository" in (out.stderr or "") else NOT_IN_HISTORY
 
 
 _ZERO_SHA = re.compile(r"0{7,64}")

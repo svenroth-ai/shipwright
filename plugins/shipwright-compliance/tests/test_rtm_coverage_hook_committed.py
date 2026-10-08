@@ -36,11 +36,12 @@ PLUGIN = Path(__file__).parent.parent
 HOOK = PLUGIN / "scripts" / "hooks" / "check_rtm_coverage.py"
 
 
-def _run(root: Path, command: str = "git commit -m x"):
+def _run(root: Path, command: str = "git commit -m x", *, full: bool = False):
     r = subprocess.run([sys.executable, str(HOOK)],
                        input=json.dumps({"tool_input": {"command": command}}),
-                       capture_output=True, text=True, cwd=str(root), env=hook_env(), timeout=60)
-    return r.returncode, r.stdout.strip()
+                       capture_output=True, text=True, cwd=str(root), env=hook_env(root),
+                       timeout=60)
+    return r if full else (r.returncode, r.stdout.strip())
 
 
 needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
@@ -104,6 +105,20 @@ def test_a_staged_correction_is_measured_not_the_low_head_copy(tmp_path):
     rc, out = _run(tmp_path, "git commit -m regen")
     assert rc == 0 and "Requirement coverage 100% (10/10" in out
     assert "reading working-tree manifest" not in out
+
+
+@needs_git
+def test_a_manifest_staged_by_the_commit_command_itself_is_measured_from_head(tmp_path):
+    """Documented PreToolUse ordering limit: the hook runs before ``git add`` does."""
+    _repo(tmp_path)
+    _write(tmp_path, _collector_manifest(3, 10, executed_rest="fail"))
+    _commit_all(tmp_path)
+    _write(tmp_path, _collector_manifest(10, 10))  # corrected, but NOT yet staged
+    r = _run(tmp_path, f"git add {REL.as_posix()} && git commit -m x", full=True)
+    assert r.returncode == 2 and "Requirement coverage 30% (3/10" in r.stdout
+    assert "separate command first" in r.stderr
+    _git(tmp_path, "add", REL.as_posix())  # staged in a separate command: measured
+    assert _run(tmp_path)[0] == 0
 
 
 @needs_git
@@ -217,7 +232,9 @@ def test_is_git_commit_inproc_including_unbalanced_quote_fallback():
     assert mod.is_git_commit("bash -c 'sh -c \"git commit\"'")  # nested shells
     import git_commit_command as gcc  # noqa: PLC0415 - on sys.path once the hook ran
     assert gcc._segment_is_commit(["sh", "-c", "git commit"], 0)
-    assert not gcc._segment_is_commit(["sh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH)
+    # past the depth cap the substring test decides: over-fire, never fail open
+    assert gcc._segment_is_commit(["sh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH)
+    assert not gcc._segment_is_commit(["sh", "-c", "echo hi"], gcc._MAX_SHELL_DEPTH)
     assert not gcc._segment_is_commit(["bash", "-o", "pipefail", "script.sh"])
 
 

@@ -97,7 +97,8 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     """``(measurement, warnings)``; measurement is ``None`` when nothing is measurable.
 
     Requirement coverage from the committed manifest; the legacy section line only
-    when there is no manifest at all. A non-current schema or a manifest with no
+    when there is no manifest at all (an unexpected git failure with no working-tree
+    copy is "unreadable", not "absent": WARN, never the section line). A non-current schema or a manifest with no
     executed result is unmeasurable (WARN), never 0%. Every case that used to allow
     silently says why in a WARN -- except a project with no compliance data at all.
     """
@@ -125,8 +126,9 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
             return None, [*warnings, unexecuted, _NOT_EVALUATING]
         return {"kind": "requirements", "pct": cov["fr"]["pct"], "coverage": cov,
                 "source_commit": manifest.get("source_commit")}, warnings
-    if problem:
-        # present but unreadable: never relabel build-section coverage as the answer
+    if problem or any(n.startswith(manifest_cov.UNREADABLE) for n in notes):
+        # present but unreadable, or git failed unexpectedly with no working-tree copy:
+        # never relabel build-section coverage as the answer
         warnings.append(_NOT_EVALUATING)
         return None, warnings
     legacy = get_coverage_from_rtm(project_root)

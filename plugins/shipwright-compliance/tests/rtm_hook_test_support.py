@@ -1,8 +1,10 @@
-"""Shared by the ``check_rtm_coverage`` tests: a clean git environment and repo helpers.
+"""Shared by the ``check_rtm_coverage`` tests: a hermetic git environment and repo helpers.
 
-An inherited ``GIT_DIR`` / ``GIT_WORK_TREE`` / ``GIT_INDEX_FILE`` (a test run from a
-git hook, or inside a worktree pipeline) would point the hook's index / ``HEAD``
-read at the developer's repository instead of the test's ``tmp_path``.
+Any inherited ``GIT_*`` variable (``GIT_DIR`` / ``GIT_WORK_TREE`` / ``GIT_INDEX_FILE``
+from a git hook or a worktree pipeline, ``GIT_CONFIG_*`` injections, ...) or the
+developer's system / global config would point the hook's index / ``HEAD`` read
+somewhere other than the test's ``tmp_path``; every ``GIT_*`` is dropped, system and
+global config are switched off and discovery is capped above ``tmp_path``.
 """
 
 from __future__ import annotations
@@ -15,20 +17,34 @@ from pathlib import Path
 
 import pytest
 
-GIT_ENV_DROP = ("SHIPWRIGHT_PROJECT_ROOT", "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")
 REL = Path(".shipwright") / "compliance" / "test-traceability.json"
 
 
-def hook_env() -> dict[str, str]:
-    """``os.environ`` without the variables that would redirect the hook or its git."""
-    return {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+def _hermetic(tmp_root: Path) -> dict[str, str]:
+    return {"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CEILING_DIRECTORIES": str(Path(tmp_root).resolve().parent)}
+
+
+def _dropped(name: str) -> bool:
+    return name.startswith("GIT_") or name == "SHIPWRIGHT_PROJECT_ROOT"
+
+
+def hook_env(tmp_root: Path) -> dict[str, str]:
+    """``os.environ`` minus every ``GIT_*`` (and the project-root override), git-hermetic.
+
+    *tmp_root* is the test's ``tmp_path``: git discovery stops above it.
+    """
+    env = {k: v for k, v in os.environ.items() if not _dropped(k)}
+    return {**env, **_hermetic(tmp_root)}
 
 
 @pytest.fixture(autouse=True)
-def scrub_git_env(monkeypatch):
+def scrub_git_env(monkeypatch, tmp_path):
     """Autouse wherever imported: in-process git reads see ``tmp_path``, not the caller's repo."""
-    for name in GIT_ENV_DROP:
+    for name in [k for k in os.environ if _dropped(k)]:
         monkeypatch.delenv(name, raising=False)
+    for name, value in _hermetic(tmp_path).items():
+        monkeypatch.setenv(name, value)
 
 
 def collector_manifest(passing: int, total: int, *, executed_rest="not_run",
@@ -63,8 +79,9 @@ def write_manifest(root: Path, manifest: dict) -> None:
 
 
 def git(root: Path, *args: str) -> None:
+    """``git -C <root>``; *root* is the test's ``tmp_path`` (the repo root)."""
     subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True,
-                   env=hook_env(), timeout=30)
+                   env=hook_env(root), timeout=30)
 
 
 def init_repo(root: Path) -> None:

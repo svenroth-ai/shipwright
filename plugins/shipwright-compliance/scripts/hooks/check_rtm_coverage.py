@@ -9,8 +9,8 @@ Measures REQUIREMENT coverage -- the share of active requirements (and, reported
 separately, acceptance criteria) with an executed-passing bound test -- from the
 ``.shipwright/compliance/test-traceability.json`` being COMMITTED: the staged
 (index) copy, else the one at ``HEAD``; the working-tree copy, which the local
-pipeline regenerates fail-closed as all ``not_run``, is read only outside a repo
-or when git has no such file. It never
+pipeline regenerates fail-closed as all ``not_run``, is read silently only outside
+a repo or when git has no such file (any other git failure: one WARN). It never
 regenerates the manifest (it fires on every ``git commit``); a stale or
 provenance-unknown manifest is a WARN, and a non-current schema or a manifest with
 no executed result is unmeasurable (WARN + allow), never 0%. Only when no manifest
@@ -20,6 +20,13 @@ sections with a commit). Cases that cannot be measured emit a visible WARN
 
 Fires only for a real ``git ... commit`` invocation (:func:`is_git_commit`), not for
 any command whose text merely contains "git commit".
+
+**Ordering limit.** PreToolUse runs BEFORE the Bash command, so the index is read as
+it stands then: a manifest staged by the same command (``git add <manifest> && git
+commit``, ``git commit -a``, ``git commit <pathspec>``, ``-o``, ``-i``) is measured
+from its previous index / HEAD copy. The block says so: stage the corrected
+manifest in a separate command first. Claude Code shows STDERR to the model on exit
+2 (the stdout JSON is kept for compatibility), so the block is written to both.
 
 Exit codes:
   0 = allow (no compliance data yet, coverage sufficient, or unmeasurable + WARN)
@@ -86,6 +93,19 @@ def is_git_commit(command: str) -> bool:
     except Exception:  # noqa: BLE001 - never let the parser's import hard-block Bash
         return "git commit" in command
     return git_commit_command.is_git_commit(command)
+
+
+STAGING_HINT = (
+    "This hook runs before the command, so a manifest staged by the same command "
+    "(git add <manifest> && git commit, commit -a, commit <pathspec>, -o, -i) is "
+    "measured from its previous index / HEAD copy: stage the corrected manifest in a "
+    "separate command first, then commit."
+)
+RATCHET_HINT = (
+    "A project far below target records its measured value as "
+    "enforcement.rtm_coverage_baseline in shipwright_compliance_config.json; "
+    "the gate then ratchets from there. The hook never writes it."
+)
 
 
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
@@ -166,11 +186,8 @@ def main() -> int:
             "threshold_pct": float(threshold_pct),
             "metric": measure["kind"],
             "warnings": warnings,
-            "ratchet_hint": (
-                "A project far below target records its measured value as "
-                "enforcement.rtm_coverage_baseline in shipwright_compliance_config.json; "
-                "the gate then ratchets from there. The hook never writes it."
-            ),
+            "ratchet_hint": RATCHET_HINT,
+            "staging_hint": STAGING_HINT,
         }
         if measure["kind"] == "requirements":
             details["fr"] = measure["coverage"]["fr"]
@@ -179,10 +196,13 @@ def main() -> int:
             details["uncovered_requirements"] = measure["coverage"]["uncovered_requirements"]
         else:
             details["uncovered_sections"] = lib.find_uncovered_sections(project_root)
-        print(json.dumps(_hook_block(
-            reason=f"{lib.describe(measure)} < {threshold_pct}% threshold",
-            details=details,
-        )))
+        reason = f"{lib.describe(measure)} < {threshold_pct}% threshold"
+        print(json.dumps(_hook_block(reason=reason, details=details)))
+        # exit 2: Claude Code shows the model STDERR and ignores the stdout JSON
+        print("\n".join([
+            f"BLOCKED (check_rtm_coverage): {reason}", RATCHET_HINT, STAGING_HINT,
+            "The user may say 'Continue anyway' to override.",
+        ]), file=sys.stderr)
         return 2
 
     if baseline is not None and lib.above_baseline(measure, baseline):

@@ -61,12 +61,24 @@ def test_non_commits_do_not_fire(command):
 
 
 def test_string_running_programs_share_the_depth_bound():
+    """Within the cap the inner string is parsed; past it the substring test over-fires."""
     depth = gcc._MAX_SHELL_DEPTH
     assert gcc.is_git_commit("cmd /c " * depth + "git commit")
-    assert not gcc.is_git_commit("cmd /c " * (depth + 1) + "git commit")
+    assert gcc.is_git_commit("cmd /c " * (depth + 1) + "git commit")
+    assert not gcc.is_git_commit("cmd /c " * (depth + 1) + "git status")
     assert gcc.is_git_commit("eval " * depth + "git commit")
-    assert not gcc.is_git_commit("eval " * (depth + 1) + "git commit")
-    assert not gcc._segment_is_commit(["eval", "git commit"], gcc._MAX_SHELL_DEPTH)
-    assert not gcc._segment_is_commit(["cmd", "/c", "git commit"], gcc._MAX_SHELL_DEPTH)
-    assert not gcc._segment_is_commit(["pwsh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH)
-    assert gcc._segment_is_commit(["pwsh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH - 1)
+    assert gcc.is_git_commit("eval " * (depth + 1) + "git commit")
+    assert not gcc.is_git_commit("eval " * depth + "echo git commit")  # parsed: echo
+    for tokens in (["eval", "git commit"], ["cmd", "/c", "git commit"], ["pwsh", "-c", "git commit"]):
+        assert gcc._segment_is_commit(tokens, depth)  # at the cap: substring, over-fires
+        assert not gcc._segment_is_commit([*tokens[:-1], "git status"], depth)
+    assert not gcc._segment_is_commit(["pwsh", "-c", "echo git commit"], depth - 1)
+
+
+@pytest.mark.parametrize("command", [
+    "echo hi # ; git commit",  # '#' is no lexer comment: the ';' still separates
+    'eval echo "a; git commit"',  # eval re-joins its words without the quotes
+    "a || git commit", "a & git commit", "(git commit)",
+])
+def test_documented_separators_and_over_fires(command):
+    assert gcc.is_git_commit(command)

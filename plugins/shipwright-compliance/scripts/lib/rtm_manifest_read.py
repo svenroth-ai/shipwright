@@ -1,14 +1,19 @@
 """Read the traceability manifest being committed: the INDEX, then ``HEAD``, then the working tree.
 
-Split out of ``rtm_manifest_coverage`` (which re-exports these names). The local
-pipeline regenerates the working-tree copy fail-closed (every link ``not_run``),
-so the commit gate never trusts it first. The staged (index) copy is what the
-commit records -- committing a corrected or regenerated manifest is measured on
-that copy; unchanged, the index equals ``HEAD``. Only a path absent from the index
-(e.g. a staged ``git rm --cached``) falls through to ``HEAD``. When the git read
-fails for a reason other than "not a git repo" / "no such file in git" (git
-missing, a timeout, an unborn HEAD, ...) the working-tree fallback is announced as
-a note instead of being taken silently -- one note, never one per git read.
+The local pipeline regenerates the working-tree copy fail-closed (every link
+``not_run``), so the commit gate never trusts it first. The staged (index) copy is
+what the commit records -- committing a corrected or regenerated manifest is
+measured on that copy; unchanged, the index equals ``HEAD``. Only a path absent
+from the index (e.g. a staged ``git rm --cached``) falls through to ``HEAD``. The
+working tree is read silently only outside a git repo or when git has no such
+file; for any other git failure (git missing, a timeout, an unborn HEAD, ...) it is
+read with one note naming the reason, never one per git read.
+
+**Ordering limit.** The PreToolUse hook runs BEFORE the Bash command, so it reads
+the index as it stands then. A manifest staged by the same command (``git add
+<manifest> && git commit``, ``git commit -a``, ``git commit <pathspec>``, ``-o``,
+``-i``) is measured from its previous index copy (which equals ``HEAD`` unless it
+was staged earlier). Stage the corrected manifest in a separate command first.
 """
 
 from __future__ import annotations
@@ -31,6 +36,7 @@ _EXPECTED_MISSES = (
 )
 EXPECTED_REASONS = frozenset(reason for _, reason in _EXPECTED_MISSES)
 _UNBORN = "HEAD has no commit yet"
+UNREADABLE = "committed manifest unreadable"  # note prefix: git failed, no working-tree copy
 
 
 def _git_blob(project_root: str | Path, spec: str, what: str) -> tuple[bytes | None, str]:
@@ -103,7 +109,7 @@ def read_manifest_noted(
         path = Path(project_root) / MANIFEST_RELPATH
         if not path.is_file():
             if unexpected and why != _UNBORN:
-                notes.append(f"committed manifest unreadable: {why}")
+                notes.append(f"{UNREADABLE}: {why}")
             return None, None, notes
         if unexpected:
             notes.append(f"reading working-tree manifest: {why}")
