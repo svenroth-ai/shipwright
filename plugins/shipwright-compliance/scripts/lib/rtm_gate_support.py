@@ -23,7 +23,6 @@ NOT_EVALUATING = "the 80% commit gate is NOT evaluating"
 #: More than this share of the active requirements not measured (their linked tests
 #: all ``not_run``): the figure from the few that ran would speak for the rest, so the
 #: manifest is unmeasurable instead. Exactly half is still evaluated.
-MAX_UNMEASURED_SHARE = Fraction(1, 2)
 
 
 def pct_text(value: float) -> str:
@@ -105,7 +104,7 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
     when there is no manifest at all (an unexpected git failure with no working-tree
     copy is "unreadable", not "absent": WARN, never the section line). A non-current schema or a manifest with no
     executed result (on an active requirement) is unmeasurable (WARN), never 0%, as is
-    one where no active requirement, or more than :data:`MAX_UNMEASURED_SHARE` of them,
+    one where no active requirement
     is measured (the N-of-M WARN says how many). Every case that used to allow
     silently says why in a WARN -- except a project with no compliance data at all.
     """
@@ -134,11 +133,6 @@ def measure(project_root: str) -> tuple[dict[str, Any] | None, list[str]]:
                 return None, [*warnings, "traceability manifest lists no active "
                               f"requirements; nothing to measure ({NOT_EVALUATING})"]
             return None, [*warnings, *filter(None, [unexecuted]), NOT_EVALUATING]
-        if Fraction(unmeasured, unmeasured + total) > MAX_UNMEASURED_SHARE:
-            return None, [*warnings, (
-                f"more than {int(MAX_UNMEASURED_SHARE * 100)}% of the active requirements "
-                "are not measured, so coverage is unmeasurable (a figure from the few "
-                "that ran would speak for the rest)"), NOT_EVALUATING]
         if unexecuted:
             return None, [*warnings, unexecuted, NOT_EVALUATING]
         return {"kind": "requirements", "pct": cov["fr"]["pct"], "coverage": cov,

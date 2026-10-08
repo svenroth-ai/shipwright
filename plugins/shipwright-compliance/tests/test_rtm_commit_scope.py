@@ -8,7 +8,6 @@ import json
 import shutil
 import subprocess
 import sys
-from fractions import Fraction
 from pathlib import Path
 
 import pytest
@@ -137,14 +136,11 @@ def test_all_active_unrun_with_an_executed_inactive_link_is_not_evaluated(tmp_pa
     assert warnings[-1] == rgs.NOT_EVALUATING
 
 
-def test_more_than_half_unmeasured_is_not_evaluated(tmp_path):
-    assert rgs.MAX_UNMEASURED_SHARE == Fraction(1, 2)
+def test_a_majority_unmeasured_still_gates_on_the_measured_rest(tmp_path):
     write_manifest(tmp_path, _unrun(collector_manifest(4, 10, executed_rest="fail"), 6))
-    measured, warnings = rgs.measure(str(tmp_path))
-    assert measured is None and "more than 50%" in warnings[-2]
-    write_manifest(tmp_path, _unrun(collector_manifest(4, 10, executed_rest="fail"), 5))
-    measured, _ = rgs.measure(str(tmp_path))  # exactly half: still evaluated
-    assert measured["coverage"]["fr"] == {"covered": 4, "total": 5, "pct": 80, "not_measured": 5}
+    measured, _ = rgs.measure(str(tmp_path))  # decision 1: gate on what ran
+    assert measured["coverage"]["fr"]["not_measured"] == 6
+    assert measured["coverage"]["fr"]["total"] == 4
 
 
 def test_a_comparison_that_raises_is_a_visible_warn(tmp_path, monkeypatch, capsys):

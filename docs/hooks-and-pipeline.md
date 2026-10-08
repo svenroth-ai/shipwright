@@ -3166,8 +3166,7 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 > - *Fallback and WARNs*: the RTM's legacy section-commit line is used only when no
 >   manifest exists. Unmeasurable cases (corrupt manifest, `schema_version` not the
 >   current 4, a manifest with no executed `pass`/`fail` result on an active
->   requirement, no active requirement measured, more than half of them (`MAX_UNMEASURED_SHARE`)
->   not measured, compliance data but no figure, invalid threshold config) print a
+>   requirement, no active requirement measured, compliance data but no figure, invalid threshold config) print a
 >   visible `WARN` instead of allowing silently. Accepted risk: an all-`not_run`
 >   manifest swept into a commit (e.g. `git commit -a` after a fail-closed local
 >   regeneration) switches the gate to WARN + allow until CI regenerates it. Optional
