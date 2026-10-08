@@ -63,8 +63,12 @@ def read_plan(project_root: Path, run_id: str) -> tuple[dict | None, str | None]
     iterates = Path(project_root) / ".shipwright" / "agent_docs" / "iterates"
     path = iterates / f"{run_id}.plan.json"
     try:
-        path.parent.resolve().relative_to(iterates.resolve())
-    except (OSError, ValueError):
+        # compare against the project root's real path, not iterates.resolve(): that would
+        # follow a symlinked iterates/ and then agree with itself
+        inside = path.parent.resolve() == Path(project_root).resolve() / ".shipwright/agent_docs/iterates"
+    except OSError:
+        inside = False
+    if not inside:
         return None, f"{path.name} resolves outside {iterates}; refusing to read through a symlinked directory"
     if path.is_symlink():
         return None, f"{path.name} is a symlink, not a regular file"
