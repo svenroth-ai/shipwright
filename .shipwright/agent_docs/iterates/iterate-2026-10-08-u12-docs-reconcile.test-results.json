@@ -1,0 +1,76 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-u12-docs-reconcile",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 99,
+      "total": 99
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-08T00:00:00+00:00",
+      "reason_code": "docs-only-surface",
+      "justification": "docs-only change; no runnable surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "claim-checks table in the docs and CLAIM_CHECKS registry stay in sync after the doc edits",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalization_claims_registry.py PASSED"
+        },
+        {
+          "behavior": "docs carry no bare artifact-path literal the canon lint rejects",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_artifact_path_canon_manifest_allowlist.py PASSED"
+        },
+        {
+          "behavior": "mirrored CI merge gates stay green with the edited docs",
+          "disposition": "tested",
+          "evidence": "uv run scripts/verify_local.py: all 3 mirrored gates green"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

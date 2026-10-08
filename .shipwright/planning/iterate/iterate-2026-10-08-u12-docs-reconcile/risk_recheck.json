@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u12-docs-reconcile",
+  "risk_recheck": {
+    "changed_file_count": 3,
+    "diff_loc": 20,
+    "risk_flags": [],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": false,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

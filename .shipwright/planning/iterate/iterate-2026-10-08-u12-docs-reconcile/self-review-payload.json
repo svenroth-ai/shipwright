@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Docs-only reconcile of hooks-and-pipeline.md and guide.md against the merged claims-hardening units: claim-gate index with ADR pointers, compliance_overrides.log write-matrix row, guide claim-gates item 0.7, stale small+/trivial/external-review sentences corrected. Bug-iterates-exempt sentences were already removed by U6."},
+{"name":"Error Handling","verdict":"n/a","note":"No code changed."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets, no code; documentation only."},
+{"name":"Test Quality","verdict":"pass","note":"Registry/doc consistency test, artifact path canon manifest test, bloat baseline test and verify_local.py all green."},
+{"name":"Performance Basics","verdict":"n/a","note":"No code changed."},
+{"name":"Naming & Structure","verdict":"pass","note":"Each gate stays described once; the new index only points to it. Docs files are not bloat-baselined."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; claim-checks table untouched so the registry meta-test still holds."}
+]}
