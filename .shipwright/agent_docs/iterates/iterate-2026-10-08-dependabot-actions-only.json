@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-10-08-dependabot-actions-only",
+  "date": "2026-10-08T15:49:48.646689Z",
+  "event_at": "2026-10-08T15:44:08.327896+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/dependabot-actions-only",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-dependabot-actions-only",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "github-actions is the only live Dependabot ecosystem; 13 pip entries stay dormant (limit 0)",
+        "disposition": "tested",
+        "evidence": "strict-YAML load + python count: 13x limit 0, 1x limit 5; spec-reviewer PASS"
+      },
+      {
+        "behavior": "every dependabot.yml entry carries a cooldown so Semgrep dependabot-missing-cooldown stays live",
+        "disposition": "tested",
+        "evidence": "semgrep r/package_managers.dependabot.dependabot-missing-cooldown: 14 findings on origin/main, 0 on new file"
+      },
+      {
+        "behavior": "no duplicate keys in changed YAML (dependabot.yml, security.yml, shipwright_accepted_risks.yaml)",
+        "disposition": "tested",
+        "evidence": "duplicate-key-rejecting YAML loader OK on all three"
+      },
+      {
+        "behavior": "accepted-risk register agrees with the suppressions in security.yml after the exclusion removal",
+        "disposition": "tested",
+        "evidence": "accepted_risks_cli check: 3 entries reconciled, no drift; test_accepted_risks_repo_guards.py + test_accepted_risks_register.py PASSED (322 related shared tests passed); test_deleting_the_register_cannot_silence_this_repos_gate now bound to FR-01.07"
+      },
+      {
+        "behavior": "Dependabot actually opens a grouped PR for github-actions after merge",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "runs on GitHub's weekly schedule after merge; observable only on the first Dependabot PR"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-08T15:43:33.218Z",
+    "attempts": 0,
+    "justification": "Declarative CI/Dependabot config with no startable surface. Verified instead by: Semgrep dependabot-missing-cooldown 14 findings on origin/main vs 0 now, strict duplicate-key YAML load of all three changed files, accepted_risks_cli check (no drift) and the 322 related shared tests; Dependabot's runtime behaviour is only observable on GitHub after merge."
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

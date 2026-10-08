@@ -1,0 +1,116 @@
+{
+  "run_id": "iterate-2026-10-08-u10-autonomous-external-review",
+  "date": "2026-10-08T14:31:10.394242Z",
+  "event_at": "2026-10-08T14:23:29.627527+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-2026-10-07-finalization-claims-hardening--U10",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-10-07-finalization-claims-hardening/sub-iterates/U10-autonomous-external-review.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-u10-autonomous-external-review",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an external pass closed unavailable is backed only by the adapter's failure envelope or, with no JSON, a non-empty stderr capture",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_the_capture_decides_whether_unavailable_is_backed (14 cases) PASSED"
+      },
+      {
+        "behavior": "a successful reply refuses the claim whatever stderr says; a retry that succeeded overwrites the failure",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_the_capture_decides_whether_unavailable_is_backed + test_a_retry_that_succeeded_overwrites_the_failure_and_refuses_the_claim PASSED"
+      },
+      {
+        "behavior": "UTF-16 BOM captures and stray text before/after the reply are read correctly (probe findings pinned)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_the_capture_decides_whether_unavailable_is_backed[UTF-16/noise cases] PASSED"
+      },
+      {
+        "behavior": "F11 review-record check refuses an external pass closed unavailable without a capture, naming the pass",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_gate_refuses_an_external_pass_closed_unavailable_without_a_capture PASSED"
+      },
+      {
+        "behavior": "a passing check still names every pass that did not run (loud)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_gate_accepts_a_captured_failure_and_still_says_the_review_did_not_run + test_gate_leaves_unavailable_on_an_internal_pass_to_its_own_rules PASSED"
+      },
+      {
+        "behavior": "a bare not_run without a reason_code on the external pass fails the review-record check",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_gate_refuses_a_bare_not_run_on_the_external_pass PASSED"
+      },
+      {
+        "behavior": "when the record is committed the capture is read from the commit, byte for byte",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_gate_reads_the_capture_from_the_commit_not_the_working_tree + test_committed_bytes_win_over_a_different_working_tree_copy PASSED"
+      },
+      {
+        "behavior": "medium floor waits for the delegated cascade only when external_code was unavailable",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable.py::test_medium_floor_waits_for_the_delegated_cascade_only_when_external_was_unavailable + test_medium_floor_still_refuses_delegated_code_when_external_was_merely_skipped PASSED"
+      },
+      {
+        "behavior": "record_review_pass.py refuses unavailable on an external pass at write time without a capture; internal rows unaffected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable_note.py::test_record_refuses_unavailable_on_an_external_pass_without_a_capture + test_record_accepts_unavailable_once_the_failure_is_captured + test_record_leaves_unavailable_on_an_internal_pass_alone PASSED"
+      },
+      {
+        "behavior": "review_unavailable_note.py prints none, or each unavailable pass with capture paths and never capture content",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable_note.py::test_note_says_none_when_every_pass_ran + test_note_names_each_unavailable_pass_and_its_capture_path_never_its_content PASSED"
+      },
+      {
+        "behavior": "--file-triage files one re-run card per run and finds it again on a second call",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable_note.py::test_file_triage_files_one_card_per_run_and_finds_it_again PASSED"
+      },
+      {
+        "behavior": "an invalid capture or a missing record prints INVALID, exits 1 and files no card",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_unavailable_note.py::test_note_refuses_and_files_no_card_when_the_capture_no_longer_backs_the_claim + test_note_is_invalid_not_none_when_the_record_is_missing PASSED"
+      },
+      {
+        "behavior": "existing reason-code CLI tests keep passing with a code that needs no capture",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_reason_code.py (14 tests) PASSED"
+      },
+      {
+        "behavior": "every skipped record command in the shipped prose names its reason code (prose sync)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_reason_code_prose_sync.py PASSED (full F0 shared/tests unit GREEN)"
+      },
+      {
+        "behavior": "a campaign runner whose external review could not run finishes loudly end to end: real capture, record CLI rows, F11 gate at medium (capture rule + floor compose), note line + re-run card read back from the triage store, 3f-bis promotion keeps it green",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_review_unavailable_integration.py::test_campaign_runner_with_an_unavailable_external_review_finishes_loudly PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_review_unavailable.py shared/tests/test_review_unavailable_note.py shared/tests/test_review_unavailable_integration.py shared/tests/test_review_reason_code.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 48,
+    "timestamp": "2026-10-08T14:30:36.627Z",
+    "evidence_path": ".shipwright/runs/iterate-2026-10-08-u10-autonomous-external-review/surface_verification.json"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
