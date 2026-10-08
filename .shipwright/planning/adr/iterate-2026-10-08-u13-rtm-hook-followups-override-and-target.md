@@ -64,3 +64,10 @@ Verdicts: GLM `approve`, OpenAI `revise`. Brief offered A (30-minute window, any
 ## Confidence Calibration
 
 Boundary: the override log (human/agent-edited). Probes: plain, BOM, CRLF, non-ASCII and cp1252 reasons, empty reason, no trailing newline, padded pipes. **Finding:** a BOM dropped the first entry, so it was fixed (`utf-8-sig`) and a regression test added. Re-probe: clean. Second probe set (two entries then two uses, `override_logger` round trip, CONSUMED of a microsecond timestamp): clean, so the asymptote was reached. Boundary: command text. CRLF heredocs and a non-ASCII delimiter were probed; the non-ASCII delimiter is not stripped, so it over-fires (accepted, safe direction). Not probed: a log on a read-only filesystem (simulated in a test via a failing `consume`).
+
+## Doubt review (orchestrator, final head): fixed and accepted limits
+
+- **Fixed:** an OVERRIDE line whose timestamp overflows UTC conversion (year 1 / 9999 with an offset) crashed `try_release` outside the WARN guard and so allowed silently and unlimited; `_when` now rejects such a timestamp (tests).
+- **Accepted limit:** heredoc stripping runs before backslash-newline joining and its delimiter parsing can differ from bash for exotic delimiters (`<<E\OF`, `<<EO"F"`), so a later real commit can be hidden; `source`/`.`/`fish` bodies are stripped. Follow-up: join continuations first, keep the body when the delimiter is odd or never closes.
+- **Accepted limit:** `bash -c` / `eval` wrappers judge only the first inner commit target.
+- **Accepted limit:** the stale-lock break is stat-then-unlink (needs a crashed holder plus a concurrent pair); one override releases one hook invocation, however many commits the command holds; a CONSUMED line lost to `git restore` revives the entry for the rest of its 30 minutes; a plain `git commit` is resolved from the hook process cwd, not the persisted shell cwd.

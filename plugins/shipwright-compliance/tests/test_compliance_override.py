@@ -59,11 +59,14 @@ def test_an_entry_is_honoured_inside_its_window_only(tmp_path):
     f"{_stamp(NOW + timedelta(minutes=10))} | check_rtm_coverage | OVERRIDE | pre-dated",
     f"{_stamp(NOW)} | check_rtm_coverage | OVERRIDE |   ",  # no reason
     "yesterday | check_rtm_coverage | OVERRIDE | unreadable time",
+    "0001-01-01T00:30:00+01:00 | check_rtm_coverage | OVERRIDE | year-1 overflow",
+    "9999-12-31T23:59:59-01:00 | check_rtm_coverage | OVERRIDE | year-10000 overflow",
     f"{_stamp(NOW)} | check_rtm_coverage | NOTE | not an override",
 ])
 def test_expired_predated_reasonless_or_malformed_entries_are_ignored(tmp_path, line):
     _log(tmp_path, line)
     assert co.active_override(tmp_path, "check_rtm_coverage", NOW) is None
+    assert co.try_release(tmp_path, "check_rtm_coverage", NOW)[0] is None  # never raises
 
 
 def test_override_logger_shape_is_read_and_the_newest_entry_wins(tmp_path):

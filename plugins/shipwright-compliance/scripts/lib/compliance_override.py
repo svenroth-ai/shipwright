@@ -65,7 +65,12 @@ def _when(text: str) -> datetime | None:
         moment = datetime.fromisoformat(text.strip().replace("Z", "+00:00"))
     except ValueError:
         return None
-    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+    moment = moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+    try:
+        moment.astimezone(timezone.utc)  # year 1 / 9999 with an offset overflows later
+    except (OverflowError, ValueError):
+        return None
+    return moment
 
 
 def _entries(lines: list[str], hook: str):
