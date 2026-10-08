@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 an integration test is the right call, and Option A (build the scenario in a tmp dir at runtime) is the smallest thing that would do.\n\n2. **The smallest thing that would do** Option A exactly as described: one test that constructs a throwaway repo, breaks one claim at a time, and asserts the other four gates still fire \u2014 with per-gate diagnostics so masking is detectable. It adds no production mechanism, no committed fixture, and no new standing service.\n\n3. **What it costs to keep** The test itself must be kept green whenever any of the five gates changes (it is, in effect, a fifth consumer of each check's input contract). If gate inputs drift, the builder in the test drifts too. That is a bounded obligation owned by the same people changing the gates \u2014 the natural owner.\n\n4. **What it forecloses** none identified \u2014 a runtime-built scenario forecloses less than a committed fixture (Option B), which would permanently freeze a repo shape and fight the tagging gate.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: Option C (rely on unit tests alone) leaves the masking problem unsolved, but that problem is real here specifically because the campaign's purpose is proving gate independence; one tmp-dir test is proportionate.\n- Suggestion: Keep A, but hold the test to one scenario class rather than a matrix of complexity levels beyond what the unit text requires (U4 small, U5 medium+); resist adding more per-gate cases later.\n\n- Category: ownership\n- Severity: low\n- Finding: The helper that builds the tmp repo is a second piece of standing machinery alongside the test itself; if it grows per-gate bespoke setup, it becomes its own maintenance surface.\n- Suggestion: Keep the builder generic (build repo, make claims, break one claim) and parameterize per gate in the test body, not in the helper.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. Yes\u2014option A is proportionate: a temporary integration scenario verifies independence that separate unit tests cannot establish.\n2. The smallest thing that would do is one parametrized test and a minimal repo builder: start each case from a valid temporary repo, break one claim, assert its specific diagnostic, and assert the other gates stay green.\n3. Its ongoing cost is maintaining the builder and expected outcomes when gate contracts change; the developers changing those gates own that obligation.\n4. It makes changes to shared gate inputs require coordinated updates to the integration scenario; no other foreclosure identified.\n5. No findings.\n\nAssessment uses the supplied brief; access to the referenced campaign file was blocked by execution policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
