@@ -1,0 +1,36 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 as a diff-only finalization gate registered in the existing claim-checks registry; this adds one check to machinery that already exists (the registry, the collector, `regenerate_base_head`) rather than a new standing mechanism, and that is the smallest thing that would do.\n\n2. **The smallest thing that would do.** Option A as specified: one registered check comparing base/head manifests already produced by `regenerate_base_head` (memoised path, reused \u2014 not regenerated a second time), per-test exemptions in the F5c entry. That is the smallest shape that actually stops the ~30-untagged-tests/day erosion; options D (instructions only) and E have no enforcement and the problem is precisely that nothing enforces, and option C (a repo-wide baseline file) is a strictly larger permanent artifact \u2014 a file listing 16,969 tests that someone must keep current, ratchet, and explain, for no additional guarantee over diff-only.\n\n3. **What it costs to keep.** Two real obligations: (a) the collector's three new tag placements (wrapped Playwright declarations, class/module-level marks) become permanent parser surface that every future test-authoring convention must keep working \u2014 this is the genuine standing-mechanism cost, and it is being paid for the right reason (without it the gate false-STOPs the WebUI, i.e. without it the gate cannot exist); (b) the exemption vocabulary and its verification rules (`fixture-or-helper` valid only if not collected, `mechanical-refactor` valid only on identifier-limited diffs) need keeping correct as authors probe them. The 11.5\u201328 s regeneration cost is bounded and already paid by existing gates.\n\n4. **What it forecloses.** None identified of significance \u2014 a diff-only gate with no baseline file forecloses nothing; it can later be tightened (repo-wide ratchet) but is not committed to it. The collector extension slightly raises the cost of moving the WebUI test conventions off pytest marks, but that was already load-bearing for the removal and coverage gates.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The exemption reason codes (`mechanical-refactor`, `fixture-or-helper`) each carry a verification rule the gate must enforce against the diff/collector forever; `mechanical-refactor` in particular (identifier-limited normalised diff across potentially hundreds of tests) is a small sub-mechanism that will attract pressure to loosen.\n- Suggestion: Consider shipping U1 with only the mechanical verification for `fixture-or-helper` (cheap, collector-mediated) and admitting `mechanical-refactor` exemptions with a mandatory reviewer-visible note rather than diff-shape verification; verify it if abuse appears. If the team is confident the diff check is cheap to keep correct, keep it \u2014 but it is the one piece of U1 whose permanent cost is not obviously matched to its failure cost.\n\nThe four U0 carry-overs are fixes to existing machinery, not new mechanisms, and are correctly placed here.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes: a hard gate for newly added tests is proportionate to demonstrated traceability erosion, but requiring tags when legacy tests are edited expands the obligation beyond that problem.\n\n2. **Smallest thing that would do:** Use the existing cached base/head manifests to STOP newly added tests without valid requirement tags, with per-test exemptions and authoring instructions. Use body digests to recognize unchanged moves or renames; leave previously untagged tests exempt when edited.\n\n3. **What it costs to keep:** Maintain collector tag recognition, test identity matching, exemption validation, and remediation guidance. Reuse the existing regeneration pass; add no separate baseline or parser.\n\n4. **What it forecloses:** The proposed edited-test rule makes routine maintenance of the large untagged legacy suite depend on requirement attribution or exemption bookkeeping.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: Applying the gate to edited legacy tests turns prevention of new traceability debt into mandatory repayment during maintenance. The evidence establishes ongoing additions of untagged tests; it does not establish that tagging every edited legacy test warrants this recurring burden.\nSuggestion: Gate newly added tests only. Retain digest matching for unchanged moves and renames, and remove the mechanical-refactor exemption machinery needed solely to accommodate edits to existing untagged tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

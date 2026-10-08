@@ -16,7 +16,10 @@ differences:
 - Step 2: see below — same ADD/MODIFY/REMOVE/NONE classification as
   FEATURE; the default for CHANGE is **MODIFY**.
 - Step 6: Update existing tests to reflect new expected behavior, then
-  implement.
+  implement. Every test you add or edit carries the tag of the FR/AC it
+  proves (`references/path-a-feature.md` → "Tag each test"); an edited
+  legacy untagged test is tagged now, because F11 `check_test_tag_binding`
+  STOPs on it.
 - Step 6a: Boundary Probe applies identically — when `touches_io_boundary`
   fires, run the round-trip + 8-probe checklist before commit.
 - Step 7.5: Confidence Calibration applies identically — mandatory at

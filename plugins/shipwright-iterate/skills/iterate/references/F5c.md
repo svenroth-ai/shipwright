@@ -24,7 +24,11 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
   }'
 ```
 
-**`exemptions` (additive, optional; absent = legacy = zero).** One item per exemption any gate
+**`exemptions` (always write it; `{"count": 0, "items": []}` when none — an entry without it prints
+`not recorded (legacy entry)`, never `0`).** The test-tag gate (`check_test_tag_binding`) reads its
+`test_exemption` items: scope `<file>::<test>` (one test, never a file or a glob), code
+`fixture-or-helper` (pytest does not collect the function) or `mechanical-refactor` (body changed
+only by renamed identifiers); the gate verifies each against the code. One item per exemption any gate
 accepted this run (a per-test exemption such as an untagged test; a review closed `not_run` is not one — it carries its own `reason_code` in `reviews.json`): `{"kind": "<an exemption family - today only test_exemption>", "scope": "<path or path::name, project-relative>",
 "reason_code": "<code from that family in shared/scripts/lib/reason_codes.py>"}`; `count` MUST equal
 `len(items)`. Free text is not a reason: `append_iterate_entry.py` refuses an unknown family or code,
