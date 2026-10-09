@@ -65,7 +65,8 @@ HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (
 GATEWAY_REVIEWERS: tuple[str, ...] = ("model-1", "model-2")
 #: Every roster a CURRENT (non-historical) run may produce, keyed by
 #: --driver: "claude" -> REVIEWERS, "codex" -> {glm, opus} (a Codex-authored
-#: diff reviewed by another OpenAI-family model is not independent). Kept as
+#: diff reviewed by another OpenAI-family model is not independent); the
+#: gateway pair when SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL is set. Kept as
 #: its own tuple rather than importing external_review_routing.DRIVER_ROSTERS
 #: — that module owns "which identity answers which leg", this one owns
 #: "which rosters are current", and importing across that boundary would
@@ -74,11 +75,11 @@ GATEWAY_REVIEWERS: tuple[str, ...] = ("model-1", "model-2")
 CURRENT_REVIEWER_ROSTERS: tuple[frozenset[str], ...] = (
     frozenset(REVIEWERS),
     frozenset({"glm", "opus"}),
+    frozenset(GATEWAY_REVIEWERS),
 )
 _SUPPORTED_REVIEWER_SETS = frozenset(
     {
         *CURRENT_REVIEWER_ROSTERS,
-        frozenset(GATEWAY_REVIEWERS),
         *(frozenset(pair) for pair in HISTORICAL_REVIEWER_PAIRS),
     }
 )

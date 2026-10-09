@@ -58,7 +58,7 @@ def _isolate_scanner_environment(monkeypatch):
     Mirror of fixtures in plugins/shipwright-run/tests/conftest.py + integration-tests/conftest.py.
     """
     for name in ("AIKIDO_CLIENT_ID", "SHIPWRIGHT_SCANNER_BACKEND", "CODEXTENDER_ACTIVE",  # last: coerces the review driver
-                 "SHIPWRIGHT_LOOP_ID", "SHIPWRIGHT_LOOP_UNIT_ID"):  # campaign-runner shell; 15 tests red
+                 "SHIPWRIGHT_LOOP_ID", "SHIPWRIGHT_LOOP_UNIT_ID", *[k for k in os.environ if k.startswith("SHIPWRIGHT_REVIEW_GATEWAY_")]):  # campaign shell; #547 gateway
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS", "1")
     real_which = shutil.which

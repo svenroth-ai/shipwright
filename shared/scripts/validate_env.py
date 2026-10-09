@@ -33,6 +33,8 @@ from pathlib import Path
 # Allow importing shared lib
 sys.path.insert(0, str(Path(__file__).parent / "lib"))
 
+from review_env_vars import FRAMEWORK_VARS, GATEWAY_BASE_URL_VAR  # noqa: E402
+
 
 def _strip_inline_comment(raw: str) -> str:
     """Return the value portion of an env-file RHS, stripping inline comments.
@@ -116,19 +118,7 @@ def load_profile(profile_name: str, profile_dir: Path) -> dict | None:
 # so the .env.local scaffold reflects what the runtime actually checks for.
 # Drift between the two is locked down by
 # ``TestFrameworkOrderDriftProtection``.
-_SHIPWRIGHT_FRAMEWORK_VARS: list[dict] = [
-    {
-        "name": "OPENROUTER_API_KEY",
-        "description": "OpenRouter API key for external plan/iterate/code reviews "
-                       "(required for the ZDR-routed GLM arm)",
-        "optional": True,
-    },
-    {
-        "name": "OPENAI_API_KEY",
-        "description": "Direct OpenAI API key (alternative to OpenRouter)",
-        "optional": True,
-    },
-]
+_SHIPWRIGHT_FRAMEWORK_VARS: list[dict] = FRAMEWORK_VARS
 
 
 def _collect_phase_vars(
@@ -293,7 +283,7 @@ def init_env_file(
     if not all_vars:
         return {"action": "skipped", "reason": f"No vars defined for phase '{phase}'"}
 
-    framework_names = [v["name"] for v in _SHIPWRIGHT_FRAMEWORK_VARS]
+    framework_names = [v["name"] for v in _SHIPWRIGHT_FRAMEWORK_VARS if not v.get("alternative")]
 
     # Ensure .env.local is gitignored BEFORE creating it.
     # If enforcement fails (permission denied, locked file, OS error), abort
@@ -315,7 +305,11 @@ def init_env_file(
 
     if env_file_path.exists():
         # Find vars that need to be added
-        missing_vars = [v for v in all_vars if v["name"] not in existing_keys]
+        # `alternative` vars go into NEW files only (see review_env_vars).
+        missing_vars = [
+            v for v in all_vars
+            if v["name"] not in existing_keys and not v.get("alternative")
+        ]
         if not missing_vars:
             return {
                 "action": "unchanged",
@@ -389,11 +383,14 @@ def _compute_missing_keys(env_file_path: Path, all_vars: list[dict]) -> list[str
     have a mix of filled + new-but-empty entries. The handoff banner
     in adopt's Step H reads this list verbatim to decide what to surface.
     """
-    if not env_file_path.exists():
-        return [v["name"] for v in all_vars]
-    parsed = parse_env_file(env_file_path)
+    parsed = parse_env_file(env_file_path) if env_file_path.exists() else {}
     out: list[str] = []
+    gateway_chosen = not _is_placeholder(parsed.get(GATEWAY_BASE_URL_VAR, ""))
     for var in all_vars:
+        if var.get("alternative"):
+            continue  # an alternative route is never "missing" - see review_env_vars
+        if gateway_chosen and var["name"] in ("OPENROUTER_API_KEY", "OPENAI_API_KEY"):
+            continue  # the gateway replaces both keys
         name = var["name"]
         value = parsed.get(name, "")
         if _is_placeholder(value):

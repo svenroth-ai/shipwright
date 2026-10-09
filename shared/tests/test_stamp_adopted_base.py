@@ -97,6 +97,9 @@ def test_an_abbreviated_base_is_refused_rather_than_resolved(adopted_repo, capsy
 
     assert code == 0 and report["status"] == "no_base", report
     assert _banner_of(adopted_repo) == before
+    # #547: the refusal names its cause and the remedy, instead of the generic
+    # "no usable commit" that left an operator guessing why a real sha stamped nothing.
+    assert "abbreviated" in report["detail"] and "40-character" in report["detail"]
 
 
 def test_a_padded_base_is_still_accepted(adopted_repo, capsys):

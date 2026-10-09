@@ -145,6 +145,18 @@ def deliver_stamp_adopted(root: Path, raw_base: str | None) -> dict:
                     "`--verify-commit` presence-filters and would call what "
                     "remains `verified`")}
     base = resolve_adopted_base(root, raw_base)
+    supplied = safe_commit(raw_base)
+    if base is None and supplied is not None and len(supplied) != _FULL_OID_LEN:
+        # An abbreviated sha is refused on purpose (see `resolve_adopted_base`), but
+        # the generic "no usable commit" wording left the operator guessing why a
+        # perfectly real commit stamped nothing (#547).
+        return {"status": "no_base", "base": None, "stamped": [],
+                "absent": absent, "detail": (
+                    "the supplied commit is an abbreviated sha, which is refused on "
+                    "purpose (a branch or tag of the same name would win over the "
+                    "object) - expand it to the full 40-character sha "
+                    "(`git rev-parse <abbrev>^{commit}`, or the `commit_at_adoption` "
+                    "event_seeder recorded); nothing was stamped")}
     if base is None:
         # Not an error, and reachable only with the set already COMPLETE. A
         # repository with no commits is a legitimate thing to onboard; the banner

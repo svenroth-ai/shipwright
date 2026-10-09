@@ -44,7 +44,7 @@ Output (JSON):
     {
         "review_schema": 2,  // v1 was implicit and used gemini/openai
         "success": true/false,
-        "provider": "openrouter" | "direct" | "codex" | "claude_cli" | "none",
+        "provider": "openrouter" | "direct" | "codex" | "claude_cli" | "gateway" | "none",
         "driver": "claude" | "codex", "mode": "<--mode>",
         "skipped": "empty_diff",  // optional, code-mode only
         "reviews": {
@@ -62,6 +62,12 @@ Output (JSON):
         }
     }
 
+Gateway route: when ``SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL`` is set, the roster
+is the operator-owned ``model-1`` / ``model-2`` pair instead (``--driver`` does
+not apply) and the route is exclusive — no fallback to OpenRouter/direct, see
+:mod:`external_review_gateway`. Each leg then also carries ``answering_model``
+and a non-secret ``gateway_evidence`` block.
+
 Prompt loading uses per-mode helpers from ``lib.external_review_prompts``;
 reviewer/model identities are validated against fixed bindings before client construction.
 """
@@ -71,7 +77,6 @@ import json
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import nullcontext
 from pathlib import Path
 
 # Wire up shared/scripts/lib so we can import shared helpers + the env loader.
@@ -88,8 +93,6 @@ from external_review_config import load_review_config  # noqa: E402
 from external_review_degraded import (  # noqa: E402
     MAX_OUTPUT_TOKENS,
     REVIEW_ENVELOPE_SCHEMA,
-    file_partial_degradation_triage,
-    finalize_review_output,
     llm_client_settings,
     retrying_completion,
 )
@@ -124,8 +127,8 @@ from external_review_routing import (  # noqa: E402
     resolve_reviewer_model,
 )
 from external_review_empty import empty_diff_envelope  # noqa: E402
-from iterate_timings import span as _timing_span  # noqa: E402
-from review_verdict import summarize_reviews  # noqa: E402
+from external_review_gateway import gateway_configured  # noqa: E402
+from external_review_gateway_cli import emit_envelope, review_timing, run_gateway  # noqa: E402
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -209,10 +212,13 @@ def review_with_openai(
 def detect_provider() -> str:
     """Detect which review provider to use.
 
-    Fallback chain: OpenRouter → direct OpenAI → none. Delegates to
-    ``api_route`` — the single copy of this rule, also used by
-    ``resolve_openai_route`` for the codex-unavailable fallback.
+    Fallback chain: gateway (exclusive when configured) → OpenRouter → direct
+    OpenAI → none. Delegates to ``api_route`` — the single copy of the
+    non-gateway rule, also used by ``resolve_openai_route`` for the
+    codex-unavailable fallback.
     """
+    if gateway_configured():
+        return "gateway"
     return api_route(
         bool(os.environ.get("OPENROUTER_API_KEY")), bool(os.environ.get("OPENAI_API_KEY"))
     )
@@ -223,7 +229,7 @@ def _fail_envelope(error: str, driver_record: dict) -> int:
     every early-exit path in ``main()`` uses — one shape regardless of
     which check failed."""
     print(json.dumps(
-        {"review_schema": REVIEW_ENVELOPE_SCHEMA, "success": False, "error": error, **driver_record},
+        {"review_schema": REVIEW_ENVELOPE_SCHEMA, "success": False, "reviewed": False, "error": error, **driver_record},
         indent=2,
     ))
     return 1
@@ -371,6 +377,11 @@ def main() -> int:
     system_prompt = system_prompt or default_system
     user_prompt = user_prompt or default_user
 
+    if gateway_configured():
+        return run_gateway(
+            args, driver_record, primary_text, spec, system_prompt, user_prompt, config, _render_user_prompt,
+        )
+
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
     _glm_id, second_id = DRIVER_ROSTERS[args.driver]
@@ -390,17 +401,8 @@ def main() -> int:
     provider = second_route  # the second leg's route only; GLM's truth is its own review's "via"
     reviews: dict[str, dict] = {}
 
-    # external_review is a real producer boundary (this whole block IS the
-    # network-call span); code mode is the Step-8 cascade's pass, others —
-    # plan, iterate and architecture alike — run pre-Build, which is why
-    # architecture shares `planning` rather than earning a parent of its own.
-    # Bare string below is a span-parent name, not a path.
-    timing_cm = nullcontext(None)
-    if args.run_id:
-        timing_parent = "review" if args.mode == "code" else "planning"  # artifact-path-canon: legacy
-        timing_cm = _timing_span(Path(args.project_root).resolve(), args.run_id,
-                                 name="external_review", parent=timing_parent)
-    with timing_cm as timing_extra:
+    # external_review is a real producer boundary: this whole block IS the network-call span.
+    with review_timing(args) as timing_extra:
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures: dict = {}
             if has_openrouter:
@@ -438,19 +440,7 @@ def main() -> int:
     if "driver_enforced_reason" in driver_record and reviews.get(second_id, {}).get("status") != "success":
         reviews.setdefault(second_id, {})["coercion_note"] = (  # say WHY this leg, not openai, was tried
             "driver coerced to codex under CODEXTENDER_ACTIVE: this leg needs a logged-in claude CLI or OPENROUTER_API_KEY")
-    output, exit_code = finalize_review_output(provider, reviews)
-    output.update(driver_record)
-    # Two reviewers exist so disagreement gets noticed; carry both verdicts and
-    # the derived contradiction alongside the full texts rather than letting a
-    # downstream finding count average them away.
-    output.update(summarize_reviews(reviews))
-    if output.get("partially_degraded"):
-        file_partial_degradation_triage(
-            Path(args.project_root).resolve(), args.run_id, args.mode, provider,
-            output["partially_degraded_legs"],
-        )
-    print(json.dumps(output, indent=2))
-    return exit_code
+    return emit_envelope(args, provider, reviews, driver_record)
 
 
 if __name__ == "__main__":

@@ -600,7 +600,7 @@ class TestFrameworkOrderDriftProtection:
     def test_framework_keys_match_external_review_fallback_order(self):
         from shared.scripts import validate_env
 
-        framework_names = [v["name"] for v in validate_env._SHIPWRIGHT_FRAMEWORK_VARS]
+        framework_names = [v["name"] for v in validate_env._SHIPWRIGHT_FRAMEWORK_VARS if not v.get("alternative")]  # #547: gateway = separate route
         assert framework_names == [
             "OPENROUTER_API_KEY",
             "OPENAI_API_KEY",

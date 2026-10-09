@@ -1,0 +1,45 @@
+{
+ "section": "iterate-2026-10-09-issue-547-followup",
+ "review": [
+  {
+   "severity": "high",
+   "category": "architecture",
+   "file": "shared/scripts/lib/external_review_gateway.py",
+   "line": 301,
+   "finding": "File is 301 lines vs the 300 source limit (new bloat crossing).",
+   "suggestion": "Cut lines; no baseline entry. FIXED: 298 lines."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/lib/external_review_gateway.py",
+   "line": 158,
+   "finding": "gateway_evidence reads parsed.port, which raises ValueError on a malformed port.",
+   "suggestion": "Guard. FIXED + test."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/lib/external_review_gateway.py",
+   "line": 488,
+   "finding": "_token_param_rejected ignores exc.param on the .code branch.",
+   "suggestion": "Apply the same param check. FIXED."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/scripts/lib/external_review_gateway_cli.py",
+   "line": 714,
+   "finding": "run_gateway takes a needless render parameter.",
+   "suggestion": "Non-blocking; kept (declared)."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "docs/hooks-and-pipeline.md",
+   "line": 4030,
+   "finding": "Missing comma; guide --verdict help omits model-1/model-2.",
+   "suggestion": "FIXED."
+  }
+ ]
+}

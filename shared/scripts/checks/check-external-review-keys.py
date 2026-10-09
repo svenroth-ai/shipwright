@@ -50,6 +50,7 @@ def main() -> int:
         "openrouter": bool(os.environ.get("OPENROUTER_API_KEY")),
         "glm": bool(os.environ.get("OPENROUTER_API_KEY")),
         "openai": bool(os.environ.get("OPENAI_API_KEY")),
+        "gateway": bool(os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL", "").strip()),
         "codex_configured": gpt_leg_provider(config) == "codex",
     }
 

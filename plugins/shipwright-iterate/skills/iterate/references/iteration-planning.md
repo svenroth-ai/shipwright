@@ -636,8 +636,8 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
 ### Handling results (Branch A)
 - Parse JSON output: `reviews.glm.feedback` + `reviews.openai.feedback` (or
-  `reviews.opus.feedback` under `--driver codex`; required, no default, never
-  hardcoded)
+  `reviews.opus.feedback` under `--driver codex`; `reviews.model-1/2.feedback` when
+  `provider` is `gateway`; required, no default, never hardcoded)
 - Print findings summary to user
 - For high-severity findings: discuss with user before proceeding to build
 - For low/medium: note in ADR, proceed

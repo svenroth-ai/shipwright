@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "AC1-9 of the iterate spec each have an implementation and a test; nothing beyond the issue's reported items plus the agreed evidence field."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Gateway failures stay per-leg errors with redacted reasons; token-param retry fires only on a rejection naming the parameter; a failing future in _run_gateway is caught and redacted."},
+  {"name": "Security Basics", "verdict": "pass", "note": "gateway_evidence records header NAMES only and a sanitized URL (asserted: no key/header value in the result JSON); https enforcement unchanged; no secrets in source."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Outcome tests with a happy and an error path per AC (exclusive/fail-closed, retry vs no-retry, marker schema accept/reject); the adopt dependency test is unmocked (find_spec) so it catches the original defect."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "Two parallel legs as before; at most one extra request on a rejected token parameter."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "New code follows the module's dual-import shim and naming; new test files split to stay under 300 lines. external_review.py grew by one helper (_run_gateway) - already over the soft limit before this change."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "external_review.py stdout -> review_payloads/record_review_pass/review_marker covered by the schema-6 round trip; .env.local scaffold -> parse_env_file covered by test_validate_env_gateway."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+]}

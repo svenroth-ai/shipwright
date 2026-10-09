@@ -27,7 +27,7 @@ from typing import Any
 
 try:  # imported as ``lib.review_marker`` (shared/scripts on sys.path)
     from .atomic_write import durable_atomic_write
-    from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS
+    from .review_verdict import GATEWAY_REVIEWERS, HISTORICAL_REVIEWER_PAIRS, REVIEWERS
 except ImportError:  # imported as top-level ``review_marker``
     # Plugin call sites put ``shared/scripts/lib`` itself on sys.path — they
     # cannot use the ``lib.`` spelling because their own ``scripts/lib``
@@ -35,7 +35,7 @@ except ImportError:  # imported as top-level ``review_marker``
     # the single authority on review state, and a second copy of that rule is
     # exactly what the gate exists to prevent.
     from atomic_write import durable_atomic_write  # type: ignore[no-redef]
-    from review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS  # type: ignore[no-redef]
+    from review_verdict import GATEWAY_REVIEWERS, HISTORICAL_REVIEWER_PAIRS, REVIEWERS  # type: ignore[no-redef]
 
 __all__ = [
     "ALLOWED_REVIEW_TYPES",
@@ -43,6 +43,7 @@ __all__ = [
     "CODE_REVIEW_STATE_FILE",
     "MARKER_SCHEMA",
     "OPUS_MARKER_SCHEMA",
+    "GATEWAY_MARKER_SCHEMA",
     "REVIEW_STATE_FILE",
     "build_marker",
     "evaluate_review_state",
@@ -76,6 +77,9 @@ OPUS_MARKER_SCHEMA = 5
 #: two axes should stay free to diverge without editing each other.
 _OPUS_ROSTER = frozenset({"glm", "opus"})
 
+#: Schema 6 means exactly {model-1, model-2} - review_verdict.GATEWAY_REVIEWERS.
+GATEWAY_MARKER_SCHEMA = 6
+
 
 def schema_for_roster(verdicts: dict[str, Any]) -> int:
     """The marker schema for exactly this reviewer set, or raise.
@@ -96,6 +100,8 @@ def schema_for_roster(verdicts: dict[str, Any]) -> int:
         return MARKER_SCHEMA
     if roster == _OPUS_ROSTER:
         return OPUS_MARKER_SCHEMA
+    if roster == frozenset(GATEWAY_REVIEWERS):
+        return GATEWAY_MARKER_SCHEMA
     raise ValueError(f"cannot select a marker schema for unrecognized reviewer set {sorted(roster)!r}")
 
 ALLOWED_STATUSES = frozenset({
@@ -199,7 +205,7 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     marker_schema = marker.get("marker_schema")
     if has_schema and (
         type(marker_schema) is not int
-        or marker_schema not in {2, 3, MARKER_SCHEMA, OPUS_MARKER_SCHEMA}
+        or marker_schema not in {2, 3, MARKER_SCHEMA, OPUS_MARKER_SCHEMA, GATEWAY_MARKER_SCHEMA}
     ):
         return STATE_BLOCK, f"unknown review marker schema {marker_schema!r}"
 
@@ -227,7 +233,10 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
             "disagreement between the two could not have been noticed"
         )
 
-    if marker_schema == OPUS_MARKER_SCHEMA:
+    if marker_schema == GATEWAY_MARKER_SCHEMA:
+        expected_reviewers = frozenset(GATEWAY_REVIEWERS)
+        contract = f"schema {GATEWAY_MARKER_SCHEMA} model-1/model-2"
+    elif marker_schema == OPUS_MARKER_SCHEMA:
         expected_reviewers = frozenset({"glm", "opus"})
         contract = f"schema {OPUS_MARKER_SCHEMA} glm/opus"
     elif marker_schema == MARKER_SCHEMA:

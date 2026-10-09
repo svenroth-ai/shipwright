@@ -1,0 +1,46 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "hidden-coupling",
+   "claim_under_doubt": "every envelope consumer handles the gateway keys",
+   "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md",
+   "line": 37,
+   "what_would_resolve_it": "RESOLVED: four runtime parse sites now name reviews.model-1/2.feedback when provider is gateway."
+  },
+  {
+   "severity": "medium",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "F11 driver gate attests vendor independence",
+   "file": "shared/scripts/tools/verifiers/review_driver_check.py",
+   "line": 70,
+   "what_would_resolve_it": "RESOLVED: provider==gateway records are not counted as attested."
+  },
+  {
+   "severity": "low",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "value errors are never retried",
+   "file": "shared/scripts/lib/external_review_gateway.py",
+   "line": 493,
+   "what_would_resolve_it": "RESOLVED: a structured code decides (inner-body shape too); unsupported_value is not retried; test added."
+  },
+  {
+   "severity": "low",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "insecure-URL path always carries gateway_evidence",
+   "file": "shared/scripts/lib/external_review_gateway.py",
+   "line": 64,
+   "what_would_resolve_it": "RESOLVED: port guard in _sanitize_url_for_display; test added. Path in the display string left as-is (pre-existing, not new)."
+  },
+  {
+   "severity": "low",
+   "lens": "irreversibility",
+   "claim_under_doubt": "tests are isolated from an operator's gateway env",
+   "file": "shared/tests/conftest.py",
+   "line": 51,
+   "what_would_resolve_it": "RESOLVED: autouse env scrub covers SHIPWRIGHT_REVIEW_GATEWAY_*."
+  }
+ ]
+}
