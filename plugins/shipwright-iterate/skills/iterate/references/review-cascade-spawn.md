@@ -1,0 +1,5 @@
+# Review cascade — row ordering and evidence rules (Step 8)
+
+> Moved verbatim out of SKILL.md (which keeps the spawn and permission rules). Normative.
+
+Stage 1's row is an ordinary `reviews` key. It was parked in a sibling `gates` object while the webui refused to read a record carrying a sixth key; that reader now renders review types it does not recognise, so `spec` was promoted (`references/iteration-reviews.md`). Records written before the promotion keep `spec` under `gates` and are still read from there — permanently, since they are immutable. The gate enforces the cascade's own ordering: a `code` row recorded `completed` while `spec` is not `completed` FAILS, because Stage 2 cannot legitimately have run without its HARD-GATE passing first. A completed `code`/`external_code` row must also carry evidence a review happened — findings, a provider, a raw excerpt, or a `recorded_by` naming an adapter other than `none`. The runner contract's "delegated" wording (§5b) is **campaign-only** and does not apply here.

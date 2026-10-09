@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Four long SKILL.md paragraphs shortened to a summary plus link; removed text lives in references/. All pinned anchors kept (prose tests green)."},
+{"name":"Error Handling","verdict":"pass","note":"Prose-only change; no runtime path."},
+{"name":"Security Basics","verdict":"pass","note":"No code, no secrets. The worktree reset safety rule keeps a summary naming the stop condition and a link to the full procedure."},
+{"name":"Test Quality","verdict":"pass","note":"Existing drift tests (iterate plugin 1248, shared prose) cover the anchors; the first run caught two lost anchors that were restored."},
+{"name":"Performance Basics","verdict":"pass","note":"SKILL.md shrinks from 49.8 KB to 45.8 KB."},
+{"name":"Naming & Structure","verdict":"pass","note":"Four new reference files, each holding only the text SKILL.md no longer carries; no duplicated prose."},
+{"name":"Affected Boundaries","verdict":"pass","note":"No producer/consumer boundary touched; SKILL.md to references links resolve."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No tests added or changed."}
+]}

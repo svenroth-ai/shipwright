@@ -1,0 +1,45 @@
+{
+  "run_id": "iterate-2026-10-09-slim-iterate-skill",
+  "date": "2026-10-09T13:38:00.465099Z",
+  "event_at": "2026-10-09T12:32:12.893571+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/slim-iterate-skill",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-slim-iterate-skill",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "SKILL.md keeps every pinned anchor and its reference links resolve after four paragraphs moved",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests (1248 passed) and shared/tests/test_iterate_skill_prose.py, test_campaign_review_contract_prose.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 1,
+      "tested": 1,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-iterate --extra dev pytest tests/test_skill_references_link.py tests/test_review_record_immediate_write_rule.py tests/test_skill_phase_matrix.py -q",
+    "exit_code": 0,
+    "tests_run": 5,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-09-slim-iterate-skill/surface_verification.json",
+    "timestamp": "2026-10-09T13:37:46.778Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
