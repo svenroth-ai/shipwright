@@ -26,7 +26,13 @@ from __future__ import annotations
 import ast
 import re
 
+from ._lib_loader import load_shared_lib
 from ._suite_tags import propagate_suite_tags
+
+# The gate's own lexer (regex literals, JSX text, comments), so a wrapped ``.each`` table closes at
+# the same paren for the collector and the test-tag gate.
+_lex = load_shared_lib("ts_lexer").lex
+_JSX_SUFFIXES = (".tsx", ".jsx", ".js")  # same set as the gate; never ``.ts``, where ``<T>x`` is a cast
 
 # A declaration head left open at the end of its line, as a statement of its own:
 # ``test(`` / ``it.only(`` / ``test.describe(`` / ``describe(`` with nothing after the paren.
@@ -36,9 +42,14 @@ _OPEN_DECL_RE = re.compile(r"^\s*(?:await\s+)?(?:it|test|describe)(?:\.\w+)*\s*\
 _CALLBACK_RE = re.compile(r"=>|\bfunction\b")
 _STRING_RE = re.compile(r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`")
 _MAX_HEAD_LINES = 8
+# A data-driven head whose table wraps: ``it.each([`` / ``test.each(`` / ``test.each`` + backtick.
+_EACH_OPEN_RE = re.compile(r"^\s*(?:await\s+)?(?:it|test)(?:\.(?!(?:describe|step)\b)\w+)*\.each\s*(?=[(`])")
+_EACH_BARE_RE = re.compile(r"^\s*(?:await\s+)?(?:it|test)(?:\.(?!(?:describe|step)\b)\w+)*\.each\s*$")
+_TITLE_OPEN_RE =re.compile(r"[ \t]*\(\s*['\"`]")
+_MAX_TABLE_LINES = 400
 
 
-def join_multiline_decls(source: str) -> str:
+def join_multiline_decls(source: str, jsx: bool = True) -> str:
     """Fold a wrapped ``test(``/``it(``/``describe(`` head onto one line.
 
     Joins the open line with the following lines up to and including the first line that
@@ -46,13 +57,16 @@ def join_multiline_decls(source: str) -> str:
     for that declaration — when no callback line appears within ``_MAX_HEAD_LINES`` or a
     comment line interrupts the head, so an unusual shape degrades to the reference
     parser's behaviour instead of being mangled. Braces are preserved, only moved onto one
-    line, so the suite-scope brace depth is unchanged.
+    line, so the suite-scope brace depth is unchanged. ``jsx`` says whether JSX text is lexed
+    (the gate's rule: not for a ``.ts`` file).
     """
     lines = source.splitlines()
     out: list[str] = []
     i = 0
     while i < len(lines):
-        end = _head_end(lines, i) if _OPEN_DECL_RE.search(lines[i]) else None
+        end = _each_end(lines, i, jsx)
+        if end is None and _OPEN_DECL_RE.search(lines[i]):
+            end = _head_end(lines, i)
         if end is None:
             out.append(lines[i])
             i += 1
@@ -60,6 +74,56 @@ def join_multiline_decls(source: str) -> str:
         out.append(" ".join([lines[i].rstrip()] + [ln.strip() for ln in lines[i + 1:end + 1]]))
         i = end + 1
     return "\n".join(out) + ("\n" if source.endswith("\n") else "")
+
+
+def _each_end(lines: list[str], start: int, jsx: bool = True) -> int | None:
+    """Index of the line where the ``.each`` table opened at ``start`` closes and the title
+    quote follows (``])('title'``); ``None`` when the head is one line or not a data-driven head."""
+    first = lines[start]
+    if not (_EACH_OPEN_RE.match(first) or _EACH_BARE_RE.match(first)):  # `.each` alone: the table opens below
+        return None
+    text = "\n".join(lines[start:start + _MAX_TABLE_LINES])
+    m = _EACH_OPEN_RE.match(text)
+    if not m:
+        return None
+    i, n = m.end(), len(text)
+    if text[i] == "`":
+        i = _quoted_end(text, i)
+        if i is None:
+            return None
+    else:
+        # `i` is at the table's `(`; the lexer skips strings, comments, regex literals and JSX text and
+        # stops at the `)` that closes it.
+        _, close = _lex(text, i + 1, jsx, stop=True)
+        if close >= n or text[close] != ")":
+            return None
+        i = close + 1
+    title = _TITLE_OPEN_RE.match(text, i)
+    if not title:
+        return None
+    line = text.count("\n", 0, title.end())
+    if not line:
+        return None
+    # The title may sit on its own line with the `{ tag: [...] }` option and callback below it:
+    # keep folding to the callback line, like a plain wrapped head.
+    if _CALLBACK_RE.search(_STRING_RE.sub("''", lines[start + line])):
+        return start + line
+    return _head_end(lines, start + line) or start + line
+
+
+def _quoted_end(text: str, i: int) -> int | None:
+    """End (exclusive) of the string/template literal opening at ``i``, else ``None``."""
+    quote, j, n = text[i], i + 1, len(text)
+    while j < n:
+        if text[j] == "\\":
+            j += 2
+        elif text[j] == quote:
+            return j + 1
+        elif text[j] == "\n" and quote != "`":  # only a template literal may span lines
+            return None
+        else:
+            j += 1
+    return None
 
 
 def _head_end(lines: list[str], start: int) -> int | None:
@@ -144,7 +208,7 @@ def parse_file(rel_path: str, source: str, grammar):
     is dropped: ``ast.parse`` rejects it, which used to hide every test in such a file."""
     source = source[1:] if source.startswith("\ufeff") else source
     if rel_path.lower().endswith(grammar._TS_SUFFIXES):
-        source = join_multiline_decls(source)
+        source = join_multiline_decls(source, rel_path.lower().endswith(_JSX_SUFFIXES))
     res = grammar.parse_source(rel_path, source)
     scope_hits, scope_invalid = propagate_suite_tags(source, rel_path, grammar)
     if rel_path.lower().endswith(".py"):

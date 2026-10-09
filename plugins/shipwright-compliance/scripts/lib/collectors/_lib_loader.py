@@ -47,7 +47,7 @@ def load_shared_lib(name: str):
     sys.path.insert(0, shared)
     try:
         # `name` is always a hardcoded module identifier from first-party callers. The
-        # ACTUAL fixed set for THIS loader is five: requirement_model, fr_tag_grammar,
+        # ACTUAL fixed set for THIS loader (ts_lexer, the gate's TS lexer, is a stdlib-only leaf): requirement_model, fr_tag_grammar,
         # fr_fold_map, jsonl_records (the collector package), and evidence_drop (R1a —
         # a plugin test needing the shared TT5 emit-side; evidence_drop mutates no
         # sys.path at import time, same safety condition as jsonl_records below). The

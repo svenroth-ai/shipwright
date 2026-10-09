@@ -3,8 +3,8 @@
 R3 is binding: an enforcing gate must **regenerate** the requirement→test index from the
 base and head checkouts and compare — the committed ``test-traceability.json`` is
 derived/RTM-visibility only and a hand-edited/stale one can never satisfy the gate. This
-module does exactly that: it ``git archive``\\s the merge-base tree and the HEAD-commit
-tree into throwaway temp dirs and runs the TT1 ``build_manifest`` collector against each,
+module does exactly that: it materialises the merge-base tree and the HEAD-commit
+tree (``ls-tree`` + ``cat-file``, so ``export-ignore`` cannot shrink them) into throwaway temp dirs and runs the TT1 ``build_manifest`` collector against each,
 so the manifests reflect the real tracked spec + test state at each commit, not whatever
 artifact happens to sit in the working tree.
 
@@ -23,10 +23,7 @@ when a gate actually fires (git available, merge-base resolvable, and — cross-
 from __future__ import annotations
 
 import importlib
-import io as _io
-import subprocess
 import sys
-import tarfile
 import tempfile
 from pathlib import Path
 
@@ -35,6 +32,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from ._layer_coverage_evidence import fresh_evidence  # noqa: E402
+from ._tree_materialise import _archive_tree  # noqa: E402,F401  (re-exported: rollout)
 from .git_helpers import _run_git, git_context  # noqa: E402
 
 _COLLECTOR: tuple | None = None
@@ -133,50 +131,6 @@ def _merge_base(project_root: Path, commit: str) -> str:
     return ""
 
 
-def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
-    """Extract with the 3.12 data filter; fall back to a manual traversal guard on 3.11.
-
-    The fallback uses proper path CONTAINMENT (``dest`` is the target or a parent of the
-    resolved member), never a string ``startswith`` prefix — that would let a sibling dir
-    (``/tmp/foo-evil`` starts with ``/tmp/foo``) slip through (external-review finding).
-    The archive source is our own git tree, but the guard is defence-in-depth regardless.
-    """
-    try:
-        tar.extractall(dest, filter="data")  # type: ignore[arg-type]
-        return
-    except TypeError:
-        pass
-    dest_r = dest.resolve()
-    for member in tar.getmembers():
-        # Reject anything but a regular file or directory (external-review finding): a symlink
-        # / hardlink / device member could point outside the temp root and the collector would
-        # follow it while scanning. Only reg + dir are needed to rebuild the manifest.
-        if not (member.isreg() or member.isdir()):
-            continue
-        target = (dest / member.name).resolve()
-        if target == dest_r or dest_r in target.parents:
-            tar.extract(member, dest)
-        # else: reject path traversal (absolute / .. / sibling) — skip the member
-
-
-def _archive_tree(project_root: Path, sha: str, dest: Path) -> bool:
-    """``git archive`` the tracked tree at ``sha`` into ``dest`` (tracked files only —
-    ``.worktrees`` / gitignored churn are excluded). Returns False on any git failure."""
-    try:
-        proc = subprocess.run(["git", "-C", str(project_root), "archive", "--format=tar", sha],
-                              capture_output=True, timeout=180)
-    except (OSError, subprocess.SubprocessError):
-        return False
-    if proc.returncode != 0 or not proc.stdout:
-        return False
-    try:
-        with tarfile.open(fileobj=_io.BytesIO(proc.stdout)) as tar:
-            _safe_extract(tar, dest)
-    except (tarfile.TarError, OSError):
-        return False
-    return True
-
-
 def _base_test_dirs(base: dict) -> set[str]:
     """Every dir the BASE manifest found a test in (tagged links + untagged + orphans), as posix
     rel paths. Fed to the HEAD ``_build`` so the gate re-scans wherever the base looked: a config
@@ -196,7 +150,7 @@ def _base_test_dirs(base: dict) -> set[str]:
 
 
 def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
-           extra_roots: set[str] | None = None) -> dict:
+           extra_roots: set[str] | None = None, prune_dirs: frozenset[str] | None = None) -> dict:
     # Honour ``traceability.test_roots`` / ``exclude_dirs`` (from ``root`` — the archived base OR
     # head tree, so a base predating the key falls back to defaults) so a layer covered ONLY by a
     # config-opted plugin/shared test is SEEN by the enforcing gate, not just the RTM. Two floors
@@ -219,7 +173,7 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
         root,
         spec_files=io.discover_specs(root),
         test_roots=test_roots,
-        prune_dirs=io.configured_prune_dirs(root),
+        prune_dirs=io.configured_prune_dirs(root) if prune_dirs is None else prune_dirs,
         evidence=evidence,
         source_commit=source_commit,
     )
@@ -229,8 +183,8 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
 # empty, tests clear them via ``clear_regen_cache``. The base manifest + rename map are evidence-
 # INDEPENDENT, so every gate shares one build; so is an evidence-FREE head (the removal and the
 # test-tag gate both read it), so it is built once per run too. Callers must not mutate either.
-_BASE_CACHE: dict[tuple[str, str], tuple[dict, dict[str, str]] | None] = {}
-_HEAD_CACHE: dict[tuple[str, str], dict] = {}
+_BASE_CACHE: dict[tuple[str, str], tuple[dict, dict[str, str], frozenset[str]] | None] = {}
+_HEAD_CACHE: dict[tuple[str, str, bool], dict] = {}
 
 
 def clear_regen_cache() -> None:
@@ -249,8 +203,9 @@ def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
             with tempfile.TemporaryDirectory(prefix="sw-trace-base-") as bd:
                 base_root = Path(bd)
                 if _archive_tree(project_root, base_sha, base_root):
-                    base = _build(test_links, io, base_root, {}, base_sha)
-                    result = (base, _rename_map(project_root, base_sha, commit_hash))
+                    prune = io.configured_prune_dirs(base_root)
+                    base = _build(test_links, io, base_root, {}, base_sha, prune_dirs=prune)
+                    result = (base, _rename_map(project_root, base_sha, commit_hash), prune)
         except (OSError, ValueError):
             result = None
     _BASE_CACHE[key] = result
@@ -259,12 +214,17 @@ def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
 
 def regenerate_base_head(
     project_root: Path, commit_hash: str, *, with_evidence: bool, run_id: str = "",
+    base_prune_only: bool = False,
 ) -> tuple[dict, dict, dict[str, str]] | None:
     """Regenerate ``(base_manifest, head_manifest, rename_map)`` from the base + head
     checkouts (R3). The base manifest + rename map are memoized per (root, commit) and shared
     between the two gates (SHOULD-FIX 8); only the HEAD manifest is rebuilt per call so the
     cross-layer gate can fold in this run's evidence (``with_evidence``). ``None`` = an infra gap
-    (git unavailable, no base ref, collector or archive failure) the caller renders as an ERROR."""
+    (git unavailable, no base ref, collector or archive failure) the caller renders as an ERROR.
+
+    ``base_prune_only`` (the test-tag gate): the head skips a folder only if BASE and HEAD both exclude it,
+    so a change cannot hide its own new tests by growing ``exclude_dirs``. The coverage gates leave it off:
+    for them the head's own ``exclude_dirs`` is the fixture fence (a fixture cannot credit a layer)."""
     if not commit_hash or git_context(project_root) != "work_tree":
         return None
     loaded = _load_collector()
@@ -274,8 +234,8 @@ def regenerate_base_head(
     br = _base_and_renames(project_root, commit_hash, test_links, io)
     if br is None:
         return None
-    base, rename_map = br
-    head_key = (str(project_root), commit_hash)
+    base, rename_map, base_prune = br
+    head_key = (str(project_root), commit_hash, base_prune_only)
     if not with_evidence and head_key in _HEAD_CACHE:
         return base, _HEAD_CACHE[head_key], rename_map
     evidence = fresh_evidence(project_root, run_id, commit_hash, evio) if with_evidence else {}
@@ -287,7 +247,9 @@ def regenerate_base_head(
             # Re-scan wherever the BASE found tests AND wherever a test git-renamed TO, so a config
             # narrowed/deleted between base and head can't hide a base-linked (or moved) test.
             extra = _base_test_dirs(base) | {Path(p).parent.as_posix() for p in rename_map.values() if p}
-            head = _build(test_links, io, head_root, evidence, commit_hash, extra_roots=extra)
+            head_prune = io.configured_prune_dirs(head_root)
+            head = _build(test_links, io, head_root, evidence, commit_hash, extra_roots=extra,
+                          prune_dirs=base_prune & head_prune if base_prune_only else head_prune)
     except (OSError, ValueError):
         return None
     if not with_evidence:

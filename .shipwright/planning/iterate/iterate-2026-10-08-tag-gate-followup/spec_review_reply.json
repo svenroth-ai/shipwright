@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Re-review passes: all five acceptance criteria and FR-01.11 AC42 are in the code with tests; class-decorator asymmetry, module pytestmark, wrapped-title join, it/test normalisation and table caps resolved."}

@@ -60,12 +60,14 @@ def test_editing_a_legacy_untagged_test_body_stops():
     assert [k for k, _t, _w in v.findings] == ["untagged-modified"]
 
 
-@pytest.mark.covers("FR-01.11/AC41")
-def test_parametrize_case_addition_is_not_a_new_or_modified_test():
+@pytest.mark.covers("FR-01.11/AC42")
+def test_parametrize_case_addition_is_an_edit_not_a_new_test():
+    """A new case adds no test id (function-level identity) but it does change what the legacy
+    untagged test runs, so it reads as a modification - not as an added test."""
     base_src = '@pytest.mark.parametrize("x", [1])\ndef test_old(x):\n    assert x\n'
     head_src = '@pytest.mark.parametrize("x", [1, 2])\ndef test_old(x):\n    assert x\n'
     v = _run(_manifest([f"{F}::test_old"]), _manifest([f"{F}::test_old"]), {F: base_src}, {F: head_src})
-    assert v.findings == []
+    assert [(k, t) for k, t, _w in v.findings] == [("untagged-modified", f"{F}::test_old")]
 
 
 @pytest.mark.covers("FR-01.11/AC41")

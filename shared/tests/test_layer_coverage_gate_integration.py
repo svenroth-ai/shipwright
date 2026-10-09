@@ -2,7 +2,7 @@
 
 The ``category:"integration"`` scenario the non-dodgeable ``check_integration_coverage`` gate
 demands for this cross-component change. Proves the four pieces compose on REAL git: (1)
-git-diff regeneration (``regenerate_base_head`` resolves the merge-base and ``git archive``\\s
+git-diff regeneration (``regenerate_base_head`` resolves the merge-base and materialises the tree (ls-tree + cat-file) for
 base+head into throwaway trees, R3); (2) the TT1 ``build_manifest`` collector over each tree;
 (3) execution-evidence (TT-EV) — emit-side stages a report+provenance, the gate builds the
 per-test index IN-MEMORY from ONLY those staged reports (MUST-FIX 2); (4) the gate verdicts

@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes\u2014option A is a proportionate extension of the existing test-tag gate; it needs no separate standing service or workflow.**\n\n2. **Smallest thing:** extend the collector for `.each`, add narrowly scoped lexical handling for regex and JSX, include callees and decorators in digests, scan head with the base exclusion set, and correct the integration scenario\u2019s skip accounting. B violates the stdlib-only constraint; C leaves common test changes invisible; D adds a restriction on legitimate configuration changes.\n\n3. **Cost to keep:** gate maintainers must keep the collector and digest logic aligned with supported test syntax, including the handwritten lexer\u2019s documented limits. The base exclusion value adds only an in-process obligation.\n\n4. **What it forecloses:** none identified. Handwritten syntax handling makes future expansion to broader TypeScript and JSX syntax more expensive, but does not prevent later replacement.\n\n5. **No findings.**\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but the only genuinely new standing mechanism is the ~250-line hand-written TS lexer, and it should exist only because the stdlib-only constraint forecloses the real-parser alternative; everything else in this change is extension of machinery that already runs.\n\n2. **The smallest thing that would do.** Option A, trimmed: extend the existing matchers for `.each`/decorators/callee digests and the base-side prune set as proposed, and make the lexer as narrow as possible \u2014 it only needs to answer \"where does this string/regex/template literal end, and is this file JSX,\" not to tokenize TypeScript. If it can be scoped to a literal-skipping pass (~100 lines) rather than a general lexer, that is the smallest thing; a full hand lexer with its own token taxonomy is bigger than the problem.\n\n3. **What it costs to keep.** The gate's maintainers now own a hand-written approximation of TypeScript's lexical grammar forever. Every future template-literal feature (nested backticks, `${}` containing strings with quotes, tagged templates) is a potential silent mis-read, and the failure mode is quiet: a real edit passes the gate unnoticed, which is exactly the bug class this change exists to close. The base-side prune set cache is cheap by comparison \u2014 a value recomputed per run, no lifecycle.\n\n4. **What it forecloses.** If the project ever drops the stdlib-only constraint (e.g. an isolated verification environment), this lexer makes that migration *easier* to see (the contract tests already exist) but harder to justify doing \u2014 sunk cost will argue for extending the hand lexer instead. Beyond that, none identified.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: medium\n- Finding: a general-purpose 250-line TS lexer is a standing mechanism whose maintenance burden is mispriced against the blind spots it fixes; the spots are specific (quote in regex literal, quote in JSX text, `.each` tables), not \"TS lexing in general.\"\n- Suggestion: build the lexer as a literal-skipper invoked only by the existing matcher around positions where a literal can start, with the JSX-vs-TS decision as a per-file flag; cap its ambition explicitly in the module docstring so it doesn't accrete token kinds.\n\n- Category: ownership\n- Severity: low\n- Finding: the brief names the maintainers (\"whoever changes the test-tag gate\") but the lexer is the one component whose breakage is invisible \u2014 it fails by reading bodies wrong, not by erroring, so the owner only learns of decay when an audit or a lucky test notices.\n- Suggestion: include at least one adversarial fixture in the integration suite per release cycle (or note that the AC's \"fails on old behavior\" fixtures serve as this) so silent regression is caught by CI, not by a human noticing.\n\nThe skip-set fix (recording per-gate skip status in the scenario test) adds no standing mechanism and is unambiguously worth it.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

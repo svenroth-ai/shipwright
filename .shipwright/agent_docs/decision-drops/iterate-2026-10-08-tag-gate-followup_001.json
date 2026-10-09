@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-08-tag-gate-followup",
+  "date": "2026-10-09",
+  "section": "Iterate - change: test-tag gate sees data-driven tests, lexes regex and JSX, counts decorator edits",
+  "title": "Close accepted limits (a)-(d) of the U1 test-tag gate",
+  "context": "U1 shipped with four accepted limits: it.each/test.each tests invisible to gate and collector; head manifest built with the head's own exclude set; a quote in a regex literal or JSX text mis-tokenised a test body; decorator edits read as no change. U11 counted a skipped gate as green.",
+  "decision": "Collector and gate enumerate .each declarations (shared grammar, joiner folds wrapped tables and next-line titles). The tag gate builds the head with base INTERSECT head exclude dirs (opt-in base_prune_only; coverage gates keep the head's own fence). A stdlib lexer handles regex literals and JSX (not in .ts). Every Python decorator and class/module pytestmark except covers is part of the digest. U11 asserts the expected skip set per complexity.",
+  "consequences": "Closed in shape: (a), (c), (d). (b) closed for exclude_dirs only; a brand-new test root named only by head config and export-ignore remain. Disclosed: collector table scan ignores regex/JSX; mark reorder digests differently; quadratic .each search on huge files.",
+  "rationale": "Closing each limit with real-git tests keeps the gate honest without new dependencies; the intersection rule must not leak into the coverage gates whose fixture fence depends on the head's exclude_dirs.",
+  "rejected": "Head-only exclude set (hides new tests); intersection for all gates (breaks fixture fence, caught by test_layer_coverage_config_scope); importing the gate lexer into the collector plugin (cross-plugin boundary).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/2026-10-08-tag-gate-followup.md"
+}
