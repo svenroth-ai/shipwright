@@ -336,7 +336,7 @@ def test_import_findings_emits_action_units_not_per_finding(
             f"action-unit {event['dedupKey']} must carry launchPayload"
         )
 
-
+@pytest.mark.covers("FR-01.14/AC05")
 def test_import_findings_idempotent_payload_frozen(
     project: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
