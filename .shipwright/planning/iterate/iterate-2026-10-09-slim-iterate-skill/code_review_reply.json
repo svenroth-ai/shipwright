@@ -1,0 +1,4 @@
+{"section":"iterate-2026-10-09-slim-iterate-skill","review":[
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-iterate/skills/iterate/SKILL.md","line":208,"finding":"Stamp rule lost 'any direct invocation' and 'exactly'.","suggestion":"Restore - done."},
+{"severity":"medium","category":"architecture","file":"plugins/shipwright-iterate/skills/iterate/references/worktree-setup.md","line":5,"finding":"Three references duplicated SKILL.md prose.","suggestion":"Cut to the removed text only - done."},
+{"severity":"low","category":"readability","file":"plugins/shipwright-iterate/skills/iterate/SKILL.md","line":182,"finding":"Link labels hid the step 3.4 duties, the delegated wording and the reset STOP clause.","suggestion":"Relabelled / restored - done."}]}
