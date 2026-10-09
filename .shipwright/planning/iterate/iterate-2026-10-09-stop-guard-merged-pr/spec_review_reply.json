@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Round 1 REJECT (docs said no gh at Stop time; docstring and contract omitted the merged-PR exit) and round 2 REJECT (docs row called the gh check fail-open although a gh failure keeps blocking) were both documentation-only and are fixed; code met AC1-AC4 and AC6 in both rounds."}

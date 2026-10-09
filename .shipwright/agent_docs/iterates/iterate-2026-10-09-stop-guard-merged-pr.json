@@ -1,0 +1,71 @@
+{
+  "run_id": "iterate-2026-10-09-stop-guard-merged-pr",
+  "date": "2026-10-09T22:10:53.309931Z",
+  "event_at": "2026-10-09T16:20:00.102137+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/stop-guard-merged-pr",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-stop-guard-merged-pr",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A PR merged after the run started releases the guard, records delivered and is not asked again",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_merged_pr_releases_the_guard_and_stays_released PASSED"
+      },
+      {
+        "behavior": "OPEN sibling, CLOSED, an earlier run's merge on a reused branch, and no PR keep blocking",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_only_this_runs_merged_pr_releases PASSED"
+      },
+      {
+        "behavior": "Unknown start or empty branch never asks gh; gh asked at most once per recheck window",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_an_unknown_start_or_branch_never_asks_gh, test_gh_is_asked_at_most_once_per_recheck_window PASSED"
+      },
+      {
+        "behavior": "A blocker recorded during the gh call survives the release",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_blocker_recorded_during_the_gh_call_survives_the_release PASSED"
+      },
+      {
+        "behavior": "gh missing, timeout, non-zero exit, garbage output never raise and never release; env switch skips gh",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_failure_modes_never_raise_and_never_release, test_the_env_switch_skips_gh_entirely PASSED"
+      },
+      {
+        "behavior": "Hook as a real subprocess against a real git worktree still blocks an open autonomous run with gh disabled",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_open_autonomous_run_is_blocked_with_next_phase, test_hook_and_cli_agree_from_main_checkout_and_from_worktree PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-iterate --extra dev pytest tests/test_iterate_stop_guard.py tests/test_iterate_stop_guard_scan.py tests/test_iterate_stop_guard_delivered.py -q",
+    "exit_code": 0,
+    "tests_run": 45,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-09-stop-guard-merged-pr/surface_verification.json",
+    "timestamp": "2026-10-09T22:10:35.987Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
