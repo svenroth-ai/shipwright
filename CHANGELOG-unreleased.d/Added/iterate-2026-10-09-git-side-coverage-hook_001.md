@@ -1,0 +1,1 @@
+A git pre-commit step now runs the requirement-coverage gate inside the real `git commit`, so shell shapes the Claude Code hook cannot read (`git $'commit'`, `uv run git commit`, wrappers) no longer hide a below-threshold commit; it judges the manifest staged for that commit and shares the threshold and logged override of the Claude hook.

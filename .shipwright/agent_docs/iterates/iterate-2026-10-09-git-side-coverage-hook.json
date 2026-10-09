@@ -1,0 +1,98 @@
+{
+  "run_id": "iterate-2026-10-09-git-side-coverage-hook",
+  "date": "2026-10-09T08:19:59.980166Z",
+  "event_at": "2026-10-09T08:10:25.663061+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/git-side-coverage-hook",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-09-git-side-coverage-hook.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-git-side-coverage-hook",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-1 below-threshold staged manifest blocks the real commit (exit 3, BLOCKED + figure, no commit)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_blocks_below_threshold PASSED"
+      },
+      {
+        "behavior": "AC-2 at/above threshold commits and prints the figure",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_allows_at_threshold_and_prints_figure PASSED"
+      },
+      {
+        "behavior": "AC-3 commit -a / pathspec judged on the staged copy, both directions",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_commit_a_judges_the_staged_copy_not_head + test_commit_a_good_worktree_over_bad_head + test_pathspec_commit_judges_the_staged_copy PASSED"
+      },
+      {
+        "behavior": "AC-4 no data commits silently; non-current schema / no executed result commit with WARN",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_no_compliance_data_commits + test_non_current_schema_warns_and_commits + test_no_executed_result_warns_and_commits PASSED"
+      },
+      {
+        "behavior": "AC-5 fail-open: measurement error, script crash, syntax error, other exit codes warn and allow; exit 3 is the only block",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage_inprocess.py::test_internal_error_fails_open + test_git_precommit_rtm_coverage.py::test_interpreter_or_script_failure_fails_open_with_a_warn + test_exit_three_is_the_only_block PASSED"
+      },
+      {
+        "behavior": "AC-6 one logged override releases once, CONSUMED written, next commit blocked; non-cp1252 reason survives",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_logged_override_releases_once + test_override_reason_outside_cp1252_does_not_turn_a_release_into_a_crash PASSED"
+      },
+      {
+        "behavior": "AC-7 hand-off token: PreToolUse grants, git side claims once, HEAD-bound, expires, junk/orphan removed, removed even when unmeasurable, expiry named in block",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage_inprocess.py::test_pretooluse_release_writes_the_token_the_git_side_takes + test_expired_handoff_is_named_in_the_block + test_junk_token_is_removed_and_evaluation_continues PASSED; test_git_precommit_rtm_coverage.py::test_handoff_token_covers_one_git_side_run + test_token_is_removed_even_when_the_manifest_is_unmeasurable + test_orphan_token_is_removed_by_the_next_run_and_cannot_bypass_later PASSED"
+      },
+      {
+        "behavior": "AC-8 pre-commit wires anti-ratchet then coverage; missing script warns and allows",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_anti_ratchet_step_and_coverage_step_are_both_wired + test_missing_coverage_script_warns_and_commits PASSED"
+      },
+      {
+        "behavior": "AC-9 shapes the lexer misses (git $'commit', uv run git commit) are blocked at the real commit",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_shapes_the_lexer_misses_are_caught_at_the_real_commit PASSED"
+      },
+      {
+        "behavior": "integration: real git commit -> pre-commit -> git-side script -> measure -> override log composes, with the PreToolUse hook's release handed off through the token",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py::test_logged_override_releases_once + test_git_precommit_rtm_coverage_inprocess.py::test_pretooluse_release_writes_the_token_the_git_side_takes PASSED"
+      },
+      {
+        "behavior": "stdbuf wrapper commit",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "stdbuf is broken in this Git for Windows (MSYS shared-library error); the wrapper class is covered by git $'commit' and uv run"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-compliance pytest plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage_inprocess.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 28,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\git-side-coverage-hook\\.shipwright\\runs\\iterate-2026-10-09-git-side-coverage-hook\\surface_verification.log",
+    "timestamp": "2026-10-09T08:19:51.199Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
