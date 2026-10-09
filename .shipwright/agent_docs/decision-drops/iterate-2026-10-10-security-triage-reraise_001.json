@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-security-triage-reraise",
+  "date": "2026-10-10",
+  "section": "Iterate - bug: security findings reach the Triage",
+  "title": "Per-finding security cards that can be re-raised",
+  "context": "All GitHub security findings of a repo shared one dedup key and the importer's own auto-close counted as a durable human decision, so one closed item hid every later finding while the compliance grade read F.",
+  "decision": "Raise one card per critical/high finding keyed by feed, rule and path; treat the importer's githubResolved close of such a card as non-durable; never close cards on a failed card pass or a code-scanning outage; refresh early when a newer security scan exists.",
+  "consequences": "Findings that return are raised again as new cards; a parked card is closed by a blip like any open one (existing operator decision). Roll-up and other GitHub sources keep durable closes.",
+  "rationale": "Per-finding keys isolate findings from each other; limiting non-durability to cards keeps the blast radius small.",
+  "rejected": "A CI write step in security.yml (needs workflow permissions, adds a second writer); making every importer close non-durable (re-raises gh-ci churn).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

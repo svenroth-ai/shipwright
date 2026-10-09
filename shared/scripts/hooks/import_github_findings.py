@@ -48,7 +48,7 @@ def run(project_root: str) -> int:
 
     try:
         if not github_triage.is_due(project_root):
-            return 0  # throttled — no gh call this session
+            return 0  # throttled (one cheap gh probe for a newer scan, see state.is_due)
 
         result = github_triage.import_findings(project_root)
 

@@ -322,11 +322,11 @@ def test_import_findings_emits_action_units_not_per_finding(
     )
     result = github_triage.import_findings(project)
     assert result["gh_available"] is True
-    # 1 security + 1 secrets + 1 ci = 3 action-units (NOT 4 cs + 4 db + 2 ss + 1 ci = 11)
-    assert result["appended"] == 3
+    assert result["appended"] == 4  # roll-up + HIGH card + secrets + ci (NOT 11 per-finding)
     keys = sorted(e["dedupKey"] for e in _append_events(project))
     assert keys == sorted([
         "gh-security:acme/foo",
+        "gh-security:acme/foo:cs:py/sql-injection:app/db.py",
         "gh-secrets:acme/foo",
         "gh-ci:1",
     ])
@@ -346,7 +346,7 @@ def test_import_findings_idempotent_payload_frozen(
         runs=[],
     )
     first = github_triage.import_findings(project)
-    [first_event] = _append_events(project)
+    first_event = next(e for e in _append_events(project) if e["dedupKey"] == "gh-security:acme/foo")
     original_payload = first_event["launchPayload"]
 
     # Second run with DIFFERENT alert set (more findings) — payload would change
@@ -356,9 +356,9 @@ def test_import_findings_idempotent_payload_frozen(
         secret_scanning=[], runs=[],
     )
     second = github_triage.import_findings(project)
-    assert first["appended"] == 1
+    assert first["appended"] == 2  # roll-up + the HIGH finding's card
     assert second["appended"] == 0
-    [only_event] = _append_events(project)
+    only_event = next(e for e in _append_events(project) if e["dedupKey"] == "gh-security:acme/foo")
     assert only_event["launchPayload"] == original_payload, (
         "AC-8: payload frozen at first append"
     )

@@ -449,7 +449,7 @@ def append_triage_item_idempotent(
                 and (not match_commit or existing.get("commit") == commit)
             )
             if matches and (
-                existing.get("status") in ("dismissed", "promoted")
+                defer_policy.is_durable_decision(existing)
                 or defer_policy.suppresses_reimport(
                     existing, source=source, dedup_key=dedup_key, commit=commit,
                     match_commit=match_commit, cutoff=cutoff,

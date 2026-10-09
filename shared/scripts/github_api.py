@@ -264,7 +264,7 @@ def artifact_max_age_days() -> float:
     return _ARTIFACT_MAX_AGE_DEFAULT_DAYS
 
 
-def latest_security_workflow_run() -> dict | None:
+def latest_security_workflow_run(branch: str | None = None) -> dict | None:
     """Latest successful run of ``.github/workflows/security.yml`` on the
     default branch, gated by the freshness cutoff.
 
@@ -283,7 +283,7 @@ def latest_security_workflow_run() -> dict | None:
        run, all runs too stale, unparseable timestamps. Distinguish
        failure from empty per the ADR-052 invariant.
     """
-    branch = default_branch()
+    branch = branch or default_branch()
     encoded_branch = quote(branch, safe="")
     data = _gh_api(
         f"repos/{{owner}}/{{repo}}/actions/workflows/"

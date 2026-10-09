@@ -1,0 +1,7 @@
+{"stage":"doubt","verdict":"objections addressed","doubts":[
+{"severity":"high","disproof_attempt":"failed card pass mass-closes cards","what_would_resolve_it":"FIXED: import_cards returns all live card keys on failure; consumer uses keys on both feeds; test_failed_card_pass_closes_nothing"},
+{"severity":"high","disproof_attempt":"SARIF-fallback findings collapse into one unknown card","what_would_resolve_it":"FIXED: findings with neither rule nor path are not carded; test added"},
+{"severity":"medium","disproof_attempt":"cs blip raises duplicate art cards","what_would_resolve_it":"FIXED: art cards only emitted when no live cs cards exist"},
+{"severity":"medium","disproof_attempt":"roll-up and parked cards re-raise","what_would_resolve_it":"FIXED for roll-up (durability limited to per-finding cards, test added); parked-card auto-close is the existing operator decision of 2026-07-27, ACCEPTED"},
+{"severity":"medium","disproof_attempt":"anti-ratchet blocks two legacy test files","what_would_resolve_it":"FIXED: helpers moved to gh_triage_helpers.py; both files back at baseline size"},
+{"severity":"low","disproof_attempt":"probe latency, local-scan card overlap, cs-cards never expire, cs severity fallback, 120-char collisions","what_would_resolve_it":"ACCEPTED/documented: hook comment corrected; docstring corrected; rest out of scope"}]}

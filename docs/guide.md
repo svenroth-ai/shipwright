@@ -1302,6 +1302,8 @@ A triage item represents **one handling**, not one finding. GitHub already has a
 | failed hard-gates on an open PR       | `gh-pr-ci:{pr_number}`            | `/shipwright-iterate --type bug` (automerge loop-closing)     |
 | shipwright-security prompt-injection (artifact) | `gh-prompt:{owner}/{repo}` | `/shipwright-security` (parallels `gh-security`; separately dismissable, GHAS-independent, sourced from `prompt_risks.json`) |
 
+**Per-finding cards (high/critical).** Besides the roll-up, each critical/high code-scanning (or, without GitHub code scanning, security-scan) finding becomes its own card, `gh-security:{owner}/{repo}:{cs|art}:{rule}:{path}`. It closes itself when the finding is gone and reopens if the finding returns; a card you dismissed by hand stays dismissed. A newer security scan on main triggers the import at the next session start, not only every 6 hours.
+
 **Two ingestion paths for the `gh-security` action-unit:**
 
 - **GHAS API path** (preferred when available): `import_github_findings.py` calls the `code-scanning/alerts` + `dependabot/alerts` GitHub APIs. Requires GitHub Advanced Security on private repos.

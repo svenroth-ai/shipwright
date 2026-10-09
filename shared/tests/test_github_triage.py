@@ -219,7 +219,7 @@ def test_import_findings_auto_resolves_fixed_alert(project, monkeypatch):
     _patch_api(monkeypatch, code_scanning=[], dependabot=[],
                secret_scanning=[], runs=[])
     result = github_triage.import_findings(project)
-    assert result["resolved"] == 1
+    assert result["resolved"] == 2  # the roll-up AND the high finding's own card
     item = next(
         i for i in read_all_items(project)
         if i.get("dedupKey") == "gh-security:acme/foo"
