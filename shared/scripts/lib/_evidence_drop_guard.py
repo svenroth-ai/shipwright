@@ -50,8 +50,28 @@ def _git(root: Path, *args: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
+def _is_ignored_scratch_tree(root: Path) -> bool:
+    """True when ``root`` is a gitignored directory nested inside another repo's work tree.
+
+    A scratch copy (``check_ac_ratchet_f0`` builds one under ``<project>/.scratch``) holds
+    no branch of its own: git run there resolves the OUTER repo, whose changed paths are
+    then joined onto the freshly copied files - which always look newer than the reports.
+    """
+    top = _git(root, "rev-parse", "--show-toplevel")
+    if top is None or Path(top.strip()).resolve() == Path(root).resolve():
+        return False
+    try:
+        proc = subprocess.run(["git", "-C", top.strip(), "check-ignore", "-q", "--", str(Path(root).resolve())],
+                              capture_output=True, timeout=_TIMEOUT, check=False)
+    except Exception:  # noqa: BLE001 - git that cannot answer keeps the guard on
+        return False
+    return proc.returncode == 0
+
+
 def _branch_paths(root: Path) -> list[str] | None:
     if _git(root, "rev-parse", "--is-inside-work-tree") is None:
+        return None
+    if _is_ignored_scratch_tree(root):
         return None
     base = next((mb.strip() for ref in _TRUNKS if (mb := _git(root, "merge-base", "HEAD", ref))), None)
     if not base:

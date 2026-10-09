@@ -1,0 +1,80 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-ratchet-f0-scratch-guard",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 22352,
+      "total": 22352
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A gitignored scratch tree nested in a repo is not guarded against the outer branch's changed paths",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_surface_freshness.py::test_a_gitignored_scratch_tree_inside_the_repo_is_not_guarded_against_the_outer_branch PASSED"
+        },
+        {
+          "behavior": "The real working tree stays guarded (stale reports still refused)",
+          "disposition": "tested",
+          "evidence": "same test (pytest.raises on the real root) + test_staging_reports_older_than_a_code_change_is_refused PASSED"
+        },
+        {
+          "behavior": "check_ac_ratchet_f0 exits 0 with uncommitted changes",
+          "disposition": "tested",
+          "evidence": "live run of shared/scripts/tools/check_ac_ratchet_f0.py on this dirty worktree: rc=0 (cached unfixed copy: rc=2)"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 0,
+        "covered_acs": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-09T07:34:23Z",
+      "justification": "Tooling-only guard fix in shared/scripts/lib; no startable surface. Exercised live via check_ac_ratchet_f0.py on a dirty tree (rc=0).",
+      "reason_code": "no-startable-surface"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-ratchet-f0-scratch-guard",
+    "commit": "a000d48391b2c95311e3e3ba6bd64b7e0bd59b27",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
