@@ -1,0 +1,69 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-slim-iterate-skill",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 1248,
+      "total": 1248
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-iterate --extra dev pytest tests/test_skill_references_link.py tests/test_review_record_immediate_write_rule.py tests/test_skill_phase_matrix.py -q",
+      "exit_code": 0,
+      "tests_run": 5,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-09-slim-iterate-skill/surface_verification.json",
+      "timestamp": "2026-10-09T13:37:46.778Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "SKILL.md keeps every pinned anchor and its reference links resolve after four paragraphs moved",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests (1248 passed) and shared/tests/test_iterate_skill_prose.py, test_campaign_review_contract_prose.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 1,
+        "tested": 1,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-slim-iterate-skill",
+    "commit": "22e6332169538491a826ad411eec4f7b5a45691f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
