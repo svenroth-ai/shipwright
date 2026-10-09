@@ -123,8 +123,6 @@ def test_an_unclosed_element_falls_back_to_plain_tokens():
 
 # --- (d) decorator edits are body edits ----------------------------------------------------------
 
-_DEC = '@pytest.mark.{mark}\ndef test_old():\n    assert 1\n'
-
 
 @pytest.mark.covers("FR-01.11/AC42")
 def test_removing_a_skip_or_swapping_parametrize_rows_changes_the_digest():
