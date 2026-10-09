@@ -45,7 +45,13 @@ from lib import evidence_drop  # noqa: E402
 from ._layer_coverage_evidence import fresh_evidence  # noqa: E402
 from ._layer_coverage_regen import _load_collector  # noqa: E402
 from ._surface_revision import revision_problem  # noqa: E402
-from ._surface_runner import latest_attempts, runner_test_paths, under  # noqa: E402
+from ._surface_runner import (  # noqa: E402
+    latest_attempts,
+    passing_case_count,
+    passing_case_counts,
+    runner_test_paths,
+    under,
+)
 
 __all__ = ["SURFACE_RUNNERS", "evidence_problem", "runner_test_paths"]
 
@@ -140,7 +146,11 @@ def evidence_problem(project_root: Path, run_id: str, commit: str, block: dict,
                 f"test(s) ({scope}), first {failed[0]!r}"), ""
     passed = _passing(results)
     tests_run = block.get("tests_run")
-    if len(passed) < tests_run:
+    # tests_run is the runner's own count, per CASE (pytest "N passed"); the index folds a
+    # parametrized function into one id, so compare in the runner's unit, not the index's.
+    cases = passing_case_count(passed, passing_case_counts(project_root, loaded[2]))
+    if cases < tests_run:
         return (f"the block records tests_run={tests_run}, but the staged evidence shows only "
-                f"{len(passed)} passing {surface} test(s) ({scope})"), ""
-    return None, f"staged evidence agrees ({len(passed)} passing, 0 failing; {scope}){note}"
+                f"{cases} passing {surface} case(s) in {len(passed)} test(s) ({scope})"), ""
+    return None, (f"staged evidence agrees ({cases} passing case(s) in {len(passed)} test(s), "
+                  f"0 failing; {scope}){note}")

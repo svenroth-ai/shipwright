@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Correctness","verdict":"pass","note":"case counts compare in the runner unit; overstated tests_run and failing cases still refused (3 new tests)"},
+{"name":"Tests","verdict":"pass","note":"883+479 shared tests, compliance paths test, new tests for warning and parametrized cases"},
+{"name":"Scope/YAGNI","verdict":"pass","note":"no smoke exemption added; recorder warns instead of refusing"},
+{"name":"File size","verdict":"pass","note":"record_review_pass.py 403 lines = HEAD; helper moved to lib"},
+{"name":"Docs","verdict":"pass","note":"runner contract doc names --from/--payload-file"},
+{"name":"Boundaries","verdict":"pass","note":"io boundary: JUnit parse reuses read_junit id rules"},
+{"name":"Affected boundaries","verdict":"n/a","note":"no schema or hook change"}]}

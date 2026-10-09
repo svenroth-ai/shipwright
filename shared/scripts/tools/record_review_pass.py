@@ -38,7 +38,7 @@ from lib.review_entry_checks import REVIEW_FAMILY, default_disposition  # noqa: 
 from lib.review_findings import ProseOverflowError, ReviewFindingsError  # noqa: E402
 from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
-from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error  # noqa: E402
+from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error, unread_reply_warning  # noqa: E402
 from lib.review_unavailable import write_time_error  # noqa: E402
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
@@ -226,11 +226,11 @@ def _cmd_record(args: argparse.Namespace) -> int:
         return _fail("marker_write_failed",
                      f"the record was written but the marker was not ({exc}).{hint}")
 
-    print(json.dumps({
-        "success": True, "review_type": args.review_type, "status": args.status,
-        "findings_count": len(findings), "parse_status": parse_status,
-        "markers": markers, "pending": pending_types(record),
-    }, indent=2))
+    result = {"success": True, "review_type": args.review_type, "status": args.status,
+              "findings_count": len(findings), "parse_status": parse_status,
+              "markers": markers, "pending": pending_types(record)}
+    result.update(unread_reply_warning(args.review_type, args.status, args.review_from, args.payload_file))
+    print(json.dumps(result, indent=2))
     return EXIT_OK
 
 

@@ -33,7 +33,7 @@ from lib import evidence_drop  # noqa: E402
 
 from ._surface_detect import is_test_path  # noqa: E402
 
-__all__ = ["latest_attempts", "runner_test_paths", "under"]
+__all__ = ["latest_attempts", "passing_case_count", "passing_case_counts", "runner_test_paths", "under"]
 
 _DIR_FLAGS = ("--directory", "--project")
 _SEPARATORS = frozenset({"&&", "||", ";", "|"})
@@ -107,6 +107,40 @@ def runner_test_paths(project_root: Path, runner: object) -> list[str]:
 def under(tid: str, paths: list[str]) -> bool:
     """``tid`` is a result of a test under one of ``paths`` (a file, or a directory)."""
     return any(tid == p or tid.startswith(p + "/") or tid.startswith(p + "::") for p in paths)
+
+
+def passing_case_counts(project_root: Path, evio) -> dict[str, int]:
+    """``{folded test id: passing JUnit cases}``; the runner's own counting unit.
+
+    The evidence index folds ``test_foo[a]`` / ``test_foo[b]`` into one id, but a runner
+    reports ``tests_run`` per case (pytest's "N passed"). Comparing the two units made a
+    parametrized unit's honest ``tests_run=18`` read as 10 passing. An id absent here
+    (Playwright, Vitest) counts as 1. Known fail-closed limits (they undercount, never
+    overcount): the Playwright reader folds every project (browser) into one id, so a
+    multi-project run recording N per project is refused; and a later staged report
+    REPLACES an earlier one's count, as in :func:`latest_attempts`, so a partial ``--lf``
+    retry undercounts. Do not "fix" the second by summing reports: a full re-run would
+    double-count and fail open.
+    """
+    prov = evidence_drop.read_provenance(project_root) or {}
+    evd = evidence_drop.evidence_dir(project_root)
+    counts: dict[str, int] = {}
+    for entry in (prov.get("reports") or {}).get("junit") or []:
+        name = entry.get("name") if isinstance(entry, dict) else None
+        if (not isinstance(name, str) or "/" in name or "\\" in name or "base" not in entry
+                or not fnmatch.fnmatchcase(name, evidence_drop.JUNIT_GLOB)):
+            continue
+        try:
+            text = (evd / name).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue  # unread => no extra cases credited; the id still counts once
+        counts.update(evio.read_junit_cases(text, root=Path(project_root), base=str(entry["base"])))
+    return counts
+
+
+def passing_case_count(passed: list[str], cases: dict[str, int]) -> int:
+    """Passing cases behind the ``passed`` ids: a JUnit id counts its cases, any other 1."""
+    return sum(max(cases.get(tid, 1), 1) for tid in passed)
 
 
 def _results(evio, project_root: Path, prov: dict, **reports) -> dict | None:

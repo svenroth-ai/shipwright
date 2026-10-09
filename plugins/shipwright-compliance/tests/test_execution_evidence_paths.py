@@ -118,3 +118,46 @@ def test_corrupt_report_is_skipped_fail_closed(tmp_path):
     index = _load(out)
     assert index["results"]["t.py::a"]["executed"] == "pass"  # junit still ingested
     assert not any(k.startswith("e2e/") for k in index["results"])  # corrupt playwright skipped
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_read_junit_cases_counts_passing_cases_behind_each_folded_id():
+    from scripts.lib.collectors._evidence_readers import read_junit_cases
+
+    xml = (
+        "<testsuites><testsuite>"
+        '<testcase file="tests/t.py" name="test_p[a]"/>'
+        '<testcase file="tests/t.py" name="test_p[b]"/>'
+        '<testcase file="tests/t.py" name="test_p[c]"><failure/></testcase>'
+        '<testcase file="tests/t.py" name="test_q"><skipped/></testcase>'
+        '<testcase file="tests/t.py" name="test_r"/>'
+        "</testsuite></testsuites>"
+    )
+    assert read_junit_cases(xml) == {"tests/t.py::test_p": 2, "tests/t.py::test_r": 1}
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_read_junit_cases_agrees_with_read_junit_on_classname_fallback_and_base():
+    from scripts.lib.collectors._evidence_readers import read_junit, read_junit_cases
+
+    xml = (
+        "<testsuites><testsuite>"
+        '<testcase classname="tests.test_a" name="test_x[a]"/>'
+        '<testcase classname="tests.test_a.TestK" name="test_y[a]"/>'
+        '<testcase classname="tests.test_a.TestK" name="test_y[b]"/>'
+        "</testsuite></testsuites>"
+    )
+    passing = {tid for tid, e in read_junit(xml, base="plugins/x").items() if e["executed"] == "pass"}
+    assert set(read_junit_cases(xml, base="plugins/x")) == passing
+    assert read_junit_cases(xml, base="plugins/x")["plugins/x/tests/test_a.py::test_y"] == 2
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_read_junit_cases_counts_distinct_cases_not_repeated_rows():
+    from scripts.lib.collectors._evidence_readers import read_junit_cases
+
+    row = '<testcase classname="tests.test_a" name="test_x[a]"/>'
+    other_class = '<testcase classname="tests.test_a.TestK" name="test_x[a]"/>'
+    xml = f"<testsuites><testsuite>{row}{row}{other_class}</testsuite></testsuites>"
+    # the repeated row is one case; the same name under another class is a second one
+    assert read_junit_cases(xml) == {"tests/test_a.py::test_x": 2}
