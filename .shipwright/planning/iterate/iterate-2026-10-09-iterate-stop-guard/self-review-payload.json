@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All five ACs implemented: guard hook, no-block exits, blocker CLI, bounded counters, SKILL rule + reference + hooks doc."},
+{"name":"Error Handling","verdict":"pass","note":"Hook is fail-open on any exception (stderr diagnostic); git calls have 5s timeouts; state and transcript reads tolerate OSError/ValueError."},
+{"name":"Security Basics","verdict":"pass","note":"run_id and pending keys sanitized before entering the block reason; blocker CLI uses a closed code list and validates the run id; no secrets."},
+{"name":"Test Quality","verdict":"pass","note":"18 tests incl. real subprocess hook runs from main checkout and worktree, boundary counters, real transcript shape."},
+{"name":"Performance Basics","verdict":"pass","note":"Incremental transcript scan by stored offset; no network calls at Stop time."},
+{"name":"Naming & Structure","verdict":"pass","note":"lib 215 lines, hook 80, CLI 46; shared/lib + thin plugin hook mirrors iterate_stop_finalize."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer/consumer pairs listed in the spec; round trip covered by hook subprocess tests (stdin JSON, pointer file, state file, blocker CLI -> hook)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff clean."}
+]}

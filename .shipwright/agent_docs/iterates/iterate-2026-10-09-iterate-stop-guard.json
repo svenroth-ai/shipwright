@@ -1,0 +1,86 @@
+{
+  "run_id": "iterate-2026-10-09-iterate-stop-guard",
+  "date": "2026-10-09T12:32:12.697301Z",
+  "event_at": "2026-10-09T10:17:59.388654+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/iterate-stop-guard",
+  "spec": ".shipwright/planning/iterate/2026-10-09-iterate-stop-guard.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-iterate-stop-guard",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Open autonomous run is blocked; reason names run and next phase",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_open_autonomous_run_is_blocked_with_next_phase PASSED"
+      },
+      {
+        "behavior": "Interactive run, retired pointer and loop unit are never blocked",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_interactive_run_and_retired_pointer_are_never_blocked, test_loop_unit_is_left_alone PASSED"
+      },
+      {
+        "behavior": "Recorded hard blocker lifts the guard; unknown code and unknown run refused; works from main checkout and worktree cwd",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_recorded_blocker_lifts_the_guard, test_unknown_blocker_code_is_refused, test_blocker_cli_refuses_a_run_without_a_live_pointer, test_hook_and_cli_agree_from_main_checkout_and_from_worktree PASSED"
+      },
+      {
+        "behavior": "Counters bounded (3 consecutive / 40 total), real work resets, kill switch",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_prose_only_answers_run_out_but_real_work_resets, test_total_cap_releases_the_guard, test_operator_kill_switch_and_counter_boundaries PASSED"
+      },
+      {
+        "behavior": "Autonomy read from the latest iterate invocation (flags only, campaign excluded, Skill call, real transcript shape)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_the_latest_iterate_invocation_decides, test_flag_inside_a_description_and_campaign_parents_are_not_autonomous, test_skill_tool_invocation_counts_as_autonomous, test_real_transcript_shape_and_list_content_are_read PASSED"
+      },
+      {
+        "behavior": "Incremental scan resumes and survives a shrunk file; next-phase hint walks phases in order",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_incremental_scan_resumes_and_survives_a_shrunk_file, test_hint_walks_the_phases_in_order PASSED"
+      },
+      {
+        "behavior": "Guard registered in the iterate plugin Stop hooks",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_the_guard_is_registered_in_the_stop_hooks_of_the_iterate_plugin PASSED"
+      },
+      {
+        "behavior": "Hook as a real subprocess against a real git worktree and run pointer composes with the blocker CLI and state store",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_hook_and_cli_agree_from_main_checkout_and_from_worktree, test_open_autonomous_run_is_blocked_with_next_phase PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "Session-less pointer matched by transcript run id; stale pointer ignored; blocker race preserved",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_a_session_less_pointer_is_matched_by_the_run_id_in_the_transcript, test_a_pointer_older_than_the_age_bound_is_ignored, test_a_blocker_recorded_during_a_stop_is_not_overwritten PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-iterate --extra dev pytest tests/test_iterate_stop_guard.py tests/test_iterate_stop_guard_scan.py -q",
+    "exit_code": 0,
+    "tests_run": 31,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-09-iterate-stop-guard/surface_verification.json",
+    "timestamp": "2026-10-09T12:31:08.609Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

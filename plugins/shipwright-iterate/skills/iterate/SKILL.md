@@ -33,7 +33,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 
 ## CRITICAL: First Actions
 
-**Governing rules:** read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER). **BEFORE any other tools:**
+**Governing rules:** read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER). **Under `--autonomous` the run is done ONLY at F11 MERGED with green checks plus the F12 summary — a closing summary, progress report or question before that is a contract violation (a green build or F0 is not a result); create the phase checklist (`TaskCreate`) right after the worktree exists, and the only legitimate early stop is a recorded hard blocker: [autonomous-contract](references/autonomous-contract.md).** **BEFORE any other tools:**
 
 ### A. Print Intro Banner
 
