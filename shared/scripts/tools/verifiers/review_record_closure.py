@@ -37,7 +37,7 @@ What this does NOT prove, stated so nobody reads more into a green result:
   present, is in the vocabulary and is not ``trivial-auto`` above trivial, and
   nothing more — there is no type-to-code (or context-to-code) matrix. In
   particular ``no-spawn-site`` and ``delegated-to-orchestrator`` describe the
-  campaign-runner context (a runner with no Agent tool); outside it they are an
+  campaign-runner context (a runner whose Agent spawn failed); outside it they are an
   unverified claim, and in no context are they an approval of the change.
 """
 

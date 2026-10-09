@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+import pytest
+pytestmark = pytest.mark.covers("FR-01.11")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _ITERATE = REPO_ROOT / "plugins" / "shipwright-iterate"
@@ -91,18 +93,18 @@ def test_step_8_states_the_stage_1_block_and_pre_commit_placement():
 
 
 def test_skill_campaign_paragraph_scopes_the_adr_029_sentence():
-    """The 'no Agent tool' sentence must not read as a general rule.
+    """The runner/Agent-tool sentence must stay campaign-scoped.
 
-    It is campaign-scoped — it describes the sub-iterate-runner, which really
-    lacks the tool. Lifted out of that context it tells every iterate not to
-    spawn subagents, which is how this defect reached production.
+    The sub-iterate-runner now carries the `Agent` tool and spawns the cascade
+    itself; only a runner whose spawn fails delegates to 3f-bis. Lifted out of
+    the campaign context the sentence would misdescribe a standalone iterate.
     """
     norm = _norm(SKILL_DOC.read_text(encoding="utf-8"))
-    assert "the runner has no agent tool" in norm, "sentence should still exist"
-    idx = norm.index("the runner has no agent tool")
+    assert "in campaign mode the runner carries the agent tool" in norm, "sentence should still exist"
+    idx = norm.index("in campaign mode the runner carries the agent tool")
     window = norm[max(0, idx - 400):idx + 200]
     assert "campaign" in window, (
-        "the 'no Agent tool' sentence must carry an explicit campaign-only "
+        "the runner/Agent-tool sentence must carry an explicit campaign-only "
         "marker within its own sentence or the one before it"
     )
 

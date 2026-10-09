@@ -236,12 +236,13 @@ def test_main_survives_garbage_stdin(monkeypatch):
     assert main() == 0
 
 
+@pytest.mark.covers("FR-01.11")
 def test_hook_is_registered_for_both_events():
     hooks = json.loads((HOOK_DIR.parent.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]
     for event in ("UserPromptSubmit", "PreToolUse"):
         commands = [h["command"] for g in hooks[event] for h in g["hooks"]]
         assert any("iterate_worktree_gate.py" in c for c in commands), event
-    (pre,) = hooks["PreToolUse"]
+    (pre,) = [g for g in hooks["PreToolUse"] if any("iterate_worktree_gate.py" in h["command"] for h in g["hooks"])]
     assert {"Skill", "Write", "Edit", "MultiEdit", "NotebookEdit", "Bash", "PowerShell"} <= set(pre["matcher"].split("|"))
 
 
