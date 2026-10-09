@@ -1,0 +1,42 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "non-trunk side-branch merge slips past freshness",
+      "disposition": "pre-existing gap outside the four asked items; docstring now states it as a residual gap"
+    },
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "stack_base_ref satisfiable by a self-made branch",
+      "disposition": "accepted limit documented; now refused unless the event carries campaign + sub_iterate_id, and on a detached HEAD"
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "HEAD:path treeish is repo-root relative from a subdirectory project",
+      "disposition": "fixed (HEAD:./path) with a subdirectory test"
+    },
+    {
+      "severity": "medium",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "root coverage.xml publish bumps the root directory mtime",
+      "disposition": "refusal text now says to commit deletions before F0"
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling",
+      "claim_under_doubt": "revert-to-trunk drops from the stacked diff",
+      "disposition": "documented as an accepted limit"
+    },
+    {
+      "severity": "low",
+      "lens": "reversibility",
+      "claim_under_doubt": "bundle retry with extras is re-gated",
+      "disposition": "documented in F-finalize-bundle.md"
+    }
+  ]
+}

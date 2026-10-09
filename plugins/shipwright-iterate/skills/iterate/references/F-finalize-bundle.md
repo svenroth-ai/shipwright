@@ -27,6 +27,12 @@ done the **manual** steps that stay outside the bundle:
 If you prefer, you can still run the five tools individually per F1/F3/F4/F5c/F5b
 — the bundle is an optimization, not a new requirement.
 
+> **A bundle re-run is re-gated.** `finalize_iterate` (F5b) judges the extras of a re-run
+> against the tree as it is now before returning the recorded event id, and keeps the
+> recorded event. After F6/F11 (or once a stacked parent's branch is gone) a late retry
+> with extras can therefore be refused where it used to be a no-op; pass no extras for a
+> pure repair re-run.
+
 ## Two-step workflow (required)
 
 The payload is passed by **file**, never inline, so a large multi-field JSON is

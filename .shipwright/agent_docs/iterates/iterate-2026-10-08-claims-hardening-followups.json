@@ -1,0 +1,71 @@
+{
+  "run_id": "iterate-2026-10-08-claims-hardening-followups",
+  "date": "2026-10-09T06:46:24.095172Z",
+  "event_at": "2026-10-08T20:51:39.114586+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/claims-hardening-followups",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-08-claims-hardening-followups/spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-claims-hardening-followups",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "no no-FR label covers a requirement catalog (nested split, greenfield catalog), iterate spec stays bookkeeping",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_claims_hardening_followups.py::test_no_label_covers_a_requirement_catalog PASSED"
+      },
+      {
+        "behavior": "finalize idempotent re-run with claims is gated, without claims returns the recorded id, divergence warned",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_finalize_rerun_is_idempotent_but_still_gated + test_a_rerun_that_states_different_claims PASSED"
+      },
+      {
+        "behavior": "stacked unit diff starts at the parent branch; refusals for bad/foreign/own/tag/orphan/no-campaign/detached refs; trunk merge drops out; shape from trunk",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_a_stacked_unit_is_measured_from_its_parent_branch and 9 sibling tests PASSED"
+      },
+      {
+        "behavior": "hand-resolved conflict and edit inside a clean merge count as branch writes; old git names the version",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_a_conflict_resolved_after_staging_makes_the_evidence_stale, test_an_edit_inside_a_cleanly_merged_file_is_a_branch_write PASSED (real git)"
+      },
+      {
+        "behavior": "deleted file dated by removing commit or directory mtime, subdirectory projects, edited-then-deleted",
+        "disposition": "tested",
+        "category": "unit",
+        "evidence": "test_claims_hardening_followups.py deletion tests (6) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_claims_hardening_followups.py shared/tests/test_claims_hardening_followups_review.py -q",
+    "exit_code": 0,
+    "tests_run": 29,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\claims-hardening-followups\\.shipwright\\runs\\iterate-2026-10-08-claims-hardening-followups\\surface_verification.log",
+    "timestamp": "2026-10-09T06:45:32.864Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

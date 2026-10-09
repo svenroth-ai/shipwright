@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category: edge-case \u2014 Severity: medium**\nFinding (Item 2, AC2): \"return it early only when the call carries no extras\" \u2014 the plan doesn't say how `prior_id` is found when the recorded event exists but the gate is judging a *re-supplied* event. If the newly built event fails a gate on re-run, the behavior (raise vs. return prior_id anyway) is unspecified. Also, \"carries no extras\" needs a precise definition: a Stop-hook repair call may carry *some* claim fields but empty values \u2014 is that \"no extras\"? A truthiness check on a dict (`if not extras`) vs. checking `extras is None` gives different outcomes for an explicitly-passed empty dict.\nSuggestion: Specify that gate failure on re-run raises (consistent with any other finalize failure), and define \"no claims\" as \"extras is None or all claim fields empty\" in the plan, with a test for each.\n\n**Category: risk \u2014 Severity: medium**\nFinding (Item 2, AC2): If the re-supplied event's claims differ from what was originally recorded, returning `prior_id` without updating or recording the discrepancy means the recorded event silently keeps stale claims while the runner believes the fresh ones were accepted. The gates pass, the id is returned, but the ledger doesn't reflect what was gated.\nSuggestion: Either append/refresh the event body under the same id, or assert the gated event matches the recorded one and fail loudly on divergence. Document which in the plan.\n\n**Category: edge-case \u2014 Severity: medium**\nFinding (Item 3, AC3): The stack-base validation (\"iterate/* ancestor of HEAD, on trunk, not the unit's own branch\") has an unhandled case: a valid ref that is an ancestor but where intermediate merge commits between `stack_base_ref` and HEAD introduce trunk changes. The diff `stack_base_ref...HEAD` will then include those trunk-side changes in the change_type diff, potentially mislabeling them. Also, \"sits on the trunk\" needs a concrete definition (reachable from trunk tip? reachable at branch point?) \u2014 a ref can be on-trunk at creation time but the trunk may have moved past it.\nSuggestion: Pin the definition (e.g., merge-base with trunk equals the ref) and add a test with an intermediate trunk merge between base and HEAD.\n\n**Category: risk \u2014 Severity: low**\nFinding (Item 4, AC4): Merge-tree replay (`git merge-tree` with `--write-tree`) on old git is flagged as a risk, but the plan also relies on first-parent ordering (\"newest-first by first-parent age\") which interacts badly with clock-skewed or rebased history. If a resolution inside an old merge commit is dated newer than a direct branch write, the merge resolution wins and could wrongly extend freshness.\nSuggestion: Acceptable to keep first-parent ordering, but document that rebases may reorder and add a test where a rebase moved a resolution commit's position.\n\n**Category: risk \u2014 Severity: low**\nFinding (Item 4, AC4): Deletion dating by surviving parent-directory mtime is filesystem-dependent (mtime can be preserved, altered by checkout, or reset by tools). The plan acknowledges \"errs toward refusing,\" which is the right direction, but a directory whose mtime is stale-old would let a recent deletion look old \u2014 the unsafe direction.\nSuggestion: If the removing commit date is unavailable, consider treating directory-mtime evidence as weak: use it only when it's *newer* than the last commit touching the path (i.e., only in the refusing direction), never to extend freshness.\n\n**Category: approach \u2014 Severity: low**\nFinding (Item 1, AC1): Checking `_REQUIREMENT_SPECS` \"first in `_covered`\" is fine, but the spec says no no-FR label \"covers\" a requirement catalog \u2014 confirm the iterate's own `iterate/<run>/spec.md` is still coverable (it's bookkeeping and excluded). The plan doesn't state the exclusion explicitly.\nSuggestion: One test asserting `iterate/<run>/spec.md` remains matched while `.shipwright/planning/<split>/spec.md` is not.\n\n**Category: dependency \u2014 Severity: low**\nFinding: `stack_base_ref` is runner-supplied and must be validated against git refs. The plan bounds it structurally but doesn't mention rev-parse of an arbitrary user-influenced string \u2014 if `event[\"stack_base_ref\"]` flows into shell commands, that's an injection surface.\nSuggestion: Resolve via `git rev-parse --verify` with the result re-checked as iterate/*; never interpolate the raw string into a shell command.\n\n## Overall Assessment\n\nThe four-part decomposition is sound and the alternative rejection is well-reasoned. The main gaps are underspecified semantics in the AC2 early-return path (stale recorded claims, \"no extras\" definition) and the stack-base on-trunk definition \u2014 both need tightening before implementation, but none require rethinking the approach.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The idempotent shortcut checks for \u201cno extras,\u201d while AC2 checks for \u201cno claims.\u201d A repair call carrying bookkeeping metadata but no claims would enter the gates and could fail instead of returning the recorded id.  \n   **Suggestion:** Explicitly identify claim-bearing fields and gate only when claims are supplied. Test no extras, metadata-only extras, and supplied claims\u2014including explicitly empty claim values.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Merge replay needs more precise handling to satisfy AC4. `git merge-tree` can return a nonzero status for an expected conflict, and a hand resolution can select the trunk\u2019s existing bytes. Looking only for a successful replay or a diff against the first parent would miss that resolution.  \n   **Suggestion:** Treat replayed conflicts as valid results, identify their affected paths, and count their committed resolutions as writes even when the resulting content matches the first parent. Distinguish conflicts from unsupported Git or replay failures; test both edited resolutions and resolutions that retain trunk content.\n\nThe four edits are appropriately scoped, but the idempotency predicate and conflict-replay semantics need clarification before implementation. This assessment is based on the mini-plan; repository inspection was blocked by the execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

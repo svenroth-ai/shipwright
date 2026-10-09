@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "name": "Correctness vs ACs",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    },
+    {
+      "name": "Tests cover happy + error path",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    },
+    {
+      "name": "No scope creep",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    },
+    {
+      "name": "Bloat caps respected",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    },
+    {
+      "name": "Docs updated with code",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    },
+    {
+      "name": "Security / fail-closed posture",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    },
+    {
+      "name": "Affected boundaries (git, event log, F11)",
+      "verdict": "pass",
+      "note": "checked against the final diff"
+    }
+  ]
+}

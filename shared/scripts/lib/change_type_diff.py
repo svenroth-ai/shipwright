@@ -32,16 +32,29 @@ diff unobtainable (no trunk name resolves, git fails, unreadable output):
 REFUSED, with a repair. Unknown is never read as clean. Only the no-FR branch
 is checked: an event that names an FR is not using the exemption.
 
-**Accepted limits.** Classification is by path, so an untracked file is judged
-by where it is, not by what it contains. Under the ``stacked`` campaign
-strategy the fork point is the trunk, so a predecessor unit's committed paths
-count against this unit's label: that fails closed, and the refusal names the
-paths (resolving the parent branch like ``git_helpers._branch_base_commit`` is
-not cheap here, because the stacked parent is not a trunk name).
+**A stacked campaign unit** measures only its own work. Its branch sits on the
+previous unit's branch, so the trunk fork point would also count the stack below
+it. The campaign runner names that parent in the event's ``stack_base_ref``
+(``lib.branch_base.resolve_base_branch``); the diff then starts at it. The ref is
+resolved in the branch namespaces only (a tag cannot shadow it) and accepted only
+when it is an ``iterate/*`` unit branch (local or ``origin/``) that is an ancestor
+of ``HEAD`` and not the unit's own branch; anything else REFUSES. The project
+shape is still read from the trunk fork point, so a parent branch cannot widen the
+labels. The unit's paths are those changed since the parent AND since the trunk
+fork point, so trunk merged into the unit later drops out instead of over-flagging. The stack below was judged by
+its own unit's gate, so it is not judged again.
+
+**Accepted limits.** A stacked child that reverts the parent's change back to the
+trunk content drops that path from its own diff. Classification is by path, so an untracked file is judged
+by where it is, not by what it contains. ``stack_base_ref`` is stated by the
+runner, not derived: an agent could point it at an ancestor unit branch of its
+own making and so exempt the commits below it. Bounded by the ``iterate/*`` and
+ancestor checks; nothing re-checks the label later.
 """
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -59,6 +72,7 @@ REMOTE_TRUNKS = ("origin/HEAD", "origin/main", "origin/master")
 LOCAL_TRUNKS = ("main", "master")
 
 _MAX_LISTED = 12
+_UNIT_BRANCH = re.compile(r"(?:origin/)?iterate/[A-Za-z0-9._/-]+\Z")
 
 
 class DiffUnavailable(Exception):
@@ -133,8 +147,28 @@ def shape_at(project_root, base: str | None) -> str:
     return SHAPE_SHIPWRIGHT_MONOREPO
 
 
-def iterate_diff(project_root) -> dict | None:
-    """``{paths, base, base_ref}`` since the fork point; ``None`` = not a repo.
+def _stack_base(root: Path, ref: str) -> tuple[str, str]:
+    """``(sha, ref)`` of a stacked unit's parent branch, or raise: it must be an ancestor of HEAD."""
+    if not _UNIT_BRANCH.match(ref) or ".." in ref:
+        raise DiffUnavailable(f"stack_base_ref {ref!r} is not an iterate/* unit branch; refusing to start the diff there")
+    # explicit namespaces: a tag named like the branch must not shadow it
+    sha = _resolve(root, f"refs/remotes/{ref}" if ref.startswith("origin/") else f"refs/heads/{ref}")
+    if not sha:
+        raise DiffUnavailable(f"stack_base_ref {ref!r} does not resolve; fetch the parent unit's branch")
+    if _run(root, ["merge-base", "--is-ancestor", sha, "HEAD"]).returncode != 0:
+        raise DiffUnavailable(f"stack_base_ref {ref!r} is not an ancestor of HEAD; refusing to start the diff there")
+    current = _run(root, ["symbolic-ref", "--short", "HEAD"]).stdout.strip()
+    if not current:
+        raise DiffUnavailable("HEAD is detached, so the unit's own branch cannot be told from stack_base_ref")
+    if ref in (current, f"origin/{current}"):  # not sha == HEAD: a unit with no commit yet legitimately sits on its parent
+        raise DiffUnavailable(f"stack_base_ref {ref!r} is this unit's own branch; name the PARENT unit's branch")
+    if _run(root, ["merge-base", _fork_point(root)[0], sha]).returncode != 0:  # shares no history with the trunk
+        raise DiffUnavailable(f"stack_base_ref {ref!r} shares no history with the trunk; refusing to start the diff there")
+    return sha, ref
+
+
+def iterate_diff(project_root, stack_base: str | None = None) -> dict | None:
+    """``{paths, base, base_ref}`` since the fork point (or ``stack_base``); ``None`` = not a repo.
 
     Raises :class:`DiffUnavailable` when git exists but cannot answer.
     """
@@ -152,20 +186,30 @@ def iterate_diff(project_root) -> dict | None:
             if listed.returncode != 0:
                 raise DiffUnavailable(f"git ls-files failed: {_stderr(listed)}")
             return {"paths": sorted(set(paths + _listed_paths(listed.stdout, prefix))),
-                    "base": None, "base_ref": "unborn HEAD"}
-        base, base_ref = _fork_point(root)
+                    "base": None, "base_ref": "unborn HEAD", "shape_base": None}
+        base, base_ref = _stack_base(root, stack_base) if stack_base else _fork_point(root)
+        shape_base = _fork_point(root)[0] if stack_base else base  # a parent branch cannot widen the labels
         diff = _run(root, ["diff", "--name-status", "-z", "-M", base, "--"])
         if diff.returncode != 0:
             raise DiffUnavailable(f"git diff failed: {_stderr(diff)}")
         buckets = parse_name_status(diff.stdout, prefix)
+        trunk_side = None
+        if stack_base:  # the unit's own paths: changed since the parent AND since the trunk (a trunk merge drops out)
+            wide = _run(root, ["diff", "--name-status", "-z", "-M", shape_base, "--"])
+            if wide.returncode != 0:
+                raise DiffUnavailable(f"git diff failed: {_stderr(wide)}")
+            trunk_side = {p for names in parse_name_status(wide.stdout, prefix).values() for p in names}
     except _GitUnavailable as exc:
         if root.is_dir() and _has_dot_git(root):
             raise DiffUnavailable(f"git is not runnable but {root} is inside a repository: {exc}") from exc
         return None
     except (_GitBroke, NameStatusError) as exc:
         raise DiffUnavailable(str(exc)) from exc
-    changed = paths + buckets["added_modified"] + buckets["deleted"] + buckets["renamed"]
-    return {"paths": sorted(set(changed)), "base": base, "base_ref": base_ref}
+    changed = buckets["added_modified"] + buckets["deleted"] + buckets["renamed"]
+    if trunk_side is not None:
+        changed = [p for p in changed if p in trunk_side]
+    changed = paths + changed
+    return {"paths": sorted(set(changed)), "base": base, "base_ref": base_ref, "shape_base": shape_base}
 
 
 def change_type_diff_error(event, project_root, caller: str) -> dict | None:
@@ -180,12 +224,16 @@ def change_type_diff_error(event, project_root, caller: str) -> dict | None:
     if is_non_empty_fr_list(event.get("affected_frs")) or is_non_empty_fr_list(event.get("new_frs")):
         return None
     try:
-        diff = iterate_diff(project_root)
-        shape = shape_at(project_root, diff["base"]) if diff else SHAPE_GENERIC
+        stack = event.get("stack_base_ref")
+        if isinstance(stack, str) and stack.strip() and not (event.get("campaign") and event.get("sub_iterate_id")):
+            raise DiffUnavailable("stack_base_ref is only accepted from a campaign unit (the event names no campaign / sub_iterate_id)")
+        diff = iterate_diff(project_root, stack.strip() if isinstance(stack, str) and stack.strip() else None)
+        shape = shape_at(project_root, diff["shape_base"]) if diff else SHAPE_GENERIC
     except (DiffUnavailable, _GitBroke, _GitUnavailable) as exc:
         return {"error": "change_type_diff_unavailable", "detail": (
             f"change_type={change_type!r} cannot be checked against the diff: {exc}. "
-            "Repair git, or link the FR(s) this change touches with --affected-frs.")}
+            + ("Fix stack_base_ref to the PARENT unit's branch (omit it for the first stacked unit), or link the FR(s)."
+               if "stack_base_ref" in str(exc) else "Repair git, or link the FR(s) this change touches with --affected-frs."))}
     if diff is None:
         print(f"[{caller}] WARNING: not a git repository - change_type={change_type!r} "
               "is NOT checked against the diff.", file=sys.stderr)

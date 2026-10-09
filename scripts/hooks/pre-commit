@@ -1,29 +1,36 @@
 #!/usr/bin/env bash
-# Shipwright bloat anti-ratchet pre-commit gate (Campaign A.defense).
-# Installed via `scripts/install-hooks.sh` (sets git config core.hooksPath).
+# Shipwright pre-commit gates. Installed via `scripts/install-hooks.sh`
+# (sets git config core.hooksPath). Two independent steps; both always run and
+# the commit is blocked if either one blocks:
 #
-# Behavior:
-# - Blocks the commit only when an existing baseline entry has grown
-#   past its `current` field (anti-ratchet). New crossings + stale
-#   entries are reported but DO NOT block here — the Stop hook
-#   (A.foundation) and Group H detective audit cover those.
-# - Measures STAGED content, not the working tree.
-# - Bypass once: `git commit --no-verify` (NEVER in shipwright dev).
+# 1. Bloat anti-ratchet (Campaign A.defense)
+#    - Blocks the commit only when an existing baseline entry has grown
+#      past its `current` field (anti-ratchet). New crossings + stale
+#      entries are reported but DO NOT block here — the Stop hook
+#      (A.foundation) and Group H detective audit cover those.
+#    - Measures STAGED content, not the working tree.
+# 2. Requirement-coverage gate (git side of `check_rtm_coverage`)
+#    - Fires inside the real `git commit`, whatever shell shape led there, and
+#      measures the manifest STAGED for this commit. Same threshold and same
+#      logged override as the Claude Code hook. Fail-open on its own errors.
+#
+# Bypass once: `git commit --no-verify` (NEVER in shipwright dev).
 
-set -euo pipefail
+set -uo pipefail
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [ -z "$repo_root" ]; then
     exit 0   # not a git repo — nothing to gate
 fi
 
-if [ ! -f "$repo_root/shipwright_bloat_baseline.json" ]; then
-    # No baseline yet (pre-adopt or fresh project) — fail-open.
-    exit 0
-fi
+hooks_dir="$(cd "$(dirname "$0")" && pwd)"
+framework_root="$(cd "$hooks_dir/../.." && pwd)"
+status=0
 
-if ! command -v uv >/dev/null 2>&1; then
-    cat >&2 <<'EOF'
+# --- 1. bloat anti-ratchet --------------------------------------------------
+if [ -f "$repo_root/shipwright_bloat_baseline.json" ]; then
+    if ! command -v uv >/dev/null 2>&1; then
+        cat >&2 <<'EOF'
 anti-ratchet pre-commit: 'uv' is not on PATH.
 
 The shipwright bloat-anti-ratchet check requires the `uv` Python
@@ -31,9 +38,30 @@ runner.  Install it from https://docs.astral.sh/uv/ and re-try.
 
 Temporary bypass (one commit):  git commit --no-verify
 EOF
-    exit 1
+        status=1
+    elif ! uv run "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" \
+        --project-root "$repo_root" \
+        --staged; then
+        status=1
+    fi
 fi
 
-uv run "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" \
-    --project-root "$repo_root" \
-    --staged
+# --- 2. requirement-coverage gate -------------------------------------------
+coverage_check="$framework_root/plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py"
+# exit 3 is the deliberate block; any other non-zero (uv or the interpreter failing)
+# must fail open, visibly, exactly like the script's own internal errors.
+if [ ! -f "$coverage_check" ]; then
+    echo "WARN (check_rtm_coverage, git pre-commit): $coverage_check not found; the coverage gate is NOT evaluating" >&2
+elif ! command -v uv >/dev/null 2>&1; then
+    echo "WARN (check_rtm_coverage, git pre-commit): 'uv' is not on PATH; the coverage gate is NOT evaluating" >&2
+else
+    uv run --no-project "$coverage_check"
+    rc=$?
+    if [ "$rc" -eq 3 ]; then
+        status=1
+    elif [ "$rc" -ne 0 ]; then
+        echo "WARN (check_rtm_coverage, git pre-commit): the check exited $rc; the coverage gate is NOT evaluating" >&2
+    fi
+fi
+
+exit "$status"

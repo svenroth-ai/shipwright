@@ -271,7 +271,7 @@ perform; F6-verify checks all three ran.
   compliance MDs / dashboard / handoff: `uv run "{shared_root}/scripts/tools/finalize_iterate.py"
   --project-root "{project_root}" --run-id "{run_id}" --event-extras-json "$extras"`. `$extras` =
   the `references/F5b.md` classification fields **plus the campaign stamp**
-  `"campaign":"{campaign_slug}"` + `"sub_iterate_id":"{sub_iterate_id}"`.
+  `"campaign":"{campaign_slug}"` + `"sub_iterate_id":"{sub_iterate_id}"` (+ stacked: `"stack_base_ref":"{base_branch}"`, omit for the first unit).
 - **F5c (MANDATORY — iterate entry):** append the per-iterate record via `append_iterate_entry.py`
   (shape: `references/F5c.md`); it fails closed unless F5's root snapshot belongs to this run,
   then installs exact bytes as `iterates/<run_id>.test-results.json` before the summary. F6 stages

@@ -38,3 +38,7 @@ shipwright_events.jsonl merge=union
 # Immutable per-run test evidence must reach Git byte-for-byte. In particular,
 # core.autocrlf must not rewrite CRLF snapshots while staging them.
 /.shipwright/agent_docs/iterates/*.test-results.json -text -diff
+
+# Git hook scripts run under bash: a CRLF checkout (core.autocrlf) would turn the
+# fail-open guarantee of scripts/hooks/pre-commit into a syntax-error block.
+scripts/hooks/* text eol=lf

@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-git-side-coverage-hook",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T07:51:34.005335+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "The hand-off token is scoped only to repository and hook, so it cannot establish that the consuming commit belongs to the command released by PreToolUse. If that command fails before committing, another commit within ten minutes can consume the token and bypass coverage without its own override. Concurrent commands have the same problem.",
+          "suggestion": "Bind the release to the authorized invocation using an identifier propagated to the Git hook. If reliable propagation is unavailable, revise AC-7 and the override flow rather than treating a repository-wide token as authorization for “that same command.” Add tests for a released command that never commits and an unrelated concurrent commit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The stated `git show :<path>` → HEAD fallback can measure a manifest that is absent from the actual commit. For example, staging deletion of the manifest makes the index lookup fail while HEAD still contains measurable coverage. This contradicts the requirement to judge the committed snapshot and warn when compliance data is absent.",
+          "suggestion": "Give git-side measurement an explicit index-only source mode that preserves `GIT_INDEX_FILE`. Distinguish an absent staged manifest from lookup or parsing errors, and test staged deletion plus alternate-index/pathspec commits. Keep any existing HEAD fallback confined to callers that need it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "O_EXCL` creation and successful `unlink` provide a single winner only while the token generation remains unchanged. One taker can read an old token, another can remove it, a grant can create a replacement, and the first taker can then unlink the replacement and accept the old grant. Expiry sweeping can similarly remove a newly issued token.",
+          "suggestion": "Serialize grant, take, and expiry cleanup using an established repository lock mechanism, or implement a generation-aware atomic claim protocol. Test concurrent grants and takes, including expiry/regrant interleavings—not just two takers against one fixed token.  The Git-side enforcement point is a sound way to close the lexer gaps. The approach needs changes to invocation-bound authorization, staged-only measurement, and token lifecycle concurrency before implementation is ready.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T07:50:58.205951+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review: git-side-coverage-hook\n\n### Findings\n\n- **Category: edge-case** · **Severity: high** — The pre-commit hook runs on every commit to the monorepo, including merge commits recorded via `git commit` after conflict resolution, `git commit --amend`, and commits made by tooling (rebase interactive continuation is `--no-verify`-exempt only when configured). The spec explicitly excludes merge/rebase commits but doesn't state how — merges that *do* run `pre-commit` (conflict-resolution commits) will hit the coverage gate against the merged index, which may legitimately be below threshold mid-merge. AC coverage should state the expected behavior for `--amend` and conflict-resolution commits, or the hook should detect `MERGE_HEAD`/`CHERRY_PICK_HEAD` and fail-open.\n\n- **Category: edge-case** · **Severity: medium** — The git-side check will block commits that contain *no changes to the manifest or code under compliance* (e.g., a docs-only commit in a repo whose current manifest is below threshold). The PreToolUse gate presumably had the same exposure, but the git-side gate now blocks `git commit` for any below-threshold state, even when the commit can't affect coverage. Consider scoping evaluation to commits that touch the manifest (or traced files), or at minimum document that this is intended.\n\n- **Category: edge-case** · **Severity: medium** — The hand-off token (`git-side-release-<hook>`, TTL 10 min, single taker) has a race the spec half-addresses: AC-7 requires \"the git-side check of that same command passes,\" but git hooks also run for *other* git operations in the window (e.g., a concurrent `git commit` from another terminal or a tool). A single-taker token can be consumed by the wrong commit, blocking the override-authorized one. In practice low risk on a single-user machine, but the failure mode is a confusing block. A cheap mitigation: have the PreToolUse hook pass the resolved `GIT_COMMIT`-relevant context — or accept and document the 10-minute […truncated]\n\n[openai] 1. **Category: security · Severity: high**  \n   **Finding:** The hand-off token is scoped only to repository and hook, so it cannot establish that the consuming commit belongs to the command released by PreToolUse. If that command fails before committing, another commit within ten minutes can consume the token and bypass coverage without its own override. Concurrent commands have the same problem.  \n   **Suggestion:** Bind the release to the authorized invocation using an identifier propagated to the Git hook. If reliable propagation is unavailable, revise AC-7 and the override flow rather than treating a repository-wide token as authorization for “that same command.” Add tests for a released command that never commits and an unrelated concurrent commit.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** The stated `git show :<path>` → HEAD fallback can measure a manifest that is absent from the actual commit. For example, staging deletion of the manifest makes the index lookup fail while HEAD still contains measurable coverage. This contradicts the requirement to judge the committed snapshot and warn when compliance data is absent.  \n   **Suggestion:** Give git-side measurement an explicit index-only source mode that preserves `GIT_INDEX_FILE`. Distinguish an absent staged manifest from lookup or parsing errors, and test staged deletion plus alternate-index/pathspec commits. Keep any existing HEAD fallback confined to callers that need it.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** `O_EXCL` creation and successful `unlink` provide a single winner only while the token generation remains unchanged. One taker can read an old token, another can remove it, a grant can create a replacement, and the first taker can then unlink the replacement and accept the old grant. Expiry sweeping can similarly remove a newly issued token.  \n   **Suggestion:** Serialize grant, take, and expiry cleanup using an established repository lock mech […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py",
+          "line": 193,
+          "finding": "AC-9 only partly proven: uv run and stdbuf shapes absent, lexer_reads never asserted False.",
+          "suggestion": "Add uv run shape, skip explicitly when the lexer reads a shape. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py",
+          "line": 151,
+          "finding": "In-process fail-open test resolved the real checkout (deleting a live token) and leaked sys.path.",
+          "suggestion": "chdir into the temp repo, restore sys.path. FIXED (step fixture).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": 263,
+          "finding": "Producer side of the hand-off untested; root divergence between the two sides fails safe but is untested.",
+          "suggestion": "End-to-end producer test. FIXED (producer test); root divergence disclosed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py",
+          "line": 81,
+          "finding": "check() only ran in a subprocess, invisible to coverage.py diff coverage.",
+          "suggestion": "In-process tests. FIXED (test_git_precommit_rtm_coverage_inprocess.py).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py",
+          "line": 77,
+          "finding": "Relative GIT_INDEX_FILE could be resolved against a subdirectory project.",
+          "suggestion": "Absolutize at entry. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py",
+          "line": 213,
+          "finding": "AC-8 matrix untested beyond a text grep.",
+          "suggestion": "Script-missing test added. FIXED; uv-missing row disclosed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_side_release.py",
+          "line": 45,
+          "finding": "O_EXCL pointless after unlink; magic -60.",
+          "suggestion": "write_text, named CLOCK_SKEW_S. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py",
+          "line": 58,
+          "finding": "Root resolution exceptions disabled the gate; above-baseline WARN parity gap.",
+          "suggestion": "Broaden fallback. FIXED; baseline WARN parity disclosed.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T08:02:56.505824+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_side_release.py",
+          "line": null,
+          "finding": "Claim under doubt: one logged override covers both enforcement points — A long step before the commit on the same Bash line outlives the 2-minute token; take() then returns the same False as 'no token', so the agent burns an override per retry without learning why.",
+          "suggestion": "Name an expired or HEAD-mismatched token in the block text. ADDRESSED: claim() returns the reason, shown in the BLOCKED advice, tested.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "scripts/hooks/pre-commit",
+          "line": null,
+          "finding": "Claim under doubt: the git-side check only adds a second enforcement point for already-gated commits — Subprocess committers (finalize, sweep_outbox, ensure_current, campaign runner) were never seen by PreToolUse and are now gated in every worktree.",
+          "suggestion": "Rebut with the invariant that main's manifest is CI-gated above threshold and F5's regenerated manifest is unmeasurable (WARN+allow). ADDRESSED as a disclosed limit: measured 21/21 (100%) against a 70% threshold in this repo; a block can only come from a genuinely below-threshold staged manifest.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: grant() and take() resolve the same root — SHIPWRIGHT_PROJECT_ROOT or an untracked cd can make the PreToolUse root differ from the git-side toplevel; the token is written where the git side never looks.",
+          "suggestion": "DISCLOSED: fails safe (a second override), never a bypass.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: a git-side override release leaves a clean tree — The CONSUMED line is appended to the tracked log after the index was built, leaving the tree dirty.",
+          "suggestion": "ACCEPTED and documented (lands in the next commit); same behaviour as the PreToolUse release.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility / fail-open contract",
+          "file": "scripts/hooks/pre-commit, .gitattributes",
+          "line": null,
+          "finding": "Claim under doubt: only exit 3 blocks — A CRLF checkout of scripts/hooks/pre-commit turns bash syntax errors into a block of every commit (fail-closed).",
+          "suggestion": "ADDRESSED: .gitattributes pins scripts/hooks/* to eol=lf.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: AC-9 shapes are caught — uv run and stdbuf wrappers were not exercised.",
+          "suggestion": "ADDRESSED: uv run --no-project git commit and git $'commit' are committed through bash; stdbuf is unusable in this Git for Windows (MSYS error), disclosed.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T08:02:56.623050+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py:186-191 (`test_anti_ratchet_step_and_coverage_step_are_both_wired`)",
+          "line": null,
+          "finding": "AC-8's \"both always run; no early exit skips the second step when the bloat baseline is absent\" is verified only by substring/index checks on the hook's text. A `pre-commit` that early-exits (e.g., `exit 0` after step 1, or an `exit` inside the baseline branch) would still pass this test, because the test never asserts the substring ordering captures control flow. There is no behavioral test where the bloat baseline is absent AND the manifest is below threshold, asserting the commit is blocked.",
+          "suggestion": "Add a test that removes/never creates `shipwright_bloat_baseline.json` in the temp repo, stages a 1/2 manifest, and asserts `commit` is blocked with `BLOCKED` — that proves the coverage step runs when step 1's guard is false.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py (file level)",
+          "line": null,
+          "finding": "AC-8's \"uv missing\" branches (anti-ratchet blocks; coverage WARNs and does not run) have no test at all — not even for the coverage WARN branch, which is pure shell and easily exercised by putting a `uv`-less stub dir first on PATH in `hook_env`.",
+          "suggestion": "Add a subprocess test with a PATH that excludes `uv`, asserting exit != 0, the anti-ratchet message, and the coverage `WARN ... NOT evaluating`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py:62-72 (`_project_root`) and plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:263-270",
+          "line": null,
+          "finding": "The token is granted at `project_root` as resolved by the PreToolUse hook (which, per the plan review's finding 5, may consult the session env) but claimed at `_project_root(...)` resolved with `allow_env=False`. If the two resolutions ever disagree (session env pointing at a different managed root), `grant` writes and `claim` reads different files and the hand-off silently degrades to \"no token\" — the operator is asked for a second override with no diagnostic. Both `claim`'s `(False, None)` and the code path make this indistinguishable from \"no release ever happened.\"",
+          "suggestion": "Either resolve both sides with the same `allow_env=False` policy in the grant path, or emit a distinguishable WARN when a token exists under the toplevel but not under the resolved project root.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:263-269",
+          "line": null,
+          "finding": "In `_block`'s release path, `import git_side_release` and `grant()` are outside any try/except. `grant` catches `OSError` internally, but an `ImportError` (lib path wrong, filesystem issue) or any unexpected exception propagates out of `_block` and can turn an already-consumed override release into a hook crash/block — the opposite of the fail-open posture everywhere else in this change.",
+          "suggestion": "Wrap the import + grant in `try/except Exception` and fold the message into `lost`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_side_release.py:66-70 (`claim`)",
+          "line": null,
+          "finding": "When `age < -CLOCK_SKEW_S` (mtime far in the future, e.g., a clock step back after grant), the expired-token message reports `released this command -N s ago ... hand-off lasts 120 s`, which is nonsense output and mildly misattributes the failure. Also, the stale-token sweep only happens when the token is read; a token left by a crash before `claim` (e.g., import failure in `check()`) persists until the next successful run — within the 2-minute TTL, so bounded, but worth noting the \"removed by EVERY git-side run\" claim in AC-7 has this exception.",
+          "suggestion": "Clamp the reported age (`max(age, 0)`) or use a distinct sentence for future-stamped tokens.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py:96-99",
+          "line": null,
+          "finding": "When the hand-off token was claimed, the git-side check skips `override.try_release` entirely and returns 0 with only a stderr WARN — but it does not print the measured figure on the allow path (the at/above-threshold path does). Minor inconsistency with AC-2's \"output carries the one-line figure\" spirit; not an AC violation since AC-2 covers only the threshold case.",
+          "suggestion": "Include `reason` (the figure) in the released WARN line — it already does via `reason`, so this is satisfied; no change needed if `describe(measure)` is in `reason`. Verify `reason` is populated before the handoff branch (it is). Withdraw if confirmed.  (Correction on the last item: `reason` is built before the handoff branch and included in the WARN, so no defect there.)",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_side_release.py",
+          "line": 66,
+          "finding": "A token containing invalid UTF-8 makes `read_text()` raise `UnicodeDecodeError`, which the `except OSError` does not catch. The token remains on disk, and `main()` fails open before measuring coverage. Consequently, every subsequent below-threshold commit is allowed until someone removes the token, violating AC-7’s every-run removal and normal-evaluation fallback.",
+          "suggestion": "Treat decoding failures as an invalid token and ensure the token is removed before returning to normal coverage evaluation. Add a test with invalid UTF-8 token bytes that verifies the commit blocks and the token disappears.  The implementation otherwise follows the specified design, with substantial behavioral coverage. Ship-with-fixes: correct malformed-token handling before merging; workspace inspection and test execution were unavailable because command execution was blocked by policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T08:05:38.641629+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py:186-191 (`test_anti_ratchet_step_and_coverage_step_are_both_wired`)\n  Finding: AC-8's \"both always run; no early exit skips the second step when the bloat baseline is absent\" is verified only by substring/index checks on the hook's text. A `pre-commit` that early-exits (e.g., `exit 0` after step 1, or an `exit` inside the baseline branch) would still pass this test, because the test never asserts the substring ordering captures control flow. There is no behavioral test where the bloat baseline is absent AND the manifest is below threshold, asserting the commit is blocked.\n  Suggestion: Add a test that removes/never creates `shipwright_bloat_baseline.json` in the temp repo, stages a 1/2 manifest, and asserts `commit` is blocked with `BLOCKED` — that proves the coverage step runs when step 1's guard is false.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-compliance/tests/test_git_precommit_rtm_coverage.py (file level)\n  Finding: AC-8's \"uv missing\" branches (anti-ratchet blocks; coverage WARNs and does not run) have no test at all — not even for the coverage WARN branch, which is pure shell and easily exercised by putting a `uv`-less stub dir first on PATH in `hook_env`.\n  Suggestion: Add a subprocess test with a PATH that excludes `uv`, asserting exit != 0, the anti-ratchet message, and the coverage `WARN ... NOT evaluating`.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/hooks/git_precommit_rtm_coverage.py:62-72 (`_project_root`) and plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:263-270\n  Finding: The token is granted at `project_root` as resolved by the PreToolUse hook (which, per the plan review's finding 5, may consult the session env) but claimed at `_project_root(...)` resolved with `allow_env=False`. If the two resolutions ever disagree (session e […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/lib/git_side_release.py:66\n- Finding: A token containing invalid UTF-8 makes `read_text()` raise `UnicodeDecodeError`, which the `except OSError` does not catch. The token remains on disk, and `main()` fails open before measuring coverage. Consequently, every subsequent below-threshold commit is allowed until someone removes the token, violating AC-7’s every-run removal and normal-evaluation fallback.\n- Suggestion: Treat decoding failures as an invalid token and ensure the token is removed before returning to normal coverage evaluation. Add a test with invalid UTF-8 token bytes that verifies the commit blocks and the token disappears.\n\nThe implementation otherwise follows the specified design, with substantial behavioral coverage. Ship-with-fixes: correct malformed-token handling before merging; workspace inspection and test execution were unavailable because command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T07:57:08.821262+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T07:50:58.338716+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T07:50:58.478711+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

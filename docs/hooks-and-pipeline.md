@@ -3182,6 +3182,27 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   regeneration) switches the gate to WARN + allow until CI regenerates it. Optional
 >   `enforcement.rtm_coverage_baseline` ratchets the threshold down for a project
 >   far below 80%.
+> - *Git-side check (second enforcement point)*: `scripts/hooks/pre-commit`
+>   (enabled per clone by `scripts/install-hooks.sh`, `core.hooksPath`) runs
+>   `git_precommit_rtm_coverage.py` after the bloat anti-ratchet step (both always
+>   run; the commit is blocked if either blocks). Git runs it inside the real
+>   `git commit`, so no shell shape can hide the commit, and it measures the manifest
+>   **staged for that commit** (git supplies the real or temporary index, so `-a` and
+>   pathspec commits are judged on what they will commit - the PreToolUse "ordering
+>   limit" does not apply). Same measurement, threshold, baseline and override log
+>   (hook name `check_rtm_coverage`); exit code 3 is the only block - an internal
+>   error, or uv/the interpreter failing, is a stderr WARN and an allow
+>   (`pre-commit` enforces this). A release by the PreToolUse hook leaves an
+>   untracked 2-minute token `.shipwright/locks/git-side-release-check_rtm_coverage`
+>   bound to the HEAD it was granted on and to the consumed override entry it rides on (a hand-written token without a consumed override is refused); every git-side run removes it and at most
+>   one honours it, so one logged override covers both points (the second commit of
+>   `a && b` needs its own; the `CONSUMED` line lands in the next commit). **Limits:**
+>   monorepo contributors only (consumer projects get no `core.hooksPath`); skipped
+>   by `--no-verify`; not run for merges/rebases that skip `pre-commit`; and a token
+>   whose commit never reached git stays valid for up to 2 minutes for any
+>   below-threshold commit in that worktree (override = attribution, not a human
+>   gate). **Stopping rule:** the PreToolUse command lexer gets no further shell
+>   shapes; a shape it misses is caught here.
 > - *Override*: a logged `check_rtm_coverage` entry in the measured repo's
 >   `compliance_overrides.log` lets the next blocked commit through once, within
 >   30 minutes of its timestamp; the hook appends `<ts> | check_rtm_coverage |
@@ -3690,8 +3711,13 @@ iterates; F5b stamps `intent` from the run's iterate entry when the extras omit 
 `spec_impact_reason_code_contradicts_change_type` for e.g. `docs-only` next to `change_type: tooling`,
 `spec_impact_intent_mismatch`), `fr_gate_specs_unparsed` (specs exist but parse to zero requirements,
 so a declared FR id cannot be verified), `change_type_not_covered_by_diff` (a no-FR `change_type`
-does not cover a changed path; `lib/change_type_paths.py`) and `change_type_diff_unavailable` (git is
-present but the fork-point diff is not: no trunk ref, a trunk with no shared history, git failing).
+does not cover a changed path; `lib/change_type_paths.py`; a requirement catalog
+`.shipwright/planning/<split>/spec.md` is covered by no label) and `change_type_diff_unavailable` (git is
+present but the fork-point diff is not: no trunk ref, a trunk with no shared history, git failing, or a
+`stack_base_ref` that is not an `iterate/*` ancestor of HEAD). A stacked campaign unit's event carries
+`stack_base_ref` (its parent unit branch) so the diff starts there instead of at the trunk. F5b's
+idempotent re-run (same `run_id`) returns the recorded event id only after these gates have judged the
+re-run's own event.
 F11 `check_spec_impact_recorded` WARNs (does not fail) on a justified `none` without a closed code.
 
 ## Phase Validators
@@ -4758,10 +4784,12 @@ audit adds two at medium+: `none` needs a closed `surface_none` reason code and 
 refused when the branch diff touches a UI / API-route / SSE-WS / message-contract
 file (`_surface_detect.py`); a real surface's numbers must be backed by this run's
 staged evidence at the verified revision (`_surface_evidence.py`; absent or stale fails;
-a trunk merge's hunks never make it stale, a later fix or amend does). Staging itself
+a trunk merge's hunks never make it stale, a later fix, an amend or a conflict resolved by hand
+inside a trunk merge does). Staging itself
 (`evidence_drop.stage`, `stage_f0_evidence.py`) refuses reports older than a
-branch-changed file (`lib/_evidence_drop_guard.py`), so the repair is always "re-run
-the tests, then stage".
+branch-changed file, deleted files included (dated by the removing commit, or for an
+uncommitted removal by the surviving parent directory's mtime; `lib/_evidence_drop_guard.py`),
+so the repair is always "re-run the tests, then stage".
 
 **Every `iterate_latest` reader must say whose run it is.** Since an iterate no
 longer commits `shipwright_test_results.json`, whatever sits at `HEAD` is
