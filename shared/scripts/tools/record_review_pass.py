@@ -187,6 +187,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
     if args.reason_code:
         entry["reason_code"] = args.reason_code
+    entry.update({k: v for k, v in (("verdict", args.verdict), ("reviewed_commit", args.reviewed_commit)) if v})
 
     project_root = Path(args.project_root)
     markers: list[str] = []
@@ -355,6 +356,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                      help="overwrite an already-terminal record (corrections only)")
     rec.add_argument("--marker-status", default=None, help="also write the legacy external_*review_state.json marker")
     rec.add_argument("--contradiction-resolution", default=None)
+    rec.add_argument("--verdict", choices=("pass", "reject"), default=None, help="the reviewer's verdict (3f-bis attestation)")
+    rec.add_argument("--reviewed-commit", default=None, help="full SHA of HEAD when the reviewed diff was taken")
     rec.add_argument("--model-tier", default=None, choices=sorted(TIERS), help="resolved model tier this spawn used")
     rec.add_argument("--transport", default=None, choices=sorted(TRANSPORTS),
                      help="which harness answered this pass; omit for the default same-session agent spawn")
@@ -381,6 +384,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):  # `show` prints non-ASCII; a cp1252 console would crash
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     args = _parse_args(argv)
     handlers = {"init": _cmd_init, "record": _cmd_record,
                 "close-missing": _cmd_close_missing, "show": _cmd_show,

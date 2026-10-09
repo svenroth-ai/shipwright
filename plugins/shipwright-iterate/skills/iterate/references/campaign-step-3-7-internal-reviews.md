@@ -10,8 +10,11 @@ Cost: up to five reviewer runs per unit (two arms + three cascade stages).
 
 ## Rules for every spawn
 
-- **`model=opus`, passed explicitly.** Never the runner's inherited tier — a silent default can be
-  a far more expensive model. Record each row with `--model-tier opus`.
+- **`model=<tier>`, passed explicitly** — `review_tier` for the cascade, `plan_review_tier` for the two
+  arms, both from the runner's brief (the orchestrator resolved them once; never re-resolve). Omit
+  `model=` only when the tier is `inherit` (the Agent tool has no `inherit` literal). Record each row
+  with `--model-tier <that tier>`. Never fall back to a hard-coded tier: a silent default can be a far
+  more expensive model, and a hard-coded one overrides the operator's choice.
 - **State the run id in plain text** in every spawn prompt: `This review is part of iterate run
   {run_id}.` The `SubagentStop` salvage hook can only find it in the subagent's own transcript.
 - **Record the instant the reply returns**, before any other reasoning or the next spawn: write the
@@ -34,7 +37,7 @@ Before the external calls, whichever Branch A/B/C applies:
 
 A campaign unit has no iterate spec: write each `## Internal … Review` outcome into the F3
 decision-drop, as the external architecture review does. Record `plan_internal` /
-`architecture_internal` `completed` with `--recorded-by {reviewer} --model-tier opus` (no payload
+`architecture_internal` `completed` with `--recorded-by {reviewer} --model-tier {plan_review_tier}` (no payload
 file). A `reject` from `architecture-internal-reviewer` HALTS THE UNIT exactly like the external
 reject (`campaign-step-3-5-plan-review.md`).
 
@@ -48,6 +51,11 @@ the diff and re-review. Record `spec`, `code` (`--from code-reviewer`) and `doub
 (`doubt` is `not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply), and set
 `reviews.code.status: "completed"` in the result JSON.
 
+**Record the pair 3f-bis can verify.** Every `completed` `spec`/`code`/`doubt` call carries
+`--verdict pass --reviewed-commit "$reviewed"` -- the HEAD the reviewed diff was taken at, captured
+(`reviewed=$(git -C "{project_root}" rev-parse HEAD)`) BEFORE the spawn, never at record time (commit the code first, as Step 3.7's `git diff HEAD~1` already assumes). Code you change
+after a review is code that review never saw: re-review it, or accept that 3f-bis will.
+
 **A REJECT is never recorded `completed`** (the Stage-1 payload drops the verdict, so a `completed`
 REJECT reads as a PASS). Record `spec not_run --reason-code delegated-to-orchestrator --disposition
 "Stage-1 REJECTED: {citations}"`, fix the diff, re-review, then re-record `completed` with `--force` once
@@ -60,8 +68,7 @@ type (first review + 2 re-reviews). `SHIPWRIGHT_RUNNER_SPAWN_GUARD=off` is the u
 **Known limits (disclosed, not solved here).** The guard is cooperative, like the worktree gate; it does not
 choose the model;
 the spec/code/doubt reviewers live in `shipwright-build`, so a consumer without it takes the fallback. The
-`SubagentStop` salvage hook resolves its root from the session cwd, not the unit worktree, so in a campaign
-it refuses and only "record the instant the reply returns" protects a reply. The `*_review_reply.json` files
+`SubagentStop` salvage hook finds the unit worktree through `loop_state.json`, so it backstops a campaign reply too. The `*_review_reply.json` files
 are the runner's own evidence (F6 stages the run dir); 3f-bis writes its own copies to the same names and
 commits only `reviews.json`.
 
@@ -77,4 +84,7 @@ The `Agent` tool unavailable at runtime, erroring, or denied. Do not stop the un
   before the merge and promotes those rows with `--force`. 3f-bis ALSO
   runs for a unit whose runner spawned the cascade whenever its own trigger fires: the runner's rows are
   its own attestation, so they never replace that gate (it re-promotes them with `--force`). Below
-  3f-bis's trigger the runner's rows stand, as `not_run` rows always did.
+  3f-bis's trigger the runner's rows stand, as `not_run` rows always did. Above it, `3f-bis` skips its
+  re-review only when `review_attested.py` confirms the pair above (verdict `pass`, a `reviewed_commit`
+  that is an ancestor of the head it merges, and nothing but `.shipwright/` / `CHANGELOG-unreleased.d/`
+  changed since); a legacy row, a missing field or later code takes the cascade as before.

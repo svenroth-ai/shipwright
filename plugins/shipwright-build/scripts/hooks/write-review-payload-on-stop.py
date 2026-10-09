@@ -68,6 +68,9 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from review_unit_root import resolve_run_root  # noqa: E402
+
 RUN_ID_RE = re.compile(r"iterate-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*")
 TERMINAL_STATUSES = {"completed", "not_run", "not_applicable"}
 _FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)```", re.DOTALL)
@@ -261,7 +264,7 @@ def main(argv: Optional[list[str]] = None) -> int:
               review_type=args.review_type)
         return 0
 
-    project_root = resolve_project_root()
+    project_root = resolve_run_root(resolve_project_root(), run_id, reviews_json_path)
 
     if wrong_root(project_root, run_id):
         _diag("no reviews.json for this run under the resolved project root — "

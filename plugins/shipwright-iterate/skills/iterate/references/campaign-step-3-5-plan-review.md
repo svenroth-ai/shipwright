@@ -7,7 +7,7 @@ the skill, the guide and the spec all claimed "every medium+ Branch A"). Where
 this file and `iteration-planning.md` disagree on the *review itself*, that file
 wins; this one owns only what differs in an **autonomous** runner — it cannot ask
 an operator, and it resolves its own `--driver`. (It does carry the `Agent` tool: the internal
-arms — `architecture-internal-reviewer`, `opus-plan-reviewer`, `model=opus` — are spawned by the
+arms — `architecture-internal-reviewer`, `opus-plan-reviewer`, `model=<plan_review_tier>` — are spawned by the
 runner itself, per `agents/sub-iterate-runner.md` Step 3.5.)
 
 **Trigger** — from Step 3.4's `plan_review_required`: effective complexity

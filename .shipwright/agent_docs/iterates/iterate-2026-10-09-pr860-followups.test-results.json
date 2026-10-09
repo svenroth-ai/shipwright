@@ -1,0 +1,110 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-pr860-followups",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 22431,
+      "total": 22431
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [
+      "F0 final run was a RESUMED run (green units reused from the preceding full run); a full run before it was green except units that failed only because SHIPWRIGHT_F0_RESUME=0 leaked into tests; CI re-runs everything"
+    ],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "runner reviewer spawns use the resolved review/plan_review tier, never a hard-coded one",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_no_runner_review_spawn_hardcodes_a_model_tier + test_the_tiers_travel_orchestrator_to_runner_to_each_spawn PASSED"
+        },
+        {
+          "behavior": "3f-bis attests only a verified pass at a current reviewed_commit; real git repo + real CLI",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_review_attestation.py::test_attested_when_only_artifacts_changed_after_the_review + 15 more PASSED"
+        },
+        {
+          "behavior": "attestation fails closed: code after review, rename, non-ancestor, legacy row, high finding, wrong recorder, uncommitted row, script under .shipwright",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_attestation.py::test_not_attested_* and test_a_rename_*, test_a_script_*, test_a_pass_row_* PASSED"
+        },
+        {
+          "behavior": "doubt must have completed when the diff is over the floor",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_attestation.py::test_doubt_must_have_completed_when_the_diff_is_over_the_floor PASSED"
+        },
+        {
+          "behavior": "record --verdict/--reviewed-commit schema guards",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_attestation.py::test_schema_rejects_a_short_sha_and_a_completed_reject PASSED"
+        },
+        {
+          "behavior": "3f-bis block lowers fires in one place behind the verified answer; documented commands carry no literal backslash-n",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_attestation.py::test_3f_bis_and_the_runner_are_wired_to_the_attestation + shared/tests/test_campaign_step_3f_bis.py PASSED"
+        },
+        {
+          "behavior": "salvage hook resolves the unit worktree (single, duplicate-listed, ambiguous, malformed loop_state)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_review_payload_unit_worktree.py (5 tests) PASSED"
+        },
+        {
+          "behavior": "record_review_pass show survives a cp1252 console",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_record_review_pass_utf8.py PASSED (red against the old tool)"
+        },
+        {
+          "behavior": "integration tests do not inherit SHIPWRIGHT_LOOP_ID / SHIPWRIGHT_LOOP_UNIT_ID",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_loop_env_isolation.py + test_removal_survivors_offpath.py PASSED with the vars exported"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_review_attestation.py shared/tests/test_record_review_pass_utf8.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 17,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\pr860-followups\\.shipwright\\runs\\iterate-2026-10-09-pr860-followups\\surface_verification.log",
+      "timestamp": "2026-10-09T10:17:02.142Z",
+      "attempts": 1
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-pr860-followups",
+    "commit": "e5436a5913bfd9b2fe143eb6a50acf231c0fdf4c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

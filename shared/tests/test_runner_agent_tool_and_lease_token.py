@@ -39,16 +39,47 @@ def test_runner_tools_list_includes_agent():
 
 
 @pytest.mark.covers("FR-01.11")
-def test_runner_spawns_internal_reviews_with_model_opus_and_keeps_the_fallback():
+def test_runner_spawns_internal_reviews_at_the_resolved_tiers_and_keeps_the_fallback():
     body = _runner()
     assert "campaign-step-3-7-internal-reviews.md" in body
-    assert "model=opus" in body, "every spawn passes model=opus explicitly"
     assert "delegated-to-orchestrator" in body, "3f-bis stays the fallback"
     ref = (_REFS / "campaign-step-3-7-internal-reviews.md").read_text(encoding="utf-8")
     for reviewer in ("architecture-internal-reviewer", "opus-plan-reviewer",
                      "spec-reviewer", "code-reviewer", "doubt-reviewer"):
         assert reviewer in ref, f"{reviewer} must be named in the spawn reference"
-    assert "model=opus" in ref and "no-spawn-site" in ref
+    assert "no-spawn-site" in ref
+
+
+_TIER_FILES = ("agents/sub-iterate-runner.md",
+               "skills/iterate/references/campaign-step-3-7-internal-reviews.md",
+               "skills/iterate/references/campaign-step-3-5-plan-review.md",
+               "skills/iterate/references/campaign-mode.md",
+               "skills/iterate/references/iteration-reviews.md",
+               "skills/iterate/SKILL.md")
+
+
+@pytest.mark.covers("FR-01.11")
+@pytest.mark.parametrize("rel", _TIER_FILES)
+def test_no_runner_review_spawn_hardcodes_a_model_tier(rel):
+    text = (_ITERATE / rel).read_text(encoding="utf-8")
+    assert not re.search(r"model=(opus|sonnet|haiku|fable)(?![a-z])", text), (
+        f"{rel}: a hard-coded model= overrides the operator's resolved review tier")
+    assert not re.search(r"--model-tier (opus|sonnet|haiku|fable)(?![a-z])", text), (
+        f"{rel}: a hard-coded --model-tier mis-records the tier the spawn used")
+
+@pytest.mark.covers("FR-01.11")
+def test_the_tiers_travel_orchestrator_to_runner_to_each_spawn():
+    mode = (_REFS / "campaign-mode.md").read_text(encoding="utf-8")
+    runner = _runner()
+    ref = (_REFS / "campaign-step-3-7-internal-reviews.md").read_text(encoding="utf-8")
+    # orchestrator briefs the runner with both resolved tiers …
+    assert "review_tier (= `review.resolved`)" in mode and "(= `plan_review.resolved`)" in mode
+    # … the runner declares them as inputs and spawns/records with them …
+    assert "`review_tier` / `plan_review_tier`" in runner
+    assert "model=<review_tier>" in runner and "model=<plan_review_tier>" in runner
+    assert "--model-tier <review_tier>" in runner and "--model-tier <plan_review_tier>" in runner
+    # … and the spawn reference owns the inherit rule.
+    assert "only when the tier is `inherit`" in ref
 
 
 @pytest.mark.covers("FR-01.11")

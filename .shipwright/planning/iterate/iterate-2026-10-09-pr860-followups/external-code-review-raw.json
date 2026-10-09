@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/review_attestation.py:113\n- Finding: The completed `doubt` row is accepted without checking `recorded_by`, although `spec` and `code` require their respective reviewers. For a diff over 100 lines, a row attributed to another actor can therefore satisfy the mandatory doubt pass and suppress 3f-bis.\n- Suggestion: Require `recorded_by == \"doubt-reviewer\"` before accepting a completed doubt pass. Add a test with an otherwise valid doubt row recorded by someone else.\n\n- Category: edge-case\n- Severity: medium\n- File: plugins/shipwright-build/scripts/hooks/review_unit_root.py:63\n- Finding: Candidate worktrees are not deduplicated. If the session root and main checkout both have loop state referencing the same unit worktree, that single holder appears twice and is treated as ambiguous, so the hook refuses to salvage the review.\n- Suggestion: Resolve and deduplicate candidate paths before counting holders. Test two loop-state files referencing the same worktree, alongside a genuinely ambiguous case with two distinct holders.\n\nShip-with-fixes: the diff addresses the specified follow-ups, but the attestation check and salvage root resolution need these corrections before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/record_review_pass.py:187-190 (`_cmd_record`)\n  Finding: The new `entry.update({(\"verdict\", args.verdict), (\"reviewed_commit\", args.reviewed_commit)})` runs *after* the `validate_entry` call that produced the `invalid_entry` error handling. If `validate_entry` is not re-run on the write path, the schema guards added to `review_record_schema.py` (short SHA, completed+reject) would never see CLI-supplied values. The tests (`test_schema_rejects_a_short_sha_and_a_completed_reject`) pass, which suggests a second validation exists on write \u2014 but the diff alone doesn't show it, and the ordering is fragile.\n  Suggestion: Move the `entry.update(...)` before the `validate_entry` call (or re-validate after the merge) so the schema guard unconditionally covers the new CLI flags.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-build/scripts/hooks/review_unit_root.py:19-30 (`_main_root`)\n  Finding: `Path(out).parent` assumes the git-common-dir output ends in `.git`. With `GIT_DIR`/`GIT_COMMON_DIR` set, or a `--git-dir` style absolute path without a `.git` component, `.parent` strips a real path segment and `unit_worktrees` silently reads a nonexistent `loop_state.json` \u2014 the hook then refuses (safe failure, but a salvage silently lost).\n  Suggestion: Append `Path(out).name == \".git\"` check and fall back to `Path(out).resolve().parent` only in that case, or use `git rev-parse --show-toplevel` of the common dir.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-build/scripts/hooks/review_unit_root.py:59-63 (`resolve_run_root`)\n  Finding: When multiple unit worktrees hold the run (a stale attempt), the function returns `project_root`, and the caller's diagnostic reports \"no reviews.json under the resolved project root\" \u2014 misleading, though behaviorally safe (refusal). More importantly, a stale worktree from a *previous successful attempt* plus the current one is the normal campaign retry state, so this ambiguity may be common enough that the salvage backstop rarely fires in campaigns.\n  Suggestion: Add a tie-breaker (e.g., most-recent `reviews.json` mtime, or the worktree matching the unit in `loop_state.json` whose status is active) or at least emit a diag distinguishing \"ambiguous\" from \"absent\".\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_review_attestation.py (`test_3f_bis_and_the_runner_are_wired_to_the_attestation`)\n  Finding: This test only greps markdown for string shapes; it verifies documentation wording, not the wiring. The same for `test_the_documented_row_commands_have_no_literal_backslash_n`. A broken `review_attested.py` invocation in campaign-mode.md (e.g., wrong flag order, missing `--run-id`) would still pass since only one line is substring-checked.\n  Suggestion: Acceptable as drift-guards, but at least assert the full `--project-root/--run-id/--head/--diff-lines` flag set appears on the invocation line.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md (new 3f-bis block)\n  Finding: `att=$(uv run ... | jq -r .attested)` without `set -o pipefail`: if `uv run` fails, `jq` emits nothing, `att` is empty, and the gate safely keeps `fires=1` \u2014 fine. But if `jq` is absent from PATH, the pipeline errors and `att` is empty \u2014 also safe. No defect, just confirming the error path is fail-closed; nothing to change.\n\nEverything else checks out: spec items (2) tier propagation with the `inherit` omission rule, (3) attestation verified against git with the disclosed \"runner can still lie\" limit, (4) worktree root resolution, (5) env isolation in both confiests, and (6) UTF-8 reconfigure are all implemented and covered by behavioral tests (real git repos, real subprocess invocations). The rename-into-artifact-path and post-record-commit cases are good adversarial coverage.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -68,6 +68,10 @@ _OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
 def _isolate_scanner_environment(monkeypatch):
     monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
     monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)
+    # A campaign-runner shell exports these; the Stop hooks the subprocess tests fire
+    # then resolve a unit worktree that does not exist (shared/tests/conftest.py does the same).
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_ID", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_UNIT_ID", raising=False)
     # Test-only kill-switch reaching subprocess invocations of orchestrator.py.
     # In-process callers of _check_security_available() are isolated by the
     # shutil.which monkeypatch below; the env var covers the subprocess case.
