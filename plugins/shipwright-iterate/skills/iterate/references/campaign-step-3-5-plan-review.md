@@ -31,7 +31,7 @@ session. Real Codex-driven campaigns: trg-a27ab4d9.
 mkdir -p "{project_root}/.shipwright/planning/iterate/{run_id}"
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" --mode iterate \
   --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
-  --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.stderr.txt"
+  --plugin-root "{plugin_root}" --project-root "{project_root}" --run-id "{run_id}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.stderr.txt"
 ```
 
 Read it back (canonical basename, trg-3b206c08) and parse `reviews.glm.feedback` +
@@ -116,7 +116,9 @@ Applies to the plan call above and to the code call (runner Step 3.7 item 2).
    attempt. They ARE the evidence: F11's review-record check (and `record_review_pass.py
    record`) refuse `unavailable` on `plan` / `external_code` unless the raw file is the
    adapter's failure envelope (its `review_schema`, `success: false` or `degraded: true`, a
-   non-empty `error` / `degraded_reason`, a `mode` this pass runs) or — raw file present, no
+   non-empty `error` / `degraded_reason`, a `mode` this pass runs, and the `capture` stamp
+   `external_review.py --run-id {run_id}` writes — an envelope without this run's stamp is refused;
+   `record` best-effort masks URLs and key shapes in the `.stderr.txt` and raw file it backs; the stamp binds a run, it is not provenance) or — raw file present, no
    JSON — the `.stderr.txt` is non-empty; no symlinks. A successful reply, or one whose every
    leg was `skipped` (`missing-keys`), refuses it. Stage the capture with `reviews.json` at F6
    (read from the commit); F6 stages the whole run dir, so delete a `<stem>.stderr.txt` that

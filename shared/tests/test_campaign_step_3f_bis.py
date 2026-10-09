@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -208,16 +209,15 @@ def test_step_3f_bis_computes_its_own_trigger_from_the_diff():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_a_stage_1_reject_is_not_recorded_as_completed():
     """The native Stage-1 payload drops `verdict`, so a `completed` REJECT reads
-    as a PASS (Stage-3 doubt). The carried-over reason code only satisfies the
-    gate; the disposition is what must hold the REJECT."""
+    as a PASS (Stage-3 doubt). The row carries the dedicated `stage-1-rejected`
+    code (machine-readable); the disposition holds the citations."""
     step = _step_3f_bis()
     tail = step[step.index("reject"):] if "reject" in step else ""
     assert "not_run" in tail, "a Stage-1 REJECT must be recorded not_run, never completed"
-    assert "carried over only so the record satisfies the gate" in tail and (
-        "is what holds the reject" in tail
-    ), "the doc must say the disposition, not the reason code, holds the REJECT"
+    assert "--reason-code stage-1-rejected" in tail and "machine-readable carrier of the" in tail, "a Stage-1 REJECT has its own code"
 
 
 def test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g():
@@ -807,6 +807,7 @@ def test_skill_iterate_docs_have_no_double_backslash_line_continuations():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3f_bis_record_calls_are_unit_scoped_and_checked():
     """R3 doubt-round, round 4, high: `record_review_pass.py`'s own
     `--project-root` was left at the `…` prefix's `{project_root}` default
@@ -832,7 +833,7 @@ def test_step_3f_bis_record_calls_are_unit_scoped_and_checked():
         "--review-type code --status completed",
         "--review-type doubt --status completed",
         "--review-type doubt --status not_applicable --reason-code diff-below-threshold",
-        "--review-type spec --status not_run --force \\ --recorded-by spec-reviewer --reason-code delegated-to-orchestrator",
+        "--review-type spec --status not_run --force \\ --recorded-by spec-reviewer --reason-code stage-1-rejected",
     )
     positions = []
     for marker in markers:

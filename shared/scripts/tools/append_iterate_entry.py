@@ -316,8 +316,8 @@ def append_iterate_entry(
     retention: int = ITERATE_RETENTION,
 ) -> dict[str, Any]:
     """Append ``entry`` and its mandatory current-run test-result evidence."""
-    err = validate_iterate_entry(entry, strict=True)[1] or entry_exemptions_error(entry)
-    if err:
+    _, err = validate_iterate_entry(entry, strict=True)
+    if err := err or entry_exemptions_error(entry):
         raise IterateAppendError(f"invalid entry: {err}")
 
     project_root = project_root.resolve()

@@ -90,9 +90,15 @@ def test_malformed_blocks_are_refused(bad):
 @pytest.mark.parametrize("scope", [
     "", "   ", "/etc/passwd::t", "x.py::/../../secret", "C:\\x\\t.py::t", "c:/x::t", "../outside.py::t",
     "tests/../../x.py::t", "tests\\..\\..\\x.py::t", "a\nb::t", "a\x00b", "x" * 301,
+    "x.py::/etc/passwd", "x.py::C:\\secret", "x.py::t::/abs",   # an absolute path AFTER the first `::`
 ])
 def test_unsafe_scopes_are_refused(scope):
     assert exemptions_error(_block(_item(scope))) is not None
+
+
+@pytest.mark.covers("FR-01.11")
+def test_a_slash_inside_a_test_name_is_not_an_absolute_path():
+    assert exemptions_error(_block(_item("tests/x.py::test_a[/not/leading]"))) is None
 
 
 @pytest.mark.covers("FR-01.11")

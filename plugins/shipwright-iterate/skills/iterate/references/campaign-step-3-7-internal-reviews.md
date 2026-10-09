@@ -63,7 +63,7 @@ campaign recorded one low finding as 0); the recorder now prints a `warning` for
 after a review is code that review never saw: re-review it, or accept that 3f-bis will.
 
 **A REJECT is never recorded `completed`** (the Stage-1 payload drops the verdict, so a `completed`
-REJECT reads as a PASS). Record `spec not_run --reason-code delegated-to-orchestrator --disposition
+REJECT reads as a PASS). Record `spec not_run --reason-code stage-1-rejected --disposition
 "Stage-1 REJECTED: {citations}"`, fix the diff, re-review, then re-record `completed` with `--force` once
 it PASSes (or leave the `not_run` row on cap exhaustion). A Stage-2 high finding must be fixed before F6.
 

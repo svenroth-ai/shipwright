@@ -58,6 +58,7 @@ REASON_CODES: Mapping[str, frozenset[str]] = MappingProxyType({
         "config-disabled",             # review disabled in config (feedback_iterations 0 or a *_review.enabled flag false)
         "missing-keys",                # no provider key configured
         "no-spawn-site",               # nothing in this context can spawn the pass (campaign internal arms)
+        "stage-1-rejected",            # the Stage-1 spec-reviewer REJECTED the diff; never recorded `completed`
     }),
     "test_exemption": frozenset({
         "fixture-or-helper",    # a function the collector does not collect as a test

@@ -4,11 +4,14 @@ Split from :mod:`cascade_trigger` along its natural seam. This module reads git
 and the run's self-reports. The gate next door decides what the review record
 must then say.
 
-**Risk flags** are the union of three sources. Any one of them is enough:
+**Risk flags** are the union of four sources. Any one of them is enough:
 
 * the session plan Stage 1 wrote (``.shipwright/agent_docs/iterates/<run_id>.plan.json``,
   ``classify_complexity --run-id``), which a standalone iterate leaves;
 * Step 3.4's ``risk_recheck.json``, which a campaign sub-iterate leaves;
+* the F5c entry's own ``risk_flags`` list: the durable copy, so a run whose sidecar
+  files are gone still answers. A run with none of these three recorded nothing, and
+  that reads as unknown (the gate then treats the trigger as fired), never as "no flag";
 * the two detectors that shared/ already carries, recomputed from the branch diff
   (``cross_component`` and ``touches_ci_supplychain``). A flag the agent did not
   record still counts. The other flags are taken as self-reported.
@@ -89,30 +92,38 @@ def read_plan(project_root: Path, run_id: str) -> tuple[dict | None, str | None]
     return data, None
 
 
-def _plan_flags(project_root: Path, run_id: str) -> tuple[list[str], str | None]:
-    """``risk_flags`` from the Stage-1 session plan. Absence is ``([], None)``."""
-    data, err = read_plan(project_root, run_id)
-    if err or data is None:
-        return [], err
-    path_name = f"{run_id}.plan.json"
-    flags = data.get("risk_flags")
-    if not isinstance(flags, list):
-        return [], f"{path_name} carries no `risk_flags` list"
-    return [f for f in flags if isinstance(f, str) and f.strip()], None
+def _names(flags: list) -> list[str]:
+    return [f for f in flags if isinstance(f, str) and f.strip()]
 
 
-def recorded_risk_flags(project_root: Path, run_id: str) -> tuple[list[str], str | None]:
-    """The run's self-reported flags (session plan + Step 3.4 record), or why not."""
+def recorded_risk_flags(project_root: Path, run_id: str, entry: dict | None = None) -> tuple[list[str], str | None]:
+    """The run's self-reported flags, or why they are unknown.
+
+    Three sources, any one enough: the session plan, Step 3.4's record, and the F5c
+    entry's own ``risk_flags`` (the durable copy, ``[]`` meaning "recorded: none").
+    A run with NONE of the three has recorded nothing, which is not "no flag": unknown.
+    """
     if not is_safe_run_id(run_id):
         return [], f"run id {str(run_id)[:60]!r} is not a single safe path component"
-    flags, err = _plan_flags(project_root, run_id)
+    plan, err = read_plan(project_root, run_id)
     if err:
         return [], err
     block, err = _read_recheck_record(Path(project_root), run_id)
     if err:
         return [], err
-    if block is not None:
-        flags += [f for f in block.get("risk_flags") or [] if isinstance(f, str) and f.strip()]
+    stated = (entry or {}).get("risk_flags")
+    if entry and "risk_flags" in entry and stated is None:
+        return [], "the F5c entry's `risk_flags` is null, not a list of flag names"
+    if plan is not None and not isinstance(plan.get("risk_flags"), list):
+        return [], f"{run_id}.plan.json carries no `risk_flags` list"
+    if stated is not None and (not isinstance(stated, list) or len(_names(stated)) != len(stated)):
+        return [], "the F5c entry's `risk_flags` is not a list of flag names"
+    if plan is None and block is None and stated is None:
+        return [], ("no plan.json, no risk_recheck.json and no `risk_flags` in the F5c entry, so "
+                    "'no flag' cannot be told from 'never recorded'")
+    in_entry = (entry or {}).get("risk_recheck")  # the entry's own copy of Step 3.4's block
+    flags = (_names((plan or {}).get("risk_flags") or []) + _names((block or {}).get("risk_flags") or []) + (stated or [])
+             + _names((in_entry or {}).get("risk_flags") or [] if isinstance(in_entry, dict) and isinstance(in_entry.get("risk_flags"), list) else []))
     return sorted(set(flags)), None
 
 
@@ -176,14 +187,39 @@ def _in_remote_trunk(project_root: Path, commit: str) -> bool:
     return False
 
 
-def measure_diff(project_root: Path, commit: str) -> DiffMeasure:
+def _run_commits(project_root: Path, head: str, run_id: str) -> list[str] | None:
+    """``head`` plus every other non-merge commit under it with this run's ``Run-ID:`` trailer.
+
+    A rebase-merged PR lands as several commits on the trunk; F6 stamps each one with
+    the trailer, so together they are the PR. Unrelated commits are never counted.
+    """
+    found: list[str] = []
+    if is_safe_run_id(run_id):
+        # `--grep` only pre-filters; an exact `Run-ID: <id>` line anywhere in the message decides (no prefix match; footer length is irrelevant)
+        rc, out, _ = _run_git(project_root, "log", "--no-merges", "--no-show-signature", "-n", "500",
+                              "--format=%H%x1f%B%x1e",
+                              "--fixed-strings", f"--grep=Run-ID: {run_id}", head, timeout=_GIT_TIMEOUT)
+        if rc != 0:
+            return None  # under-counting is the unsafe direction: the caller reads None as unknown
+        if out.count("\x1e") >= 500:
+            return None  # the cap was hit: the run may have more commits than were read
+        for record in out.split("\x1e"):
+            sha, _, body = record.strip().partition("\x1f")
+            if sha and any(line.strip() == f"Run-ID: {run_id}" for line in body.splitlines()):
+                found.append(sha)
+    return [head] + [h for h in found if h != head]
+
+
+def measure_diff(project_root: Path, commit: str, run_id: str = "") -> DiffMeasure:
     """Count the branch against its merge-base with the trunk.
 
     No trustworthy trunk base is UNKNOWN, never "the last commit": a branch of
     several commits would otherwise be measured by its tip alone. A commit that
     already sits on the trunk (``base == commit``) has no branch range. Its own
     numstat is measured only when a REMOTE trunk ref contains it, the shape of a
-    squash-merged PR. On a local-only trunk (unpushed commits on ``main``, a
+    merged PR: with ``run_id``, every commit of that run (see :func:`_run_commits`)
+    is measured, so a rebase-merged PR counts as a whole; a squash-merged one is
+    its tip alone. On a local-only trunk (unpushed commits on ``main``, a
     remote-less greenfield trunk) the tip may be the last of several commits, so
     the size is unknown. A merge commit's own numstat shows nothing: unknown too.
     """
@@ -208,7 +244,10 @@ def measure_diff(project_root: Path, commit: str) -> DiffMeasure:
                                      "it is a merge commit is unknown")
         if merge:
             return DiffMeasure(error=f"{head[:8]} is a merge commit already on the trunk; its size is unknown")
-        args = ["show", "--numstat", "--no-renames", "--format=", head]
+        commits = _run_commits(project_root, head, run_id)
+        if commits is None:
+            return DiffMeasure(error=f"git could not list the commits of run {run_id[:40]!r} under {head[:8]}")
+        args = ["show", "--numstat", "--no-renames", "--format=", *commits]
     rc, out, err = _run_git(project_root, "-c", "core.quotePath=false", *args, timeout=_GIT_TIMEOUT)
     if rc != 0:
         return DiffMeasure(error=f"`git {args[0]} --numstat` failed ({(err or '').strip()[:120]})")

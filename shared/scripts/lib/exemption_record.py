@@ -51,9 +51,13 @@ def _scope_error(scope: Any) -> str | None:
         return f"scope is longer than {_MAX_SCOPE_CHARS} characters"
     if _CONTROL_RE.search(scope):
         return "scope contains a control character"
-    path = scope.split("::", 1)[0].replace("\\", "/")
-    if path.startswith("/") or re.match(r"^[A-Za-z]:", path):
-        return "scope must be project-relative, not an absolute path"
+    # every `::` part: `tests/x.py::/etc/passwd` must not pass because only the first was looked at
+    for part in scope.split("::"):
+        if not part.strip():
+            return "scope has an empty `::` part"
+        part = part.replace("\\", "/")
+        if part.startswith("/") or re.match(r"^[A-Za-z]:", part):
+            return "scope must be project-relative, not an absolute path"
     if ".." in re.split(r"[\\/]|::", scope):
         return "scope must not climb out of the project with '..'"
     return None

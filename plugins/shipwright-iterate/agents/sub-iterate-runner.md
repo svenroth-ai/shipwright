@@ -181,7 +181,7 @@ Cascade".
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code --diff-file "$DIFF_FILE" \
-     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.stderr.txt"
+     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" --project-root "{project_root}" --run-id "$RUN_ID" --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json" 2> "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.stderr.txt"
    ```
 
    Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse feedback. Apply high/medium findings before commit, OR mark

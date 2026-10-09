@@ -79,6 +79,8 @@ _TOOL = "shared/scripts/tools/record_review_pass.py"
 _DIFF_REPAIR = ("To let F11 measure the diff instead, make the trunk branch resolvable: fetch the "
                 "remote trunk (`git fetch origin <trunk>`), unshallow a shallow clone "
                 "(`git fetch --unshallow`), or record the code review. ")
+_FLAGS_UNRECORDED_REPAIR = ("Nothing is unreadable: the run never recorded its risk flags. Add `risk_flags: [...]` "
+                            "(`[]` for none) to the F5c entry, or record the code review.")
 _FLAGS_REPAIR = ("To clear the input instead, regenerate or remove the unreadable file named above "
                  "and re-run F11. ")
 
@@ -110,11 +112,12 @@ def _scope(project_root: Path, run_id: str, entry: dict) -> tuple[bool, str]:
     return True, f"{label} ({sources})"
 
 
-def _trigger(project_root: Path, run_id: str, commit_hash: str) -> tuple[str, str, str]:
+def _trigger(project_root: Path, run_id: str, commit_hash: str, entry: dict | None = None) -> tuple[str, str, str]:
     """``(state, detail, repair)``; state is ``fired``, ``quiet``, ``not_git`` or ``error``."""
-    flags, err = recorded_risk_flags(project_root, run_id)
+    flags, err = recorded_risk_flags(project_root, run_id, entry)
     if err:
-        return "fired", f"risk flags unknown: {err}", _FLAGS_REPAIR
+        repair = _FLAGS_UNRECORDED_REPAIR if "never recorded" in err else _FLAGS_REPAIR
+        return "fired", f"risk flags unknown: {err}", repair
     flagged = f"risk flag(s) {', '.join(flags)}"
     ctx = git_context(project_root)
     if ctx == "not_git":
@@ -127,7 +130,7 @@ def _trigger(project_root: Path, run_id: str, commit_hash: str) -> tuple[str, st
     if not commit:
         rc, out, _ = _run_git(project_root, "rev-parse", "HEAD", timeout=10.0)
         commit = out.strip() if rc == 0 else ""
-    measure = measure_diff(project_root, commit) if commit else None
+    measure = measure_diff(project_root, commit, run_id) if commit else None
     if measure is None or measure.error:
         reason = measure.error if measure else "HEAD is unresolvable"
         reasons = [flagged] if flags else []
@@ -168,7 +171,7 @@ def check_cascade_trigger(project_root: Path, run_id: str, commit_hash: str = ""
     if not in_scope:
         return _skip(scope)
 
-    state, why, repair = _trigger(project_root, run_id, commit_hash)
+    state, why, repair = _trigger(project_root, run_id, commit_hash, entry)
     if state == "not_git":
         return _skip("not a git work tree and no risk flag recorded")
     if state == "quiet":

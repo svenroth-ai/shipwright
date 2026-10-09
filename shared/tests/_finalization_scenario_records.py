@@ -21,7 +21,8 @@ def write_entry(root: Path, complexity: str, surface: dict) -> None:
     """The run's F5c entry, carrying the complexity and its F0.5 block."""
     (root / F5C_DIR).mkdir(parents=True, exist_ok=True)
     entry = {"run_id": RUN, "type": "change", "complexity": complexity, "branch": "iterate/probe",
-             "tests_passed": True, "date": "2026-10-08T00:00:00+00:00", "surface_verification": surface}
+             "tests_passed": True, "date": "2026-10-08T00:00:00+00:00", "surface_verification": surface,
+             "risk_flags": []}  # F5c.md: the durable copy ([] = recorded none)
     (root / F5C_DIR / f"{RUN}.json").write_text(json.dumps(entry), encoding="utf-8")
 
 

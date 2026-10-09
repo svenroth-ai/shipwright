@@ -1,0 +1,7 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "all 11 ACs built; Stage-1 spec-reviewer PASS"},
+ {"name": "Test Quality", "verdict": "pass", "note": "new CLI, redact and real-git cascade tests; fixtures of tightened gates updated"},
+ {"name": "Error handling", "verdict": "pass", "note": "redaction runs before the row and fails the record on OSError; unreadable record keeps --marker-status required"},
+ {"name": "Boundaries", "verdict": "pass", "note": "stamp, risk_flags, Run-ID trailer, stderr redaction probed with real producers"},
+ {"name": "Size caps", "verdict": "pass", "note": "record_review_pass 407<=408, append_iterate_entry 451, external_review <=469"}
+]}

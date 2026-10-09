@@ -1,0 +1,1 @@
+`external_review.py` stamps each envelope with the run; the `unavailable` evidence rule refuses an unstamped one, and `record` masks URLs and key shapes in the stderr and raw captures that back an `unavailable` row.

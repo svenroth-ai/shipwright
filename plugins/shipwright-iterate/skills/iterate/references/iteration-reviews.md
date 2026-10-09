@@ -662,7 +662,8 @@ missing keys, degraded provider).
 **`--reason-code` — REQUIRED on every `not_run` / `not_applicable` row (`record` and `close-missing`).**
 One code from the closed `review_not_run` vocabulary in `shared/scripts/lib/reason_codes.py`
 (`unavailable`, `trivial-auto`, `delegated-to-orchestrator`, `diff-below-threshold`,
-`complexity-below-threshold`, `user-opt-out`, `config-disabled`, `missing-keys`, `no-spawn-site`).
+`complexity-below-threshold`, `user-opt-out`, `config-disabled`, `missing-keys`, `no-spawn-site`,
+`stage-1-rejected`).
 Given alone it supplies a rule-naming disposition; given with `--disposition` both are stored. A
 completed pass has no code, and a code outside the vocabulary is refused at the CLI. F11 refuses a
 skipped row without one at every complexity. F11 verifies the run being finalized; a record
@@ -682,7 +683,8 @@ written before this rule carries codeless legacy rows and would fail if it were 
   `complexity-below-threshold` (`plan`, `plan_internal`, `architecture_internal` below medium),
   `diff-below-threshold` (`code`/`spec`/`doubt`/`external_code` with no risk flag and a small diff),
   `user-opt-out` / `config-disabled` / `missing-keys` (an external pass the operator, config or keys
-  ruled out), `delegated-to-orchestrator` / `no-spawn-site` (campaign runner, below).
+  ruled out), `delegated-to-orchestrator` / `no-spawn-site` (campaign runner, below),
+  `stage-1-rejected` (a `spec` row after a Stage-1 REJECT — never `completed`, the payload drops the verdict).
 
 ### Campaign sub-iterate rows
 

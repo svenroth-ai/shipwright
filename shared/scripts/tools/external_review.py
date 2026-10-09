@@ -77,6 +77,7 @@ import json
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Wire up shared/scripts/lib so we can import shared helpers + the env loader.
@@ -309,6 +310,9 @@ def main() -> int:
     # with `mode`, so an `unavailable` capture names the pass it came from.
     args.driver, driver_record = resolve_effective_driver(args.driver, announce=True)
     driver_record["mode"] = args.mode
+    # Stamped by the adapter itself at capture time, so a failure envelope copied from
+    # another run (or hand-written) is told apart (lib/review_unavailable.py checks it).
+    driver_record["capture"] = {"run_id": args.run_id, "at": datetime.now(timezone.utc).isoformat()}
 
     # Mode-specific validation lives in lib/external_review_modes (a foreign
     # flag first, then a missing one — see there for why the order matters).
