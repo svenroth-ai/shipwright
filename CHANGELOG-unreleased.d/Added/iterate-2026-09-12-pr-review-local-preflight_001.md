@@ -1,1 +1,0 @@
-shipwright-security: pr_review.py gains a local preflight mode (--base/--diff-file) running the required Tier-3 PR-review gate against an unpushed branch's merge-base diff, wired into iterate's F11 before push

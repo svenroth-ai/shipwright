@@ -1,1 +1,0 @@
-An autonomous iterate whose external review cannot run now says so: the pass is closed unavailable only with the reviewer's captured error, the PR body and the run summary name it, and one triage card asks for the review to be re-run

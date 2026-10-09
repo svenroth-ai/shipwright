@@ -1,1 +1,0 @@
-Campaign sub-iterate-runner now makes the external architecture-review call; a reject from either reviewer halts that unit and is shown, with the recommended alternative, when the campaign ends (FR-01.11 AC39)

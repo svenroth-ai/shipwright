@@ -1,1 +1,0 @@
-Campaign sub-iterate runner now has the Agent tool and spawns the plan, architecture and spec/code/doubt reviewers itself (model=opus); the orchestrator's 3f-bis review remains the fallback and independent second look.

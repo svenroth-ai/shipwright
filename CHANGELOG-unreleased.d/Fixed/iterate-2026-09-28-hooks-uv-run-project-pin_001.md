@@ -1,1 +1,0 @@
-Every Shipwright hook now runs isolated from the session's working directory (`uv run --no-project`), so hooks can no longer try to sync/reinstall an unrelated project just because it happens to be open in the same terminal -- this could previously hard-fail on Windows with a file-lock error.

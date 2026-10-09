@@ -1,1 +1,0 @@
-Compliance audit D5 (feature/change with no requirement link) is now advisory: it reports the suggested fix command but no longer fails the audit or its exit code, matching FR-01.10/AC06 (AC06 is now test-bound); it also no longer feeds the compliance:backlog triage card, and audit-report.md now shows the fix for advisory flags.

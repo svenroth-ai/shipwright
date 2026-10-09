@@ -1,1 +1,0 @@
-state.py's phase detector, the build dashboard, and the two handoff/suggest-iterate hooks now read run_config.phase_tasks[] as their primary progress signal instead of the write-once current_step/completed_steps fields (P4.04 s3)

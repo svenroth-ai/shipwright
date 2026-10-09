@@ -1,1 +1,0 @@
-F0 resumes across invocations: after a red run and a fix, the next F0 re-runs only the previously red tests of each red unit and reuses green units, merging both into one report that is marked as resumed (never a full green run); any doubt falls back to a full unit run, and SHIPWRIGHT_F0_RESUME=0 turns it off.

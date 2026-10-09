@@ -1,1 +1,0 @@
-External review cascade and Codex review transport now use GPT-6.1 Sol (openai/gpt-6.1-sol via OpenRouter, gpt-6.1-sol direct and via Codex CLI); GPT-6 Luna (PR-review gate) unchanged; stale gpt-5.4 fallbacks in condense_release_notes replaced

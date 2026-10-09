@@ -1,1 +1,0 @@
-The SessionStart Phase-Quality banner now reports only the newest audit run per phase, so a FAIL that a newer run no longer reports (for example a stale test-evidence mtime or an already-mapped FR) stops being announced for weeks after it was resolved.
