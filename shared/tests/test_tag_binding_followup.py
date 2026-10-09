@@ -18,7 +18,7 @@ from lib.fr_tag_grammar import _TEST_DECL_RE, parse_ts_js  # noqa: E402
 from test_tag_binding_gate_integration import RUN, _py_base, _repo  # noqa: E402
 from tools.verifiers import tag_binding_gate as gate  # noqa: E402
 from tools.verifiers._tag_binding_identity import body_digests, mechanically_renamed  # noqa: E402
-from tools.verifiers._tag_binding_ts_lex import lex  # noqa: E402
+from lib.ts_lexer import lex  # noqa: E402
 
 TS = "tests/app.test.ts"
 TSX = "tests/app.test.tsx"

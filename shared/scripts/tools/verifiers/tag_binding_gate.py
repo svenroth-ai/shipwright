@@ -101,7 +101,7 @@ def check_test_tag_binding(project_root: Path, run_id: str, commit_hash: str = "
         if regen is None:
             return _fail("cannot enforce: the traceability collector could not regenerate the base/head "
                          "manifests (no merge-base with the default branch, the compliance plugin's "
-                         "collector did not load, or `git archive` failed) - fetch the default branch "
+                         "collector did not load, or the tree could not be read) - fetch the default branch "
                          "(`git fetch origin`) and check plugins/shipwright-compliance is present")
         base, head, _renames = regen
         require_manifest_shape(base, "regenerated at base")

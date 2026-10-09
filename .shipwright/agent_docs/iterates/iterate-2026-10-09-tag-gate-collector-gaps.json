@@ -1,0 +1,100 @@
+{
+  "run_id": "iterate-2026-10-09-tag-gate-collector-gaps",
+  "date": "2026-10-09T06:45:20.893243Z",
+  "event_at": "2026-10-08T23:13:18.982104+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "default",
+  "branch": "iterate/tag-gate-collector-gaps",
+  "spec": ".shipwright/planning/iterate/2026-10-09-tag-gate-collector-gaps.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-tag-gate-collector-gaps",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "wrapped .each table holding a regex literal or JSX text is folded and enumerated",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_a_wrapped_table_with_a_regex_or_jsx_text_is_seen_by_the_gate x4 PASSED"
+      },
+      {
+        "behavior": "gate lexes with the shared lib module",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_the_gate_lexes_with_the_shared_lib_module PASSED"
+      },
+      {
+        "behavior": "test folder named only by the head config is seen (plain, glob, added, replacing)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_a_test_folder_named_only_by_the_head_config_is_seen x4 PASSED"
+      },
+      {
+        "behavior": "test hidden by export-ignore at head is still seen",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_a_test_hidden_by_export_ignore_at_head_is_still_seen PASSED"
+      },
+      {
+        "behavior": "base test under export-ignore neither removed nor new",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_a_base_test_under_export_ignore_does_not_read_as_removed_or_new PASSED"
+      },
+      {
+        "behavior": "materialised tree keeps files and in-tree file links only",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_a_materialised_tree_keeps_files_and_in_tree_file_links_only PASSED"
+      },
+      {
+        "behavior": "symlinked test outside the test roots is seen by the gate",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_a_symlinked_test_file_outside_the_test_roots_is_seen_by_the_gate PASSED"
+      },
+      {
+        "behavior": "empty base tree is a valid tree",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_an_empty_base_tree_is_a_valid_tree PASSED"
+      },
+      {
+        "behavior": "export-ignored folder is in the materialised tree",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_collector_gaps.py::test_the_materialised_tree_keeps_an_export_ignored_folder PASSED"
+      },
+      {
+        "behavior": "path traversal entry refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_core.py::test_write_blobs_rejects_path_traversal PASSED"
+      },
+      {
+        "behavior": "full regression: 18 test roots",
+        "disposition": "tested",
+        "evidence": "run_test_suite.py F0: 18 units GREEN"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_tag_binding_collector_gaps.py -q -p no:cacheprovider --junitxml=.shipwright/runs/iterate-2026-10-09-tag-gate-collector-gaps/f05-junit.xml",
+    "exit_code": 0,
+    "tests_run": 15,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\tag-gate-collector-gaps\\.shipwright\\runs\\iterate-2026-10-09-tag-gate-collector-gaps\\surface_verification.log",
+    "timestamp": "2026-10-09T06:44:44.194Z"
+  },
+  "declared_removals": [
+    {
+      "path": "shared/scripts/tools/verifiers/_tag_binding_ts_lex.py",
+      "reason": "moved to shared/scripts/lib/ts_lexer.py so the compliance collector can load the same lexer"
+    }
+  ],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

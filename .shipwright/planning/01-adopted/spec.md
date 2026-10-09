@@ -976,8 +976,9 @@ _Where the work detail lives_ at the end of this document.
   the project's own settings then leave out of the scan, when the change is finished, then
   each of those counts as an added or edited test and needs a requirement name like any
   other; a quote inside a pattern or inside page markup does not hide an edit to the rest
-  of the test.
-  (iterate-2026-10-08-tag-gate-followup)
+  of the test, including inside a case table that wraps over several lines; a test whose
+  folder the project's export rules leave out of a release archive is still counted.
+  (iterate-2026-10-08-tag-gate-followup, iterate-2026-10-09-tag-gate-collector-gaps)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

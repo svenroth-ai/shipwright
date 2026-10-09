@@ -3,8 +3,8 @@
 R3 is binding: an enforcing gate must **regenerate** the requirement→test index from the
 base and head checkouts and compare — the committed ``test-traceability.json`` is
 derived/RTM-visibility only and a hand-edited/stale one can never satisfy the gate. This
-module does exactly that: it ``git archive``\\s the merge-base tree and the HEAD-commit
-tree into throwaway temp dirs and runs the TT1 ``build_manifest`` collector against each,
+module does exactly that: it materialises the merge-base tree and the HEAD-commit
+tree (``ls-tree`` + ``cat-file``, so ``export-ignore`` cannot shrink them) into throwaway temp dirs and runs the TT1 ``build_manifest`` collector against each,
 so the manifests reflect the real tracked spec + test state at each commit, not whatever
 artifact happens to sit in the working tree.
 
@@ -23,10 +23,7 @@ when a gate actually fires (git available, merge-base resolvable, and — cross-
 from __future__ import annotations
 
 import importlib
-import io as _io
-import subprocess
 import sys
-import tarfile
 import tempfile
 from pathlib import Path
 
@@ -35,6 +32,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from ._layer_coverage_evidence import fresh_evidence  # noqa: E402
+from ._tree_materialise import _archive_tree  # noqa: E402,F401  (re-exported: rollout)
 from .git_helpers import _run_git, git_context  # noqa: E402
 
 _COLLECTOR: tuple | None = None
@@ -131,50 +129,6 @@ def _merge_base(project_root: Path, commit: str) -> str:
         if rc == 0 and mb.strip() and mb.strip() != commit:
             return mb.strip()
     return ""
-
-
-def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
-    """Extract with the 3.12 data filter; fall back to a manual traversal guard on 3.11.
-
-    The fallback uses proper path CONTAINMENT (``dest`` is the target or a parent of the
-    resolved member), never a string ``startswith`` prefix — that would let a sibling dir
-    (``/tmp/foo-evil`` starts with ``/tmp/foo``) slip through (external-review finding).
-    The archive source is our own git tree, but the guard is defence-in-depth regardless.
-    """
-    try:
-        tar.extractall(dest, filter="data")  # type: ignore[arg-type]
-        return
-    except TypeError:
-        pass
-    dest_r = dest.resolve()
-    for member in tar.getmembers():
-        # Reject anything but a regular file or directory (external-review finding): a symlink
-        # / hardlink / device member could point outside the temp root and the collector would
-        # follow it while scanning. Only reg + dir are needed to rebuild the manifest.
-        if not (member.isreg() or member.isdir()):
-            continue
-        target = (dest / member.name).resolve()
-        if target == dest_r or dest_r in target.parents:
-            tar.extract(member, dest)
-        # else: reject path traversal (absolute / .. / sibling) — skip the member
-
-
-def _archive_tree(project_root: Path, sha: str, dest: Path) -> bool:
-    """``git archive`` the tracked tree at ``sha`` into ``dest`` (tracked files only —
-    ``.worktrees`` / gitignored churn are excluded). Returns False on any git failure."""
-    try:
-        proc = subprocess.run(["git", "-C", str(project_root), "archive", "--format=tar", sha],
-                              capture_output=True, timeout=180)
-    except (OSError, subprocess.SubprocessError):
-        return False
-    if proc.returncode != 0 or not proc.stdout:
-        return False
-    try:
-        with tarfile.open(fileobj=_io.BytesIO(proc.stdout)) as tar:
-            _safe_extract(tar, dest)
-    except (tarfile.TarError, OSError):
-        return False
-    return True
 
 
 def _base_test_dirs(base: dict) -> set[str]:
