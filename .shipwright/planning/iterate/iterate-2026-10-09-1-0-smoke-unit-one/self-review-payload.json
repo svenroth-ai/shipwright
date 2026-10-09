@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"docs/_smoke/unit-1.md created with exactly one line, as the sub-iterate spec scopes."},
+{"name":"Error Handling","verdict":"n/a","note":"Static markdown file; no executable code paths."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets, inputs or code; plain text only."},
+{"name":"Test Quality","verdict":"n/a","note":"No behavior to test; full suite re-run at F0 to prove nothing regressed."},
+{"name":"Performance Basics","verdict":"n/a","note":"No runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"File name and path match the spec verbatim."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format producer or consumer touched; no round-trip probe applicable."}
+]}

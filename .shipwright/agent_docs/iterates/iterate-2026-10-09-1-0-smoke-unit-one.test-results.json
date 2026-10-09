@@ -1,0 +1,57 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-1-0-smoke-unit-one",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-09-1-0-smoke-unit-one/surface_verification.json",
+      "timestamp": "2026-10-09T09:12:34.644Z",
+      "attempts": 0,
+      "justification": "Docs-only one-line markdown file under docs/_smoke; no startable surface changes.",
+      "reason_code": "docs-only-surface"
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "Small docs-only diff: one throwaway markdown line with no testable behavior; full F0 suite (18 units) re-run green to prove no regression."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-1-0-smoke-unit-one",
+    "commit": "e5436a5913bfd9b2fe143eb6a50acf231c0fdf4c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

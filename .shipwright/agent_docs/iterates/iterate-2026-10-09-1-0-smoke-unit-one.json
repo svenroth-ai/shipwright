@@ -1,0 +1,32 @@
+{
+  "run_id": "iterate-2026-10-09-1-0-smoke-unit-one",
+  "date": "2026-10-09T09:21:02.781128Z",
+  "event_at": "2026-10-09T09:20:45.595607+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/smoke-860-1-0-unit-one",
+  "spec": ".shipwright/planning/iterate/campaigns/smoke-860-20261009/sub-iterates/1.0-unit-one.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-1-0-smoke-unit-one",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "Small docs-only diff: one throwaway markdown line with no testable behavior; full F0 suite (18 units) re-run green to prove no regression."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-09-1-0-smoke-unit-one/surface_verification.json",
+    "timestamp": "2026-10-09T09:12:34.644Z",
+    "attempts": 0,
+    "justification": "Docs-only one-line markdown file under docs/_smoke; no startable surface changes.",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-1-0-smoke-unit-one",
+  "date": "2026-10-09",
+  "section": "Iterate — change: smoke unit 1",
+  "title": "Smoke unit 1 throwaway doc for PR 860 campaign verification",
+  "context": "PR 860 changed how the campaign runner passes its lease token and spawns its own internal reviews; a throwaway campaign exercises that path end to end.",
+  "decision": "Add a one-line docs/_smoke/unit-1.md file as the minimal diff for sub-iterate 1.0; the PR stays open and is never merged.",
+  "consequences": "No runtime or spec change; the branch and PR are disposable once the smoke verification is read.",
+  "rationale": "The smallest possible diff isolates the runner mechanics under test from any product change.",
+  "rejected": "An empty commit was rejected because the finalization gates need a real diff to measure.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
