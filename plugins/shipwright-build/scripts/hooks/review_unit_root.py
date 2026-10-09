@@ -32,8 +32,24 @@ def _main_root(start: Path) -> Optional[Path]:
     return Path(out).parent if out else None
 
 
+def _registered_worktrees(root: Path) -> Optional[set[Path]]:
+    """Real paths of the repo's registered worktrees, or ``None`` when git cannot say."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "worktree", "list", "--porcelain"],
+            capture_output=True, encoding="utf-8", errors="replace", timeout=10, check=False,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    paths = {Path(line[len("worktree "):]).resolve() for line in out.splitlines()
+             if line.startswith("worktree ")}
+    return paths or None
+
+
 def unit_worktrees(project_root: Path) -> list[Path]:
-    """Worktrees ``loop_state.json`` records for the campaign's units."""
+    """Worktrees ``loop_state.json`` records for the campaign's units, kept only
+    when git itself lists them: ``loop_state.json`` is written by the runner, so a
+    crafted entry must not steer where the hook writes."""
     roots = [project_root]
     main = _main_root(project_root)
     if main is not None and main != project_root:
@@ -50,7 +66,10 @@ def unit_worktrees(project_root: Path) -> list[Path]:
             wt = unit.get("worktree") if isinstance(unit, dict) else None
             if isinstance(wt, str) and wt.strip():
                 found.append(Path(wt))
-    return found
+    registered = _registered_worktrees(project_root)
+    if registered is None:
+        return []
+    return [w for w in found if w.resolve() in registered]
 
 
 def resolve_run_root(project_root: Path, run_id: str,

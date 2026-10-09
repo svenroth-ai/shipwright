@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import subprocess
 from pathlib import Path
 
 HOOKS = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
@@ -28,18 +29,37 @@ def _load(name: str, filename: str):
 hook = _load("write_review_payload_on_stop_uw", "write-review-payload-on-stop.py")
 
 
-def _campaign(tmp_path: Path, with_reviews: bool = True) -> tuple[Path, Path]:
-    root = tmp_path / "main"
-    unit_wt = tmp_path / "unit-wt"
-    for p in (root / ".shipwright", unit_wt):
-        p.mkdir(parents=True)
-    (root / ".shipwright" / "loop_state.json").write_text(
-        json.dumps({"units": [{"id": "A", "worktree": str(unit_wt)}]}), encoding="utf-8")
-    if with_reviews:
-        run_dir = unit_wt / ".shipwright" / "planning" / "iterate" / RUN_ID
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", *args],
+                   capture_output=True, text=True, check=True)
+
+
+def _worktree(root: Path, name: str, run_dir_reviews: bool = True) -> Path:
+    """A REGISTERED git worktree of ``root`` (the hook only trusts those)."""
+    wt = root.parent / name
+    _git(root, "worktree", "add", "-q", "-b", name, str(wt))
+    if run_dir_reviews:
+        run_dir = wt / ".shipwright" / "planning" / "iterate" / RUN_ID
         run_dir.mkdir(parents=True)
         (run_dir / "reviews.json").write_text(
             json.dumps({"reviews": {"code": {"status": "pending"}}}), encoding="utf-8")
+    return wt
+
+
+def _write_state(root: Path, worktrees: list) -> None:
+    (root / ".shipwright").mkdir(exist_ok=True)
+    (root / ".shipwright" / "loop_state.json").write_text(
+        json.dumps({"units": [{"id": f"U{i}", "worktree": str(w)} for i, w in enumerate(worktrees)]}),
+        encoding="utf-8")
+
+
+def _campaign(tmp_path: Path, with_reviews: bool = True) -> tuple[Path, Path]:
+    root = tmp_path / "main"
+    root.mkdir()
+    _git(root, "init", "-q")
+    _git(root, "commit", "-q", "--allow-empty", "-m", "init")
+    unit_wt = _worktree(root, "unit-wt", run_dir_reviews=with_reviews)
+    _write_state(root, [unit_wt])
     return root, unit_wt
 
 
@@ -72,26 +92,30 @@ def test_still_refuses_when_no_unit_worktree_holds_the_run(tmp_path, monkeypatch
 
 def test_the_same_worktree_listed_twice_is_not_ambiguous(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path)
-    state = json.loads((root / ".shipwright" / "loop_state.json").read_text(encoding="utf-8"))
-    state["units"].append({"id": "B", "worktree": str(unit_wt) + "/."})
-    (root / ".shipwright" / "loop_state.json").write_text(json.dumps(state), encoding="utf-8")
+    _write_state(root, [unit_wt, str(unit_wt) + "/."])
     assert _stop(monkeypatch, tmp_path, root) == 0
     assert hook.salvage_path(unit_wt, RUN_ID, "code").exists()
 
 
 def test_two_distinct_worktrees_holding_the_run_are_ambiguous_and_refused(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path)
-    stale = tmp_path / "stale-wt"
-    run_dir = stale / ".shipwright" / "planning" / "iterate" / RUN_ID
-    run_dir.mkdir(parents=True)
-    (run_dir / "reviews.json").write_text(
-        json.dumps({"reviews": {"code": {"status": "pending"}}}), encoding="utf-8")
-    state = json.loads((root / ".shipwright" / "loop_state.json").read_text(encoding="utf-8"))
-    state["units"].append({"id": "A2", "worktree": str(stale)})
-    (root / ".shipwright" / "loop_state.json").write_text(json.dumps(state), encoding="utf-8")
+    stale = _worktree(root, "stale-wt")
+    _write_state(root, [unit_wt, stale])
     assert _stop(monkeypatch, tmp_path, root) == 0
     assert not hook.salvage_path(unit_wt, RUN_ID, "code").exists()
     assert not hook.salvage_path(stale, RUN_ID, "code").exists()
+
+
+def test_a_path_git_does_not_list_is_never_a_salvage_root(tmp_path, monkeypatch):
+    """loop_state.json is runner-written: a crafted entry must not steer the write."""
+    root, _unit_wt = _campaign(tmp_path, with_reviews=False)
+    rogue = tmp_path / "rogue"
+    (rogue / ".shipwright" / "planning" / "iterate" / RUN_ID).mkdir(parents=True)
+    (rogue / ".shipwright" / "planning" / "iterate" / RUN_ID / "reviews.json").write_text(
+        json.dumps({"reviews": {"code": {"status": "pending"}}}), encoding="utf-8")
+    _write_state(root, [rogue])
+    assert _stop(monkeypatch, tmp_path, root) == 0
+    assert not hook.salvage_path(rogue, RUN_ID, "code").exists()
 
 
 def test_a_malformed_loop_state_degrades_to_the_session_root(tmp_path, monkeypatch):
