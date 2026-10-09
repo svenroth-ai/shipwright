@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-runner-lease-and-agent-tool",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:17:41.573123+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC1's core mechanism is a prose fix — the runner brief now tells the agent to pass `--attempt`/`--attempt-id`. If the runner agent omits or mis-parses the flags, the lease silently behaves as before. There's no code-level enforcement that a touch without the tokens actually fails in the campaign path (only a unit test driving `check_unit_lease.main` directly).",
+          "suggestion": "Since a token-less touch already refuses (verified), make the loud failure (`LEASE-TOUCH-FAILED` + `finalization.lease_touch: \"failed\"`) a contract the runner must honor and add a pinning test on the brief text itself (consistent with the 88 existing pinning tests) so a future brief edit can't quietly drop the flags.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC4/AC5: runner-spawned reviews are self-attested rows with no verdict or reviewed-head binding, and the orchestrator still re-runs everything via 3f-bis `--force`. The runner-side cascade therefore adds cost (three opus-model spawns per unit) without currently shortening the orchestrator path — the benefit is deferred to a follow-up.",
+          "suggestion": "Acknowledged in the spec, and dropping it is defensible, but note explicitly in `iteration-reviews.md` that these rows are informational-only today, so downstream consumers don't treat `completed` as gated evidence. That's the one concrete consumer-facing risk of the new record shape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AC2 autouse fixture scrubs `SHIPWRIGHT_LOOP_ID`/`SHIPWRIGHT_LOOP_UNIT_ID` for `shared/tests` only. Other test suites or subprocesses launched by the runner (including the newly spawned Agent-tool reviews, which inherit the loop env) may hit the same leak that produced the original 15 failures.",
+          "suggestion": "Verify the reviewers spawned in Step 3.5/3.7 either don't execute `shared/tests` or get the same scrub; otherwise scrub at spawn time in the runner's documented invocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The lease-touch retry is \"one retry\" with `finalization.lease_touch: \"failed\"` — but no stated behavior for what 3f-bis does when the field is `\"failed\"` vs absent. The `jq` consumer reads `.units[].worktree`; is a `failed` touch recorded as a partial unit entry or no entry?",
+          "suggestion": "Pin the exact `loop_state.json` state after a failed touch (no worktree key vs. null) and one test of 3f-bis reading that state → LEASE-FALLBACK.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC3 depends on \"the flag is absent from the plugin cache until the PR merges\" — a timing assumption. If the plugin cache updates mid-campaign, runners running their worktree's script copy may diverge in behavior from the cached version other agents use.",
+          "suggestion": "Make the brief say \"always run the worktree's copy\" (unconditional) rather than conditioning on cache state, which is cheaper to reason about and test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Self-attested review rows (`completed`, reason codes like `delegated-to-orchestrator`) written by the runner are new trusted input to the orchestrator's reviews.json consumer. No integrity marker distinguishes runner-attested rows from orchestrator-gated rows.",
+          "suggestion": "The verdict/reviewed-head binding follow-up addresses this; in the interim, consider a `self_attested: true` field so any consumer can filter without inferring from reason codes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The failed-touch path does not distinguish a transient write failure from a rejected attempt token or lost lease. Retrying and recording `lease_touch: \"failed\"` provides visibility, but does not specify whether a runner that no longer owns the unit stops working.",
+          "suggestion": "Retry only recoverable failures. On ownership rejection, stop unit mutations and finalization immediately. For other persistent failures, prevent promotion until the orchestrator verifies the unit’s worktree and ownership; a `LEASE-FALLBACK` message alone cannot establish that the shared worktree contains the unit’s changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The runner contract specifies spawning reviewers and recording `completed`, but does not specify how their findings affect progression. A successfully completed reviewer can still reject the approach or report blocking findings. The orchestrator’s later independent review preserves its gate, but does not establish that the runner actually acts on its internal reviews.",
+          "suggestion": "Explicitly require the runner to consume reviewer results, resolve blocking findings, and repeat affected reviews after fixes before advancing. Distinguish a reviewer’s successful execution from acceptance, and route missing or unusable results through the documented fallback.  The token fix, worktree-local script execution, and retained independent orchestrator gate are sound choices. Based on the supplied approach, the lease-failure and reviewer-result handling need explicit rules before approval; implementation files could not be inspected because command execution was blocked.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T22:19:08.409311+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: risk — Severity: medium**\nFinding: AC1's core mechanism is a *prose* fix — the runner brief now tells the agent to pass `--attempt`/`--attempt-id`. If the runner agent omits or mis-parses the flags, the lease silently behaves as before. There's no code-level enforcement that a touch without the tokens actually fails in the campaign path (only a unit test driving `check_unit_lease.main` directly).\nSuggestion: Since a token-less touch already refuses (verified), make the loud failure (`LEASE-TOUCH-FAILED` + `finalization.lease_touch: \"failed\"`) a contract the runner *must* honor and add a pinning test on the brief text itself (consistent with the 88 existing pinning tests) so a future brief edit can't quietly drop the flags.\n\n**Category: approach — Severity: medium**\nFinding: AC4/AC5: runner-spawned reviews are self-attested rows with no verdict or reviewed-head binding, and the orchestrator still re-runs everything via 3f-bis `--force`. The runner-side cascade therefore adds cost (three opus-model spawns per unit) without currently shortening the orchestrator path — the benefit is deferred to a follow-up.\nSuggestion: Acknowledged in the spec, and dropping it is defensible, but note explicitly in `iteration-reviews.md` that these rows are informational-only today, so downstream consumers don't treat `completed` as gated evidence. That's the one concrete consumer-facing risk of the new record shape.\n\n**Category: edge-case — Severity: medium**\nFinding: The AC2 autouse fixture scrubs `SHIPWRIGHT_LOOP_ID`/`SHIPWRIGHT_LOOP_UNIT_ID` for `shared/tests` only. Other test suites or subprocesses launched *by* the runner (including the newly spawned Agent-tool reviews, which inherit the loop env) may hit the same leak that produced the original 15 failures.\nSuggestion: Verify the reviewers spawned in Step 3.5/3.7 either don't execute `shared/tests` or get the same scrub; otherwise scrub at spawn time in the runner's documented invocati […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The failed-touch path does not distinguish a transient write failure from a rejected attempt token or lost lease. Retrying and recording `lease_touch: \"failed\"` provides visibility, but does not specify whether a runner that no longer owns the unit stops working.  \n   **Suggestion:** Retry only recoverable failures. On ownership rejection, stop unit mutations and finalization immediately. For other persistent failures, prevent promotion until the orchestrator verifies the unit’s worktree and ownership; a `LEASE-FALLBACK` message alone cannot establish that the shared worktree contains the unit’s changes.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The runner contract specifies spawning reviewers and recording `completed`, but does not specify how their findings affect progression. A successfully completed reviewer can still reject the approach or report blocking findings. The orchestrator’s later independent review preserves its gate, but does not establish that the runner actually acts on its internal reviews.  \n   **Suggestion:** Explicitly require the runner to consume reviewer results, resolve blocking findings, and repeat affected reviews after fixes before advancing. Distinguish a reviewer’s successful execution from acceptance, and route missing or unusable results through the documented fallback.\n\nThe token fix, worktree-local script execution, and retained independent orchestrator gate are sound choices. Based on the supplied approach, the lease-failure and reviewer-result handling need explicit rules before approval; implementation files could not be inspected because command execution was blocked.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "settled skip let self-attested rows bypass the orchestrator gate (REJECT/no head binding) - fixed by removing the skip; 3f-bis stays independent",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "REJECT recording shape and blocker #3 autonomy wording - fixed",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "schema indent fixed; stale 'no Agent tool' fixture wording left (tests still pass)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T22:14:16.777185+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 3f-bis independence overstated (fires=0 skip) - reworded to 'whenever its trigger fires' — Addressed in-diff by rewording/disclosure; see campaign-step-3-7-internal-reviews.md Known limits.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: payload basename collision - documented as known limit — Addressed in-diff by rewording/disclosure; see campaign-step-3-7-internal-reviews.md Known limits.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: allow-list prose-only - disclosed; PreToolUse guard follow-up — Addressed in-diff by rewording/disclosure; see campaign-step-3-7-internal-reviews.md Known limits.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: salvage hook root, REJECT-path code/doubt rows, other test roots - disclosed/rebutted (3f-bis shell out of scope) — Addressed in-diff by rewording/disclosure; see campaign-step-3-7-internal-reviews.md Known limits.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T22:17:30.531892+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md` (~line 38–45, the lease-touch bash block)",
+          "line": null,
+          "finding": "The runnable code block still invokes `uv run \"{shared_root}/scripts/checks/check_unit_lease.py\" touch … --attempt \"{attempt}\" --attempt-id \"{attempt_id}\"`, while the new prose paragraph immediately below says \"Cache lag: a unit's own new CLI flag is absent from the installed plugin cache until its PR merges… run only that script from your worktree's copy\". An autonomous runner that executes the literal block (which is what runners do) will hit the stale cached script that doesn't recognize `--attempt`/`--attempt-id`, fail both attempts, and set `finalization.lease_touch: \"failed\"` — i.e. the exact defect this change fixes reproduces on the very first campaign run against an unsynced cache. The prose override is easy to miss next to a copy-pasteable command.",
+          "suggestion": "Change the block itself to run the worktree's copy for `check_unit_lease.py` (e.g. `uv run \"{project_root}/scripts/checks/check_unit_lease.py\"` or an explicit `# run from {project_root}, not {shared_root} — cache lag` annotation inside the fence), and keep `{shared_root}` only for the session-lock touch which gains no new flag.  2. Category: test — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_runner_agent_tool_and_lease_token.py` (`test_the_runner_briefs_touch_writes_the_worktree_on_a_claimed_row`)",
+          "line": null,
+          "finding": "The test imports and drives the repo's current `check_unit_lease.py`, not the copy the brief's command block actually points at (`{shared_root}`/plugin-cache copy). It validates the CLI accepts the flags and that the brief prints the flags, but it cannot detect the cache-lag mismatch in finding 1 — the block's `{shared_root}` path is never exercised. A runner whose installed cache lags would still fail in production while this test stays green.",
+          "suggestion": "Additionally assert that the lease-touch block in the brief references the worktree-local script path (or at least that the block and the cache-lag prose don't contradict each other), so the doc-level fix is pinned.  3. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-iterate/agents/sub_iterate_runner_contract.schema.json` (`lease_touch`)",
+          "line": null,
+          "finding": "The new `lease_touch` enum is `[\"failed\"]` only, and the brief's `attempt token mismatch` path STOPs with `reason_code: \"lease_superseded\"` and \"push nothing\". If a runner writes `finalization.lease_touch` on that path too (plausible, since the touch did fail), the enum rejects it; if it doesn't, downstream consumers can't distinguish \"worktree untrustworthy, build continued\" from \"claim superseded, unit aborted\" from `finalization` alone. Not a hard failure, but an ambiguity on the loud-failure path AC1 introduces.",
+          "suggestion": "Either widen the enum (e.g. add `\"superseded\"`) or state explicitly in the brief/schema description that the superseded STOP path never writes `lease_touch`.  4. Category: test — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_runner_agent_tool_and_lease_token.py` (`test_shared_tests_do_not_inherit_the_campaign_loop_env`)",
+          "line": null,
+          "finding": "AC2 claims 15 failures across 5 files were reproduced, but the regression test pins only `test_generate_handoff_on_stop.py`. If the conftest scrub is ever narrowed, the other four files' leak sensitivity is unprotected. Also, spawning a nested pytest with `timeout=300` makes this test slow and a potential CI flake source.",
+          "suggestion": "Acceptable as a smoke pin, but consider asserting on the conftest scrub directly (e.g. that the fixture deletes both env names) as the cheap, fast half of the pin.  Everything else checks out: AC4/AC5's spawn + fallback semantics are consistently described across the runner brief, the new reference, `campaign-mode.md`, `iteration-reviews.md`, `guide.md`, and the schema; the `LEASE-FALLBACK` echo, `reason_codes.py` comment updates, and the rewritten prose tests all match the new contract. No security issues — the changes are prose/docs/fixtures plus tests, and the conftest change only removes env leakage.  Overall: ship-with-fixes — the substance is sound and well-pinned, but the lease-touch code block contradicting its own cache-lag prose is a real production-path defect that the new tests can't catch.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T22:18:43.403026+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: spec / bug — Severity: medium**\n- File: `plugins/shipwright-iterate/agents/sub-iterate-runner.md` (~line 38–45, the lease-touch bash block)\n- Finding: The runnable code block still invokes `uv run \"{shared_root}/scripts/checks/check_unit_lease.py\" touch … --attempt \"{attempt}\" --attempt-id \"{attempt_id}\"`, while the new prose paragraph immediately below says \"Cache lag: a unit's own new CLI flag is absent from the installed plugin cache until its PR merges… run only that script from your worktree's copy\". An autonomous runner that executes the literal block (which is what runners do) will hit the stale cached script that doesn't recognize `--attempt`/`--attempt-id`, fail both attempts, and set `finalization.lease_touch: \"failed\"` — i.e. the exact defect this change fixes reproduces on the very first campaign run against an unsynced cache. The prose override is easy to miss next to a copy-pasteable command.\n- Suggestion: Change the block itself to run the worktree's copy for `check_unit_lease.py` (e.g. `uv run \"{project_root}/scripts/checks/check_unit_lease.py\"` or an explicit `# run from {project_root}, not {shared_root} — cache lag` annotation inside the fence), and keep `{shared_root}` only for the session-lock touch which gains no new flag.\n\n**2. Category: test — Severity: low**\n- File: `shared/tests/test_runner_agent_tool_and_lease_token.py` (`test_the_runner_briefs_touch_writes_the_worktree_on_a_claimed_row`)\n- Finding: The test imports and drives the *repo's current* `check_unit_lease.py`, not the copy the brief's command block actually points at (`{shared_root}`/plugin-cache copy). It validates the CLI accepts the flags and that the brief *prints* the flags, but it cannot detect the cache-lag mismatch in finding 1 — the block's `{shared_root}` path is never exercised. A runner whose installed cache lags would still fail in production while this test stays green.\n- Suggestion: Additionally assert that the lease-touch bl […truncated]\n\n[openai] No concrete defects found in the supplied diff. It covers the lease fencing token, loud failure handling, test environment isolation, runner review spawns, fallback recording, and retention of the orchestrator’s independent gate.\n\nThe lease test exercises the CLI against a claimed row; the review-spawn tests primarily pin instructions rather than verify runtime execution. That limits the evidence for actual spawning, but does not establish a defect in this instruction-driven change.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:11:25.219187+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:13:18.690761+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:11:43.102917+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

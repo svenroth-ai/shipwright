@@ -1,0 +1,103 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-runner-lease-and-agent-tool",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 21959,
+      "total": 22056
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-08T22:51:45.195Z",
+      "attempts": 0,
+      "justification": "Diff is runner/orchestrator prose, a result-schema property, test scaffolding and docs; no UI, API route, SSE/WebSocket or message contract. The lease-token and loop-env behaviours are exercised by shared/tests/test_runner_agent_tool_and_lease_token.py.",
+      "reason_code": "no-startable-surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "sub-iterate-runner frontmatter lists the Agent tool",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_runner_tools_list_includes_agent PASSED"
+        },
+        {
+          "behavior": "runner brief + reference carry model=opus, the five reviewers, the fallback and no-spawn-site",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_runner_spawns_internal_reviews_with_model_opus_and_keeps_the_fallback PASSED"
+        },
+        {
+          "behavior": "3f-bis stays an independent gate (no runner_settled skip); spawns are allow-listed and re-review capped",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_3f_bis_stays_an_independent_gate_and_runner_spawns_are_allow_listed PASSED"
+        },
+        {
+          "behavior": "lease touch with the brief's flags writes the worktree on a claimed row; a token-less touch is refused",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_the_runner_briefs_touch_writes_the_worktree_on_a_claimed_row PASSED"
+        },
+        {
+          "behavior": "shared/tests do not inherit SHIPWRIGHT_LOOP_ID / SHIPWRIGHT_LOOP_UNIT_ID (15 failures in 5 files before, 0 after)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_shared_tests_do_not_inherit_the_campaign_loop_env PASSED"
+        },
+        {
+          "behavior": "campaign review-record shape and actor table accept runner-completed internal rows and refuse delegated mislabels",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_record_campaign_shape.py + test_campaign_review_contract_prose.py PASSED"
+        },
+        {
+          "behavior": "iteration-reviews / iterate SKILL prose pins describe the new contract",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iteration_reviews_prose.py + test_iterate_skill_prose.py PASSED"
+        },
+        {
+          "behavior": "campaign machinery composes: runner brief, orchestrator 3f-bis, lease script and review-record rows agree end to end",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_the_runner_briefs_touch_writes_the_worktree_on_a_claimed_row + test_review_record_campaign_shape.py PASSED; F0 integration-tests unit PASS"
+        },
+        {
+          "behavior": "a live Claude Code runner subagent actually spawns reviewers with model=opus",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a live nested subagent spawn by the model runtime; prose contract is pinned, runtime behaviour is observable only in a real campaign wave"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "declared_removals": []
+  }
+}

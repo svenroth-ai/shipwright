@@ -28,6 +28,7 @@ import sys
 from pathlib import Path
 
 import pytest
+pytestmark = pytest.mark.covers("FR-01.11")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -227,9 +228,10 @@ def test_runner_may_not_close_code_completed_and_the_contract_says_so(
     rc, out = _record_row(campaign_root, "code", "completed", None)
     assert rc == 0, f"the CLI itself has no provenance to check: {out}"
 
-    assert "may never write code or doubt as completed" in _norm_doc(), (
-        "the runner contract must forbid closing code/doubt as completed — "
-        "this sentence is the only enforcement point, since the CLI cannot "
+    assert ("may never write spec, code, doubt, plan_internal or "
+            "architecture_internal as completed for a pass whose subagent it "
+            "did not spawn and read") in _norm_doc(), (
+        "the contract sentence is the only enforcement point: the CLI cannot "
         "know who ran the review"
     )
 
@@ -291,23 +293,25 @@ def test_contract_table_lists_every_row_this_test_writes(review_type, status):
     table = _step_37_table()
     assert review_type in table, f"the Step 3.7 table must carry the {review_type} row"
     if review_type in _INTERNAL_ARM_TYPES:
-        # Not a delegated-cascade row like spec/code/doubt: runner-owned (not
-        # orchestrator-owned) but still capped at `not_run` — no campaign-level
-        # internal-arm spawn site exists to ever promote either one.
-        assert "runner, permanently - never promoted | not_run only" in table, (
-            f"{review_type} must be owned by the runner, permanently, and "
-            "capped at not_run — never promoted at 3f-bis"
+        # Runner-owned, NEVER promoted at 3f-bis (no orchestrator spawn site).
+        assert "runner (never promoted by 3f-bis) | completed when it spawned the reviewer" in table, (
+            f"{review_type}: runner-owned, completed only for its own spawn"
         )
     elif status == "not_run":
-        assert "| spec (stage 1), code, doubt | orchestrator - not the runner | not_run only" in table, (
-            f"{review_type} is an internal stage: the table must own it to the "
-            "orchestrator and cap the runner at not_run"
-        )
+        assert _STAGE_ROW in table, f"{review_type}: the stage row must cap the runner"
+
     else:
         assert "completed" in table, (
             f"{review_type} is the runner's own work and must be recordable "
             "as completed"
         )
+
+
+_STAGE_ROW = (
+    "| spec (stage 1), code, doubt | the runner for each pass whose subagent it "
+    "spawned and read; else the orchestrator (3f-bis) | completed only for a "
+    "pass its own subagent returned"
+)
 
 
 def _step_37_table() -> str:
@@ -334,13 +338,8 @@ def _norm_doc_section(heading: str) -> str:
 def test_the_table_never_lets_the_runner_close_an_internal_stage_completed():
     """The pairing that matters, asserted once and directly.
 
-    The literal includes `spec`: Stage 1 joined the row when it became
-    recordable, and it belongs there for the same reason as the other two — the
-    campaign runner has no Agent tool, so it performs none of the three and may
-    write none of them `completed`.
+    The runner spawns all three (incl. `spec`) but may write `completed` only
+    for a pass whose own subagent returned; a failed spawn is `not_run`.
     """
     table = _step_37_table()
-    assert "| spec (stage 1), code, doubt | orchestrator - not the runner | not_run only" in table, (
-        "the internal stages must be one row, owned by the orchestrator, and "
-        "writable by the runner only as not_run"
-    )
+    assert _STAGE_ROW in table, "the internal stages must be one row, completed only for own spawns"

@@ -159,7 +159,11 @@ two are independent: a campaign session-lock failure means a second SESSION
 may now be driving the campaign; a lease-touch failure means only THIS
 UNIT's own liveness signal went stale, and is even more strictly
 warn-and-continue (no fencing-token validation applies to it at all until R4
-lands — see "Per-unit worktree path" below for why).
+lands — see "Per-unit worktree path" below for why). **Warn-and-continue means the BUILD continues, not
+that the failure is quiet:** the runner prints `LEASE-TOUCH-FAILED`, retries once and records
+`finalization.lease_touch: "failed"`, because the lease touch is what writes the unit's `worktree` into
+`loop_state.json` and `3f-bis` falls back to the shared campaign worktree without it. The touch must
+carry `--attempt-id` — a claimed row refuses a token-less touch (trg-c23f2ee7).
 
 **A worktree recreate silently drops the lock.** The state file lives
 *inside* the worktree it protects (`{campaign_wt}/.shipwright/`), so

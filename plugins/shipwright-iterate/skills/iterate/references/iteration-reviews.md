@@ -170,11 +170,12 @@ own SKILL.md §F applies at every spawn in the cascade, standalone or delegated)
 **Who runs it.** **A standalone iterate spawns the cascade itself**, from
 SKILL.md Step 8, before F6 (commit) — it has the `Agent` tool, so there is no
 delegate. Only in **campaign mode** does the question of delegation arise at
-all: the sub-iterate-runner subagent has no `Agent` tool, so
-`agents/sub-iterate-runner.md` Step 3.7 hands the cascade to the orchestrator
-(see `campaign-mode.md` for what that currently does and does not cover). Do not
-read the campaign delegation as a general rule — that misreading is what let
-standalone runs finish with no internal review at all.
+all: the sub-iterate-runner subagent carries the `Agent` tool and spawns the
+cascade itself (`agents/sub-iterate-runner.md` Step 3.7, `model=opus`), and only
+when a spawn cannot happen does it hand the cascade to the orchestrator's
+`3f-bis` fallback (`campaign-mode.md`). Do not read that fallback as a general
+rule — that misreading is what let standalone runs finish with no internal
+review at all.
 
 All three stages run in this fixed order:
 
@@ -241,10 +242,10 @@ rule. The two reviews are now independent routes to the same guarantee.
 **0. First establish that it genuinely cannot run.** This ladder is for a *real*
 blocker, and there are exactly four:
 
-1. this agent type has **no `Agent` tool** — structurally the sub-iterate-runner;
+1. this agent has **no usable `Agent` tool** — absent from its tools list, or unavailable at runtime (the sub-iterate-runner lists it, so for a runner this means the spawn itself failed);
 2. the tool **errored** when called (a permission *denial* counts here — say so);
 3. the run is a **campaign sub-iterate built by the runner under `--autonomous`**,
-   where there is no operator to ask. A *standalone* run that an operator merely
+   where there is no operator to ask — this excuses questions, never the runner's own Step 3.5/3.7 spawns, which need no operator. A *standalone* run that an operator merely
    described as "autonomous" is **not** this case: the person who wrote that
    invocation is present, so ask them;
 4. the operator was asked and **declined** — including an answer that declines by
@@ -290,8 +291,8 @@ does not disappear:
    a pass never due is the false statement this record exists to prevent. Do
    **not** record either `completed` "by substitution": that claims the contract's pass ran, and it did not;
 3. in campaign mode the same escalation is what ADR-029 already specifies —
-   the runner has no `Agent` tool, so the cascade is delegated to the
-   orchestrator. This section is its standalone-mode counterpart, which was
+   a runner that cannot spawn delegates the cascade to the orchestrator's
+   `3f-bis`. This section is its standalone-mode counterpart, which was
    missing.
 
 **This is enforced, not merely instructed.** At medium+ the F11 verifier
@@ -685,12 +686,18 @@ written before this rule carries codeless legacy rows and would fail if it were 
 
 ### Campaign sub-iterate rows
 
-The sub-iterate-runner subagent has no `Agent` tool, so it performs `self`,
-`plan` and `external_code` and performs neither internal stage — nor either
-internal-arm review (`plan_internal`, `architecture_internal`), for the same
-reason. It records
-exactly this — **who did the work decides the name** (`agents/sub-iterate-runner.md`
-Step 3.7 carries the actor table). Each `…` below stands for the invocation
+The sub-iterate-runner subagent carries the `Agent` tool, so it performs
+`self`, `plan` and `external_code` **and** spawns both internal-arm reviews
+(`plan_internal`, `architecture_internal`; Step 3.5) and the internal cascade
+(`spec` → `code` → `doubt`; Step 3.7) itself, each with `model=opus` passed
+explicitly. **Who did the work decides the name**
+(`agents/sub-iterate-runner.md` Step 3.7 carries the actor table): a row is
+`completed` only for a pass whose own subagent returned. The `not_run` rows
+below are the **fallback** for a runner whose spawn cannot happen (the `Agent`
+tool unavailable, erroring or denied at runtime) — the orchestrator's `3f-bis`
+then runs the cascade and promotes `spec`/`code`/`doubt` with `--force`
+(`plan_internal`/`architecture_internal` are never promoted). Each `…` below
+stands for the invocation
 prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 --project-root "{project_root}" --run-id "{run_id}"` — so `…` already includes
 `record`, and the lines below continue from there:
@@ -712,32 +719,45 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
   --disposition "{the rule that applies, e.g. external_code_review.enabled is false for this project}" \
   --marker-status "{skipped_user_opt_out | skipped_config_disabled}"  # omit for missing-keys / unavailable
 
-# the delegated internal cascade — recorded as NOT having run.
-# Stage 1 has a row of its own and is delegated with the rest; omitting it
-# leaves `spec` pending and reds the sub-iterate at F11.
+# the internal cascade when the runner SPAWNED it — one call per stage, the
+# SKILL.md Step 8 shapes with the Stage payload file each reply was written to
+# (`spec_review_reply.json` / `code_review_reply.json` / `doubt_review_reply.json`):
+… --review-type spec --status completed --from spec-reviewer \
+  --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/spec_review_reply.json" \
+  --recorded-by spec-reviewer --model-tier opus
+# (`code`: --from code-reviewer; `doubt`: --from doubt-reviewer, or
+#  `--status not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply)
+
+# the delegated internal cascade — FALLBACK, recorded as NOT having run, when
+# the runner could not spawn. Stage 1 has a row of its own and is delegated
+# with the rest; omitting it leaves `spec` pending and reds the sub-iterate at F11.
 … --review-type spec --status not_run --reason-code delegated-to-orchestrator \
-  --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
+  --disposition "blocker 1 (Agent spawn failed: tool unavailable, errored or denied at runtime): the sub-iterate-runner could not spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)"
 
 # `--reason-code` is load-bearing at small: F11's check_cascade_trigger refuses a
 # free-text-only `code` row when a risk flag is set or the diff is > 100 lines.
 … --review-type code --status not_run --reason-code delegated-to-orchestrator \
-  --disposition "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
+  --disposition "blocker 1 (Agent spawn failed: tool unavailable, errored or denied at runtime): the sub-iterate-runner could not spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)"
 
 # Stage 3 cannot precede Stage 2
 … --review-type doubt --status not_run --reason-code delegated-to-orchestrator \
-  --disposition "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate"
+  --disposition "blocker 1 (Agent spawn failed): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate"
 
-# the internal plan-review arm — recorded as NOT having run, and NEVER
-# promoted at 3f-bis: unlike spec/code/doubt there is no campaign-level
-# internal-arm spawn site yet (documented gap), so this row stays `not_run`
-# for the life of the sub-iterate.
+# the internal plan-review arm (Step 3.5) — recorded by the runner when it
+# SPAWNED opus-plan-reviewer (metadata-only, as in iteration-planning.md Step 4 item 0):
+… --review-type plan_internal --status completed \
+  --recorded-by opus-plan-reviewer --model-tier opus
+# NEVER promoted at 3f-bis: when the spawn could not happen the row stays
+# `not_run` for the life of the sub-iterate (the orchestrator has no
+# internal-arm spawn site), and below medium it is `not_applicable`:
 … --review-type plan_internal --status not_run --reason-code no-spawn-site \
-  --disposition "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three"
+  --disposition "Agent spawn failed (tool unavailable, errored or denied at runtime) so opus-plan-reviewer did not run; the orchestrator has no internal-arm spawn site, so this row is not delegated like spec/code/doubt"
 
-# the internal architecture-review arm — same treatment, same reason: no
-# campaign-level spawn site exists yet for a fresh-context architecture pass.
+# the internal architecture-review arm — same treatment.
+… --review-type architecture_internal --status completed \
+  --recorded-by architecture-internal-reviewer --model-tier opus
 … --review-type architecture_internal --status not_run --reason-code no-spawn-site \
-  --disposition "campaign sub-iterates have no internal architecture-review arm yet — a documented gap (P2.17a/trg-14392ba5), not delegated to the orchestrator like the other three"
+  --disposition "Agent spawn failed (tool unavailable, errored or denied at runtime) so architecture-internal-reviewer did not run; the orchestrator has no internal-arm spawn site, so this row is not delegated like spec/code/doubt"
 ```
 
 A bare `--disposition "delegated"` is **rejected** (a disposition must name a

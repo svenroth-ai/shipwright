@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category: risk \u2014 Severity: medium**\nFinding: AC1's core mechanism is a *prose* fix \u2014 the runner brief now tells the agent to pass `--attempt`/`--attempt-id`. If the runner agent omits or mis-parses the flags, the lease silently behaves as before. There's no code-level enforcement that a touch without the tokens actually fails in the campaign path (only a unit test driving `check_unit_lease.main` directly).\nSuggestion: Since a token-less touch already refuses (verified), make the loud failure (`LEASE-TOUCH-FAILED` + `finalization.lease_touch: \"failed\"`) a contract the runner *must* honor and add a pinning test on the brief text itself (consistent with the 88 existing pinning tests) so a future brief edit can't quietly drop the flags.\n\n**Category: approach \u2014 Severity: medium**\nFinding: AC4/AC5: runner-spawned reviews are self-attested rows with no verdict or reviewed-head binding, and the orchestrator still re-runs everything via 3f-bis `--force`. The runner-side cascade therefore adds cost (three opus-model spawns per unit) without currently shortening the orchestrator path \u2014 the benefit is deferred to a follow-up.\nSuggestion: Acknowledged in the spec, and dropping it is defensible, but note explicitly in `iteration-reviews.md` that these rows are informational-only today, so downstream consumers don't treat `completed` as gated evidence. That's the one concrete consumer-facing risk of the new record shape.\n\n**Category: edge-case \u2014 Severity: medium**\nFinding: The AC2 autouse fixture scrubs `SHIPWRIGHT_LOOP_ID`/`SHIPWRIGHT_LOOP_UNIT_ID` for `shared/tests` only. Other test suites or subprocesses launched *by* the runner (including the newly spawned Agent-tool reviews, which inherit the loop env) may hit the same leak that produced the original 15 failures.\nSuggestion: Verify the reviewers spawned in Step 3.5/3.7 either don't execute `shared/tests` or get the same scrub; otherwise scrub at spawn time in the runner's documented invocation.\n\n**Category: edge-case \u2014 Severity: low**\nFinding: The lease-touch retry is \"one retry\" with `finalization.lease_touch: \"failed\"` \u2014 but no stated behavior for what 3f-bis does when the field *is* `\"failed\"` vs absent. The `jq` consumer reads `.units[].worktree`; is a `failed` touch recorded as a partial unit entry or no entry?\nSuggestion: Pin the exact `loop_state.json` state after a failed touch (no worktree key vs. null) and one test of 3f-bis reading that state \u2192 LEASE-FALLBACK.\n\n**Category: dependency \u2014 Severity: low**\nFinding: AC3 depends on \"the flag is absent from the plugin cache until the PR merges\" \u2014 a timing assumption. If the plugin cache updates mid-campaign, runners running their worktree's script copy may diverge in behavior from the cached version other agents use.\nSuggestion: Make the brief say \"always run the worktree's copy\" (unconditional) rather than conditioning on cache state, which is cheaper to reason about and test.\n\n**Category: security \u2014 Severity: low**\nFinding: Self-attested review rows (`completed`, reason codes like `delegated-to-orchestrator`) written by the runner are new trusted input to the orchestrator's reviews.json consumer. No integrity marker distinguishes runner-attested rows from orchestrator-gated rows.\nSuggestion: The verdict/reviewed-head binding follow-up addresses this; in the interim, consider a `self_attested: true` field so any consumer can filter without inferring from reason codes.\n\n## Overall Assessment\n\nThe approach is sound and unusually well-probed (reproduce-first env-leak fix, live boundary verification, correct decision not to skip 3f-bis on self-attested evidence). The findings above are refinements around contract durability: pin the brief text that carries the load-bearing behavior, clarify the failed-touch state shape, and mark self-attested rows explicitly.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The failed-touch path does not distinguish a transient write failure from a rejected attempt token or lost lease. Retrying and recording `lease_touch: \"failed\"` provides visibility, but does not specify whether a runner that no longer owns the unit stops working.  \n   **Suggestion:** Retry only recoverable failures. On ownership rejection, stop unit mutations and finalization immediately. For other persistent failures, prevent promotion until the orchestrator verifies the unit\u2019s worktree and ownership; a `LEASE-FALLBACK` message alone cannot establish that the shared worktree contains the unit\u2019s changes.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The runner contract specifies spawning reviewers and recording `completed`, but does not specify how their findings affect progression. A successfully completed reviewer can still reject the approach or report blocking findings. The orchestrator\u2019s later independent review preserves its gate, but does not establish that the runner actually acts on its internal reviews.  \n   **Suggestion:** Explicitly require the runner to consume reviewer results, resolve blocking findings, and repeat affected reviews after fixes before advancing. Distinguish a reviewer\u2019s successful execution from acceptance, and route missing or unusable results through the documented fallback.\n\nThe token fix, worktree-local script execution, and retained independent orchestrator gate are sound choices. Based on the supplied approach, the lease-failure and reviewer-result handling need explicit rules before approval; implementation files could not be inspected because command execution was blocked.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
