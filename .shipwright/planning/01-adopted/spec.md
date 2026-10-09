@@ -979,6 +979,14 @@ _Where the work detail lives_ at the end of this document.
   of the test, including inside a case table that wraps over several lines; a test whose
   folder the project's export rules leave out of a release archive is still counted.
   (iterate-2026-10-08-tag-gate-followup, iterate-2026-10-09-tag-gate-collector-gaps)
+- (E) [AC43] Given a change was started hands-off (autonomous) and its pull request is
+  not yet merged with passing checks, when the assistant tries to end its turn, then it is
+  sent back to work with the next unfinished step named; it may stop only after a
+  blocker it cannot resolve itself was recorded with a reason from a fixed list, or after
+  repeated nudges produced no work at all. A session that is not a hands-off change, or a
+  change that already reached its merged end, is never held back, and a failure of the
+  guard itself never traps the session.
+  (iterate-2026-10-09-iterate-stop-guard)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

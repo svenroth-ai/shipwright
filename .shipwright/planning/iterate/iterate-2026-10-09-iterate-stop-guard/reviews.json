@@ -1,0 +1,452 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-iterate-stop-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T12:06:20.934129+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Transcript scanning (`scan_transcript`) to detect \"this session ran `/shipwright-iterate --autonomous`\" is fragile. A run started in one session and continued in another (resume, `--continue`, or the operator replying in a fresh session) won't have the slash command in this transcript — so the guard silently fails open on exactly the resumed sessions most likely to stall. Conversely, a session that merely discusses a past autonomous run (prose-only mentions are explicitly handled) risks false positives.",
+          "suggestion": "Make the run pointer the source of truth for \"a live autonomous run exists,\" and write `session_id` into the pointer at start time (or scan only the tail of the current transcript). If the pointer doesn't carry the session, treat ambiguity explicitly rather than defaulting to open/closed by heuristics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The block-counters interact with `session_id` lifetime. \"40 blocks per run\" and \"3 consecutive blocks\" are stored under `<run_id>.json` in `.shipwright/runtime/…`, but the consecutive counter resets on \"real work\" — how is \"a tool call\" detected? Reading the transcript tail for tool_use entries since the last Stop is timing-sensitive (hook may fire before transcript flush). If detection is unreliable, the 3-block bound either never triggers (infinite loop) or always triggers (guard becomes advisory).",
+          "suggestion": "Define consecutive-block detection concretely (e.g., Claude Code provides `stop_hook_active` or last-message metadata in the Stop payload — use that if available) and test the \"tool call between blocks\" reset path explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "Race between Stop evaluation and `deliver_pr.py` retiring the pointer: if the PR merges while the agent's final Stop fires, the guard reads a pointer that's about to be retired, blocks, and the agent does a pointless extra turn. Also, what happens on FAILED/CLOSED-not-merged runs — the spec says the pointer is retired at MERGED/CLOSED, but a run that dies mid-way (operator kills it) leaves a live pointer that will block every future Stop in that session until the 40 cap.",
+          "suggestion": "Ensure failure paths also retire the pointer, and document that `record_hard_blocker.py` (or a `--retire` flag) is the escape hatch for abandoned runs. Consider that an operator facing repeated blocks with no obvious exit command is a real UX failure — surface the escape command in the block reason text itself.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security /",
+          "file": null,
+          "line": null,
+          "finding": "The blocker state file `.shipwright/runtime/iterate-stop-guard/<run_id>.json` is a guard-bypass writable by the agent itself. An autonomous agent that's stuck can learn to run `record_hard_blocker.py --reason-code <anything valid>` to defeat its own guard. The closed reason-code list is only a weak speed bump if the codes are guessable and unauthenticated.",
+          "suggestion": "At minimum, require the reason code to correspond to a real terminal state and have `record_hard_blocker.py` validate against the pointer (e.g., refuse if the run phase isn't actually blocked). Acknowledge in docs that this is a self-discipline guard, not a security boundary — then the closed list is fine.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "\"Register first in Stop\" in `hooks.json` implies there may be existing Stop hooks whose ordering/behavior this changes. The spec doesn't enumerate them or state what happens when multiple Stop hooks return conflicting `decision` values.",
+          "suggestion": "Audit existing Stop hooks; if one exists, define composition (Claude Code's behavior with multiple blocking Stop hooks) and test it. If none exists today, say so, and note the ordering constraint for future hooks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The `SHIPWRIGHT_LOOP_ID` exemption (presumably to avoid blocking an outer iterate wrapper) is a good escape, but any nested or chained autonomous session without that env var set gets no exemption. Verify the launch path actually sets it in all nested scenarios, or the exemption is dead code.",
+          "suggestion": "One test asserting where `SHIPWRIGHT_LOOP_ID` is set in the launching code, not just that the guard respects it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Rejecting the `gh pr view`-at-Stop-time alternative is correct (network at hook time, latency, auth in hook context). The run-pointer approach is sound. The three-file split (lib + thin hook + blocker CLI) is justified given the lib needs unit tests — not over-produced. The bounded-block design (3 consecutive / 40 total) is a good safety valve against lockout.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "\"Fail-open on any internal error\" is the right default, but combined with fragile transcript detection and pointer-read races, the guard may fail open more often than the 5/10 incident rate suggests, making the change look effective in tests but not in practice.",
+          "suggestion": "Add an observability hook — log every fail-open decision (with cause) to the runtime dir so effectiveness can be measured post-deploy; otherwise you can't tell whether the 5/10 stalls stopped.  Overall assessment: The approach is sound — pointer-based state, fail-open, and bounded blocking are all correct choices, and the rejected alternatives were rightly rejected. The main revision needed is making autonomous-session detection reliable (pointer-carried session id rather than transcript heuristics) and defining the consecutive-block counter's \"real work\" detection concretely, since both determine whether the guard actually works in the field.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Transcript detection does not specify how to associate an autonomous invocation with the live run. An earlier autonomous command in the same session could cause a later interactive run to be blocked. Conversely, a Skill call may carry its arguments separately from its skill name.",
+          "suggestion": "Define detection for both invocation formats and tie the applicable invocation to the current run pointer. Test autonomous → interactive transitions, multiple runs in one session, and Skill arguments containing `--autonomous`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan leaves runtime path resolution unspecified. The setup script, Stop hook, and blocker command must resolve the same pointer and state file when executed from either the main checkout or an iterate worktree. Otherwise, the guard can silently fail open or fail to recognize a recorded blocker.",
+          "suggestion": "Reuse the existing pointer and repository-root resolution helpers. Add subprocess tests from both working directories that record a blocker through the actual CLI and verify that the hook honors it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Real work between blocks” lacks an explicit definition and checkpoint. Rescanning a transcript and finding any historical tool call could reset the consecutive counter indefinitely; failing to recognize new tool calls could release the guard prematurely.",
+          "suggestion": "Persist the transcript position or event identifier observed at each block and reset the consecutive count only for qualifying tool calls after that checkpoint. Test the exact three-block and forty-block boundaries, intervening tool calls, and repeated processing of the same transcript.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The required “first unfinished phase” depends on authoritative completion evidence, but the plan does not identify that evidence for each phase. A live pointer establishes that delivery remains pending; it does not establish whether self-review, finalization, commit, or push has finished.",
+          "suggestion": "Map each phase to existing persisted run evidence and define how missing or inconsistent evidence is handled. Test each phase transition so the recovery message directs the agent to the actual next step.  The local, fail-open guard is a sound approach and avoids network dependencies at Stop time. The run association, shared path resolution, counter semantics, and phase evidence need to be made explicit before implementation is ready.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T12:06:02.583965+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: risk / Severity: high**\n  **Finding:** Transcript scanning (`scan_transcript`) to detect \"this session ran `/shipwright-iterate --autonomous`\" is fragile. A run started in one session and continued in another (resume, `--continue`, or the operator replying in a fresh session) won't have the slash command in *this* transcript — so the guard silently fails open on exactly the resumed sessions most likely to stall. Conversely, a session that merely *discusses* a past autonomous run (prose-only mentions are explicitly handled) risks false positives.\n  **Suggestion:** Make the run pointer the source of truth for \"a live autonomous run exists,\" and write `session_id` into the pointer at start time (or scan only the tail of the current transcript). If the pointer doesn't carry the session, treat ambiguity explicitly rather than defaulting to open/closed by heuristics.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** The block-counters interact with `session_id` lifetime. \"40 blocks per run\" and \"3 consecutive blocks\" are stored under `<run_id>.json` in `.shipwright/runtime/…`, but the consecutive counter resets on \"real work\" — how is \"a tool call\" detected? Reading the transcript tail for tool_use entries since the last Stop is timing-sensitive (hook may fire before transcript flush). If detection is unreliable, the 3-block bound either never triggers (infinite loop) or always triggers (guard becomes advisory).\n  **Suggestion:** Define consecutive-block detection concretely (e.g., Claude Code provides `stop_hook_active` or last-message metadata in the Stop payload — use that if available) and test the \"tool call between blocks\" reset path explicitly.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** Race between Stop evaluation and `deliver_pr.py` retiring the pointer: if the PR merges while the agent's final Stop fires, the guard reads a pointer that's about to be retired, blocks, and the agent does a pointl […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Transcript detection does not specify how to associate an autonomous invocation with the live run. An earlier autonomous command in the same session could cause a later interactive run to be blocked. Conversely, a Skill call may carry its arguments separately from its skill name.  \n   **Suggestion:** Define detection for both invocation formats and tie the applicable invocation to the current run pointer. Test autonomous → interactive transitions, multiple runs in one session, and Skill arguments containing `--autonomous`.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan leaves runtime path resolution unspecified. The setup script, Stop hook, and blocker command must resolve the same pointer and state file when executed from either the main checkout or an iterate worktree. Otherwise, the guard can silently fail open or fail to recognize a recorded blocker.  \n   **Suggestion:** Reuse the existing pointer and repository-root resolution helpers. Add subprocess tests from both working directories that record a blocker through the actual CLI and verify that the hook honors it.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Real work between blocks” lacks an explicit definition and checkpoint. Rescanning a transcript and finding any historical tool call could reset the consecutive counter indefinitely; failing to recognize new tool calls could release the guard prematurely.  \n   **Suggestion:** Persist the transcript position or event identifier observed at each block and reset the consecutive count only for qualifying tool calls after that checkpoint. Test the exact three-block and forty-block boundaries, intervening tool calls, and repeated processing of the same transcript.\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The required “first unfinished phase” depends on authoritative completion evidence, but  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 52,
+          "finding": "Autonomy detection only accepts --autonomous among LEADING flags; a trailing flag or a quoted flag value is missed, so the run is treated as interactive.",
+          "suggestion": "Parse flags with their arity and also accept a trailing --autonomous.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 116,
+          "finding": "Skill-path detection uses a plain substring match, disagreeing with the slash-command path.",
+          "suggestion": "Use the same flag parser for both.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 199,
+          "finding": "Scan state is persisted only on the block path; passed-through Stops rescan from offset 0 and read the whole file with fh.read().",
+          "suggestion": "Persist the scan whenever the pointer is live; iterate lines.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 131,
+          "finding": "Rewrite detection only catches a shrunk file; a rewritten file that grew, or another transcript, is resumed mid-file.",
+          "suggestion": "Store the transcript path and rescan when it differs.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 202,
+          "finding": "A recorded hard blocker cannot be cleared, so a resumed run continues without a guard.",
+          "suggestion": "Add record_hard_blocker.py --clear and document it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 186,
+          "finding": "F6 hint is satisfied by any commit on the branch (setup makes a triage sweep commit) and hard-codes origin/main.",
+          "suggestion": "Detect the F6 commit by run_id in the message; resolve the base from origin/HEAD.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_hard_blocker.py",
+          "line": 36,
+          "finding": "Pointer liveness check is a raw substring match on serialized JSON and can raise OSError on a pointer retired mid-glob.",
+          "suggestion": "json.loads each pointer, catch OSError/ValueError.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 221,
+          "finding": "The block reason omits --run-id and the allowed codes for record_hard_blocker.py.",
+          "suggestion": "Interpolate the full command.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 38,
+          "finding": "The 40-per-run cap and the futile cap release silently.",
+          "suggestion": "Print a stderr diagnostic when a cap releases a Stop.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py",
+          "line": 141,
+          "finding": "Test gaps: hint branches F6/push/delivery, trailing flag, Skill prose args, half-written last line, scan saved on pass-through.",
+          "suggestion": "Add the cases.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T12:11:30.454598+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/scripts/hooks/iterate_stop_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: A live run pointer for this session is found by the Stop payload's session_id — Pointers are keyed by session_id or run_id; real pointers with an empty session_id exist on disk (setup ran without SHIPWRIGHT_SESSION_ID), so the guard silently never fires for those runs.",
+          "suggestion": "Fall back to a session-less pointer whose run id the transcript names.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling / reversibility",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: A live pointer means the run is not delivered — A merge outside deliver_pr leaves the pointer live; the hint then says push + gh pr create after the branch was deleted, steering a duplicate PR.",
+          "suggestion": "Ignore pointers older than 48h; soften the push hint to check gh pr list first.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: Background waits are handled — The agent obeys a block with a polling tool call, which resets the futile counter, until the 40 total cap is gone.",
+          "suggestion": "Tell the agent in the reason to end the turn without tool calls while a named background task runs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/autonomous-contract.md",
+          "line": null,
+          "finding": "Claim under doubt: SHIPWRIGHT_ITERATE_STOP_GUARD=0 is an operator kill switch — Hook processes inherit the launch environment; it cannot be set in a live session.",
+          "suggestion": "Document it as launch-time and name the live escape (Esc, abandoned-by-operator).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: Guard state and blocker writes cannot clobber each other — decide() writes a merged dict without a lock; a blocker recorded between its read and write is lost; an orphaned tmp file can remain.",
+          "suggestion": "Re-read the blocker before the final write; unlink the tmp in a finally.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: Only an iterate invocation changes the autonomy decision — Any Skill whose name contains 'iterate' counts as an iterate invocation.",
+          "suggestion": "Match the skill name exactly.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T12:20:41.533902+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py` (whole file) vs. the spec's Test Completeness Ledger row 7",
+          "line": null,
+          "finding": "The spec's ledger claims `test_hooks_json_registration PASSED` as evidence for AC coverage of the `hooks.json` registration, but no such test exists anywhere in the diff (the file has 18 tests, none touching `hooks.json`). A typo in the command path, a wrong matcher, or dropping the \"first in Stop\" ordering would pass CI silently. The ledger's evidence is factually wrong for this row.",
+          "suggestion": "Add a real test that loads `plugins/shipwright-iterate/hooks/hooks.json`, finds the Stop matcher, and asserts the guard's command string and its position; correct the ledger.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_hard_blocker.py:33-36",
+          "line": null,
+          "finding": "Pointer validation does a raw substring match `'\"run_id\": \"{args.run_id}\"'` against the serialized JSON of every pointer file. This couples the CLI to the exact `json.dumps` spacing of whatever `setup_iterate_worktree.py` writes (default separators today, but any future `separators=(\",\", \":\")` or key-order change silently makes every blocker recording fail with exit 2 — trapping the session until the 40-block cap, which is the exact failure mode the guard exists to prevent).",
+          "suggestion": "Parse each pointer with `json.loads` and compare `ptr.get(\"run_id\") == args.run_id`, matching how the hook reads pointers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/iterate_stop_guard.py:58` (`_AUTONOMOUS_ARGS`)",
+          "line": null,
+          "finding": "autonomous\\b` — since `-` is a non-word character, `\\b` matches between `s` and `-`, so a hypothetical `--autonomous-only`, `--autonomous-mode`, or any hyphenated future flag containing the prefix is classified as autonomous. The analogous `--campaign\\b` has the same issue in the exclusion direction (a `--campaign-x` variant would be excluded from the guard).",
+          "suggestion": "Use `--autonomous(?=[\\s=]|$)` (or `(?!\\S)` after consuming an optional `=value`) so only the exact flag or an assignment form matches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/iterate_stop_guard.py:186-188` (`next_phase_hint`, F6 branch)",
+          "line": null,
+          "finding": "_git(worktree, \"rev-list\", \"--count\", \"origin/main..HEAD\")` returns `\"\"` both when the count errors (e.g. `origin/main` doesn't exist in a freshly-created worktree with no fetch) and treats it identically to `\"0\"` → the hint tells the agent \"F6 commit is missing\" when commits exist but the remote ref is absent. Never gates, but actively misleads the agent it is nudging.",
+          "suggestion": "Distinguish the error path (`\"\"`) from a real `0`, or use a ref that always exists locally (e.g. the worktree's merge-base with the main branch checked out in the main root).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/iterate_stop_guard.py:143-160` (`scan_transcript`) + `decide` early-return paths",
+          "line": null,
+          "finding": "When `decide` returns `None` early (blocker, kill switch, not autonomous, caps), the new scan offset/`tools` count is never persisted, so every subsequent Stop rescans from the stale offset; conversely, after a transcript shrink/rewrite the cumulative `tools` resets to 0, so `tool_count > stored tool_count` is false and one post-rewrite Stop immediately increments the futile counter — three transcript rewrites (resume/compact cycles, which Claude Code does do) burn the entire 3-consecutive budget without any prose-only behavior.",
+          "suggestion": "Persist the scan result (offset/tools) on the pass-through paths too, and on a detected shrink, also reset the stored `tool_count` baseline so the futile counter isn't penalized.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/record_hard_blocker.py` / `shared/scripts/lib/iterate_stop_guard.py:83-90",
+          "line": null,
+          "finding": "The blocker state file is agent-writable and the CLI's only validation is that a live pointer exists — the agent can self-release with any valid code. The spec's reviews acknowledge and disclose this (\"cooperative enforcement, not a security boundary\"), and the stderr print + F12 naming requirement are the mitigations, so this is accepted-risk, noted here only for the record. No change required.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 114,
+          "finding": "Skill-call detection searches the entire argument string for flag substrings. An interactive invocation with `args=\"make --autonomous stricter\"` is therefore blocked, while an autonomous invocation with `args=\"--autonomous improve --campaign handling\"` incorrectly bypasses the guard. This violates the requirement to leave interactive iterates alone.",
+          "suggestion": "Parse the Skill arguments using the same leading-option rules as slash commands, matching complete flag tokens. Add tests for both examples.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 53,
+          "finding": "The slash-command flag regex can consume a description word as the value of a boolean flag. For `--autonomous improve --campaign handling`, `_CAMPAIGN_ARGS` consumes `--autonomous improve` and treats the description’s `--campaign` as a campaign option, disabling enforcement for an autonomous run.",
+          "suggestion": "Parse options with their actual arity and stop at the first description token. Add coverage for descriptions containing flag names after an autonomous option.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 69,
+          "finding": "Invalid state JSON is silently converted to an empty state. With a live autonomous pointer, the hook then blocks instead of failing open, and resets any previously persisted blocker and block counters. This contradicts the explicit internal-error exemption.",
+          "suggestion": "Treat a missing state file as initial state, but propagate malformed JSON and other read failures to the hook’s fail-open handler. Test corrupted state through the actual hook subprocess.  Overall assessment: ship-with-fixes. The approach is sound, but argument detection and state-error handling need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T12:11:30.565024+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: test**\n  **Severity: medium**\n  File: `plugins/shipwright-iterate/tests/test_iterate_stop_guard.py` (whole file) vs. the spec's Test Completeness Ledger row 7\n  **Finding:** The spec's ledger claims `test_hooks_json_registration PASSED` as evidence for AC coverage of the `hooks.json` registration, but no such test exists anywhere in the diff (the file has 18 tests, none touching `hooks.json`). A typo in the command path, a wrong matcher, or dropping the \"first in Stop\" ordering would pass CI silently. The ledger's evidence is factually wrong for this row.\n  **Suggestion:** Add a real test that loads `plugins/shipwright-iterate/hooks/hooks.json`, finds the Stop matcher, and asserts the guard's command string and its position; correct the ledger.\n\n- **Category: bug**\n  **Severity: medium**\n  File: `shared/scripts/tools/record_hard_blocker.py:33-36`\n  **Finding:** Pointer validation does a raw substring match `'\"run_id\": \"{args.run_id}\"'` against the serialized JSON of every pointer file. This couples the CLI to the exact `json.dumps` spacing of whatever `setup_iterate_worktree.py` writes (default separators today, but any future `separators=(\",\", \":\")` or key-order change silently makes every blocker recording fail with exit 2 — trapping the session until the 40-block cap, which is the exact failure mode the guard exists to prevent).\n  **Suggestion:** Parse each pointer with `json.loads` and compare `ptr.get(\"run_id\") == args.run_id`, matching how the hook reads pointers.\n\n- **Category: bug**\n  **Severity: low**\n  File: `shared/scripts/lib/iterate_stop_guard.py:58` (`_AUTONOMOUS_ARGS`)\n  **Finding:** `--autonomous\\b` — since `-` is a non-word character, `\\b` matches between `s` and `-`, so a hypothetical `--autonomous-only`, `--autonomous-mode`, or any hyphenated future flag containing the prefix is classified as autonomous. The analogous `--campaign\\b` has the same issue in the *exclusion* direction (a `--campaign-x` variant wo […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/iterate_stop_guard.py:114\n- Finding: Skill-call detection searches the entire argument string for flag substrings. An interactive invocation with `args=\"make --autonomous stricter\"` is therefore blocked, while an autonomous invocation with `args=\"--autonomous improve --campaign handling\"` incorrectly bypasses the guard. This violates the requirement to leave interactive iterates alone.\n- Suggestion: Parse the Skill arguments using the same leading-option rules as slash commands, matching complete flag tokens. Add tests for both examples.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/iterate_stop_guard.py:53\n- Finding: The slash-command flag regex can consume a description word as the value of a boolean flag. For `--autonomous improve --campaign handling`, `_CAMPAIGN_ARGS` consumes `--autonomous improve` and treats the description’s `--campaign` as a campaign option, disabling enforcement for an autonomous run.\n- Suggestion: Parse options with their actual arity and stop at the first description token. Add coverage for descriptions containing flag names after an autonomous option.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/iterate_stop_guard.py:69\n- Finding: Invalid state JSON is silently converted to an empty state. With a live autonomous pointer, the hook then blocks instead of failing open, and resets any previously persisted blocker and block counters. This contradicts the explicit internal-error exemption.\n- Suggestion: Treat a missing state file as initial state, but propagate malformed JSON and other read failures to the hook’s fail-open handler. Test corrupted state through the actual hook subprocess.\n\nOverall assessment: ship-with-fixes. The approach is sound, but argument detection and state-error handling need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T12:07:34.217146+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T12:06:02.457702+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T12:04:17.971602+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
