@@ -56,8 +56,36 @@ def _git(root: Path, *args: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
+_SCRATCH_DIR = ".scratch"  # check_ac_ratchet_f0's scratch parent; gitignored by every Shipwright repo
+
+
+def _is_ignored_scratch_tree(root: Path) -> bool:
+    """True when ``root`` is a copy under the OUTER repo's gitignored ``.scratch/`` directory.
+
+    A scratch copy (``check_ac_ratchet_f0`` builds one under ``<project>/.scratch``) holds
+    no branch of its own: git run there resolves the OUTER repo, whose changed paths are
+    then joined onto the freshly copied files - which always look newer than the reports.
+    Narrow on purpose: a checkout with its own ``.git`` (an iterate worktree, a nested
+    clone) is its own toplevel and stays guarded, wherever it sits.
+    """
+    top = _git(root, "rev-parse", "--show-toplevel")
+    if top is None:
+        return False
+    top_path, root_path = Path(top.strip()).resolve(), Path(root).resolve()
+    if top_path == root_path or (top_path / _SCRATCH_DIR) not in root_path.parents:
+        return False
+    try:
+        proc = subprocess.run(["git", "-C", str(top_path), "check-ignore", "-q", "--", str(root_path)],
+                              capture_output=True, timeout=_TIMEOUT, check=False)
+    except Exception:  # noqa: BLE001 - git that cannot answer keeps the guard on
+        return False
+    return proc.returncode == 0
+
+
 def _branch_paths(root: Path) -> tuple[str, list[str]] | None:
     if _git(root, "rev-parse", "--is-inside-work-tree") is None:
+        return None
+    if _is_ignored_scratch_tree(root):
         return None
     base = next((mb.strip() for ref in _TRUNKS if (mb := _git(root, "merge-base", "HEAD", ref))), None)
     if not base:

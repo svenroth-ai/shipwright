@@ -1,0 +1,5 @@
+{"items":[
+{"name":"Correctness","verdict":"pass","note":"Guard returns fail-open (None) only when root is a different toplevel AND gitignored by the outer repo; real trees unaffected."},
+{"name":"Tests","verdict":"pass","note":"New test covers scratch skip and real-tree guard; F0 18 units green; live ratchet rc=0."},
+{"name":"Scope","verdict":"pass","note":"Two files; check_ac_ratchet_f0.py unchanged."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No io-boundary; git subprocess only."}]}
