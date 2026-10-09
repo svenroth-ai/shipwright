@@ -48,10 +48,27 @@ def _is_bad(case: ET.Element) -> bool:
     return any(case.find(tag) is not None for tag in _BAD)
 
 
+#: A report larger than this reads as unreadable (the whole-unit fallback), never as data.
+_MAX_XML_BYTES = 8 * 1024 * 1024
+
+
 def _parse(path: Path) -> ET.ElementTree | None:
+    """The report as a tree, or None when absent/garbled/oversized/DTD-bearing.
+
+    A DOCTYPE is refused outright (it is the only door to entity expansion and a
+    pytest JUnit file never has one), so no XML-hardening dependency is needed.
+    """
     try:
-        return ET.parse(path)  # nosec B314 - written by this runner's own pytest
-    except (OSError, ET.ParseError):
+        data = Path(path).read_bytes()
+        if len(data) > _MAX_XML_BYTES:
+            return None
+        # Strict UTF-8 text, so the DTD check and the parser see the same characters
+        # (a BOM'd UTF-16 DOCTYPE would slip a byte-level substring test).
+        text = data.decode("utf-8")
+        if "<!DOCTYPE" in text or "<!ENTITY" in text:
+            return None
+        return ET.ElementTree(ET.fromstring(text))
+    except (OSError, UnicodeDecodeError, ET.ParseError):
         return None
 
 

@@ -12,6 +12,8 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import scripts.tools.suite_failed_only as fo
@@ -63,6 +65,37 @@ def test_junit_failure_count_is_none_for_unreadable_report(tmp_path):
     bad.write_text("<testsuite", encoding="utf-8")
     assert fo.junit_failure_count(bad) is None
     assert fo.junit_failure_count(tmp_path / "missing.xml") is None
+
+
+@pytest.mark.covers("FR-01.06/AC04")
+def test_parse_refuses_a_doctype_report(tmp_path):
+    """An entity-expansion payload must read as unreadable, never be expanded."""
+    bomb = tmp_path / "r.xml"
+    bomb.write_text(
+        '<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "aaaa">]>'
+        '<testsuites><testsuite><testcase classname="C" name="&a;"/></testsuite></testsuites>',
+        encoding="utf-8",
+    )
+    assert fo.testcase_count(bomb) is None
+
+
+@pytest.mark.covers("FR-01.06/AC04")
+def test_parse_refuses_a_utf16_doctype_report(tmp_path):
+    """A BOM'd UTF-16 DOCTYPE must not slip a byte-level substring check."""
+    bomb = tmp_path / "r.xml"
+    bomb.write_bytes(
+        '<?xml version="1.0" encoding="utf-16"?><!DOCTYPE x [<!ENTITY a "aaaa">]>'
+        '<testsuites><testsuite><testcase classname="C" name="&a;"/></testsuite></testsuites>'
+        .encode("utf-16")
+    )
+    assert fo.testcase_count(bomb) is None
+
+
+@pytest.mark.covers("FR-01.06/AC04")
+def test_parse_refuses_an_oversized_report(tmp_path, monkeypatch):
+    monkeypatch.setattr(fo, "_MAX_XML_BYTES", 64)
+    big = _junit(tmp_path / "r.xml", [("C", f"t{i}", None) for i in range(20)])
+    assert fo.testcase_count(big) is None
 
 
 def test_failed_only_count_requires_cache_and_report_to_agree(tmp_path):

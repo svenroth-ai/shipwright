@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-security-findings-triage",
+  "date": "2026-10-10",
+  "section": "Iterate — bug: clear the 5 open High security findings",
+  "title": "Harden JUnit parse without a new dependency; bump urllib3 to 2.8.0",
+  "context": "Release scan showed 5 High (Semgrep use-defused-xml-parse in suite_failed_only.py; urllib3 CVE-2026-97687/88/89 in plan+security lockfiles), grading the repo F.",
+  "decision": "_parse now reads bounded UTF-8 text, refuses DOCTYPE/ENTITY, and uses ET.fromstring; urllib3 raised to 2.8.0 via uv lock --upgrade-package in both plugin lockfiles.",
+  "consequences": "A malformed, oversized or DTD-bearing report falls back to the whole-unit retry. No new dependency.",
+  "rationale": "Precedent in compliance _evidence_readers (size cap, no defusedxml dep); shared scripts run in consumer projects that lack defusedxml. No suppression comment added.",
+  "rejected": "defusedxml dependency (breaks consumer envs); inline nosemgrep (ratcheted, hides the finding).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

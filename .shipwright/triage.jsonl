@@ -2433,3 +2433,4 @@
 {"event":"status","id":"trg-23e8ff20","ts":"2026-10-09T10:59:18.513459Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #869","promotedTaskId":null}
 {"event":"status","id":"trg-670fe6d0","ts":"2026-10-09T11:04:20.563521Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #859 (merged); stale PR-CI card","promotedTaskId":null}
 {"event":"status","id":"trg-f73f4eb7","ts":"2026-10-09T13:40:27.144813Z","newStatus":"dismissed","by":"cli","reason":"Implemened PR #870","promotedTaskId":null}
+{"event":"status","id":"trg-89c2e452","ts":"2026-10-09T20:43:00.080515Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #874","promotedTaskId":null}
