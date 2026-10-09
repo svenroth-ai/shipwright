@@ -189,12 +189,19 @@ def test_token_expires_and_has_a_single_winner(tmp_path):
     assert not git_side_release.token(tmp_path, hook).exists()
 
 
+def _install_hook(hooks: Path) -> None:
+    """Copy the real pre-commit LF-normalised and executable (git ignores a non-executable hook)."""
+    target = hooks / "pre-commit"
+    target.write_bytes((HOOKS / "pre-commit").read_bytes().replace(b"\r\n", b"\n"))
+    target.chmod(0o755)
+
+
 def _fake_framework(tmp_path: Path, body: str) -> Path:
     """A copy of the real pre-commit beside a stand-in coverage script running *body*."""
     hooks = tmp_path / "fw" / "scripts" / "hooks"
     hooks.mkdir(parents=True)
-    (hooks / "pre-commit").write_bytes((HOOKS / "pre-commit").read_bytes().replace(b"\r\n", b"\n"))
-    script = tmp_path / "fw" / "plugins" / "shipwright-compliance" / "scripts" / "hooks"
+    _install_hook(hooks)
+    script =tmp_path / "fw" / "plugins" / "shipwright-compliance" / "scripts" / "hooks"
     script.mkdir(parents=True)
     (script / "git_precommit_rtm_coverage.py").write_text(body, encoding="utf-8")
     return hooks
@@ -214,7 +221,7 @@ def test_missing_coverage_script_warns_and_commits(repo, tmp_path_factory):  # A
     root = tmp_path_factory.mktemp("fw")
     hooks = root / "fw" / "scripts" / "hooks"
     hooks.mkdir(parents=True)
-    (hooks / "pre-commit").write_bytes((HOOKS / "pre-commit").read_bytes().replace(b"\r\n", b"\n"))
+    _install_hook(hooks)
     git(repo, "config", "core.hooksPath", str(hooks))
     stage_manifest(repo, 1)
     result = commit(repo)
