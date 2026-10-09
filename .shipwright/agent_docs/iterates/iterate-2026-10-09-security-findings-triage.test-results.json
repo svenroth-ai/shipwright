@@ -1,0 +1,85 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-security-findings-triage",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 22540,
+      "total": 22540
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 2,
+      "total": 2
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests/test_suite_failed_only.py -q",
+      "exit_code": 0,
+      "tests_run": 19,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\security-findings-triage\\.shipwright\\runs\\iterate-2026-10-09-security-findings-triage\\surface_verification.log",
+      "timestamp": "2026-10-09T22:03:20.731Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "JUnit report carrying a DOCTYPE/ENTITY reads as unreadable (None), never expanded",
+          "disposition": "tested",
+          "evidence": "test_suite_failed_only.py::test_parse_refuses_a_doctype_report PASSED (red before fix)"
+        },
+        {
+          "behavior": "BOM'd UTF-16 DOCTYPE report is refused too",
+          "disposition": "tested",
+          "evidence": "test_suite_failed_only.py::test_parse_refuses_a_utf16_doctype_report PASSED"
+        },
+        {
+          "behavior": "Report over the size cap reads as unreadable",
+          "disposition": "tested",
+          "evidence": "test_suite_failed_only.py::test_parse_refuses_an_oversized_report PASSED"
+        },
+        {
+          "behavior": "Ordinary pytest JUnit report still parses and callers behave as before",
+          "disposition": "tested",
+          "evidence": "39+19 existing suite_failed_only/suite_retry/suite_resume tests PASSED"
+        },
+        {
+          "behavior": "urllib3 2.8.0 in plan+security lockfiles clears CVE-2026-97687/88/89",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "verified against OSV (2.8.0: no vulns, 2.7.0: listed); confirmed by the next main Security Scan"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-security-findings-triage",
+    "commit": "0ee33fc0931cbb3e0421d5a23322d6ea9839384b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

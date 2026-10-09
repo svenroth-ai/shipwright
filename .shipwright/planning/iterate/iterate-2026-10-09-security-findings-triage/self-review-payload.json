@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Fixes the 5 High: urllib3 2.7.0->2.8.0 (OSV: 2.8.0 clean) in plan+security lockfiles; JUnit parse no longer ET.parse on a file path."},
+{"name":"Error Handling","verdict":"pass","note":"Oversized, DOCTYPE/ENTITY or garbled report returns None = whole-unit retry fallback, same as before."},
+{"name":"Security Basics","verdict":"pass","note":"DOCTYPE refused outright, 8 MiB cap; no new dependency (precedent: compliance _evidence_readers)."},
+{"name":"Test Quality","verdict":"pass","note":"Two new tests, red before fix (DOCTYPE case failed), green after; 39 suite tests pass."},
+{"name":"Performance Basics","verdict":"pass","note":"One read_bytes instead of streaming parse; reports are small."},
+{"name":"Naming & Structure","verdict":"pass","note":"_MAX_XML_BYTES mirrors the compliance constant name."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Boundary is the pytest JUnit file read by suite_retry/suite_resume; unchanged format accepted, tested via existing suite tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff: no findings."}]}

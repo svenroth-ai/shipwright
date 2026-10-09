@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-security-findings-triage",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:46:29.985120+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:48:59.991881+00:00",
+      "disposition": "small, tiny diff; doubt-reviewer surfaces (migrations/async/cross-plugin/irreversible) not touched; external review is medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/suite_failed_only.py",
+          "line": 63,
+          "finding": "DTD guard is a raw byte-substring check; a BOM-carrying UTF-16/32 report spells '<!DOCTYPE' with NUL bytes, evades the check, and expat would still parse its internal DTD. Low impact (runner's own pytest writes UTF-8; modern expat caps amplification; no external entities) but the docstring says refused outright.",
+          "suggestion": "Decode strictly as UTF-8 first (add UnicodeDecodeError to except), run the DOCTYPE check on the text, ET.fromstring(text). Add a UTF-16 DOCTYPE test.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T21:48:50.402968+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:48:59.991881+00:00",
+      "disposition": "small, tiny diff; doubt-reviewer surfaces (migrations/async/cross-plugin/irreversible) not touched; external review is medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:48:59.991881+00:00",
+      "disposition": "small, tiny diff; doubt-reviewer surfaces (migrations/async/cross-plugin/irreversible) not touched; external review is medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:46:59.997636+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:48:59.991881+00:00",
+      "disposition": "small, tiny diff; doubt-reviewer surfaces (migrations/async/cross-plugin/irreversible) not touched; external review is medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T21:48:59.991881+00:00",
+      "disposition": "small, tiny diff; doubt-reviewer surfaces (migrations/async/cross-plugin/irreversible) not touched; external review is medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
