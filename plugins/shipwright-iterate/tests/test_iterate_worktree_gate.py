@@ -236,6 +236,7 @@ def test_main_survives_garbage_stdin(monkeypatch):
     assert main() == 0
 
 
+@pytest.mark.covers("FR-01.11")
 def test_hook_is_registered_for_both_events():
     hooks = json.loads((HOOK_DIR.parent.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]
     for event in ("UserPromptSubmit", "PreToolUse"):
