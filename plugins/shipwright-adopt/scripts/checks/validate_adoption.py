@@ -209,7 +209,7 @@ def _validate_review(project_root: Path) -> list[str]:
     return []
 
 
-_REVIEW_LEG_RE = re.compile(r"^## .+ \u2014 (\w+)\s*$", re.MULTILINE)
+_REVIEW_LEG_RE = re.compile(r"^## .+ \u2014 ([\w-]+)\s*$", re.MULTILINE)
 
 
 def _review_warnings(project_root: Path) -> list[str]:
