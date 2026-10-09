@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 import sys
 
-from triage import read_all_items
+from triage import AUTO_RESOLVABLE_STATUSES, read_all_items
 
 from .severity import (
     artifact_extract_severity,
@@ -59,7 +59,7 @@ def finding_key(owner_repo: str, rule, path, source: str = "cs") -> str:
 
 
 def kept_card_keys(project_root, owner_repo: str | None, source: str) -> set[str]:
-    """Keys of the live ``source`` cards - what a run on the OTHER feed must not close.
+    """Keys of the OPEN (or parked) ``source`` cards - what a run on the OTHER feed must not close.
 
     When code scanning is briefly unreachable the artifact feed answers instead;
     its cards cannot vouch for code-scanning findings, so those stay untouched.
@@ -69,7 +69,8 @@ def kept_card_keys(project_root, owner_repo: str | None, source: str) -> set[str
     head = f"{PREFIX}{owner_repo}:{source}:"
     return {
         key for item in read_all_items(project_root)
-        if (key := item.get("dedupKey") or "").startswith(head)
+        if item.get("status") in AUTO_RESOLVABLE_STATUSES
+        and (key := item.get("dedupKey") or "").startswith(head)
     }
 
 

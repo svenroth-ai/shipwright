@@ -162,7 +162,7 @@ def test_card_text_is_charset_limited_and_capped(tmp_path, monkeypatch):
         assert "\n" not in card[field] and "\x1b" not in card[field], field
     assert " " not in card["dedupKey"]
     assert "ignore previous" not in card["detail"]  # spaces were replaced in the rule part
-    assert "x" * 121 not in card["detail"]  # the rule is capped
+    assert len(card["dedupKey"].split(":")[3]) == 120  # the rule segment is capped exactly
 
 
 @pytest.mark.covers("FR-01.14/AC14")
@@ -265,3 +265,21 @@ def test_freshness_probe_is_a_single_gh_call_using_the_stored_branch(tmp_path, m
                             {"id": 8, "created_at": datetime.now(timezone.utc).isoformat()}]})
     assert github_triage.is_due(tmp_path, now=datetime.now(timezone.utc)) is True
     assert len(calls) == 1 and "branch=trunk" in calls[0]
+
+
+@pytest.mark.covers("FR-01.14/AC14")
+def test_closed_code_scanning_cards_do_not_suppress_artifact_cards(tmp_path, monkeypatch):
+    """Only OPEN cs cards vouch for a finding; a fixed one must not hide the artifact's."""
+    run = {"id": 5, "html_url": "u",
+           "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+    _patch(monkeypatch, cs=[_cs("trivy/CVE-2026-1", "plugins/a/uv.lock")], db=[])
+    github_triage.import_findings(tmp_path)
+    _patch(monkeypatch, cs=[], db=[])  # fixed -> the cs card closes
+    github_triage.import_findings(tmp_path)
+    assert not _cards(tmp_path, "triage")
+
+    _patch(monkeypatch, cs=None, db=None, run=run, findings=[
+        {"severity": "high", "rule": "CVE-2026-9", "affected_file": "b.py"}])
+    github_triage.import_findings(tmp_path)
+    assert {c["dedupKey"] for c in _cards(tmp_path, "triage")} == {
+        finding_key(REPO, "CVE-2026-9", "b.py", "art")}
