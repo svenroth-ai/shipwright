@@ -172,7 +172,6 @@ def test_a_missing_target_falls_back_with_a_warn(tmp_path):
     'cat <<"EOF" > f\nIt\'s fine to git commit later\nEOF',  # unbalanced quote in the body
     "cat <<EOF\ngit commit\nEOF\necho done",
     "cat <<-EOF\n\tgit commit\n\tEOF",
-    "cat <<EOF\ngit commit -m x",  # never terminated: bash reads the rest as the body
 ])
 def test_heredoc_bodies_are_not_scanned(command):
     assert not gcc.is_git_commit(command)
@@ -180,6 +179,7 @@ def test_heredoc_bodies_are_not_scanned(command):
 
 @pytest.mark.parametrize("command", [
     "git commit -F - <<EOF\nmessage\nEOF",
+    "cat <<EOF\ngit commit -m x",  # never terminated: kept visible (over-fires, never hides)
     "cat <<EOF > f\nbody\nEOF\ngit commit -m x",
     'echo "a <<EOF"\ngit commit -m x',  # a quoted operator starts nothing
     "echo hi # <<EOF\ngit commit -m x",  # nor does one inside a comment

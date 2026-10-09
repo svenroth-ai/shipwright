@@ -183,6 +183,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [External review that could not run: captured, announced, re-run (campaign unit U10)](iterate-2026-10-08-u10-autonomous-external-review-reviews.md)
 - [One runtime-built scenario proves the finalization-claims gates stay independent](iterate-2026-10-08-u11-integration-scenario-claims-scenario.md)
 - [The claims-hardening docs say what the code now does, each gate once](iterate-2026-10-08-u12-docs-reconcile-docs-reconcile.md)
+- [Commit-hook command shapes and the one-use override](iterate-2026-10-08-u13-hook-command-shapes-parser-and-override.md)
 - [Compliance soft-block override and commit-target measurement](iterate-2026-10-08-u13-rtm-hook-followups-override-and-target.md)
 - [Review record and ledger enforced at every complexity (campaign unit U3)](iterate-2026-10-08-u3-review-record-trivial-reviews.md)
 - [Small-iterate code-review trigger, one diff-size rule (campaign unit U4)](iterate-2026-10-08-u4-cascade-trigger-100-reviews.md)

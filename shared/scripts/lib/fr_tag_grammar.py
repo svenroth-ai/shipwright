@@ -78,7 +78,10 @@ _COVERS_CANDIDATE_RE = re.compile(r"\bFR[\w.-]*")
 # TS/JS surface matchers (limited, documented reference forms).
 _COVERS_COMMENT_RE = re.compile(r"//\s*@covers\s+(?P<ids>[^\n]+)")
 # ``it(``/``test(`` (+ .skip/.only) — NOT test.describe/test.step/a hook, nor a commented-out line.
-_TEST_DECL_RE = re.compile(r"^(?!\s*(?://|/\*|\*)).*?\b(?:it|test)(?:\.(?!(?:describe|step|beforeEach|afterEach|beforeAll|afterAll|use|extend)\b)\w+)?\s*\(\s*(['\"`])(?P<title>.*?)\1")
+# A data-driven ``it.each(table)('title', …)`` / ``test.each`table`('title', …)`` is one test, id = the
+# title text (``%s``/``$x`` placeholders stay literal); the table must close on the title's line (a
+# wrapped one is folded onto it by ``_file_tags.join_multiline_decls`` before this matcher runs).
+_TEST_DECL_RE = re.compile(r"^(?!\s*(?://|/\*|\*)).*?\b(?:it|test)(?:\.(?!(?:describe|step|beforeEach|afterEach|beforeAll|afterAll|use|extend|each)\b)\w+)?(?:\.each\s*(?:\(.*?\)|`[^`]*?`))?\s*\(\s*(['\"`])(?P<title>.*?)\1")
 # The documented "title suffix": one or more @FR tokens at the END of the title.
 _TITLE_SUFFIX_RE = re.compile(r"(?P<tags>(?:@FR[\w.-]*\s*)+)$")
 _TAG_ARRAY_RE = re.compile(r"tag\s*:\s*\[(?P<body>[^\]]*)\]")
@@ -251,7 +254,7 @@ def parse_ts_js(source: str, path: str = "") -> ParseResult:
                     invalid += iv
             covers_prev = None
 
-            array = _TAG_ARRAY_RE.search(line)
+            array = _TAG_ARRAY_RE.search(line, decl.end())  # after the title: an `.each` row may hold its own `tag:`
             if array:
                 h, iv = _classify_at_tokens(array.group("body"), test, "native_tag")
                 hits += h

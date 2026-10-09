@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "AC-1..AC-13 each have code and a proving test; spec-reviewer PASS; no feature beyond the seven cards (override_marker.py is an extraction to hold the 300-line cap)."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Every OSError on the override path blocks (marker unreadable now counts as used, doubt fix); the parser over-fires on RecursionError, depth cap and unparseable text."},
+  {"name": "Security Basics", "verdict": "pass", "note": "Command text is only lexed, never executed; no secrets; the override gate fails closed, and a restored log cannot revive a used override (untracked marker)."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Tests assert exact commit tuples, release outcomes and WARN text on real strings, temp dirs and git repos; each review regression is pinned by a test."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "Fallback regex made atomic (no catastrophic backtracking, pinned by a timing test); lock waits are bounded by LOCK_WAIT_S with 50 ms sleeps."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "New modules follow the lib/ stdlib-only pattern; compliance_override.py is 287 lines and new test files stay under 300 (bloat gate)."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Hook payload cwd, bash command text and the override log/marker files are the boundaries; the log-restore round trip and the cwd-to-project resolution are exercised by tests."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No skips added; the git-dependent cases use the repo's existing needs_git marker; one pytest root (plugins/shipwright-compliance/tests) per process."}
+]}
