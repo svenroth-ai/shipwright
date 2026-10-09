@@ -37,6 +37,11 @@ Exit codes:
 The user can override by saying "Continue anyway": the block names the exact line to
 append to .shipwright/agent_docs/compliance_overrides.log, which lets the next blocked
 commit through once within 30 minutes, with a visible WARN (``lib/compliance_override``).
+Where the monorepo's git ``pre-commit`` is installed (``scripts/install-hooks.sh``) the same
+gate also runs at the real commit (``git_precommit_rtm_coverage``), measuring the manifest
+staged for that commit; a release here leaves it a 2-minute hand-off token
+(``lib/git_side_release``) so one override covers both. That step, not this lexer, is what
+closes shell shapes ``is_git_commit`` cannot read: the lexer gets no further shapes.
 A line committing to more than one repo below its threshold is never released by an
 override: commit to each repo separately.
 """
@@ -255,7 +260,17 @@ def _block(lib: Any, override: Any, measure: dict[str, Any], threshold_pct: str,
     else:
         released, why_not = override.try_release(project_root, HOOK)
         if released is not None:  # a logged "Continue anyway", now used
-            _warn_output(warnings, info=override.notice(HOOK, released, reason))
+            # the git pre-commit step judges this same commit: hand it the release
+            try:  # the override is already consumed: a failed hand-off must not undo the release
+                _on_path()
+                import git_side_release  # noqa: PLC0415
+
+                lost = git_side_release.grant(project_root, HOOK, released.at)
+            except Exception as exc:  # noqa: BLE001
+                lost = (f"the git-side hand-off failed ({type(exc).__name__}); the git pre-commit "
+                        "check will ask for its own logged override")
+            _warn_output(warnings + ([lost] if lost else []),
+                         info=override.notice(HOOK, released, reason))
             return 0
     advice = "\n".join(filter(None, [why_not, override.instruction(project_root, HOOK)]))
     print(json.dumps(_hook_block(reason=reason, details=details, override=advice)))

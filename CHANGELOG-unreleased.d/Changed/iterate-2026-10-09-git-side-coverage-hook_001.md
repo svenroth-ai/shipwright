@@ -1,0 +1,1 @@
+A logged coverage override now covers both the Claude Code hook and the git pre-commit step for the same command (a 2-minute, HEAD-bound hand-off); `scripts/hooks/pre-commit` runs both of its steps every time and only the coverage step's exit code 3 blocks, any other failure warns and allows.

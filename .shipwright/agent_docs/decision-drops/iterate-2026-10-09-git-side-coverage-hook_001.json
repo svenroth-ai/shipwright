@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-git-side-coverage-hook",
+  "date": "2026-10-09",
+  "section": "Iterate — change: git-side coverage check",
+  "title": "Git pre-commit step runs the requirement-coverage gate at the real commit",
+  "context": "check_rtm_coverage decides from Bash command text, so every shell shape its lexer cannot read hides a commit; the open shapes kept growing (ANSI-C quoting, uv run/stdbuf/flock/setsid wrappers, leading redirections).",
+  "decision": "scripts/hooks/pre-commit also runs git_precommit_rtm_coverage.py inside git commit: staged manifest, same threshold and logged override; exit 3 is the only block. The PreToolUse lexer gets no further shapes.",
+  "consequences": "New write surface .shipwright/locks/git-side-release-check_rtm_coverage (2 min, HEAD-bound hand-off). Subprocess committers in the monorepo are now gated too. Clones without install-hooks.sh keep only the Claude hook and CI.",
+  "rationale": "Only git sees the real commit and its real index (also for commit -a / pathspec); reuses measurement and override code. GLM and the internal architecture review approved; OpenAI rejected as disproportionate (CI catches misses) - overruled, recorded in the spec.",
+  "rejected": "Keep extending the lexer (unbounded); step-aside PreToolUse (loses the earlier block, needs install detection); do nothing (OpenAI's pick; a late red CI only).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

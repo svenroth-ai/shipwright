@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Should it exist?** No: I would choose **C**, because the stated consequence is a recoverable late CI failure, which does not justify a second commit gate and persistent override coordination.\n\n2. **Smallest thing that would do:** Keep the existing PreToolUse check, stop extending its lexer, and rely on the existing CI coverage check and F11 verifier for commits it misses.\n\n3. **What it costs to keep:** Two local enforcement points must agree on measurement and overrides; maintainers must also preserve the hand-off token\u2019s lifetime and consumption semantics and keep clone-local hook installation working.\n\n4. **What it forecloses:** It makes removing or changing the Claude hook harder by coupling its override releases to Git execution.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: The added gate and override hand-off create an ongoing coordination obligation to prevent a late red build. The brief establishes no failure cost or frequency that warrants that obligation.\nSuggestion: Choose C: accept the existing local check\u2019s detection limits and let CI and F11 catch misses, without further lexer expansion.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a git-side pre-commit check is the correct standing mechanism, and it is the only one of the four options that actually closes the class rather than chasing it.\n\n2. **The smallest thing that would do.** Option B as proposed: a step in the *existing* `scripts/hooks/pre-commit` (no new hook, no new install path, no new credential), calling the existing measurement code and override log, plus the minimal one-taker hand-off token. Option A is a treadmill by the brief's own admission (the open-shapes list keeps growing); option D over-fires on every Bash command to solve a git-only problem; option C accepts the miss rate the project has repeatedly spent effort reducing \u2014 CI catches it, but only after the work is done. Because the pre-commit hook already exists and is already installed via `core.hooksPath`, this adds a *step* to a standing mechanism, not a new one, and it removes the PreToolUse hook's documented ordering limit for free.\n\n3. **What it costs to keep.** The coverage gate now has two enforcement points sharing one measurement library \u2014 future changes to the gate must be verified against both, and the failure mode \"they drift\" is invisible until a shape where they disagree appears. The token mechanism adds a third shared convention on `.shipwright/locks/` (naming, TTL, single-taker semantics) that both hooks must keep agreeing on. Both are real but proportionate obligations, and the drift risk is bounded because CI remains a third, independent check.\n\n4. **What it forecloses.** None identified. It actually relaxes a foreclose: the stopping rule \"never extend the lexer again\" becomes enforceable instead of aspirational.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The hand-off token (AC-7) is a small mechanism whose only benefit is avoiding a *second* override log line for a command already released once. It is the one piece that could be dropped: without it, an overridden commit gets blocked a second time at git time and needs a second (logged) override \u2014 annoying, not unsafe.\n- Suggestion: Keep it \u2014 it is small and the double-override path is genuinely user-hostile \u2014 but if any part of this brief should shrink under time pressure, this is the piece. Do not let it grow (no new token formats, no renewal logic beyond the 10-minute mtime TTL already specified).\n\n- Category: ownership\n- Severity: low\n- Finding: The token's TTL semantics (mtime, 10 min) mean an expired token silently degrades to \"normal evaluation\" \u2014 nothing will notice if the mechanism rots, since the fallback is correct behaviour.\n- Suggestion: Acceptable by design; just ensure the expired-token path is covered by the AC-7 test so future refactors of the locks convention can't silently break the \"exactly one taker\" property.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "verdicts": {
+    "openai": "reject",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": true,
+    "comparable": true,
+    "requires_resolution": true,
+    "reason": "reviewers contradict each other: glm=approve, openai=reject"
+  }
+}

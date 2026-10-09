@@ -3181,6 +3181,27 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 >   regeneration) switches the gate to WARN + allow until CI regenerates it. Optional
 >   `enforcement.rtm_coverage_baseline` ratchets the threshold down for a project
 >   far below 80%.
+> - *Git-side check (second enforcement point)*: `scripts/hooks/pre-commit`
+>   (enabled per clone by `scripts/install-hooks.sh`, `core.hooksPath`) runs
+>   `git_precommit_rtm_coverage.py` after the bloat anti-ratchet step (both always
+>   run; the commit is blocked if either blocks). Git runs it inside the real
+>   `git commit`, so no shell shape can hide the commit, and it measures the manifest
+>   **staged for that commit** (git supplies the real or temporary index, so `-a` and
+>   pathspec commits are judged on what they will commit - the PreToolUse "ordering
+>   limit" does not apply). Same measurement, threshold, baseline and override log
+>   (hook name `check_rtm_coverage`); exit code 3 is the only block - an internal
+>   error, or uv/the interpreter failing, is a stderr WARN and an allow
+>   (`pre-commit` enforces this). A release by the PreToolUse hook leaves an
+>   untracked 2-minute token `.shipwright/locks/git-side-release-check_rtm_coverage`
+>   bound to the HEAD it was granted on and to the consumed override entry it rides on (a hand-written token without a consumed override is refused); every git-side run removes it and at most
+>   one honours it, so one logged override covers both points (the second commit of
+>   `a && b` needs its own; the `CONSUMED` line lands in the next commit). **Limits:**
+>   monorepo contributors only (consumer projects get no `core.hooksPath`); skipped
+>   by `--no-verify`; not run for merges/rebases that skip `pre-commit`; and a token
+>   whose commit never reached git stays valid for up to 2 minutes for any
+>   below-threshold commit in that worktree (override = attribution, not a human
+>   gate). **Stopping rule:** the PreToolUse command lexer gets no further shell
+>   shapes; a shape it misses is caught here.
 > - *Override*: a logged `check_rtm_coverage` entry in the measured repo's
 >   `compliance_overrides.log` lets the next blocked commit through once, within
 >   30 minutes of its timestamp; the hook appends `<ts> | check_rtm_coverage |

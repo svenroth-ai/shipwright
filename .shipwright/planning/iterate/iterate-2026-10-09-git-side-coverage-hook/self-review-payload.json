@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "spec-compliance", "verdict": "pass", "note": "AC-1..9 each have an end-to-end test against real git; nothing beyond the spec was added."},
+ {"name": "error-handling", "verdict": "pass", "note": "exit 3 is the only block; script crash, uv failure and measurement errors WARN and allow; UTF-8 forced on streams."},
+ {"name": "security", "verdict": "pass", "note": "no secrets; token is HEAD-bound, 2-minute, removed on every run; residual disclosed in the spec."},
+ {"name": "test-quality", "verdict": "pass", "note": "outcome assertions on real commits, positive-output assertions on allow paths, unit tests for token expiry/single winner."},
+ {"name": "performance", "verdict": "pass", "note": "one extra uv run per commit; accepted and disclosed."},
+ {"name": "naming-structure", "verdict": "pass", "note": "files under 300 lines, names follow the sibling hook/lib pattern."},
+ {"name": "affected-boundaries", "verdict": "pass", "note": "token file, staged-manifest read, hook exit code all round-tripped by real git commits in the tests."},
+ {"name": "test-hygiene", "verdict": "pass", "note": "no silent skips except an explicit skip when a later lexer reads a shape; tests fail loudly otherwise."}
+]}
