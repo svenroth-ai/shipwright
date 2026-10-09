@@ -20,12 +20,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-09T09:56:13.955187+00:00",
-      "disposition": "Plan phase (spec, mini-plan, plan and architecture reviews) was not executed: the operator pre-specified six concrete items and this autonomous run went straight to build; code-level review ran instead (spec, code, doubt, external).",
+      "completed_at": "2026-10-09T10:24:00.120599+00:00",
+      "disposition": "Plan phase not executed: the operator pre-specified six concrete items in an autonomous run, so planning and its reviews were skipped; spec, code, doubt and external code review ran.",
       "recorded_by": "close-missing",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "unavailable"
+      "reason_code": "user-opt-out"
     },
     "code": {
       "review_type": "code",
@@ -307,12 +307,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-09T09:56:13.955187+00:00",
-      "disposition": "Plan phase (spec, mini-plan, plan and architecture reviews) was not executed: the operator pre-specified six concrete items and this autonomous run went straight to build; code-level review ran instead (spec, code, doubt, external).",
+      "completed_at": "2026-10-09T10:23:55.123320+00:00",
+      "disposition": "Plan phase not executed: the operator pre-specified six concrete items in an autonomous run, so planning and its reviews were skipped; spec, code, doubt and external code review ran.",
       "recorded_by": "close-missing",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "unavailable"
+      "reason_code": "user-opt-out"
     },
     "architecture_internal": {
       "review_type": "architecture_internal",
@@ -320,12 +320,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-09T09:56:13.955187+00:00",
-      "disposition": "Plan phase (spec, mini-plan, plan and architecture reviews) was not executed: the operator pre-specified six concrete items and this autonomous run went straight to build; code-level review ran instead (spec, code, doubt, external).",
+      "completed_at": "2026-10-09T10:23:55.235345+00:00",
+      "disposition": "Plan phase not executed: the operator pre-specified six concrete items in an autonomous run, so planning and its reviews were skipped; spec, code, doubt and external code review ran.",
       "recorded_by": "close-missing",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "unavailable"
+      "reason_code": "user-opt-out"
     }
   }
 }

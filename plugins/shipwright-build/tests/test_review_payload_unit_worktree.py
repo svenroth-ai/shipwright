@@ -15,6 +15,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 HOOKS = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
 RUN_ID = "iterate-2026-10-09-unit-worktree-salvage"
 
@@ -75,6 +77,7 @@ def _stop(monkeypatch, tmp_path: Path, root: Path) -> int:
     return hook.main(["--review-type", "code"])
 
 
+@pytest.mark.covers("FR-01.11")
 def test_salvage_lands_in_the_unit_worktree(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path)
     assert _stop(monkeypatch, tmp_path, root) == 0
@@ -83,6 +86,7 @@ def test_salvage_lands_in_the_unit_worktree(tmp_path, monkeypatch):
         "nothing may be planted in the session root"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_still_refuses_when_no_unit_worktree_holds_the_run(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path, with_reviews=False)
     assert _stop(monkeypatch, tmp_path, root) == 0
@@ -90,6 +94,7 @@ def test_still_refuses_when_no_unit_worktree_holds_the_run(tmp_path, monkeypatch
     assert not hook.salvage_path(root, RUN_ID, "code").parent.exists()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_the_same_worktree_listed_twice_is_not_ambiguous(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path)
     _write_state(root, [unit_wt, str(unit_wt) + "/."])
@@ -97,6 +102,7 @@ def test_the_same_worktree_listed_twice_is_not_ambiguous(tmp_path, monkeypatch):
     assert hook.salvage_path(unit_wt, RUN_ID, "code").exists()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_two_distinct_worktrees_holding_the_run_are_ambiguous_and_refused(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path)
     stale = _worktree(root, "stale-wt")
@@ -106,6 +112,7 @@ def test_two_distinct_worktrees_holding_the_run_are_ambiguous_and_refused(tmp_pa
     assert not hook.salvage_path(stale, RUN_ID, "code").exists()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_a_path_git_does_not_list_is_never_a_salvage_root(tmp_path, monkeypatch):
     """loop_state.json is runner-written: a crafted entry must not steer the write."""
     root, _unit_wt = _campaign(tmp_path, with_reviews=False)
@@ -118,6 +125,7 @@ def test_a_path_git_does_not_list_is_never_a_salvage_root(tmp_path, monkeypatch)
     assert not hook.salvage_path(rogue, RUN_ID, "code").exists()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_a_malformed_loop_state_degrades_to_the_session_root(tmp_path, monkeypatch):
     root, unit_wt = _campaign(tmp_path)
     (root / ".shipwright" / "loop_state.json").write_text("{not json", encoding="utf-8")
