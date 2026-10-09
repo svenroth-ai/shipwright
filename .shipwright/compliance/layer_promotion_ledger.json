@@ -1,0 +1,247 @@
+{
+  "decisions": {
+    "FR-01.01": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.02": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.03": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.05": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.06": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.07": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.08": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.09": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.10": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:05b925bad3cdde6bda35ccf6a3b00cb8ae2c53b982f055025b6d49ee654690f1",
+        "reason": "highest observable layer 'integration' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit",
+          "integration"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.11": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:05b925bad3cdde6bda35ccf6a3b00cb8ae2c53b982f055025b6d49ee654690f1",
+        "reason": "highest observable layer 'integration' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit",
+          "integration"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.13": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.14": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.16": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.18": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.19": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ],
+    "FR-01.20": [
+      {
+        "action": "promoted",
+        "anchor_commit": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
+        "ci_run_id": 37993055946,
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:b5c5a8c6842cce8fcc9f81e55283fa6de4f21f011fca89030bd5e3767d7c7ca6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-10-09T21:48:26.510Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-10-09-stop-guard-merged-pr"
+      }
+    ]
+  },
+  "schema_version": 1
+}
