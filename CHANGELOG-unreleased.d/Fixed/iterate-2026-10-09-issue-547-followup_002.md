@@ -1,0 +1,1 @@
+Adopt: shipwright-adopt declares openai and jsonschema, failed review legs write their reason to review.md and validate_adoption warns when no leg succeeded, --stamp-adopted explains a refused abbreviated sha, and the gateway variables are scaffolded into a new .env.local

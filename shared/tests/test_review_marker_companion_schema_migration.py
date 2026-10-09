@@ -57,14 +57,15 @@ def test_companion_writes_a_historical_gemini_envelope_as_schema_2(tmp_path):
     assert state != STATE_BLOCK
 
 
+@pytest.mark.covers("FR-01.13/AC07")
 def test_write_markers_rejects_an_unrecognized_verdict_roster(tmp_path):
-    # A gateway-route pair (GATEWAY_REVIEWERS = "model-1"/"model-2") or any
-    # other unrecognized reviewer set must fail loudly here rather than fall
-    # through to MARKER_SCHEMA silently, mirroring the fix that now applies
-    # to the historical deepseek/openai roster.
+    # Any reviewer set outside the known rosters must fail loudly here rather
+    # than fall through to MARKER_SCHEMA silently, mirroring the fix that now
+    # applies to the historical deepseek/openai roster. (The gateway pair
+    # "model-1"/"model-2" is a KNOWN roster since #547 - schema 6.)
     with pytest.raises(ReviewRecordError, match="unrecognized reviewer set"):
         write_markers(
             tmp_path, "run-1", "plan", marker_status="completed",
             record_status="completed", findings_count=0,
-            verdicts={"model-1": "approve", "model-2": "approve"},
+            verdicts={"model-1": "approve", "model-3": "approve"},
         )

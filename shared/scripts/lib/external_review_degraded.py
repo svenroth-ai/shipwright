@@ -13,6 +13,12 @@ _BANNER = (
     "succeeded ({reason}). This is NOT a silent skip: the caller must treat it "
     "as 'external review did not run', not mark the gate completed."
 )
+_NOT_REVIEWED_BANNER = (
+    "warning: external review did NOT run (provider={provider}) - no reviewer "
+    "was attempted. `success` is true because nothing failed, but nothing was "
+    "reviewed: check `reviewed` / `reviews_succeeded`, and configure "
+    "OPENROUTER_API_KEY, OPENAI_API_KEY or SHIPWRIGHT_REVIEW_GATEWAY_*."
+)
 _PARTIAL_BANNER = (
     "warning: external review PARTIALLY degraded — {legs} did not return a "
     "usable reply while at least one other reviewer succeeded. The gate still "
@@ -254,12 +260,18 @@ def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
         "provider": provider,
         "degraded": degraded,
         "reviews_succeeded": succeeded,
+        # `success` stays True when nothing was attempted (provider "none" is the
+        # explicit missing-keys state callers branch on), so on its own it cannot
+        # tell "reviewed and fine" from "nothing reviewed". This can (#547).
+        "reviewed": succeeded > 0,
         "reviews": reviews,
     }
     if degraded:
         reason = degraded_reason(provider, reviews)
         output["degraded_reason"] = reason
         print(_BANNER.format(reason=reason), file=sys.stderr)
+    elif succeeded == 0:
+        print(_NOT_REVIEWED_BANNER.format(provider=provider), file=sys.stderr)
     elif is_partially_degraded(reviews):
         legs = partially_degraded_legs(reviews)
         output["partially_degraded"] = True

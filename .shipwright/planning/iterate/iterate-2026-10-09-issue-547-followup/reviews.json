@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-issue-547-followup",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T14:11:33.747405+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T14:36:02.019008+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 301,
+          "finding": "File is 301 lines vs the 300 source limit (new bloat crossing).",
+          "suggestion": "Cut lines; no baseline entry. FIXED: 298 lines.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 158,
+          "finding": "gateway_evidence reads parsed.port, which raises ValueError on a malformed port.",
+          "suggestion": "Guard. FIXED + test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 488,
+          "finding": "_token_param_rejected ignores exc.param on the .code branch.",
+          "suggestion": "Apply the same param check. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/external_review_gateway_cli.py",
+          "line": 714,
+          "finding": "run_gateway takes a needless render parameter.",
+          "suggestion": "Non-blocking; kept (declared).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4030,
+          "finding": "Missing comma; guide --verdict help omits model-1/model-2.",
+          "suggestion": "FIXED.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T14:33:15.335457+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dff20ca9fdd75d78ef9c5f959c2a9b1c5d3f7fe3"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-5-plan-review.md",
+          "line": 37,
+          "finding": "every envelope consumer handles the gateway keys",
+          "suggestion": "RESOLVED: four runtime parse sites now name reviews.model-1/2.feedback when provider is gateway.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/tools/verifiers/review_driver_check.py",
+          "line": 70,
+          "finding": "F11 driver gate attests vendor independence",
+          "suggestion": "RESOLVED: provider==gateway records are not counted as attested.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 493,
+          "finding": "value errors are never retried",
+          "suggestion": "RESOLVED: a structured code decides (inner-body shape too); unsupported_value is not retried; test added.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 64,
+          "finding": "insecure-URL path always carries gateway_evidence",
+          "suggestion": "RESOLVED: port guard in _sanitize_url_for_display; test added. Path in the display string left as-is (pre-existing, not new).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "irreversibility",
+          "file": "shared/tests/conftest.py",
+          "line": 51,
+          "finding": "tests are isolated from an operator's gateway env",
+          "suggestion": "RESOLVED: autouse env scrub covers SHIPWRIGHT_REVIEW_GATEWAY_*.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T14:33:21.438562+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dff20ca9fdd75d78ef9c5f959c2a9b1c5d3f7fe3"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec / edge-case",
+          "file": "shared/scripts/validate_env.py (`_compute_missing_keys`)",
+          "line": null,
+          "finding": "The early \"no `.env.local` exists\" return (`return [v[\"name\"] for v in all_vars]`) bypasses the new `if var.get(\"alternative\"): continue` guard, which lives only inside the loop over a parsed file. A project with no `.env.local` yet gets the four `SHIPWRIGHT_REVIEW_GATEWAY_` scaffold vars listed in `missing_keys`, violating AC8 (\"never reported as missing_keys\"). The gateway-only key-drop also can't apply on that path, so a gateway-only operator who hasn't created the file is told to supply both API keys.",
+          "suggestion": "Skip `alternative` vars (and apply the gateway-chosen drop once a default is chosen) on the no-file early return too, e.g. compute the same filtered list for both branches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug / spec",
+          "file": "shared/scripts/lib/external_review_gateway.py (`_token_param_rejected`)",
+          "line": null,
+          "finding": "When the exception carries any structured `code` (e.g. OpenAI's ubiquitous `invalid_request_error`), the function returns `code == \"unsupported_parameter\" and ...` and never consults the \"unsupported\" wording — but real gateways frequently reject `max_completion_tokens` with `code: \"invalid_request_error\"` and a message like \"`max_completion_tokens` is not supported with this model; use `max_tokens`\". AC5 says retry on structured `unsupported_parameter` or \"unsupported\" wording; this implementation lets any truthy structured code veto the wording path, so the documented fallback silently won't fire for the most common real-world rejection shape. The test `test_a_structured_code_decides_the_retry` pins the veto, so this is a deliberate-but-wrong reading of the spec, not a test gap.",
+          "suggestion": "Only let the structured code short-circuit to `False` when it is a recognized code that actually conflicts (e.g. `unsupported_parameter` for a different param, or `invalid_value`); for other codes, fall through to the wording check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression / edge-case",
+          "file": "shared/scripts/tools/verifiers/review_driver_check.py (new `provider == \"gateway\": continue`)",
+          "line": null,
+          "finding": "The gateway skip happens before `seen += 1`. If the check downstream treats `seen == 0` as \"no review state found\" (an error), a gateway-only run in a Codextender session would produce markers that count for nothing and could fail the verifier. Verify the `seen == 0` path is benign for gateway markers, or count them before skipping the driver check.",
+          "suggestion": "Increment `seen` for gateway markers too (and only skip the driver-identity assertion), or confirm the zero-seen branch is a no-op.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/scripts/checks/validate_adoption.py (`_REVIEW_LEG_RE`)",
+          "line": null,
+          "finding": "^## .+ — (\\w+)$` is matched against the whole `review.md`, whose body embeds the reviewers' free-form feedback. An LLM reviewer whose feedback contains a line like `## note — error` would be counted as a leg status and could trigger (or suppress) the warning spuriously. The success-leg suppression depends on the literal word `success` appearing in such a match.",
+          "suggestion": "Cheap hardening: have `review_runner` emit a machine-readable status marker (e.g. an HTML comment `<!-- leg: model-1 error -->`) and match that instead of parsing prose headings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/compliance_adopt_stamp.py (`supplied = safe_commit(raw_base)`)",
+          "line": null,
+          "finding": "The abbreviated-sha explanation only fires when `safe_commit(raw_base)` echoes an abbreviation and `resolve_adopted_base` returned None. If `safe_commit` normalizes (e.g. lowercases, strips `^{commit}` suffixes, or pads), or if `raw_base` is a ref that resolves to a commit while also being a valid short hex prefix, the branch ordering (`base is None and ...`) can silently fall through to the generic \"no usable commit\" message for inputs the operator would classify as \"an abbreviated sha\". Can't be confirmed without `safe_commit`'s body, but the guard chain is fragile.",
+          "suggestion": "Compute the abbreviated-sha diagnosis from `raw_base` directly (length-7–39 hex, post-`safe_commit`) before the generic branch, and assert the two paths are mutually exclusive in a test with a ref-collision case.  Everything else checks out well against the ACs: the exclusive fail-closed gateway routing (AC1), status/availability wiring (AC2), schema-6 marker with rejection of glm/openai under it (AC3, round-trip tested through the real recorder CLI), the `reviewed` flag on all four envelope shapes plus the stderr notice (AC4), evidence redaction with header names only and host-only sanitization (AC6), plugin dependency declaration with an installability test that survives the \"mock hides the missing import\" trap (AC7), env scaffolding into new files only (AC8, tested), and the improved abbreviated-sha message (AC9). The split-out modules avoid the bloat-ratchet and the existing drift-protection test was updated coherently.  Overall: ship-with-fixes — the missing-file `missing_keys` leak (AC8 violation) and the token-param retry veto are concrete enough to fix first; the rest are hardening.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 187,
+          "finding": "Any structured error code suppresses the wording-based retry. A gateway returning `code: \"invalid_request_error\"` with `\"Unsupported parameter: max_completion_tokens\"` therefore fails without trying `max_tokens`, despite AC5 explicitly allowing unsupported wording.",
+          "suggestion": "Allow explicit unsupported-parameter wording when the structured code is generic. Continue rejecting specific value errors and errors targeting another parameter; add a test for this generic-code response.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/external_review_gateway.py",
+          "line": 247,
+          "finding": "Every error result calls `gateway_evidence(base_url)` without a token parameter, and that helper omits `token_param` entirely. Missing configuration, missing `openai`, request failures, and failed fallback attempts therefore violate AC6’s required evidence shape.",
+          "suggestion": "Always include `token_param`, using `null` before a request is attempted and the attempted parameter for transport failures. Preserve `\"max_tokens\"` when the fallback request fails, and assert the field on error results.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 232,
+          "finding": "Early failures emit `reviewed: false` but no stderr notice that review did NOT run. The empty-diff envelope likewise bypasses `finalize_review_output`, so the new notice only covers the ordinary no-provider path. AC4 requires the notice whenever nothing was attempted.",
+          "suggestion": "Emit the notice on early-failure and empty-diff exits as well, and test stderr for both paths.  Ship-with-fixes: the gateway dispatch and roster integration are implemented, but retry compatibility and required failure diagnostics remain incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-09T14:36:01.865056+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec / edge-case\n  Severity: medium\n  File: shared/scripts/validate_env.py (`_compute_missing_keys`)\n  Finding: The early \"no `.env.local` exists\" return (`return [v[\"name\"] for v in all_vars]`) bypasses the new `if var.get(\"alternative\"): continue` guard, which lives only inside the loop over a parsed file. A project with no `.env.local` yet gets the four `SHIPWRIGHT_REVIEW_GATEWAY_*` scaffold vars listed in `missing_keys`, violating AC8 (\"never reported as missing_keys\"). The gateway-only key-drop also can't apply on that path, so a gateway-only operator who hasn't created the file is told to supply both API keys.\n  Suggestion: Skip `alternative` vars (and apply the gateway-chosen drop once a default is chosen) on the no-file early return too, e.g. compute the same filtered list for both branches.\n\n- Category: bug / spec\n  Severity: medium\n  File: shared/scripts/lib/external_review_gateway.py (`_token_param_rejected`)\n  Finding: When the exception carries any structured `code` (e.g. OpenAI's ubiquitous `invalid_request_error`), the function returns `code == \"unsupported_parameter\" and ...` and never consults the \"unsupported\" wording — but real gateways frequently reject `max_completion_tokens` with `code: \"invalid_request_error\"` and a message like \"`max_completion_tokens` is not supported with this model; use `max_tokens`\". AC5 says retry on structured `unsupported_parameter` **or** \"unsupported\" wording; this implementation lets any truthy structured code veto the wording path, so the documented fallback silently won't fire for the most common real-world rejection shape. The test `test_a_structured_code_decides_the_retry` pins the veto, so this is a deliberate-but-wrong reading of the spec, not a test gap.\n  Suggestion: Only let the structured code short-circuit to `False` when it is a recognized code that actually conflicts (e.g. `unsupported_parameter` for a different param, or `invalid_value`); for other codes, fall thr […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/external_review_gateway.py:187\n- Finding: Any structured error code suppresses the wording-based retry. A gateway returning `code: \"invalid_request_error\"` with `\"Unsupported parameter: max_completion_tokens\"` therefore fails without trying `max_tokens`, despite AC5 explicitly allowing unsupported wording.\n- Suggestion: Allow explicit unsupported-parameter wording when the structured code is generic. Continue rejecting specific value errors and errors targeting another parameter; add a test for this generic-code response.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/external_review_gateway.py:247\n- Finding: Every error result calls `gateway_evidence(base_url)` without a token parameter, and that helper omits `token_param` entirely. Missing configuration, missing `openai`, request failures, and failed fallback attempts therefore violate AC6’s required evidence shape.\n- Suggestion: Always include `token_param`, using `null` before a request is attempted and the attempted parameter for transport failures. Preserve `\"max_tokens\"` when the fallback request fails, and assert the field on error results.\n\n- Category: spec\n- Severity: low\n- File: shared/scripts/tools/external_review.py:232\n- Finding: Early failures emit `reviewed: false` but no stderr notice that review did NOT run. The empty-diff envelope likewise bypasses `finalize_review_output`, so the new notice only covers the ordinary no-provider path. AC4 requires the notice whenever nothing was attempted.\n- Suggestion: Emit the notice on early-failure and empty-diff exits as well, and test stderr for both paths.\n\nShip-with-fixes: the gateway dispatch and roster integration are implemented, but retry compatibility and required failure diagnostics remain incomplete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T14:14:41.415778+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dff20ca9fdd75d78ef9c5f959c2a9b1c5d3f7fe3"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T14:36:02.135399+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T14:36:02.251732+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

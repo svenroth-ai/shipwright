@@ -261,7 +261,8 @@ unavailable` with that reason as the disposition, never a completed review.)
 remains required for CLI shape parity with plan/iterate modes.)
 
 3. Parse JSON output (`reviews.glm.feedback` + `reviews.openai.feedback`, or
-   `reviews.opus.feedback` under `--driver codex`; required, no default,
+   `reviews.opus.feedback` under `--driver codex`; `reviews.model-1/2.feedback` when
+   `provider` is `gateway`; required, no default,
    never hardcoded). Merge any high/medium severity findings into the
    in-flight findings list from Step 6b. Treat them with the same
    autonomous/guided handling rule as the internal subagent findings.

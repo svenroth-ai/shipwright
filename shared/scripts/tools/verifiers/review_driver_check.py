@@ -66,6 +66,8 @@ def check_review_driver(
             if session_active and (run_dir / name).is_file():
                 bad.append(f"{name}: unreadable (not JSON/UTF-8) while this session is Codextender")
             continue
+        if raw.get("provider") == "gateway":
+            continue  # operator-chosen models: vendor independence is not attested here
         seen += 1
         driver = raw.get("driver")
         if driver == "codex" or (driver != "claude" and not session_active):

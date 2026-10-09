@@ -209,6 +209,28 @@ def _validate_review(project_root: Path) -> list[str]:
     return []
 
 
+_REVIEW_LEG_RE = re.compile(r"^## .+ \u2014 ([\w-]+)\s*$", re.MULTILINE)
+
+
+def _review_warnings(project_root: Path) -> list[str]:
+    """Warn when Layer-3 review was attempted but no reviewer produced a review.
+
+    Not an error (a skipped review is a documented outcome), but this used to pass
+    silently as `ok: true` (#547).
+    """
+    review = project_root / ".shipwright" / "adopt" / "review.md"
+    if not review.is_file():
+        return []
+    statuses = _REVIEW_LEG_RE.findall(review.read_text(encoding="utf-8", errors="replace"))
+    if statuses and "success" not in statuses:
+        return [
+            "Layer-3 review produced no usable review: every reviewer leg ended "
+            f"{sorted(set(statuses))} (see the Reason lines in .shipwright/adopt/review.md). "
+            "Fix the cause and re-run Step G, or accept an unreviewed adoption knowingly."
+        ]
+    return []
+
+
 def _hollow_adr_detection():
     """trg-6b59524b hollow-ADR detector, loaded BY FILE LOCATION (ADR-045).
 
@@ -249,6 +271,7 @@ def validate(project_root: Path) -> dict:
     errors.extend(_validate_honesty_artifacts(project_root))
 
     warnings: list[str] = []
+    warnings.extend(_review_warnings(project_root))
     warnings.extend(_hollow_adr_detection().soft_check_decision_log_density(project_root))
     warnings.extend(_hollow_adr_detection().soft_check_adr_seed_folder(project_root))
 

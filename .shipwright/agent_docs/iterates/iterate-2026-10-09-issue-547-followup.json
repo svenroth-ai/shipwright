@@ -1,0 +1,101 @@
+{
+  "run_id": "iterate-2026-10-09-issue-547-followup",
+  "date": "2026-10-09T14:55:50.175481Z",
+  "event_at": "2026-10-09T12:32:12.893571+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/issue-547-followup",
+  "spec": ".shipwright/planning/iterate/2026-10-09-issue-547-gateway-followup.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-issue-547-followup",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 gateway-only operator is routed through the gateway; exclusive and fail-closed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_cli.py::test_cli_routes_a_gateway_only_operator_through_the_gateway, test_cli_gateway_is_exclusive_and_fails_closed PASSED"
+      },
+      {
+        "behavior": "AC1 detect_provider names the gateway",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_cli.py::test_cli_detect_provider_names_the_gateway PASSED"
+      },
+      {
+        "behavior": "AC2 gateway counts as an available route; key check reports providers.gateway",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_cli.py::test_gateway_counts_as_an_available_route, test_key_check_reports_the_gateway PASSED"
+      },
+      {
+        "behavior": "AC3 gateway roster has marker schema 6; recorder writes it and rejects a mixed roster",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_record_review_pass_gateway.py::test_recorder_accepts_a_gateway_envelope_and_writes_a_schema_6_marker, test_recorder_still_rejects_a_mixed_roster; shared/tests/test_external_review_gateway_cli.py::test_gateway_roster_has_its_own_marker_schema PASSED"
+      },
+      {
+        "behavior": "AC4 reviewed flag and stderr notice when nothing was reviewed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_cli.py::test_nothing_attempted_is_not_reported_as_reviewed, shared/tests/test_record_review_pass_gateway.py::test_empty_diff_and_failure_envelopes_say_nothing_was_reviewed PASSED"
+      },
+      {
+        "behavior": "AC5 max_completion_tokens first; one max_tokens retry only on an unsupported rejection; value errors and unrelated errors not retried",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_leg.py::test_gateway_leg_sends_max_completion_tokens_first, test_gateway_leg_falls_back_to_max_tokens_when_rejected, test_gateway_leg_unrelated_error_is_not_retried, test_a_400_that_merely_names_the_parameter_is_not_retried, test_structured_unsupported_parameter_retries_and_keeps_both_errors, test_a_structured_code_decides_the_retry, test_a_generic_error_code_with_unsupported_wording_still_falls_back PASSED"
+      },
+      {
+        "behavior": "AC5 configured max_retries reaches the client",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_leg.py::test_configured_retry_count_reaches_the_client PASSED"
+      },
+      {
+        "behavior": "AC6 gateway evidence on every result incl. early failures, ImportError, malformed port; header names only",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_gateway_leg.py::test_gateway_evidence_names_headers_but_never_values, test_early_failures_still_carry_gateway_evidence, test_missing_openai_package_still_carries_gateway_evidence, test_evidence_survives_a_malformed_port, test_insecure_url_with_malformed_port_still_returns_an_error_with_evidence, test_error_evidence_always_has_a_token_param_key PASSED"
+      },
+      {
+        "behavior": "AC6 F11 driver gate does not count a gateway record as vendor-attested",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_record_review_pass_gateway.py::test_a_gateway_record_is_not_counted_as_driver_attested PASSED"
+      },
+      {
+        "behavior": "AC7 adopt declares openai/jsonschema; failed leg reason written; validate_adoption warns",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_review_diagnostics_and_deps.py::test_review_dependencies_are_declared_and_importable, test_failed_leg_reason_is_written_to_the_review, test_successful_leg_gets_no_reason_line, test_validation_warns_when_no_review_leg_succeeded, test_validation_is_quiet_for_a_real_or_skipped_review PASSED"
+      },
+      {
+        "behavior": "AC8 gateway vars scaffolded into a new .env.local only, never missing_keys (also with no file), chosen gateway drops the two keys",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_validate_env_gateway.py::test_new_env_file_lists_the_gateway_variables, test_gateway_variables_are_never_reported_as_missing_keys, test_existing_env_file_is_not_touched_for_the_gateway, test_a_chosen_gateway_makes_the_two_keys_irrelevant, test_no_env_file_yet_never_lists_gateway_vars_as_missing PASSED"
+      },
+      {
+        "behavior": "AC9 abbreviated sha explained instead of generic no-usable-commit",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stamp_adopted_base.py::test_an_abbreviated_base_is_refused_rather_than_resolved PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_external_review_gateway_cli.py shared/tests/test_external_review_gateway_leg.py shared/tests/test_record_review_pass_gateway.py -q",
+    "exit_code": 0,
+    "tests_run": 29,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-09-issue-547-followup/surface_verification.json",
+    "timestamp": "2026-10-09T14:48:08.730Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

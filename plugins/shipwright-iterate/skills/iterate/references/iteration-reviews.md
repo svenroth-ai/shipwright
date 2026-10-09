@@ -409,7 +409,7 @@ completed review; the two capture files are its required evidence (`campaign-ste
 parent `review` — see [iterate-timings](iterate-timings.md).)
 
 Read the redirected file back and parse `reviews.glm.feedback` +
-`reviews.openai.feedback` (or `reviews.opus.feedback` under `--driver codex`;
+`reviews.openai.feedback` (or `reviews.opus.feedback` under `--driver codex`; `reviews.model-1/2.feedback` when `provider` is `gateway`;
 required, no default, never hardcoded — see iteration-planning.md). Merge any
 high/medium-severity findings into the iterate ADR's
 `External-Code-Review-Findings` table. Address before commit (apply fix,

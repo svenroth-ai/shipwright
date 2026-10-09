@@ -160,11 +160,24 @@ def _codex_route_reachable(config: dict[str, Any]) -> bool:
     return available
 
 
+def _gateway_route_configured() -> bool:
+    """True iff the operator pointed review traffic at a gateway (#547).
+
+    Without this, a gateway-only operator (no OPENROUTER/OPENAI key) read as
+    ``missing_keys`` and the skills prompted for an API key instead of using
+    the route that was already configured. The env var is read directly, as
+    the neighbouring key checks are, rather than importing
+    ``external_review_gateway`` - whose own import shim pulls in
+    ``external_review_degraded`` for nothing this predicate needs.
+    """
+    return bool(os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL", "").strip())
+
+
 def is_external_review_enabled(config: dict[str, Any]) -> bool:
     """Check if external review is enabled and at least one route is available.
 
-    Considers OPENROUTER_API_KEY and OPENAI_API_KEY, or a reachable codex
-    route. GLM has no direct fallback; Gemini credentials are historical
+    Considers OPENROUTER_API_KEY and OPENAI_API_KEY, a configured
+    gateway, or a reachable codex route. GLM has no direct fallback; Gemini credentials are historical
     and deliberately ignored.
     """
     from env import load_shipwright_env  # type: ignore[import-not-found]
@@ -178,7 +191,7 @@ def is_external_review_enabled(config: dict[str, Any]) -> bool:
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    return has_openrouter or has_openai or _codex_route_reachable(config)
+    return has_openrouter or has_openai or _gateway_route_configured() or _codex_route_reachable(config)
 
 
 def is_external_code_review_enabled(config: dict[str, Any]) -> bool:
@@ -214,7 +227,7 @@ def get_external_review_status(config: dict[str, Any]) -> str:
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    if has_openrouter or has_openai or _codex_route_reachable(config):
+    if has_openrouter or has_openai or _gateway_route_configured() or _codex_route_reachable(config):
         return "available"
     return "missing_keys"
 

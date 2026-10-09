@@ -183,6 +183,13 @@ def run_review(
         status = rev.get("status", "unknown")
         feedback = rev.get("feedback", "_no feedback_")
         body += f"## {name} — {status}\n\n{feedback}\n\n"
+        if status != "success" and rev.get("reason"):
+            # A failed leg's `reason` is the only record of WHY (missing
+            # package, rejected parameter, gateway refusal). Without it the
+            # artifact said "_no feedback_" and the cause had to be rediscovered
+            # by calling llm_review directly (#547). Gateway legs are redacted
+            # upstream; other routes carry the provider's own error text.
+            body += f"> Reason: {rev['reason']}\n\n"
         if rev.get("reasoning_cap_dropped"):
             body += f"> Warning: {rev['reasoning_cap_dropped']}\n\n"
         body += "---\n\n"

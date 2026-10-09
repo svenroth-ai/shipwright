@@ -35,7 +35,7 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
 ```
 
 Read it back (canonical basename, trg-3b206c08) and parse `reviews.glm.feedback` +
-`reviews.openai.feedback` (`reviews.opus.feedback` under `--driver codex`; required,
+`reviews.openai.feedback` (`reviews.opus.feedback` under `--driver codex`; `reviews.model-1/2.feedback` when `provider` is `gateway`; required,
 never hardcoded). Merge high/medium findings into the iterate ADR's
 `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
 `rejected-with-reason`, before Finalization. A non-zero exit, a reply that is not
