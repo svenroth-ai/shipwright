@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PR 1 diff meets every part of the spec: _parse no longer calls ET.parse(path); reads bytes, returns None on >8MiB, <!DOCTYPE or <!ENTITY, else ET.fromstring; no new dependency, no suppression; urllib3 2.7.0->2.8.0 in both lockfiles only; no triage changes; two tests match."}
