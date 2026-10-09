@@ -41,7 +41,10 @@ placeholder such as `"change_type": "{docs|…}"` is itself a rejection (a prese
   agents, `shared/prompts/**`, `shared/constitution.md`); under `src/**`,
   `app/**`, `server/**`, `pages/**` a `docs`/`test`/`e2e`/`sbom` directory
   name covers nothing (rules: `lib/change_type_paths.py`; no per-project
-  override — a path no rule covers needs its FR linked). Refusals:
+  override — a path no rule covers needs its FR linked; a requirement catalog
+  `.shipwright/planning/<split>/spec.md` is covered by no label, so a run that mints AC ids or promotes layers links the FRs it touches). A stacked
+  campaign unit adds `"stack_base_ref":"<parent unit branch>"` to its extras so
+  the diff starts there. Refusals:
   `change_type_not_covered_by_diff` (names the paths) and
   `change_type_diff_unavailable` (git present, no trunk ref or one sharing
   no history with HEAD; not a git

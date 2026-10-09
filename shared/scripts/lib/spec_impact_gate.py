@@ -31,11 +31,13 @@ must agree (``docs-only`` with ``docs`` and so on). ``tests-only``,
 
 from __future__ import annotations
 
+import sys
+
 from lib.fr_classification import CHANGE_TYPE_VALUES, NONE_REASON_MAX_LEN, is_non_empty_fr_list, is_valid_none_reason
 from lib.reason_codes import reason_code_error
 
 __all__ = [
-    "LABEL_OF_CODE", "SPEC_IMPACT_INTENTS", "SPEC_IMPACT_NONE_FAMILY",
+    "CLAIM_KEYS", "claims_divergence", "warn_claims_divergence", "LABEL_OF_CODE", "SPEC_IMPACT_INTENTS", "SPEC_IMPACT_NONE_FAMILY",
     "none_record_problem", "spec_impact_gate_error", "stamp_intent_from_history",
 ]
 
@@ -48,6 +50,22 @@ SPEC_IMPACT_NONE_FAMILY = "spec_impact_none"
 #: The no-FR ``change_type`` each label-naming code must sit next to (``<label>-only``),
 #: keyed off the FR-gate's own enum so the two can never name different labels.
 LABEL_OF_CODE = {f"{label}-only": label for label in CHANGE_TYPE_VALUES}
+
+
+#: The classification claims a re-run can state differently from the event already on record.
+CLAIM_KEYS = ("change_type", "affected_frs", "new_frs", "spec_impact", "intent", "stack_base_ref")
+
+
+def claims_divergence(recorded: dict, event: dict) -> list[str]:
+    """Claim keys the re-run's ``event`` states differently from the ``recorded`` one (the record is kept)."""
+    return [k for k in CLAIM_KEYS if k in event and event[k] != recorded.get(k)]
+
+
+def warn_claims_divergence(recorded: dict, event: dict, caller: str) -> None:
+    """Say on stderr that a re-run's differing claims were gated but NOT written over the record."""
+    differing = claims_divergence(recorded, event)
+    if differing:
+        print(f"[{caller}] WARNING: recorded event kept; the re-run states different {differing}.", file=sys.stderr)
 
 
 def _justification(event: dict):

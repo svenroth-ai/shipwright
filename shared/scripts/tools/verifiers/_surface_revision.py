@@ -10,7 +10,9 @@ unfingerprinted evidence is stale.
 **The rule, when ``head_commit`` is the verified commit or an ancestor of it.**
 The paths the branch itself owns are the ones the tested tree changed against
 ``head`` plus the ones the branch's own first-parent NON-merge commits in
-``head..commit`` touched. For each such path ``P`` the tested content
+``head..commit`` touched, plus the paths a first-parent trunk merge there
+resolved by hand (a conflict: what the merge commit holds for it is the
+branch's own write, ``git merge-tree`` names them). For each such path ``P`` the tested content
 ``tree:P`` is compared with ``L(P):P``, where ``L(P)`` is the newest of those
 commits that touched ``P`` (``head`` when none did). F11 runs ``ensure_current``
 (a merge from the trunk) before this check, so the verified commit itself may
@@ -31,8 +33,11 @@ only in the tested tree, absent from both ``head`` and the verified commit (a
 stray untracked file such as a test-run leak). Strays are named in the note.
 
 Residual gaps (ADR): the fingerprint is taken at staging, which
-``evidence_drop.stage`` bounds by refusing reports older than the code; a
-conflict resolution inside a trunk-merge commit is not a branch write.
+``evidence_drop.stage`` bounds by refusing reports older than the code. An
+octopus merge in ``head..commit`` cannot be replayed, so it is unreadable and
+fails closed. A merge of a NON-trunk side branch (or an updated stacked parent)
+is not told apart from a trunk merge: its own commits are not first-parent, and
+a clean replay shows no hand edit, so code it brought in reads as the trunk's.
 """
 
 from __future__ import annotations
@@ -50,6 +55,10 @@ from .git_helpers import _run_git  # noqa: E402
 
 __all__ = ["revision_problem"]
 
+
+class _MergeTreeUnsupported(Exception):
+    """``git merge-tree --write-tree`` is unavailable (git < 2.38) or could not replay a merge; the text says which."""
+
 _T = 30.0
 _GIT_FAILED = "git could not compare the tested tree {tree} with {commit} (fingerprint unreadable, or pruned by `git gc`)"
 
@@ -64,13 +73,56 @@ def _tested_paths(project_root: Path, head: str, tree: str) -> set[str] | None:
     return {p.strip() for p in out.splitlines() if _owned(p.strip())} if rc == 0 else None
 
 
-def _last_writes(project_root: Path, head: str, commit: str) -> dict[str, str] | None:
-    """``{path: newest first-parent non-merge commit in head..commit touching it}``."""
-    rc, out, _ = _run_git(project_root, "-c", "core.quotePath=false", "log", "--first-parent",
-                          "--no-merges", "--no-renames", "--name-only", "--format=%x00%H",
+def _resolutions(project_root: Path, head: str, commit: str) -> dict[str, str] | None:
+    """``{path: newest first-parent merge commit in head..commit that changed it by hand}``.
+
+    Each merge is replayed (``git merge-tree``); every path where the recorded merge
+    differs from git's own automatic merge was resolved or edited by hand: a conflict
+    (the replayed tree holds markers) or an edit inside a cleanly merged file.
+    ``None`` when git failed or a merge has other than two parents.
+    """
+    rc, out, _ = _run_git(project_root, "rev-list", "--first-parent", "--merges", "--parents",
                           f"{head}..{commit}", timeout=_T)
     if rc != 0:
         return None
+    owners: dict[str, str] = {}
+    for line in out.splitlines():
+        shas = line.split()
+        if not shas:
+            continue
+        if len(shas) != 3:
+            return None
+        rc, replay, err = _run_git(project_root, "merge-tree", "--write-tree", "-z", shas[1], shas[2], timeout=_T)
+        if rc == 129:  # usage error: this git has no --write-tree
+            raise _MergeTreeUnsupported("this git is older than 2.38, so a trunk merge's hand edits cannot be "
+                                        "replayed (`git merge-tree --write-tree`); upgrade git to verify this branch")
+        if rc not in (0, 1):  # 1 = conflicts, the case this exists for
+            raise _MergeTreeUnsupported(f"git merge-tree could not replay the merge {shas[0][:12]} "
+                                        f"(exit {rc}: {err.strip()[:120]}; unrelated history or a shallow clone?)")
+        replayed = replay.split(chr(0), 1)[0].strip()
+        rc, diff, _ = _run_git(project_root, "-c", "core.quotePath=false", "diff", "--name-only", "--no-renames",
+                               replayed, f"{shas[0]}^{{tree}}", timeout=_T)
+        if rc != 0:
+            return None
+        for name in diff.splitlines():
+            if _owned(name.strip()):
+                owners.setdefault(name.strip(), shas[0])  # newest first: the first sighting wins
+    return owners
+
+
+def _last_writes(project_root: Path, head: str, commit: str) -> dict[str, str] | None:
+    """``{path: newest first-parent commit in head..commit that wrote it}``.
+
+    A write is a non-merge commit touching the path, or a merge that hand-resolved a conflict in it.
+    """
+    rc, out, _ = _run_git(project_root, "-c", "core.quotePath=false", "log", "--first-parent",
+                          "--no-merges", "--no-renames", "--name-only", "--format=%x00%H",
+                          f"{head}..{commit}", timeout=_T)
+    resolved = _resolutions(project_root, head, commit)
+    rc_order, order, _ = _run_git(project_root, "rev-list", "--first-parent", f"{head}..{commit}", timeout=_T)
+    if rc != 0 or resolved is None or rc_order != 0:
+        return None
+    age = {sha: n for n, sha in enumerate(order.split())}  # 0 = newest
     owners: dict[str, str] = {}
     sha = ""
     for line in out.splitlines():
@@ -78,6 +130,11 @@ def _last_writes(project_root: Path, head: str, commit: str) -> dict[str, str] |
             sha = line[1:].strip()
         elif sha and _owned(line.strip()):
             owners.setdefault(line.strip(), sha)  # newest first: the first sighting wins
+    for path, merge in resolved.items():
+        if merge not in age or (path in owners and owners[path] not in age):
+            return None  # an ordering git did not give us is not read as "newest"
+        if path not in owners or age[merge] < age[owners[path]]:
+            owners[path] = merge
     return owners
 
 
@@ -132,7 +189,10 @@ def revision_problem(project_root: Path, head: str, tree: object, commit: str,
                     f"consolidation), and the tested tree differs from it at {differs[0]!r}"), ""
         return None, (f"; staged at {head[:12]}, not an ancestor (consolidated?), but the tested "
                       f"tree equals the commit on all {len(paths)} branch path(s)") + _stray_note(strays)
-    owners = _last_writes(project_root, head, commit)
+    try:
+        owners = _last_writes(project_root, head, commit)
+    except _MergeTreeUnsupported as exc:
+        return str(exc), ""
     if owners is None:
         return failed, ""
     refs = {p: owners.get(p, head) for p in tested | set(owners)}

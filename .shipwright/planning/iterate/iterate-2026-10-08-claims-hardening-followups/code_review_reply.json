@@ -1,0 +1,36 @@
+{
+  "section": "iterate-2026-10-08-claims-hardening-followups",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/_evidence_drop_guard.py",
+      "finding": "paths from git diff are repo-root-relative, not project-relative (fixed: --relative)"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/change_type_diff.py",
+      "finding": "trunk merge into a stacked unit over-flags (fixed: intersection of the two diffs)"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/finalize_iterate.py",
+      "finding": "idempotent re-run silently drops diverging claims (fixed: warning)"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/_evidence_drop_guard.py",
+      "finding": "first-run __pycache__ bumps the directory mtime (documented)"
+    }
+  ],
+  "rounds": 2,
+  "round1_fixed": [
+    "Stop-hook repair pass",
+    "uncommitted delete of edited file",
+    "old git message",
+    "own-branch"
+  ]
+}

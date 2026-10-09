@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-claims-hardening-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:25:19.991754+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Specify that gate failure on re-run raises (consistent with any other finalize failure), and define \"no claims\" as \"extras is None or all claim fields empty\" in the plan, with a test for each.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Either append/refresh the event body under the same id, or assert the gated event matches the recorded one and fail loudly on divergence. Document which in the plan.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Pin the definition (e.g., merge-base with trunk equals the ref) and add a test with an intermediate trunk merge between base and HEAD.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Acceptable to keep first-parent ordering, but document that rebases may reorder and add a test where a rebase moved a resolution commit's position.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "If the removing commit date is unavailable, consider treating directory-mtime evidence as weak: use it only when it's newer than the last commit touching the path (i.e., only in the refusing direction), never to extend freshness.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "One test asserting `iterate/<run>/spec.md` remains matched while `.shipwright/planning/<split>/spec.md` is not.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "stack_base_ref` is runner-supplied and must be validated against git refs. The plan bounds it structurally but doesn't mention rev-parse of an arbitrary user-influenced string — if `event[\"stack_base_ref\"]` flows into shell commands, that's an injection surface.",
+          "suggestion": "Resolve via `git rev-parse --verify` with the result re-checked as iterate/; never interpolate the raw string into a shell command.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The idempotent shortcut checks for “no extras,” while AC2 checks for “no claims.” A repair call carrying bookkeeping metadata but no claims would enter the gates and could fail instead of returning the recorded id.",
+          "suggestion": "Explicitly identify claim-bearing fields and gate only when claims are supplied. Test no extras, metadata-only extras, and supplied claims—including explicitly empty claim values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Merge replay needs more precise handling to satisfy AC4. `git merge-tree` can return a nonzero status for an expected conflict, and a hand resolution can select the trunk’s existing bytes. Looking only for a successful replay or a diff against the first parent would miss that resolution.",
+          "suggestion": "Treat replayed conflicts as valid results, identify their affected paths, and count their committed resolutions as writes even when the resulting content matches the first parent. Distinguish conflicts from unsupported Git or replay failures; test both edited resolutions and resolutions that retain trunk content.  The four edits are appropriately scoped, but the idempotency predicate and conflict-replay semantics need clarification before implementation. This assessment is based on the mini-plan; repository inspection was blocked by the execution policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:16:13.701475+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: edge-case — Severity: medium**\nFinding (Item 2, AC2): \"return it early only when the call carries no extras\" — the plan doesn't say how `prior_id` is found when the recorded event exists but the gate is judging a *re-supplied* event. If the newly built event fails a gate on re-run, the behavior (raise vs. return prior_id anyway) is unspecified. Also, \"carries no extras\" needs a precise definition: a Stop-hook repair call may carry *some* claim fields but empty values — is that \"no extras\"? A truthiness check on a dict (`if not extras`) vs. checking `extras is None` gives different outcomes for an explicitly-passed empty dict.\nSuggestion: Specify that gate failure on re-run raises (consistent with any other finalize failure), and define \"no claims\" as \"extras is None or all claim fields empty\" in the plan, with a test for each.\n\n**Category: risk — Severity: medium**\nFinding (Item 2, AC2): If the re-supplied event's claims differ from what was originally recorded, returning `prior_id` without updating or recording the discrepancy means the recorded event silently keeps stale claims while the runner believes the fresh ones were accepted. The gates pass, the id is returned, but the ledger doesn't reflect what was gated.\nSuggestion: Either append/refresh the event body under the same id, or assert the gated event matches the recorded one and fail loudly on divergence. Document which in the plan.\n\n**Category: edge-case — Severity: medium**\nFinding (Item 3, AC3): The stack-base validation (\"iterate/* ancestor of HEAD, on trunk, not the unit's own branch\") has an unhandled case: a valid ref that is an ancestor but where intermediate merge commits between `stack_base_ref` and HEAD introduce trunk changes. The diff `stack_base_ref...HEAD` will then include those trunk-side changes in the change_type diff, potentially mislabeling them. Also, \"sits on the trunk\" needs a concrete definition (reachable from trunk tip? reachable at bran […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The idempotent shortcut checks for “no extras,” while AC2 checks for “no claims.” A repair call carrying bookkeeping metadata but no claims would enter the gates and could fail instead of returning the recorded id.  \n   **Suggestion:** Explicitly identify claim-bearing fields and gate only when claims are supplied. Test no extras, metadata-only extras, and supplied claims—including explicitly empty claim values.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Merge replay needs more precise handling to satisfy AC4. `git merge-tree` can return a nonzero status for an expected conflict, and a hand resolution can select the trunk’s existing bytes. Looking only for a successful replay or a diff against the first parent would miss that resolution.  \n   **Suggestion:** Treat replayed conflicts as valid results, identify their affected paths, and count their committed resolutions as writes even when the resulting content matches the first parent. Distinguish conflicts from unsupported Git or replay failures; test both edited resolutions and resolutions that retain trunk content.\n\nThe four edits are appropriately scoped, but the idempotency predicate and conflict-replay semantics need clarification before implementation. This assessment is based on the mini-plan; repository inspection was blocked by the execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_evidence_drop_guard.py",
+          "line": null,
+          "finding": "paths from git diff are repo-root-relative, not project-relative (fixed: --relative)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/change_type_diff.py",
+          "line": null,
+          "finding": "trunk merge into a stacked unit over-flags (fixed: intersection of the two diffs)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": null,
+          "finding": "idempotent re-run silently drops diverging claims (fixed: warning)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_evidence_drop_guard.py",
+          "line": null,
+          "finding": "first-run __pycache__ bumps the directory mtime (documented)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:28:24.385558+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "non-trunk side-branch merge slips past freshness",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "stack_base_ref satisfiable by a self-made branch",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "HEAD:path treeish is repo-root relative from a subdirectory project",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "root coverage.xml publish bumps the root directory mtime",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "revert-to-trunk drops from the stacked diff",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "bundle retry with extras is re-gated",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:35:12.613048+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/change_type_diff.py (~line 185 / the unborn-HEAD early return, and ~line 213 in `change_type_diff_error`)",
+          "line": null,
+          "finding": "The unborn-HEAD early return in `iterate_diff` (`{\"paths\": ..., \"base\": None, \"base_ref\": \"unborn HEAD\"}`) does not include the new `shape_base` key, but `change_type_diff_error` now reads `diff[\"shape_base\"]` unconditionally. On a repo with an unborn HEAD and git present, this raises an uncaught `KeyError` instead of the intended warning/gate path (previously it read `diff[\"base\"]`, which existed).",
+          "suggestion": "Add `\"shape_base\": None` to the unborn-HEAD dict (or use `diff.get(\"shape_base\", diff[\"base\"])` in `change_type_diff_error`) and add a test for the unborn-HEAD + change_type path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/change_type_diff.py (`_stack_base`)",
+          "line": null,
+          "finding": "AC3 (and the Architecture Review's \"on-trunk\" reconciliation) requires the `stack_base_ref` to \"sit on the trunk\". `_stack_base` only checks the `iterate/` name, resolvability, ancestry of HEAD, and not-own-branch — it never verifies the ref sits on the trunk, so an `iterate/` branch grafted in from off-trunk history that happens to be an ancestor of HEAD would be accepted. The tests also never cover this case (`test_a_stack_base_on_another_branch_refuses` fails on the ancestor check, not an on-trunk check).",
+          "suggestion": "Add the on-trunk check (e.g. require the ref's merge-base with the trunk to equal the trunk fork point / that it is reachable from HEAD's first-parent chain through the trunk), plus a test with an off-trunk `iterate/` branch merged into the unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_surface_revision.py (`_last_writes` age fallback)",
+          "line": null,
+          "finding": "age.get(merge, 0) < age.get(owners[path], 0)` treats an unknown SHA as age 0 (newest), silently preferring the merge commit when ordering data is incomplete. Also, if a merge resolution write is newer than a non-merge write, the merge overwrites it correctly, but an unresolvable ordering silently biases rather than failing closed, unlike the module's stated posture.",
+          "suggestion": "Fail closed (return `None`/raise) if a sha from the resolution map is missing from the `rev-list` ordering instead of defaulting to newest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_claims_hardening_followups_review.py (`test_trunk_merged_into_the_stacked_unit_keeps_the_stack_base_usable`)",
+          "line": null,
+          "finding": "The assertion `err is None or err[\"error\"] == \"change_type_not_covered_by_diff\"` accepts both \"clean\" and \"refused\" outcomes, so it would pass even if the trunk merge broke the stack base entirely (e.g. produced `change_type_diff_unavailable`) — no, it wouldn't pass for that, but it also doesn't verify the merge actually landed a covered path was over-flagged, so the \"over-flags, never under-flags\" property is only half-checked. This is acceptable given the design note, but the test does not distinguish \"usable\" from \"silently widening/narrowing\".",
+          "suggestion": "Tighten to assert the specific expected error for the merged trunk path (or that no `change_type_diff_unavailable` occurs AND the trunk-added path is the only flagged one).  Overall assessment: the four follow-ups are implemented and mostly well-tested, but the missing `shape_base` key on the unborn-HEAD path is a real crash, and the AC3 \"sits on the trunk\" check is absent — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/change_type_diff.py",
+          "line": 215,
+          "finding": "change_type_diff_error` now reads `diff[\"shape_base\"]`, but `iterate_diff`’s unborn-HEAD return still supplies only `paths`, `base`, and `base_ref`. A no-FR finalization in a newly initialized repository raises an uncaught `KeyError` instead of evaluating the changed paths.",
+          "suggestion": "Include `\"shape_base\": None` in the unborn-HEAD result. Add a test that invokes the gate before the repository’s first commit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/change_type_diff.py",
+          "line": 157,
+          "finding": "_stack_base` checks the branch namespace, ancestry of HEAD, and own-branch exclusion, but never validates AC3’s on-trunk condition. For example, an unrelated `iterate/` lineage merged into HEAD passes the ancestry check; `_fork_point(root)` can still succeed through HEAD’s other parent, allowing that unrelated branch to become the diff base.",
+          "suggestion": "Validate the stack base’s required relationship to the resolved trunk before accepting it, and refuse when that relationship cannot be established. Add a negative test where the supplied branch is an ancestor of HEAD through an unrelated-history merge.  Ship-with-fixes: the change addresses the main hardening paths, but the unborn-repository regression and missing stack-base validation need correction. Local inspection was blocked by execution policy; these findings are based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:25:20.302029+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: bug\n  Severity: medium\n  File: shared/scripts/lib/change_type_diff.py (~line 185 / the unborn-HEAD early return, and ~line 213 in `change_type_diff_error`)\n  Finding: The unborn-HEAD early return in `iterate_diff` (`{\"paths\": ..., \"base\": None, \"base_ref\": \"unborn HEAD\"}`) does not include the new `shape_base` key, but `change_type_diff_error` now reads `diff[\"shape_base\"]` unconditionally. On a repo with an unborn HEAD and git present, this raises an uncaught `KeyError` instead of the intended warning/gate path (previously it read `diff[\"base\"]`, which existed).\n  Suggestion: Add `\"shape_base\": None` to the unborn-HEAD dict (or use `diff.get(\"shape_base\", diff[\"base\"])` in `change_type_diff_error`) and add a test for the unborn-HEAD + change_type path.\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/change_type_diff.py (`_stack_base`)\n  Finding: AC3 (and the Architecture Review's \"on-trunk\" reconciliation) requires the `stack_base_ref` to \"sit on the trunk\". `_stack_base` only checks the `iterate/*` name, resolvability, ancestry of HEAD, and not-own-branch — it never verifies the ref sits on the trunk, so an `iterate/*` branch grafted in from off-trunk history that happens to be an ancestor of HEAD would be accepted. The tests also never cover this case (`test_a_stack_base_on_another_branch_refuses` fails on the ancestor check, not an on-trunk check).\n  Suggestion: Add the on-trunk check (e.g. require the ref's merge-base with the trunk to equal the trunk fork point / that it is reachable from HEAD's first-parent chain through the trunk), plus a test with an off-trunk `iterate/*` branch merged into the unit.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_surface_revision.py (`_last_writes` age fallback)\n  Finding: `age.get(merge, 0) < age.get(owners[path], 0)` treats an unknown SHA as age 0 (newest), silently preferring the merge commit when ordering data is incomplete. Also, if a merge resolu […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/change_type_diff.py:215\n- Finding: `change_type_diff_error` now reads `diff[\"shape_base\"]`, but `iterate_diff`’s unborn-HEAD return still supplies only `paths`, `base`, and `base_ref`. A no-FR finalization in a newly initialized repository raises an uncaught `KeyError` instead of evaluating the changed paths.\n- Suggestion: Include `\"shape_base\": None` in the unborn-HEAD result. Add a test that invokes the gate before the repository’s first commit.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/change_type_diff.py:157\n- Finding: `_stack_base` checks the branch namespace, ancestry of HEAD, and own-branch exclusion, but never validates AC3’s on-trunk condition. For example, an unrelated `iterate/*` lineage merged into HEAD passes the ancestry check; `_fork_point(root)` can still succeed through HEAD’s other parent, allowing that unrelated branch to become the diff base.\n- Suggestion: Validate the stack base’s required relationship to the resolved trunk before accepting it, and refuse when that relationship cannot be established. Add a negative test where the supplied branch is an ancestor of HEAD through an unrelated-history merge.\n\nShip-with-fixes: the change addresses the main hardening paths, but the unborn-repository regression and missing stack-base validation need correction. Local inspection was blocked by execution policy; these findings are based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:25:20.143548+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:21:26.544437+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:16:55.970984+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

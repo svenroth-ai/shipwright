@@ -9,8 +9,14 @@ merge-base with the trunk, uncommitted, or untracked) was modified after the
 OLDEST report being staged was written, staging is refused.
 
 Not counted: finalization records (``review_diff_threshold.is_counted_path``),
-prose (``.md`` / ``.rst`` / ``.txt``), anything under a ``.shipwright/``
-directory (a test run's leaks), and deleted paths (no mtime). A resumed F0
+prose (``.md`` / ``.rst`` / ``.txt``) and anything under a ``.shipwright/``
+directory (a test run's leaks). A deleted path has no mtime, so its deletion
+is dated instead: by the committer date of the branch commit that removed it,
+(``%ct``: a back-dated commit date passes, and a deletion committed only
+after the tests already saw it is refused), or, for an uncommitted deletion,
+by the mtime of the nearest surviving parent directory (a removal bumps it, and so does the first import that creates its
+``__pycache__`` after the oldest report: a one-time refusal that a second F0 clears; any other change in that directory after the
+run does too, which errs toward refusing). A resumed F0
 run is not affected: its reused reports are copied into the run that reuses
 them, so their mtimes are that run's.
 
@@ -76,7 +82,7 @@ def _is_ignored_scratch_tree(root: Path) -> bool:
     return proc.returncode == 0
 
 
-def _branch_paths(root: Path) -> list[str] | None:
+def _branch_paths(root: Path) -> tuple[str, list[str]] | None:
     if _git(root, "rev-parse", "--is-inside-work-tree") is None:
         return None
     if _is_ignored_scratch_tree(root):
@@ -84,11 +90,11 @@ def _branch_paths(root: Path) -> list[str] | None:
     base = next((mb.strip() for ref in _TRUNKS if (mb := _git(root, "merge-base", "HEAD", ref))), None)
     if not base:
         return None
-    tracked = _git(root, "diff", "--name-only", "--no-renames", base)
+    tracked = _git(root, "diff", "--relative", "--name-only", "--no-renames", base)
     untracked = _git(root, "ls-files", "--others", "--exclude-standard")
     if tracked is None or untracked is None:
         return None
-    return sorted({p.strip() for p in (tracked + "\n" + untracked).splitlines() if p.strip()})
+    return base, sorted({p.strip() for p in (tracked + "\n" + untracked).splitlines() if p.strip()})
 
 
 def _counted(path: str) -> bool:
@@ -97,24 +103,42 @@ def _counted(path: str) -> bool:
             and ".shipwright" not in lower.split("/"))
 
 
+def _deleted_after(root: Path, base: str, rel: str, oldest: float) -> bool:
+    """A path missing from the working tree was removed after ``oldest`` (dated as the module docstring says)."""
+    gone_at_head = _git(root, "cat-file", "-e", f"HEAD:./{rel}") is None  # else the removal is uncommitted
+    stamp = (_git(root, "log", "-1", "--format=%ct", f"{base}..HEAD", "--", rel) or "").strip() if gone_at_head else ""
+    if stamp.isdigit():
+        return int(stamp) + 1 > oldest  # %ct is whole seconds: the real instant lies in [ct, ct + 1)
+    parent = (root / rel).parent
+    while parent != root and not parent.exists():
+        parent = parent.parent
+    try:
+        return parent.stat().st_mtime > oldest
+    except OSError:
+        return True  # cannot date the removal: unknown is not fresh
+
+
 def check_reports_newer_than_code(project_root: Path, sources: list[Path]) -> None:
     """Raise :class:`ReportsOlderThanCodeError` when a branch path changed after the oldest report."""
     mtimes = [(src.stat().st_mtime, src) for src in sources if src.is_file()]
-    paths = _branch_paths(Path(project_root)) if mtimes else None
-    if not paths:
+    found = _branch_paths(Path(project_root)) if mtimes else None
+    if not found or not found[1]:
         return
+    base, paths = found
+    root = Path(project_root)
     oldest, report = min(mtimes)
     newer = []
     for rel in filter(_counted, paths):
         try:
-            if (Path(project_root) / rel).stat().st_mtime > oldest:
+            if (root / rel).stat().st_mtime > oldest:
                 newer.append(rel)
-        except OSError:
-            continue  # deleted in the working tree: no mtime to compare
+        except OSError:  # deleted in the working tree: no mtime, so date the removal
+            if _deleted_after(root, base, rel, oldest):
+                newer.append(rel)
     if newer:
         when = datetime.fromtimestamp(oldest, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         raise ReportsOlderThanCodeError(
             f"refusing to stage: {newer[0]!r}" + (f" and {len(newer) - 1} more path(s)" if len(newer) > 1 else "")
             + f" changed after the oldest report ({report.name}, written {when}), so these reports "
             "describe older code. Re-run the tests (F0, and F0.5 for the surface), then stage the "
-            "reports that run wrote. Nothing was staged.")
+            "reports that run wrote. A deleted path is dated by its commit or its directory: commit deletions before F0. Nothing was staged.")
