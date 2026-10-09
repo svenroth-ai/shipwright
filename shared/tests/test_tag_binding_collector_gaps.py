@@ -19,7 +19,6 @@ from test_tag_binding_gate_integration import RUN, _py_base, _repo  # noqa: E402
 from tools.verifiers import tag_binding_gate as gate  # noqa: E402
 
 _CFG = "shipwright_compliance_config.json"
-_LEGACY = "tests/legacy.test.ts"
 _LEGACY_BODY = "test('legacy', () => { expect(1).toBe(1); });\n"
 
 
