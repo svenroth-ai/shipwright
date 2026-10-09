@@ -3,7 +3,9 @@
 An autonomous iterate is only done when its PR is MERGED and the checks are
 green (F11 delivery, then F12). ``deliver_pr.py`` retires the run pointer at
 exactly that moment, so *a live run pointer for this session* is the code-level
-"run is still open" signal -- no ``gh`` call at Stop time.
+"run is still open" signal. A PR merged out of band (auto-merge, by hand) leaves
+the pointer live, so one rate-limited ``gh pr list`` check on a would-be block
+covers that case.
 
 The guard blocks a Stop (``{"decision": "block", "reason": ...}``) while that
 pointer is live, unless one of the legitimate exits holds:
@@ -12,6 +14,8 @@ pointer is live, unless one of the legitimate exits holds:
   ``--campaign`` parent, whose sub-runs never open a PR of their own),
 * a hard blocker was recorded (``record_hard_blocker.py``),
 * the operator set ``SHIPWRIGHT_ITERATE_STOP_GUARD=0``,
+* the run's PR was merged after the run started (``delivered``;
+  ``SHIPWRIGHT_ITERATE_STOP_GUARD_GH=0`` skips the ``gh`` call),
 * the bounded counters ran out: ``MAX_FUTILE_BLOCKS`` consecutive blocks with no
   tool call in between (the agent answered the block with prose again, e.g.
   while it waits for a background task), or ``MAX_TOTAL_BLOCKS`` per run. These
@@ -32,7 +36,9 @@ import os
 import re
 import subprocess
 import sys
+import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from lib.events_log import resolve_events_path
@@ -46,6 +52,7 @@ from lib.iterate_stop_guard_transcript import (  # noqa: F401 - re-exported API
 
 MAX_FUTILE_BLOCKS = 3
 MAX_TOTAL_BLOCKS = 40
+MERGED_RECHECK_SECONDS = 120
 HARD_BLOCKER_CODES = (
     "non-converging-delivery",
     "admin-merge-required",
@@ -153,8 +160,54 @@ def next_phase_hint(worktree: Path, run_id: str, branch: str) -> str:
         return "Continue with the next unfinished phase of the iterate lifecycle."
 
 
+def _gh_prs(worktree: Path, branch: str) -> list[dict]:
+    """Every PR headed by ``branch`` as ``{"state", "mergedAt"}`` (``[]`` on any
+    failure, which counts as not merged). ``SHIPWRIGHT_ITERATE_STOP_GUARD_GH=0`` skips the call."""
+    if os.environ.get("SHIPWRIGHT_ITERATE_STOP_GUARD_GH") == "0":
+        return []
+    try:
+        out = subprocess.run(["gh", "pr", "list", "--head", branch, "--state", "all",
+                              "--json", "state,mergedAt"], cwd=str(worktree),
+                             capture_output=True, text=True, timeout=8, check=False)
+        data = json.loads(out.stdout) if out.returncode == 0 else []
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+    return [p for p in data if isinstance(p, dict)] if isinstance(data, list) else []
+
+
+def _utc(text: object) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def _delivered_out_of_band(worktree: Path, branch: str, run_started: str, state: dict) -> bool:
+    """True when THIS run's PR is already MERGED although its pointer is still live
+    (merged by auto-merge or by hand, so ``deliver_pr.py`` never retired it). One
+    ``gh`` call, re-asked at most every ``MERGED_RECHECK_SECONDS`` and only on a Stop
+    that would otherwise block. "This run's": a branch name is reused by later runs
+    with the same slug, so a PR counts only when it merged after the run started; an
+    unknown start, a ``gh`` failure or an OPEN sibling PR all count as "not merged"
+    (never a premature release)."""
+    started = _utc(run_started)
+    if not branch or started is None:
+        return False
+    now = time.time()
+    if now - float(state.get("merged_checked_at", 0)) < MERGED_RECHECK_SECONDS:
+        return False
+    state["merged_checked_at"] = now
+    prs = _gh_prs(worktree, branch)
+    if any(p.get("state") == "OPEN" for p in prs):
+        return False
+    return any(p.get("state") == "MERGED" and (_utc(p.get("mergedAt")) or started) > started
+               for p in prs)
+
+
 def decide(*, main_root: Path, run_id: str, worktree: Path, branch: str,
-           autonomous: bool, tool_count: int, scan: dict | None = None) -> str | None:
+           autonomous: bool, tool_count: int, scan: dict | None = None,
+           run_started: str = "") -> str | None:
     """Return the block reason, or ``None`` to let the Stop through. Mutates state."""
     if os.environ.get("SHIPWRIGHT_ITERATE_STOP_GUARD") == "0":
         return None
@@ -164,6 +217,12 @@ def decide(*, main_root: Path, run_id: str, worktree: Path, branch: str,
     state.pop("reset", None)
     if not autonomous or state.get("blocker"):
         write_state(main_root, run_id, state)
+        return None
+    if state.get("delivered") or _delivered_out_of_band(worktree, branch, run_started, state):
+        fresh = read_state(main_root, run_id).get("blocker")  # recorded during the gh call: keep it
+        write_state(main_root, run_id, {**state, "delivered": True, **({"blocker": fresh} if fresh else {})})
+        print(f"[iterate_stop_guard] stop allowed for {_safe(run_id)}: its PR is already MERGED",
+              file=sys.stderr)
         return None
     total, futile = int(state.get("blocks", 0)), int(state.get("futile", 0))
     release = None

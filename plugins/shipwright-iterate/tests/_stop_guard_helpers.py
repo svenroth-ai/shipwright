@@ -14,6 +14,8 @@ BLOCKER_TOOL = REPO_ROOT / "shared" / "scripts" / "tools" / "record_hard_blocker
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
 
+os.environ.setdefault("SHIPWRIGHT_ITERATE_STOP_GUARD_GH", "0")  # hermetic: no real gh in these tests
+
 RUN = "iterate-2026-10-09-demo"
 CMD = ("<command-message>x</command-message><command-name>/shipwright-iterate:iterate"
        "</command-name><command-args>{args}</command-args>")

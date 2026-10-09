@@ -60,7 +60,7 @@ def main() -> int:
         reason = guard.decide(
             main_root=main_root, run_id=run_id, worktree=worktree,
             branch=str(pointer.get("branch") or ""), autonomous=autonomous,
-            tool_count=scan.tools,
+            tool_count=scan.tools, run_started=str(pointer.get("created_at") or ""),
             scan={"autonomous": scan.autonomous, "tools": scan.tools, "offset": scan.offset,
                   "path": transcript, "reset": scan.reset},
         )
