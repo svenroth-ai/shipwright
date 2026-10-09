@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-tag-gate-collector-gaps",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:32:36.418449+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:34:30.896374+00:00",
+      "disposition": "run treated as small: operator brief dictated the three fixes; no plan/architecture stage ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "_tree_materialise.py",
+          "line": 34,
+          "finding": "empty tree treated as failure",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "_tree_materialise.py",
+          "line": 58,
+          "finding": "truncated blob unchecked",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "_lib_loader.py",
+          "line": 50,
+          "finding": "stale count in comment",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "test_layer_coverage_gate_integration.py",
+          "line": 5,
+          "finding": "stale git archive docstrings",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:32:36.684843+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: dropping symlinks is safe — old tar extracted in-tree relative symlinks; a symlinked test could hide from the gate",
+          "suggestion": "resolve in-tree file links - FIXED with tests",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "empty tree is a failure",
+          "suggestion": "treat as empty tree - FIXED with test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "raw blobs equal archive output",
+          "suggestion": "documented in module docstring",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "memory parity",
+          "suggestion": "accepted: ~2x blob size transient",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "one lexer test proves collector side",
+          "suggestion": "behaviour tests are the proof; test renamed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "new test untagged",
+          "suggestion": "covers mark added - FIXED",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:32:36.826158+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_tree_materialise.py` (`_tree_blobs`, links handling)",
+          "line": null,
+          "finding": "AC3 states \"Regular files only; symlinks and submodules stay out\", but the implementation resolves in-tree file symlinks and writes them as copies. This is the (defensible) resolution of the doubt-review's high finding, but it contradicts the written acceptance criterion; the spec text was never updated to match.",
+          "suggestion": "Update the AC/spec wording to \"regular files plus in-tree file symlinks resolved as copies; links leaving the tree, directory links and submodules stay out\", or narrow the code to the spec. The behaviour itself is sound.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_tree_materialise.py` (`_read_blobs`, `size = int(header[2])`)",
+          "line": null,
+          "finding": "Malformed `cat-file --batch` output with a non-numeric size raises `ValueError`, which is not in the `except (OSError, subprocess.SubprocessError)` in `_tree_blobs`, so `_archive_tree` crashes instead of returning `False` — the \"Returns False on any git failure\" contract is violated for corrupted output.",
+          "suggestion": "Catch `(OSError, subprocess.SubprocessError, ValueError)` in `_tree_blobs`, or parse defensively in `_read_blobs`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_ts.py:27` (`from lib.ts_lexer import lex`)",
+          "line": null,
+          "finding": "The gate's lexer import changed from a package-relative import (worked with only `tools.verifiers` importable) to an absolute top-level `lib` import, which requires `shared/scripts` on `sys.path` at import time and is shadowable by any other top-level `lib` package earlier on the path. The old relative import had neither dependency.",
+          "suggestion": "Keep a relative import (`from ...lib.ts_lexer import lex` won't work since `lib` isn't under `tools`; instead import via the same path-setup the tests use, or make `ts_lexer` importable relative to the verifiers package, e.g. a thin `tools/verifiers/_tag_binding_ts_lex.py` re-exporting `lib.ts_lexer.lex`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_tree_materialise.py` (`_tree_blobs` symlink resolution)",
+          "line": null,
+          "finding": "A symlink whose target is itself a symlink (chain) is silently dropped: the target lookup only matches regular files in `files`, whereas the old tar extraction would have materialised the chain and the collector could follow it. Also, symlink targets containing NUL or invalid UTF-8 rely on `surrogateescape` decode in `_write_blobs`, which on some filesystems will raise `OSError` — that one is caught, so it degrades to `False` for the whole tree rather than skipping the one path.",
+          "suggestion": "Document/accept chained-link dropping (or resolve transitively); in `_write_blobs`, wrap the per-entry write so one bad path is skipped rather than failing the whole tree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_tag_binding_collector_gaps.py` (`test_the_gate_lexes_with_the_shared_lib_module`)",
+          "line": null,
+          "finding": "This test only asserts object identity of the two `lex` references; it would pass even if the collector never called the lexer (the behavioural proof lives in the wrapped-table tests, which is fine, but the identity test alone proves nothing about collector usage). Acceptable as a wiring pin, not as AC evidence.",
+          "suggestion": "None needed if the wrapped-table parametrised tests are treated as the AC1 evidence (they are); optionally drop or keep as a wiring drift guard.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_tree_materialise.py",
+          "line": 82,
+          "finding": "The materialiser copies in-tree symlinks into regular files, causing symlinked tests to be scanned and enforced. AC3 explicitly requires regular files only, with symlinks excluded; the new symlink tests instead enforce the opposite behavior.",
+          "suggestion": "Exclude mode `120000` entries from materialisation to meet the stated acceptance criterion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_tag_binding_collector_gaps.py",
+          "line": 82,
+          "finding": "The base-side `export-ignore` test passes with the old implementation too: both archived trees omit the unchanged hidden test, and the unrelated comment edit still produces a successful verdict. It does not verify that export-ignored files are included from the base tree.",
+          "suggestion": "Assert that the regenerated base manifest contains the hidden test, or directly assert its contents in the materialised base tree.  Ship-with-fixes: the collector and export-ignore changes address the main gaps, but symlink handling contradicts the specification and the base-side regression test needs a discriminating assertion. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T06:34:30.753778+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: spec** — Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tree_materialise.py` (`_tree_blobs`, links handling)\n  **Finding:** AC3 states \"Regular files only; symlinks and submodules stay out\", but the implementation resolves in-tree file symlinks and writes them as copies. This is the (defensible) resolution of the doubt-review's high finding, but it contradicts the written acceptance criterion; the spec text was never updated to match.\n  **Suggestion:** Update the AC/spec wording to \"regular files plus in-tree file symlinks resolved as copies; links leaving the tree, directory links and submodules stay out\", or narrow the code to the spec. The behaviour itself is sound.\n\n- **Category: bug** — Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tree_materialise.py` (`_read_blobs`, `size = int(header[2])`)\n  **Finding:** Malformed `cat-file --batch` output with a non-numeric size raises `ValueError`, which is not in the `except (OSError, subprocess.SubprocessError)` in `_tree_blobs`, so `_archive_tree` crashes instead of returning `False` — the \"Returns False on any git failure\" contract is violated for corrupted output.\n  **Suggestion:** Catch `(OSError, subprocess.SubprocessError, ValueError)` in `_tree_blobs`, or parse defensively in `_read_blobs`.\n\n- **Category: regression** — Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tag_binding_ts.py:27` (`from lib.ts_lexer import lex`)\n  **Finding:** The gate's lexer import changed from a package-relative import (worked with only `tools.verifiers` importable) to an absolute top-level `lib` import, which requires `shared/scripts` on `sys.path` at import time and is shadowable by any other top-level `lib` package earlier on the path. The old relative import had neither dependency.\n  **Suggestion:** Keep a relative import (`from ...lib.ts_lexer import lex` won't work since `lib` isn't under `tools`; instead import via the same path-setup the tests use, or m […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tree_materialise.py:82\n- Finding: The materialiser copies in-tree symlinks into regular files, causing symlinked tests to be scanned and enforced. AC3 explicitly requires regular files only, with symlinks excluded; the new symlink tests instead enforce the opposite behavior.\n- Suggestion: Exclude mode `120000` entries from materialisation to meet the stated acceptance criterion.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_tag_binding_collector_gaps.py:82\n- Finding: The base-side `export-ignore` test passes with the old implementation too: both archived trees omit the unchanged hidden test, and the unrelated comment edit still produces a successful verdict. It does not verify that export-ignored files are included from the base tree.\n- Suggestion: Assert that the regenerated base manifest contains the hidden test, or directly assert its contents in the materialised base tree.\n\nShip-with-fixes: the collector and export-ignore changes address the main gaps, but symlink handling contradicts the specification and the base-side regression test needs a discriminating assertion.\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:32:36.556650+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:34:31.025353+00:00",
+      "disposition": "run treated as small: operator brief dictated the three fixes; no plan/architecture stage ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T06:34:31.162780+00:00",
+      "disposition": "run treated as small: operator brief dictated the three fixes; no plan/architecture stage ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
