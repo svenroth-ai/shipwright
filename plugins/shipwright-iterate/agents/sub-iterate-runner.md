@@ -22,6 +22,7 @@ You receive these parameters in the prompt:
 - `plugin_root` / `plan_plugin_root`: absolute paths to the shipwright-iterate plugin / shipwright-plan (external_review.py's `uv run --project` target); `shared_root`: absolute path to the shared directory
 - `base_branch`: Ref to branch off. **serial (campaign default): the FRESH `origin/<default>` remote ref** — every sub-iterate (incl. the first) branches off it, so it starts from a `main` that already contains every prior merged sub-iterate. (stacked: the previous sub-iterate's branch; null for the first stacked sub-iterate.)
 - `session_id`: Shipwright session ID
+- `review_tier` / `plan_review_tier`: the model tiers the orchestrator resolved once for the campaign (`opus|sonnet|haiku|inherit|fable`). Every reviewer spawn passes `model=<tier>` (omitted when `inherit`) and its row records `--model-tier <tier>`: `review_tier` for the `spec`/`code`/`doubt` cascade, `plan_review_tier` for the two Step 3.5 arms. Absent ⇒ `inherit`. Never re-resolved here.
 - `branch_name`: Target branch name (e.g., `iterate/campaign-14.2-multi-question`) — the same value `loop_state.json`'s row calls `branch`.
 - `campaign_worktree` / `state_path` (campaign-dag-scheduler R2): the SHARED campaign worktree path, and `loop_state.json`'s path under it (never per-unit); both absent on a standalone iterate.
 - `unit_id` / `attempt` / `attempt_id` (campaign-dag-scheduler R5a): `unit_id` == `sub_iterate_id` (the `--unit`/`.id` name `loop_claim.py`'s claim mechanics use); `attempt` (0-indexed retry count) builds the per-unit worktree's composite slug for Step 1.0's guard below (`references/campaign-worktree.md` → "Per-unit worktree path"); `attempt_id` is this claim's fencing token, checked at Step 1.0.5 and every later claim-mechanics mutation.
@@ -118,7 +119,7 @@ when none of its three arms hold. **Full body — read it first:**
 - **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`): notice + skip both
   calls; record `skipped_config_disabled` in the ADR.
 
-**Internal arms (medium+ effective complexity, before the external calls, any branch):** spawn `shipwright-plan:architecture-internal-reviewer` and `shipwright-plan:opus-plan-reviewer` yourself with `model=opus` — procedure, recording, fallback: `references/campaign-step-3-7-internal-reviews.md`. An architecture-internal `reject` halts the unit like the external one below.
+**Internal arms (medium+ effective complexity, before the external calls, any branch):** spawn `shipwright-plan:architecture-internal-reviewer` and `shipwright-plan:opus-plan-reviewer` yourself with `model=<plan_review_tier>` — procedure, recording, fallback: `references/campaign-step-3-7-internal-reviews.md`. An architecture-internal `reject` halts the unit like the external one below.
 
 Always record the `plan` row (command in the reference); a call that cannot run is recorded `unavailable` with its capture and the run continues, loudly (reference → *Unavailable*); every other row is listed at Step 3.7.
 
@@ -165,8 +166,8 @@ Cascade".
 **Procedure** when triggered:
 
 1. Internal reviewer cascade — you carry `Agent`: spawn `spec-reviewer` (HARD-GATE) →
-   `code-reviewer` → conditional `doubt-reviewer` yourself, `model=opus` at every spawn,
-   each recorded `completed` (`--model-tier opus`); up to five reviewer runs per unit with
+   `code-reviewer` → conditional `doubt-reviewer` yourself, `model=<review_tier>` at every spawn,
+   each recorded `completed` (`--model-tier <review_tier>`); up to five reviewer runs per unit with
    Step 3.5's two; Claude Code and Codextender only. Procedure, and the **fallback** when a
    spawn cannot happen (`not_run --reason-code delegated-to-orchestrator` — the orchestrator's
    `campaign-mode.md` **3f-bis** then runs and promotes it): `references/campaign-step-3-7-internal-reviews.md`.
@@ -193,9 +194,9 @@ Cascade".
    |---|---|---|
    | `self` (3.6) | runner | `completed` ONLY (with evidence) |
    | `plan` (3.5) | runner | `completed` / `not_run` + `--reason-code` |
-   | `spec` (Stage 1), `code`, `doubt` | the runner for each pass whose subagent it spawned and read; else the orchestrator (3f-bis) | `completed` ONLY for a pass its own subagent returned (`--model-tier opus`); otherwise `not_run` + `--reason-code delegated-to-orchestrator` (rule optional) |
+   | `spec` (Stage 1), `code`, `doubt` | the runner for each pass whose subagent it spawned and read; else the orchestrator (3f-bis) | `completed` ONLY for a pass its own subagent returned (`--model-tier <review_tier> --verdict pass --reviewed-commit <HEAD at review>` -- what 3f-bis verifies); otherwise `not_run` + `--reason-code delegated-to-orchestrator` (rule optional) |
    | `external_code` | runner (item 2) | `completed` / `not_run` + `--reason-code` (rule optional; marker `skipped_*`) |
-   | `plan_internal`/`architecture_internal` (3.5) | runner (never promoted by 3f-bis) | `completed` when it spawned the reviewer (`--recorded-by … --model-tier opus`); else `not_applicable` (below medium) / `not_run --reason-code no-spawn-site` |
+   | `plan_internal`/`architecture_internal` (3.5) | runner (never promoted by 3f-bis) | `completed` when it spawned the reviewer (`--recorded-by … --model-tier <plan_review_tier>`); else `not_applicable` (below medium) / `not_run --reason-code no-spawn-site` |
 
    The runner may **never** write `spec`, `code`, `doubt`, `plan_internal` or `architecture_internal` as `completed` for a pass whose subagent it did not spawn and read ("completed by substitution" claims a pass that did not run). Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*. `reviews.code` / `reviews.external_code` record what fired and what deferred.
 

@@ -24,13 +24,13 @@ before R5a. This formalizes the ad-hoc orchestration pattern.
 >
 > **Where the internal reviews run here.** The runner carries the `Agent` tool, so it spawns the
 > internal arms (Step 3.5) and the `spec-reviewer` → `code-reviewer` → `doubt-reviewer` cascade
-> (Step 3.7) itself, `model=opus`, recording the rows `completed`
+> (Step 3.7) itself, at the review tiers the brief carries, recording the rows `completed`
 > (`references/campaign-step-3-7-internal-reviews.md`). **`3f-bis` is the fallback:** a runner that
 > cannot spawn records them `not_run --reason-code delegated-to-orchestrator`, and `3f-bis` runs the
 > cascade after the result is recorded, before the PR merges (the last point a REJECT can still stop
 > delivery — `3g` merges), then promotes the rows with `--force`. `3f-bis` is also
-> kept as the independent second look when the runner did spawn (whenever its own trigger fires): the
-> runner's `completed` rows are its own attestation (no verdict or reviewed-head binding).
+> kept as the independent second look when the runner did spawn (whenever its own trigger fires), unless
+> its rows record a `pass` verdict and a `reviewed_commit` that `3f-bis` verifies against git (`review_attested.py`).
 > A hand-run `--sub-iterate-id` invocation is a standalone session and never reaches `3f-bis`.
 
 ## Why interleaved-serial (and not build-all-then-merge)
@@ -206,9 +206,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    uv run "{shared_root}/scripts/tools/resolve_model_tier.py" \
      --project-root "$(pwd)" [--review-model {flag}] [--finalization-model {flag}]
    ```
-   (The CLI also resolves `plan_review` — unconsumed here: the runner spawns
-   its own internal arms (Step 3.5) and cascade (Step 3.7) with `model=opus`
-   passed explicitly, never the resolved tier.)
+   (`plan_review` too: pass it to the runner as `plan_review_tier` and `review.resolved` as
+   `review_tier` — its internal arms (Step 3.5) and cascade (Step 3.7) spawn with those, never a fixed tier.)
    Keep `review.resolved` for step 3f-bis's fallback cascade and
    `finalization.resolved` for step 3c's `sub-iterate-runner` spawn. Both
    values are substituted as literal `model=` Agent-tool parameters at each
@@ -398,6 +397,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          result_i = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
                        model=<finalization tier resolved at loop step 2, omit if "inherit">,
                        prompt=<brief with sub_iterate_id (= unit_id), run_id (3b),
+                       review_tier (= `review.resolved`), plan_review_tier (= `plan_review.resolved`),
                        unit_id, attempt, attempt_id, spec, base_branch,
                        campaign_slug (this loop's `{slug}`), plan_plugin_root,
                        project_root (= THIS unit's own per-unit worktree, from
@@ -794,6 +794,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          fires=<1 or 0>   # substitute the literal digit the risk-flag/medium+ judgement concluded
          [ "$diff_lines" -gt 100 ] && fires=1   # mechanical floor: the judgement above may only RAISE fires, never lower it
          echo "$fires" > "$run_dir/fires" || STRICT-STOP
+
+       **The one lowering of `fires`: the runner's rows, verified against git.** `review_attested.py` accepts
+       them (`--verdict pass --reviewed-commit`) only if that commit is an ancestor of `$diff_head`, only
+       `.shipwright/` / `CHANGELOG-unreleased.d/` data changed since, and `doubt` completed once the diff
+       is over the 100-line floor; any other answer leaves `fires` at 1. A fresh block:
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; was=$(cat "$run_dir/fires"); unit_wt=$(cat "$run_dir/unit_worktree"); diff_head=$(cat "$run_dir/diff_head"); diff_lines=$(cat "$run_dir/diff_lines"); [ -n "$unit_wt" ] || unit_wt="{project_root}"; [ -n "$diff_head" ] || STRICT-STOP
+         att=$(uv run "{shared_root}/scripts/tools/review_attested.py" --project-root "$unit_wt" --run-id "{run_id}" --head "$diff_head" --diff-lines "$diff_lines" | jq -r .attested)
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"   # same value; keeps the write beside its rebuild
+         [ "$was" = 1 ] && [ "$att" = true ] && echo 0 > "$run_dir/fires"
 
        **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
        unit's own `worktree`/`branch`/`attempt_id` from `loop_state.json`

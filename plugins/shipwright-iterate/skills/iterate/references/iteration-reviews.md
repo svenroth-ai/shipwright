@@ -171,7 +171,7 @@ own SKILL.md §F applies at every spawn in the cascade, standalone or delegated)
 SKILL.md Step 8, before F6 (commit) — it has the `Agent` tool, so there is no
 delegate. Only in **campaign mode** does the question of delegation arise at
 all: the sub-iterate-runner subagent carries the `Agent` tool and spawns the
-cascade itself (`agents/sub-iterate-runner.md` Step 3.7, `model=opus`), and only
+cascade itself (`agents/sub-iterate-runner.md` Step 3.7, at the resolved review tier), and only
 when a spawn cannot happen does it hand the cascade to the orchestrator's
 `3f-bis` fallback (`campaign-mode.md`). Do not read that fallback as a general
 rule — that misreading is what let standalone runs finish with no internal
@@ -689,7 +689,7 @@ written before this rule carries codeless legacy rows and would fail if it were 
 The sub-iterate-runner subagent carries the `Agent` tool, so it performs
 `self`, `plan` and `external_code` **and** spawns both internal-arm reviews
 (`plan_internal`, `architecture_internal`; Step 3.5) and the internal cascade
-(`spec` → `code` → `doubt`; Step 3.7) itself, each with `model=opus` passed
+(`spec` → `code` → `doubt`; Step 3.7) itself, each with the resolved tier passed
 explicitly. **Who did the work decides the name**
 (`agents/sub-iterate-runner.md` Step 3.7 carries the actor table): a row is
 `completed` only for a pass whose own subagent returned. The `not_run` rows
@@ -720,13 +720,18 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
   --marker-status "{skipped_user_opt_out | skipped_config_disabled}"  # omit for missing-keys / unavailable
 
 # the internal cascade when the runner SPAWNED it — one call per stage, the
-# SKILL.md Step 8 shapes with the Stage payload file each reply was written to
+# SKILL.md Step 8 shapes with the Stage payload file each reply was written to.
+# Capture `reviewed=$(git -C "{project_root}" rev-parse HEAD)` BEFORE the spawn and use that value:
+# a SHA taken at record time would credit a fix the reviewer never saw.
 # (`spec_review_reply.json` / `code_review_reply.json` / `doubt_review_reply.json`):
 … --review-type spec --status completed --from spec-reviewer \
   --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/spec_review_reply.json" \
-  --recorded-by spec-reviewer --model-tier opus
+  --recorded-by spec-reviewer --model-tier {review_tier} \
+  --verdict pass --reviewed-commit "$reviewed"
 # (`code`: --from code-reviewer; `doubt`: --from doubt-reviewer, or
-#  `--status not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply)
+#  `--status not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply.
+#  Every completed one carries `--verdict pass --reviewed-commit <HEAD when the reviewer ran>`:
+#  the pair 3f-bis verifies before it skips its re-review. A REJECT is never `completed`.)
 
 # the delegated internal cascade — FALLBACK, recorded as NOT having run, when
 # the runner could not spawn. Stage 1 has a row of its own and is delegated
@@ -746,7 +751,7 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 # the internal plan-review arm (Step 3.5) — recorded by the runner when it
 # SPAWNED opus-plan-reviewer (metadata-only, as in iteration-planning.md Step 4 item 0):
 … --review-type plan_internal --status completed \
-  --recorded-by opus-plan-reviewer --model-tier opus
+  --recorded-by opus-plan-reviewer --model-tier {plan_review_tier}
 # NEVER promoted at 3f-bis: when the spawn could not happen the row stays
 # `not_run` for the life of the sub-iterate (the orchestrator has no
 # internal-arm spawn site), and below medium it is `not_applicable`:
@@ -755,7 +760,7 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 
 # the internal architecture-review arm — same treatment.
 … --review-type architecture_internal --status completed \
-  --recorded-by architecture-internal-reviewer --model-tier opus
+  --recorded-by architecture-internal-reviewer --model-tier {plan_review_tier}
 … --review-type architecture_internal --status not_run --reason-code no-spawn-site \
   --disposition "Agent spawn failed (tool unavailable, errored or denied at runtime) so architecture-internal-reviewer did not run; the orchestrator has no internal-arm spawn site, so this row is not delegated like spec/code/doubt"
 ```

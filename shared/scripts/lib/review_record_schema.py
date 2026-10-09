@@ -133,6 +133,7 @@ _MIN_DISPOSITION_CHARS = 12
 _OPTIONAL_STRINGS = (
     "provider", "completed_at", "disposition", "recorded_by",
     "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier", "transport", "transport_note", "reason_code",
+    "verdict", "reviewed_commit",
 )
 
 TRANSPORTS = frozenset({"agent", "codex"})  # which harness answered; absent = ordinary spawn
@@ -203,6 +204,11 @@ def validate_entry(review_type: str, entry: Any, *, where: str | None = None) ->
             return f"{where}.{key} must be a string or null"
     if (err := reason_code_entry_error(entry, where)):
         return err
+    if (entry.get("verdict") not in (None, "pass", "reject")
+            or (entry.get("verdict") == "reject" and entry.get("status") == "completed")):
+        return f"{where}.verdict must be 'pass', or 'reject' on a row that is not completed"
+    if entry.get("reviewed_commit") is not None and not re.fullmatch(r"[0-9a-f]{40}", entry["reviewed_commit"]):
+        return f"{where}.reviewed_commit must be a full 40-hex commit SHA"
     if entry.get("transport") not in (None, *TRANSPORTS):
         return f"{where}.transport {entry.get('transport')!r} not in {sorted(TRANSPORTS)}"
     if "verdicts" in entry:

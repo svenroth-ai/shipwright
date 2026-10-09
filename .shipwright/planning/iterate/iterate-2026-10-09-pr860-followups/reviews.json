@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-pr860-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T09:56:07.374128+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T10:24:00.120599+00:00",
+      "disposition": "Plan phase not executed: the operator pre-specified six concrete items in an autonomous run, so planning and its reviews were skipped; spec, code, doubt and external code review ran.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "user-opt-out"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_attestation.py",
+          "line": 43,
+          "finding": "Attestation fails open on renames (git diff --name-only lists only the post-image path).",
+          "suggestion": "Use --no-renames and test it. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 799,
+          "finding": "The new 3f-bis block can lower fires although the prose says the 100-line floor is never lowered; doubt n/a accepted without a size check.",
+          "suggestion": "Pass --diff-lines and require a completed doubt over the floor; update the prose. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 190,
+          "finding": "--verdict pass is not checked against the reviewer payload.",
+          "suggestion": "Accepted: disclosed limit; attestation additionally refuses high findings.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/review_attested.py",
+          "line": 758,
+          "finding": "Docstring promises exit 0 but uncaught exceptions traceback.",
+          "suggestion": "Wrap attest() and print a not-attested reason. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_record_schema.py",
+          "line": 210,
+          "finding": "reviewed_commit is 40-hex only; a SHA-256 repository would fail.",
+          "suggestion": "Accepted: Shipwright repos are SHA-1; failure is loud at record time.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 809,
+          "finding": "The new block lacks the unit_wt fallback of the other sites.",
+          "suggestion": "Add the fallback and a diff_head guard. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/review_unit_root.py",
+          "line": 187,
+          "finding": "text=True decodes git output with the locale code page on Windows.",
+          "suggestion": "Use encoding utf-8. FIXED in both helpers.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_review_attestation.py",
+          "line": 931,
+          "finding": "A schema-guard test could pass vacuously.",
+          "suggestion": "Assert the reason names the field. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_review_attestation.py",
+          "line": 880,
+          "finding": "Completed-doubt, recorded_by and main-checkout branches untested.",
+          "suggestion": "Tests added for doubt and recorded_by. FIXED (main-checkout path stays uncovered).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 190,
+          "finding": "Illegal --verdict / --reviewed-commit surface as record_write_failed rather than a usage error.",
+          "suggestion": "Accepted: still non-zero and the message names the field.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T09:56:07.509002+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: reviewed_commit is the HEAD the reviewer actually saw — The command rev-parsed HEAD at record time, so a fix committed before recording would be credited as reviewed.",
+          "suggestion": "Capture the SHA before the spawn. FIXED in the three command references.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: verdict: pass means the reviewer passed the change — --verdict is a free flag and attest() never read findings, so an unfixed high would attest.",
+          "suggestion": "attest() refuses a pass row carrying a high/critical finding. FIXED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the rows attest() reads are the rows that get merged — read_record read the working tree, so an uncommitted row could attest a tree that never carries it.",
+          "suggestion": "Read reviews.json from the head commit. FIXED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility / blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: nothing outside .shipwright/ and CHANGELOG-unreleased.d/ can change the reviewed behaviour — Scripts, bloat exceptions and the traceability manifest live under .shipwright/ and feed gates.",
+          "suggestion": "Treat executable suffixes, bloat-exception and test-traceability.json as code. FIXED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a small diff that fires 3f-bis still gets an independent Stage-3 judgement — doubt not_applicable is accepted on a small risk-flagged diff.",
+          "suggestion": "Rebutted: 3f-bis's own path already lets doubt be not_applicable on a small diff.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the salvage hook writes into the one right unit worktree — The first matching worktree won even when several held the run id.",
+          "suggestion": "Refuse when more than one distinct worktree holds it. FIXED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the attestation path is reachable in practice — A consolidating F6 would make reviewed_commit a non-ancestor; that fails closed.",
+          "suggestion": "Accepted: safe failure.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T09:56:07.572722+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_review_pass.py:187-190 (`_cmd_record`)",
+          "line": null,
+          "finding": "The new `entry.update({(\"verdict\", args.verdict), (\"reviewed_commit\", args.reviewed_commit)})` runs after the `validate_entry` call that produced the `invalid_entry` error handling. If `validate_entry` is not re-run on the write path, the schema guards added to `review_record_schema.py` (short SHA, completed+reject) would never see CLI-supplied values. The tests (`test_schema_rejects_a_short_sha_and_a_completed_reject`) pass, which suggests a second validation exists on write — but the diff alone doesn't show it, and the ordering is fragile.",
+          "suggestion": "Move the `entry.update(...)` before the `validate_entry` call (or re-validate after the merge) so the schema guard unconditionally covers the new CLI flags.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-build/scripts/hooks/review_unit_root.py:19-30 (`_main_root`)",
+          "line": null,
+          "finding": "Path(out).parent` assumes the git-common-dir output ends in `.git`. With `GIT_DIR`/`GIT_COMMON_DIR` set, or a `--git-dir` style absolute path without a `.git` component, `.parent` strips a real path segment and `unit_worktrees` silently reads a nonexistent `loop_state.json` — the hook then refuses (safe failure, but a salvage silently lost).",
+          "suggestion": "Append `Path(out).name == \".git\"` check and fall back to `Path(out).resolve().parent` only in that case, or use `git rev-parse --show-toplevel` of the common dir.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-build/scripts/hooks/review_unit_root.py:59-63 (`resolve_run_root`)",
+          "line": null,
+          "finding": "When multiple unit worktrees hold the run (a stale attempt), the function returns `project_root`, and the caller's diagnostic reports \"no reviews.json under the resolved project root\" — misleading, though behaviorally safe (refusal). More importantly, a stale worktree from a previous successful attempt plus the current one is the normal campaign retry state, so this ambiguity may be common enough that the salvage backstop rarely fires in campaigns.",
+          "suggestion": "Add a tie-breaker (e.g., most-recent `reviews.json` mtime, or the worktree matching the unit in `loop_state.json` whose status is active) or at least emit a diag distinguishing \"ambiguous\" from \"absent\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_review_attestation.py (`test_3f_bis_and_the_runner_are_wired_to_the_attestation`)",
+          "line": null,
+          "finding": "This test only greps markdown for string shapes; it verifies documentation wording, not the wiring. The same for `test_the_documented_row_commands_have_no_literal_backslash_n`. A broken `review_attested.py` invocation in campaign-mode.md (e.g., wrong flag order, missing `--run-id`) would still pass since only one line is substring-checked.",
+          "suggestion": "Acceptable as drift-guards, but at least assert the full `--project-root/--run-id/--head/--diff-lines` flag set appears on the invocation line.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md (new 3f-bis block)",
+          "line": null,
+          "finding": "att=$(uv run ... | jq -r .attested)` without `set -o pipefail`: if `uv run` fails, `jq` emits nothing, `att` is empty, and the gate safely keeps `fires=1` — fine. But if `jq` is absent from PATH, the pipeline errors and `att` is empty — also safe. No defect, just confirming the error path is fail-closed; nothing to change.  Everything else checks out: spec items (2) tier propagation with the `inherit` omission rule, (3) attestation verified against git with the disclosed \"runner can still lie\" limit, (4) worktree root resolution, (5) env isolation in both confiests, and (6) UTF-8 reconfigure are all implemented and covered by behavioral tests (real git repos, real subprocess invocations). The rename-into-artifact-path and post-record-commit cases are good adversarial coverage.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/review_attestation.py",
+          "line": 113,
+          "finding": "The completed `doubt` row is accepted without checking `recorded_by`, although `spec` and `code` require their respective reviewers. For a diff over 100 lines, a row attributed to another actor can therefore satisfy the mandatory doubt pass and suppress 3f-bis.",
+          "suggestion": "Require `recorded_by == \"doubt-reviewer\"` before accepting a completed doubt pass. Add a test with an otherwise valid doubt row recorded by someone else.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-build/scripts/hooks/review_unit_root.py",
+          "line": 63,
+          "finding": "Candidate worktrees are not deduplicated. If the session root and main checkout both have loop state referencing the same unit worktree, that single holder appears twice and is treated as ambiguous, so the hook refuses to salvage the review.",
+          "suggestion": "Resolve and deduplicate candidate paths before counting holders. Test two loop-state files referencing the same worktree, alongside a genuinely ambiguous case with two distinct holders.  Ship-with-fixes: the diff addresses the specified follow-ups, but the attestation check and salvage root resolution need these corrections before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T09:56:13.835786+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/record_review_pass.py:187-190 (`_cmd_record`)\n  Finding: The new `entry.update({(\"verdict\", args.verdict), (\"reviewed_commit\", args.reviewed_commit)})` runs *after* the `validate_entry` call that produced the `invalid_entry` error handling. If `validate_entry` is not re-run on the write path, the schema guards added to `review_record_schema.py` (short SHA, completed+reject) would never see CLI-supplied values. The tests (`test_schema_rejects_a_short_sha_and_a_completed_reject`) pass, which suggests a second validation exists on write — but the diff alone doesn't show it, and the ordering is fragile.\n  Suggestion: Move the `entry.update(...)` before the `validate_entry` call (or re-validate after the merge) so the schema guard unconditionally covers the new CLI flags.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-build/scripts/hooks/review_unit_root.py:19-30 (`_main_root`)\n  Finding: `Path(out).parent` assumes the git-common-dir output ends in `.git`. With `GIT_DIR`/`GIT_COMMON_DIR` set, or a `--git-dir` style absolute path without a `.git` component, `.parent` strips a real path segment and `unit_worktrees` silently reads a nonexistent `loop_state.json` — the hook then refuses (safe failure, but a salvage silently lost).\n  Suggestion: Append `Path(out).name == \".git\"` check and fall back to `Path(out).resolve().parent` only in that case, or use `git rev-parse --show-toplevel` of the common dir.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-build/scripts/hooks/review_unit_root.py:59-63 (`resolve_run_root`)\n  Finding: When multiple unit worktrees hold the run (a stale attempt), the function returns `project_root`, and the caller's diagnostic reports \"no reviews.json under the resolved project root\" — misleading, though behaviorally safe (refusal). More importantly, a stale worktree from a *previous successful attempt* plus the current one is the no […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/review_attestation.py:113\n- Finding: The completed `doubt` row is accepted without checking `recorded_by`, although `spec` and `code` require their respective reviewers. For a diff over 100 lines, a row attributed to another actor can therefore satisfy the mandatory doubt pass and suppress 3f-bis.\n- Suggestion: Require `recorded_by == \"doubt-reviewer\"` before accepting a completed doubt pass. Add a test with an otherwise valid doubt row recorded by someone else.\n\n- Category: edge-case\n- Severity: medium\n- File: plugins/shipwright-build/scripts/hooks/review_unit_root.py:63\n- Finding: Candidate worktrees are not deduplicated. If the session root and main checkout both have loop state referencing the same unit worktree, that single holder appears twice and is treated as ambiguous, so the hook refuses to salvage the review.\n- Suggestion: Resolve and deduplicate candidate paths before counting holders. Test two loop-state files referencing the same worktree, alongside a genuinely ambiguous case with two distinct holders.\n\nShip-with-fixes: the diff addresses the specified follow-ups, but the attestation check and salvage root resolution need these corrections before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T09:56:07.444420+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T10:23:55.123320+00:00",
+      "disposition": "Plan phase not executed: the operator pre-specified six concrete items in an autonomous run, so planning and its reviews were skipped; spec, code, doubt and external code review ran.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "user-opt-out"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T10:23:55.235345+00:00",
+      "disposition": "Plan phase not executed: the operator pre-specified six concrete items in an autonomous run, so planning and its reviews were skipped; spec, code, doubt and external code review ran.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "user-opt-out"
+    }
+  }
+}

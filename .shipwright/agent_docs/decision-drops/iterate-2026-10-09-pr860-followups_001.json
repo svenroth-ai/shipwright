@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-pr860-followups",
+  "date": "2026-10-09",
+  "section": "Iterate — change: PR #860 follow-ups (campaign runner reviews)",
+  "title": "3f-bis skips re-review only on a git-verified runner attestation",
+  "context": "The campaign runner now spawns its own reviewers, but its rows are self-attested, so 3f-bis re-ran the cascade on every unit and the spawns hard-coded model=opus.",
+  "decision": "Runner rows carry --verdict and --reviewed-commit; review_attested.py lets 3f-bis skip only when they check out against git. Spawns use the resolved review/plan_review tiers. The salvage hook finds the unit worktree.",
+  "consequences": "Fewer duplicate reviews on clean units; any later code, legacy row, rename or high finding keeps the full cascade. The attestation is still the runner's own claim, checked for staleness, not for honesty.",
+  "rationale": "Dropping the second look entirely trusts a self-report; binding it to a verdict, a pre-spawn SHA and the committed record closes stale and absent attestations cheaply.",
+  "rejected": "Trusting the runner row alone (self-attested); always re-reviewing (duplicate cost); signing rows (no key infrastructure).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}
