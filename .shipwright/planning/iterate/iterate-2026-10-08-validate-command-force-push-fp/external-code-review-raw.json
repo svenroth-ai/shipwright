@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-build/scripts/hooks/force_push_guard.py:37\n- Finding: Inline shell comments are parsed as push arguments. For example, `git push origin feature/x # --force main` is blocked even though Bash executes only a normal push to `feature/x`. This violates the requirement to inspect actual push arguments.\n- Suggestion: Recognize unquoted comments beginning at word boundaries while preserving literal mid-word `#` characters.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-build/scripts/hooks/force_push_guard.py:54\n- Finding: Splitting into lines before tokenization loses multiline quote boundaries. A harmless command such as `git commit -m \"release notes\\n git push -f origin main\\n\"` is blocked because its message content is interpreted as a separate command.\n- Suggestion: Preserve quote state across newlines and split commands only at unquoted separators. Add a regression test with a multiline quoted message containing force-push text.\n\n- Category: security\n- Severity: high\n- File: plugins/shipwright-build/scripts/hooks/force_push_guard.py:190\n- Finding: Implicit push destinations are inferred from the hook\u2019s repository and both HEAD/upstream names, rather than the command\u2019s actual destination. `cd repo && git push -f` can therefore pass when `repo` is on `main` but the hook\u2019s repository is on a feature branch. Conversely, with `push.default=current`, a feature branch tracking `origin/main` is incorrectly blocked even though it pushes to the feature branch.\n- Suggestion: Track the effective working directory and resolve implicit destinations using the selected remote and Git push configuration. Cover both directory changes and differing `push.default` behavior with repository-backed tests.\n\nThe two reported false positives have regression coverage, but the replacement introduces additional false blocks and can miss protected-branch pushes. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "### Findings\n\n**1. Category: security \u2014 Command substitution bypasses the guard entirely**\n- File: `force_push_guard.py` \u2014 `segments()` / tokenization (new file, ~line 60\u201395)\n- Finding: With `punctuation_chars=True`, a command like `echo $(git push -f origin main)` tokenizes as `\"$(\"`, `git`, `push`, `-f`, ... \u2014 `_exe_index` returns index 0 (`\"$(\"`), which is not `git`, so `push_args` returns None and the force push is never inspected. Same for backticks/`$()` anywhere in the command. The old grep-based check would have caught this; the new one does not.\n- Suggestion: strip `$(` / `` ` `` / `${` sequences before tokenizing (or treat them as segment separators, like `;`), so nested commands are parsed rather than silently dropped.\n\n**2. Category: bug \u2014 Inline trailing comments are parsed as push arguments (false positive)**\n- File: `force_push_guard.py` \u2014 `_tokens()` sets `lex.commenters = \"\"` with the comment \"bash treats # as a comment only at word start\", but the word-start rule is never implemented\n- Finding: `git push -f origin feature/x # pushing fix for main` tokenizes `#`, `pushing`, ... `main` as push arguments; `main` becomes a \"refspec\" with `forced=True`, so a legitimate force push to a feature branch is blocked. This is exactly the class of false positive the spec exists to eliminate (the docstring even acknowledges the rule but the code doesn't enforce it).\n- Suggestion: drop tokens from a word-start `#` to end of line (a `#` token or a token beginning with `#` after whitespace terminates the segment as bash does), rather than disabling comment handling altogether.\n\n**3. Category: bug \u2014 `_exe_index` mishandles wrappers with non-option arguments**\n- File: `force_push_guard.py` \u2014 `_exe_index()` (~line 120)\n- Finding: `timeout 10 git push -f origin main` \u2014 `timeout` is a WRAPPER, but `10` doesn't start with `-`, so the loop returns the index of `10` as the executable. The push is never inspected. Tests only cover `sudo -u bob git` (option+value) and bare wrappers; `timeout <duration>` \u2014 a very common wrapper \u2014 silently bypasses the guard.\n- Suggestion: for value-taking wrappers with non-clustered value arguments, skip the wrapper's trailing non-option arguments too (or special-case `timeout`, which takes a mandatory duration operand), or scan forward for a `git` token when a wrapper's operand position doesn't resolve to an executable.\n\n**4. Category: edge-case \u2014 `--force-if-includes` not recognized**\n- File: `force_push_guard.py` \u2014 `blocked()` (~line 160)\n- Finding: `arg == \"--force\" or arg.startswith(\"--force-with-lease\")` misses `--force-if-includes`, which (combined with `--force-with-lease` or a `+refspec`) forces the push. Low impact since it requires a `+`/lease flag too, which are matched, but `git push origin +main` is caught \u2014 so this is minor.\n- Suggestion: match any `--force*` long option, or add `--force-if-includes` explicitly.\n\n**5. Category: test \u2014 tests mirror the implementation's blind spots**\n- File: `tests/test_hooks.py` \u2014 the two parametrize lists\n- Finding: Coverage is broad and genuinely behavioral (exit codes asserted, both directions), but all wrapper tests use forms that happen to work (`sudo -u bob`, bare `xargs`/`env`/`time`); no case for `timeout 30 git push -f origin main`, `$(...)` substitution, or trailing comments. A wrong-but-tested implementation passes while the cases above slip through. The `_bash()` CI-hardening and fail-open tests are good.\n- Suggestion: add regression cases for `timeout 10 git push -f origin main`, `echo $(git push -f origin main)`, and `git push -f origin feature/x # fix main`.\n\n**Non-issues checked:** the two spec false positives (branch name containing `-f`, `--notes-file` + unrelated `checkout master`) are fixed and covered; `--force-with-lease` is explicit per spec; fail-open error path is intentional and tested; the validate_command.sh plumbing (bytes I/O for cp1252, exit-code propagation) is correct and preserves the existing block contract (exit 2, same message).\n\n### Overall assessment\nThe spec's stated acceptance criteria are implemented and tested, but the guard has three concrete parsing gaps (command substitution, trailing comments, wrapper operands) that create both bypasses and a new false positive \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
