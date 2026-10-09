@@ -381,6 +381,7 @@ def test_finalize_gate_rejects_malformed_change_type(project, monkeypatch):
             if e.get("type") == "work_completed"] == []
 
 
+@pytest.mark.covers("FR-01.11/AC04")
 def test_finalize_rerun_is_idempotent_but_still_gated(project, monkeypatch):
     """A re-run with the same run_id returns the existing event id (no second
     event) yet the gate judges the re-run's own extras: invalid ones are refused."""

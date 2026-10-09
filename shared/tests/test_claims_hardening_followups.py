@@ -35,11 +35,19 @@ TEST_A = {"tests/test_a.py": "def test_x():\n    pass\n"}
 
 # --- (1) requirement catalogs ---------------------------------------------------
 
-@pytest.mark.covers("FR-01.11/AC03")
-@pytest.mark.parametrize("shape", [SHAPE_GENERIC, SHAPE_SHIPWRIGHT_MONOREPO])
-def test_no_label_covers_a_requirement_catalog(shape):
+def _no_label_covers_catalogs(shape):
     for label in LABELS:
         assert unclassified_paths(CATALOGS, label, shape) == CATALOGS
+
+
+@pytest.mark.covers("FR-01.11/AC03")
+def test_no_label_covers_a_requirement_catalog_in_a_generic_project():
+    _no_label_covers_catalogs(SHAPE_GENERIC)
+
+
+@pytest.mark.covers("FR-01.11/AC03")
+def test_no_label_covers_a_requirement_catalog_in_the_monorepo():
+    _no_label_covers_catalogs(SHAPE_SHIPWRIGHT_MONOREPO)
 
 
 @pytest.mark.covers("FR-01.11/AC03")
@@ -93,11 +101,24 @@ def test_a_stacked_unit_is_measured_from_its_parent_branch(tmp_path):
     assert blamed and "src/own.py" in blamed["detail"] and "src/app.py" not in blamed["detail"]
 
 
-@pytest.mark.covers("FR-01.11/AC03")
-@pytest.mark.parametrize("ref", ["main", "iterate/missing", "iterate/../main"])
-def test_a_stack_base_that_is_not_a_unit_ancestor_refuses(tmp_path, ref):
+def _refuses_stack_base(tmp_path, ref):
     err = change_type_diff_error(_event("docs", campaign="c", sub_iterate_id="u1", stack_base_ref=ref), _stack(tmp_path), "t")
     assert err and err["error"] == "change_type_diff_unavailable"
+
+
+@pytest.mark.covers("FR-01.11/AC03")
+def test_a_stack_base_naming_the_trunk_refuses(tmp_path):
+    _refuses_stack_base(tmp_path, "main")
+
+
+@pytest.mark.covers("FR-01.11/AC03")
+def test_a_stack_base_naming_a_missing_branch_refuses(tmp_path):
+    _refuses_stack_base(tmp_path, "iterate/missing")
+
+
+@pytest.mark.covers("FR-01.11/AC03")
+def test_a_stack_base_with_a_traversal_segment_refuses(tmp_path):
+    _refuses_stack_base(tmp_path, "iterate/../main")
 
 
 @pytest.mark.covers("FR-01.11/AC03")
