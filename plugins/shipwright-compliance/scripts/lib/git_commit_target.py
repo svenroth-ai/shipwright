@@ -115,6 +115,15 @@ def _project_dir(start: Path) -> tuple[Path, bool, str | None]:
     return root, shared.is_shipwright_project(root), None
 
 
+def project_at(directory: Path) -> tuple[Path, bool, str | None]:
+    """``(project, found, note)`` a commit run from *directory* lands in (shared resolver).
+
+    For a commit that names no location: *directory* is the persisted shell directory
+    the hook payload carries, not the hook process's own.
+    """
+    return _project_dir(directory)
+
+
 def _locate(opts: tuple[str, ...], cwd: str | Path) -> CommitTarget | None:
     located = _options(opts)
     if not located:

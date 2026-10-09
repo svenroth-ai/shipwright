@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/shell_heredoc.py:211\n- Finding: Continuations in unquoted heredoc bodies are never joined when checking the closing delimiter. For `cat <<EOF\\nEO\\\\\\nF\\ngit commit -m x\\nEOF`, Bash joins `EO\\\\\\nF` into `EOF` and executes the following commit. This implementation instead strips the commit as body data until the second `EOF`, bypassing the gate.\n- Suggestion: Join backslash-newline sequences in unquoted bodies before delimiter comparison, while preserving literal lines in quoted bodies. Add this case as a regression test.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/shell_substitution.py:67\n- Finding: Parenthesis matching treats `)` inside a shell comment as the substitution terminator. With `echo \"$(echo hi # )\\ngit commit -m x)\"`, the shell executes the commit, but the scanner extracts only `echo hi # `; the outer quoted argument also prevents top-level token parsing from finding the commit.\n- Suggestion: Skip shell comments through their newline when matching substitution parentheses. Test both detection and preservation of `-C` options for a commit following such a comment.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/lib/git_commit_command.py:57\n- Finding: The unparseable-text fallback loses targets containing quoted spaces. For `# Let's go\\ngit -C \"/project b\" commit -m y`, `_LOOSE_OPTS` cannot match the complete path and `_loose_commits` yields `()` instead. The hook consequently measures the default or shell project rather than `/project b`, potentially allowing a commit against the wrong coverage result.\n- Suggestion: Recover options from each independently parseable command line using quote-aware tokenization, retaining conservative detection for lines that still cannot be parsed. Add a quoted-path fallback test.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py:131\n- Finding: AC-13 requires fallback warnings to name both directories, but the missing-directory warning names only the missing shell directory. The conflicting-environment warning also claims measurement occurs on `env_root`, although the function actually falls back to `default_root()`; these can differ, as the new three-project test demonstrates.\n- Suggestion: Construct these warnings where the actual fallback root is known, and name that root explicitly. Assert both paths and the actual measured root in the tests.\n\nShip-with-fixes: the change addresses many specified cases, but two valid shell shapes still hide executable commits, and target recovery can measure the wrong project. Execution verification was unavailable because the environment rejected shell commands.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**1. Quote-unaware backslash in `shell_substitution._scan` hides real commits (fail-open)**\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-compliance/scripts/lib/shell_substitution.py` (the `_scan` method, `if ch == \"\\\\\": i += 2`)\n- Finding: The backslash escape is applied regardless of quote state. Inside single quotes the shell treats `\\` as literal, so the common `'\\''` idiom for embedding an apostrophe breaks the scanner: in `echo 'it'\\''s ok'; echo \"$(git commit -m x)\"`, the `\\` skips the following `'`, the scanner believes the single quote is still open, and the later `$(git commit \u2026)` is treated as quoted text and never reported. The top-level shlex pass also can't see it (it sits inside double quotes), so `is_git_commit` returns False for a command the shell really runs \u2014 exactly the \"hidden commit\" class this iterate exists to close. Note `_ends_in_comment` in `shell_heredoc.py` already gets this right (`ch == \"\\\\\" and quote != \"'\"`); `_scan` diverges from it.\n- Suggestion: In `_scan`, only treat `\\` as an escape when not inside single quotes (skip-to-closing-`'` should consume backslashes literally). Add a test with the `'\\''` idiom followed by a `$(git commit)`.\n\n**2. A file where the marker directory should be is misreported as a concurrent use**\n- Category: bug\n- Severity: low\n- File: `plugins/shipwright-compliance/scripts/lib/compliance_override.py`, `consume()` \u2014 `marker.parent.mkdir(parents=True, exist_ok=True)` inside the `try` whose first `except` is `FileExistsError`\n- Finding: `Path.mkdir(exist_ok=True)` raises `FileExistsError` when `.shipwright/locks` exists as a regular file, and that exception is caught by the branch that reports \"used by a concurrent command first\" \u2014 a misleading diagnosis (nothing was consumed). The existing test `test_an_unwritable_marker_dir_keeps_the_block` only asserts `\"NOT applied\"`, so it passes with the wrong reason and would not catch this.\n- Suggestion: Create the marker with `os.open` only (after a bare `mkdir` whose `FileExistsError`/`IsADirectoryError` falls into the generic OSError branch), or check `marker.parent.is_dir()` first; tighten the test to assert the \"could not be marked used\" wording.\n\n**3. Lock release is a read-then-unlink TOCTOU**\n- Category: edge-case\n- Severity: low\n- File: `plugins/shipwright-compliance/scripts/lib/compliance_override.py`, `_locked()` `finally` block\n- Finding: `lock.read_text() == token` followed by `lock.unlink()` is not atomic; if this holder exceeds `STALE_LOCK_S`, a breaker renames the lock and a third party re-creates it between the read and the unlink, the displaced holder deletes the new owner's lock. Window is narrow (requires a >30 s hold plus a racing re-take in the microsecond gap), and the marker arbiter still prevents a double release, so impact is limited to lock churn.\n- Suggestion: Acceptable to leave documented; otherwise unlink via a rename-to-private-name + token re-check, mirroring `_break_stale`.\n\n## Spec-compliance check\n\nAll 13 ACs have implementing code and at least one direct test (AC-1\u2026AC-13 verified against `test_hook_command_shapes.py`, `test_hook_override_lock.py`, `test_hook_shell_cwd_scope.py`); the docs/CHANGELOG updates for AC-8/AC-13 are present. Tests assert behavior (return values, file contents, exit codes), not just invocation, and both happy and error paths are covered. No regressions found in existing callers: `_segment_commit` \u2192 `_segment_commits` keeps `_segment_is_commit`'s boolean semantics, and the moved \"never-closed heredoc\" test matches the new intended over-fire behavior per AC-2.\n\nThe overall design is sound and well-tested; finding 1 is a genuine fail-open gap in the new substitution scanner that should be fixed before this is called done.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

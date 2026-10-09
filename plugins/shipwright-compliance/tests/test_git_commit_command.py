@@ -73,6 +73,10 @@ def test_non_commits_do_not_fire(command):
     assert not gcc.is_git_commit(command)
 
 
+def _has_commit(tokens, depth=0):
+    return next(gcc._segment_commits(tokens, depth), None) is not None
+
+
 def test_string_running_programs_share_the_depth_bound():
     """Within the cap the inner string is parsed; past it the substring test over-fires."""
     depth = gcc._MAX_SHELL_DEPTH
@@ -83,13 +87,13 @@ def test_string_running_programs_share_the_depth_bound():
     assert gcc.is_git_commit("eval " * (depth + 1) + "git commit")
     assert not gcc.is_git_commit("eval " * depth + "echo git commit")  # parsed: echo
     for tokens in (["eval", "git commit"], ["cmd", "/c", "git commit"], ["pwsh", "-c", "git commit"]):
-        assert gcc._segment_is_commit(tokens, depth)  # at the cap: substring, over-fires
-        assert not gcc._segment_is_commit([*tokens[:-1], "git status"], depth)
-    assert not gcc._segment_is_commit(["pwsh", "-c", "echo git commit"], depth - 1)
-    assert gcc._segment_is_commit(["env", "-S", "git commit"], depth)  # at the cap: substring
-    assert not gcc._segment_is_commit(["env", "-S", "git status"], depth)
-    assert gcc._segment_is_commit(["env", "-S", "git commit 'x"], 0)  # unbalanced quote: substring
-    assert not gcc._segment_is_commit(["env", "-S", "git status 'x"], 0)
+        assert _has_commit(tokens, depth)  # at the cap: substring, over-fires
+        assert not _has_commit([*tokens[:-1], "git status"], depth)
+    assert not _has_commit(["pwsh", "-c", "echo git commit"], depth - 1)
+    assert _has_commit(["env", "-S", "git commit"], depth)  # at the cap: substring
+    assert not _has_commit(["env", "-S", "git status"], depth)
+    assert _has_commit(["env", "-S", "git commit 'x"], 0)  # unbalanced quote: substring
+    assert not _has_commit(["env", "-S", "git status 'x"], 0)
 
 
 @pytest.mark.parametrize("command", [

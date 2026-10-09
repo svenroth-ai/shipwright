@@ -231,11 +231,15 @@ def test_is_git_commit_inproc_including_unbalanced_quote_fallback():
     assert mod.is_git_commit("git commit \\\r\n  -m x")
     assert mod.is_git_commit("bash -c 'sh -c \"git commit\"'")  # nested shells
     import git_commit_command as gcc  # noqa: PLC0415 - on sys.path once the hook ran
-    assert gcc._segment_is_commit(["sh", "-c", "git commit"], 0)
+
+    def _has_commit(tokens, depth=0):
+        return next(gcc._segment_commits(tokens, depth), None) is not None
+
+    assert _has_commit(["sh", "-c", "git commit"], 0)
     # past the depth cap the substring test decides: over-fire, never fail open
-    assert gcc._segment_is_commit(["sh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH)
-    assert not gcc._segment_is_commit(["sh", "-c", "echo hi"], gcc._MAX_SHELL_DEPTH)
-    assert not gcc._segment_is_commit(["bash", "-o", "pipefail", "script.sh"])
+    assert _has_commit(["sh", "-c", "git commit"], gcc._MAX_SHELL_DEPTH)
+    assert not _has_commit(["sh", "-c", "echo hi"], gcc._MAX_SHELL_DEPTH)
+    assert not _has_commit(["bash", "-o", "pipefail", "script.sh"])
 
 
 def test_parser_import_failure_falls_back_to_the_substring_test(monkeypatch):

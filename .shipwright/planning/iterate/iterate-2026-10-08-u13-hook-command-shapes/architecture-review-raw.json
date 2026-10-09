@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes\u2014option A is proportionate: it repairs the existing gate and adds a small consumption record needed to prevent tracked-log restoration from reviving an override.**\n\n2. **Smallest thing:** extend the existing reader for the specified command shapes, use the payload directory through the existing project-root resolver, and atomically create one local marker per consumed override. Option E cannot preserve consumption across `git restore`; option C introduces a second gate and repository installation obligations.\n\n3. **Cost to keep:** the compliance plugin maintainers must maintain the reader\u2019s shell semantics and the local marker record alongside the tracked attribution log. Tests support that obligation; they do not replace ownership.\n\n4. **What it forecloses:** future shell forms require reader changes, and the tracked log alone can no longer reconstruct whether an override remains available.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** Mostly no new mechanism is needed \u2014 this is hardening machinery that already exists (the lexer, the override log) \u2014 and the one genuinely new standing piece, the `O_EXCL` consumption marker, is small and justified.\n\n2. **The smallest thing that would do:** Extend the existing lexer with the missing shapes (option A), and replace reliance on the revivable CONSUMED log line with the single untracked marker file for consumption. That is what is proposed, and it is close to minimal: the marker is one empty file per override use, checked by `O_EXCL`, no cleanup job, no new service.\n\n3. **What it costs to keep:** (a) the hand-written shell reader keeps growing \u2014 every future shell shape someone dreams up is a new accepted limit or a new lexer patch, forever; (b) marker files accumulate in `.shipwright/locks/` with no stated pruning, so the directory grows monotonically with override use; (c) the \"payload cwd is the commit scope\" rule must now be reasoned about in every future change to scope resolution.\n\n4. **What it forecloses:** none identified that matters. The marker adds a filesystem-truth source alongside the git-tracked log, which mildly complicates anyone who later wants the log to be the single record \u2014 but that design was already broken by `git restore`.\n\n5. **Findings:**\n\n- Category: proportionality\n- Severity: low\n- Finding: The `O_EXCL` marker directory has no retention story; markers are never removed, so it grows unboundedly in proportion to override use.\n- Suggestion: Delete the marker for an entry when its 30-minute window expires (wherever the window is already being checked), or state in `docs/hooks-and-pipeline.md` that the directory is disposable and safe to clear.\n\n- Category: existence\n- Severity: low\n- Finding: Option C (a real `pre-commit` git hook as the gate) would eliminate the standing obligation to keep hand-parsing shell text correct at all, and is the structurally safer long-term shape. It is presumably out for reasons outside this brief (the gate must fire before the shell runs, not at commit time), but this change deepens permanent investment in the lexer regardless.\n- Suggestion: Accept A for this change, but record in the ADR's accepted-limits section that each new lexer gap is evidence for eventually adding a git-side backstop, so the limit list is not treated as terminal.\n\n- Category: existence\n- Severity: low\n- Finding: The one-command-per-override semantics (AC-8) is a rule, not a mechanism, and the right one \u2014 a command holding two commits released whole is over-permissive in the safe direction only.\n- Suggestion: None; keep as documented.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
