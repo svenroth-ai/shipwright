@@ -1,0 +1,1 @@
+{"section":"iterate-2026-10-08-u13-hook-command-shapes","verdict":"APPROVE","summary":"Round 4 APPROVE, no findings. Rounds 1-3 REJECTs (loose-fallback single commit per line, regex backtracking, $(( arithmetic misclassification x2) were fixed and pinned by tests; remaining lows accepted and disclosed.)","review":[]}

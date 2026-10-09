@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
 import rtm_gate_support as gate
-from git_commit_target import CommitTarget, commit_targets
+from git_commit_target import CommitTarget, commit_targets, project_at
 
 _GIT_TIMEOUT_S = 5
 
@@ -119,15 +119,54 @@ def _below(cache: dict[str, Any], root: str, env: dict[str, str]) -> bool:
     return measured is not None and not gate.meets(measured, gate.read_threshold(root)[0])
 
 
+def _shell_project(shell_dir: str | None, warnings: list[str],
+                   default: Callable[[], str]) -> str | None:
+    """The Shipwright project the persisted shell directory belongs to, else ``None``.
+
+    ``None`` falls back to the managed default root; whenever that drops a project the
+    shell directory does resolve to, a WARN says so (never a silent switch).
+    """
+    if shell_dir is None:
+        return None
+    if not Path(shell_dir).is_dir():
+        warnings.append(f"the shell directory {shell_dir} does not exist; the commit is "
+                        f"measured on the managed project root {default()}")
+        return None
+    root, found, note = project_at(Path(shell_dir))
+    if note:
+        warnings.append(note)
+    if found and not Path(shell_dir).resolve().is_relative_to(Path(root).resolve()):
+        warnings.append(f"the shell directory {shell_dir} lies outside the project {root} it "
+                        f"resolves to (a project below it); the commit lands in the repo "
+                        f"around the shell directory, measured on the managed project root "
+                        f"{default()}")
+        return None
+    if found and not _has_compliance_data(str(root)):
+        warnings.append(f"the shell directory belongs to the project {root}, which holds no "
+                        f"compliance data; measured on the managed project root {default()}")
+        return None
+    if not found:
+        return None  # a fixture, child or non-project directory: the default decides
+    env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")  # the documented disambiguator wins
+    if env_root and repo_key(env_root) != repo_key(root):
+        warnings.append(f"the shell directory belongs to the project {root}, but "
+                        f"SHIPWRIGHT_PROJECT_ROOT names {env_root}; measured on the managed "
+                        f"project root {default()}")
+        return None
+    return str(root)
+
+
 def commit_scope(command: str, cwd: Any, default: Callable[[], str]) -> Scope:
     """The :class:`Scope` for the repo(s) *command* commits to.
 
-    *default* (the managed project root) for a commit naming no location or a
-    directory that does not exist (WARN). A command committing to several repos is
+    A commit naming no location is judged on the project the payload's shell directory
+    belongs to (the hook process may run elsewhere); *default* (the managed project
+    root) when that directory is no project, or for a directory that does not exist (WARN). A command committing to several repos is
     judged on the first one below its threshold (else the first), with a WARN
     naming them all; :attr:`Scope.below` lists every repo below its threshold.
     """
-    cwd = cwd if isinstance(cwd, str) and cwd else os.getcwd()
+    shell_dir = cwd if isinstance(cwd, str) and cwd else None
+    cwd = shell_dir or os.getcwd()
     memo: list[str] = []
 
     def default_root() -> str:
@@ -136,14 +175,17 @@ def commit_scope(command: str, cwd: Any, default: Callable[[], str]) -> Scope:
         return memo[0]
 
     warnings: list[str] = []
+    plain: str | None = None
     roots: dict[str, tuple[str, dict[str, str]]] = {}  # repo_key -> (root, env), in order
     for target in commit_targets(command, cwd):
         if target is not None and not target.project_root.is_dir():
             warnings.append(f"the commit names {target.project_root}, which is not a "
                             f"directory; measured {default_root()} instead")
             target = None
-        if target is None:
-            roots.setdefault(repo_key(default_root()), (default_root(), {}))
+        if target is None:  # a plain commit lands where the SHELL is, not where the hook runs
+            if plain is None:  # judged once: its WARNs are not repeated per commit
+                plain = _shell_project(shell_dir, warnings, default_root) or default_root()
+            roots.setdefault(repo_key(plain), (plain, {}))
             continue
         warnings.extend(filter(None, [target.note, _no_project_warning(target, default_root())]))
         root = str(target.project_root)

@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-u13-hook-command-shapes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T23:16:39.225134+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "delete markers matching a hook run's entries when the override log is rotated/truncated, or key the marker to a hash of the log entry so at most one marker per entry exists and old ones can be swept when their entry leaves the log.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "bind the marker filename to a content hash of the log entry (e.g. `consumed-<hook>-<sha16>`), not a timestamp. This also fixes the accumulation problem above for free.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "in `docs/hooks-and-pipeline.md`, state the unit plainly (\"one override releases every commit in that single Bash command\") so users aren't surprised by a mixed-project command.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "add one sentence to the ADR accepted limits; optionally require the regex match to not be preceded by `#` on its line in the fallback.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "assert in the AC-7 test that the failure path takes measurable time proportional to the sleep, not just that it raises.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "add/confirm a test for the \"env names project C, cwd is project B, commit has no location\" combination; the AC-6 wording covers the two-name case but not the three-way interaction.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "record in the ledger that the asymptote probe ran after both fixes landed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Atomic rename prevents two breakers from removing the same lock, but does not establish lock ownership. After a stale lock is renamed, another process can acquire the original path. Restoring the renamed lock—or cleanup by its original owner—could overwrite or remove the new owner’s lock. The consumption marker protects duplicate release, but concurrent log operations remain exposed.",
+          "suggestion": "Give each lock an ownership token and verify ownership before cleanup. Restore a renamed lock only without replacing an existing lock. Add a concurrency test covering acquisition between rename and restoration, plus cleanup by the displaced owner.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The loose regex fallback needs to preserve commit locations, not merely detect a commit. AC-5 deliberately triggers fallback on text containing `git -C x commit`; detecting it while dropping `-C x` could send coverage validation to the default project and incorrectly release a commit in another project.",
+          "suggestion": "Specify and test the fallback’s yielded arguments and resulting project scope. Recover supported location options through the existing target logic; when detection succeeds but the target remains ambiguous, use an explicit conservative outcome rather than silently treating it as a location-free commit.  The approach is proportionate, and retaining the stdlib implementation is reasonable for this focused change. Resolve lock ownership and fallback target preservation before approval; the stated boolean and stale-breaker tests alone do not establish those guarantees.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T22:32:42.151948+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case** — **Severity: medium** — The `O_EXCL` marker files (`consumed-<hook>-<ts>`) accumulate forever under `.shipwright/locks/` with no cleanup, and nothing is stated about garbage collection or retention. Over months of hook runs this grows unboundedly inside the user's repo.\n  **Suggestion:** delete markers matching a hook run's entries when the override log is rotated/truncated, or key the marker to a hash of the log entry so at most one marker per entry exists and old ones can be swept when their entry leaves the log.\n\n- **Category: edge-case** — **Severity: medium** — The marker is keyed by `(hook, ts)` but the guarantee it enforces is per *log entry*. If a log entry is edited, duplicated, or two entries share a timestamp (or clocks skew), a marker can either release the wrong entry or permanently block a fresh one (fail-closed = the override silently stops working, which is user-visible friction, not just a safety issue).\n  **Suggestion:** bind the marker filename to a content hash of the log entry (e.g. `consumed-<hook>-<sha16>`), not a timestamp. This also fixes the accumulation problem above for free.\n\n- **Category: risk** — **Severity: medium** — AC-8 makes one override release an entire Bash command, potentially containing multiple `git commit` invocations in different projects. Combined with the fact that the override is after-the-fact attribution (not a gate), a user who clicks \"Continue anyway\" on a mixed command (`git -C a commit; git -C b commit`) has one override covering commits that were never individually reviewed. This is documented, so it's a disclosed trade-off, but the doc note should be explicit that the unit of release is the *command*, not the project.\n  **Suggestion:** in `docs/hooks-and-pipeline.md`, state the unit plainly (\"one override releases every commit in that single Bash command\") so users aren't surprised by a mixed-project command.\n\n- **Category: edge-case** — **Severity: low** — Th […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Atomic rename prevents two breakers from removing the same lock, but does not establish lock ownership. After a stale lock is renamed, another process can acquire the original path. Restoring the renamed lock—or cleanup by its original owner—could overwrite or remove the new owner’s lock. The consumption marker protects duplicate release, but concurrent log operations remain exposed.  \n   **Suggestion:** Give each lock an ownership token and verify ownership before cleanup. Restore a renamed lock only without replacing an existing lock. Add a concurrency test covering acquisition between rename and restoration, plus cleanup by the displaced owner.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The loose regex fallback needs to preserve commit locations, not merely detect a commit. AC-5 deliberately triggers fallback on text containing `git -C x commit`; detecting it while dropping `-C x` could send coverage validation to the default project and incorrectly release a commit in another project.  \n   **Suggestion:** Specify and test the fallback’s yielded arguments and resulting project scope. Recover supported location options through the existing target logic; when detection succeeds but the target remains ambiguous, use an explicit conservative outcome rather than silently treating it as a location-free commit.\n\nThe approach is proportionate, and retaining the stdlib implementation is reasonable for this focused change. Resolve lock ownership and fallback target preservation before approval; the stated boolean and stale-breaker tests alone do not establish those guarantees.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T23:02:25.601184+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract (fail-open)",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py",
+          "line": null,
+          "finding": "Claim under doubt: the override path fails closed on every OSError — Path.exists() on an unreadable marker re-raises EACCES outside try_release's try; run_failopen turns it into exit 0.",
+          "suggestion": "Treat 'cannot tell' as used.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling (parser regression)",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": null,
+          "finding": "Claim under doubt: dropping the global continuation join is safe — A quoted heredoc body fed to a shell keeps backslash-newline raw; bash joins it: bash <<'EOF'\\ngit \\\\\\ncommit -m x\\nEOF was missed.",
+          "suggestion": "Join continuations in kept run-body lines.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract (silent wrong repo)",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py",
+          "line": null,
+          "finding": "Claim under doubt: a plain commit is measured on the shell directory's project, never a silent switch — (a) a found project with no compliance data fell back to the default with no WARN; (b) project_root step-3 descent picked a project BELOW the shell directory, which the commit does not land in.",
+          "suggestion": "WARN in (a); reject a resolved project that does not contain the shell directory in (b).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "parser under-fire (adversarial shapes)",
+          "file": "shell_heredoc.py, shell_substitution.py, git_commit_command.py",
+          "line": null,
+          "finding": "Claim under doubt: every command shape that runs git commit is seen — ANSI-C quoting $'..\\'..' and '<<' inside ${...} are not modelled by the three scanners.",
+          "suggestion": "Model $'..' and ${...} or document the limit.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (pre-existing, not introduced)",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": null,
+          "finding": "Claim under doubt: the segment parser recognises git commit behind common prefixes — Leading redirections, --config-env/--attr-source, wrappers outside the closed set (uv run, stdbuf, flock, setsid), env '#x=1', pwsh -CommandWithArgs.",
+          "suggestion": "Out of scope for U13.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-08T23:16:16.969823+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_substitution.py` (the `_scan` method, `if ch == \"\\\\\": i += 2`)",
+          "line": null,
+          "finding": "The backslash escape is applied regardless of quote state. Inside single quotes the shell treats `\\` as literal, so the common `'\\''` idiom for embedding an apostrophe breaks the scanner: in `echo 'it'\\''s ok'; echo \"$(git commit -m x)\"`, the `\\` skips the following `'`, the scanner believes the single quote is still open, and the later `$(git commit …)` is treated as quoted text and never reported. The top-level shlex pass also can't see it (it sits inside double quotes), so `is_git_commit` returns False for a command the shell really runs — exactly the \"hidden commit\" class this iterate exists to close. Note `_ends_in_comment` in `shell_heredoc.py` already gets this right (`ch == \"\\\\\" and quote != \"'\"`); `_scan` diverges from it.",
+          "suggestion": "In `_scan`, only treat `\\` as an escape when not inside single quotes (skip-to-closing-`'` should consume backslashes literally). Add a test with the `'\\''` idiom followed by a `$(git commit)`.  2. A file where the marker directory should be is misreported as a concurrent use",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py`, `consume()` — `marker.parent.mkdir(parents=True, exist_ok=True)` inside the `try` whose first `except` is `FileExistsError",
+          "line": null,
+          "finding": "Path.mkdir(exist_ok=True)` raises `FileExistsError` when `.shipwright/locks` exists as a regular file, and that exception is caught by the branch that reports \"used by a concurrent command first\" — a misleading diagnosis (nothing was consumed). The existing test `test_an_unwritable_marker_dir_keeps_the_block` only asserts `\"NOT applied\"`, so it passes with the wrong reason and would not catch this.",
+          "suggestion": "Create the marker with `os.open` only (after a bare `mkdir` whose `FileExistsError`/`IsADirectoryError` falls into the generic OSError branch), or check `marker.parent.is_dir()` first; tighten the test to assert the \"could not be marked used\" wording.  3. Lock release is a read-then-unlink TOCTOU",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_override.py`, `_locked()` `finally` block",
+          "line": null,
+          "finding": "lock.read_text() == token` followed by `lock.unlink()` is not atomic; if this holder exceeds `STALE_LOCK_S`, a breaker renames the lock and a third party re-creates it between the read and the unlink, the displaced holder deletes the new owner's lock. Window is narrow (requires a >30 s hold plus a racing re-take in the microsecond gap), and the marker arbiter still prevents a double release, so impact is limited to lock churn.",
+          "suggestion": "Acceptable to leave documented; otherwise unlink via a rename-to-private-name + token re-check, mirroring `_break_stale`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_heredoc.py",
+          "line": 211,
+          "finding": "Continuations in unquoted heredoc bodies are never joined when checking the closing delimiter. For `cat <<EOF\\nEO\\\\\\nF\\ngit commit -m x\\nEOF`, Bash joins `EO\\\\\\nF` into `EOF` and executes the following commit. This implementation instead strips the commit as body data until the second `EOF`, bypassing the gate.",
+          "suggestion": "Join backslash-newline sequences in unquoted bodies before delimiter comparison, while preserving literal lines in quoted bodies. Add this case as a regression test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/shell_substitution.py",
+          "line": 67,
+          "finding": "Parenthesis matching treats `)` inside a shell comment as the substitution terminator. With `echo \"$(echo hi # )\\ngit commit -m x)\"`, the shell executes the commit, but the scanner extracts only `echo hi # `; the outer quoted argument also prevents top-level token parsing from finding the commit.",
+          "suggestion": "Skip shell comments through their newline when matching substitution parentheses. Test both detection and preservation of `-C` options for a commit following such a comment.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/git_commit_command.py",
+          "line": 57,
+          "finding": "The unparseable-text fallback loses targets containing quoted spaces. For `# Let's go\\ngit -C \"/project b\" commit -m y`, `_LOOSE_OPTS` cannot match the complete path and `_loose_commits` yields `()` instead. The hook consequently measures the default or shell project rather than `/project b`, potentially allowing a commit against the wrong coverage result.",
+          "suggestion": "Recover options from each independently parseable command line using quote-aware tokenization, retaining conservative detection for lines that still cannot be parsed. Add a quoted-path fallback test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/rtm_commit_scope.py",
+          "line": 131,
+          "finding": "AC-13 requires fallback warnings to name both directories, but the missing-directory warning names only the missing shell directory. The conflicting-environment warning also claims measurement occurs on `env_root`, although the function actually falls back to `default_root()`; these can differ, as the new three-project test demonstrates.",
+          "suggestion": "Construct these warnings where the actual fallback root is known, and name that root explicitly. Assert both paths and the actual measured root in the tests.  Ship-with-fixes: the change addresses many specified cases, but two valid shell shapes still hide executable commits, and target recovery can measure the wrong project. Execution verification was unavailable because the environment rejected shell commands.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T23:16:20.885127+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Quote-unaware backslash in `shell_substitution._scan` hides real commits (fail-open)**\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-compliance/scripts/lib/shell_substitution.py` (the `_scan` method, `if ch == \"\\\\\": i += 2`)\n- Finding: The backslash escape is applied regardless of quote state. Inside single quotes the shell treats `\\` as literal, so the common `'\\''` idiom for embedding an apostrophe breaks the scanner: in `echo 'it'\\''s ok'; echo \"$(git commit -m x)\"`, the `\\` skips the following `'`, the scanner believes the single quote is still open, and the later `$(git commit …)` is treated as quoted text and never reported. The top-level shlex pass also can't see it (it sits inside double quotes), so `is_git_commit` returns False for a command the shell really runs — exactly the \"hidden commit\" class this iterate exists to close. Note `_ends_in_comment` in `shell_heredoc.py` already gets this right (`ch == \"\\\\\" and quote != \"'\"`); `_scan` diverges from it.\n- Suggestion: In `_scan`, only treat `\\` as an escape when not inside single quotes (skip-to-closing-`'` should consume backslashes literally). Add a test with the `'\\''` idiom followed by a `$(git commit)`.\n\n**2. A file where the marker directory should be is misreported as a concurrent use**\n- Category: bug\n- Severity: low\n- File: `plugins/shipwright-compliance/scripts/lib/compliance_override.py`, `consume()` — `marker.parent.mkdir(parents=True, exist_ok=True)` inside the `try` whose first `except` is `FileExistsError`\n- Finding: `Path.mkdir(exist_ok=True)` raises `FileExistsError` when `.shipwright/locks` exists as a regular file, and that exception is caught by the branch that reports \"used by a concurrent command first\" — a misleading diagnosis (nothing was consumed). The existing test `test_an_unwritable_marker_dir_keeps_the_block` only asserts `\"NOT applied\"`, so it passes with the wrong reason and would not catch this.\n- Suggestion: Create the marker w […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/shell_heredoc.py:211\n- Finding: Continuations in unquoted heredoc bodies are never joined when checking the closing delimiter. For `cat <<EOF\\nEO\\\\\\nF\\ngit commit -m x\\nEOF`, Bash joins `EO\\\\\\nF` into `EOF` and executes the following commit. This implementation instead strips the commit as body data until the second `EOF`, bypassing the gate.\n- Suggestion: Join backslash-newline sequences in unquoted bodies before delimiter comparison, while preserving literal lines in quoted bodies. Add this case as a regression test.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-compliance/scripts/lib/shell_substitution.py:67\n- Finding: Parenthesis matching treats `)` inside a shell comment as the substitution terminator. With `echo \"$(echo hi # )\\ngit commit -m x)\"`, the shell executes the commit, but the scanner extracts only `echo hi # `; the outer quoted argument also prevents top-level token parsing from finding the commit.\n- Suggestion: Skip shell comments through their newline when matching substitution parentheses. Test both detection and preservation of `-C` options for a commit following such a comment.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/lib/git_commit_command.py:57\n- Finding: The unparseable-text fallback loses targets containing quoted spaces. For `# Let's go\\ngit -C \"/project b\" commit -m y`, `_LOOSE_OPTS` cannot match the complete path and `_loose_commits` yields `()` instead. The hook consequently measures the default or shell project rather than `/project b`, potentially allowing a commit against the wrong coverage result.\n- Suggestion: Recover options from each independently parseable command line using quote-aware tokenization, retaining conservative detection for lines that still cannot be parsed. Add a quoted-path fallback test.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-compliance/scr […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:36:36.036196+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:32:41.744382+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:32:41.954761+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
