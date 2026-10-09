@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tree_materialise.py:82\n- Finding: The materialiser copies in-tree symlinks into regular files, causing symlinked tests to be scanned and enforced. AC3 explicitly requires regular files only, with symlinks excluded; the new symlink tests instead enforce the opposite behavior.\n- Suggestion: Exclude mode `120000` entries from materialisation to meet the stated acceptance criterion.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_tag_binding_collector_gaps.py:82\n- Finding: The base-side `export-ignore` test passes with the old implementation too: both archived trees omit the unchanged hidden test, and the unrelated comment edit still produces a successful verdict. It does not verify that export-ignored files are included from the base tree.\n- Suggestion: Assert that the regenerated base manifest contains the hidden test, or directly assert its contents in the materialised base tree.\n\nShip-with-fixes: the collector and export-ignore changes address the main gaps, but symlink handling contradicts the specification and the base-side regression test needs a discriminating assertion.\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: spec** \u2014 Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tree_materialise.py` (`_tree_blobs`, links handling)\n  **Finding:** AC3 states \"Regular files only; symlinks and submodules stay out\", but the implementation resolves in-tree file symlinks and writes them as copies. This is the (defensible) resolution of the doubt-review's high finding, but it contradicts the written acceptance criterion; the spec text was never updated to match.\n  **Suggestion:** Update the AC/spec wording to \"regular files plus in-tree file symlinks resolved as copies; links leaving the tree, directory links and submodules stay out\", or narrow the code to the spec. The behaviour itself is sound.\n\n- **Category: bug** \u2014 Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tree_materialise.py` (`_read_blobs`, `size = int(header[2])`)\n  **Finding:** Malformed `cat-file --batch` output with a non-numeric size raises `ValueError`, which is not in the `except (OSError, subprocess.SubprocessError)` in `_tree_blobs`, so `_archive_tree` crashes instead of returning `False` \u2014 the \"Returns False on any git failure\" contract is violated for corrupted output.\n  **Suggestion:** Catch `(OSError, subprocess.SubprocessError, ValueError)` in `_tree_blobs`, or parse defensively in `_read_blobs`.\n\n- **Category: regression** \u2014 Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tag_binding_ts.py:27` (`from lib.ts_lexer import lex`)\n  **Finding:** The gate's lexer import changed from a package-relative import (worked with only `tools.verifiers` importable) to an absolute top-level `lib` import, which requires `shared/scripts` on `sys.path` at import time and is shadowable by any other top-level `lib` package earlier on the path. The old relative import had neither dependency.\n  **Suggestion:** Keep a relative import (`from ...lib.ts_lexer import lex` won't work since `lib` isn't under `tools`; instead import via the same path-setup the tests use, or make `ts_lexer` importable relative to the verifiers package, e.g. a thin `tools/verifiers/_tag_binding_ts_lex.py` re-exporting `lib.ts_lexer.lex`).\n\n- **Category: edge-case** \u2014 Severity: low\n  **File:** `shared/scripts/tools/verifiers/_tree_materialise.py` (`_tree_blobs` symlink resolution)\n  **Finding:** A symlink whose target is itself a symlink (chain) is silently dropped: the target lookup only matches regular files in `files`, whereas the old tar extraction would have materialised the chain and the collector could follow it. Also, symlink targets containing NUL or invalid UTF-8 rely on `surrogateescape` decode in `_write_blobs`, which on some filesystems will raise `OSError` \u2014 that one is caught, so it degrades to `False` for the whole tree rather than skipping the one path.\n  **Suggestion:** Document/accept chained-link dropping (or resolve transitively); in `_write_blobs`, wrap the per-entry write so one bad path is skipped rather than failing the whole tree.\n\n- **Category: test** \u2014 Severity: low\n  **File:** `shared/tests/test_tag_binding_collector_gaps.py` (`test_the_gate_lexes_with_the_shared_lib_module`)\n  **Finding:** This test only asserts object identity of the two `lex` references; it would pass even if the collector never called the lexer (the behavioural proof lives in the wrapped-table tests, which is fine, but the identity test alone proves nothing about collector usage). Acceptable as a wiring pin, not as AC evidence.\n  **Suggestion:** None needed if the wrapped-table parametrised tests are treated as the AC1 evidence (they are); optionally drop or keep as a wiring drift guard.\n\n## What checks out\n\n- The `export-ignore` fix is real: `ls-tree`+`cat-file` cannot be shrunk by `.gitattributes`, and the dedicated tests pin both head-side and base-side behaviour.\n- Path containment in `_write_blobs` is correct (`dest_r in target.parents`, not prefix), and the traversal test exercises a sibling-dir case.\n- The `_each_end` rewrite correctly handles the case where the lexer's stop index is past the text (`close >= n or text[close] != \")\"` guards the contract).\n- `_read_blobs` validates each header's sha/type and bounds-checks the final blob; the truncated-blob case from code review is genuinely handled.\n- AC2's \"no code change, pinned by tests\" is honest \u2014 the four parametrised config cases exist and the spec says they passed on `main`.\n\nOverall: the three gaps are genuinely closed with behaviour tests that fail on old code; the findings above are refinements (spec wording drift, one uncaught parse exception, an import-robustness regression on the shared lexer).\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

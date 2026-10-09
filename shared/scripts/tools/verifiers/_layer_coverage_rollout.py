@@ -43,12 +43,12 @@ evidence-derived — the same collector call ``_layer_coverage_regen`` already
 uses for the base/head manifests, just pointed at a third, older commit.
 Reuses that module's ``_load_collector``/``_archive_tree``/``_build`` rather
 than re-implementing archive extraction, which would otherwise risk losing
-the hardened tar-extraction defences (``_safe_extract``'s path-containment
-and member-type guards, ``_archive_tree``'s subprocess timeout) to a
+the hardened extraction defences (``_write_blobs``'s path-containment, the
+regular-file-only filter, ``_archive_tree``'s subprocess timeout) to a
 copy-paste drift.
 
 **Why callers should only invoke this when a gap is already otherwise HARD.**
-The archive+build here is a full ``git archive`` + collector test-root walk
+The archive+build here is a full tree materialisation + collector test-root walk
 of a third, potentially old, commit — the SAME cost class as the base/head
 builds ``_layer_coverage_regen`` already pays twice. It buys nothing on a
 clean run (the overwhelming common case), so ``layer_coverage_binding.py``

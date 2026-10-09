@@ -1,0 +1,8 @@
+{"items":[
+{"name":"spec-match","verdict":"pass","note":"AC1-AC3 implemented; AC2 pinned by regression tests (already true)"},
+{"name":"tests-first","verdict":"pass","note":"5 of the new cases failed on old code before the change"},
+{"name":"no-dead-code","verdict":"pass","note":"_safe_extract/tarfile removed with their only caller"},
+{"name":"error-paths","verdict":"pass","note":"git failure, truncated blob, traversal, empty tree all covered"},
+{"name":"security","verdict":"pass","note":"path containment kept; links leaving the tree dropped"},
+{"name":"docs-wording","verdict":"pass","note":"stale git archive wording updated"},
+{"name":"affected-boundaries","verdict":"pass","note":"lexer shared lib; tree materialiser used by 4 gates, 458 tests green"}]}

@@ -16,7 +16,7 @@ key and any name the test does not bind (``expect``, an imported helper) must st
 A data-driven ``it.each(table)('title', ...)`` / ``test.each`table`('title', ...)`` is a test
 too (one id, the title text, like the collector's); its callee - modifier and table - is part of
 the digest, so editing a table row or turning ``test`` into ``test.skip`` is an edit. Regex literals
-and JSX are lexed by :mod:`._tag_binding_ts_lex`.
+and JSX are lexed by :mod:`lib.ts_lexer` (shared with the compliance collector).
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from __future__ import annotations
 import hashlib
 import re
 
-from ._tag_binding_ts_lex import lex
+from lib.ts_lexer import lex
 
 __all__ = ["ts_shapes", "ts_tag_sets"]
 
