@@ -77,6 +77,7 @@ def test_no_base_is_claimed_when_it_cannot_be_established(
     )
 
 
+@pytest.mark.covers("FR-01.13/AC07")
 def test_an_abbreviated_base_is_refused_rather_than_resolved(adopted_repo, capsys):
     """A short id is ``no_base``, because git would resolve it as a REF first.
 

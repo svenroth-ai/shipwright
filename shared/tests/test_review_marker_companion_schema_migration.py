@@ -57,6 +57,7 @@ def test_companion_writes_a_historical_gemini_envelope_as_schema_2(tmp_path):
     assert state != STATE_BLOCK
 
 
+@pytest.mark.covers("FR-01.13/AC07")
 def test_write_markers_rejects_an_unrecognized_verdict_roster(tmp_path):
     # Any reviewer set outside the known rosters must fail loudly here rather
     # than fall through to MARKER_SCHEMA silently, mirroring the fix that now

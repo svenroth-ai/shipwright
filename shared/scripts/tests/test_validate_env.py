@@ -597,14 +597,12 @@ class TestFrameworkOrderDriftProtection:
                 ordered.append(k)
         return ordered
 
+    @pytest.mark.covers("FR-01.13/AC07")
     def test_framework_keys_match_external_review_fallback_order(self):
         from shared.scripts import validate_env
 
         framework_names = [v["name"] for v in validate_env._SHIPWRIGHT_FRAMEWORK_VARS if not v.get("alternative")]  # #547: gateway = separate route
-        assert framework_names == [
-            "OPENROUTER_API_KEY",
-            "OPENAI_API_KEY",
-        ]
+        assert framework_names == ["OPENROUTER_API_KEY", "OPENAI_API_KEY"]
 
         runtime_keys = self._extract_runtime_fallback_keys()
 
