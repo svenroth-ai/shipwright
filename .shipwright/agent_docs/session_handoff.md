@@ -1,36 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-10-08-claims-hardening-followups"
+run_id: "iterate-2026-09-24-r5b-merge-lane"
 phase: "iterate"
-reason: "iterate: claims-hardening follow-ups"
-timestamp: "2026-10-09T06:46:24.305686+00:00"
+reason: "iterate: campaign-dag-scheduler R5b serial merge lane"
+timestamp: "2026-09-24T06:44:57.450745+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-10-09 06:46:24 UTC
+> Auto-generated 2026-09-24 06:44:57 UTC
 
 ## Session Info
 
-- **Session ID**: fd3771ad-f179-49a6-82fa-1ccd97fde1bd
-- **Timestamp**: 2026-10-09 06:46:24 UTC
-- **Reason**: iterate completion: iterate-2026-10-08-claims-hardening-followups
+- **Session ID**: ccb8f881-5a1a-4d9e-ae92-2cdb5ae55623
+- **Timestamp**: 2026-09-24 06:44:57 UTC
+- **Reason**: iterate: campaign-dag-scheduler R5b serial merge lane
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-10-08-claims-hardening-followups
-- **Date**: 2026-10-09T06:46:24.095172Z
-- **Type**: change
+- **Run ID**: iterate-2026-09-23-r5a-wave-build-flip
+- **Date**: 2026-09-23T16:44:27.584176Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/claims-hardening-followups
-- **ADR**: iterate-2026-10-08-claims-hardening-followups
+- **Branch**: iterate/campaign-r5a-wave-build-flip
+- **ADR**: iterate-2026-09-23-r5a-wave-build-flip
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-10-08-claims-hardening-followups/spec.md
+- **Spec**: .shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R5a-wave-build-flip.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/claims-hardening-followups
-- **External Review Marker**: completed (external_review_state.json @ 2026-10-09T06:16:13)
+- **Branch**: iterate/campaign-r5b-merge-lane
+- **External Review Marker**: completed (external_review_state.json @ 2026-09-24T06:25:12)
 - **Review Cascade**: no run_id resolved
 
 ### Mandatory replay on Resume
@@ -66,8 +66,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/claims-hardening-followups
-- **Last Commit**: 4ef03c35d Merge remote-tracking branch 'origin/main' into iterate/claims-hardening-followups
+- **Branch**: iterate/campaign-r5b-merge-lane
+- **Last Commit**: 032d1ebbf feat(iterate): campaign-mode wave-based concurrent sub-iterate build (campaign-dag-scheduler R5a) (#794)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -83,17 +83,17 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-360ba49d | work_completed | iterate (Test-tag gate follow-up: data-driven tests, base-side prune set, regex/JSX lexing, decorator edits, U11 skip set) | 2026-10-08 |
-| evt-793a049f | work_completed | iterate (Commit-hook command shapes: heredoc and continuation order, nested shell commits, command substitutions, shell-cwd scope, atomic stale-lock break, one override per hook run, restore-proof consumption) | 2026-10-08 |
-| evt-5d6885c2 | work_completed | iterate (Close the U5/U6 accepted limits in the finalization claims gates) | 2026-10-09 |
-| evt-f1fafe1a | work_completed | iterate (Docs reconcile for the finalization claims hardening) | 2026-10-08 |
-| evt-cffff36b | work_completed | iterate (Integration scenario proving the finalization-claims gates are independent) | 2026-10-08 |
+| evt-f7cfa441 | work_completed | iterate (campaign-mode serial merge lane: review pinning exactness, PR-identity + merge-SHA verification, rebase-triggered staleness cascade, STRICT-STOP drain) | 2026-09-24 |
+| evt-0f53d04c | grade_snapshot | — | 2026-09-23 |
+| evt-0233ea5a | work_completed | iterate (Flip campaign-mode.md's Loop from single-unit-at-a-time to wave-based concurrent sub-iterate build, wiring R1-R4's dependency-graph/worktree/state-machine primitives live) | 2026-09-23 |
+| evt-e91ce306 | event_amended | — | 2026-09-23 |
+| evt-6a59c108 | work_completed | None (—) | 2026-09-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 712
-- **Last iterate**: change — Test-tag gate follow-up: data-driven tests, base-side prune set, regex/JSX lexing, decorator edits, U11 skip set (2026-10-08)
+- **Total work events**: 668
+- **Last iterate**: change — campaign-mode serial merge lane: review pinning exactness, PR-identity + merge-SHA verification, rebase-triggered staleness cascade, STRICT-STOP drain (2026-09-24)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
