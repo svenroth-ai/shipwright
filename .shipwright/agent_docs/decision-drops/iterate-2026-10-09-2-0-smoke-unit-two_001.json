@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-2-0-smoke-unit-two",
+  "date": "2026-10-09",
+  "section": "Iterate - feature: smoke unit 2 marker check",
+  "title": "Throwaway smoke check for docs/_smoke/unit-2.md (PR #860 campaign)",
+  "context": "Campaign smoke-860-20261009 needs a real, tested change per unit to exercise the sub-iterate runner end to end (PR #860). Never merged.",
+  "decision": "Add stdlib scripts/_smoke_check.py (exit 0 iff the marker is a readable UTF-8 file with visible text after dropping Unicode Cf chars), the marker doc, and 18 tests in shared/tests (no repo-root tests/ root exists; one-test-root rule).",
+  "consequences": "Nothing permanent: no gate, hook or caller invokes the script and the branch is discarded. Test location deviates from the spec's tests/ path, recorded in the ADR file.",
+  "rationale": "Smallest change that still gives the runner a collected test to verify; all internal and external reviews approved or were dispositioned.",
+  "rejected": "Wiring the check into verify_local.py as a gate; a marker-only change with no test.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-09-2-0-smoke-unit-two.md"
+}

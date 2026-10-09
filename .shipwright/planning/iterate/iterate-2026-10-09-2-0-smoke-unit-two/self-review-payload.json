@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Script verifies docs/_smoke/unit-2.md exists and is non-empty; doc and test created; test placed in shared/tests (no repo-root tests/ root exists, one-test-root rule) - deviation recorded in the ADR."},
+{"name":"Error Handling","verdict":"pass","note":"Missing path, non-file path, unreadable/invalid UTF-8 and whitespace-only content all return (False, message) and exit 1; no traceback paths."},
+{"name":"Security Basics","verdict":"pass","note":"Read-only stdlib script; no secrets, no shell, no network; --project-root only selects a read location."},
+{"name":"Test Quality","verdict":"pass","note":"9 tests cover each failure branch, success, in-process main() exit codes and two real subprocess round-trips (explicit root and cwd-independent default)."},
+{"name":"Performance Basics","verdict":"pass","note":"Single small file read; no loops or I/O fan-out."},
+{"name":"Naming & Structure","verdict":"pass","note":"Leading-underscore names mark the throwaway smoke files; check()/main() split mirrors other repo scripts; no dead code."},
+{"name":"Affected Boundaries","verdict":"pass","note":"One boundary: committed markdown file -> script reader. Round-trip probe run (subprocess reads the committed doc, exit 0); BOM tolerated via utf-8-sig, invalid bytes fail cleanly."}
+]}

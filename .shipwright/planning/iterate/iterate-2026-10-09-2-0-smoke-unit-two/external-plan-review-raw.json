@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Acceptance criteria remain \u201cTBD,\u201d leaving the expected CLI behavior undefined. The test-location deviation is reasonable given the stated repository constraints, but should be reflected in the specification.  \n   **Suggestion:** Define success as an existing regular file containing non-whitespace text, with exit 0 on success and exit 1 on failure. Record `shared/tests/test_smoke_unit2.py` as the intended test location.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan does not specify how the CLI determines `project_root`. Resolving the document relative to the caller\u2019s working directory could cause false failures when the script is invoked elsewhere; the committed-document round-trip may miss this.  \n   **Suggestion:** Default to the repository root derived from the script\u2019s location. Run the successful subprocess test from a temporary working directory to verify that behavior.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** Tests cover missing files and directories, but the failure contract for unreadable files or decoding errors is unspecified. These could produce a traceback instead of the intended check result.  \n   **Suggestion:** Use an explicit encoding and convert expected filesystem and decoding errors into `(False, message)` and CLI exit 1.\n\nThe approach is appropriately isolated and lightweight, with no apparent security concerns or impact on existing functionality from the described changes. Resolve the acceptance criteria and CLI root behavior before implementation; keeping this throwaway check out of permanent gate wiring is sensible.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: approach / severity: medium**\n  **Finding:** The spec places the test at `tests/test_smoke_unit2.py`, but the plan puts it in `shared/tests/` with a path-based load to dodge the conftest \"one test root\" rule. Path-based subject loading (ADR-045 register-before-exec) is machinery invented for a throwaway smoke test that is never supposed to be merged at all.\n  **Suggestion:** For a throwaway, the simpler approach is to not fight the repo's test-root rules at all \u2014 either skip the pytest test entirely (the CLI subprocess exit-code check *is* the smoke), or accept the minor deviation and let it live under `shared/tests` with a normal import. If the path-loading is required by ADR-045, cite why it can't be avoided; otherwise drop it.\n\n- **Category: approach / severity: low**\n  **Finding:** Six test cases (missing file, whitespace-only, non-empty, directory-at-path, CLI exit 1, CLI round-trip) plus a parameterized `check()` API is more than a throwaway smoke warrants. The plan even mentions a rejected alternative that \"adds a standing mechanism\" \u2014 the same logic applies to parts of this plan.\n  **Suggestion:** A minimal smoke is: script exists, exits 0 on the committed doc, exits 1 when the file is temporarily absent. Two subprocess tests, no API surface. Keep it proportional to \"never merge.\"\n\n- **Category: risk / severity: medium**\n  **Finding:** \"Throwaway\u2026 never merge\" conflicts with creating committed-looking files (`docs/_smoke/unit-2.md`, a test that will run in CI if merged by accident, or worse, fail if the doc is stripped). If the branch is ever merged, `shared/tests/test_smoke_unit2.py` becomes a permanent CI dependency on a throwaway doc.\n  **Suggestion:** Add a guard: name the test file with a clear `_smoke_` marker (done), add a module-level skip condition or a comment referencing PR #860, and confirm the campaign workflow deletes these files on merge of the real PR.\n\n- **Category: edge-case / severity: low**\n  **Finding:** Non-empty check as \"file exists and has content\" vs \"whitespace-only\" \u2014 the plan does cover whitespace, but the doc creation is specified as \"one line of text\" with no content guidance; if it's just whitespace the round-trip test fails confusingly.\n  **Suggestion:** Specify the exact content (e.g., `smoke unit 2 \u2014 ok`) in the plan so doc and test can't drift.\n\n- **Category: dependency / severity: low**\n  **Finding:** `docs/_smoke/` directory presumably doesn't exist; nothing verifies it's creatable / gitignored appropriately (a `_smoke` dir committed by accident is clutter).\n  **Suggestion:** Confirm whether `docs/_smoke/` should be gitignored for the throwaway run.\n\n**Overall assessment:** The core idea (small stdlib script + subprocess exit-code check) is sound and the wiring decision to avoid `verify_local.py` integration is correct for a throwaway. But the plan over-builds the test harness for something explicitly marked never-merge \u2014 trim it and reconcile the spec/plan test-location mismatch.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

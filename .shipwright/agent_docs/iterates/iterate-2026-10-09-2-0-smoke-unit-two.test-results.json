@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-2-0-smoke-unit-two",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 21748,
+      "total": 21845
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 574,
+      "total": 574
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "f0-resumed-local: final F0 invocation reused green units from the immediately preceding full invocation on the identical tree (tree_changed_files=0) and re-ran shared/scripts/tools/tests in full; 97 skipped tests counted in unit.total"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_smoke_unit2.py -v",
+      "exit_code": 0,
+      "tests_run": 18,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-smoke-860-20261009--2.0\\.shipwright\\runs\\iterate-2026-10-09-2-0-smoke-unit-two\\surface_verification.log",
+      "timestamp": "2026-10-09T09:53:31.950Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "missing marker file -> fail/exit 1",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_missing_file_fails PASSED; shared/tests/test_smoke_unit2.py::test_cli_exits_one_when_missing PASSED"
+        },
+        {
+          "behavior": "whitespace-only file -> fail",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_empty_file_fails PASSED"
+        },
+        {
+          "behavior": "format-character-only file (Cf) -> fail",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_format_chars_only_fails[9 code points] PASSED"
+        },
+        {
+          "behavior": "directory at target path -> fail",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_directory_at_target_path_fails PASSED"
+        },
+        {
+          "behavior": "invalid UTF-8 -> clean fail, no traceback",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_invalid_utf8_fails_cleanly PASSED"
+        },
+        {
+          "behavior": "visible text -> pass/exit 0",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_non_empty_file_passes PASSED; shared/tests/test_smoke_unit2.py::test_main_exit_codes_in_process PASSED"
+        },
+        {
+          "behavior": "committed doc passes via real CLI (round-trip)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_real_repo_doc_passes_via_cli PASSED"
+        },
+        {
+          "behavior": "default root independent of cwd",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_smoke_unit2.py::test_cli_default_root_is_independent_of_cwd PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-2-0-smoke-unit-two",
+    "commit": "e5436a5913bfd9b2fe143eb6a50acf231c0fdf4c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-2-0-smoke-unit-two",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T09:29:13.813737+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "The spec places the test at `tests/test_smoke_unit2.py`, but the plan puts it in `shared/tests/` with a path-based load to dodge the conftest \"one test root\" rule. Path-based subject loading (ADR-045 register-before-exec) is machinery invented for a throwaway smoke test that is never supposed to be merged at all.",
+          "suggestion": "For a throwaway, the simpler approach is to not fight the repo's test-root rules at all — either skip the pytest test entirely (the CLI subprocess exit-code check is the smoke), or accept the minor deviation and let it live under `shared/tests` with a normal import. If the path-loading is required by ADR-045, cite why it can't be avoided; otherwise drop it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Six test cases (missing file, whitespace-only, non-empty, directory-at-path, CLI exit 1, CLI round-trip) plus a parameterized `check()` API is more than a throwaway smoke warrants. The plan even mentions a rejected alternative that \"adds a standing mechanism\" — the same logic applies to parts of this plan.",
+          "suggestion": "A minimal smoke is: script exists, exits 0 on the committed doc, exits 1 when the file is temporarily absent. Two subprocess tests, no API surface. Keep it proportional to \"never merge.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "\"Throwaway… never merge\" conflicts with creating committed-looking files (`docs/_smoke/unit-2.md`, a test that will run in CI if merged by accident, or worse, fail if the doc is stripped). If the branch is ever merged, `shared/tests/test_smoke_unit2.py` becomes a permanent CI dependency on a throwaway doc.",
+          "suggestion": "Add a guard: name the test file with a clear `_smoke_` marker (done), add a module-level skip condition or a comment referencing PR #860, and confirm the campaign workflow deletes these files on merge of the real PR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "Non-empty check as \"file exists and has content\" vs \"whitespace-only\" — the plan does cover whitespace, but the doc creation is specified as \"one line of text\" with no content guidance; if it's just whitespace the round-trip test fails confusingly.",
+          "suggestion": "Specify the exact content (e.g., `smoke unit 2 — ok`) in the plan so doc and test can't drift.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "docs/_smoke/` directory presumably doesn't exist; nothing verifies it's creatable / gitignored appropriately (a `_smoke` dir committed by accident is clutter).",
+          "suggestion": "Confirm whether `docs/_smoke/` should be gitignored for the throwaway run.  Overall assessment: The core idea (small stdlib script + subprocess exit-code check) is sound and the wiring decision to avoid `verify_local.py` integration is correct for a throwaway. But the plan over-builds the test harness for something explicitly marked never-merge — trim it and reconcile the spec/plan test-location mismatch.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Acceptance criteria remain “TBD,” leaving the expected CLI behavior undefined. The test-location deviation is reasonable given the stated repository constraints, but should be reflected in the specification.",
+          "suggestion": "Define success as an existing regular file containing non-whitespace text, with exit 0 on success and exit 1 on failure. Record `shared/tests/test_smoke_unit2.py` as the intended test location.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not specify how the CLI determines `project_root`. Resolving the document relative to the caller’s working directory could cause false failures when the script is invoked elsewhere; the committed-document round-trip may miss this.",
+          "suggestion": "Default to the repository root derived from the script’s location. Run the successful subprocess test from a temporary working directory to verify that behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Tests cover missing files and directories, but the failure contract for unreadable files or decoding errors is unspecified. These could produce a traceback instead of the intended check result.",
+          "suggestion": "Use an explicit encoding and convert expected filesystem and decoding errors into `(False, message)` and CLI exit 1.  The approach is appropriately isolated and lightweight, with no apparent security concerns or impact on existing functionality from the described changes. Resolve the acceptance criteria and CLI root behavior before implementation; keeping this throwaway check out of permanent gate wiring is sensible.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T09:29:02.748370+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: approach / severity: medium**\n  **Finding:** The spec places the test at `tests/test_smoke_unit2.py`, but the plan puts it in `shared/tests/` with a path-based load to dodge the conftest \"one test root\" rule. Path-based subject loading (ADR-045 register-before-exec) is machinery invented for a throwaway smoke test that is never supposed to be merged at all.\n  **Suggestion:** For a throwaway, the simpler approach is to not fight the repo's test-root rules at all — either skip the pytest test entirely (the CLI subprocess exit-code check *is* the smoke), or accept the minor deviation and let it live under `shared/tests` with a normal import. If the path-loading is required by ADR-045, cite why it can't be avoided; otherwise drop it.\n\n- **Category: approach / severity: low**\n  **Finding:** Six test cases (missing file, whitespace-only, non-empty, directory-at-path, CLI exit 1, CLI round-trip) plus a parameterized `check()` API is more than a throwaway smoke warrants. The plan even mentions a rejected alternative that \"adds a standing mechanism\" — the same logic applies to parts of this plan.\n  **Suggestion:** A minimal smoke is: script exists, exits 0 on the committed doc, exits 1 when the file is temporarily absent. Two subprocess tests, no API surface. Keep it proportional to \"never merge.\"\n\n- **Category: risk / severity: medium**\n  **Finding:** \"Throwaway… never merge\" conflicts with creating committed-looking files (`docs/_smoke/unit-2.md`, a test that will run in CI if merged by accident, or worse, fail if the doc is stripped). If the branch is ever merged, `shared/tests/test_smoke_unit2.py` becomes a permanent CI dependency on a throwaway doc.\n  **Suggestion:** Add a guard: name the test file with a clear `_smoke_` marker (done), add a module-level skip condition or a comment referencing PR #860, and confirm the campaign workflow deletes these files on merge of the real PR.\n\n- **Category: edge-case / severity: low**\n  **Fin […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Acceptance criteria remain “TBD,” leaving the expected CLI behavior undefined. The test-location deviation is reasonable given the stated repository constraints, but should be reflected in the specification.  \n   **Suggestion:** Define success as an existing regular file containing non-whitespace text, with exit 0 on success and exit 1 on failure. Record `shared/tests/test_smoke_unit2.py` as the intended test location.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan does not specify how the CLI determines `project_root`. Resolving the document relative to the caller’s working directory could cause false failures when the script is invoked elsewhere; the committed-document round-trip may miss this.  \n   **Suggestion:** Default to the repository root derived from the script’s location. Run the successful subprocess test from a temporary working directory to verify that behavior.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** Tests cover missing files and directories, but the failure contract for unreadable files or decoding errors is unspecified. These could produce a traceback instead of the intended check result.  \n   **Suggestion:** Use an explicit encoding and convert expected filesystem and decoding errors into `(False, message)` and CLI exit 1.\n\nThe approach is appropriately isolated and lightweight, with no apparent security concerns or impact on existing functionality from the described changes. Resolve the acceptance criteria and CLI root behavior before implementation; keeping this throwaway check out of permanent gate wiring is sensible.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_smoke_unit2.py",
+          "line": 38,
+          "finding": "Catalog T (test repetition), non-blocking (Goal B). Four tests rebuild the same tmp_path / docs / _smoke / unit-2.md path and mkdir step, and three subprocess tests repeat the same subprocess.run([sys.executable, str(_SUBJECT), ...], capture_output=True, text=True, check=False) call. Estimated saving: about 8-10 LOC.",
+          "suggestion": "Optional. Add a _target(root) helper and a _run_cli(*args, cwd=None) helper. The file is 108 LOC and throwaway, so it can also ship as-is.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_smoke_unit2.py",
+          "line": 21,
+          "finding": "spec_from_file_location returns Optional[ModuleSpec] and spec.loader can be None. If the subject is missing, the test module fails at collection with an AttributeError on None instead of a clear message. Pyright warning only; ruff does not catch it.",
+          "suggestion": "Add assert spec is not None and spec.loader is not None, _SUBJECT before module_from_spec.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "architecture",
+          "file": "shared/tests/test_smoke_unit2.py",
+          "line": 1,
+          "finding": "The spec asks for tests/test_smoke_unit2.py, but the test lives in shared/tests/. The mini-plan and the module docstring justify this (no root tests/, one registered test root per process). Stage-1 already accepted this. Recorded only so the deviation is traceable.",
+          "suggestion": "None.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T09:30:45.678730+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_smoke_unit2.py",
+          "line": null,
+          "finding": "Claim under doubt: test_invisible_format_chars_only_fails checks the new zero-width stripping — shared/tests/test_smoke_unit2.py:50 writes literal invisible characters (raw U+200B U+2060, not escape sequences). If an editor strips them the string becomes a bare newline; check() still returns empty via plain str.strip(), so the test stays green but no longer tests the feature - a silent false-green.",
+          "suggestion": "Use escape sequences, and assert the input is non-empty under plain strip() so the test cannot pass on whitespace alone.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "scripts/_smoke_check.py",
+          "line": null,
+          "finding": "Claim under doubt: _INVISIBLE removes ZWSP, ZWNJ, ZWJ, WJ and BOM — scripts/_smoke_check.py:16 builds the table from a literal of raw invisible characters; losing any silently shrinks the table with no error, and only two of five are tested.",
+          "suggestion": "Write the literal with escapes, or parametrize the test over all five code points.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "scripts/_smoke_check.py",
+          "line": null,
+          "finding": "Claim under doubt: a file that renders as empty is reported empty — The strip list is hand-picked; a file with only U+00AD, U+200E/U+200F, U+180E or U+2061-U+2064 passes as non-empty.",
+          "suggestion": "Filter generically (drop unicodedata.category(c) == 'Cf' before strip()), or narrow the comment to the five listed code points.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T09:31:50.027597+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/tests/test_smoke_unit2.py:1 — The spec places the test at `tests/test_smoke_unit2.py`, but the diff puts it at `shared/tests/test_smoke_unit2.py`. The docstring offers a rationale (repo has no root tests dir, conftest enforces one root per process), but none of that is in the spec — it's an unverifiable justification in a diff that's supposed to be a throwaway. Either the spec  […truncated]",
+          "line": null,
+          "finding": "Confirm the conftest claim; if true, amend the spec/AC to record the location deviation. If it's a throwaway smoke check for PR #860, location matters little, but spec-vs-diff drift should be explicit.",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-09T09:30:02.984001+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec | Severity: medium\n  File: shared/tests/test_smoke_unit2.py:1 — The spec places the test at `tests/test_smoke_unit2.py`, but the diff puts it at `shared/tests/test_smoke_unit2.py`. The docstring offers a rationale (repo has no root tests dir, conftest enforces one root per process), but none of that is in the spec — it's an unverifiable justification in a diff that's supposed to be a throwaway. Either the spec should be updated to sanction the location, or the file should move.\n  Suggestion: Confirm the conftest claim; if true, amend the spec/AC to record the location deviation. If it's a throwaway smoke check for PR #860, location matters little, but spec-vs-diff drift should be explicit.\n\n- Category: test | Severity: low\n  File: shared/tests/test_smoke_unit2.py:64 (`test_main_exit_codes_in_process`) — `smoke.main()` calls `argparse.parse_args`; that's fine, but the two `main()` calls print to stdout, which pollutes pytest output. Not a correctness bug, only noise. No action strictly required.\n\n- Category: test | Severity: low\n  File: scripts/_smoke_check.py:22-24 — `utf-8-sig` decoding means a file containing only a BOM plus whitespace is treated as empty; that's arguably correct behavior, but it also means a pure-BOM file passes as... actually no, `\"\\ufeff\".strip()` is empty, so it fails correctly. No defect; noting the edge is handled.\n\nPositive notes: error paths (missing file, directory-at-path, undecodable bytes, whitespace-only) are all covered; exit codes verified both in-process and via real subprocess with cwd-independence; the subject is loaded by path per ADR-045; the script itself matches the spec (stdlib-only, exit 0/1, checks existence and non-emptiness). No security or regression concerns — nothing existing is touched.\n\nOverall the implementation is solid and well-tested; the only substantive issue is the spec-mandated test path not being honored. Ship-with-fixes (or amend the spec to bless the deviation).\n\nS […truncated]\n\n[openai] No concrete defects found. The script checks existence, file type, and non-whitespace content, handles read failures, and returns appropriate exit codes. Tests validate success and failure cases plus CLI behavior from another working directory.\n\nThe test is placed in `shared/tests/` instead of the specified `tests/`; the diff explains this as necessary for the repository’s test-root constraints. Acceptance criteria remain TBD, so there are no additional defined criteria to assess.\n\nOverall assessment: ship-as-is for the throwaway smoke exercise, respecting the specification’s “never merge” restriction.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T09:29:58.367255+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T09:27:50.847899+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T09:27:37.505686+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

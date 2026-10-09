@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The script checks existence, file type, and non-whitespace content, handles read failures, and returns appropriate exit codes. Tests validate success and failure cases plus CLI behavior from another working directory.\n\nThe test is placed in `shared/tests/` instead of the specified `tests/`; the diff explains this as necessary for the repository\u2019s test-root constraints. Acceptance criteria remain TBD, so there are no additional defined criteria to assess.\n\nOverall assessment: ship-as-is for the throwaway smoke exercise, respecting the specification\u2019s \u201cnever merge\u201d restriction.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: spec | Severity: medium\n  File: shared/tests/test_smoke_unit2.py:1 \u2014 The spec places the test at `tests/test_smoke_unit2.py`, but the diff puts it at `shared/tests/test_smoke_unit2.py`. The docstring offers a rationale (repo has no root tests dir, conftest enforces one root per process), but none of that is in the spec \u2014 it's an unverifiable justification in a diff that's supposed to be a throwaway. Either the spec should be updated to sanction the location, or the file should move.\n  Suggestion: Confirm the conftest claim; if true, amend the spec/AC to record the location deviation. If it's a throwaway smoke check for PR #860, location matters little, but spec-vs-diff drift should be explicit.\n\n- Category: test | Severity: low\n  File: shared/tests/test_smoke_unit2.py:64 (`test_main_exit_codes_in_process`) \u2014 `smoke.main()` calls `argparse.parse_args`; that's fine, but the two `main()` calls print to stdout, which pollutes pytest output. Not a correctness bug, only noise. No action strictly required.\n\n- Category: test | Severity: low\n  File: scripts/_smoke_check.py:22-24 \u2014 `utf-8-sig` decoding means a file containing only a BOM plus whitespace is treated as empty; that's arguably correct behavior, but it also means a pure-BOM file passes as... actually no, `\"\\ufeff\".strip()` is empty, so it fails correctly. No defect; noting the edge is handled.\n\nPositive notes: error paths (missing file, directory-at-path, undecodable bytes, whitespace-only) are all covered; exit codes verified both in-process and via real subprocess with cwd-independence; the subject is loaded by path per ADR-045; the script itself matches the spec (stdlib-only, exit 0/1, checks existence and non-emptiness). No security or regression concerns \u2014 nothing existing is touched.\n\nOverall the implementation is solid and well-tested; the only substantive issue is the spec-mandated test path not being honored. Ship-with-fixes (or amend the spec to bless the deviation).\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

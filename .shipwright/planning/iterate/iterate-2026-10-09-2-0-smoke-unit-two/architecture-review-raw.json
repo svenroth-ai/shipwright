@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No \u2014 this mechanism is explicitly throwaway and never merges, so nothing permanent is created; the only question is proportionality, and the smallest thing would do.\n\n2. **The smallest thing that would do** \u2014 A single script that checks the marker file exists and is non-empty. Drop the test file (tests/test_smoke_unit2.py): the script has no callers and no future, so a test guarding it is a test of scaffolding that will be deleted with the branch. One file, one check.\n\n3. **What it costs to keep** \u2014 Nothing: no gate, no CI job, no caller, branch discarded. Cost is only the author's time while the branch lives.\n\n4. **What it forecloses** \u2014 none identified.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The paired test doubles the throwaway surface without protecting anything \u2014 the script is never merged, has no callers, and dies with the branch.\n- Suggestion: Keep only scripts/_smoke_check.py and docs/_smoke/unit-2.md; delete tests/test_smoke_unit2.py from the plan.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. No standing mechanism should exist, and the proposed disposable branch change is proportionate to exercising the campaign runner.\n2. The smallest thing that would do is the proposed marker file, presence/non-empty check script, and test, confined to the smoke branch.\n3. Keeping it costs nothing after the run; the only obligation is discarding the branch as stated.\n4. What it forecloses: none identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

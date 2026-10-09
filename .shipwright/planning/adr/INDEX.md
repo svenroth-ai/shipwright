@@ -189,3 +189,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Small-iterate code-review trigger, one diff-size rule (campaign unit U4)](iterate-2026-10-08-u4-cascade-trigger-100-reviews.md)
 - [The F0.5 surface claim is re-derived from the diff and the staged evidence](iterate-2026-10-08-u5-surface-check-surface-claim.md)
 - [Requirement gate bypasses closed (campaign unit U6)](iterate-2026-10-08-u6-requirement-gate-reviews.md)
+- [Smoke unit 2: marker-file presence check (PR #860 campaign smoke)](iterate-2026-10-09-2-0-smoke-unit-two.md)

@@ -1,0 +1,23 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "none of the four (no migration, async, cross-plugin import or irreversible op); run because the caller asked, scope is three new throwaway files",
+  "doubts": [
+    {"severity": "medium", "lens": "hidden coupling",
+     "claim_under_doubt": "test_invisible_format_chars_only_fails checks the new zero-width stripping",
+     "disproof_attempt": "shared/tests/test_smoke_unit2.py:50 writes literal invisible characters (raw U+200B U+2060, not escape sequences). If an editor strips them the string becomes a bare newline; check() still returns empty via plain str.strip(), so the test stays green but no longer tests the feature - a silent false-green.",
+     "file": "shared/tests/test_smoke_unit2.py",
+     "what_would_resolve_it": "Use escape sequences, and assert the input is non-empty under plain strip() so the test cannot pass on whitespace alone."},
+    {"severity": "low", "lens": "hidden coupling",
+     "claim_under_doubt": "_INVISIBLE removes ZWSP, ZWNJ, ZWJ, WJ and BOM",
+     "disproof_attempt": "scripts/_smoke_check.py:16 builds the table from a literal of raw invisible characters; losing any silently shrinks the table with no error, and only two of five are tested.",
+     "file": "scripts/_smoke_check.py",
+     "what_would_resolve_it": "Write the literal with escapes, or parametrize the test over all five code points."},
+    {"severity": "low", "lens": "boundary & contract",
+     "claim_under_doubt": "a file that renders as empty is reported empty",
+     "disproof_attempt": "The strip list is hand-picked; a file with only U+00AD, U+200E/U+200F, U+180E or U+2061-U+2064 passes as non-empty.",
+     "file": "scripts/_smoke_check.py",
+     "what_would_resolve_it": "Filter generically (drop unicodedata.category(c) == 'Cf' before strip()), or narrow the comment to the five listed code points."}
+  ],
+  "summary": "3 doubts: 1 medium, 2 low, all about the invisible-character literals and how far they reach. Reversibility, concurrency and ADR-045 boundary lenses raised nothing. Nothing blocks the commit; fix or rebut each in writing."
+}

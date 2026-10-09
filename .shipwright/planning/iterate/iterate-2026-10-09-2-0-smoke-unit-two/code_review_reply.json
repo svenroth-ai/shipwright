@@ -1,0 +1,26 @@
+{
+  "section": "2.0-unit-two (iterate-2026-10-09-2-0-smoke-unit-two)",
+  "verdict": "PASS",
+  "review": [
+    {"severity": "low", "category": "readability", "file": "shared/tests/test_smoke_unit2.py", "line": 38,
+     "finding": "Catalog T (test repetition), non-blocking (Goal B). Four tests rebuild the same tmp_path / docs / _smoke / unit-2.md path and mkdir step, and three subprocess tests repeat the same subprocess.run([sys.executable, str(_SUBJECT), ...], capture_output=True, text=True, check=False) call. Estimated saving: about 8-10 LOC.",
+     "suggestion": "Optional. Add a _target(root) helper and a _run_cli(*args, cwd=None) helper. The file is 108 LOC and throwaway, so it can also ship as-is."},
+    {"severity": "low", "category": "readability", "file": "shared/tests/test_smoke_unit2.py", "line": 21,
+     "finding": "spec_from_file_location returns Optional[ModuleSpec] and spec.loader can be None. If the subject is missing, the test module fails at collection with an AttributeError on None instead of a clear message. Pyright warning only; ruff does not catch it.",
+     "suggestion": "Add assert spec is not None and spec.loader is not None, _SUBJECT before module_from_spec."},
+    {"severity": "info", "category": "architecture", "file": "shared/tests/test_smoke_unit2.py", "line": 1,
+     "finding": "The spec asks for tests/test_smoke_unit2.py, but the test lives in shared/tests/. The mini-plan and the module docstring justify this (no root tests/, one registered test root per process). Stage-1 already accepted this. Recorded only so the deviation is traceable.",
+     "suggestion": "None."}
+  ],
+  "notes": [
+    "Correctness: check() handles a missing file, a directory at the target path, an unreadable or non-UTF-8 file, and a whitespace-only file. Exit codes 0/1 match the spec. Broken symlink reports missing (acceptable). TOCTOU window between checks and read is safe because the read catches OSError.",
+    "Default --project-root comes from __file__ (parents[1]), not cwd, and a test covers it.",
+    "ADR-045: subject loaded by path and registered in sys.modules under a unique name before exec; no sys.path edits.",
+    "Diff coverage: main() and check() run in-process, so the subprocess-only coverage blind spot does not apply.",
+    "Size and bloat: about 150 LOC across 3 new files, all under budgets; no dead code; stdlib only.",
+    "Security and performance: nothing relevant; subprocesses use list argv with no shell.",
+    "Static read only; ruff/pytest not run by the reviewer."
+  ],
+  "files_reviewed": ["scripts/_smoke_check.py", "docs/_smoke/unit-2.md", "shared/tests/test_smoke_unit2.py"],
+  "review_type": "full-review"
+}
