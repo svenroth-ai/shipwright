@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-stop-guard-merged-pr",
+  "date": "2026-10-10",
+  "section": "Iterate — bug: stop-guard blocked a run whose PR was already merged",
+  "title": "The Stop guard releases a run whose PR is already MERGED",
+  "context": "A PR merged by auto-merge (or by hand) leaves the run pointer live because deliver_pr.py never retires it, so the guard blocked every Stop until its 40-block cap and flooded the operator with Stop hook errors.",
+  "decision": "Before blocking, ask gh pr list --head <branch> once per 2 minutes (8 s timeout) and release when a PR merged after the run started and none is open; record delivered. A gh failure or unknown start counts as not merged. SHIPWRIGHT_ITERATE_STOP_GUARD_GH=0 skips the call.",
+  "consequences": "The guard now has a network dependency on a would-be block, bounded to one 8 s call per 2 minutes and never able to release on error. A merge is matched to the run by mergedAt after the pointer's created_at, so a reused branch name cannot release a new run.",
+  "rationale": "The first design avoided gh at Stop time; a live pointer alone cannot tell an out-of-band merge from an open run, and the run pointer age bound only cleared it after 48 h.",
+  "rejected": "Checking whether the branch is an ancestor of origin/main (a squash merge is not an ancestor); trusting the pointer alone.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

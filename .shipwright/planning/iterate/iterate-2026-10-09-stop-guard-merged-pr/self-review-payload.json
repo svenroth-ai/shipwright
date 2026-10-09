@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"A merged PR of this run releases the Stop guard; contract and hooks doc updated."},
+{"name":"Error Handling","verdict":"pass","note":"gh missing, timeout, non-zero exit and garbage output all return no PRs, so the guard keeps blocking; the 120 s recheck window is stamped even on failure."},
+{"name":"Security Basics","verdict":"pass","note":"gh runs without a shell, argv list only; the branch name comes from the run pointer."},
+{"name":"Test Quality","verdict":"pass","note":"Parametrized states incl. reused-branch old merge, OPEN sibling, CLOSED, empty; blocker race; failure modes; env switch; tests are hermetic via the env switch."},
+{"name":"Performance Basics","verdict":"pass","note":"At most one gh call (8 s cap) per 2 minutes, only on a would-be block."},
+{"name":"Naming & Structure","verdict":"pass","note":"lib 250 lines, delivered tests in their own 107-line file."},
+{"name":"Affected Boundaries","verdict":"pass","note":"New consumer of gh JSON state,mergedAt and the pointer's created_at; both parsed defensively."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skipped or weakened tests."}
+]}

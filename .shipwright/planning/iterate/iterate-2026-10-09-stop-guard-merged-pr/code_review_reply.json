@@ -1,0 +1,5 @@
+{"section":"iterate-2026-10-09-stop-guard-merged-pr","review":[
+{"severity":"high","category":"correctness","file":"shared/scripts/lib/iterate_stop_guard.py","line":182,"finding":"A reused branch name could release a new run on an old merged PR.","suggestion":"Count a PR only if mergedAt is after the run start - fixed, with tests."},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-iterate/tests/test_iterate_stop_guard.py","line":76,"finding":"Existing tests ran the real gh.","suggestion":"Env switch SHIPWRIGHT_ITERATE_STOP_GUARD_GH=0 set in the helpers - fixed."},
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/iterate_stop_guard.py","line":198,"finding":"Delivered write could drop a concurrently recorded blocker.","suggestion":"Re-read the blocker before the write - fixed, with a test."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py","line":80,"finding":"gh failure-mode gaps.","suggestion":"Parametrized missing/timeout/failed/garbage, empty branch, CLOSED - done."}]}
