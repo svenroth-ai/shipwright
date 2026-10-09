@@ -1,1 +1,0 @@
-External review now forces the Opus-based reviewer roster (driver=codex) whenever CODEXTENDER_ACTIVE is set, instead of trusting the typed --driver flag, and records the effective driver and reason in the raw review JSON

@@ -1,1 +1,0 @@
-Finalization now stops when a change adds or edits a test that does not name the requirement it proves (per-test exemptions with a fixed reason list are verified, not trusted), and the traceability collector binds wrapped Playwright tests, class-level and module-level pytest marks and files saved with a byte-order mark

@@ -1,1 +1,0 @@
-shipwright-build: the dangerous-command guard (`validate_command.sh`) no longer blocks harmless commands as a force push to main/master - it now inspects only the push segment, matches the force flag as a whole push argument (`-f`, `--force`, `--force-with-lease`, `+refspec`) and takes main/master from the push target instead of searching the whole command string

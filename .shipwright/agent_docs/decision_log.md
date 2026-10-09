@@ -5298,3 +5298,2224 @@ shipwright/
 - **Consequences:** Cheaper gate; new dependency on shared/config/external_review.json's health for DeepSeek calls (added to SENSITIVE_PATH_RE); single-live-provider rollback risk documented, not engineered around.
 - **Rejected:** GLM 5.3/Flash (not live-tested this iterate); adding a second live ZDR provider (out of scope, touches deepseek_routing's own values).
 - **Details:** [iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md](../planning/adr/iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md)
+
+---
+
+### ADR-398: Declare this monorepo's own release manifests and bump multi-occurrence version fields together
+- **Date:** 2026-09-01
+- **Section:** Iterate — feature: dogfood release-manifest sync + marketplace_json format
+- **Run-ID:** iterate-2026-09-01-changelog-config-marketplace-sync
+- **Context:** The monorepo had no shipwright_changelog_config.json, so sync_release_manifests.py was a no-op at release time: the 14 plugin.json + marketplace.json version stamps were never bumped automatically. v0.33.0 shipped with every plugin stranded at the prior version; corrected by hand in v0.33.1. marketplace.json also carries its version twice (root + each plugins[] entry), a shape the existing package_json format cannot represent. Full context: see spec_ref.
+- **Decision:** Add shipwright_changelog_config.json declaring all 15 manifests (14 package_json + marketplace.json under a new marketplace_json format). render_marketplace_write bumps root + every plugins[].version together in one pass. A new describe_version_state() closes a root-only-comparison bug a second code-review pass found, wired into sync()/verify_commit()/the standing drift check, with regression tests. Full detail: see spec_ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A root-only comparison is the natural first implementation and passed the initial review; a second code-review pass specifically re-verifying the fix (not just re-scanning for new issues) is what caught that the bug class could still slip past the release gate itself, not just the write path — so the fix had to reach describe_version_state, not just render_marketplace_write.
+- **Consequences:** Every future monorepo release keeps all 15 manifests in lockstep with the release tag; the v0.33.0-class regression cannot recur silently. sync_release_manifests.py and changelog_checks.py depend on manifest_sync_core.describe_version_state(); the module is now six small cooperating files instead of two, each under the 300-line guideline. Full detail: see spec_ref.
+- **Rejected:** Considered comparing only render_marketplace_write's own lockstep check and leaving sync()/verify_commit()/the standing check on a root-only comparison — rejected because that leaves the release gate itself blind to the exact drift class the format exists to catch.
+- **Details:** [iterate-2026-09-01-changelog-config-marketplace-sync-marketplace-json-format.md](../planning/adr/iterate-2026-09-01-changelog-config-marketplace-sync-marketplace-json-format.md)
+
+---
+
+### ADR-399: Retry-on-empty-reply budgeted by llm_client.max_retries + loud partial degradation
+- **Date:** 2026-09-01
+- **Section:** Iterate — bug: external review retry + partial degradation
+- **Run-ID:** iterate-2026-09-01-external-review-retry-degradation
+- **Context:** max_retries/retry_codes were decorative — a 200-OK-but-empty reply skipped retries entirely, letting DeepSeek's arm silently degrade for weeks.
+- **Decision:** Retry a degraded reply up to llm_client.max_retries times (same value passed to OpenAI()'s transport retry); report partial degradation loudly + auto-file a deduped triage card.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One config value for both layers avoids reintroducing config-vs-behavior drift; the bounded worst case is rarely reached since an exhausted SDK retry raises rather than looping.
+- **Consequences:** Config now controls both retry layers; a silently-missing reviewer opinion is visible via partially_degraded output + warning + triage card, without failing the gate.
+- **Rejected:** A separate hardcoded app-level retry budget (reverted after external review); wiring the dead retry_codes list (no public SDK hook, deleted instead).
+- **Details:** [iterate-2026-09-01-external-review-retry-degradation-retry-budget.md](../planning/adr/iterate-2026-09-01-external-review-retry-degradation-retry-budget.md)
+
+---
+
+### ADR-400: Replace DeepSeek with GLM 5.3 as the plan/code-review cascade's second reviewer
+- **Date:** 2026-09-02
+- **Section:** Iterate — change: DeepSeek to GLM 5.3 reviewer swap
+- **Run-ID:** iterate-2026-09-02-glm-plan-code-review-swap
+- **Context:** DeepSeek degrades on large diffs (reasoning-budget exhaustion) plus a distinct unrelated client bug; user wants a reliable, cheap complement to Opus+GPT-5.6-terra.
+- **Decision:** Swap DeepSeek for GLM 5.3 (OpenRouter, reasoning.effort=low) as the cascade's second identity; keep DeepSeek's ZDR primitives unbound but intact for the separate Tier-3 PR-review gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** GLM 5.3 shares DeepSeek's reasoning-budget failure but it is reliably fixed by the effort cap; no surveyed US/EU/ZDR alternative beats its general-reasoning benchmark at comparable price.
+- **Consequences:** Cost/reliability improves with no user-visible capability change; legacy DeepSeek env override for this cascade is now a silent no-op (accepted).
+- **Rejected:** Devstral (no reasoning-index data), Kimi K2 Thinking (weak reasoning index), Grok 4.6 (no cost win), Qwen3-max (no US/EU hosting).
+- **Details:** [iterate-2026-09-02-glm-plan-code-review-swap-deepseek-to-glm.md](../planning/adr/iterate-2026-09-02-glm-plan-code-review-swap-deepseek-to-glm.md)
+
+---
+
+### ADR-401: Codex CLI as a second GPT review leg
+- **Date:** 2026-09-03
+- **Section:** Iterate — feature: Codex CLI as a second GPT review leg
+- **Run-ID:** iterate-2026-09-03-codex-cli-review-leg
+- **Context:** Both consumers of the GPT reviewer identity call OpenAI's Chat Completions API, metered per token; operator has a flat-cost Codex subscription and wants an optional zero-marginal-cost route.
+- **Decision:** Add review_codex() alongside the OpenRouter/direct legs, config-driven route selection (external_review.gpt_leg.provider), identity-locked model binding, never-raising availability check with graceful fallback.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Codex CLI is agentic free-form text, not a JSON API response, so it needs its own leg reusing the existing prose+sentinel contract rather than a new output schema.
+- **Consequences:** Codex-subscription operators zero out GPT-leg API cost; non-opted-in operators see byte-identical routing (AC7). New subprocess dependency with its own (larger) timeout/retry budget.
+- **Rejected:** Env-var route override — rejected because the task requires config-driven, non-silent provider selection, and an env var choosing transport has no identity-lock backstop.
+- **Details:** [iterate-2026-09-03-codex-cli-review-leg-adr.md](../planning/adr/iterate-2026-09-03-codex-cli-review-leg-adr.md)
+
+---
+
+### ADR-402: Log every PR-review decision, not just unknown ones
+- **Date:** 2026-09-03
+- **Section:** shipwright-security/pr_review
+- **Run-ID:** iterate-2026-09-03-pr-review-block-visibility
+- **Context:** A legitimate block/approve/comment decision from pr_review.py printed nothing past the initial reviewing-PR line, making a correct gate outcome indistinguishable from a hang. This caused PR #672 to be misdiagnosed as a GLM-JSON-parse flake / OpenRouter network issue across 4 CI runs.
+- **Decision:** Print an unconditional, bounded (300-char) stderr excerpt of decision+exit_code+summary after every review, pointing readers at the full PR comment for details.
+- **Commit:** (assigned post-merge)
+- **Consequences:** CI logs now self-explain a block/approve/comment outcome; no exit-code or comment-posting behavior changed.
+
+---
+
+### ADR-403: Swap PR-review gate default model from GLM 5.3 to GPT-5.6 Luna
+- **Date:** 2026-09-03
+- **Section:** pr_review/model-default
+- **Run-ID:** iterate-2026-09-03-pr-review-sonnet-default
+- **Context:** GLM 5.3 silently hangs mid-review (no error output, 90-170s then exit 1), reproduced 4x on webui PR #416 while sibling PRs succeeded -- traced to the ZDR routing pool's allow_fallbacks:false, 2-reseller-only constraint. Full detail: see spec-ref ADR.
+- **Decision:** Default swapped to openai/gpt-5.6-luna, not a Sonnet-5 rollback -- empirically near-identical coding-review benchmark scores at ~1/15th the price, plus 3-host provider diversity vs the 2-reseller ZDR pool. Full detail: see spec-ref ADR.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Checked live benchmark + pricing data before committing to a same-family rollback, per the user's explicit ask -- changed the plan mid-run.
+- **Consequences:** The required PR-review gate (both repos) no longer depends on the narrow ZDR pool by default; cost per review drops ~15x vs Sonnet. DeepSeek/GLM stay as operator overrides. Full detail: see spec-ref ADR.
+- **Details:** [iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md](../planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md)
+
+---
+
+### ADR-404: Resolve the bash/Python temp-file boundary instead of a bare /tmp/ path
+- **Date:** 2026-09-04
+- **Section:** Iterate — bug: review-scratch path resolution
+- **Run-ID:** iterate-2026-09-03-review-scratch-path
+- **Context:** Git-Bash/MSYS mounts /tmp onto %TEMP%; native Python resolves a leading / against the drive root. A bare /tmp/<name> handoff between bash and uv-run Python silently reads a different file on Windows.
+- **Decision:** Pipe campaign_units.json directly Python-to-Python (no file); keep a resolve()/cleanup() scratch helper (review_scratch.py) for the 4 diff-file boundaries that need a frozen snapshot across steps.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture Review (GLM+OpenAI) recommended the smaller two-shape design over a scratch-file-everywhere plan; the review cascade separately caught a cleanup-ordering bug where code-review-protocol.md's own cleanup deleted the diff file code-review.md's cascade step still needed.
+- **Consequences:** Removed a cleanup call and a scratch file from the units-list boundary; the diff-file boundaries gain a private ACL-hardened scratch root plus a 217-file regression guard against bare /tmp/ literals.
+- **Rejected:** Scratch file for every boundary (more machinery than the pipeable boundary needs); a self-healing stale-directory sweep in resolve() (masks a call site that forgot cleanup); a test-hygiene allow-silent-skip marker on the reparse-point tests (a Windows junction plants without privilege and is the more faithful test).
+- **Details:** [iterate-2026-09-03-review-scratch-path-scratch-boundary.md](../planning/adr/iterate-2026-09-03-review-scratch-path-scratch-boundary.md)
+
+---
+
+### ADR-405: Stop sending codex-exec-only flags to `codex login status`
+- **Date:** 2026-09-05
+- **Section:** Iterate — bug: fix Codex login-status probe misreporting availability
+- **Run-ID:** iterate-2026-09-05-codex-availability-probe-flags
+- **Context:** is_codex_available() sent codex-exec-only flags (--ignore-user-config/--ignore-rules) to `codex login status`, which rejects them (exit 2). The blanket returncode!=0 check misread that as "not authenticated", so the function ALWAYS reported Codex unavailable, silently breaking the just-shipped Codex-CLI GPT-review-leg (PR #672) in every repo that opted in. See linked ADR for full detail.
+- **Decision:** Remove `--ignore-user-config`/`--ignore-rules` from the `codex login status` subprocess call. Leave the classification branches (TimeoutExpired/OSError/returncode!=0) untouched — they were already correct once the argv stopped producing a false non-zero exit.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Root-caused via live reproduction: `codex login status --ignore-user-config --ignore-rules` exits 2 ("unexpected argument") against the real CLI, while `codex exec` legitimately accepts and needs those flags (kept unchanged at that call site).
+- **Consequences:** is_codex_available() now correctly detects a genuinely authenticated Codex CLI; live-verified in this worktree against the real, authenticated binary: is_codex_available() -> (True, ''), and resolve_openai_route() with gpt_leg.provider="codex" -> "codex". The three repos that already opted into the codex provider will get a working Codex-CLI GPT-review-leg once this merges and the plugin cache is synced.
+- **Details:** [iterate-2026-09-05-codex-availability-probe-flags-codex-login-status-flags.md](../planning/adr/iterate-2026-09-05-codex-availability-probe-flags-codex-login-status-flags.md)
+
+---
+
+### ADR-406: Diff-scoped FR-hygiene gate for touched rows, plus I7/I8
+- **Date:** 2026-09-06
+- **Section:** shipwright-iterate / shipwright-compliance
+- **Run-ID:** iterate-2026-09-06-fr-hygiene-touched-rows
+- **Context:** Group I's I1/I2/I6 are advisory-only by design so legacy specs clean up gradually; an adopted repo carried ~50 iterates of bad FR rows with every gate clean. No criterion-shape check existed; TBD placeholders never aged.
+- **Decision:** Added a non-dodgeable F11 gate enforcing I1/I2/I7 on FR rows a run's own diff touches, plus new I7 (criterion shape) and I8 (TBD age via git blame) Group I checks. See spec-ref for the full design.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Independent Opus review rejected blanket-promoting I1/I2/I6 (breaks documented legacy-cleanup rationale, redden every adopted repo) and a producer-conditional split (unimplementable at the audit layer). See spec-ref.
+- **Consequences:** Bad new/edited FR rows now fail finalization; legacy rows unaffected. Dashboard gains I7/I8. Three test fixtures updated for the new check-id set.
+- **Rejected:** Global I1/I2/I6 promotion; producer-conditional split; a new TBD-since marker line (breaks existing criteria detection).
+- **Details:** [iterate-2026-09-06-fr-hygiene-touched-rows-fr-hygiene-gate.md](../planning/adr/iterate-2026-09-06-fr-hygiene-touched-rows-fr-hygiene-gate.md)
+
+---
+
+### ADR-407: Bump lighthouse in shipwright-test perf runner from 13.1.0 to 13.4.1
+- **Date:** 2026-09-06
+- **Section:** Iterate — bug: bump vulnerable lighthouse perf-runner dependency
+- **Run-ID:** iterate-2026-09-06-lighthouse-perf-lockfile-bump
+- **Context:** The PR-review security scan repeatedly flagged plugins/shipwright-test/scripts/perf/package-lock.json for pinning a transitively vulnerable lighthouse@13.1.0 during iterate-2026-09-06-fr-hygiene-touched-rows. That was out of scope for that iterate (which merged clean on PR #679) and deferred here.
+- **Decision:** Bump the exact-pinned lighthouse dependency to 13.4.1 and regenerate the lockfile from scratch (rm -rf node_modules package-lock.json && npm install) rather than hand-patching, so the committed lockfile is internally consistent. Also raised engines.node from >=22 to >=22.19 to match what lighthouse 13.4.1 itself requires.
+- **Commit:** (assigned post-merge)
+- **Consequences:** npm audit goes from 20 vulnerabilities (16 moderate, 4 high: opentelemetry/core, extract-zip, puppeteer-core, sentry/node) to 0. extract-zip is dropped entirely from the dependency tree. No source code changes; lighthouse-runner.mjs's default-export call shape is unaffected across this minor-version range.
+
+---
+
+### ADR-408: AC-id minting + reader for the shipped FR heading+bullet shape
+- **Date:** 2026-09-07
+- **Section:** campaign req3-04c-ac-identity-wave2 / P3.1 (SPEC §8 E1)
+- **Run-ID:** iterate-2026-09-06-p3-1-ac-identity-reader-corpus
+- **Context:** Campaign req3-04c-ac-identity-wave2, sub-iterate P3.1: SPEC §8 E1 needs a tool-minted, permanent, per-criterion identity (AC id) for the shipped FR heading+bullet shape, mirroring how FR ids are minted (fr-authoring.md §4). Dormant infra only -- not wired into the real spec.md or any consumer yet (P3.2/P3.3's job).
+- **Decision:** Embed [ACnn] literally in the criterion bullet (square brackets, never parens -- avoids colliding with the (E) marker / (iterate-slug) footnotes). Persist a per-FR high-water-mark registry, seeded bidirectionally (max of registry vs. document) so a lagging or ahead snapshot self-heals. mint()/read() share block-discovery, both delegate criterion-text extraction to lib.fr_criteria(R0); mint() applies read()'s SAME leading-bullet-run gate, so a bullet is never minted that read() cannot also see.
+- **Commit:** (assigned post-merge)
+- **Rationale:** No content hash (D9): ACs get reworded, which would break every existing tag. Position-only identity breaks on reorder/insert/delete. Composing on lib.fr_criteria (R0) avoids re-implementing (and silently diverging from) its continuation-line joining, whitespace normalisation, and placeholder-dropping rules.
+- **Consequences:** AC ids are permanent (never renumbered/reused), tool-minted (never typed), and readable via ac_identity.read()/read_all(). mint_ac_ids.py CLI serializes concurrent --write via a registry-file lock, writes the registry before the spec (a registry-ahead gap self-heals; a spec-ahead gap risks reuse), and validates registry values. Still dormant: fr_criteria callers reading an already-minted real document would see [ACnn] as literal text -- named here, deferred to whoever wires minting in.
+- **Rejected:** Content-hash identity (D9 -- rewording breaks every tag). Position-index identity (breaks on insert/reorder/delete). Reimplementing fr_criteria's block/criteria parsing inside ac_identity instead of composing on R0 (duplication risk, would drift from the canonical reader over time).
+- **Details:** [p3.1-ac-identity-reader-corpus.md](../planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.1-ac-identity-reader-corpus.md)
+
+---
+
+### ADR-409: Bloat baseline sync, CLAUDE.md trim, FR-01.19 evidence recovery
+- **Date:** 2026-09-06
+- **Section:** Iterate — change: post-679 hygiene sweep
+- **Run-ID:** iterate-2026-09-06-post-679-hygiene-sweep
+- **Context:** The post-PR-679 compliance audit flagged 3 pre-existing, unrelated gaps: H1/H2 bloat-baseline drift (~20 files), CLAUDE.md at 216 lines (cap 200), and D1/D3 coverage gaps on FR-01.18/FR-01.19.
+- **Decision:** Synced the baseline (24 H1 entries added, 21 H2 ceilings tightened to measured size, 0 dropped). Trimmed CLAUDE.md to 197 lines by pointing two blocks at their existing canonical homes (scripts/verify_local.py docstring, shared/prompts/writing-plugin.md). Recovered FR-01.19's real historical test totals (1488/1488) from the immutable main-self-heal test-results snapshot via an event_amended overlay.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same honesty rule as the 2026-06-30 fr-retag-honesty and 2026-07-28 hygiene-sweep precedents: only amend with real, recoverable evidence; never fabricate coverage.
+- **Consequences:** H1/H2/F6/F7/D1(FR-01.19)/D3(FR-01.19) now pass. FR-01.18 is deliberately left open: no event since its 2026-07-26 mint has ever touched shipwright-grade, so tagging one would forge the audit trail.
+- **Rejected:** Force-closing FR-01.18 by retagging an unrelated 2026-07-03/04 grade-build event (fails D3's ts>=mint-ts requirement) or by minting a fresh dated event (forges the audit trail).
+
+---
+
+### ADR-410: Reconcile D1/D3 for FR-01.18 (/shipwright-grade)
+- **Date:** 2026-09-06
+- **Section:** compliance-reconciliation
+- **Run-ID:** iterate-2026-09-06-reconcile-fr-01-18
+- **Context:** FR-01.18 was minted by evt-ea7203ec (2026-07-26) alongside 17 other requirements in one bulk content round. That event recorded no tests block, and no event since named FR-01.18 in affected_frs — so D1 (spec FR coverage) and D3 (promised FRs delivered) both flagged it, even though the shipwright-grade plugin implementing it has been on disk and tested since.
+- **Decision:** Record a new work_completed event naming FR-01.18 in affected_frs, carrying this run's real whole-suite test totals (17317/17376 passed, F0-verified). No source change: the plugin already exists; this closes a recording gap, not a functionality gap.
+- **Commit:** (assigned post-merge)
+- **Rationale:** FR-01.18's traceability-manifest node carries required_layers_source=inferred_legacy, so D1's stricter manifest-link proof does not apply — the event-level tested-mint proof alone satisfies both checks, matching the framework's own recording-integrity design (see _group_d_promise.py docstring).
+- **Consequences:** D1 and D3 both read the new event and report pass. No behavior changes; spec_impact is none.
+
+---
+
+### ADR-411: Fold sibling-worktree triage decisions into a main tree's own read
+- **Date:** 2026-09-07
+- **Section:** Iterate — bug: triage cross-tree pending-delivery visibility
+- **Run-ID:** iterate-2026-09-06-triage-cross-tree-pending-delivery
+- **Context:** A decision recorded only in a worktree's tracked triage.jsonl read back on main as still open, with pendingDelivery False — a false reassurance.
+- **Decision:** main's read_all_items now folds a known id's status/amend events from every sibling worktree's tracked log, naming the branch; filesystem-only discovery, cached.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Boundary is reported-never-delivered: nothing is written; only a sibling's TRACKED log is read; only main reads siblings.
+- **Consequences:** main never reports 'still open' about a decision already made on a sibling branch; two accepted gaps (no expiry, foreign corruption stderr-only) documented, not fixed.
+- **Rejected:** A delivery-receipt file, a git subprocess for discovery/liveness, and a persistent cross-process cache were all rejected as out of scope.
+- **Details:** [iterate-2026-09-06-triage-cross-tree-pending-delivery-cross-tree-fold.md](../planning/adr/iterate-2026-09-06-triage-cross-tree-pending-delivery-cross-tree-fold.md)
+
+---
+
+### ADR-412: JS/TS-aware test-weakening detector for the main-repair safety gate
+- **Date:** 2026-09-07
+- **Section:** Iterate — bug: JS/TS-aware main-repair safety gate
+- **Run-ID:** iterate-2026-09-06-ts-repair-safety-unsupported
+- **Context:** assertion_weakening.py parsed test files with Python ast only; any repo whose tests are .test.ts hit unsupported_test_file (blocking) on every main-repair touching a test file, regardless of actual weakening. Verified false-positive on leadwright e764f89.
+- **Decision:** Add a hand-written JS/TS test scanner, dispatched by extension in analyze_file, pooling tests by identity (literal name or dynamic-name sentinel) with multiset marks and exact-content-key matching to bound false blocks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A false BLOCK is worse than a false negative for this gate (it is the gate's whole reason for existing), so ambiguous pooled findings are reported, not blocked; only unambiguous loss blocks.
+- **Consequences:** TS/JS repos get real weakening analysis instead of a blanket block. Restored a dropped .py conftest exemption and extended assert-call matching (both caught by code review).
+- **Rejected:** Ordinal-keying (gameable by decoy reordering); a real JS/TS parser dependency (adds a non-Python runtime dep to a Python-only shared lib); an explicit opt-out path (leaves the gate unenforced or exactly as blocked as before).
+- **Details:** [iterate-2026-09-06-ts-repair-safety-unsupported-js-ts-detector.md](../planning/adr/iterate-2026-09-06-ts-repair-safety-unsupported-js-ts-detector.md)
+
+---
+
+### ADR-413: Per-(session, agent) bloat marker keying
+- **Date:** 2026-09-07
+- **Section:** Iterate — bug: bloat-gate subagent marker isolation
+- **Run-ID:** iterate-2026-09-07-bloat-gate-subagent-marker-isolation
+- **Context:** bloat_gate_on_stop.py and check_file_size.py keyed the per-session marker by session_id alone; a background subagent (Task tool) shares its spawner's session_id, so its in-flight oversize edit could block the spawning session's own Stop on a file it never touched.
+- **Decision:** Key the marker by (session_id, agent_id) via a new bloat_marker_key.py, using a collision-free ~XX hex-escape suffix when agent_id is present; unchanged when absent.
+- **Commit:** (assigned post-merge)
+- **Rationale:** agent_id is the only field distinguishing a subagent's hook call from its spawner's when they share session_id (live-payload-verified); marker isolation, not worktree-wide vs diff-scoped, was the actual defect.
+- **Consequences:** Subagent and spawning session get isolated marker files; existing single-agent behavior is byte-identical. bloat_gate_on_stop.py is Stop-only, so subagent self-enforcement stays delegated to F0/F11's independent bloat_baseline.scan().
+- **Rejected:** Making the subagent self-resolve its own oversize touches before yielding was rejected: its own F0/F11 finalization already independently enforces the ceiling, so isolation alone is sufficient without runner-side logic.
+
+---
+
+### ADR-414: AC-scoped @covers tag grammar + test-traceability manifest v4
+- **Date:** 2026-09-07
+- **Section:** P3.2 tag-grammar-manifest-v4
+- **Run-ID:** iterate-2026-09-07-p3-2-tag-grammar-manifest-v4
+- **Context:** P3.1 minted tool-assigned [ACnn] markers for FR criteria but left the library dormant. P3.2 spec: (1) covers("FR-01.11/AC07") with bare FR still valid; (2) schema_version + MODEL_VERSION bump together (frozen, additionalProperties:false, churn-allowlisted); (3) the v4 manifest stays readable by a v3-shaped consumer -- additive nodes only, no field removed or retyped, verified against a frozen v3 fixture (CORRECTED 2026-09-07, PR #686 Stage-1 REJECT: the original AC-3, 'the WebUI reader accepts v4', wrongly scoped a monorepo unit to commit into the separate shipwright-webui repository -- a campaign is per-repo by construction; the WebUI reader is owned by sub-iterate w3 of campaign req3-06-mechanics-webui, trg-a2017e6f); (4) no change is attempted in the shipwright-webui repository.
+- **Decision:** Extend fr_tag_grammar's pytest_marker form to accept an optional /ACnn suffix (fail-closed on malformed suffix). Manifest gains additive per-requirement acs map + testLink.ac_id (D9: no content hash, omitted-when-empty). schema_version+MODEL_VERSION 3->4 in lockstep; swept 2 more in-repo consumers that would silently SKIP on v4; bumped the frozen contract fixture. AC#3 (corrected) is verified by a real, test-locked assertion -- test_v4_stays_additive_over_the_frozen_v3_shape diffs the live v4 contract against the frozen test-traceability-3.0.json fixture and asserts nothing was removed or retyped -- superseding the earlier empirical round-trip probes against the webui reader, which verified a claim (the reader accepts v4) that is no longer this unit's acceptance criterion.
+- **Commit:** (assigned post-merge)
+- **Rationale:** D9 carries forward from P3.1: AC ids are tool-minted ordinals, never a content hash. Additive omitted-when-empty shape avoids re-litigating the frozen contract's additionalProperties:false posture. Fail-closed suffix validation matches the grammar's existing bare-FR token rule.
+- **Consequences:** Every future @covers tag may name an AC without breaking any of the ~1,243 existing bare-FR tags (empirically confirmed zero collisions). Manifest grows additively; F5b's update_compliance --phase iterate regenerates the real committed manifest to v4 as part of this run. AC-existence validation is explicitly deferred to P3.4/P3.6, not silently skipped.
+- **Rejected:** New @covers_ac marker form (doubles tag-migration surface); content-hash-keyed AC binding (violates D9); AC-existence validation inside this grammar (deferred to P3.4/P3.6, both external reviews pushed for it twice, see ADR spec-ref for full disposition table); editing the separate shipwright-webui repo (out of scope; a wire-format guarantee, not an implementation, is what this unit owes it -- see corrected AC-3).
+- **Details:** [iterate-2026-09-07-p3-2-tag-grammar-manifest-v4-ac-binding.md](../planning/adr/iterate-2026-09-07-p3-2-tag-grammar-manifest-v4-ac-binding.md)
+
+---
+
+### ADR-415: Binding-completeness F11 gate + ledger/(E)-bullet reconciliation
+- **Date:** 2026-09-07
+- **Section:** Iterate — feature: F11 binding-completeness gate (P3.3)
+- **Run-ID:** iterate-2026-09-07-p3-3-producers-emit-and-require-binding
+- **Context:** P3.3 ACs: reject a binding naming only unit tests once integration/e2e evidence exists for the same FR; reconcile the ledger's row numbering against spec.md's (E) bullets.
+- **Decision:** Added F11 gate check_binding_completeness (require-half only); extracted shared route_gap_severity; ran an empirical dry-run (0 hard/1 advisory over 20 FRs); reconciled the ledger via a citation-based post-walk-bullet table.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Narrow scope keeps blast radius to one enforcement mechanism. Row-count reconciliation proved structurally incompatible with the ledger's split/merge conventions (FR-01.18); citation-based method chosen and spot-verified before trusting at scale.
+- **Consequences:** A behaviour-changed FR whose binding understates its own evidence now HARD-blocks at medium+ (ADVISORY for legacy/collision); dry-run shows no FR at risk today. Emit-half (producer wiring) deferred to P3.5/follow-up, tracked in campaign.md.
+- **Rejected:** Wire all 3 producers now; new machine-readable ledger schema (REQ3.06's job); raw row-count reconciliation; git-blame cross-check (confounded by bulk commit 28491e1c9); shared single regen snapshot across all 3 run_all_checks gates.
+- **Details:** [iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md](../planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md)
+
+---
+
+### ADR-416: Mechanical AC-provenance backfill, conservative by construction
+- **Date:** 2026-09-07
+- **Section:** Iterate — feature: monorepo AC-provenance tagging backfill
+- **Run-ID:** iterate-2026-09-07-p3-4-tagging-backfill
+- **Context:** Monorepo AC-scoped test coverage was 0%; only mechanical FR tags existed. Need a non-guessing way to raise it.
+- **Decision:** Join a criterion's provenance footnote to its introducing commit's Run-ID and tag every test in a file that commit ADDED; hand-map a small bounded remainder; both counted separately.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fuzzy/title-similarity matching would inflate the number dishonestly (backfill_signals.TITLE_CAP precedent); mechanical yield is small but trustworthy.
+- **Consequences:** AC-scoped coverage 0% -> 1.14% (157/13767: 137 derived + 20 hand-mapped); two review-cascade-found bugs fixed pre-ship (cross-FR slug reuse, whole-file regex over-substitution).
+- **Rejected:** Full coverage via fuzzy matching (rejected as dishonest); per-FR-only slug uniqueness (found unsound mid-review, replaced with document-wide uniqueness).
+- **Details:** [iterate-2026-09-07-p3-4-tagging-backfill-mechanical-ac-provenance-backfill.md](../planning/adr/iterate-2026-09-07-p3-4-tagging-backfill-mechanical-ac-provenance-backfill.md)
+
+---
+
+### ADR-417: CI-provenance predicate for traceability-manifest verification (P3.4c)
+- **Date:** 2026-09-09
+- **Section:** Iterate — feature: CI provenance attestation for promotion evidence
+- **Run-ID:** iterate-2026-09-08-ci-provenance-attestation
+- **Context:** The original P3.5-class defect this sub-iterate traces back to: nothing in the framework could prove that a commit's traceability manifest had actually been CI-verified, as opposed to merely claimed. compare_traceability_manifest.py already regenerates and structurally diffs the manifest in CI (iterate-2026-08-26-r1b-ci-manifest-regen-gate), but that check is deliberately advisory-only and its result was never durably, non-forgeably readable by anything outside the CI run itself.
+- **Decision:** Add shared/scripts/ci_provenance.py (+ CLI tools/ci_provenance_check.py): resolves whether a commit's manifest was CI-confirmed by reading GitHub's own Actions Jobs API, never a local claim or artifact. verified requires a push run on the default branch, conclusion=success, and the drift-check's confirmation step reading success. ci.yml gains one new infallible echo step; the drift-check's body/exit-code contract is otherwise unchanged. Details: see spec_ref ADR.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Round 3 (Architecture Review) found the original Round-1 artifact/digest-upload design unnecessary: the Jobs API step-conclusion read already gives GitHub-attested proof without needing an uploaded artifact to reproduce byte-for-byte between CI and the consumer, which the Round-1 design could never actually guarantee (Internal Plan Review Round-1 finding). Removing the artifact layer also removed an entire class of digest-mismatch failure modes.
+- **Consequences:** A future consumer (P3.5) gains a durable, non-forgeable check for CI-verified manifests, with no self-reported state trusted. Explicitly structural-only scope (not execution-tier) is disclosed in the docstring, spec, and ADR so 'verified' is never mistaken for full correctness proof. A Windows PATH executable-search risk for gh/git subprocess calls is disclosed, not fixed. Details: see spec_ref ADR.
+- **Rejected:** Round 1's artifact-upload + content-digest design was rejected: the digest could never reproduce between the CI environment and a later consumer process, and the intended unforgeability argument had a real hole (a PR's own workflow file runs before human review can catch a malicious edit to it) — both caught by Internal Plan Review before any code was written against that shape.
+- **Details:** [iterate-2026-09-08-ci-provenance-attestation-unforgeable-manifest-attestation.md](../planning/adr/iterate-2026-09-08-ci-provenance-attestation-unforgeable-manifest-attestation.md)
+
+---
+
+### ADR-418: Strip the minted [ACnn] marker in lib.fr_criteria, not in each of its nine readers
+- **Date:** 2026-09-09
+- **Section:** Iterate — change: fr_criteria strips the [ACnn] marker at its own seam
+- **Run-ID:** iterate-2026-09-09-fr-criteria-marker-strip
+- **Context:** lib.ac_identity.mint() inserts a leading [ACnn] marker into a criterion bullet's text. Nine downstream readers of lib.fr_criteria criterion text treated that text as marker-free prose (P3.4 doubt review, #689): the cross-layer digest gate would see every minted criterion as changed, and a minted placeholder bullet would stop collapsing to the bare-placeholder token set. Neither was active yet, but it sits directly under P3.6, so it had to close first. Full context: see spec_ref.
+- **Decision:** Strip the leading [ACnn] marker inside lib.fr_criteria's own text-extraction seam (criteria_texts(), in the new lib._criteria_text module), gated by a strip_ac_marker kwarg (default True). lib.ac_identity.read() is the one caller that must still see the marker, so it alone passes strip_ac_marker=False. All nine other readers get marker-free text with zero code changes of their own.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixing the shared root cause once, at the one place all nine consumers already funnel through, is strictly cheaper and safer than adding marker-awareness to nine independent call sites.
+- **Consequences:** One seam fixes all nine consumers instead of teaching each one the marker's shape; mint() stays free to write placeholder bullets later without a fresh sweep of readers. Adds one boolean parameter threaded through four public fr_criteria functions and one new module (lib._criteria_text.py, split out after the addition crossed the 300-line bloat-baseline guideline). Stripping applies only to a bullet's opening line, never a continuation line. Full detail: see spec_ref.
+- **Rejected:** Teaching each of the nine readers about the marker's shape individually — rejected because it multiplies the surface kept in sync with the marker grammar, and three of the nine never call fr_criteria directly.
+- **Details:** [iterate-2026-09-09-fr-criteria-marker-strip.md](../planning/adr/iterate-2026-09-09-fr-criteria-marker-strip.md)
+
+---
+
+### ADR-419: CI-artifact-bound execution evidence for per-FR Layers promotion (P3.5 restart)
+- **Date:** 2026-09-09
+- **Section:** Iterate — feature: per-FR Layers promotion, execution-tier evidence binding (restart)
+- **Run-ID:** iterate-2026-09-09-p3-5-promote-layers-per-fr-restart
+- **Context:** PR #690 (first P3.5 attempt) hit 12 BLOCK verdicts across 10 CI cycles, 9 restating the same root finding: it trusted coverage/tests straight out of the committed manifest, never verified as bound to a real CI run. ci_provenance.resolve_ci_verification (P3.4c) proves manifest STRUCTURE was not fabricated, but deliberately excludes tests/coverage from its comparison -- leaving the exact execution-tier trust gap PR #690 fell into.
+- **Decision:** Add shared/scripts/ci_execution_evidence.py (peer of ci_provenance.py): composes with resolve_ci_verification, then content-binds (source_commit + structural_diff) a newly CI-uploaded artifact (ci_manifest_drift_check.py's own regen, previously discarded), downloaded by its own artifact ID (never by name -- closes an external-review-caught cross-attempt gap). promote_required_layers.py REPLACES a node's coverage/tests with this CI-sourced evidence; ci.yml gains one artifact-upload step.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Round-2 plan review's empirical feasibility check confirmed main's tip has genuine pre-existing structural drift today, so the mechanism correctly reports zero promotions until a drift-clean verified push run exists (Rollout validation, tracked). Content-binding (not a second unforgeability predicate) was chosen per the restart brief's explicit constraint against inventing one.
+- **Consequences:** A per-FR Layers promotion is now bound to a specific, unforgeable CI run's own execution output, never a self-reported manifest claim. Rebuilt (not copied) evaluator/ledger/writer/CLI shape from 13e3dbad7, zero evaluate_fr code changes needed. Review rounds found and fixed 6 real defects; one asymmetry (human-CLI fingerprint basis) is disclosed, not fixed. Details: see spec_ref ADR.
+- **Rejected:** Treating resolve_ci_verification's verified as sufficient for execution-tier fields too (the exact trap PR #690 fell into). Making the drift-check comparison blocking (forbidden by P3.4c's mandate/issue #449). A single aggregate CI step conclusion instead of an artifact (cannot be FR-scoped, and is itself a second unforgeability predicate).
+- **Details:** [2026-09-09-p3-5-promote-layers-per-fr-restart.md](../planning/iterate/2026-09-09-p3-5-promote-layers-per-fr-restart.md)
+
+---
+
+### ADR-420: Keystone AC gate: a changed acceptance criterion must have re-run its tests green, in THIS run
+- **Date:** 2026-09-10
+- **Section:** Compliance / CI gates
+- **Run-ID:** iterate-2026-09-09-p3-6-keystone-gate
+- **Context:** REQ-3 SPEC 1.4 says a behaviour-changing PR must not merge without naming its changed ACs and re-running the tests bound to them, green. P3.4 minted 268 AC ids; P3.5 promoted required_layers; nothing yet enforced the binding at merge time. Measured first: only 9 of 268 ACs carry a binding today, and a hand-edited committed manifest is already inert because ci.yml regenerates it in place before comparing.
+- **Decision:** A pull_request-only ci.yml step running check_keystone_ac_gate.py after the manifest-regeneration step in the SAME job. It digests each acceptance criterion at base and head from spec.md, then judges every CHANGED AC on link counts in the two manifests (base>=1/head=0, or head reduced below base, blocks as binding_removed; 0/0 is report-only) and every ADDED AC on the head count alone (>=1 takes the greenness walk, 0 is report-only; no base comparison and no layer-gap check -- deviation 3). Any head link that is not enabled+pass blocks with a distinct reason code (skipped / failed / not_selected). Exit 0 clean, 1 blocked, 2 infra, always with a JSON verdict.
+- **Commit:** (assigned post-merge)
+- **Rationale:** It does NOT call resolve_execution_evidence: that answers 'can I trust evidence I did not produce', and ci_provenance._qualifying_runs accepts only push runs on the default branch - on a pull_request it resolves unavailable on 100 percent of PRs, leaving the gate inert. Same run, same process tree, so read the producer directly. The quantifier is ALL bound links, never _cov_status's any(); the walk RAISES on an empty link set, since all() over empty is vacuously true.
+- **Consequences:** Scope, not to be dropped from any summary: a PR that changes behaviour in code and changes no acceptance criterion passes untouched - this enforces spec-to-test consistency, not code-to-spec consistency. Reach today: it protects the 9 bound ACs, prevents a bound AC being quietly unbound in one PR, and grows as binding grows. Deleting or rotating an AC id is REPORTED (removed_with_bindings), not blocked - that predicate is p3.7(b)'s orphan detector. Exactly as strong as ci.yml, by design.
+- **Rejected:** D9's ac_id->tests->last_verified_commit baseline (Q1): ci.yml re-runs every suite on every PR, so there is nothing selective for a ledger to compensate for, and a stored baseline is a self-reported trust artifact. Author-DECLARED changed ACs (Q1b): a declaration is forgeable, a spec-derived signal is not. Path-based code-behaviour detection (Track R): struck from scope on measured grounds.
+- **Details:** [2026-09-09-p3-6-keystone-gate.md](../planning/iterate/2026-09-09-p3-6-keystone-gate.md)
+
+---
+
+### ADR-421: CONTEXT.md producer wired into the interview protocol
+- **Date:** 2026-09-09
+- **Section:** Campaign req3-09-p4-grill-glossary — P4.1: glossary-generator
+- **Run-ID:** iterate-2026-09-09-p4-1-glossary-generator
+- **Context:** shared/context-format.md defined CONTEXT.md's schema but no script ever wrote it (FR-01.16 AC06 unearned promise); requirement-elicitation.md Sec.4/Sec.7 require a sharpened term to land there in the same interview turn.
+- **Decision:** Added write_context_term.py (idempotent, lock+atomic-write producer) and wired it into interview-protocol.md right after Philosophy, invoked in the same turn a term is sharpened.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Producer-script pattern mirrors every other shared producer (file_lock + durable_atomic_write); atomic, lock-safe, independently testable.
+- **Consequences:** /shipwright-project interviews now produce a real, growing CONTEXT.md; a second/third term appends without corrupting earlier ones; unchanged reruns are byte-identical.
+- **Rejected:** Case-folding terms (risks merging genuinely different terms); broad markdown-escaping (over-broad, only ** is a real delimiter risk); a different {shared_root} convention (diverges from every existing producer for no reason).
+- **Details:** [iterate-2026-09-09-p4-1-glossary-generator-context-md-producer.md](../planning/adr/iterate-2026-09-09-p4-1-glossary-generator-context-md-producer.md)
+
+---
+
+### ADR-422: Normalize object-shaped PR-review findings before rendering
+- **Date:** 2026-09-09
+- **Section:** Iterate -- bug: PR review renderer
+- **Run-ID:** iterate-2026-09-09-pr-review-dict-finding-render
+- **Context:** PR #690's Tier-3 review round at 2026-09-08T14:04:35Z posted blocking findings as raw Python dict reprs ({'file': ..., 'issue': '...the f...'}) inside the PR comment, truncated mid-value, because pr_review_render.render_comment stringified whatever shape the model returned for a blocking/comment finding -- sometimes a string, sometimes a structured object -- instead of normalizing it. Every other round on the same PR rendered the same section as prose.
+- **Decision:** Add pr_review_render._finding_text(item): a string passes through unchanged; a dict carrying recognizable file/issue-like keys renders as 'location - text' prose; a dict with no recognized key falls back to 'key: value' prose. render_comment now filters and renders blocking/comment findings through this normalizer instead of an f-string over the raw value.
+- **Commit:** (assigned post-merge)
+- **Consequences:** The PR comment, and the next remediation round that reads it, always see the finding's actual text -- never a truncated dict repr. Also split pr_review_render.py (crossed the 300-line guideline) into pr_review_render.py (comment assembly) and pr_review_sanitize.py (sanitiser + model-facing metadata), mirroring the existing pr_review_lib/pr_review_render split precedent.
+- **Rejected:** Fixing this only at the prompt level (forcing string-only model output) was rejected: the bug report explicitly asks to accept both shapes since the model demonstrably emits both, and a renderer-side normalizer is robust regardless of future prompt drift.
+
+---
+
+### ADR-423: Non-converging PR-review halt (exit 8)
+- **Date:** 2026-09-09
+- **Section:** Iterate — change: non-converging PR-review halt
+- **Run-ID:** iterate-2026-09-09-pr-review-nonconverging-halt
+- **Context:** PR #690 pushed 10x/7h40m, blocked every time by the same Tier-3 PR-review finding reworded 9 of 12 times; exit 2 kept suggesting re-push.
+- **Decision:** Add terminal EXIT_NON_CONVERGING=8 when the last two PR-Review BLOCK comments share a recurring (file,claim) finding, gated by review-based authenticity+commit-binding.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Sameness (not a push count) separates a stuck loop from genuinely converging rounds; commit-binding upgraded to GitHub's own reviews[].commit.oid after doubt review found the committedDate guess had both false-positive and false-negative modes.
+- **Consequences:** Stuck runs stop after round 2 instead of round 10, handed to a human; no new Required Check, no producer change, never blocks an otherwise-passing merge.
+- **Rejected:** Push-count threshold (wrong axis); a producer-side nonce marker (larger, out-of-scope change to pr_review.py's posting protocol); resetting the BLOCK pair on an intervening APPROVE (no real-data case yet, disclosed).
+- **Details:** [iterate-2026-09-09-pr-review-nonconverging-halt-terminal-exit-code.md](../planning/adr/iterate-2026-09-09-pr-review-nonconverging-halt-terminal-exit-code.md)
+
+---
+
+### ADR-424: Dashboard phase strip reads phase_tasks[] instead of write-once fields
+- **Date:** 2026-09-09
+- **Section:** shipwright-compliance/mermaid
+- **Run-ID:** iterate-2026-09-09-s1-dashboard-phase-strip
+- **Context:** Campaign p4-04-retire-write-once-steps s1 of 6: the dashboard phase strip is the one reader whose regression a person sees. It moves to phase_tasks[] first and alone, per the parent card's explicit warning.
+- **Decision:** _get_phase_status drops the current_step parameter and derives status via new _phase_tasks_status(phase, run_config), aggregating multi-entry split phases. current_step/completed_steps remain on the schema, unread.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture-review-approved per-reader migration (2026-09-06, GPT+GLM APPROVE): a dual-write bridge would install a new standing drift-prone mechanism in fields whose only purpose is deletion.
+- **Consequences:** Driven runs render correctly (phase_tasks[] always present). A config with no phase_tasks[] at all now reads PENDING instead of using positional current_step inference -- the gap already assigned to s2b.
+- **Rejected:** Fallback to current_step when phase_tasks[] is absent: rejected, reintroduces mode-conditional truth the architecture review already rejected for the v1 update_step path.
+- **Details:** [iterate-2026-09-09-s1-dashboard-phase-strip-phase-tasks-reader.md](../planning/adr/iterate-2026-09-09-s1-dashboard-phase-strip-phase-tasks-reader.md)
+
+---
+
+### ADR-425: Adopt seeds phase_tasks[] entries marked established-at-adoption
+- **Date:** 2026-09-09
+- **Section:** shipwright-adopt/config_writer
+- **Run-ID:** iterate-2026-09-09-s2-adopted-config-shape
+- **Context:** Campaign p4-04-retire-write-once-steps decision (1), made concrete: for FUTURE adoptions, shipwright-adopt should express the same not-outstanding claim completed_steps carries today in the phase_tasks[] shape readers are migrating to (s1 already migrated the dashboard-phase-strip reader). Already-adopted repos on disk are s2b's separate scope.
+- **Decision:** write_run_config gains a new phase_tasks entry per completed_steps phase (status done, or skipped for test, mirroring phase_history's existing adopted/adopted-skipped split) carrying an additive establishedAtAdoption: true marker, written alongside (not instead of) the existing completed_steps/phase_history fields.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture-review-approved per-writer migration (2026-09-06, GPT+GLM APPROVE): nothing invented, the existing seed expressed in the new shape.
+- **Consequences:** A newly adopted repo's dashboard phase strip renders every completed_steps phase as complete (proven by a real producer-to-consumer boundary probe against mermaid.py). design is in the pipeline but was never in completed_steps and gets no entry either -- inert in practice since write_run_config always stamps run-level status complete, which short-circuits mermaid's phase_tasks read entirely (also proven in the same test). Unblocks the s4 verifiers migration.
+- **Rejected:** Seeding design too: completed_steps never claimed it either, so seeding it now would invent a claim this sub-iterate has no basis for; also empirically moot given the status short-circuit.
+- **Details:** [iterate-2026-09-09-s2-adopted-config-shape-phase-tasks-writer.md](../planning/adr/iterate-2026-09-09-s2-adopted-config-shape-phase-tasks-writer.md)
+
+---
+
+### ADR-426: Backfill phase_tasks[] into already-adopted configs
+- **Date:** 2026-09-09
+- **Section:** Iterate — feature: backfill phase_tasks[] for already-adopted configs
+- **Run-ID:** iterate-2026-09-09-s2b-backfill-existing-adopted-config
+- **Context:** s2 seeds phase_tasks[] only for NEW adoptions; a repo adopted before 2026-09-09 has completed_steps but no phase_tasks[], so migrated readers can render its phases as skipped.
+- **Decision:** Add a pure backfill_missing_phase_tasks() reusing s2's build_adopted_phase_task, plus a CLI wrapper, run against the existing config in place; idempotent, verified against the real leadwright repo.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reusing s2's shared entry-builder guarantees status agrees with phase_history's own outcome by construction; no fleet-wide discovery exists in this monorepo to scan against.
+- **Consequences:** A pre-2026-09-09 adopted repo reads identically to a fresh s2 write once backfilled; dry-run confirmed against the live leadwright checkout, no write performed unattended.
+- **Rejected:** convert_configs_to_events.py (wrong artifact, no phase_tasks[] concept); a fleet-wide --scan mode (no repo registry exists to enumerate against).
+- **Details:** [iterate-2026-09-09-s2b-backfill-existing-adopted-config-backfill-phase-tasks.md](../planning/adr/iterate-2026-09-09-s2b-backfill-existing-adopted-config-backfill-phase-tasks.md)
+
+---
+
+### ADR-427: The keystone AC gate's post-merge detective arm
+- **Date:** 2026-09-10
+- **Section:** Iterate — feature: keystone gate post-merge detective arm
+- **Run-ID:** iterate-2026-09-10-keystone-detective-arm
+- **Context:** P3.6's keystone gate is preventive and same-run only; a direct push bypasses it and even PR-merged commits are never re-checked against a real trunk CI run. Triage card trg-a05c4aba (ruling Q5).
+- **Decision:** Plain importable module only (classify_commit + build_verified_manifest), composing existing cross-commit resolvers. No CLI, no wiring, no ci.yml drift test -- per external Architecture Review scope reduction.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Composing with resolve_ci_verification/resolve_execution_evidence (not the preventive gate's own same-run producer) is what makes this genuinely detective. Seven-way outcome taxonomy lets callers distinguish failure modes, never an open-ended TBD.
+- **Consequences:** A tested, callable detective classifier exists for a future consumer to invoke; ships dormant by design, no active control yet. Deferred follow-ups (drift fix, periodic consumer) must land in that order.
+- **Rejected:** Original CLI-shaped brief (disproportionate, no bound consumer); a stored baseline ledger (already rejected in P3.6's own ruling Q1); per-layer duplicate-id scoping (would reintroduce last-write-wins ambiguity).
+- **Details:** [iterate-2026-09-10-keystone-detective-arm.md](../planning/adr/iterate-2026-09-10-keystone-detective-arm.md)
+
+---
+
+### ADR-428: Keystone gate verifier logic added to SENSITIVE_PATH_RE
+- **Date:** 2026-09-10
+- **Section:** Iterate — change: keystone gate verifier sensitive-path parity
+- **Run-ID:** iterate-2026-09-10-keystone-verifier-sensitive-path
+- **Context:** The keystone AC gate's own verifier logic (check_keystone_ac_gate.py + 8 _keystone_*.py modules) was not named in SENSITIVE_PATH_RE, so editing it alone escaped the mandatory review an edit to ci.yml gets (trg-9967000f).
+- **Decision:** Add the ci.yml-invoked entry point and a _keystone_ prefix match to SENSITIVE_PATH_RE so skip-pr-review cannot waive review on the gate's own verifier logic.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Doubt-review found the shared _layer_coverage_* helpers those modules import also back an unrelated gate, so widening further would over-broaden mandatory review onto that gate's unrelated PRs -- a real trade-off, not a drop-in fix.
+- **Consequences:** Edits to the 8 _keystone_*.py modules or their entry point now force mandatory PR review, matching ci.yml. A residual gap in shared helper modules those files import is documented and deferred (trg-a719e3b7).
+- **Rejected:** Widening SENSITIVE_PATH_RE to the whole verifiers/ directory -- rejected as over-broad; deferred to trg-a719e3b7 for a scoped follow-up.
+
+---
+
+### ADR-429: Two P3.7 feeder AC-binding gates, deliberately asymmetric
+- **Date:** 2026-09-10
+- **Section:** Spec/design/2026-07-22-req3-campaign-SPEC.md S8 E2
+- **Run-ID:** iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted
+- **Context:** P3.6 built the keystone AC gate but explicitly declined two related checks: "AC without a test" and "a test whose AC vanished" (design doc S3b/S7/S10 item 8, triage trg-f68795d2). P3.6 measured 259/268 minted ACs unbound today -- a real legacy backlog for the first predicate, none for the second.
+- **Decision:** Build check_ac_coverage_ratchet.py anti-ratcheted against a committed baseline (259 seeded entries) for "AC without a test"; build check_orphan_ac_binding.py hard from day one, no baseline, for "a test whose AC vanished" -- two arms: an orphaned binding at head (deletion/id-rotation), and a binding dropped on unchanged criterion text between base and head (the two-PR unbind sequence's PR1).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The brief's "one shared condition closes all three unbind shapes" claim was traced by hand and found NOT to hold for the two-PR sequence; a second arm was designed and built rather than silently assuming the brief's summary was exact.
+- **Consequences:** Two new pull_request-only ci.yml gates, CI-only (never mirrored by verify_local.py, same reason as the keystone gate). A retired FR's surviving bindings are invisible to both arms (trg-00b11bd7, same scope boundary as the keystone gate's own links_for). Baseline self-grandfathering in the same PR is an accepted, disclosed risk (trg-91532c29), same as the bloat baseline.
+- **Rejected:** Reading the ratchet baseline from the merge-base commit (would fail this introducing PR's own gate, since origin/main has no baseline yet); a persisted cross-run resolution ledger for the baseline's re-unbound-after-resolved gap (real design work, deferred, trg-91532c29).
+- **Details:** [2026-09-10-p3-7-feeder-checks.md](../planning/iterate/2026-09-10-p3-7-feeder-checks.md)
+
+---
+
+### ADR-430: Advisory FR-rationale-link check via a run_id proxy, never a hard gate
+- **Date:** 2026-09-11
+- **Section:** Iterate - feature: M7 rewritability-advisory (campaign req3-04c-ac-identity-wave2, sub-iterate p3.8)
+- **Run-ID:** iterate-2026-09-10-p3-8-rewritability-advisory
+- **Context:** M7's spec status was prose rule, unclear if real -- verify, do not assume. Verified first: neither decision_drop.schema.json nor requirement_model.py carries any field linking an FR id to a decision-drop/ADR in either direction. That absence is itself the M7 finding, not a gap to close with a new schema field (out of scope for an advisory check; campaign D7 rules out an LLM/judgement substitute).
+- **Decision:** Classify each FR as linked/unlinked/could_not_determine via the nearest real mechanical signal: a work_completed event naming the FR carries a run_id (adr_id), and that same run_id appearing on a decision-drop or aggregated decision_log.md ADR counts as linked. New shared/scripts/lib/rewritability_links.py does the classification; new Group I check I9 renders it, unconditionally advisory (pass, never fail).
+- **Commit:** (assigned post-merge)
+- **Consequences:** Reader-visible rendering states the proxy nature explicitly (co-occurring rationale, not a verified per-requirement link) so it is not mistaken for a stronger claim. Three outcomes, never two: no recorded change is could_not_determine, never silently folded into unlinked. Known gaps: run-level not FR-level proxy; Run-ID bullet only exists on ADRs from 2026-05-16 on; a direct FR-ADR schema field is deferred, named not built.
+- **Rejected:** A direct FR-ADR schema field change (real producer/consumer ripple, out of scope for an advisory measurement sub-iterate). An LLM/judgement-based link verifier (campaign D7 rules this out for a mechanical detective check). Promoting M7 to a hard gate (explicitly against the design spec's own instruction that M7 stays advisory).
+- **Details:** [2026-09-10-p3-8-rewritability-advisory.md](../planning/iterate/2026-09-10-p3-8-rewritability-advisory.md)
+
+---
+
+### ADR-431: Bundle P3.7's deferred test-body-suspects advisory check into p3.8, advisory only
+- **Date:** 2026-09-11
+- **Section:** Iterate - feature: test-body-suspects advisory CI check (bundled from a P3.7 deferred item)
+- **Run-ID:** iterate-2026-09-10-p3-8-rewritability-advisory
+- **Context:** P3.7's own sub-iterate spec named a third, lower-priority check (an AC whose own text is unchanged but whose bound test body was edited) and explicitly deferred it. This run bundles that deferred item alongside M7 rewritability rather than leaving it as a dangling deferral, since both are small, advisory-only, non-gate additions to the same CI job and the same Group-of-checks family (P3.6 section 7 / P3.7's own checks).
+- **Decision:** Add check_test_body_suspects.py (+ verifiers._test_body_suspects) as a new pull_request-only CI step after P3.7's two feeder checks. Its CLI returns exit 0 UNCONDITIONALLY -- clean/advisory/infra-fault all report via the JSON payload's status field, never the exit code -- so it can never block a merge even by accident. Provenance: trg-d03a239d (filed this run after the original citation could not be found in the tracked store).
+- **Commit:** (assigned post-merge)
+- **Consequences:** A human reviewing a PR gets an extra, purely informational signal (refactor vs. quiet weakening of a test bound to an unchanged AC) with zero risk of a new false-positive CI failure, since the step cannot fail its own job step. docs/hooks-and-pipeline.md documents the new step alongside its two P3.7 siblings. Known gap: the provenance trail for the original bundling decision was not fully preserved before this run's finalization; trg-d03a239d is the corrected record.
+- **Rejected:** Leaving the item deferred/unbuilt with only a prose TBD (rejected: this task's own hard constraints forbid a vague TBD once a concrete mechanism/shape is known -- the check was already designed in P3.7's own spec). Making it a hard gate (rejected: explicitly against the class-level 'mechanics raise a flag, a human decides' rule P3.6/P3.7/P3.8 all restate).
+- **Details:** [2026-09-10-p3-8-rewritability-advisory.md](../planning/iterate/2026-09-10-p3-8-rewritability-advisory.md)
+
+---
+
+### ADR-432: Grandfather promote_required_layers.py + its test file as a bloat exception
+- **Date:** 2026-09-10
+- **Section:** bloat-gate exception
+- **Run-ID:** iterate-2026-09-10-p34c-promotion-anchor-guard
+- **Context:** Both files were already several times over the 300-line limit before P3.4c touched them, with no existing baseline entry. P3.4c is additive functionality on the same tool/tests; see spec-ref for full detail.
+- **Decision:** Grandfather both files into shipwright_bloat_baseline.json with state=exception at their current sizes (678 / 1187 lines), referencing this ADR.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Both files stay exempt from the anti-ratchet gate at current size; growing past 678 / 1187 lines re-trips the gate fresh.
+- **Rejected:** Splitting either file now -- rejected as out-of-scope churn mid-review-cascade; see spec-ref.
+- **Details:** [iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md](../planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md)
+
+---
+
+### ADR-433: Anchor Layers-promotion to the newest verified ancestor
+- **Date:** 2026-09-10
+- **Section:** Iterate — change: anchor Layers-promotion to the newest verified ancestor
+- **Run-ID:** iterate-2026-09-10-p34c-promotion-anchor-guard
+- **Context:** Layers-promotion only fires when HEAD's own CI run is verified; measured drift closes that window in ~1 hour, so the P3.5 mechanism rarely gets to run.
+- **Decision:** Walk HEAD's first-parent history for the newest verified ancestor A; promote FRs whose bound evidence is provably unstale between A and HEAD (identity + diff + unaccounted-test-path checks).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Option C (auto-refresh bot) refused three times (no PAT/CI job/policy weakening); Option A (refresh ritual) needs a manual admin override every cycle. Anchoring is a pure widening.
+- **Consequences:** Promotion fires on realistic PR-cadence timescales without loosening the unforgeability predicate; unavailable/error/anchor-evidence-fault all degrade to no-promotion, never a false one.
+- **Rejected:** A - refresh/merge/promote ritual: manual toil, admin override every cycle. C - automatic drift-closing bot: refused three times, off the table again.
+- **Details:** [iterate-2026-09-10-p34c-promotion-anchor-guard-anchor-design.md](../planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-anchor-design.md)
+
+---
+
+### ADR-434: Grill-trace evidence record + completeness gate
+- **Date:** 2026-09-10
+- **Section:** Iterate — feature: grill-trace evidence record + completeness gate (P4.2)
+- **Run-ID:** iterate-2026-09-10-p4-2-grill-trace-gate
+- **Context:** Grilling method (requirement-elicitation.md §8/§9) is prompt-only; nothing checks it happened. See spec for full context.
+- **Decision:** Write one grill-trace JSON per requirement live during interview; gate enforces DESIGN.md's four STOPs, wired into project Step 8.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors verify_iterate_finalization.py's check_* shape; reuses P4.1's context_md_format.read_terms(), never forks the parser.
+- **Consequences:** Step 8 blocks on incomplete/undefined/assumed traces or FR rows with no matching trace. Gate never judges prose quality.
+- **Rejected:** Scanning text for undefined terms (judgment call, rejected); per-FR-id join at interview time (FR ids don't exist yet).
+- **Details:** [iterate-2026-09-10-p4-2-grill-trace-gate-completeness.md](../planning/adr/iterate-2026-09-10-p4-2-grill-trace-gate-completeness.md)
+
+---
+
+### ADR-435: Dynamic discovery of requirement-elicitation citing docs
+- **Date:** 2026-09-10
+- **Section:** FR-01.16 AC09
+- **Run-ID:** iterate-2026-09-10-p4-3-elicitation-site-discovery
+- **Context:** test_requirement_elicitation_refs.py's CITING_DOCS was a hardcoded 4-tuple; FR-01.16 AC09 requires the set be established by looking, not by a list someone must remember to extend.
+- **Decision:** Replaced CITING_DOCS with discover_elicitation_reference_docs(root), globbing plugins/*/skills/*/references/*.md for the 'recommended answer' marker (verified unique to the 4 known docs). Split into _elicitation_discovery.py + two test files for the 300-LOC cap. See ADR for full external-review disposition table.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the repo's established forward/reverse SSoT meta-test pattern (test_touches_build_python_inputs_sync.py). Subset check (not exact-equality) for AC1 avoids reintroducing the maintenance burden AC09 removes.
+- **Consequences:** A new elicitation-surface doc carrying the marker is reverse-checked for the citation automatically, no test-file edit needed. Marker stays a prose phrase (not a structural marker) by deliberate scope-bounded rejection -- editing it would touch shipwright-adopt's step-c-interview.md, out of scope.
+- **Rejected:** Keying discovery on the citation string itself (collapses discovery and the reverse check); exact-set equality for the regression pin (blocks legitimate additions); a structural HTML-comment marker (would require write access to shipwright-adopt, out of scope).
+- **Details:** [iterate-2026-09-10-p4-3-elicitation-site-discovery.md](../planning/adr/iterate-2026-09-10-p4-3-elicitation-site-discovery.md)
+
+---
+
+### ADR-436: Pin Sec.0/Sec.4/Sec.5's most recent rules against drift
+- **Date:** 2026-09-10
+- **Section:** Iterate — change: pin Sec.0/Sec.4/Sec.5 rules against drift
+- **Run-ID:** iterate-2026-09-10-p4-4-grill-module-recent-rules-drift
+- **Context:** Sec.0, Sec.4's glossary trigger, and Sec.5's minimum-two rule had no drift test; Sec.0 could be deleted whole and nothing would fail.
+- **Decision:** Append Sec.0 heading to REQUIRED_SECTIONS end; add 3 sentence-level pinning tests mirroring the existing load-bearing-rules test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Matches the file's existing pinning idiom; Sec.4's trigger sentence wraps a markdown line so that one assertion normalizes whitespace.
+- **Consequences:** Deleting/rewording any of the 3 rule sentences now turns exactly its own test red, spot-checked manually.
+- **Rejected:** Inserting the Sec.0 entry at position 0 (card mandates append-at-end); a generic whitespace-normalizer (only 1 of 3 sentences wraps).
+- **Details:** [iterate-2026-09-10-p4-4-grill-module-recent-rules-drift.md](../planning/adr/iterate-2026-09-10-p4-4-grill-module-recent-rules-drift.md)
+
+---
+
+### ADR-437: Nothing-to-review carve-out for the PR-review gate
+- **Date:** 2026-09-10
+- **Section:** Iterate — bug: PR-review gate fails closed on all-generated PRs
+- **Run-ID:** iterate-2026-09-10-pr-review-generated-only
+- **Context:** PRs #707/#708 posted PR Review=failure on all-generated-artifact diffs, forcing admin-override merges. Full rationale in the ADR spec file.
+- **Decision:** Stage 2 derives all_generated from trusted API-read changed paths via a new, strictly narrower classifier; a new pure decide_gate() composes the final verdict, never masking a sensitive path or a real review/waiver failure.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Keeps FR-01.17 (E)7's trust boundary (stage-2 default-branch code, never stage-1's artifact); a narrower classifier avoids reusing a policy tuned for a different, lower-stakes decision.
+- **Consequences:** All-generated PRs post success with a self-explaining description; verdict logic moved into two tested pure functions instead of inline workflow bash.
+- **Rejected:** Reading the signal from stage 1's artifact (forbidden self-exemption); reusing is_generated_path directly (too broad); a catch-all generated-looking-diff pass (violates hard constraint 4).
+- **Details:** [iterate-2026-09-10-pr-review-generated-only-carveout.md](../planning/adr/iterate-2026-09-10-pr-review-generated-only-carveout.md)
+
+---
+
+### ADR-438: Migrate 4 write-once current_step/completed_steps readers to phase_tasks[] (P4.04 s3)
+- **Date:** 2026-09-10
+- **Section:** shared/scripts/lib/state.py; shared/scripts/tools/update_build_dashboard.py; shared/scripts/hooks/generate_handoff_on_stop.py; shared/scripts/hooks/suggest_iterate.py
+- **Run-ID:** iterate-2026-09-10-s3-hooks-and-state
+- **Context:** state.py::detect_current_phase falsely claimed phase_tasks[] was 'authoritative when present' in its own comment/docstring while still not treating it as primary. Three other readers (dashboard, 2 hooks) still keyed routing/display on write-once current_step/completed_steps, which the v2 orchestrator never advances.
+- **Decision:** Made phase_tasks[] the primary signal in all 4 readers. Two shapes: display-only (dashboard) drops v1 entirely, mirroring mermaid.py (s1); behavioral/routing readers (state.py, 2 hooks) keep a fallback — state.py's existing config heuristic, the hooks' v1 fields (load-bearing for standalone configs).
+- **Commit:** (assigned post-merge)
+- **Rationale:** phase_tasks-first with v1-fallback ONLY when phase_tasks[] gives no confident signal (absent/empty) avoids an OR-merge that could resurrect stale write-once data; 'current' means has-an-unfinished-entry (incl. backlog/awaiting_launch), not just active, per external plan review.
+- **Consequences:** Standalone/v1 dashboard configs now render pending instead of stale complete/in-progress (intentional, matches mermaid.py). A v1-only completed_steps-covers-pipeline case needed a narrow terminal check in state.py restored after code review. Full shared/tests suite (10,118) green.
+- **Rejected:** OR-merging v1 and v2 signals (would let a stale write-once field win); extracting one shared cross-file aggregation helper now (deferred — two genuinely different fallback shapes, premature abstraction for a single sub-iterate).
+- **Details:** [iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md](../planning/adr/iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md)
+
+---
+
+### ADR-439: design_checks/compliance_compliance/convert_configs_to_events move to phase_tasks[]
+- **Date:** 2026-09-10
+- **Section:** Iterate — feature: phase_tasks[] readers (verifiers + converter)
+- **Run-ID:** iterate-2026-09-10-s4-verifiers-and-converter
+- **Context:** Three readers (design adopted-repo skip, Cmp1, config->events migration) still key on write-once completed_steps, inert on a driven run since s1/s3 migrated the other five readers.
+- **Decision:** All three read phase_tasks[] first via new shared completed_phases_with_fallback, falling back to completed_steps only when phase_tasks[] is absent/malformed -- never merely on an empty completed set (external-review fix).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same per-reader migration already architecture-approved for s1/s3; consolidates 3 near-duplicate fallback helpers into one shared function per external plan+code review.
+- **Consequences:** Adopted-repo design skip fires from phase_tasks[] alone; Cmp1 and the migration tool stop under-reporting a driven run's real progress against a stale completed_steps snapshot.
+- **Rejected:** See spec-ref ADR: literal terminal-design-entry skip condition; adopted-fixture built via cross-plugin import (ADR-045 collision).
+- **Details:** [iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md](../planning/adr/iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md)
+
+---
+
+### ADR-440: Retarget v1 update_step onto phase_tasks[], then drop current_step/completed_steps
+- **Date:** 2026-09-10
+- **Section:** Iterate — campaign p4-04-retire-write-once-steps s5: retarget v1 update_step, drop write-once fields
+- **Run-ID:** iterate-2026-09-10-s5-retarget-v1-then-drop
+- **Context:** Campaign p4-04 migrated every reader off the write-once current_step/completed_steps fields (s1/s3/s4); the v1 update_step path and both remaining writers still used them.
+- **Decision:** v1 update_step now advances phase_tasks[] directly (find-or-create, no CAS); both writers (write_run_config.py, config_writer.py) drop the fields; every fallback reader branch is deleted except four one-time legacy cutovers external code review surfaced.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Retarget-first-then-delete avoids a dual-write window; single diff keeps the retarget and the drop from ever landing half-migrated.
+- **Consequences:** phase_tasks[] is the sole progress authority on every run shape. Four narrow one-time migration boundaries remain (create_config's merge, generate_handoff_on_stop.py, state.py, suggest_iterate.py), each firing only for a pre-s5 config with zero usable phase_tasks[] evidence, to avoid permanent deadlock/misreport.
+- **Rejected:** Dual-write both shapes for a transition sub-iterate (rejected: reinstalls mode-conditional truth). Keep completed_steps readable forever (rejected: defeats the campaign). Re-add a general completed_steps fallback to phase_tasks_progress() itself (rejected: reopens mode-conditional truth app-wide instead of one boundary).
+- **Details:** [iterate-2026-09-10-s5-retarget-v1-then-drop.md](../planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md)
+
+---
+
+### ADR-441: Local status always outranks a foreign status
+- **Date:** 2026-09-11
+- **Section:** Iterate — bug: triage cross-tree status precedence
+- **Run-ID:** iterate-2026-09-10-triage-cross-tree-precedence
+- **Context:** read_all_items ordered status/amend events by (ts, file-order) with no origin precedence; a stale reopen in an abandoned sibling worktree outranked a real dismiss on origin/main.
+- **Decision:** A foreign status event applies only when this tree's own tracked+outbox union has no status event for that id; amend stays purely chronological.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Local truth must be authoritative over an unmerged/abandoned worktree's foreign tail, which is advisory data by lib.triage_cross_tree's own design.
+- **Consequences:** A local decision can never be reopened by a stale sibling regardless of timestamp; a foreign status still fills a gap for an id never locally decided.
+- **Rejected:** Filtering at the lib.triage_cross_tree source layer instead of in read_all_items -- would invert the module boundary that module already documents.
+- **Details:** [iterate-2026-09-10-triage-cross-tree-precedence-bloat-exception.md](../planning/adr/iterate-2026-09-10-triage-cross-tree-precedence-bloat-exception.md)
+
+---
+
+### ADR-442: Run the AC coverage ratchet gate on push to main as well as pull_request
+- **Date:** 2026-09-11
+- **Section:** CI / P3.7 feeder (a)
+- **Run-ID:** iterate-2026-09-11-ac-ratchet-push-observe
+- **Context:** The P3.7 feeder (a) ratchet (shipwright_ac_coverage_baseline.json) only ran inside pull_request CI, so it was observed exactly once in its lifecycle — never again after merge (trg-e69bf1ba, bundling trg-91532c29).
+- **Decision:** Widen the AC coverage ratchet (gate) step's if: condition to also fire on push to main (no merge base needed), and add a push-only --check-baseline-growth --parent-sha <before-sha> flag that diffs the baseline file's own committed bytes against the push's pre-image, since re-running the plain comparison alone detects nothing new (external review, openai, HIGH).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the bloat baseline's continuous re-measurement rather than a second provenance mechanism, per the operator's own dismissal note bundling trg-91532c29 into this card; the baseline-growth diff is the minimal addition needed to make that mechanism actually detect something, per external code review.
+- **Consequences:** A same-PR self-grandfathered baseline entry now shows up as red on main the very next push instead of staying silently unreviewed forever, but that run is detective (not a required PR check) and self-clears the push after — a missed alarm gets no further signal. An AC that regresses (bound then unbound again) without touching the baseline file's bytes stays NOT closed — tracked as an open follow-up per feeder-checks.md §7.
+- **Rejected:** A rolling/persisted resolution ledger with cross-run memory, closing the later-regression case too — real design work, deliberately deferred; the operator's note says to check whether the simpler push-trigger fix already covers it before building one, and it only partially does.
+
+---
+
+### ADR-443: One-time rollout transition grace for check_binding_completeness
+- **Date:** 2026-09-11
+- **Section:** Iterate — change: binding-completeness rollout transition
+- **Run-ID:** iterate-2026-09-11-binding-completeness-rollout-transition
+- **Context:** trg-aedcfe7b: an explicit binding predating the gate's 2026-09-07 rollout gets no grace; webui promoted 9 FRs the same day and get zero leniency.
+- **Decision:** A HARD gap downgrades to ADVISORY when head's required_layers is a non-empty, title-matched superset of the project's own git history at-or-before the rollout instant (source-agnostic).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses regenerate_base_head's own archive+collector machinery instead of a fragile git-blame primitive; source-agnostic superset check is the only design that protects the measured webui population.
+- **Consequences:** Pre-existing, unchanged-or-widened explicit bindings survive their next unrelated touch; narrowed/new bindings judged normally. Permanent per-repo git resolution added to the gate family.
+- **Rejected:** Exact-match comparator; source-gated grace; git-blame-on-spec-row; grace-by-diff-against-merge-base; reusing manifest_at_commit.py (violates R3); unconditional amnesty; hand-annotation backfill (architecture-review glm reject, overridden by explicit operator directive).
+- **Details:** [iterate-2026-09-11-binding-completeness-rollout-transition.md](../planning/adr/iterate-2026-09-11-binding-completeness-rollout-transition.md)
+
+---
+
+### ADR-444: Operator-only guard for record_ci_supplychain_ack.py
+- **Date:** 2026-09-11
+- **Section:** Iterate — bug: CI supply-chain ack authorship guard
+- **Run-ID:** iterate-2026-09-11-ci-supplychain-ack-authorship
+- **Context:** PR #718 (trg-33d30377): a campaign sub-iterate runner wrote its own CI-supplychain ack for its own diff, violating a prose-only rule in campaign-mode.md Step 3.4 that nothing enforced. Every existing check (run binding, content fingerprint, field shape) validated the self-authored ack perfectly -- none asked who wrote it. Full detail: see spec_ref.
+- **Decision:** record_ci_supplychain_ack.py now refuses outright (no override) while SHIPWRIGHT_LOOP_UNIT_ID is set in its own process env -- the marker an active autonomous-loop unit's subprocesses carry via capture_session_id.py's CLAUDE_ENV_FILE sync. Checked at main/build_ack/write_ack. Added --commit <ref> mode and a required provenance stamp (worktree|commit). Full detail: see spec_ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Gate on data (who authored the write, checked mechanically), not on an agent being expected to behave -- webui #285 already showed a full medium iterate with external plan review reversing an accepted-risk posture unnoticed. provenance stays required even though no current authorization decision reads its value: it is the one signal distinguishing this CLI's own output from a hand-assembled forgery that otherwise gets run-id and content binding right by copying a real ack.
+- **Consequences:** A campaign runner or shipwright-build --autonomous unit can no longer author its own ack in either content mode, with no file left behind on refusal. An operator has a reachable path pre- and post-commit. This is a process-identity heuristic, not a cryptographic guarantee -- disclosed, not hidden. Full detail: see spec_ref.
+- **Rejected:** SHIPWRIGHT_SESSION_ID-based authorship matching -- a Task-spawned runner and its orchestrating session are plausibly the same session id, and the documented remedial flow has the operator resolve from that same session. Prose-only rule (architecture brief Option C) -- the exact posture that already failed once. Cryptographic operator-identity proof -- not buildable with this repo's infrastructure (no human-in-the-loop signing).
+- **Details:** [iterate-2026-09-11-ci-supplychain-ack-authorship-decision.md](../planning/adr/iterate-2026-09-11-ci-supplychain-ack-authorship-decision.md)
+
+---
+
+### ADR-445: Re-measure the AC-evidence ledger by flat text count, not a per-row parser
+- **Date:** 2026-09-11
+- **Section:** campaign req3-06-enforcement-mono, sub-iterate e0
+- **Run-ID:** iterate-2026-09-11-e0-ledger-accounting
+- **Context:** The ledger's backlog counts (44/15/10/25) were stale from the campaign's own start; nobody had re-run the count since the 2026-07-26 end-check, and the document has ~200 criteria across a dozen hand-written table shapes with no stable schema.
+- **Decision:** Count every backtick-quoted canonical status phrase across the whole document (shared/scripts/tools/measure_ac_evidence_ledger.py), rather than parsing table structure per row. Cross-checked exact against the operator's 2026-09-06 hand re-measurement (47/19/16/36/50).
+- **Commit:** (assigned post-merge)
+- **Consequences:** The count includes the legend's and the End-check summary's own backtick occurrences (a documented, constant, accepted imprecision) and moves if prose ever backticks a status phrase outside a table cell. A committed test asserts the ledger header and the script's live output stay in sync.
+- **Rejected:** A structural per-row table parser: rejected because the ledger's tables take a different ad-hoc shape in nearly every section, so a parser would need one rule per shape and silently break on the next new one. A hard per-row ownership-annotation gate (both external code reviewers' top suggestion): rejected as out of scope for this bounded accounting pass — it would require reformatting ~150 pre-existing rows that already resolve via the legend's documented default routing.
+- **Details:** [e0-ledger-accounting.md](../planning/iterate/campaigns/req3-06-enforcement-mono/sub-iterates/e0-ledger-accounting.md)
+
+---
+
+### ADR-446: Mechanisable checks for the 18 flagged plan/design ledger lines
+- **Date:** 2026-09-11
+- **Section:** Iterate - checks: mechanise 18 flagged FR-01.03/FR-01.04 lines
+- **Run-ID:** iterate-2026-09-11-e1-checks-plan-design
+- **Context:** 18 ledger lines were prompt-only (mechanisable); D7 forbids downgrading them to an LLM-judged gate.
+- **Decision:** Wrote one check function + test per line, wired into check-plan-gates.py / check-design-gates.py, flipping the ledger line in the same edit.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Check-then-test kept each of the 18 edits small; splitting the Prerequisites check onto its own adoption signal avoided breaking legacy-plan leniency.
+- **Consequences:** Ledger counts stable at 29/19/16/33/68; check-plan-gates.py --project-root is now required (breaking, callers updated).
+- **Rejected:** Downgrading any line to judgement - rejected per-line, every criterion had a concrete checkable shape.
+- **Details:** [iterate-2026-09-11-e1-checks-plan-design.md](../planning/adr/iterate-2026-09-11-e1-checks-plan-design.md)
+
+---
+
+### ADR-447: Mechanised checks for /shipwright-project (FR-01.02) and elicitation (FR-01.16)
+- **Date:** 2026-09-11
+- **Section:** FR-01.02 / FR-01.16 enforcement
+- **Run-ID:** iterate-2026-09-11-e2-checks-project-elicitation
+- **Context:** REQ-3 ledger named 9 prompt-only/mechanisable lines under FR-01.02 (6) and FR-01.16 (3, excl. e6's 5 judgement lines). D7: no line may become an LLM-judgement gate; downgrade to judgement+drift-test only when no deterministic oracle exists.
+- **Decision:** Built 4 new pure gate functions + wiring (_project_gate_extras.py/_project_gate_wiring.py) into project_checks.run_project_checks: basis_forbids_assumed (#4/#15 merged, extension-scope skipped), criteria_free_of_implementation_detail (#5), no_empty_split (#10 floor), starting_guidance_present (#11). #8/#10/#3 each split floor(enforced)+judgement-half(drift-tested: #8b,#10b,#3b). FR-01.16 C/#6/#3-half cite already-shipped P4.2 work.
+- **Commit:** (assigned post-merge)
+- **Rationale:** 7 rounds of external code review (both GLM+OpenAI) hardened every manifest-read path (parse failure, non-list/non-object splits, unsafe/traversal names, missing/unreadable spec.md, scope defaults) to fail loud instead of silently passing; round 7 closed with GLM approve. Full findings tables + self-review + confidence-calibration in the linked spec-ref.
+- **Consequences:** 9 lines closed, 3 new drift-tested judgement downgrades, none gated. 67 tests green, lint clean. Live re-measure: 20 mechanisable, 24 judgement, 16 enforced-untested, 33 unimplemented, 76 enforced-tested. No architecture-doc impact (existing dispatcher, no new route/schema).
+- **Rejected:** A second semantic 'does this AC name a settlement' oracle for #15 (no deterministic check exists); directory enumeration for split discovery (cannot distinguish real splits from reserved dirs like campaigns/adr/grill-traces); failing the whole manifest on any single invalid split name (kept per-split granularity instead).
+- **Details:** [iterate-2026-09-11-e2-checks-project-elicitation-checks.md](../planning/adr/iterate-2026-09-11-e2-checks-project-elicitation-checks.md)
+
+---
+
+### ADR-448: Fix 5 deferred PR #699 findings on the CONTEXT.md glossary producer
+- **Date:** 2026-09-11
+- **Section:** Iterate — bug: glossary-generator P4.1 review follow-ups
+- **Run-ID:** iterate-2026-09-11-glossary-p41-review-followups
+- **Context:** PR #699 (P4.1 glossary generator) review deferred 5 non-blocking findings: misleading test names, missing CLI help text, an incomplete doc guard, a caller-unfriendly error message, and a real parser false-positive.
+- **Decision:** Fix all 5: rename tests, add argparse help, extend the doc guard, reword the blank-avoid error for both callers, and make parse_language_entries absorb a wrapped _Avoid_ continuation line the same way it already does for definitions.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Item 5 was verified by direct reproduction before fixing. Reviewed by the full internal cascade (spec/code/doubt, all PASS) plus an external cascade (both legs approve) since the diff exceeded the 100-line review trigger.
+- **Consequences:** Closes a permanent, unrecoverable false-duplicate rejection triggered by a wrapped avoid-line cross-reference; no behavior change to the sanctioned --payload-file happy path.
+- **Rejected:** Considered leaving item 5 as a documented known limitation, but it has no hand-edit recovery path mid-interview, so a real correctness bug would stay live in the sanctioned interview-writing path.
+
+---
+
+### ADR-449: Split hide-vs-skip review-evidence matching, closed and case-sensitive
+- **Date:** 2026-09-11
+- **Section:** plugins/shipwright-security/scripts/lib/pr_review_generated.py
+- **Run-ID:** iterate-2026-09-11-pr-review-evidence-filter-gap
+- **Context:** PR #722's PR-review gate BLOCKed because spec_review_reply.json and external-code-review-raw.json (tool-written review transcripts) weren't excluded from the diff shown to the reviewer, risking a fake-approval injection read as real.
+- **Decision:** Widened the hide-side match (is_generated_path) to an anchored, mostly-closed set; kept the skip-side match (is_safe_to_skip_review, licenses a zero-model-call gate pass) at reviews.json only, narrower than even its pre-iterate shape, and case-sensitive.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Five review rounds (internal plan, 3x external plan, code, doubt, external code, spec) each converged toward narrower skip-safety; hide and skip have different stakes and must not share a regex.
+- **Consequences:** New reviewer-transcript files no longer trigger circular review; the gate-bypass surface did not grow — it shrank, since the skip set is now closed instead of sharing the hide side's wildcard.
+- **Rejected:** Adding the closed reply-file set to skip-safety too (reverted after external review round 3: exact basename is not provenance); enumerating a closed external-*review* set (no fixed producer filename exists).
+
+---
+
+### ADR-450: Seam survey: FR cluster to existing test boundary (t0, req3-05)
+- **Date:** 2026-09-11
+- **Section:** req3-05-test-backfill-mono/t0
+- **Run-ID:** iterate-2026-09-11-t0-seam-survey
+- **Context:** REQ3.05 mono test-backfill campaign needs one repo-wide answer to which existing test seam proves each FR-01.NN AC before t1-t9 run, so units do not each re-decide the same question (259 unbound ACs across 20 FRs).
+- **Decision:** Produced a tracked FR-to-root mapping doc (20 FRs, grep+spot-checked precedent, 2 named no-seam exceptions with AC-by-AC breakdowns) at .shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md; deliberately NOT in the gitignored campaigns/ dir. External plan+code review findings applied; see spec-ref for the full findings ledger.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A survey unit has no AC cluster of its own to bind (FR cluster: - in its spec) and is read-only across all test roots by its own spec; regenerating the baseline here would be a no-op misrepresented as work.
+- **Consequences:** t1-t9 cite this survey's rows instead of re-deciding a seam; two open items handed to the campaign owner: the missing per-AC baseline reason field (Finding 5) and the t4/t5/t8/t9 root-count deviation from the 2-root guidance (flagged, not resolved by t0).
+- **Details:** [iterate-2026-09-11-t0-seam-survey-findings.md](../planning/adr/iterate-2026-09-11-t0-seam-survey-findings.md)
+
+---
+
+### ADR-451: Bind FR-01.11's 27 unbound ACs to existing tests; fix AC-coverage manifest scan gap
+- **Date:** 2026-09-11
+- **Section:** Campaign req3-05-test-backfill-mono, sub-iterate t1 (FR-01.11)
+- **Run-ID:** iterate-2026-09-11-t1-iterate-surface
+- **Context:** 27 FR-01.11 ACs (AC01-16,19-29) had no @pytest.mark.covers binding. t0's seam survey named 2 test roots (plugins/shipwright-iterate/tests, shared/tests); AC08/AC09's real implementation lives only in a 3rd, already-canonical ADR-044 root (shared/scripts/tools/tests).
+- **Decision:** Tagged 24 of 27 unbound ACs onto existing tests in t0's 2 roots; AC12 left unbound-with-reason (Exception 4). Accepted a 3rd-root deviation for AC08/AC09 (seam is shared/scripts/tools/tests, canonical ADR-044 root) -- Exception 3 in the seam survey, accepted by the campaign owner for t1 specifically. Widened traceability.test_roots to the full ADR-044 list, letting the manifest regen see AC08/AC09's tags. Wrote 2 new tests where none existed (AC20, AC22). Full detail: --spec-ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The campaign owner reviewed and accepted the 3rd-root deviation for t1 specifically (2026-09-11) -- that ruling, not a self-cited t0 recommendation scoped to other units, is the authority. Precedent exists for FR-01.20 (3 roots) and FR-01.14 (2 roots incl. this same 3rd root).
+- **Consequences:** unbound 259->233 (26 of 27 target ACs bound; AC12 left unbound-with-reason, Exception 4); zero new orphans. Bumped test_record_event.py's ADR-092 exception 501->507 (4 decorator lines). Split test_surface_verification.py's 2 new tests into a sibling file instead of bumping it (honest Ousterhout argument impossible for a flat file). Added test_traceability_config_roots_parity.py so this gap can't reopen. Fixed a sbom/dashboard mismatch via `uv sync --extra dev`. Full detail: --spec-ref.
+- **Rejected:** Skipping AC08/AC09 (spec forbids leaving an AC unbound without a recorded reason, and a real seam DOES exist); duplicating AC08/AC09's behavior into shared/tests as a new harness (violates 'no new harness where one fits').
+- **Details:** [iterate-2026-09-11-t1-iterate-surface-fr-01-11-ac-backfill.md](../planning/adr/iterate-2026-09-11-t1-iterate-surface-fr-01-11-ac-backfill.md)
+
+---
+
+### ADR-452: Backfill AC-proving tests for FR-01.14's 29 unbound ACs
+- **Date:** 2026-09-11
+- **Section:** req3-05-test-backfill-mono t2
+- **Run-ID:** iterate-2026-09-11-t2-triage-inbox
+- **Context:** FR-01.14 (Triage Inbox) had 29/29 ACs unbound in shipwright_ac_coverage_baseline.json. Per t0's seam survey the cluster's seam is shared/tests (primary) plus shared/scripts/tools/tests for the CLI-tool layer -- two ADR-044 roots, one unit, exactly as t0 assigned.
+- **Decision:** Bound 28 of 29 ACs to existing, already-passing tests via @pytest.mark.covers("FR-01.14/ACnn") -- no new test files, no new harness. AC26 ("the Triage Inbox is explicitly not a plan") is a definitional/policy guarantee with no deterministic surface to assert against (same class as FR-01.12 Exception 1's AC02/AC03/AC07/AC09) -- left unbound in the regenerated baseline rather than forced onto a test that would not prove it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Backfill campaign rule: bind to an existing seam, never invent a new one; a test must actually prove the AC, not merely be shaped around the current implementation. Each binding was verified by reading the target test's body against the AC's exact text before tagging.
+- **Consequences:** shipwright_ac_coverage_baseline.json unbound count: 233 -> 205 (28 removed, all FR-01.14, verified via diff against the pre-change baseline -- zero unrelated movement). AC26 remains unbound with this drop as its recorded reason.
+
+---
+
+### ADR-453: Clarify format_pending_delivery_notice cannot imply a live flip
+- **Date:** 2026-09-11
+- **Section:** Iterate — change: triage delivery-notice wording
+- **Run-ID:** iterate-2026-09-11-triage-delivery-notice-wording
+- **Context:** The precedence fix (iterate-2026-09-10) added a local-wins rule to read_all_items but the delivery-notice docstring was untouched.
+- **Decision:** Document that the notice never signals a live risk to an already-shown local decision; only a real merge can change it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Follow-up item from the precedence fix's own plan+external review, filed to prevent stale docs from misleading a future reader.
+- **Consequences:** No behavior change; clearer maintainer-facing docs, avoiding a future misreading of the local-wins asymmetry.
+- **Rejected:** Rewording the user-facing NOTE string too — rejected as unnecessary scope: the ambiguity was in the docstring read by maintainers, not the CLI text, and tests pin exact substrings of that string.
+
+---
+
+### ADR-454: Opportunistic FR Layers promotion at iterate worktree setup
+- **Date:** 2026-09-11
+- **Section:** Iterate — tooling: wire the P3.5 Layers promotion tool into the iterate flow
+- **Run-ID:** iterate-2026-09-11-wire-promote-required-layers
+- **Context:** P3.5 (#693) shipped promote_required_layers.py but nothing ever called it -- no SKILL.md, plugin, or workflow referenced it outside its own module family (confirmed by grep). An iterate that pushed a higher observable layer left that FR's Layers cell stale until an operator remembered the CLI, and no ledger file had ever been written.
+- **Decision:** Add lib/layer_promotion_sweep.py, called from setup_iterate_worktree.py step 4.5, BEFORE self-heal/outbox (push ships full ancestry, not just the tip). A found promotion is committed LOCALLY then delivered as its OWN small PR against origin/<default> (lib/layer_promotion_delivery.deliver_as_own_pr: push, gh pr create, best-effort automerge) -- the local commit is always rolled back afterward. Non-decisive outcomes degrade to a reported result; it never blocks setup.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Evaluating trunk's own fresh tip lets the tool's existing verified-ancestor anchor logic work unchanged. Shipping via a separate PR (not a commit on iterate/<slug>) is REQUIRED, not stylistic: F11 cross-layer coverage diffs the branch against its merge-base with origin/<default> -- for a freshly-cut worktree that merge-base IS the promotion's own parent commit, so committing it onto the branch put it inside the run's own gated diff.
+- **Consequences:** The promotion mechanism now actually runs, opportunistically, on every iterate, but NEVER inside that iterate's own PR. CREATE-path manual Layers authoring is documented as by-construction; MODIFY-path prose cross-references the automated widen path. New write surface .shipwright/compliance/layer_promotion_ledger.json ships in the promotion's own PR, never the triggering iterate's. The guaranteed rollback checks its own returncode (rollback_failed status) rather than assuming success.
+- **Rejected:** Original design (Stage-1 spec-review REJECT): commit the promotion onto iterate/<slug> as its own chore(compliance) commit, reasoning it 'never mixes into that diff.' False -- F11 recomputes required_layers changes as behaviour-changed and would HARD-fail an iterate that never touched the promoted FR. Wiring into F11 instead: HEAD there is unpushed, forcing the anchor-fallback for no benefit. A second CREATE-side writer: structurally impossible.
+
+---
+
+### ADR-455: entry_anchor() requires a leading run_id/ADR-NNN bold anchor
+- **Date:** 2026-09-12
+- **Section:** Iterate — bug: agent-doc-budget anchor false-match
+- **Run-ID:** iterate-2026-09-12-agent-doc-budget-anchor-falsematch
+- **Context:** entry_anchor() picked the FIRST bold span anywhere in an entry as its cross-diff identity. A date-lead entry whose prose quotes another entry's own bold anchor form (e.g. describing a `- **Run-ID:**` bullet) got that incidental match as its anchor.
+- **Decision:** Restrict entry_anchor() to a LEADING bold span shaped like a run_id or ADR-NNN; anything else falls back to the first 60 chars of the body.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both real bold-lead forms (Convention/Architecture Updates canonical shape, and the legacy bold-lead Learnings form) already put the anchor at the very start; nothing legitimate relies on a mid-body bold match.
+- **Consequences:** An incidental prose bold quote can no longer collide with an unrelated base entry's anchor, so new_over_budget() can no longer skip a genuinely new over-budget entry by mistaking it for an edit.
+- **Rejected:** Requiring shape validation without the leading-position check was rejected: it would not have caught this bug, since the incidental Run-ID: quote is itself shape-plausible-looking prose, not a genuine anchor.
+
+---
+
+### ADR-456: Mechanise or downgrade FR-01.06/FR-01.07's 7 AC lines
+- **Date:** 2026-09-12
+- **Section:** Iterate — feat: FR-01.06/FR-01.07 checks-test-security
+- **Run-ID:** iterate-2026-09-12-e3-checks-test-security
+- **Context:** AC-evidence ledger named 7 prompt-only lines for this sub-iterate; D7 requires each enforced or downgraded with a reason.
+- **Decision:** Built 3 checks (FR-01.06 #5/#6-floor/#7); downgraded FR-01.06's 2 constitution mentions and FR-01.07's 2 lines to judgement, each drift-tested.
+- **Commit:** (assigned post-merge)
+- **Rationale:** No oracle exists for the downgraded lines (grep-confirmed dead fields / cross-cutting rule); D7 forbids a gate that pretends one does.
+- **Consequences:** Ledger: 14 mechanisable, 29 judgement, 80 enforced-tested; all 7 lines closed, none left as an unresolved deferral.
+- **Rejected:** A prose deferral note without flipping the status tag (code review rejected this); silently coercing malformed stats to 0.
+- **Details:** [iterate-2026-09-12-e3-checks-test-security-fr0106-fr0107-checks.md](../planning/adr/iterate-2026-09-12-e3-checks-test-security-fr0106-fr0107-checks.md)
+
+---
+
+### ADR-457: is_safe_to_skip_review: anchor or remove each _GENERATED_PREFIXES entry
+- **Date:** 2026-09-12
+- **Section:** Iterate — fix: anchor or remove _GENERATED_PREFIXES skip-safety per prefix
+- **Run-ID:** iterate-2026-09-12-generated-prefixes-provenance-anchor
+- **Context:** is_safe_to_skip_review's _GENERATED_PREFIXES check was a plain directory-prefix match, unanchored unlike the function's basename/review-evidence categories. Round 4 (parent iterate iterate-2026-09-11-pr-review-evidence-filter-gap) traced one prefix to a real consumer: security_gate.py trusts .shipwright/compliance/ci-security.json's content unverified as a deploy-gate oracle.
+- **Decision:** Per prefix: the compliance-evidence and agent-doc-runtime prefixes are removed from skip-safety entirely (no closed writer shape / gitignored-never-tracked). iterates/ first anchored to its RUN_ID_STRICT filename shape, then also removed after doubt review showed that shape is public/forgeable and complexity_history.load_history_prior trusts it unauthenticated. CHANGELOG-unreleased.d/ anchored to <category>/<name>_<NNN>.md (ASCII digits). is_generated_path (hide side) unchanged. Full rationale: spec_ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Doubt review + external code review both independently disproved 'write-time-enforced filename shape' as equivalent to provenance for a file an automated consumer trusts unauthenticated — the same lesson Round 4 already established for reviews.json, applied per-prefix here.
+- **Consequences:** PRs touching only the compliance-evidence, iterates, or agent-doc-runtime prefixes now get one real (if trivial) review call instead of an automatic skip; CHANGELOG-only PRs keep the automatic skip. pr_review_generated.py split into two files to stay under the 300-line guideline. A pre-existing, unrelated whitespace-normalization gap in both classifiers was found by external review and filed as trg-0eb7b587 (out of scope here).
+- **Rejected:** Narrowing .shipwright/agent_docs/iterates/ to a RUN_ID_STRICT-anchored filename (kept skip-safe) was the first draft; rejected once complexity_history.load_history_prior was identified as an unauthenticated content-trusting consumer of that exact shape.
+- **Details:** [iterate-2026-09-12-generated-prefixes-provenance-anchor-skip-safety.md](../planning/adr/iterate-2026-09-12-generated-prefixes-provenance-anchor-skip-safety.md)
+
+---
+
+### ADR-458: Name keystone-carrying layer-coverage helpers individually in SENSITIVE_PATH_RE
+- **Date:** 2026-09-12
+- **Section:** shipwright-security/review_record_tier
+- **Run-ID:** iterate-2026-09-12-keystone-helper-sensitive-path
+- **Context:** trg-a719e3b7: the keystone AC gate's own _keystone_*.py verifier modules import three shared, non-_keystone_-prefixed helpers (_layer_coverage_ac.py, _layer_coverage_binding.py, _layer_coverage_core.py) that carry keystone-specific decision logic, so an edit to those helpers escaped the mandatory-review pattern added for trg-9967000f.
+- **Decision:** List the three helper files individually in SENSITIVE_PATH_RE rather than matching the whole verifiers/_layer_coverage_ directory.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Closes the residual gap for the files keystone actually imports; the list must be kept in sync (via the same import grep) whenever a _keystone_*.py module's imports change.
+- **Rejected:** Directory-wide match on verifiers/_layer_coverage_ — rejected because those same helpers also back an unrelated non-keystone layer-coverage gate, and a directory match would force mandatory review onto that gate's own unrelated maintenance PRs.
+
+---
+
+### ADR-459: Local PR-review preflight (--base/--diff-file)
+- **Date:** 2026-09-12
+- **Section:** Iterate — change: local PR-review preflight
+- **Run-ID:** iterate-2026-09-12-pr-review-local-preflight
+- **Context:** Three real PRs blocked 2026-09-12 by the required pr_review.py CI gate; each cost a full push-CI-review round trip to learn the verdict.
+- **Decision:** Add pr_review.py --base/--diff-file local preflight (new pr_review_local.py), same prompts/model/filter as CI, wired into F11 before push; a preflight, never a waiver.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The gate itself works (3 real defects in one day) - the fix is running it sooner, not less often; reuses F0's private-temp-index diff technique rather than importing it, to avoid coupling plugins.
+- **Consequences:** Operator learns the CI verdict before pushing; a malformed invocation or unresolvable --base/--diff-file still STOPs (EXIT_USAGE), only real infra unavailability is advisory.
+- **Rejected:** Narrowing the required CI gate to Tier-3/external-contributor PRs only - rejected, CI stays the sole required authority for every PR.
+- **Details:** [iterate-2026-09-12-pr-review-local-preflight-design.md](../planning/adr/iterate-2026-09-12-pr-review-local-preflight-design.md)
+
+---
+
+### ADR-460: One-time rollout transition grace for FR-01.02 #5/#10
+- **Date:** 2026-09-12
+- **Section:** Iterate — change: FR-01.02 #5/#10 rollout-transition grace
+- **Run-ID:** iterate-2026-09-12-project-gate-rollout-transition
+- **Context:** Stage-2 code review on PR #729 (trg-9583d3a8): check_criteria_free_of_implementation_detail (#5) and check_no_empty_split (#10) are unconditional hard blocks, unlike check_basis_forbids_assumed/check_starting_guidance_present. An extension project's pre-existing spec.md content, written before these gates existed, can hard-fail Step 8 for unrelated legacy content. A permanent scope==extension skip was ruled out: neither gate is greenfield-only.
+- **Decision:** One-time, per-repo rollout-transition grace mirroring the check_binding_completeness precedent (PR #721), adapted to text/count identity: per-criterion string membership for #5, declared-split+zero-rows-at-rollout for #10. New modules _project_gate_rollout.py/_project_gate_rollout_snapshot.py/_project_gate_grace.py/_project_gate_extras_rollout.py. Fixed epoch 2026-09-12T06:23:06Z (PR #729's merge commit).
+- **Commit:** (assigned post-merge)
+- **Consequences:** Pre-existing extension-scope content violating #5/#10 now downgrades to advisory; content authored/edited after the rollout instant is judged normally at every scope. #4/#15/#11 untouched. Two follow-up triage cards minted: trg-ac2ef362 (adopt AC-miner still gets no grace) and trg-fcb3ee97 (a third near-identical rollout-resolver copy now exists).
+- **Rejected:** A permanent scope==extension skip (excuses future violations too) and doing nothing (leaves a measured regression for adopt-ed projects) — both rejected; see the full ADR for the glm/openai architecture-review contradiction and its resolution.
+- **Details:** [iterate-2026-09-12-project-gate-rollout-transition.md](../planning/adr/iterate-2026-09-12-project-gate-rollout-transition.md)
+
+---
+
+### ADR-461: Raise ITERATE_RETENTION to 200 for branch-concurrency headroom
+- **Date:** 2026-09-12
+- **Section:** F3
+- **Run-ID:** iterate-2026-09-12-retention-cap-headroom
+- **Context:** Retention's self-heal (re-reads full disk state each append) was modeled for ~2 concurrent branches; actual concurrency has grown well past that, so different branches scatter-prune different other-run entry files near the old 50 cap.
+- **Decision:** Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py; update its docstring, inline comment, and F5c.md's retention prose to match; add a regression test guarding the three stay in sync.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The mechanism (self-heal, pins) is unchanged and already covered by test_retention_merge_overshoot.py; only its sizing was stale. A cap bump is the smallest fix that stops the scatter-prune symptom without building new machinery.
+- **Consequences:** Directory can hold ~200 unpinned summaries before pruning resumes; shipwright_events.jsonl remains the durable full history regardless; two pre-existing tests with hardcoded fixture counts were parameterized on ITERATE_RETENTION.
+- **Rejected:** Main-only post-merge retention step (new machinery the 2026-08-15 ADR already declined); F6/pre-commit guard against staging another run's deletion (would defeat retention's designed function, since evicting other runs' oldest entries is the mechanism working as intended).
+- **Details:** [iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md](../planning/adr/iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md)
+
+---
+
+### ADR-462: Retention sweeps the entry file's evidence sibling too
+- **Date:** 2026-09-12
+- **Section:** shared/scripts/tools/append_iterate_entry.py
+- **Run-ID:** iterate-2026-09-12-retention-sibling-sweep
+- **Context:** trg-b28a039c raised ITERATE_RETENTION 50->200 but deferred this: _apply_retention unlinked only the <run_id>.json entry file, never its <run_id>.test-results.json evidence sibling written by install_current_evidence, so the evidence file class grew unbounded (127 orphans measured 2026-09-12).
+- **Decision:** Retention stays in its current per-append shape; _apply_retention now also unlinks evidence_file_for(project_root, run_id) for each evicted entry, tolerating EvidenceError/FileNotFoundError/OSError (no evidence ever installed, or already raced away).
+- **Commit:** (assigned post-merge)
+- **Consequences:** Evidence files no longer outlive the entry that owns them once retention sweeps it. Sweep unit is now (entry, evidence) together, matching the sibling-write relationship install_current_evidence already establishes at append time. Backlog cleanup of the 127 pre-existing orphans is a separate follow-up (safe: nothing reads a deleted run's evidence).
+- **Rejected:** Removing retention entirely (as trg-b28a039c also floated) was rejected for this iterate: it survives in its current shape, so the sweep-unit question is answered as 'also unlink the sibling', not as part of a larger retention rework.
+
+---
+
+### ADR-463: One canonical basename per review-evidence kind
+- **Date:** 2026-09-12
+- **Section:** Iterate — change: canonical review-evidence basenames
+- **Run-ID:** iterate-2026-09-12-review-evidence-canonical-names
+- **Context:** Review-evidence files were written with 40+ ad-hoc per-run filenames, so the PR-review classifier could not safely allowlist genuine review output without being too loose or unable to keep up (trg-3b206c08).
+- **Decision:** Give each kind (self/spec/code/doubt/plan/external_code) ONE canonical basename in a shared registry; record_review_pass.py rejects a mismatched --payload-file; every producer site (incl. the SubagentStop salvage hook) redirects to it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** spec/code/doubt reuse the exact names the classifier already anchors to; self keeps its established name; plan/external_code match the classifier's own cited external-*review*-raw.json example. Basename-only, not directory-anchored -- the classifier's own regex is already run-anchored.
+- **Consequences:** A future classifier exact-path allowlist can safely extend to this family. The salvage hook now writes into the same file the orchestrator writes, guarded by a wrong-root refusal so a misresolved project root cannot plant a stray in the main tree.
+- **Rejected:** Widening the classifier wildcard or growing its allowlist ad hoc (both rejected by the prior filter-gap iterate); enforcing the run directory here too (would need rewriting ~10 test fixtures for a risk the classifier's regex already covers).
+- **Details:** [iterate-2026-09-12-review-evidence-canonical-names-canonical-basenames.md](../planning/adr/iterate-2026-09-12-review-evidence-canonical-names-canonical-basenames.md)
+
+---
+
+### ADR-464: Correct Step 8 agent_docs file count from 5 to 3
+- **Date:** 2026-09-12
+- **Section:** shipwright-project Step 8 completion checklist
+- **Run-ID:** iterate-2026-09-12-step8-agentdocs-5files-doc-fix
+- **Context:** step-8-completion.md and SKILL.md item 4 claimed the agent_docs directory has 5 files; project-scaffolding.md's producer contract and the new starting_guidance_present gate (FR-01.02 #11) both write only 3 (architecture.md, decision_log.md, conventions.md), plus CLAUDE.md at project root as item 3.
+- **Decision:** Fixed the prose to say 3 files and named them, and noted session_handoff.md is written later by the Stop hook and does not count toward this check.
+- **Commit:** (assigned post-merge)
+- **Consequences:** The checklist now matches the gate and the producer contract; no behavior or gate logic changed.
+
+---
+
+### ADR-465: Backfill AC-proving tests for FR-01.03's 21 and FR-01.04's 12 unbound ACs
+- **Date:** 2026-09-12
+- **Section:** req3-05-test-backfill-mono t3
+- **Run-ID:** iterate-2026-09-12-t3-plan-design
+- **Context:** FR-01.03 (21 ACs) and FR-01.04 (12 ACs) had zero bound acceptance criteria per shipwright_ac_coverage_baseline.json. t0 seam survey assigned this cluster exactly two roots: plugins/shipwright-plan/tests and plugins/shipwright-design/tests.
+- **Decision:** Bound 28/33 ACs via @pytest.mark.covers(), mostly onto existing tests; 9 ACs needed new test functions invoking real production CLIs (external_review.py, resolve_gate_policy.py, record_requirement_impact.py). 5 ACs left unbound: AC20/AC21 name DeepSeek, superseded by GLM (Exception 6); AC10's full 'others left untouched' claim is not enforced by the production gate, which deliberately allows Chrome Change Propagation to touch every screen (Exception 7); AC03/AC11 have no artifact a deterministic check can observe mid-session -- self_review_fallback_ran is confirmed write-only and AC11's stop-and-ask has no recorded flag (Exception 8). AC20 and AC10 were first (wrongly) bound, then unbound after Stage-1 spec-review REJECTed both as unfaithful -- corrected 2026-09-12. AC03 and AC11 were bound as drift-pin tests (same class as pre-existing AC02), dispositioned 'kept as-is' through two advisory review rounds, then unbound after the Tier-3 PR-review gate (the actual merge-blocking check) found the text-pin insufficient for these two NET-NEW bindings -- corrected 2026-09-12. AC09's binding was also strengthened after the same Tier-3 pass found its renderer-only test insufficient: added an end-to-end test driving external_review.main() with only the network call stubbed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Backfill rule: bind to an existing seam, never invent one; a test must PROVE the AC, not merely be shaped around the implementation. Every binding was verified by reading the target test body against the ACs exact spec.md text before tagging. Full-detail spec-ref has Self-Review, Confidence Calibration, and both review-cascade disposition tables.
+- **Consequences:** unbound_count 205->177 (28 removed, verified via git diff exact-match). Two new test files stay under 300-LOC. Compliance-report regen files reverted post-derivation (t1/t2 precedent) so this diff carries only the baseline change. Full detail: spec-ref.
+- **Rejected:** Tagging AC21 onto a differently-scoped test was rejected (misrepresents proof). Tagging AC20 onto the current-roster tests, and AC10 onto a test that doesn't prove 'others untouched', were both initially done, then REJECTed by Stage-1 spec-review and reverted. Keeping AC03/AC11 bound to drift-pin tests after two advisory reviews accepted it was rejected by the Tier-3 gate and reverted; both stay as unmarked drift-pin guards. Self-granting a 3rd root for stronger existing shared/tests coverage was rejected (t1 PR#730 precedent) -- flagged, not self-authorized; recorded as seam-survey Named Exception 6.
+- **Details:** [iterate-2026-09-12-t3-plan-design-fr-01-03-01-04-ac-backfill.md](../planning/adr/iterate-2026-09-12-t3-plan-design-fr-01-03-01-04-ac-backfill.md)
+
+---
+
+### ADR-466: Bind FR-01.06/FR-01.07 AC coverage to existing test seams, leave 7 unprovable ACs unbound
+- **Date:** 2026-09-12
+- **Section:** req3-05-test-backfill-mono/t4
+- **Run-ID:** iterate-2026-09-12-t4-test-security
+- **Context:** shipwright_ac_coverage_baseline.json listed 18/18 FR-01.06 ACs and 14 FR-01.07 ACs as unbound (no proving test). Campaign req3-05 requires backfilling AC-qualified @pytest.mark.covers markers onto real proving tests, attaching to the highest existing test boundary rather than a new harness.
+- **Decision:** Bound 25 of the 32 ACs to existing/strengthened tests across plugins/shipwright-test/tests, plugins/shipwright-security/tests, and one bare-tag upgrade in shared/tests (3-root waiver per operator ruling 2026-09-12). Left 7 ACs unbound with a recorded reason each (conjunctive ACs where only half is testable, or no observable artifact exists), per seam-survey Exceptions 1/4/7/8 precedent.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Per t3's Tier-3 PR-Review REJECT lesson, every binding was checked against 'would this test fail if the production code broke this specific way' before being claimed; the 7 unbound ACs are exactly the cases where that answer was honestly no.
+- **Consequences:** unbound_count dropped 177->152 in the coverage baseline (anti-ratchet). External plan + code review (glm+openai) both found real gaps in two new tests (AC01 scan-type filtering, AC12 gitignore proof); both fixed with stronger production-driving assertions, re-verified green (1031 passed) before commit.
+- **Rejected:** Binding all 32 ACs regardless of provability (rejected: would repeat t3's REJECT pattern of tests shaped around the implementation, not proving the AC). Adding a machine-readable reason field to the baseline schema (rejected: cross-cutting schema change, out of scope for a test-binding unit, same disposition as t0/t2/t3).
+- **Details:** [2026-09-12-t4-test-security-miniplan.md](../planning/iterate/2026-09-12-t4-test-security-miniplan.md)
+
+---
+
+### ADR-467: Bind AC-proving tests at genuine seams; except with reasons where none exists
+- **Date:** 2026-09-12
+- **Section:** Iterate — change: t5 deploy-changelog AC backfill
+- **Run-ID:** iterate-2026-09-12-t5-deploy-changelog
+- **Context:** FR-01.08 (/shipwright-deploy) and FR-01.09 (/shipwright-changelog) had 30 spec ACs with zero @covers bindings; the campaign rule requires binding at the highest existing user-observable seam, never simulating proof.
+- **Decision:** Bound 23/30 ACs to existing or new tests exercising real production code paths (4 new test functions total); recorded 7 unbound with evidence-grounded, per-AC reasons rather than forcing a weak binding.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Verified each binding would actually fail if the AC described regression occurred; rejected two near-miss bindings during binding (a post-hoc verifier, a wrong code path) and three more during external plan/code review.
+- **Consequences:** AC coverage baseline unbound_count 152->129; two grandfathered bloat baseline entries bumped for legitimate tag/docstring growth; a 4th ADR-044 test root used for 2 ACs, flagged for operator ratification.
+- **Rejected:** Forcing AC02/AC05/AC08/AC11/AC12 (deploy) and AC01/AC15 (changelog) onto seams that do not prove them; inventing new production testability hooks to make them provable was out of this unit's scope.
+
+---
+
+### ADR-468: Bind AC-proving tests to the real check function + its wiring; flag out-of-root seams
+- **Date:** 2026-09-12
+- **Section:** req3-05-test-backfill-mono t6: FR-01.02/FR-01.16 AC bindings
+- **Run-ID:** iterate-2026-09-12-t6-project-elicitation
+- **Context:** 25 ACs (FR-01.02 AC01-15, FR-01.16 AC01-10) were listed unbound in shipwright_ac_coverage_baseline.json. Two declared test roots: plugins/shipwright-project/tests, shared/tests.
+- **Decision:** 23 of 25 ACs bound: enforced ACs tagged at the pure GateResult function AND paired with the run_project_checks wiring test; prompt-only ACs bound to drift tests pinning the exact rule sentence (never just the heading). AC01/AC15's only full seam sat in a 3rd/4th ADR-044 root -- flagged via trg-704cdb22 rather than self-authorized, then approved by the campaign owner 2026-09-12 (dismissed) and bound. AC03/AC04 remain unbound: no seam anywhere checks interview completeness or 'nothing invented'.
+- **Commit:** (assigned post-merge)
+- **Rationale:** External plan+code review both flagged wrapper-only bindings and mislabeled tags; fixed before finalization (paired FR-01.02 AC06/AC08/AC13/AC14 with the wiring test, added the missing FR-01.02/AC07 pure-function tag, dropped a mislabeled FR-01.16/AC10 tag).
+- **Consequences:** shipwright_ac_coverage_baseline.json unbound_count 129->106 (repo-wide, since the manifest regen picked up other in-flight tags too; this unit's own contribution is the 23 newly-bound FR-01.02/FR-01.16 ACs). Full per-AC disposition table in the linked spec-ref.
+- **Rejected:** Forcing a weak/proxy binding on AC01/AC03/AC04/AC15 to reach 25/25 — rejected by the sub-iterate's own binding constraint. Self-authorizing a 3rd/4th test root for AC01/AC15 — rejected, mirrors t5's own precedent of flagging rather than deciding unilaterally.
+- **Details:** [iterate-2026-09-12-t6-project-elicitation-ac-bindings.md](../planning/adr/iterate-2026-09-12-t6-project-elicitation-ac-bindings.md)
+
+---
+
+### ADR-469: Bind AC-proving tests to the real audit/engine seams; flag out-of-root seams; triage a real spec-vs-implementation gap
+- **Date:** 2026-09-12
+- **Section:** req3-05-test-backfill-mono t7: FR-01.10/FR-01.18 AC bindings
+- **Run-ID:** iterate-2026-09-12-t7-compliance-grade
+- **Context:** 22 ACs (FR-01.10 AC01-14, FR-01.18 AC01-08) listed unbound in shipwright_ac_coverage_baseline.json. Two declared test roots: plugins/shipwright-compliance/tests, plugins/shipwright-grade/tests.
+- **Decision:** 21 of 22 ACs bound to existing, real, passing tests, never a renderer/wrapper-only proxy. AC03 needed a 3rd ADR-044 root (shared/tests); AC04 needed a 4th (integration-tests), found only after External Plan Review asked for an actual search. Both flagged, per the campaign owner's standing pre-approval. AC06 stays unbound: Group D's D5 sets status=fail on the exact scenario AC06 says must not fail the audit - filed as triage card trg-6bda0dbb.
+- **Commit:** (assigned post-merge)
+- **Rationale:** External plan review (OpenAI HIGH) on cross-root JUnit aggregation for AC03 verified via discover_test_roots+ci_junit_plan.py, no gap. OpenAI medium asked for a real AC04 search - found the seam, 20/22->21/22. GLM's stacked/multi-arg covers-decorator concerns both empirically verified via links_for(), no regression.
+- **Consequences:** shipwright_ac_coverage_baseline.json unbound_count 106->85 repo-wide (this unit's contribution: 21 of its 22 ACs). Full disposition table + both external-review findings tables (18 findings total) in the linked spec-ref.
+- **Rejected:** Forcing a proxy binding on AC06 - rejected by this unit's own binding constraint. Self-authorizing extra test roots - rejected, mirrors t5/t6. OpenAI's claim AC06 needs a code fix now - rejected: unbound-with-a-triage-card is the established t3-t6 disposition for a genuine spec conflict.
+- **Details:** [iterate-2026-09-12-t7-compliance-grade-ac-bindings.md](../planning/adr/iterate-2026-09-12-t7-compliance-grade-ac-bindings.md)
+
+---
+
+### ADR-470: Record the deferred test-results orphan defect instead of fixing or cleaning it now
+- **Date:** 2026-09-12
+- **Section:** Iterate — change: test-results orphan triage card
+- **Run-ID:** iterate-2026-09-12-test-results-orphan-triage
+- **Context:** The retention rework (trg-b28a039c) fixed the entry-cap collision but deferred its sibling defect -- entry pruning orphans a run's .test-results.json -- to its own iterate, which was never filed.
+- **Decision:** Record the deferred defect as a standalone triage card (trg-42edfde6) with the measured orphan count and root cause; make no code change.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixing or bulk-deleting now would preempt the rework's design decision on sweep unit, or manufacture new orphans before the rule changes; recording first keeps the finding from being lost twice.
+- **Consequences:** The 127 pre-existing orphans and the ongoing leak stay visible and actionable instead of silently re-accumulating; fix and cleanup stay sequenced after the rework.
+- **Rejected:** Fixing append_iterate_entry.py's retention now (preempts trg-b28a039c's rework); bulk-deleting the 127 orphans now (should follow the rework, per PR #736's own precedent).
+
+---
+
+### ADR-471: mark_status reports its outbox-vs-tracked write target
+- **Date:** 2026-09-12
+- **Section:** mark_status route reporting
+- **Run-ID:** iterate-2026-09-12-triage-route-report
+- **Context:** mark_status() silently derives outbox-vs-tracked for a status flip (should_route_to_outbox: origin+default-branch+not-CI), unlike amend_triage_item() which reports it. Three same-session flips landed tracked-on-a-branch unnoticed, one invisible on the board for hours.
+- **Decision:** mark_status(return_item=True) now returns (previous, item, to_outbox), additive. New lib/triage_route.py centralizes route_label/route_note. All four CLI writers (dismiss/snooze/amend/promote+defer+unpark) report route in --json and human stderr. Derivation stays non-overridable.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reporting through the shared dispatch, not just the two named call sites, closes the gap for every writer; the derivation itself stays git-state-only per the card's explicit constraint.
+- **Consequences:** Scope grew to triage_promote.py's promote()/_transition() and cmd_promote/_status_flip after two external reviewers (GLM, Codex) flagged dismiss's silent non-json path. A Stage-1 spec-reviewer pass caught the extension breaking 4 pre-existing exact-dict-equality tests; fixed same-run.
+- **Rejected:** A caller --route flag (rejected: reintroduces the data-loss risk the derivation prevents). Fixing only the two literal call sites (rejected: leaves dismiss silent, defeating the change's purpose).
+- **Details:** [iterate-2026-09-12-triage-route-report-mark-status-route-reporting.md](../planning/adr/iterate-2026-09-12-triage-route-report-mark-status-route-reporting.md)
+
+---
+
+### ADR-472: Codex CLI as a fallback transport for the internal review cascade
+- **Date:** 2026-09-17
+- **Section:** Iterate — feature: Codex CLI internal review transport
+- **Run-ID:** iterate-2026-09-13-codex-internal-review-transport
+- **Context:** The internal review cascade assumes Claude Code driving on an Anthropic model. A Codex-CLI-driven session or a non-Anthropic-redirected session has no genuine independent Agent-tool spawn.
+- **Decision:** Run a codex exec subprocess as a per-role reviewer, dispatched from a single stated rule at four orchestrator spawn sites, under a scrubbed env allowlist with dual schema validation.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the existing external-review leg's subprocess isolation posture and record_review_pass.py's existing --from values rather than inventing new patterns.
+- **Consequences:** Every role degrades gracefully on failure instead of silently proceeding or hard-crashing; record_review_pass.py gains --transport to keep Codex-answered rows distinguishable.
+- **Rejected:** A ModelConfig schema bump forking review-invocation prose at every model-tier note; a new --from codex-transport adapter; inheriting the ambient env; sending the agent .md verbatim; parallel role dispatch.
+- **Details:** [iterate-2026-09-13-codex-internal-review-transport-design.md](../planning/adr/iterate-2026-09-13-codex-internal-review-transport-design.md)
+
+---
+
+### ADR-473: Add a read-only, run-scoped completion oracle for Codex Light
+- **Date:** 2026-09-15
+- **Section:** Iterate — change: Codex Light completion oracle
+- **Run-ID:** iterate-2026-09-15-codex-light-shipwright
+- **Context:** The WebUI needs a single local query surface that can tell whether one Codex-run phase has completed without changing delivery state.
+- **Decision:** Add session-scoped verifier siblings and one CLI that returns JSON verdicts for C1 phases, build work, and read-only iterate delivery state.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Run identity from session stamps is stronger than shared project-level completion signals and keeps the WebUI from duplicating Shipwright semantics.
+- **Consequences:** Existing C1 callers retain their broad historical fallbacks; the new oracle deliberately excludes unscoped fallbacks and never invokes deliver_pr.py.
+- **Rejected:** Changing the legacy C1 function or using deliver_pr.py as an oracle would broaden regression risk or mutate PR delivery.
+
+---
+
+### ADR-474: Mechanise FR-01.08/FR-01.09 prompt-only-mechanisable ledger lines
+- **Date:** 2026-09-15
+- **Section:** AC-evidence-ledger req3-06 e4: FR-01.08 / FR-01.09 prompt-only lines
+- **Run-ID:** iterate-2026-09-15-e4-checks-deploy-changelog
+- **Context:** FR-01.08/FR-01.09 ledger rows marked prompt-only (mechanisable) had no deterministic oracle proving the behaviour happens. Per D7, a fake/weak gate is worse than an honest downgrade with a documented reason.
+- **Decision:** Built real deterministic checks (rollback_audit.py append-only trail + deploy_checks verifiers reconciling smoke/rollback/phase_history with fail-closed timestamps; aggregate_changelog --fail-if-empty) for every row with a real oracle; downgraded 2 rows with documented residual-limitation reasons. See spec-ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two rounds each of external plan + code review (GLM+OpenAI) found and fixed 3 genuine fail-open bugs via ADR-024 round-trip probes, not hand fixtures; full detail in spec-ref.
+- **Consequences:** Two new durable write surfaces recorded in architecture.md. deploy_checks.py crosses 300 LOC (new baseline entry); several test files re-baselined upward. anti_ratchet_check.py --worktree clean.
+- **Rejected:** GLM: Path(None) crash claim empirically disproven (CLI default is '.', not None). OpenAI (2 rounds): aggregate() positional-regression claim disproven via existing '*,' keyword-only marker. Full detail in spec-ref.
+- **Details:** [iterate-2026-09-15-e4-checks-deploy-changelog-mechanise-fr0108-fr0109.md](../planning/adr/iterate-2026-09-15-e4-checks-deploy-changelog-mechanise-fr0108-fr0109.md)
+
+---
+
+### ADR-475: Bind 16 of 30 unbound ACs to real enforcing tests across /shipwright-run, /shipwright-build, /shipwright-preview, /shipwright-adopt
+- **Date:** 2026-09-15
+- **Section:** Iterate — campaign req3-05-test-backfill-mono, sub-iterate t8: FR-01.01/FR-01.05/FR-01.12/FR-01.13 AC-proving tests
+- **Run-ID:** iterate-2026-09-15-t8-run-build-preview-adopt
+- **Context:** shipwright_ac_coverage_baseline.json listed 30 unbound ACs across FR-01.01 (7), FR-01.05 (8), FR-01.12 (9), FR-01.13 (6) at the start of this run. Full per-AC table + review disposition: .shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md.
+- **Decision:** Tagged 16 ACs onto real enforcing tests with @pytest.mark.covers (FR-01.01 7/7, FR-01.05 0/8, FR-01.12 4/9, FR-01.13 5/6). Remaining 14 recorded unbound with a concrete no-seam reason each. See spec-ref for the full per-AC table.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Never bind a test that only proves part of a conjunctive AC's REQUIRED clause.
+- **Consequences:** shipwright_ac_coverage_baseline.json unbound_count: 85 -> 69 repo-wide. Two of an original 18 taggings were retracted after external review found each proved less than the full AC (see spec-ref).
+- **Details:** [iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md](../planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)
+
+---
+
+### ADR-476: Bind 24 of 31 unbound ACs to real enforcing tests across cross-repo contract, CI re-check, main-repair, and context-cost meter
+- **Date:** 2026-09-15
+- **Section:** Iterate — campaign req3-05-test-backfill-mono, sub-iterate t9 (final unit): FR-01.15/FR-01.17/FR-01.19/FR-01.20 AC-proving tests
+- **Run-ID:** iterate-2026-09-15-t9-contract-cihost-repair-contextcost
+- **Context:** shipwright_ac_coverage_baseline.json listed 31 unbound ACs across FR-01.15 (8), FR-01.17 (7), FR-01.19 (10), FR-01.20 (6) at the start of this run — the campaign's final unit. Full per-AC table + review disposition: .shipwright/planning/adr/iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md.
+- **Decision:** Tagged 24 ACs onto real enforcing tests with @pytest.mark.covers (FR-01.15 4/8, FR-01.17 6/7, FR-01.19 8/10, FR-01.20 6/6). Remaining 7 recorded unbound with a concrete no-seam reason each (seam survey Exceptions 2, 10, 11). See spec-ref for the full per-AC table.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Never bind a test that only proves persistence of a same-run artifact rather than real enforcement; never bind a conjunctive AC on one provable clause alone.
+- **Consequences:** shipwright_ac_coverage_baseline.json unbound_count: 69 -> 45 repo-wide. One of an original 25 taggings (FR-01.15/AC08) was retracted after external review found it proved persistence of a same-run doc sentence, not enforcement. This is the final unit of the campaign; all 10 sub-iterates (t0-t9) are now complete.
+- **Rejected:** Inventing new production wiring to prove FR-01.15/AC05 through a publish/gate call site that does not exist yet — rejected as re-deciding a seam t0 already assigned to the library functions themselves.
+- **Details:** [iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md](../planning/adr/iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md)
+
+---
+
+### ADR-477: Row-scoped status counting for the AC-evidence ledger
+- **Date:** 2026-09-16
+- **Section:** Iterate — bug: AC-evidence ledger status counting restricted to table rows
+- **Run-ID:** iterate-2026-09-16-ac-ledger-status-cell-counting
+- **Context:** count_statuses counted every backtick-quoted canonical status anywhere in the 2100+-line REQ-3 ledger, not just status-cell content. On 2026-09-12 a sub-iterate's prose paragraph inflated the live count past the ADR's recorded totals, producing a false spec-reviewer REJECT.
+- **Decision:** Restrict counting to markdown table-row lines only, excluding table blocks whose header's first cell is structurally 'Status' (legend + historical summary tables), with fence-tracking so code-block examples never count.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Table-row + structural header exclusion is verified against the live ledger (incl. a real table headed 'Enforcement' instead of 'Status'), and cross-checked against an independent by-hand recount (25) already recorded in the ledger.
+- **Consequences:** Every historical total moves; past ADRs/decision-drops/ledger totals are NOT rewritten (same convention as ADR numbering). New totals stated in a forward-only reconciliation paragraph: 1/25/13/25/92 (mechanisable/judgement/untested/unimplemented/tested).
+- **Rejected:** Column-name-based parsing (find a 'Status' column, count only that column) — rejected: the live ledger has a real criterion table whose status column is headed 'Enforcement', so column-name matching would silently undercount it.
+- **Details:** [2026-09-16-ac-ledger-status-cell-counting.md](../planning/iterate/2026-09-16-ac-ledger-status-cell-counting.md)
+
+---
+
+### ADR-478: Producer-side hygiene filtering for mined acceptance criteria
+- **Date:** 2026-09-16
+- **Section:** Iterate — change: adopt miner hygiene gate conflict
+- **Run-ID:** iterate-2026-09-16-adopt-miner-hygiene-gate-conflict
+- **Context:** Rollout-transition grace only helps pre-rollout spec.md content; every future /shipwright-adopt onboarding mines gate-violating bullets with no grace at all (trg-ac2ef362).
+- **Decision:** Filter every mined bullet through the shared fr_hygiene_detectors.violations() gate before appending; drop dirty bullets, strip a dirty describe prefix when the bare it-label is clean, dedup per file, filter before the 10-item cap.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Internal + 2 rounds external architecture review (glm+openai) approved fixing the producer over extending gate-side grace: generalizes to all future onboardings, no gate change needed, reuses an existing cross-plugin loader idiom.
+- **Consequences:** Mined ACs are gate-clean at generation time for every future onboarding. An all-dirty candidate file now falls through to its next sibling. New hard module-level shared/ dependency, matching 8 existing precedents.
+- **Rejected:** Gate-side grace extension (would need to grow indefinitely); a dropped-bullets reporting feature (real but separable); AST test parsing (not worth the dep); remediating the installed-base window (tracked separately as trg-655cf276).
+- **Details:** [iterate-2026-09-16-adopt-miner-hygiene-gate-conflict.md](../planning/adr/iterate-2026-09-16-adopt-miner-hygiene-gate-conflict.md)
+
+---
+
+### ADR-479: Coded release entry point for FR-01.08 AC02/AC05
+- **Date:** 2026-09-16
+- **Section:** Iterate — change: coded release entry point for FR-01.08 AC02/AC05
+- **Run-ID:** iterate-2026-09-16-deploy-ac02-ac05-coded-gates
+- **Context:** AC02/AC05 existed only as SKILL.md agent prose, untestable (t5 external review, glm finding 5).
+- **Decision:** Add release.py: agent-free CLI chaining test-gate, deploy, smoke, and coded auto-rollback, with a required --target guard for PROD.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Doubt review's 6 findings: PROD guard, deadline-gate, and health-recheck fixed in code; branch-granularity and no-lock recorded as known limitations, out of scope for this unit.
+- **Consequences:** 20 in-process + 4 subprocess E2E tests now prove AC02/AC05; hosting.py/release_rollback.py/test_gate.py split out to keep one oracle each.
+- **Rejected:** Extending jelastic_client.py in place (circular import with rollback.py); fixing branch-vs-commit granularity or adding a concurrency lock now (bigger design, out of proportion to this unit).
+- **Details:** [iterate-2026-09-16-deploy-ac02-ac05-coded-gates-coded-release-gate.md](../planning/adr/iterate-2026-09-16-deploy-ac02-ac05-coded-gates-coded-release-gate.md)
+
+---
+
+### ADR-480: AST meta-test gate for the plain append_triage_item producer contract
+- **Date:** 2026-09-16
+- **Section:** FR-01.14 row #1 (triage producer contract)
+- **Run-ID:** iterate-2026-09-16-e5-checks-remainder
+- **Context:** FR-01.14 row #1 named a mechanisable oracle but had no gate: a new producer could call the plain, non-deduplicating append_triage_item and write duplicates freely.
+- **Decision:** Built triage_plain_append_scan.py (AST scan, repo-wide) + triage_plain_append_scope.py (lexical scope-chain resolver) + test_triage_append_producer_registry.py (allowlist + reverse-drift guard). See spec-ref for full detail.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The row own oracle named this mechanism; reuses the registry-plus-reverse-guard pattern test_triage_precondition_registry.py already established.
+- **Consequences:** A new automated producer using the plain append now fails CI by name. 10 external review rounds converged on a real scope-chain resolver; remaining gaps are named, empirically checked, and test-pinned. See spec-ref.
+- **Rejected:** Full symbolic import resolution (over-engineering, no real producer ever used it); changing triage_add.py concurrency behavior (out of scope, human-driven CLI not a background producer).
+- **Details:** [iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md](../planning/adr/iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md)
+
+---
+
+### ADR-481: Judgement-line drift tests close the 19/25 discrepancy, no gate built
+- **Date:** 2026-09-16
+- **Section:** Campaign req3-06-enforcement-mono e6 — judgement-line drift tests
+- **Run-ID:** iterate-2026-09-16-e6-judgement-drift-tests
+- **Context:** Campaign named 19 judgement rows (2026-09-06); e1-e5 splits since then made the live count 25.
+- **Decision:** Wrote 9 new drift tests + 6 citations for pre-existing coverage; corrected 1 stale status tag. No gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** D7's abort condition: no oracle for reading-comprehension judgements, so a drift test is the honest ceiling.
+- **Consequences:** 25/25 judgement rows now carry a real drift test; a prose edit to any source doc fails the matching test.
+- **Rejected:** Trusting the stale 19 count; leaving FR-01.02 4b mistagged judgement; a shared markdown-stripping helper.
+- **Details:** [iterate-2026-09-16-e6-judgement-drift-tests-closure.md](../planning/adr/iterate-2026-09-16-e6-judgement-drift-tests-closure.md)
+
+---
+
+### ADR-482: Stop normalizing whitespace in is_generated_path
+- **Date:** 2026-09-16
+- **Section:** shipwright-security PR-review generated-path classifier
+- **Run-ID:** iterate-2026-09-16-generated-path-no-strip
+- **Context:** is_safe_to_skip_review (pr_review_skip_safety.py) used to .strip() its input before matching generated-artifact paths, letting a whitespace-padded real file borrow a canonical shape's classification; fixed on PR #746. Its sibling is_generated_path (pr_review_generated.py) had the identical .strip() and was never fixed to match.
+- **Decision:** Removed .strip() from is_generated_path. Also narrowed _clean_diff_path's blanket .strip() to .rstrip(chr(13)) only (CRLF), its one legitimate purpose, as hardening — investigated and found NOT an active end-to-end gap given filter_generated_paths's all-paths-must-be-generated exclusion rule, but a blanket strip served no other purpose.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Stage-2 code review raised a claimed end-to-end gap (trailing whitespace surviving through _clean_diff_path); investigated and empirically disproved via reverting the fix and re-running the new end-to-end test, which stayed green thanks to the diff --git header's own redundant path capture plus the all-sides exclusion rule. The _clean_diff_path narrowing was kept anyway as a hardening measure, not as the closure of an active vulnerability.
+- **Consequences:** A real file whose name differs from a canonical generated/hidden path only by leading or trailing whitespace is no longer misclassified and hidden from the PR-reviewing model. No change to is_safe_to_skip_review or the match-rule tables themselves.
+
+---
+
+### ADR-483: Corroborated-trunk-ancestry check for check_binding_completeness rollout grace
+- **Date:** 2026-09-16
+- **Section:** Iterate — change: layer-coverage rollout trust anchor
+- **Run-ID:** iterate-2026-09-16-layer-coverage-rollout-trust-anchor
+- **Context:** PR #755 fixed the FR-01.02 #5/#10 rollout-grace trust anchor (trg-4380c61a): a bare committer timestamp is forgeable. Its sibling, _layer_coverage_rollout.py, was deliberately left unfixed, scoped out by the operator.
+- **Decision:** resolve_rollout_commit now also requires the candidate be an ancestor of git_helpers._branch_base_commit's corroborated trunk boundary, mirroring _project_gate_rollout.py's fix exactly.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the already-hardened _branch_base_commit helper rather than a new mechanism, per PR #755's own precedent and the P3.3 ADR's per-gate-family resolver pattern.
+- **Consequences:** A forged, backdated, unmerged branch commit no longer receives grace; existing tests updated to simulate an origin/main trunk ref (on_trunk=True default). trg-4380c61a closed in full.
+- **Rejected:** Leaving the gap open (rejected: same disclosed vulnerability class PR #755 already fixed for its sibling); a shared cross-family resolver refactor now (rejected: out of scope, trg-fcb3ee97).
+- **Details:** [iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md](../planning/adr/iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md)
+
+---
+
+### ADR-484: A third, cross-vendor external-reviewer identity (opus), gated by a required --driver flag
+- **Date:** 2026-09-17
+- **Section:** Iterate — feature: opus review leg + required --driver flag
+- **Run-ID:** iterate-2026-09-16-opus-review-leg-codex-driver
+- **Context:** external_review.py's roster was hard-coded to {glm, openai}. A Codex-driven diff was reviewed by the openai leg — same vendor as the author, a vendor-mode self-review.
+- **Decision:** Add a third Anthropic-backed reviewer leg (opus: local claude CLI, OpenRouter fallback) and a required, no-default --driver {claude,codex} flag; codex swaps the roster to {glm, opus}.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses review_codex()'s stdin/argv isolation posture and resolve_reviewer_model's identity-lock, keeping the new leg consistent with the two existing ones rather than inventing a fourth pattern.
+- **Consequences:** External review is provider-independent from whichever CLI drove the diff. Every call site needed a one-line --driver addition. Ships dormant until trg-a27ab4d9 wires a real Codex-CLI caller.
+- **Rejected:** A default --driver value; env-var auto-detection; a review_opus_openrouter() wrapper; a generic pluggable multi-driver architecture; a literal --model opus alias.
+- **Details:** [iterate-2026-09-16-opus-review-leg-codex-driver-third-reviewer-identity.md](../planning/adr/iterate-2026-09-16-opus-review-leg-codex-driver-third-reviewer-identity.md)
+
+---
+
+### ADR-485: Configurable Codex reviewer identity axis; fable added to Claude TIERS
+- **Date:** 2026-09-18
+- **Section:** Iterate — feature: Codex reviewer-identity config axis + fable tier
+- **Run-ID:** iterate-2026-09-18-codex-review-tier-config
+- **Context:** Codex-side reviewer model was hardcoded (gpt-5.6-sol) with no config story; Claude's TIERS enum had gone stale (missing fable, a real Agent-tool alias).
+- **Decision:** Two new shipwright_model_config.json keys (codex_review/codex_plan_review) + a --codex-model flag, guarded by an unconditional syntactic allowlist raising before launch (no live catalog check). fable added to TIERS, unranked like inherit.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review (glm=revise-high, openai=reject) converged that live codex-catalog validation traded a small earliness gain for a standing dependency on an undocumented, already-shifting CLI subcommand -- the allowlist plus Codex's own launch error is the smallest thing that would do.
+- **Consequences:** Byte-identical default behavior when unconfigured. A configured project gets a used, allowlisted, evidenced override -- supersedes AC2's dormant lock (iterate-2026-09-13). fable is usable across every existing model-tier flag/key without further wiring.
+- **Rejected:** Live codex debug models catalog validation (fail-closed, cache) -- dropped, see rationale. Folding Codex slugs into TIERS as new literals -- rejected, TIERS is a closed enum mirroring the Agent tool's own closed model parameter; Codex's space is open-ended.
+- **Details:** [iterate-2026-09-18-codex-review-tier-config.md](../planning/adr/iterate-2026-09-18-codex-review-tier-config.md)
+
+---
+
+### ADR-486: Session-scoped Codex reviewer model override
+- **Date:** 2026-09-19
+- **Section:** Iterate — change: Codex reviewer session-model override
+- **Run-ID:** iterate-2026-09-19-codex-reviewer-session-override
+- **Context:** Codex-reviewer identity keys (codex_review, codex_plan_review) had no session-scoped override, unlike Claude's four spawn roles via resolve_model_tier's flag_value.
+- **Decision:** Add SHIPWRIGHT_CODEX_REVIEW_MODEL / SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL env vars, resolved inside run_codex_review ahead of the project-config fallback, gated by the existing syntactic allowlist.
+- **Commit:** (assigned post-merge)
+- **Rationale:** codex exec has no first-party flag the shared Python scripts can read at review time; a plain env var reaches every dispatch site for free via Codex CLI's own shell_environment_policy.inherit=all.
+- **Consequences:** Codex reviewer model is now overridable per-session without editing project config; unblocks a future webui field. No durable audit record of which env-sourced model a review used -- mitigated by documenting scoped per-invocation export.
+- **Rejected:** A reviews.json audit-trail schema change to record the resolved Codex model slug durably -- exceeds this task's explicit scope of making the override consumable.
+
+---
+
+### ADR-487: Shared per-journey E2E coverage oracle
+- **Date:** 2026-09-20
+- **Section:** Iterate — fix: per-journey E2E coverage gate
+- **Run-ID:** iterate-2026-09-19-e2e-journey-coverage-gate
+- **Context:** FR-01.06 #6b was deferred because the shared verifier could not import the test plugin matcher without violating ADR-045.
+- **Decision:** Move reusable journey parsing and matching to shared/scripts/lib and call it from the shared test gate; retain plugin shims for compatibility.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A shared oracle makes the existing criterion-14 behavior authoritative at the gate.
+- **Consequences:** Every planned journey needs a matching local spec; greenfield blocks and brownfield creates durable non-blocking follow-up work.
+- **Rejected:** A plugin-private import violates ADR-045; retaining the existence-only floor preserves the known false-positive.
+- **Details:** [iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md](../planning/adr/iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md)
+
+---
+
+### ADR-488: Campaign scheduling: interleaved-serial rationale is stale; scheduler design deferred
+- **Date:** 2026-09-20
+- **Section:** campaign-mode
+- **Run-ID:** iterate-2026-09-20-campaign-dag-scheduler
+- **Context:** Campaigns run all sub-iterates serially even when independent. PR #246's stated collision rationale predates PR #480 excluding derived snapshots from iterate branches.
+- **Decision:** Verified the old rationale no longer applies; documented findings and a depends_on/scheduler design sketch (DAG vs. pre-computed waves) for a future implementation iterate. No scheduler code changed this run.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Verified against current code: derived_snapshots.py excludes 12 paths from commits; events.jsonl/triage.jsonl already reconcile via merge=union + resolve_churn_conflicts.py; concurrent campaigns already run today (feedback_one_loop_per_repo_is_false).
+- **Consequences:** Unblocks a follow-up medium+ iterate to add structured depends_on and parallel scheduling once DAG-vs-waves is chosen; no behavior change today.
+- **Details:** [2026-09-20-campaign-dag-scheduler.md](../planning/iterate/2026-09-20-campaign-dag-scheduler.md)
+
+---
+
+### ADR-489: Canonical plugin-root resolver + deterministic Codex bundle builder
+- **Date:** 2026-09-21
+- **Section:** Iterate — feature: codex plugin bundle + root contract
+- **Run-ID:** iterate-2026-09-20-codex-plugin-bundle-root-contract
+- **Context:** No shared plugin-root resolver existed; Codex has no CLAUDE_PLUGIN_ROOT and Shipwright had no real Codex install path.
+- **Decision:** New lib.plugin_root resolver (SHIPWRIGHT_PLUGIN_ROOT > CLAUDE_PLUGIN_ROOT > PLUGIN_ROOT) plus build_codex_plugin.py bundle builder + verifier; migrate 3 hook call sites.
+- **Commit:** (assigned post-merge)
+- **Rationale:** SHIPWRIGHT_PLUGIN_ROOT is framework-owned and checked first; value-level contract only, does not parse cache topology (phase-aware hook matching under Codex's umbrella install remains unsolved, out of scope).
+- **Consequences:** A script resolves its own plugin root identically under Claude or Codex; Shipwright installs into a real Codex session with every skill discoverable (proven live).
+- **Rejected:** Committing the built bundle instead of gitignoring it: rejected as a drift-prone generated artifact multiplying diff size with no added verification benefit; publication-readiness is out of campaign scope.
+- **Details:** [iterate-2026-09-20-codex-plugin-bundle-root-contract-resolver-and-bundle-builder.md](../planning/adr/iterate-2026-09-20-codex-plugin-bundle-root-contract-resolver-and-bundle-builder.md)
+
+---
+
+### ADR-490: Codex review dispatch: codex_review_roles.py stays the sole config source
+- **Date:** 2026-09-20
+- **Section:** Iterate — change: map skill-prose Task()/Agent-tool calls to real Codex subagent profiles (M4)
+- **Run-ID:** iterate-2026-09-20-m4-codex-subagent-dispatch
+- **Context:** M4 originally planned to generate .codex/agents/<role>.toml custom-agent profiles per review role, mirroring codex_review_roles.py's model/effort/sandbox, so Codex subagent dispatch would parallel Claude's named subagents. Architecture Review (both external legs unanimous) found no automated consumer: codex exec cannot invoke a named custom agent from a non-interactive session.
+- **Decision:** Cut the .codex/agents/*.toml generator entirely (user decision, 2026-09-20). codex_review_roles.py stays the sole canonical source of Codex model/effort/sandbox -- it was always the source the TOML files would have mirrored, never superseded by them. Added -c model_reasoning_effort=high (spec/code/doubt roles) and transport_note_for() so recorded evidence matches the actual codex exec argv.
+- **Commit:** (assigned post-merge)
+- **Rationale:** User confirmed the cut directly: 'fuer mich brauche ich es nicht... wir haben doch aktuell schon einen mechanismus' -- codex_review_roles.py predates this iterate as the canonical source; the generator was net-new, disproportionate work building an unused second copy of settings already centralized.
+- **Consequences:** No .codex/agents/*.toml files ship; Codex CLI dispatch stays argv-driven via codex exec. Any future named-subagent support must re-derive from codex_review_roles.py rather than reintroduce a second, parallel config surface. transport_note now reflects the exact effort/sandbox actually passed, not a separately-maintained file.
+- **Rejected:** Keep the generator for hypothetical future named-agent support -- rejected, no consumer today and an unmaintained second source of truth risks drifting from codex_review_roles.py. Make the TOML files canonical instead of the Python module -- rejected, Architecture Review found no execution path reads them at all.
+
+---
+
+### ADR-491: Codex activation-envelope delivery: prompt-borne, minted reactively by UserPromptSubmit
+- **Date:** 2026-09-20
+- **Section:** Iterate -- change: campaign codex-plugin-execution-reliability, sub-iterate R0
+- **Run-ID:** iterate-2026-09-20-r0-resolve-1a-envelope-delivery
+- **Context:** Parent spec M3/M7 needs a pre-worktree activation signal so a Codex CLI session cannot proceed past tool calls until worktree setup has actually run. R0 resolves which envelope-delivery variant mints that signal and answers two falsification questions, per a 2026-09-20 amendment requiring live proof against Codex CLI 0.155.0. Full context: see --spec-ref.
+- **Decision:** Envelope is prompt-borne, minted reactively by UserPromptSubmit once a real session exists; PreToolUse consumes it atomically, one-time. R2 scope trimmed to terminal producer only (webui/Desktop deferred); Claude-side registration deferred as a separate decision; envelope authenticity takes document-the-risk, not a nonce. Full mechanism, gaps, and Contract for R2: see --spec-ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** First draft proposed a pre-session file keyed by cwd+session identity - impossible, session identity doesn't exist at mint time. Two independent reviews rejected this convergently; corrected design live-proven for UserPromptSubmit. Architecture Review split glm=approve/openai=reject; openai's alternative is the same spoofable cwd-only signal an earlier parent-spec review already rejected. Operator chose to keep the design, trim R2 scope. Full: see spec-ref.
+- **Consequences:** R2 inherits two hard blocking preconditions before AC1a can be met: ordinary trusted-hook denial never proven (only bypass-mode denies observed), and mint-to-consume never chained end-to-end live. R2's scope shrinks to terminal-only. Claude sessions remain unenforced. No production code ships from this run.
+- **Rejected:** Pre-session file-binding (session-identity-impossible at mint time). Claude hooks.json registration now (self-contradicts cross-runtime defense). Per-launch secret/nonce (disproportionate new credential mechanism). All three producers as R2 scope (disproportionate surface). Gating on cwd/worktree-shape with no minted record (already-rejected spoofable signal). Full list: see spec-ref.
+- **Details:** [iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md](../planning/adr/iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md)
+
+---
+
+### ADR-492: Codex first-eligible-call gate
+- **Date:** 2026-09-23
+- **Section:** Iterate — feature: Codex first-eligible-call gate (M3, R2)
+- **Run-ID:** iterate-2026-09-20-r2-m3-hook-parity-iterate-only
+- **Context:** R0 selected prompt-borne envelope + mint/consume design. Architecture Review cut the planned Stop-gate third hook to R2b as disproportionate.
+- **Decision:** Ship two Codex-only hooks (mint, gate) via a new hooks-codex/hooks.json sibling manifest, invisible to Claude Code's loader. One-shot deny budget on the first eligible call.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Tokenized/segment-aware Bash matching (not substring) prevents smuggling other commands past the gate. External code review (glm+openai, both revise) findings fixed in-run; see spec-ref.
+- **Consequences:** Codex sessions get the nudge at zero Claude-visible cost. Per-turn git-subprocess cost not fully eliminated under Codex (R2b follow-up). Stop-gate half explicitly not closed by R2.
+- **Rejected:** Persistent Stop-gated enforcement (disproportionate, deferred R2b); registering in the shared Claude-visible hooks.json (would gate Claude too); substring matching (smuggling risk).
+- **Details:** [iterate-2026-09-20-r2-m3-hook-parity-iterate-only-codex-first-call-gate.md](../planning/adr/iterate-2026-09-20-r2-m3-hook-parity-iterate-only-codex-first-call-gate.md)
+
+---
+
+### ADR-493: Shared commit-resolution primitive for rollout-transition gates
+- **Date:** 2026-09-20
+- **Section:** shared/scripts/tools/verifiers
+- **Run-ID:** iterate-2026-09-20-shared-rollout-commit-resolver
+- **Context:** Two gate families (_project_gate_rollout.py for FR-01.02 #5/#10, _layer_coverage_rollout.py for check_binding_completeness) each carried a ~20-line, byte-identical git rollout-grace resolver (shallow guard, rev-list --before, committer-epoch re-verify, trunk-ancestry trust anchor). External plan review (glm, low) on iterate-2026-09-12-project-gate-rollout-transition flagged this as a third near-identical copy and asked for a shared primitive.
+- **Decision:** Extracted the algorithm into a new module, _rollout_resolution.py, exposing is_shallow / resolve_head_sha / resolve_rollout_commit(project_root, commit_hash, *, epoch). epoch is a required keyword with no default and no module-level constant of its own, so a family cannot accidentally inherit another family's rollout instant. Both family modules became thin wrappers calling it with their own GATE_ROLLOUT_AT_EPOCH, keeping their own caches and public APIs unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The P3.3 ADR's own precedent (each gate family owns its own rollout instant and resolver) is preserved above the extraction line; only the mechanical git plumbing was shared, never the instant or the caching strategy. Verified behavior-identical via behavior_snapshot.py snapshot/verify (green before and after) and a Stage-1/Stage-2/external-code review cascade, all PASS.
+- **Consequences:** A third gate family needing this pattern now calls resolve_rollout_commit with its own epoch instead of copy-pasting a fourth block. Code review (low) also flagged the new test file's real-git harness as duplicating 2+ other shared/tests files -- a pre-existing repo-wide convention, disclosed, not fixed (out of scope: touches 6-8 unrelated files).
+
+---
+
+### ADR-494: Sweep pre-fix orphaned iterate test-results evidence
+- **Date:** 2026-09-21
+- **Section:** iterate-cleanup
+- **Run-ID:** iterate-2026-09-21-orphan-evidence-cleanup
+- **Context:** PR #752 (2026-09-12) made retention delete an evidence file's entry AND its .test-results.json sibling together, but that fix only stops NEW orphans; retention runs before it had already deleted 129 entry files while leaving their immutable evidence siblings behind under .shipwright/agent_docs/iterates/.
+- **Decision:** Delete the 129 orphaned *.test-results.json files (no corresponding <run_id>.json entry) whose run_id date is older than the 2026-09-01 cutoff, via git rm, with no code change (the producing fix already ships on main).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Cleanup is safe because nothing reads a deleted run's evidence; sequencing it after the sibling-sweep fix landed keeps the rule and the cleanup in a consistent order.
+- **Consequences:** 0 orphaned evidence files remain in .shipwright/agent_docs/iterates/ as of this run; nothing referenced these files functionally (only historical docs/ADRs/test docstrings cite the run_ids, unaffected by the file's removal).
+
+---
+
+### ADR-495: depends_on schema, campaign_graph.py, resume-safe readiness guard
+- **Date:** 2026-09-22
+- **Section:** Campaign campaign-dag-scheduler — R1: depends_on schema
+- **Run-ID:** iterate-2026-09-21-r1-depends-on-schema
+- **Context:** Bootstraps a dependency-aware parallel campaign scheduler: campaign.md needs an operator-editable depends_on edge per sub-iterate, and cmd_next needs to skip a not-yet-merged dependency without disturbing the existing single-unit serial engine.
+- **Decision:** Add a header-indexed Depends On column + carry-through, a new campaign_graph.py (charset/structural/frozen-contract validators + resume-safe projector) and loop_state.py (terminal-status mapping + ancestry-verified is_unit_ready), and one narrow kind==sub_iterate guard in cmd_next — no new flag/exit code.
+- **Commit:** (assigned post-merge)
+- **Rationale:** 4 rounds of external code review converged on real case-fold/fetch/type-validation/BOM bugs, all fixed; the remaining gap is architectural (R4's own promotion mechanism), not a code defect this sub-iterate can safely patch.
+- **Consequences:** depends_on gating degrades safely (stays blocked, never falsely unblocks) but is NOT yet load-bearing within one continuous campaign session — only across a restart — until R4/R5b's cmd_mark_merged lands; escalated to the campaign owner in the ADR.
+- **Rejected:** Storing depends_on only in status.json (skip the campaign.md column) — rejected, campaign.md is what the operator/design-conversation read and edit.
+- **Details:** [iterate-2026-09-21-r1-depends-on-schema-adr.md](../planning/adr/iterate-2026-09-21-r1-depends-on-schema-adr.md)
+
+---
+
+### ADR-496: campaign_init.py raised to 358-LOC
+- **Date:** 2026-09-22
+- **Section:** Bloat exception — campaign_init.py
+- **Run-ID:** iterate-2026-09-21-r1-depends-on-schema
+- **Context:** campaign_init.py was at 300 lines before R1. It needs write-time depends_on validation (hard-reject), a stacked-strategy deprecation warning, and a type/membership guard a code review found necessary.
+- **Decision:** Grant an exception raising campaign_init.py's allowed current to 358; retire when a future sub-iterate adds another write-time validation concern, by extracting a shared campaign_init_validation.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The new validation logic has exactly one caller and reuses the file's own existing lazy-import pattern — a same-file, same-caller helper does not meet the bar for its own module (Ousterhout deep-module argument).
+- **Consequences:** No caller's signature changed except init_campaign's new ValueError failure mode, already the pattern _validate_triage_id uses and main() already catches.
+- **Rejected:** Split immediately instead of granting the exception — rejected, would relocate one caller's helper into a new module for LOC-counting alone, not genuine encapsulation.
+- **Details:** [iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md](../planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md)
+
+---
+
+### ADR-497: campaign_status.py raised to 357-LOC
+- **Date:** 2026-09-22
+- **Section:** Bloat exception — campaign_status.py
+- **Run-ID:** iterate-2026-09-21-r1-depends-on-schema
+- **Context:** campaign_status.py was already at 299 lines with no baseline entry before R1. The header-indexed parse_campaign_skeleton rewrite, depends_on carry-through, and a Step 3.8 probe's UTF-8-BOM fix all landed in this same, already-narrow file.
+- **Decision:** Grant an exception raising campaign_status.py's allowed current to 357; retire if a FOURTH cross-cutting concern is added beyond skeleton-parsing/event-projection/merge-status, by extracting column-lookup helpers into their own module.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The file is a deep module: four narrow public functions, substantial logic behind them (never-downgrade status ladder, corrupt-line-tolerant event projection, header-indexed parsing) — splitting would relocate tightly-coupled private helpers with no other caller.
+- **Consequences:** Only an additive, default-preserving project_campaign_status(..., *, skeleton=None) parameter changed; every existing caller is unaffected.
+- **Rejected:** Move project_campaign_status into campaign_graph.py instead — rejected, campaign_graph.py already imports it FROM this file; reversing that would duplicate _project_events/merge_status reach-across.
+- **Details:** [iterate-2026-09-21-r1-depends-on-schema-campaign-status-bloat.md](../planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-status-bloat.md)
+
+---
+
+### ADR-498: campaign_graph.py raised to 322-LOC
+- **Date:** 2026-09-22
+- **Section:** Bloat exception — campaign_graph.py
+- **Run-ID:** iterate-2026-09-21-r1-depends-on-schema
+- **Context:** campaign_graph.py was written new in R1 at 265 lines. External code review found a real case-fold-consistency deadlock bug and a schema-validation gap; fixing both, entirely inside the same four existing functions, grew the file to 322.
+- **Decision:** Grant an exception raising campaign_graph.py's allowed current to 322; retire if a future change adds a fourth cross-cutting concern, by splitting cycle detection into its own graph-utilities module.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The module's public interface is unchanged; callers see nothing new, only improved internal correctness — exactly what a deep module should absorb without a caller-visible split.
+- **Consequences:** No caller-visible signature changed at all — every added line is internal hardening of validate_dependency_graph/check_frozen_contracts/_read_loop_state_units's existing bodies.
+- **Rejected:** Extract a shared _casefold_lookup helper module — rejected for R1, two one-line call sites are not yet a coherent shared abstraction; premature abstraction for a third caller that doesn't exist yet.
+- **Details:** [iterate-2026-09-21-r1-depends-on-schema-campaign-graph-bloat.md](../planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-graph-bloat.md)
+
+---
+
+### ADR-499: Codex hooks: launcher-script quoting, platform-split
+- **Date:** 2026-09-22
+- **Section:** Iterate — feature: config-layer Codex hooks sync
+- **Run-ID:** iterate-2026-09-22-r1b-codex-hooks-config-layer-shim
+- **Context:** R1 wired hooks into the Codex plugin bundle, but live probing showed Codex never executes bundled hooks (openai/codex#16430, #39895) — the config-layer ~/.codex/hooks.json is the only path that works, and building its sync surfaced a Windows cmd.exe /C double-quote bug plus, per external review, a mirror-image POSIX space-in-path bug.
+- **Decision:** Sync bundle hooks into ~/.codex/hooks.json via one launcher script per handler (bare path on Windows, shlex-quoted on POSIX); ownership by directory membership with .resolve() containment, not exact-triple matching; is_codex_runtime() now shape-checks BUILD_MANIFEST.json, not just presence.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two clean internal review passes (doubt-reviewer, code-reviewer) both reasoned on this Windows dev machine and missed the POSIX bug entirely; two independent external review legs caught it convergently — clear evidence for why external code review is mandatory-by-default, not conditional on the internal cascade's outcome.
+- **Consequences:** hooks.json's command field is now genuinely platform-shaped (bare vs shlex-quoted); future code touching it directly must go through _hooks_json_command()/_command_to_launcher_path() or risk reintroducing either platform's bug. Manual sync remains required until R2's terminal trigger resumes.
+- **Rejected:** Shape-checking plugin.json the same way as BUILD_MANIFEST.json (converts a genuinely corrupted bundle's loud error into a silent no-op). Escaping cmd.exe metacharacters in launcher bodies (bundle content is already first-party trusted). A nonce/signature for bundle authenticity (disproportionate to the threat model).
+- **Details:** [iterate-2026-09-22-r1b-codex-hooks-config-layer-shim-launcher-script-quoting.md](../planning/adr/iterate-2026-09-22-r1b-codex-hooks-config-layer-shim-launcher-script-quoting.md)
+
+---
+
+### ADR-500: Per-unit worktree identity, path-safety, and lease heartbeat (capability, R2)
+- **Date:** 2026-09-22
+- **Section:** Campaign campaign-dag-scheduler R2
+- **Run-ID:** iterate-2026-09-22-r2-worktree-capability
+- **Context:** R1 built the DAG scheduler's depends_on graph. R5a needs a per-unit worktree checkout to run units concurrently, and R4 needs claim/fencing on top of a lease. R2 builds the naming, Windows path-safety, guard-mode identity, worktree wrapper, and per-unit lease those two need, WITHOUT wiring the checkout flip live (R2's scope) — but the lease-touch wiring itself is live now, closing a runner-Task heartbeat gap campaign-worktree.md already documented.
+- **Decision:** Add lib/campaign_unit_worktree.py (composite name/path, Windows MAX_PATH incl. git admin dir + gitdir child, reserved-name rejection) + tools/setup_unit_worktree.py wrapping setup_iterate_worktree.py unchanged; add lib/unit_lease.py + checks/check_unit_lease.py (unfenced upsert, stale_attempt_conflict marking, optional cross-check), guarded by the existing loop.lock. Wire sub-iterate-runner.md to touch both at Step 1 / before Step 4 / before Step 5.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Ousterhout/YAGNI/Chesterton-Fence argued in full in the bloat-exception ADR; a real git error (fatal: $GIT_DIR too big) at a worktree path under 260 chars proved the admin-dir check was not optional.
+- **Consequences:** check_worktree_location.py accepts the composite slug with zero code change (guard-mode). The runner prompt crosses its bloat-exception ceiling again (497->512); a new bloat-exception ADR is recorded pending release. R5a can flip project_root to the per-unit path without re-deriving naming/safety; R4 adds fencing on the lease without touching this module. Delegated Stage-2 code review (campaign-mode.md 3f-bis) found two real bugs, fixed pre-merge: (1) the lease heartbeat wrote its own `attempt` value over autonomous_loop.py's own retry counter on every touch, silently resetting it and manufacturing false stale_attempt_conflict reports — fixed by never overwriting an existing `attempt`, only creating it when truly absent or non-int; (2) the same heartbeat's `branch` write, live from Step 1 (before any commit), made `_reconcile_in_progress`'s branch-has-commits heuristic fire for a genuinely still-running unit on any campaign-session resume, silently marking it falsely complete with no result.json. A first fix gated (2) on lease staleness; the delegated Stage-3 doubt-review disproved it (defers the bug past the 7200s lease horizon rather than removing it, and stranded a live-lease unit silently in_progress with no other reconciliation path). Final fix gates on PROVENANCE instead: once a row has ever been lease-touched, the branch heuristic never applies to it again, live or expired, falling through to the pending-reset. The doubt round also found and fixed: cmd_init's reconcile branch took no lock (now wrapped in loop.lock); is_unit_lease_stale failed open on a malformed lease_expires_at (now fails closed); and touch_unit_lease's returned dict didn't expose the row's real attempt for a stale_attempt_conflict warning to explain itself (now does, via row_attempt). One doubt finding (stale_attempt_conflict noise, since the runner has no `--attempt` parameter to pass) is a documented known limitation deferred to R4, not silently left as a false claim — the prior docstring's contrary claim is corrected.
+- **Rejected:** Deferring the lease-touch wiring to R4/R5a alongside the checkout flip (R2 scopes it in-scope now); treating an ownership-loss touch failure as fatal (reverses the spec's own warn-and-continue design).
+- **Details:** [R2-worktree-capability.md](../planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R2-worktree-capability.md)
+
+---
+
+### ADR-501: Unit-scoped review-attribution pin
+- **Date:** 2026-09-22
+- **Section:** Iterate — campaign: campaign-dag-scheduler R3 (review-diff-fix)
+- **Run-ID:** iterate-2026-09-22-r3-review-diff-fix
+- **Context:** Pre-R5a, campaign-mode.md's 3f-bis review step always diffs the shared worktree's own HEAD, correct only because one unit is checked out at a time; R5a's per-unit worktrees would silently misattribute reviews.
+- **Decision:** New lib/review_attribution.py (pin/ship/verify, FATAL-on-error) resolves each unit's own worktree/branch before diffing; 3f-bis pins unconditionally, every named git call runs against the unit's own resolved worktree, not the campaign worktree.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Ousterhout deep-module precedent (R2's sub-iterate-runner.md exception): the pin's existence and exact trigger belong inline in campaign-mode.md, the mechanism is delegated to the lib module's own docstring.
+- **Consequences:** New review_pin.json write-surface + legacy reviewed_head dual-write; 3g's merge check now verifies a genuinely unit-scoped pin, closing the misattribution risk before R5a ships.
+- **Rejected:** Deferring the fix to land alongside R5a itself was rejected per the spec's own note: the risk must close before wave-build ships a new, untested code path under that sub-iterate's time pressure.
+- **Details:** [iterate-2026-09-22-r3-review-diff-fix-adr.md](../planning/adr/iterate-2026-09-22-r3-review-diff-fix-adr.md)
+
+---
+
+### ADR-502: 9-state unit machine, single-writer fencing, atomic batch claim (R4)
+- **Date:** 2026-09-23
+- **Section:** campaign-dag-scheduler R4 — concurrent state mechanics
+- **Run-ID:** iterate-2026-09-22-r4-state-mechanics
+- **Context:** loop_state.json gains a 9-state machine + hyphen-based single-writer fencing for kind==sub_iterate, restated for the wave model. See .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md (bloat exception, current 757) and -review-findings.md (28 external-review findings, dispositioned).
+- **Decision:** Split mechanics into lib/loop_state.py (state machine, fencing primitives, path helpers, dual-kind reconcile), lib/loop_claim.py (batch claim/release, ancestry outside loop.lock), lib/loop_mark.py (identity-checked mark-running/mark-merged/mark). kind==section behaviorally unchanged, proven by a dedicated full-cycle regression test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two external review passes (plan + code) found and fixed 2 high + 4 medium real defects (path traversal, cmd_record TOCTOU + missing transition check, ancestry-inside-lock, legacy in_progress fallthrough, unfenced cmd_mark cwd, claim-time lease gap); 6 more findings deferred to R5a (runner-brief construction, R2-lease-touch fencing migration) with documented reasoning. Full table in -review-findings.md.
+- **Consequences:** autonomous_loop.py shrinks (420->442, still net below its pre-R4 454 baseline). loop_state.py needs a bloat exception (278->757) per its own explicit plan-assigned module boundary. Every downstream R5a/R5b/R6 sub-iterate builds on this 9-state vocabulary and fencing invariant.
+- **Details:** [iterate-2026-09-22-r4-state-mechanics-review-findings.md](../planning/adr/iterate-2026-09-22-r4-state-mechanics-review-findings.md)
+
+---
+
+### ADR-503: Conditional external-review driver on CODEXTENDER_ACTIVE + opus-leg env-scrub fix
+- **Date:** 2026-09-23
+- **Section:** Codextender monorepo integration Part C
+- **Run-ID:** iterate-2026-09-23-codextender-monorepo-part-c
+- **Context:** Under Codextender, the driving harness stays claude but the model backend is Codex-backed, so --driver claude|codex roster selection must follow the model, not the harness. Separately, external_review_opus_leg.py's review_claude_cli inherited ANTHROPIC_* env vars unscrubbed — a pre-existing bug.
+- **Decision:** Made --driver conditional on CODEXTENDER_ACTIVE across all 11 census sites; documented ADR-127's inherit tier as the operator action for review/plan_review; scrubbed ANTHROPIC_BASE_URL/AUTH_TOKEN/MODEL from review_claude_cli's subprocess env with a regression test; updated hooks-and-pipeline.md + guide.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses ADR-127's inherit tier and the existing DRIVER_ROSTERS mechanism; the env fix is a minimal targeted subprocess env= addition.
+- **Consequences:** Codextender diffs get independent GLM+Opus review instead of a same-vendor rubber stamp; the env-leak fix benefits every caller, not only Codextender; CODEXTENDER_ACTIVE documented as distinct from is_codex_runtime().
+- **Rejected:** A new free-text Codex model tier for review subagents — rejected, agent_model_param() only accepts opus|sonnet|haiku|fable.
+- **Details:** [iterate-2026-09-23-codextender-monorepo-part-c-details.md](../planning/adr/iterate-2026-09-23-codextender-monorepo-part-c-details.md)
+
+---
+
+### ADR-504: Split two test files that crossed the 300-line bloat gate post-merge
+- **Date:** 2026-09-23
+- **Section:** bloat-repair
+- **Run-ID:** iterate-2026-09-23-codextender-part-c-bloat-split
+- **Context:** PR #791 merged before the session bloat-gate Stop-hook could run; two test files exceeded 300 LOC while adding regression tests. CI's own Bloat Check passed (first-time crossings aren't blocked, only ratcheting an exception) so main stayed green, but the crossing is real debt.
+- **Decision:** Split both files along existing concern boundaries, verified byte-identical to origin/main before editing. All 38 tests re-verified passing; code-reviewer PASS with no defects.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Both files back under the 300-line ceiling with headroom. No behavior change.
+- **Details:** [iterate-2026-09-23-codextender-part-c-bloat-split-details.md](../planning/adr/iterate-2026-09-23-codextender-part-c-bloat-split-details.md)
+
+---
+
+### ADR-505: AGENTS.md generation, single-sourced with CLAUDE.md
+- **Date:** 2026-09-24
+- **Section:** Iterate — change: AGENTS.md generation for Codex CLI
+- **Run-ID:** iterate-2026-09-23-m5-agents-md-generation-drift
+- **Context:** Codex CLI reads AGENTS.md natively; neither adopt nor project ever wrote one, so Codex sessions got zero Shipwright guidance. Root AGENTS.md also drifted: hardcoded Codex model-slug/reasoning-effort defaults.
+- **Decision:** Generate AGENTS.md via the same _render_claude_md(host_name=...) CLAUDE.md uses, plus one shared Codex-only appendix with an inert marker; reuse the existing load-bearing-preservation policy; remove the two hardcoded default bullets from root AGENTS.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One render function, one small appendix file — nothing left to duplicate or drift, unlike a second hand-maintained template.
+- **Consequences:** Every adopted/scaffolded project ships AGENTS.md; greenfield's single-source guarantee is instruction-driven, not code-enforced, same as CLAUDE.md's own greenfield path.
+- **Rejected:** Independent AGENTS.md template pinned by a drift test (reintroduces split-brain); do nothing (Codex gets no guidance); heading-derived idempotency marker (collides with pre-existing sections, desyncs on reword).
+- **Details:** [iterate-2026-09-23-m5-agents-md-generation-drift-agents-md-generation.md](../planning/adr/iterate-2026-09-23-m5-agents-md-generation-drift-agents-md-generation.md)
+
+---
+
+### ADR-506: Flip the campaign loop to wave-based concurrent sub-iterate build
+- **Date:** 2026-09-23
+- **Section:** Iterate — feat: campaign-dag-scheduler R5a wave-based concurrent build flip
+- **Run-ID:** iterate-2026-09-23-r5a-wave-build-flip
+- **Context:** campaign-mode.md's loop built one sub-iterate at a time. R1-R4 already built the primitives a concurrent model needs: the dependency graph, per-unit worktree wrapper, and the atomic batch-claim/fencing state machine. R5a wires them together into the live loop.
+- **Decision:** Flip steps 3a-3f: compute+claim a bounded per-wave ready set (loop_claim.cmd_next_batch), give each claimed unit its own worktree, spawn every unit's sub-iterate-runner as a parallel Task call in one message, reconcile wave-return in fixed order, then drain 3f-bis..3h one unit at a time before the next wave's ready set is even computed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** R1-R4 already built the underlying state-machine and worktree primitives; the wave model is the minimal orchestration change that captures their concurrency without breaking the merge-lane serialization the interleaved-serial design depends on.
+- **Consequences:** Units within a wave now build concurrently; the merge lane still drains serially, one unit at a time, per wave -- cross-wave pipelining is an explicit non-goal. A new wave-scoped SHIPWRIGHT_LOOP_UNIT_ID sentinel (truthiness-only) replaces the old per-runner identity export; _run_id.py/handoff namespacing resolve identity from the per-unit worktree instead.
+- **Rejected:** Cross-wave pipelining (needs unconfirmed mid-turn Task-completion processing by this harness). Per-runner self-export of unit identity (races on the shared CLAUDE_ENV_FILE across concurrent runners -- see campaign-mode.md's own security note).
+- **Details:** [iterate-2026-09-23-r5a-wave-build-flip.md](../planning/adr/iterate-2026-09-23-r5a-wave-build-flip.md)
+
+---
+
+### ADR-507: Rename retired/bumped model identifiers
+- **Date:** 2026-09-24
+- **Section:** Iterate — change: model version bump
+- **Run-ID:** iterate-2026-09-24-model-version-bump
+- **Context:** Upstream model catalog updated: Opus 5 -> 5.5, Terra retired, Sol and Luna bumped to v6.
+- **Decision:** Rename the literal model ids across pricing, review routing, CI and docs; keep retired ids priced for historical transcripts.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A pure rename keeps identity-lock bindings and cost tracking correct without behavior change.
+- **Consequences:** Reviews/CI now target the new models; old cost transcripts still resolve correctly.
+- **Rejected:** Dropping the old claude-opus-5 pricing entry entirely -- rejected: it would unprice historical transcripts (code-reviewer MEDIUM finding).
+
+---
+
+### ADR-508: Serial merge lane: review pinning, staleness cascade, STRICT-STOP
+- **Date:** 2026-09-24
+- **Section:** Iterate - infra: campaign-dag-scheduler R5b serial merge lane
+- **Run-ID:** iterate-2026-09-24-r5b-merge-lane
+- **Context:** Merge lane lacked exact pin assertion, PR-identity check, validated merge-SHA recording, and STRICT-STOP drain semantics.
+- **Decision:** Add HEAD==reviewed_head and commit-parent asserts, PR-identity pre-merge check, bounded mergeCommit.oid confirm via cmd_mark_merged, rebase-triggered staleness cascade, and campaign_drain.py for STRICT-STOP.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses existing SHA-guard and cmd_mark override patterns rather than duplicating them; keys staleness off the unit own branch tip, not origin default drift.
+- **Consequences:** Merge lane provably merges only the pinned diff/PR, records a validated SHA, and STRICT-STOP always finalizes with the lock released.
+- **Rejected:** New fencing mutators per demotion; base-SHA-drift-keyed staleness would re-review every sibling on any merge.
+- **Details:** [iterate-2026-09-24-r5b-merge-lane-serial-merge-lane.md](../planning/adr/iterate-2026-09-24-r5b-merge-lane-serial-merge-lane.md)
+
+---
+
+### ADR-509: Exclude node_modules from every Codex bundle copy
+- **Date:** 2026-09-25
+- **Section:** Iterate — bug: build_codex_plugin.py bundles node_modules, breaking on Windows MAX_PATH
+- **Run-ID:** iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath
+- **Context:** build_codex_plugin.py's SOURCE_EXCLUDE_DIRS (applied to the per-origin scripts, skills, and shared/ copies) omitted node_modules. Found live while building the bundle for a Codex-CLI hook-chain probe: shipwright-test/scripts/perf's locally-installed Lighthouse dependency tree (a build/test-time-only npm project, not runtime content) got copied wholesale, and a deeply nested package path exceeded Windows' 260-char MAX_PATH, failing the build with shutil.Error.
+- **Decision:** Add "node_modules" to SOURCE_EXCLUDE_DIRS, the same allowlist that already excludes tests/__pycache__/.venv/etc. from all three copied trees.
+- **Commit:** (assigned post-merge)
+- **Consequences:** A Codex bundle never embeds any plugin's or shared's node_modules regardless of whether it happens to be installed locally, eliminating the MAX_PATH failure class entirely rather than working around one specific depth.
+- **Details:** [iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath-node-modules-exclusion.md](../planning/adr/iterate-2026-09-25-codex-plugin-bundle-nodemodules-maxpath-node-modules-exclusion.md)
+
+---
+
+### ADR-510: Capstone proof for campaign-dag-scheduler R1-R5b composition
+- **Date:** 2026-09-26
+- **Section:** Iterate -- feature: R6 capstone integration proof
+- **Run-ID:** iterate-2026-09-26-r6-capstone-integration
+- **Context:** R1-R5b (dependency gating, worktrees, review-attribution, state machine, wave concurrency, serial merge lane) each had unit tests but no test proved they compose together end to end.
+- **Decision:** Add one real-git integration test exercising all 6 subsystems' real cmd_* entry points in one continuous 5-unit DAG scenario against a bare-origin fixture; gh pr merge is simulated via a real git merge feeding a real SHA to cmd_mark_merged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A single continuous scenario keeps the composition proof owned and reviewable on its own, per the sub-iterate spec's explicit rejection of splitting it across other sub-iterates' suites.
+- **Consequences:** campaign-dag-scheduler campaign (R1-R6) is now fully built; no production code changed, only shared/tests/test_campaign_dag_scheduler_integration.py added.
+- **Rejected:** Splitting the proof across R1-R5b's own test files (rejected by spec: would make composition implicit, not owned); mocking gh pr merge with a fake Python wrapper (none exists; real git merge chosen instead).
+
+---
+
+### ADR-511: Internal architecture-review arm for plan and iterate
+- **Date:** 2026-09-28
+- **Section:** Iterate — feature: internal architecture review arm
+- **Run-ID:** iterate-2026-09-28-architecture-review-internal-arm
+- **Context:** Architecture question was asked only by external LLM review; never asked when unavailable/declined.
+- **Decision:** Add a separate fresh-context agent + always-first internal pass on both /shipwright-plan and /shipwright-iterate, mirroring plan_internal's gating.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the internal-plan-review precedent; a separate agent avoids inheriting the plan reviewer's anchored frame.
+- **Consequences:** Both phases now ask the question on every eligible run; Codex/campaign paths stay documented Ran:no/not_run gaps, not silent.
+- **Rejected:** Merging into opus-plan-reviewer (reintroduces the anchor); a real smoke-spawn this run to close D5 (would fabricate accounting).
+- **Details:** [iterate-2026-09-28-architecture-review-internal-arm-adr.md](../planning/adr/iterate-2026-09-28-architecture-review-internal-arm-adr.md)
+
+---
+
+### ADR-512: Trim CLAUDE.md under the 200-line cap; sync bloat baseline with 26 of 28 drifted files
+- **Date:** 2026-09-28
+- **Section:** Iterate — change: compliance hygiene (F6 CLAUDE.md cap, H1 bloat baseline sync)
+- **Run-ID:** iterate-2026-09-28-compliance-hygiene-f6-h1
+- **Context:** Two open compliance findings: CLAUDE.md at 219 lines exceeded the F6 200-line hygiene cap, and 28 oversize files (incl. a 1676-line outlier) had drifted out of the H1 bloat-baseline, both undetected by the anti-ratchet.
+- **Decision:** Condensed three verbose CLAUDE.md sections into terser prose pointing at existing docs (193 lines). Merged 26 of the 28 missing files into shipwright_bloat_baseline.json as grandfathered entries via the baseline's own producer (bloat_baseline.scan), preserving every existing entry byte-for-byte; the 2 extreme outliers were deliberately left out.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Grandfathering matches the baseline's own default state for ordinary drift; the two outliers (5-5.6x the limit) get the ADR-exception-or-split treatment an earlier operator note demanded instead, per the follow-up spec.
+- **Consequences:** F6 re-verifies pass. H1 re-verifies pass for 26 of 28 files and stays open, on purpose, for the 2 extreme outliers a Tier-3 review correctly refused to see grandfathered.
+- **Rejected:** Grandfathering all 28 incl. the two outliers (first attempt) — Tier-3 review blocked it as the exact bulk-baseline shortcut that operator note had rejected. Also rejected: splitting the outliers in this pass — real design work out of scope here.
+- **Details:** [iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md](../planning/adr/iterate-2026-09-28-compliance-hygiene-f6-h1-outlier-followup.md)
+
+---
+
+### ADR-513: Make the fan-out join test order peers by barrier passes, not wall-clock
+- **Date:** 2026-09-29
+- **Section:** Iterate — bug: flaky fan-out join barrier test
+- **Run-ID:** iterate-2026-09-28-fanout-join-test-determinism
+- **Context:** test_detected_fanout_waits_for_all_installed_hook_participants failed on a Windows main push ('barrier returned before every active peer joined'); it raced a 0.5s ceiling and a thread-side flag against a real-time joiner (fixes #543, #583 were timing bumps).
+- **Decision:** Test-only: patch all three wall-clock exits to 60s, gate the joiner on the barrier's second poll pass, assert the markers directly when the barrier returns, and bound elapsed below 30s. Production barrier unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two independent races produced the same message: sub-second ceilings versus a starved joiner, and joined.set() lagging the marker the barrier polls. Verified by forced starvation (old test fails, new passes) and two mutants.
+- **Consequences:** The test no longer depends on scheduling for a false failure, and a no-wait or single-pass barrier fails deterministically. Detection of a barrier that sits out its ceiling relies on the elapsed bound.
+- **Rejected:** Raising the retry or ceiling again (the #543/#583 pattern); a longer joiner sleep; asserting on the thread-side flag.
+
+---
+
+### ADR-514: Required-check presence and PR execution
+- **Date:** 2026-09-29
+- **Section:** Iterate — bug: conditional PR required-check drift
+- **Run-ID:** iterate-2026-09-28-fix-required-check-conditional-pr
+- **Context:** Conditional PR jobs were omitted from reporting names, so configured checks were mislabeled phantom although skipped jobs report Success.
+- **Decision:** Derive possible PR check names separately from every-PR execution candidates; a small classifier proves candidates, everything else is possible-only; posted-status scripts are not analysed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A shell/payload parser for status-posting scripts was built and removed: unbounded scope, never provable for arbitrary scripts. Weaker analysis can only miss a phantom, never invent one.
+- **Consequences:** False phantom cards for conditional jobs are avoided while genuinely missing and unenforced names remain visible. Name parity is not a policy-effectiveness audit.
+- **Rejected:** Ignoring all conditional jobs misses real checks; a status-script shell parser cannot be made complete.
+- **Details:** [iterate-2026-09-28-fix-required-check-conditional-pr-required-check-drift.md](../planning/adr/iterate-2026-09-28-fix-required-check-conditional-pr-required-check-drift.md)
+
+---
+
+### ADR-515: Pin every hooks.json uv run invocation with --no-project
+- **Date:** 2026-09-28
+- **Section:** Iterate — bug: hooks-uv-run-project-pin
+- **Run-ID:** iterate-2026-09-28-hooks-uv-run-project-pin
+- **Context:** Every hooks.json invokes hook scripts as uv run "<script>", no --no-project. uv resolves its target project from the session CWD, not the scripts own path, so a CWD that is an unrelated uv-managed project makes every hook try to sync it -- on Windows this can hard-fail (os error 32) when a running process holds that projects console-script .exe open.
+- **Decision:** Pin every hooks.json uv run invocation with --no-project so hooks never discover/resolve/sync whatever project the CWD happens to be. Doubt review found this also drops ambient third-party deps a hooks subprocess chain relied on; restored explicitly via --with pyyaml/jsonschema where needed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** 5 of ~41 hook scripts already used --no-project, proving the pattern; --isolated/--project were tested live and rejected (still sync a project). Doubt reviews live-reproduced regression (uv run --no-project python -c "import yaml" fails with no ambient venv) showed the flag alone silently breaks two dependency chains.
+- **Consequences:** Hooks never touch or wait on an unrelated CWD project again; per-hook overhead drops. Known residual: an ambient .venv/.python-version above CWD is still honored (interpreter selection, not sync) -- disclosed, not fixed. A nested build-hook uv run and codex bundle-merge prefixes also needed matching updates.
+- **Rejected:** --isolated (still resolves+syncs the host project into a throwaway venv); --project <dir> (still syncs, recouples hooks to a plugins own venv cost); pinning --python 3.11 everywhere (closes the unrelated ambient-interpreter residual, out of scope, no existing precedent pins it).
+- **Details:** [2026-09-28-hooks-uv-run-project-pin.md](../planning/iterate/2026-09-28-hooks-uv-run-project-pin.md)
+
+---
+
+### ADR-516: PEP 723 inline metadata as the version-independent hook isolation layer
+- **Date:** 2026-09-28
+- **Section:** Iterate - change: PEP 723 headers on every hook entry point
+- **Run-ID:** iterate-2026-09-28-pep723-hook-isolation-pilot
+- **Context:** --no-project (#810) stops project sync but not a CWD .python-version (uv 0.11: a headerless hook errored on an uninstallable pin), and on uv >= 0.12 project discovery is script-relative anyway, which reddened #810's negative control on CI's floating uv 0.12.19.
+- **Decision:** Every script a hooks.json runs via uv run carries a # /// script header (requires-python >=3.11, dependencies mirroring --with). --no-project stays as the second layer. A test derives the header ledger from hooks.json so a new hook without one fails CI.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Version-independent by uv's documented contract; measured, not assumed: stderr stays empty, the compatible-but-uninstallable pin is ignored, headerless controls show the header is what isolates.
+- **Consequences:** Hooks ignore ambient project, .venv and .python-version on any uv version (verified on 0.11.9 and 0.12.19). Cold-cache 12-plugin start costs ~2.3 s once. Bash hooks (python3 on PATH) are not covered.
+- **Rejected:** Pinning uv in CI (freezes every workflow to save one test); relying on --no-project alone (version-dependent); a campaign (the rollout is mechanical: one script, one ledger test).
+
+---
+
+### ADR-517: Banner reports only the newest run per phase
+- **Date:** 2026-09-28
+- **Section:** Iterate - bug: SessionStart Phase-Quality replayed superseded FAILs
+- **Run-ID:** iterate-2026-09-28-phase-quality-newest-run-per-phase
+- **Context:** _findings.md is a retained history of the last N runs; session_start_phase_quality announced every open FAIL of every retained run, so a FAIL true once was replayed as open for 51 days (768219s stale mtime; unmapped FR-01.21) and closed findings never retired.
+- **Decision:** build_phase_quality_injection keeps only FAILs from the newest non-sentinel block of each phase (audited_at instant, ties to the earlier block; blocks identified by position). The raw parser _collect_tier1_fails stays unfiltered and only stamps an additive block index.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest fix matching the reporter's role (a digest reader); re-evaluating each FAIL against live state would need per-check logic in a minimal hook context. Reviews caught two gaps: same run id audited twice, and text comparison of timestamps across UTC offsets.
+- **Consequences:** A FAIL still true in the newest run is repeated by that run and stays visible; a retired FAIL disappears without re-evaluating live state. Cost: one extra linear pass over a digest of at most a few runs.
+- **Rejected:** Re-evaluating each retained FAIL against current state (per-check evaluators duplicated into the hook); keying by run id (misses one run audited in two sessions); string comparison of audited_at (wrong across UTC offsets).
+
+---
+
+### ADR-518: Campaign sub-iterate-runner runs the external architecture review; a reject halts the unit
+- **Date:** 2026-09-29
+- **Section:** Iterate — feature: campaign runner architecture review
+- **Run-ID:** iterate-2026-09-29-campaign-runner-architecture-review
+- **Context:** The external architecture pass (PR #582) was wired for standalone iterate and plan but not the campaign runner, which carried an inlined copy of Step 3.5 at its bloat cap and cannot ask an operator on a reject.
+- **Decision:** Extract the runner's Step 3.5 into references/campaign-step-3-5-plan-review.md and add the second call there. A reject from either architecture reviewer halts the unit: escalated / architecture_review_rejected, both verdicts + alternative + halted.patch inline in result.json, surfaced at campaign end by finalize step 5.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Extraction removes the duplication that caused the divergence; halting reuses Branch B's record-and-report shape. Claimed R5a rows collapse escalated to failed, so step 5 reads persisted result.json files, never the row.
+- **Consequences:** Runner 528->510 lines and baseline lowered, no exception minted. One reject stalls the whole wave (existing escalated STRICT-STOP). The reject arrives post-Build (halted.patch keeps the work). The internal arm stays a not_run gap.
+- **Rejected:** A new ADR-gated bloat exception (records the duplication as permanent); pointing the runner at the interactive step with deltas only (that step is written around STOP-and-ask; the runner needs runnable commands).
+
+---
+
+### ADR-519: Group D D5 is advisory, not a hard fail
+- **Date:** 2026-09-29
+- **Section:** FR-01.10/AC06
+- **Run-ID:** iterate-2026-09-29-d5-advisory-ac06
+- **Context:** AC06 says an unlinked behaviour-affecting change is reported with a suggested fix command without failing the audit, but D5 set status=fail, flipping AuditReport.any_fail and run_audit's exit code.
+- **Decision:** D5 now reports status=pass with an 'advisory —' detail prefix and still attaches the suggested fix command, following Group I's I1-I3 pattern. AC06 stays as written and is now bound to tests.
+- **Commit:** (assigned post-merge)
+- **Consequences:** An unlinked feature/change no longer turns the audit red; the write-time record_event gate and the F11 verifier remain the enforcement points. Tests asserting D5 fail were updated.
+- **Rejected:** Amend AC06 to match the hard-fail; rejected by the operator.
+
+---
+
+### ADR-520: llm_review.run_review takes driver and swaps openai for opus under codex
+- **Date:** 2026-09-29
+- **Section:** Iterate — change: driver-aware roster in shared llm_review
+- **Run-ID:** iterate-2026-09-29-llm-review-opus-leg-codex-driver
+- **Context:** external_review.py gained --driver codex ({glm, opus}) but llm_review.run_review (adopt Layer-3 review) kept {glm, openai}, leaving same-vendor self-review when Codex drives adopt.
+- **Decision:** run_review(driver='claude'|'codex') mirrors DRIVER_ROSTERS; codex uses resolve_opus_route (claude_cli, else OpenRouter opus). Adopt review_runner passes driver=codex only when CODEXTENDER_ACTIVE is set; gateway route unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same roster rule as external_review.py, one resolver per driver with no fallthrough; default driver keeps today's behavior for every other caller.
+- **Consequences:** Codex-driven adopt reviews are cross-vendor. Adopt's API-key pre-gate still skips keyless sessions (claude CLI leg unreachable there) — known limitation.
+- **Rejected:** Refactoring both copies onto one shared roster function: wider blast radius than this gap warrants.
+
+---
+
+### ADR-521: Read-only readiness command sharing one verdict function with next-batch
+- **Date:** 2026-09-29
+- **Section:** Iterate — feature: loop_claim.py readiness (read-only ready-set for the WebUI DAG view)
+- **Run-ID:** iterate-2026-09-29-loop-claim-readiness
+- **Context:** WebUI card 10 must show which campaign units are launchable. next-batch is the only computation of that and it also claims; readiness is not just 'dependencies merged' but also 'merged commit is on the batch base' and 'strategy supported'.
+- **Decision:** Add `loop_claim.py readiness` (no lock, no claim, no write). The ready-set moved to new lib/loop_ready_set.py: unit_blockers() is the single per-unit verdict, ready == no blockers, blocked_by IS those blockers; next-batch calls the same function. Output is a versioned JSON contract (schema_version 1.0, frozen fixture).
+- **Commit:** (assigned post-merge)
+- **Rationale:** One verdict per unit makes a not-ready pending row always carry a reason, and a memoized oracle caps git fetches at one per call; both were code-review findings against a first design with a separate blocked_by derivation.
+- **Consequences:** The WebUI never re-derives readiness. Ancestry may fetch origin once per call, so the view must not poll tightly. loop_claim.py shrinks 540 to 519 lines (bloat exception unchanged). The origin/main git-baseline bump gate (contract_baseline) is not yet wired for this third producer.
+- **Rejected:** Duplicating the rule in the WebUI (drifts from next-batch); a second hand-mirrored blocked_by derivation (can disagree with ready and refetches).
+- **Details:** [iterate-2026-09-29-loop-claim-readiness.md](../planning/adr/iterate-2026-09-29-loop-claim-readiness.md)
+
+---
+
+### ADR-522: Repo-declared advisory checks silence 'unenforced' drift
+- **Date:** 2026-09-29
+- **Section:** Iterate — change: repo-declared advisory checks for required-checks drift producer
+- **Run-ID:** iterate-2026-09-29-required-checks-advisory
+- **Context:** The required-checks drift producer re-filed its card for checks that run on PRs but are deliberately not required; ADVISORY_CONTEXTS was a hard-coded empty set and the CLI never passed advisory=.
+- **Decision:** check_required_checks.py reads required_checks_advisory (list of names) from the repo's shipwright_run_config.json via load_advisory_checks and passes it to compare_required_checks; a declared name silences 'unenforced' only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A stale in-repo list must not hide a phantom (configured but never produced), which blocks every PR, so declarations do not apply to that direction.
+- **Consequences:** Operators record 'deliberately advisory' once per repo. A missing or malformed key declares nothing, so findings are never suppressed by accident. An already-filed card is not closed automatically.
+- **Rejected:** Applying the declaration to both directions (code review: hides the merge-blocking one); a new dedicated config file (run_config already exists in every project).
+
+---
+
+### ADR-523: Review cascade and Codex transport move to GPT-6.1 Sol
+- **Date:** 2026-09-30
+- **Section:** Iterate â€” change: GPT-6 Sol to GPT-6.1 Sol
+- **Run-ID:** iterate-2026-09-30-gpt-6-1-sol-bump
+- **Context:** OpenAI released GPT-6.1 Sol; GPT-6 Luna was not upgraded. The openai reviewer identity pins the model in three code-owned places that must agree.
+- **Decision:** Bumped gpt-6-sol to gpt-6.1-sol (openai/gpt-6.1-sol on OpenRouter) in external_review.json, routing bindings, llm_review defaults, CODEX_REVIEW_MODEL, docs and tests; replaced stale gpt-5.4 fallbacks in condense_release_notes. Luna stays gpt-6-luna.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Identity lock rejects any differing string, so one lockstep rename is the only safe shape.
+- **Consequences:** All three transports review as GPT-6.1 Sol. Slug live-verified on OpenRouter and Codex CLI 0.159.2 before the change. Direct OpenAI route not pinged (no key locally).
+- **Rejected:** Bumping Luna too: no 6.1 Luna exists.
+
+---
+
+### ADR-524: Stateful worktree gate for Claude Code iterates
+- **Date:** 2026-10-01
+- **Section:** Iterate — feature: Claude-side worktree gate for /shipwright-iterate
+- **Run-ID:** iterate-2026-10-01-claude-worktree-gate
+- **Context:** B1a (worktree per iterate) is prose; recent models skip it and edit the main checkout. Codex has a one-shot gate; Claude had none.
+- **Decision:** A UserPromptSubmit+PreToolUse hook arms per session on /shipwright-iterate or the Skill tool, denies main-tree writes and non-allowlisted shell until the session is isolated, then releases for good.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Claude Code can deny repeatedly, so live state is judged on every call, closing the one-shot Codex gap; an allowlist keeps pre-setup steps working.
+- **Consequences:** Iterates start in a worktree mechanically; fail-open, 24h TTL, env/phrase off switch. Residuals (sibling worktrees, pointer-only release, git -c) are disclosed; F0/F11 leak guard stays the backstop.
+- **Rejected:** One-shot Codex clone (misses later calls); project-level settings.json hook (retired model); default-deny all tools (breaks pre-setup steps and MCP).
+
+---
+
+### ADR-525: Reviewer dispatch keys on the harness, not on CODEXTENDER_ACTIVE
+- **Date:** 2026-10-01
+- **Section:** Iterate — change: Codextender reviewers are Agent-tool subagents
+- **Run-ID:** iterate-2026-10-01-codextender-agent-tool-review-dispatch
+- **Context:** Codextender (Claude Code behind a proxy that maps subagents to sol) spawns spec/code/doubt-reviewer through the Agent tool and never ran review_via_codex.py, yet the architecture-internal review was skipped for it and codex_review_dispatch.md told redirected sessions to use codex exec.
+- **Decision:** Skip architecture-internal-reviewer and dispatch via review_via_codex.py only when Codex CLI itself drives. Codextender and every Claude Code session spawn Agent-tool subagents and record Ran: yes. The external --driver roster mapping is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** codex exec defaults to gpt-6.1-sol, the same family Codextender maps subagents to, so dispatching through it buys no independence. The --driver roster answers a different question (the diff author was Codex-backed).
+- **Consequences:** Codextender iterates now run the architecture review. Prose-only change plus drift tests; a real Codextender iterate must still confirm Ran: yes live. Codex Light parity is card 19.
+- **Rejected:** Adding a Codex transport for architecture_internal (still out of scope); dropping the --driver codex mapping (still right for author independence).
+
+---
+
+### ADR-526: External review driver is enforced, not trusted
+- **Date:** 2026-10-01
+- **Section:** Iterate — change: enforce external-review driver under Codextender
+- **Run-ID:** iterate-2026-10-01-codextender-driver-enforcement
+- **Context:** Under Codextender a GPT-family model builds, yet agents typed --driver claude, so the external review's openai leg (GPT) reviewed GPT-authored code. Two earlier runs recorded driver=claude with no opus leg.
+- **Decision:** external_review.py and llm_review.run_review coerce --driver claude to codex whenever CODEXTENDER_ACTIVE is set (any non-empty value), print a stderr note, and record driver, driver_requested, codextender_active and driver_enforced_reason in every envelope. New F11 check check_review_driver fails a run whose raw external review says driver=claude under Codextender.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The tool is the only place that cannot be mistyped; the skills' shell snippet was agent-typed and demonstrably skipped.
+- **Consequences:** A Codextender review now depends on the opus leg being reachable (claude CLI login or OPENROUTER_API_KEY); a skipped/failed leg carries a coercion_note naming the cause. Tests clear ambient CODEXTENDER_ACTIVE via autouse fixtures in four roots.
+- **Rejected:** Refusing (exit non-zero) on --driver claude: blocks legitimate scripted callers instead of fixing them. Trusting the flag plus prose: already failed twice.
+
+---
+
+### ADR-527: F0 pins a short pytest --basetemp per unit
+- **Date:** 2026-10-01
+- **Section:** Iterate - fix: F0 parallel attempt exceeded Windows MAX_PATH
+- **Run-ID:** iterate-2026-10-01-iterate-wallclock
+- **Context:** Since 2026-09-06 shared/tests failed its parallel F0 attempt in 99 of 100 runs and paid a whole-unit serial retry (median 1235 s vs 215 s). Root cause: pytest's default pytest-of-<user>/pytest-N/ plus xdist's popen-gwN/ pushed deep fixture trees past 260 chars in the parallel attempt only.
+- **Decision:** run_test_suite._exec passes --basetemp <unit tmp>/t (a SUBdir, since pytest wipes its basetemp and the JUnit report/attempt log live in the unit tmp) via a new optional build_command param.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixes the cause instead of tuning the fleet budget; no gate weakened; zero net lines in a bloat-exception file.
+- **Consequences:** Measured under real fleet load: shared/tests 1509 s (RETRY-GREEN) to ~305-313 s, no retry, all 18 units PASS, diff-coverage PASS; F0 wall ~28 min to ~7 min. Retry and gate semantics unchanged. Follow-ups filed as triage cards: failed-tests-only retry; F0 pre-check of the AC coverage ratchet.
+- **Rejected:** xdist in ci.yml (CI must stay serial, test_ci_stays_SERIAL - operator dropped it); budget/ordering tuning (the contention hypothesis was disproved by measurement).
+
+---
+
+### ADR-528: architecture_internal is its own Codex review role
+- **Date:** 2026-10-02
+- **Section:** Iterate — change: Codex Light review parity (architecture_internal role, plan_review effort)
+- **Run-ID:** iterate-2026-10-02-codex-arch-internal-role
+- **Context:** Under a Codex CLI driver (no Agent tool) the internal architecture review recorded Ran: no, and plan_review ran at default reasoning effort. A live probe also showed the API rejecting untyped const/enum in the spec/doubt/plan_review schemas, so those roles never launched.
+- **Decision:** Add role architecture_internal to review_via_codex.py (own schema, own architecture_internal_reply.json, inputs --brief-file + sanitized --spec-file, effort=high, plan reviewer's Codex model key). plan_review joins the effort set. Every Codex review schema now types its const/enum properties. Plan step 5-int-arch and iterate step 0b dispatch the role under Codex CLI.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reusing plan_review would clobber plan_review_reply.json and needs a --plan-file this pass never has.
+- **Consequences:** A Codex-driven run records the internal architecture review as Ran: yes. The CLI refuses a spec still carrying prior-review sections. A new schema file must reach the plugin cache (update-marketplace) or the role reports capability failure.
+- **Rejected:** Reusing role=plan_review (basename collision, wrong inputs); a new config key (same tier role as plan_review, so it shares codex_plan_review).
+
+---
+
+### ADR-529: F0 runs the AC coverage ratchet against a scratch-regenerated manifest
+- **Date:** 2026-10-02
+- **Section:** Iterate - change: F0 mirrors the AC coverage ratchet gate
+- **Run-ID:** iterate-2026-10-02-f0-ac-ratchet-mirror
+- **Context:** AC coverage ratchet (gate) turned CI red 3 times in 4 days (newly minted ACs unbound); verify_local.py listed it as un-mirrorable because the committed manifest would vouch for itself.
+- **Decision:** New post-suite F0 step shared/scripts/tools/check_ac_ratchet_f0.py: copy the working tree to <project>/.scratch, stage F0's retained JUnit, regenerate the manifest there from the working tree's @covers tags, run the real check_ac_coverage_ratchet.py on it. Exit 0/1/2; no-op for projects without the gate. Repair-PR safety stays CI-only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Regeneration from a scratch copy, not the committed manifest, is what removes self-vouching; the real tree and its tracked manifest are never written. Verified end to end: clean on the real tree, blocked (exit 1) when a baselined AC is removed.
+- **Consequences:** A new unbound AC now fails at F0, not in CI. Costs one working-tree copy plus a regen (~1 min). stage_f0_evidence gained validated_junit_reports and regenerate_manifest an optional plugin_root (--frozen, timeout) - both behaviour-preserving for existing callers.
+- **Rejected:** Regenerating in place (dirties the tracked manifest F6 commits); mirroring inside verify_local.py (runs before the suite, so no JUnit exists yet); mirroring Repair-PR safety (needs the PR base revision).
+
+---
+
+### ADR-530: F0 resumes a red unit across invocations
+- **Date:** 2026-10-02
+- **Section:** Iterate — change: F0 cross-invocation resume
+- **Run-ID:** iterate-2026-10-02-f0-cross-invocation-resume
+- **Context:** After a red F0 and a fix, the next F0 re-ran the whole unit (shared/tests takes 15-22 min), although only a handful of tests had been red.
+- **Decision:** A red run leaves a hash-pinned resume token; the next F0 re-runs only the red tests of each red unit (--lf), reuses green units, and merges into one report marked resumed. It resumes even after a source fix (operator decision A); CI is the safety net.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A fix almost always edits source, so refusing to resume after a source edit would make the feature useless; every doubt (test edit, merge-base move, other run, torn state, rc 5) still runs the unit in full.
+- **Consequences:** A fix round costs seconds instead of minutes. A regression hiding in a reused result surfaces only in CI; resumed evidence is marked resumed-local, and a refused diff-coverage gate costs one extra full run.
+- **Rejected:** Resume only on an unchanged tree (never fires); selecting tests from the diff (rejected by the operator); re-running red units in full (no gain for large units).
+
+---
+
+### ADR-531: F0 retries only the red tests of a unit that failed in parallel
+- **Date:** 2026-10-02
+- **Section:** Iterate — change: F0 failed-only retry
+- **Run-ID:** iterate-2026-10-02-failed-only-retry
+- **Context:** A unit red in its parallel F0 attempt was re-run whole and serial (shared/tests ~20 min). Measured over 146 red unit-attempts: 66% passed alone (races), most real reds had 1-2 red tests.
+- **Decision:** Retry only the red tests (pytest --lf --lfnf=none --cov-append against the first attempt's own per-unit cache) when the cache's lastfailed count equals the JUnit failure count (0<n<=10). Refuse for <error> testcases, collection errors, stopped runs, crashed workers, or a re-run whose testcase count is not exactly the red count; every doubt falls back to the whole-unit retry. Cross-invocation resume deferred (triage trg-ab3de9ab).
+- **Commit:** (assigned post-merge)
+- **Rationale:** In-run only: no persisted state, nothing that can claim a green tree that never ran. Reviews (internal, external, doubt) drove the scope down from resume.
+- **Consequences:** A residual race costs seconds instead of the whole unit. Order-dependent and import-order failures can pass alone, so such a green is still filed as a race (retry_kind=failed-only) and CI stays the authoritative full serial gate. The pytest cache is now enabled in every F0 attempt.
+- **Rejected:** Cross-invocation resume with a 5-file change bound: reviews found false greens after non-test source changes, non-Python inputs invisible to a .py hash, and staged evidence claiming a full run.
+
+---
+
+### ADR-532: Resumed F0 evidence is distinguished downstream
+- **Date:** 2026-10-03
+- **Section:** Iterate - change: F0 resume provenance consumers
+- **Run-ID:** iterate-2026-10-03-f0-resume-provenance-consumers
+- **Context:** PR #833 staged resumed F0 runs with a resumed_local provenance marker that no consumer read, so reused green testcases counted like executed ones.
+- **Decision:** stage_f0_evidence records each unit's report base; the evidence index tags carried-over pytest results reused:true (refresh_index and F11 fresh_evidence); a warning-only strict_exempt F11 check names resumed units.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator accepted in #833 that resume is advisory with CI as the safety net; making it visible without blocking honours that.
+- **Consequences:** Reused results still count as passes, so resume keeps its speed-up; the reuse is visible in the index and at F11. Root-level (empty base) units are not tagged, only named in the warning.
+- **Rejected:** Blocking F11 on resumed evidence - defeats the speed-up the operator approved.
+
+---
+
+### ADR-533: Campaign brief to make finalization enforce what the documentation claims
+- **Date:** 2026-10-07
+- **Section:** Iterate - docs: finalization-claims hardening campaign brief
+- **Run-ID:** iterate-2026-10-07-audit-test-tagging-claims
+- **Context:** An audit of the whitepaper against the code found that only 6.0% (monorepo) and 28.9% (WebUI) of tests carry an FR tag, that iterate never instructs the agent to tag new tests, and that several promised gates are narrower than described (AC-text-only, medium+-only, self-reported fields, prose-only).
+- **Decision:** Record a 12-unit parallel campaign (U0 foundation, U1 hard test-tag gate, U2 delta backfill, U3-U7, U9-U12; U8 cut) in a campaign brief, revised after internal Opus and external GPT/GLM plan and architecture reviews. Operator decisions: U1 hard STOP at every complexity, autonomous runs continue loudly when external review is unavailable, 80% hook stays a soft-block.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reviews showed the first draft's file sets were not disjoint (iterate_checks.py is at its bloat cap), so a foundation unit and a tag-from-the-start contract were added. The U1 feasibility spike measured 28 s cold / 11.5 s warm manifest regeneration, which is acceptable for F11.
+- **Consequences:** The campaign adds roughly seven tightened or new finalization verifiers behind one extension point; each is a permanent obligation and a false positive blocks every iterate, so U1 and U9 start with a measurement and U7 is warn-first. Whitepaper wording is deliberately not part of this campaign.
+- **Rejected:** Option C (correct the documentation only) - GPT's architecture reviewer and Opus preferred it, but the operator wants the product to do what the paper says. Option D (one generic claims-registry verifier) - harder to reason about and saves no per-claim logic.
+
+---
+
+### ADR-534: Close the accepted limits of U5/U6 in the finalization claims gates
+- **Date:** 2026-10-09
+- **Section:** Iterate - change: claims-hardening follow-ups
+- **Run-ID:** iterate-2026-10-08-claims-hardening-followups
+- **Context:** U5/U6 recorded four accepted limits: a no-FR label could cover a requirement catalog, finalize's idempotent re-run skipped the requirement gates, a stacked unit was measured against the trunk, and surface-evidence freshness ignored hand-resolved merges and deleted files.
+- **Decision:** Requirement catalogs are covered by no label (canonical is_requirement_spec + .shipwright/agent_docs/spec.md); a re-run with claims is gated and keeps the record; a campaign unit states stack_base_ref and is measured from it (intersection with the trunk diff); merges are replayed with git merge-tree and deleted files are dated by commit or directory mtime.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each gap was a false-green path; the fixes reuse existing predicates and add no new mechanism beyond one optional event field.
+- **Consequences:** Needs git >= 2.38 for merge replay (distinct message otherwise). stack_base_ref is runner-stated (accepted limit); a non-trunk side-branch merge remains a residual freshness gap; catalog-minting runs must link their FRs.
+- **Rejected:** Deriving the stack base from campaign loop state (no fixed location); a per-project label override; leaving the stacked case fail-closed.
+
+---
+
+### ADR-535: Dependabot version updates go live for github-actions only
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: Dependabot for github-actions only
+- **Run-ID:** iterate-2026-10-08-dependabot-actions-only
+- **Context:** Dependabot was dormant (limit 0 everywhere, decision 2026-05-22) on the premise that Trivy covers CVEs and PR noise is unwanted. Repo is now public; SHA-pin/tag rot on actions is a real maintenance cost, and Dependabot security updates + alerts were enabled via repo settings.
+- **Decision:** Activate only the github-actions ecosystem in dependabot.yml (weekly, minor/patch grouped, majors separate, 7-day cooldown); all 13 pip ecosystems stay dormant. Every entry carries a cooldown, so the wholesale Semgrep exclusion dependabot-missing-cooldown and its register entry are removed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Cheapest way to stop tag/SHA rot without opening pip PR noise already covered by Trivy; cooldown keeps freshly published tags out for 7 days.
+- **Consequences:** Weekly grouped Actions PRs appear. GitHub-owned actions stay on tags by choice, no longer by necessity; adopter posture unchanged. Dependabot PRs get no Actions secrets, so required pr-review may not post on them until a Dependabot secret is added or they are merged by hand.
+- **Rejected:** Activating pip too (noise, Trivy covers it); one all-in-one group incl. majors (a single breaking major would block safe bumps); keeping the Semgrep exclusion (would hide a missing cooldown on the live entry).
+
+---
+
+### ADR-536: Tier-3 PR review gate moves to Claude Haiku 5.5
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: PR-review default model GPT-6 Luna to Claude Haiku 5.5
+- **Run-ID:** iterate-2026-10-08-pr-review-haiku-5-5
+- **Context:** The PR-review gate ran openai/gpt-6-luna in the monorepo and openai/gpt-5.6-luna in the webui. The operator judged Haiku 5.5 better than Luna for this review.
+- **Decision:** DEFAULT_MODEL is now HAIKU_MODEL = anthropic/claude-haiku-5.5 in pr_review_openrouter.py and the workflow env literal, in both repos. Luna, DeepSeek and GLM stay named operator overrides.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One lockstep change keeps the code default and the workflow literal equal, as test_model_env_matches_code_default enforces.
+- **Consequences:** Slug live-verified on OpenRouter (json_object response OK, 1M context, same cap as before). anthropic/ is outside the ZDR namespaces, so no provider pin is added. Webui keeps its older Luna slug on purpose.
+- **Rejected:** Removing the Luna constant: operator overrides and rollback need it.
+
+---
+
+### ADR-537: Campaign runner spawns its own internal reviews
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: runner lease token and Agent tool
+- **Run-ID:** iterate-2026-10-08-runner-lease-and-agent-tool
+- **Context:** The sub-iterate-runner had no Agent tool, so units recorded plan_internal, architecture_internal and the spec/code/doubt cascade not_run; its lease touch also lacked the attempt token.
+- **Decision:** Give the runner the Agent tool and have it spawn the five allow-listed reviewers with model=opus; pass --attempt-id on the lease touch and make a failed touch loud. 3f-bis stays.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A one-flag fix is smaller than writing the worktree at claim time; keeping 3f-bis avoids trusting unbound self-attested rows.
+- **Consequences:** Up to five reviewer runs per unit. Runner rows are self-attested, so 3f-bis still re-runs and re-promotes them with --force; allow-list is prose-only.
+- **Rejected:** Skipping 3f-bis for settled units (fail-open on self-attested rows); writing the worktree in loop_claim.py (new fencing semantics).
+- **Details:** [2026-10-09-runner-lease-and-agent-tool.md](../planning/iterate/2026-10-09-runner-lease-and-agent-tool.md)
+
+---
+
+### ADR-538: Close accepted limits (a)-(d) of the U1 test-tag gate
+- **Date:** 2026-10-09
+- **Section:** Iterate - change: test-tag gate sees data-driven tests, lexes regex and JSX, counts decorator edits
+- **Run-ID:** iterate-2026-10-08-tag-gate-followup
+- **Context:** U1 shipped with four accepted limits: it.each/test.each tests invisible to gate and collector; head manifest built with the head's own exclude set; a quote in a regex literal or JSX text mis-tokenised a test body; decorator edits read as no change. U11 counted a skipped gate as green.
+- **Decision:** Collector and gate enumerate .each declarations (shared grammar, joiner folds wrapped tables and next-line titles). The tag gate builds the head with base INTERSECT head exclude dirs (opt-in base_prune_only; coverage gates keep the head's own fence). A stdlib lexer handles regex literals and JSX (not in .ts). Every Python decorator and class/module pytestmark except covers is part of the digest. U11 asserts the expected skip set per complexity.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Closing each limit with real-git tests keeps the gate honest without new dependencies; the intersection rule must not leak into the coverage gates whose fixture fence depends on the head's exclude_dirs.
+- **Consequences:** Closed in shape: (a), (c), (d). (b) closed for exclude_dirs only; a brand-new test root named only by head config and export-ignore remain. Disclosed: collector table scan ignores regex/JSX; mark reorder digests differently; quadratic .each search on huge files.
+- **Rejected:** Head-only exclude set (hides new tests); intersection for all gates (breaks fixture fence, caught by test_layer_coverage_config_scope); importing the gate lexer into the collector plugin (cross-plugin boundary).
+- **Details:** [2026-10-08-tag-gate-followup.md](../planning/iterate/2026-10-08-tag-gate-followup.md)
+
+---
+
+### ADR-539: One F11 extension point and one closed reason-code vocabulary
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: finalization gate registry + shared reason codes
+- **Run-ID:** iterate-2026-10-08-u0-foundation-gate-registry
+- **Context:** run_all_checks lives in a file at its bloat cap, and review rows record why a pass did not run only as free text; eleven follow-up units need to add gates and closed answers.
+- **Decision:** Add verifiers/_finalization_claims.CLAIM_CHECKS spliced in once, a frozen lib/reason_codes.REASON_CODES per family, an optional reason_code on review rows and an optional exemptions block (count+items) in the F5c entry.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Optional fields keep 65+ immutable histories readable while writers and validators ship together; the registry avoids eleven edits to a capped file.
+- **Consequences:** Later gates register in one list and keep code in their own module; old records and entries without the new fields stay valid; capped files shrank.
+- **Rejected:** Move the whole existing check list into a new module (large churn of a capped file, all importers re-pointed); do nothing (every unit would collide on the capped file). Architecture review: GLM approve, GPT revise preferring that move.
+- **Details:** [iterate-2026-10-08-u0-foundation-gate-registry-reviews.md](../planning/adr/iterate-2026-10-08-u0-foundation-gate-registry-reviews.md)
+
+---
+
+### ADR-540: Finalization stops on an added or edited test that names no requirement
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: test-tag gate at finalization
+- **Run-ID:** iterate-2026-10-08-u1-test-tag-gate
+- **Context:** Only 6% of monorepo tests carry a requirement tag; nothing at finalization requires one, because the existing tag rules fire only on new or reworded acceptance criteria.
+- **Decision:** New F11 claim check check_test_tag_binding: regenerate base+head manifests through the compliance collector (evidence-free head memoised with the removal gate), STOP on untagged added/edited tests, stripped, malformed or unresolvable tags and per-diff exemptions; per-test test_exemption codes are verified against the code. A non-git directory STOPs too (no SKIP).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the production collector and regeneration the removal gate already pays for, so no second parser and no second regeneration; diff-only ratchet semantics per the operator decision of 2026-10-07. The body digest is its own (_tag_binding_identity.py): _test_body_suspects.py digests verbatim source and covers only AC-bound tests, so it cannot ignore docstring/comment-only edits or token-normalise TS bodies.
+- **Consequences:** Every iterate must tag the tests it adds or edits; legacy untagged tests stay untouched until edited. Collector binds wrapped Playwright heads, class/module marks, BOM files (+273 links). Accepted limits (reviews ADR): untagged test.each TS tests unseen; head config (exclude_dirs, export-ignore, new root) can hide new tests; TS tokenizer ignores regex/JSX; decorator/helper edits are not body edits; _is_test_id is a path heuristic; merge-base recomputed; fixture-or-helper = pytest collection.
+- **Rejected:** Reference grammar parser (cannot bind wrapped Playwright or suite tags); committed base manifest (stale, would false-STOP); advisory-only; repo-wide baseline file; instructions only; gate added tests only (architecture review GPT revise).
+- **Details:** [iterate-2026-10-08-u1-test-tag-gate-reviews.md](../planning/adr/iterate-2026-10-08-u1-test-tag-gate-reviews.md)
+
+---
+
+### ADR-541: An external review closed unavailable must show the adapter's captured error and is announced
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: autonomous external review, loud not silent
+- **Run-ID:** iterate-2026-10-08-u10-autonomous-external-review
+- **Context:** An autonomous run whose external review could not run closed the pass not_run and carried on: reason_code unavailable was an unverified claim, and nothing told the operator afterwards. Operator decision: the run may continue, never silently, no env-var waiver.
+- **Decision:** plan/external_code closed unavailable need the adapter's capture (its schema-2 failure envelope with error and matching mode, or stderr beside the raw file), read from the commit, no symlinks; record_review_pass refuses it at write time. review_unavailable_note.py prints the PR/F12 line and files one re-run card. The medium+ floor accepts unavailable plus a delegated code row only for a campaign entry.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The canonical basenames already pin where the adapter writes, so no schema field or CLI flag is needed (WebUI reads the schema); the gate stays inside the existing review-record check, iterate_checks.py untouched.
+- **Consequences:** Every iterate-side external_review call redirects stderr; envelopes carry mode. A successful or all-skipped reply can no longer be closed unavailable. Campaign units can finish at medium+ when the external review fails; 3f-bis still supplies the code review. Limits (entry-evidence guard, shape not provenance, stderr content, card existence) are in spec_ref.
+- **Rejected:** Schema field + CLI flag for the artifact path; halting the unit (contradicts the operator decision); an env-var waiver (excluded). Architecture review: GLM and GPT approve.
+- **Details:** [iterate-2026-10-08-u10-autonomous-external-review-reviews.md](../planning/adr/iterate-2026-10-08-u10-autonomous-external-review-reviews.md)
+
+---
+
+### ADR-542: One runtime-built scenario proves the finalization-claims gates stay independent
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: finalization-claims integration scenario
+- **Run-ID:** iterate-2026-10-08-u11-integration-scenario
+- **Context:** Five finalization gates (tags, review record, cascade trigger, surface claim, requirement gates) each have unit tests, but nothing showed a second red gate cannot hide a missing check in the first.
+- **Decision:** One integration test builds a compliant run in a tmp git repo at run time and breaks one claim per case, asserting the owning gate's diagnostic and that every other gate stays green.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Per-gate unit tests cannot show masking; a committed fixture would be refused by the tag gate it exercises.
+- **Consequences:** Changing a gate's input contract now requires updating the scenario builder; masking between gates is caught.
+- **Rejected:** Committed fixture repo; relying on per-gate unit tests alone.
+- **Details:** [iterate-2026-10-08-u11-integration-scenario-claims-scenario.md](../planning/adr/iterate-2026-10-08-u11-integration-scenario-claims-scenario.md)
+
+---
+
+### ADR-543: Claims-hardening docs reconciled, each gate described once
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: docs reconcile for the finalization claims hardening
+- **Run-ID:** iterate-2026-10-08-u12-docs-reconcile
+- **Context:** Units documented their own gates, leaving no single index and a few stale sentences (ledger small+, external review unavailable, no write-matrix row for the override log).
+- **Decision:** Add a gate index with ADR pointers to hooks-and-pipeline.md, a write-matrix row for compliance_overrides.log, and guide item 0.7 plus corrected sentences; no code changes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Index and pointers avoid a second copy of each gate description that would drift.
+- **Consequences:** A reader finds each claim gate in one place; the registry meta-test and path-canon tests still pass.
+- **Rejected:** Re-describing gates in the guide; editing the claim-checks table rows.
+- **Details:** [iterate-2026-10-08-u12-docs-reconcile-docs-reconcile.md](../planning/adr/iterate-2026-10-08-u12-docs-reconcile-docs-reconcile.md)
+
+---
+
+### ADR-544: Hook reads more command shapes; one override per hook run
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: commit-hook command shapes
+- **Run-ID:** iterate-2026-10-08-u13-hook-command-shapes
+- **Context:** The commit hook misread heredocs, nested shells, substitutions and the shell cwd, and its override could be revived or double-spent.
+- **Decision:** One override releases one hook run; an O_EXCL marker arbitrates; the lexer over-fires on every shape it cannot prove safe.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Over-firing costs a re-run, under-firing skips the coverage gate; a marker is atomic where the log lock is not.
+- **Consequences:** Fewer unseen commits and no revived overrides; accepted shell-quoting limits are listed in the spec file.
+- **Rejected:** One override per commit (uncountable before it runs); a full shell parser (not stdlib-sized).
+- **Details:** [iterate-2026-10-08-u13-hook-command-shapes-parser-and-override.md](../planning/adr/iterate-2026-10-08-u13-hook-command-shapes-parser-and-override.md)
+
+---
+
+### ADR-545: A logged override is honoured once within 30 minutes; the coverage gate measures the commit's repo
+- **Date:** 2026-10-08
+- **Section:** Iterate - change: compliance soft-block override and commit-target measurement
+- **Run-ID:** iterate-2026-10-08-u13-rtm-hook-followups
+- **Context:** U9 left seven gaps in the commit coverage hook. Neither soft-block hook read the override log it asked for, a partial test run counted requirements as uncovered, and git -C commits were measured in the cwd. Unit U13 of the finalization-claims-hardening campaign.
+- **Decision:** Operator decisions 1 and 2 (2026-10-08). A requirement whose every linked test is not_run is not measured: left out of the figure, WARN N of M. A logged override lets that hook's next block through once within 30 min (CONSUMED line; not applied if unwritable), one shared helper for check_rtm_coverage and check_security_scan. The gate measures the repo named by -C/--work-tree/--git-dir.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An override the gate never reads is no escape hatch, and an unexecuted test proves nothing either way. Single use follows the operator's 'next commit' wording; one appended line in the existing append-only log is the smallest way to record use.
+- **Consequences:** compliance_overrides.log is now gate input as well as an audit trail. A multi-repo commit line is judged on its first failing repo. Heredoc bodies and commented heredoc operators are not scanned; git.cmd counts as git; user aliases, cd && git commit and env -S stay uncovered.
+- **Rejected:** A 30-minute window with unlimited passes (broader than the decision). An audit-only log. git rev-parse --show-toplevel as the target (returns the monorepo root for a subdirectory project). Counting not_run tests as uncovered.
+- **Details:** [iterate-2026-10-08-u13-rtm-hook-followups-override-and-target.md](../planning/adr/iterate-2026-10-08-u13-rtm-hook-followups-override-and-target.md)
+
+---
+
+### ADR-546: Delta backfill writes no tags; the 1,440 untagged tests become one triage card
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: U2 delta backfill of requirement tags (monorepo)
+- **Run-ID:** iterate-2026-10-08-u2-delta-backfill
+- **Context:** 1,440 tests were added since 2026-09-16 without an @FR tag (16,969 untagged at HEAD vs 15,546 at the base). Campaign unit U2 asks for deterministic, high-confidence tags only.
+- **Decision:** Ran backfill_test_links and backfill_ac_provenance over all test roots: 0 deterministic matches, so no test file was edited. Filed one triage card (trg-067e08fa) with a per-file measurement doc; nothing deleted.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Hand-mapping 1,440 tests to FRs would be guessing, and most of them (campaign, loop, review infrastructure) have no matching FR to point at.
+- **Consequences:** The untagged delta stays until a human or LLM-adjudicated mapping is done; U1's tag-at-authoring gate is what stops it regrowing. No bloat-cap file was touched, so no exception ADR.
+- **Rejected:** Hand-tagging by judgement; tagging whole files from a provenance join (the engine itself refuses files with several untagged tests).
+
+---
+
+### ADR-547: Review record and ledger answer at every complexity, trivial included
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: review record and ledger enforced at every complexity
+- **Run-ID:** iterate-2026-10-08-u3-review-record-trivial
+- **Context:** A record could close every review not_run with free text and pass at small; trivial skipped the review record and the test ledger entirely, so an unreviewed change looked like a reviewed one.
+- **Decision:** self must be completed with evidence at every complexity; every not_run/not_applicable row carries a closed reason_code (trivial-auto at trivial only, a per-type code from small up); the trivial ledger is a recorded n/a row with trivial-auto. Ledger check moved to verifiers/_ledger_completeness.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the existing gates and vocabulary instead of a new mechanism; one command closes the trivial default. Architecture review: GLM approve, GPT approve. Accepted limits (follow-ups): a Stage-1 REJECT carries delegated-to-orchestrator, the truth lives in its disposition (no reader groups by reason_code; a stage-1-rejected code is a follow-up); record --force on a plan/external_code not_run row with missing-keys/unavailable is blocked by the marker rule, so a repair needs that rule relaxed.
+- **Consequences:** Trivial runs record self plus one close-missing --reason-code trivial-auto and a default ledger row; runner campaign rows carry delegated-to-orchestrator / no-spawn-site; iterate_checks.py shrank 1082 to about 855 lines. The ledger gate also refuses any non-trivial-auto code on an n/a ledger (intended). In-flight runs recorded before this merge are repaired with record --force --reason-code; sync the plugin cache only after in-flight units pass F11.
+- **Rejected:** Require codes from small up only and keep trivial skipped (leaves the gap); a type-to-code matrix in the verifier (re-encodes the phase matrix); making --reason-code mandatory in the CLI.
+- **Details:** [iterate-2026-10-08-u3-review-record-trivial-reviews.md](../planning/adr/iterate-2026-10-08-u3-review-record-trivial-reviews.md)
+
+---
+
+### ADR-548: A small iterate with a risk flag or a diff over 100 lines must answer for its code review
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: small-iterate code-review trigger
+- **Run-ID:** iterate-2026-10-08-u4-cascade-trigger-100
+- **Context:** The phase matrix runs the code-review cascade at small when a risk flag is set or the diff exceeds 100 lines, but nothing enforced it, and the 100 lines were counted three different ways (git diff HEAD~1 | wc -l in the runner doc, numstat in Step 3.4, nothing at F11).
+- **Decision:** One rule in shared/scripts/lib/review_diff_threshold.py: added+removed lines vs the merge-base, no renames, finalization records excluded, strictly > 100. Step 3.4 loads it by path; new F11 claim check check_cascade_trigger requires code completed with evidence or not_run with an allowlisted reason_code (unavailable, delegated-to-orchestrator, user-opt-out).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The U0 registry keeps iterate_checks.py untouched; loading the shared file by path avoids the lib package collision (ADR-044/045) without a second copy; the exclusion keeps F11's count equal to what Step 3.4 saw.
+- **Consequences:** Small runs that crossed the trigger can no longer close code with free text; campaign runners record delegated-to-orchestrator. Step 3.4's diff_loc no longer counts .shipwright/ and changelog drops. An unmeasurable diff (incl. a trunk tip no remote trunk ref contains) or unreadable flag source counts as triggered and the record decides; a missing complexity is in scope. Accepted limits (trivial label, sidecar-only flags, unproven delegation, develop trunks) are in spec_ref.
+- **Rejected:** Extend the medium+ floor to small (makes review mandatory for every small run); fix the docs only (leaves the trigger unenforced); keep a local fallback constant (two definitions). Architecture review: GLM and GPT approve.
+- **Details:** [iterate-2026-10-08-u4-cascade-trigger-100-reviews.md](../planning/adr/iterate-2026-10-08-u4-cascade-trigger-100-reviews.md)
+
+---
+
+### ADR-549: F11 re-derives the F0.5 surface claim from the diff and staged evidence
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: F0.5 surface check not bypassable
+- **Run-ID:** iterate-2026-10-08-u5-surface-check
+- **Context:** At medium+ F11 checked only the shape of the F0.5 block: surface=none with free text passed even when the diff added an API route, and tests_run/exit_code were typed numbers nothing compared with an execution record.
+- **Decision:** verifiers/surface_check.py: medium+ none needs a closed surface_none reason_code and a diff that touches no UI / API route / SSE-WS / message contract; UI must be web; other surfaces must be backed by this run's staged evidence whose tested_tree equals the branch's own last write of each owned path (trunk-merge hunks drop out), with no failing result under the runner's test paths; staging refuses reports older than the code.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Parent-only and commit-walk freshness both failed on real campaign units (fix commits, record commits, trunk merges) or missed an amend after staging; comparing the tested tree with the verified commit per branch-changed path is exact and needs no commit-shape assumption.
+- **Consequences:** After U5 merges, any sibling unit that commits a code fix after staging must re-run F0 and restage. Accepted limits: the threat model is an honest agent's shortcut, not forgery (the staging dir is gitignored and unauthenticated); the fingerprint is taken at staging, bounded by the report-mtime guard; CLI is not a surface kind; submodule content is seen only as a gitlink.
+- **Rejected:** Parent-only freshness (breaks every campaign unit); commit-walk freshness (misses an amend after staging); a producer --require-reason-code (producer does not know complexity); letting an unmeasurable diff pass a non-none surface.
+- **Details:** [iterate-2026-10-08-u5-surface-check-surface-claim.md](../planning/adr/iterate-2026-10-08-u5-surface-check-surface-claim.md)
+
+---
+
+### ADR-550: Requirement gates: fixes answer, none-reasons are coded, no-FR labels are checked against the diff
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: requirement gate bypasses (campaign U6)
+- **Run-ID:** iterate-2026-10-08-u6-requirement-gate
+- **Context:** The write-time requirement gates had five bypasses: bug iterates were exempt from the spec-impact rule; spec_impact none accepted any free text; FR existence allowed declared ids when specs parsed to zero requirements; the spec-impact gate ran at the record_event CLI only, never at F5b; a no-FR change_type label was believed without looking at what changed.
+- **Decision:** run_fr_gates (called by both write paths) gains two arms: lib/spec_impact_gate.py (feature/change/bug link FRs or record none; every none carries a one-line justification and a closed spec_impact_none code) and lib/change_type_diff.py with built-in project-shape rules in lib/change_type_paths.py (label must cover the fork-point to working-tree diff, untracked and renames incl.). Existence fails closed; F11 stops skipping bugs.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Replayed 167 historical no-FR events: the draft rules refused 18 legitimate runs; after widening to the observed config, CI and test paths, 4 remain, all real mislabels. Narrowing the monorepo set to shared/scripts and scripts refused 82 of 167 (49%), the outcome the brief rules out. Trunk resolved remote-first so a local main at HEAD cannot hide committed work.
+- **Consequences:** Every CLI or F5b event recording spec_impact none needs spec_impact_reason_code; siblings finalizing after U6 too. A no-FR label not covering a changed path is refused; git without a usable trunk refuses. Accepted limits: edits after F5b and an idempotent F5b re-run are not re-gated; a stale plugin cache bypasses write-time rules (F11 WARNs); under the stacked strategy a predecessor's paths count (fails closed).
+- **Rejected:** A global no-runtime-code rule (refuses every monorepo tooling change). A per-project change_type_paths override in shipwright_run_config.json (dropped after both architecture reviewers: a permanent exemption contract with no demonstrated need, and the working-tree copy let a change widen its own exemption). A separate F11 re-check (both write paths already share the gate).
+- **Details:** [iterate-2026-10-08-u6-requirement-gate-reviews.md](../planning/adr/iterate-2026-10-08-u6-requirement-gate-reviews.md)
+
+---
+
+### ADR-551: Commit hook gates on requirement coverage from the committed manifest
+- **Date:** 2026-10-08
+- **Section:** Iterate - change: commit-time 80% hook measures requirement coverage
+- **Run-ID:** iterate-2026-10-08-u9-rtm-80-hook
+- **Context:** check_rtm_coverage read the RTM line for build sections with a commit; adopted projects have none, so the hook allowed every commit silently. Unit U9 of the finalization-claims-hardening campaign.
+- **Decision:** The hook reads the manifest being COMMITTED: the index copy (git cat-file blob :./<path>), else HEAD's only when the index lacks the path; never regenerated. The working tree is read silently only outside a git repo or when git has no such file; for any other git failure it is read with one WARN naming the reason. FR coverage gates, AC is reported, rtm_coverage_baseline ratchets. Schema != 4 or no executed pass/fail result: WARN + allow, never 0%.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A gate named for requirement coverage must measure it; the manifest already joins bindings to results. Trigger: git_commit_command.is_git_commit, narrower than the old substring test, which stays the fallback when the text cannot be parsed or the module cannot be imported. git commit --dry-run / -h over-fire; git aliases, merge, revert, cherry-pick, rebase and am are not covered.
+- **Consequences:** PreToolUse runs before the command, so a manifest staged by the same command (git add && git commit, commit -a, commit <pathspec>, -o, -i) is measured from its previous index/HEAD copy; the block (stderr + JSON) says to stage it in a separate command first. Accepted risk: an all-not_run manifest swept into a commit switches the gate to WARN + allow until CI regenerates it; and the by-commit binding-to-result join is the collector's, not re-verified. Measured: FR 21/21, AC 246/285.
+- **Rejected:** B: emit a requirement line from rtm_generator (764 LOC, at bloat cap). C: correct the docs only, leaving a gate that never fires. Reading HEAD only: rejected, committing a corrected or regenerated manifest would still be gated on the old one. Reading the working-tree manifest first: rejected, a fail-closed local regeneration marks every link not_run, so coverage would read 0% and block every commit on a measurement artefact rather than on real coverage.
+
+---
+
+### ADR-552: Version-pinning CI tests accept a newer action major
+- **Date:** 2026-10-08
+- **Section:** Iterate — change: tests tolerate Dependabot major bumps
+- **Run-ID:** iterate-2026-10-08-unpin-action-major-in-tests
+- **Context:** Dependabot now proposes GitHub Actions majors. Two tests pinned an exact major (upload-artifact@v4, codeql-action@v4) and turned PR #850 red.
+- **Decision:** The upload-artifact test asserts the action path; the codeql test asserts major >= 4 (keeps its guard against falling back to v3). Both are bound to FR-01.17.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The tests guard the action and a minimum version, not an exact major; Dependabot owns the major.
+- **Consequences:** Future major bumps of these two actions no longer fail the suite. A SHA-pinned or branch ref in codeql.yml would raise ValueError instead of the assertion message (latent; all refs are tags today).
+- **Rejected:** Closing the Dependabot PR (the next major breaks the same tests again).
+
+---
+
+### ADR-553: Force-push guard inspects only the push segment
+- **Date:** 2026-10-09
+- **Section:** Iterate - bug: force-push guard false positives
+- **Run-ID:** iterate-2026-10-08-validate-command-force-push-fp
+- **Context:** validate_command.sh searched the whole command string for a force flag and then for the word main/master, so a branch name containing -f or an unrelated --notes-file plus checkout master blocked harmless commands.
+- **Decision:** Move the inspection to force_push_guard.py: quote-aware tokenising, split on separators and newlines, force flag as a whole push argument, target taken from the push refspecs; an argument-less force push is judged by the checked-out branch and its upstream. Internal errors fail open.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Parsing the push segment is the smallest change that makes flag and target belong to the same command; a separate module is unit-testable and avoids a quoting trap in inline bash.
+- **Consequences:** Harmless commands pass; real force pushes to main/master stay blocked. It remains a best-effort denylist over shell text (documented limits), not a sandbox.
+- **Rejected:** Tightening the grep regexes (still string search); making the guard fail closed on parser errors (a bug there would block unrelated commands).
+
+---
+
+### ADR-554: Git pre-commit step runs the requirement-coverage gate at the real commit
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: git-side coverage check
+- **Run-ID:** iterate-2026-10-09-git-side-coverage-hook
+- **Context:** check_rtm_coverage decides from Bash command text, so every shell shape its lexer cannot read hides a commit; the open shapes kept growing (ANSI-C quoting, uv run/stdbuf/flock/setsid wrappers, leading redirections).
+- **Decision:** scripts/hooks/pre-commit also runs git_precommit_rtm_coverage.py inside git commit: staged manifest, same threshold and logged override; exit 3 is the only block. The PreToolUse lexer gets no further shapes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Only git sees the real commit and its real index (also for commit -a / pathspec); reuses measurement and override code. GLM and the internal architecture review approved; OpenAI rejected as disproportionate (CI catches misses) - overruled, recorded in the spec.
+- **Consequences:** New write surface .shipwright/locks/git-side-release-check_rtm_coverage (2 min, HEAD-bound hand-off). Subprocess committers in the monorepo are now gated too. Clones without install-hooks.sh keep only the Claude hook and CI.
+- **Rejected:** Keep extending the lexer (unbounded); step-aside PreToolUse (loses the earlier block, needs install detection); do nothing (OpenAI's pick; a late red CI only).
+
+---
+
+### ADR-555: Gateway roster gets its own marker schema
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: review gateway follow-up
+- **Run-ID:** iterate-2026-10-09-issue-547-followup
+- **Context:** The #547 gateway answered reviews but no marker could record model-1/model-2, so the gate read them as unreviewed.
+- **Decision:** Add marker schema 6 for the model-1/model-2 roster and join it to CURRENT_REVIEWER_ROSTERS; keep success semantics and add an additive reviewed flag.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Aliasing onto glm/openai would falsify roster identity; flipping success would break the documented missing-keys state.
+- **Consequences:** Older readers fail closed on schema 6; F11 driver gate does not attest vendor independence for gateway runs.
+- **Rejected:** Alias gateway onto glm/openai; flip success to false when nothing ran; model-capability metadata, retry policy and connector layer (parked).
+- **Details:** [2026-10-09-issue-547-gateway-followup.md](../planning/iterate/2026-10-09-issue-547-gateway-followup.md)
+
+---
+
+### ADR-556: A Stop hook keeps an --autonomous iterate running until its PR is merged
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: autonomous iterate Stop-guard
+- **Run-ID:** iterate-2026-10-09-iterate-stop-guard
+- **Context:** Recent autonomous iterates ended their turn after the build (no finalization, no plan review) and asked the operator how to continue. Nothing in code prevented it; the rule was only prose in a very long SKILL.md.
+- **Decision:** Add iterate_stop_guard.py as the first Stop hook of the iterate plugin: while the session's run pointer is live (deliver_pr.py not yet at MERGED/CLOSED) and the latest iterate invocation is --autonomous, block the Stop with the next unfinished phase. Exits: record_hard_blocker.py, 3 futile / 40 total blocks, SHIPWRIGHT_ITERATE_STOP_GUARD=0. Fail-open.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The pointer is already the code-level run-open signal; no gh call at Stop time. Own counters replace stop_hook_active, which stays true after the first block.
+- **Consequences:** Autonomy is read from the transcript, not the pointer, so it does not depend on the agent passing a flag. Self-release via the blocker CLI is cooperative; the stderr line and F12 naming bound it. Sibling Stop hooks re-run on every blocked Stop. The phase hint can lag a renamed phase.
+- **Rejected:** Autonomy flag in the run pointer (depends on the agent-followed setup step, and worktree_isolation.py has no bloat headroom); gh pr view at Stop time (network in a hook).
+
+---
+
+### ADR-557: 3f-bis skips re-review only on a git-verified runner attestation
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: PR #860 follow-ups (campaign runner reviews)
+- **Run-ID:** iterate-2026-10-09-pr860-followups
+- **Context:** The campaign runner now spawns its own reviewers, but its rows are self-attested, so 3f-bis re-ran the cascade on every unit and the spawns hard-coded model=opus.
+- **Decision:** Runner rows carry --verdict and --reviewed-commit; review_attested.py lets 3f-bis skip only when they check out against git. Spawns use the resolved review/plan_review tiers. The salvage hook finds the unit worktree.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Dropping the second look entirely trusts a self-report; binding it to a verdict, a pre-spawn SHA and the committed record closes stale and absent attestations cheaply.
+- **Consequences:** Fewer duplicate reviews on clean units; any later code, legacy row, rename or high finding keeps the full cascade. The attestation is still the runner's own claim, checked for staleness, not for honesty.
+- **Rejected:** Trusting the runner row alone (self-attested); always re-reviewing (duplicate cost); signing rows (no key infrastructure).
+
+---
+
+### ADR-558: Reports-older-than-code guard skips gitignored scratch trees
+- **Date:** 2026-10-09
+- **Section:** Iterate — bug: AC ratchet F0 mirror false exit 2 in scratch tree
+- **Run-ID:** iterate-2026-10-09-ratchet-f0-scratch-guard
+- **Context:** check_ac_ratchet_f0 copies the tree to <project>/.scratch inside the repo; git there resolves the OUTER repo, so its changed paths joined onto fresh copies always looked newer than the retained reports (exit 2 on any dirty iterate).
+- **Decision:** _evidence_drop_guard._branch_paths returns None (fail-open) when the root is a gitignored directory nested in another repo's work tree; real trees stay guarded.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixes the root cause in the guard (scratch holds no branch of its own) instead of moving scratch, which F0 diff-coverage docs and tests assume lives under .scratch.
+- **Consequences:** The ratchet mirror works on uncommitted iterates without relocating scratch. Fail-open only for ignored nested dirs; F11 remains the gate.
+- **Rejected:** Moving the scratch parent outside the repo (breaks MAX_PATH headroom and the documented .scratch contract).
+
+---
+
+### ADR-559: Four very long SKILL.md paragraphs moved into references
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: slim the iterate SKILL.md
+- **Run-ID:** iterate-2026-10-09-slim-iterate-skill
+- **Context:** SKILL.md carried seven lines of 1.5-4.7 KB each, which dilutes the rules an autonomous run must follow.
+- **Decision:** Keep a summary with every pinned anchor in SKILL.md and move the remaining detail to review-cascade-spawn, complexity-calibration, worktree-setup and campaign-review-briefing references.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Drift tests pin Step 8 permission prose and the risk taxonomy in SKILL.md, so only text without a pin could move.
+- **Consequences:** SKILL.md shrinks from 49.8 KB to 45.8 KB (still 300 lines). Detail now sits one link away; the permission rules of Step 8 stay inline because tests pin them.
+- **Rejected:** Moving the Step 8 permission rules or the risk-taxonomy rows (pinned by tests, and the rows are the normative taxonomy).
+
+---
+
+### ADR-560: Recorder warns on unread replies; F0.5 counts cases
+- **Date:** 2026-10-09
+- **Section:** Iterate — bug: smoke-campaign recording gaps
+- **Run-ID:** iterate-2026-10-09-smoke-campaign-recording-gaps
+- **Context:** A smoke campaign recorded a code-review finding as 0 and F11 refused an honest parametrized tests_run (18 cases vs 10 folded ids).
+- **Decision:** The recorder warns when a completed spec/code/doubt row has no read reply; the surface check compares tests_run to passing pytest cases (read_junit_cases, distinct per id). No smoke exemption code is added.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Folding is the traceability identity so the gate adapts to the runner's unit. A smoke exemption would be a claimable bypass for untagged tests.
+- **Consequences:** Metadata-only rows stay legal but loud; the evidence index keeps folding parametrized ids. Partial retries and multi-project Playwright runs undercount, which fails closed.
+- **Rejected:** Hard-refusing metadata-only rows (broke 15 tests, codex transport); changing the fold; a smoke exemption code; keying case identity on resolved file only (undercounts same-named methods in different classes).
+
+---
+
+### ADR-561: Collector shares the gate's TS lexer; trees are materialised without git archive
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: tag-gate collector gaps
+- **Run-ID:** iterate-2026-10-09-tag-gate-collector-gaps
+- **Context:** PR 861 left three gaps: the collector could not close a wrapped .each table holding a regex literal or JSX text, a head-config-only test folder, and files dropped by export-ignore.
+- **Decision:** Moved the lexer to shared lib/ts_lexer.py, used by both gate and collector. Replaced git archive with ls-tree + cat-file (tree materialiser), resolving in-tree file symlinks as copies. The head-config folder was already seen; pinned by tests.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One lexer means one answer on where a table ends. ls-tree/cat-file ignores attributes, so the scanned tree equals the committed tree.
+- **Consequences:** export-ignore can no longer hide a test from the gates; blobs are raw (no eol/LFS smudge); memory is about 2x blob size transiently. Chained symlinks and links leaving the tree are dropped.
+- **Rejected:** A second regex-aware scan inside the collector (two lexers to keep in sync); git archive with an info/attributes override (mutates the user's repo).
+
+---
+
+### ADR-562: Close the U0/U3/U4/U10 review-record follow-ups
+- **Date:** 2026-10-09
+- **Section:** Iterate — change: review-record follow-ups (U0/U3/U4/U10)
+- **Run-ID:** iterate-2026-10-09-u-review-followups-widened
+- **Context:** Review-record and cascade-gate follow-ups left open by the finalization-claims hardening: a null marker reason, a post-hoc reason_code, a Stage-1 REJECT filed as delegated, risk flags read from gitignored sidecars, a rebase-merged PR sized by its tip, an unstamped unavailable capture, unmasked stderr.
+- **Decision:** make_entry takes reason_code; add stage-1-rejected; relax --force for skipped rows; persist risk_flags in the F5c entry (absent=unknown); measure a rebase-merged PR over its Run-ID commits; stamp captures with capture{run_id,at}; mask URLs and key shapes in unavailable captures.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each fix extends an existing mechanism so a gate or record stops overstating what it proves; internal and external reviews agreed and their fixes are folded in.
+- **Consequences:** Stricter gates fail closed: old unstamped envelopes and entries without risk_flags are refused or read as fired. Limits: the stamp binds a run, not a provider; masking runs at record time for unavailable rows only; risk_flags is self-reported; commits without the trailer are not counted.
+- **Rejected:** Stripping stderr (loses the evidence the claim needs); adapter-side masking and F11 re-masking checks (out of scope); an F11 rule on stage-1-rejected (the campaign STRICT-STOP is the gate).
+- **Details:** [iterate-2026-10-09-u-review-followups-widened.md](../planning/iterate/iterate-2026-10-09-u-review-followups-widened.md)

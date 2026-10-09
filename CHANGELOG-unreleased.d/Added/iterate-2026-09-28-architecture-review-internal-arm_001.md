@@ -1,1 +1,0 @@
-Internal architecture-review pass (architecture_internal) runs always-first on /shipwright-plan and /shipwright-iterate (medium+), asking 'should this be built at all' even when external LLM review is unavailable; an in-flight run whose reviews.json predates this needs close-missing --only architecture_internal (same remediation plan_internal already established).

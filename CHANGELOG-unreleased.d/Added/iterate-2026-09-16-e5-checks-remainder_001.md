@@ -1,1 +1,0 @@
-test(triage): AST meta-test gate closes FR-01.14 row #1's producer contract gap, catching a new automated producer that calls the plain (non-deduplicating) append_triage_item instead of the idempotent form

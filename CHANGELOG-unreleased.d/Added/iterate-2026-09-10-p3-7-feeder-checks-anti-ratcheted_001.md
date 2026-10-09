@@ -1,1 +1,0 @@
-feat(compliance): add two AC-binding feeder CI gates (P3.7) -- an anti-ratcheted 'AC without a test' check and a hard-from-day-one 'a test whose AC vanished' check, closing the two remaining checks P3.6's keystone AC gate deliberately left open

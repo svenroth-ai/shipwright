@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-09-28T12:35:47.613231+00:00
-Source-State: run=iterate-2026-09-28-hooks-uv-run-project-pin
-Consistency-audit: last run 2026-07-28 (62 days earlier) — FAIL
-Total commits: 1614
+Generated: 2026-10-09T16:20:00.102137+00:00
+Source-State: run=iterate-2026-10-09-u-review-followups-widened base=6ae44444f5b2 release=v0.34.0
+Consistency-audit: last run 2026-07-28 (73 days earlier) — FAIL
+Total commits: 1647
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 561
-    "feat" : 426
-    "chore" : 282
-    "docs" : 167
-    "refactor" : 94
-    "test" : 51
+    "fix" : 564
+    "feat" : 445
+    "chore" : 283
+    "docs" : 170
+    "refactor" : 100
+    "test" : 52
     "ci" : 20
     "other" : 11
     "perf" : 1
@@ -23,27 +23,30 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 561 commits
+### Fixes (fix) — 564 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-28 | security | restrict architecture-internal-spec scratch file to owner-only | 643235498a02 |
+| 2026-10-09 | review | close the U0/U3/U4/U10 review-record follow-ups (#874) | 6ae44444f5b2 |
+| 2026-10-09 | iterate | recorder warns on unread reviewer replies; F0.5 surface check counts pytest cases (#870) | bea31d3749a7 |
+| 2026-10-09 | iterate | reports-older-than-code guard skips gitignored scratch trees (#865) | e5436a5913bf |
+| 2026-10-09 | iterate | campaign runner passes the lease token and spawns its own internal reviews (#860) | 4dd27c8b5fc9 |
+| 2026-10-09 | compliance | collector and gate share one TS lexer; trees scanned without git archive (#863) | d55b3986e0b1 |
+| 2026-10-09 | build | dangerous-command guard only blocks a real force flag aimed at main/master (#859) | cb27a0e6ee18 |
+| 2026-10-09 | compliance | commit hooks read more shell shapes; one override per hook run, restore-proof (#862) | 1ce340f1ff71 |
+| 2026-10-09 | compliance | test-tag gate sees data-driven tests, lexes regex and JSX, counts decorator edits (#861) | d0505137c11b |
+| 2026-10-08 | compliance | a logged override lets the coverage or security block through once; the gate measures the commit's repo (#847) | e45426f79eb2 |
+| 2026-10-08 | compliance | commit-time coverage hook measures requirement coverage, not build sections (#839) | b7e09d354465 |
+| 2026-10-01 | test | pin a short pytest --basetemp per F0 unit (#828) | 98461479815e |
+| 2026-10-01 | review | enforce external-review driver=codex under Codextender (#826) | 403493b9bc34 |
+| 2026-09-29 | compliance | repo-declared advisory checks silence required-checks drift (#824) | 2a1eb244fc09 |
+| 2026-09-29 | compliance | conditional PR jobs are possible checks, not phantoms (#823) | db47e3d16524 |
+| 2026-09-29 | review | opus claude_cli leg drops review under subscription login (#819) | a1ae4ff35f6f |
+| 2026-09-29 | review | driver-aware {glm,opus} roster in shared llm_review for Codex-driven adopt reviews (#820) | b563826e40b7 |
+| 2026-09-29 | compliance | make audit D5 advisory so FR-01.10/AC06 holds (#818) | aef386f2b48b |
+| 2026-09-29 | test | make the fan-out join barrier test independent of wall-clock timing (#817) | b9469ef08ee9 |
+| 2026-09-28 | hooks | SessionStart phase-quality banner reports only the newest run per phase (#815) | a23ed3aabdc3 |
 | 2026-09-28 | main | use malformed TOML for the uv-project-isolation negative control (#814) | 4bfad84b703e |
-| 2026-09-28 | iterate | fix boundary-regex indentation gap, document plan-side strip scope (external code review round 7) | 4ec7d904a033 |
-| 2026-09-28 | iterate | fail closed when an unterminated fence hides a prior-review section (external code review + F11 preflight round 8) | 2aaf595aa41b |
-| 2026-09-28 | iterate | catch mkdir failure, wire it into step 0b degraded handling (external code review round 6) | b8a265aff427 |
-| 2026-09-28 | iterate | clean error on unreadable spec-file, disclose Windows junction gap (external code review round 5) | dfeea9ca2348 |
-| 2026-09-28 | iterate | remove duplicate regex, guard run-dir symlink (external code review round 4) | ae13a8a382cb |
-| 2026-09-28 | iterate | rewrite fence masker as a line-scanner (external code review round 3) | c83623064654 |
-| 2026-09-28 | iterate | drop the fence-closer backreference (external code review round 2) | e61fa86b2a97 |
-| 2026-09-28 | iterate | fence-aware section strip + symlinked-runs-dir refusal (external code review) | 0deddedf4d74 |
-| 2026-09-28 | iterate | record external_code as not_run (missing API keys, F11) | 50a208104197 |
-| 2026-09-28 | iterate | refuse to follow a symlink at the spec sanitizer's output path (F11) | 9c62407d43ff |
-| 2026-09-28 | iterate | add prompt-injection defense to architecture-internal-reviewer (F11) | 3bc864a89a6a |
-| 2026-09-28 | iterate | reconcile pending architecture_internal row before resume skip (F11) | 73fe22af88db |
-| 2026-09-28 | iterate | remove anchoring-guarantee overclaim, neutral mini-plan wording (F11) | 29da64015442 |
-| 2026-09-28 | iterate | close path-traversal gap in architecture-internal spec sanitizer (F11) | ecdcdafc5c9f |
-| 2026-09-28 | iterate | close architecture-internal-reviewer anchoring gap (D2) | 9220cc183e89 |
 | 2026-09-28 | hooks | pin every hooks.json uv run invocation with --no-project (#810) | a6bb2537457f |
 | 2026-09-28 | compliance | trim CLAUDE.md under 200-line cap, sync bloat baseline (F6, H1) (#806) | f3dc44fd90fa |
 | 2026-09-28 | hooks | walk up to the git root when resolving project_root (#807) | 8f6859351021 |
@@ -589,11 +592,30 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 426 commits
+### Features (feat) — 445 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-28 | iterate | internal architecture-review arm for plan and iterate | 5985f987e1db |
+| 2026-10-09 | review | finish the operator-owned review gateway route (#547) (#873) | 0ae5b8bbda15 |
+| 2026-10-09 | iterate | Stop hook keeps an autonomous iterate running until its PR is merged (#871) | 22e633216953 |
+| 2026-10-09 | iterate | campaign runner reviews use the resolved tier; 3f-bis skips a re-review only on a git-verified attestation (#869) | c4287504cd19 |
+| 2026-10-09 | compliance | git pre-commit step runs the coverage gate at the real commit (#866) | 524588ba9c87 |
+| 2026-10-08 | finalization | the F0.5 surface claim is re-derived from the diff and the staged evidence (#846) | a2f491a4ac69 |
+| 2026-10-08 | finalization | the requirement record is enforced on every iterate path (#845) | 4518bfdd40c5 |
+| 2026-10-08 | finalization | an external review that could not run is proven, announced and queued for a re-run (#844) | ca335b790388 |
+| 2026-10-08 | pr-review | switch the PR-review gate default model to Claude Haiku 5.5 (#843) | b19939fd265b |
+| 2026-10-08 | f11 | stop when an added or edited test names no requirement (#841) | be69e37589b1 |
+| 2026-10-08 | finalization | a small iterate with a risk flag or a diff over 100 lines answers for its code review (#842) | 8f2700352e37 |
+| 2026-10-08 | finalization | review record and test ledger are enforced at every complexity (#840) | b79a573cfe84 |
+| 2026-10-08 | finalization | one F11 extension point and a shared closed reason-code vocabulary (#837) | b564270d5e7f |
+| 2026-10-03 | f0 | tell reused from executed results of a resumed run downstream (#834) | c010b0ea7e3e |
+| 2026-10-02 | f0 | resume a red unit across invocations instead of re-running it whole (#833) | 369a26d3a7f4 |
+| 2026-10-02 | review | Codex Light runs the internal architecture review and plan review at high effort (#832) | fefd4cab8f52 |
+| 2026-10-02 | f0 | mirror the AC coverage ratchet gate locally (#830) | 598406a465de |
+| 2026-10-01 | iterate | enforce the worktree step on Claude Code with a PreToolUse gate (#829) | d061c584776b |
+| 2026-09-29 | iterate | campaign runner runs the external architecture review (#821) | 8fc8e877893c |
+| 2026-09-29 | campaign | loop_claim readiness — read-only per-unit launchability for the WebUI DAG view (#822) | 07aa70e32cf9 |
+| 2026-09-28 | iterate | internal architecture-review arm for /shipwright-plan and /shipwright-iterate (#813) | 940759c2c706 |
 | 2026-09-26 | iterate | R6 capstone integration test for campaign-dag-scheduler (#805) | ec10ab456716 |
 | 2026-09-26 | iterate | campaign-dag-scheduler R5b serial merge lane hardening (#799) | 2d45a8949e2e |
 | 2026-09-25 | adopt,project | generate AGENTS.md for Codex CLI alongside CLAUDE.md (#798) | ba72bd8dd484 |
@@ -1020,17 +1042,18 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 282 commits
+### Chores (chore) — 283 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-28 | iterate | restore derived snapshots to fork-point content (F11) | bf4f9a44a938 |
-| 2026-09-28 | iterate | regenerate session handoff (F11) | 6f073a0b4ead |
-| 2026-09-28 | iterate | record round-7 external code review (F5c) | 2fefb424f4b1 |
-| 2026-09-28 | iterate | regenerate F5c evidence, record final external code review (F5c) | dc9ebff92288 |
-| 2026-09-28 | iterate | regenerate F5c evidence after external-code-review fixes (F5c) | 698c53723f8b |
-| 2026-09-28 | churn | regenerate derived snapshots after main merge | 13bcb2faaf5b |
-| 2026-09-28 | triage | sweep 2 outbox append(s) into branch | de5ed12ad6d2 |
+| 2026-10-08 | ci | bump actions/upload-artifact from 4 to 6 (#850) | b0464b6ae0e3 |
+| 2026-10-08 | ci | bump astral-sh/setup-uv (#854) | 590a042effc5 |
+| 2026-10-08 | ci | bump actions/checkout from 4 to 7 (#853) | 82d4760481fb |
+| 2026-10-08 | ci | bump peter-evans/create-or-update-comment from 4.0.0 to 5.0.0 (#852) | 661ba4fc94bc |
+| 2026-10-08 | ci | bump astral-sh/setup-uv from 3.2.4 to 10.2.0 (#851) | c4445fe971b8 |
+| 2026-10-08 | ci | bump actions/github-script from 7 to 9 (#849) | 35ecaa90028c |
+| 2026-10-08 | ci | activate Dependabot for github-actions only, drop cooldown exclusion (#848) | 68bb8ce998d5 |
+| 2026-10-08 | traceability | measure the untagged-test delta since 2026-09-16 and file it as one triage card (#838) | c9cc72f5a117 |
 | 2026-09-26 | triage | sweep 16 outbox append(s) into branch (#804) | 3b484e2039d2 |
 | 2026-09-22 | compliance | refresh evidence documents as of 42e45008dbd9 (#789) | cf28f55b443b |
 | 2026-09-21 | iterate | sweep pre-fix orphaned iterate test-results evidence (#780) | 82e01e49d94c |
@@ -1307,11 +1330,14 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 167 commits
+### Documentation (docs) — 170 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-28 | iterate | record F11 local preflight round 9 as converged (F5c) | f48ef6d158b9 |
+| 2026-10-08 | finalization | describe each claims-hardening gate once and fix stale finalization sentences (#858) | 2eb08ab286ce |
+| 2026-10-08 | security | describe the live Dependabot setup instead of "dormant" (#857) | 1332e6db7941 |
+| 2026-10-07 | planning | campaign brief to make finalization enforce its documented claims (#836) | 168b7fe01f77 |
+| 2026-10-07 | — | refresh Command Center board and task screenshots (#835) | 62ffe3df5d84 |
 | 2026-09-26 | shared | note held_merge_reconciliation.py is exercised by the R5b merge lane (#801) | 01077b4cc9ee |
 | 2026-09-21 | iterate | investigate dependency-aware parallel campaign scheduling (#782) | 526f347f9002 |
 | 2026-09-20 | iterate | resolve Codex activation-envelope delivery design (R0, codex-plugin-execution-reliability) (#776) | 0e519f715610 |
@@ -1479,10 +1505,16 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 94 commits
+### Refactoring (refactor) — 100 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-10-09 | iterate | move four long SKILL.md paragraphs into references (#872) | 95766a98568c |
+| 2026-10-09 | finalization | close the accepted limits of the claims-hardening U5/U6 gates (#864) | 2d14307ddc97 |
+| 2026-10-02 | f0 | retry only the red tests of a unit that failed in parallel (#831) | 464b99c8be24 |
+| 2026-10-01 | review | Codextender spawns reviewers via Agent tool; architecture review no longer skipped (#827) | 49bbac5e50f0 |
+| 2026-09-30 | review | bump external review + Codex transport to GPT-6.1 Sol (#825) | 2694d002a2c5 |
+| 2026-09-29 | hooks | PEP 723 inline metadata on every uv-run hook entry point (#816) | 9763b2f2f858 |
 | 2026-09-24 | review | rename retired/bumped model identifiers (#795) | d8793b446cbf |
 | 2026-09-21 | shared | pin Codex review dispatch reasoning effort, cut TOML generator (M4) (#779) | 25020f59df64 |
 | 2026-09-20 | verifiers | extract shared rollout-transition commit resolver (#778) | ae515b6d09ee |
@@ -1578,11 +1610,12 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 51 commits
+### Tests (test) — 52 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-28 | iterate | split fence-masking unit tests out of the anchoring-defense file (bloat gate) | 068579b4b6a9 |
+| 2026-10-08 | finalization | one integration scenario breaks each finalization gate in isolation (U11) (#856) | 5eb4fe2d20ac |
+| 2026-10-08 | ci | let version-pinning tests accept a newer action major (#855) | a15da2f952ef |
 | 2026-09-16 | iterate | backfill AC-proving tests for FR-01.15/17/19/20 (req3-05 t9, final unit) (#760) | 49a7bd998f8b |
 | 2026-09-16 | compliance | drift tests for the 19 judgement-line AC-evidence rows (req3-06 e6) (#763) | 0e2a57ee7cd3 |
 | 2026-09-16 | triage | AST meta-test gate closes FR-01.14 row #1's producer contract gap (req3-06 e5) (#762) | b8f4a18c9d3b |
@@ -1691,7 +1724,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1614 |
+| Total commits | 1647 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1614 |
+| Human-authored commits | 1647 |
 

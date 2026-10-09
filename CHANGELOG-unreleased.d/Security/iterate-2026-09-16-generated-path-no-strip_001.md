@@ -1,1 +1,0 @@
-PR-review generated-artifact path classifier (is_generated_path) no longer normalizes leading/trailing whitespace before matching, closing a misclassification gap where a whitespace-padded lookalike path could be hidden from the reviewing model

@@ -1,1 +1,0 @@
-Add capstone integration test proving campaign-dag-scheduler's R1-R5b subsystems (dependency gating, per-unit worktrees, review-attribution, state machine, wave concurrency, serial merge lane) compose correctly against real git

@@ -1,1 +1,0 @@
-Operator-owned review gateway (#547): external_review.py now routes plan/iterate/code/architecture reviews through SHIPWRIGHT_REVIEW_GATEWAY_*, sends max_completion_tokens with a one-shot max_tokens fallback, records non-secret gateway evidence (host, header names, token param), and gets its own review marker schema 6 (model-1/model-2)

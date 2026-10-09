@@ -1,1 +1,0 @@
-Finalization now checks that a small iterate with a risk flag or more than 100 changed lines answered for its code review (completed, or not run with a fixed reason code); the 100-line count is defined once and shared by the campaign runner's Step 3.4 and the F11 check
