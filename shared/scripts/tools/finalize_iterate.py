@@ -254,16 +254,11 @@ def _record_event(
         return None
 
     try:
-        # Idempotency: scan for an existing work_completed event for this run_id.
-        for prior in read_events(project_root):
-            if (
-                prior.get("type") == "work_completed"
-                and prior.get("source") == "iterate"
-                and prior.get("adr_id") == run_id
-            ):
-                # Already recorded by an earlier finalize call — return that
-                # event's ID so callers can still patch the commit SHA later.
-                return prior.get("id")
+        # Idempotency: an existing event for this run_id is returned; a re-run that supplies claims (extras) is gated first.
+        prior = next((e for e in read_events(project_root) if e.get("type") == "work_completed"
+                      and e.get("source") == "iterate" and e.get("adr_id") == run_id), None)
+        if prior and not event_extras:  # the Stop-hook repair pass: no new claims, nothing to judge
+            return prior.get("id")
 
         event: dict = {}
         # Caller-supplied fields land FIRST so the system fields below
@@ -316,11 +311,14 @@ def _record_event(
             raise FinalizeGateError(f"'tests' block malformed: {exc}", code="fr_gate_malformed_tests_block") from exc
 
         # FR-gate parity (ADR-059): run_fr_gates runs every requirement gate; intent comes from the entry first.
-        from lib.spec_impact_gate import stamp_intent_from_history
+        from lib.spec_impact_gate import stamp_intent_from_history, warn_claims_divergence
         gate_error = stamp_intent_from_history(event, project_root) or run_fr_gates(event, project_root, "finalize_iterate")
         if gate_error is not None:
             raise FinalizeGateError(gate_error.get("detail", "FR-gate rejected the event"), code=gate_error.get("error", "fr_gate_unclassified"))
 
+        if prior:  # recorded earlier: return its ID (callers patch the commit SHA later)
+            warn_claims_divergence(prior, event, "finalize_iterate")
+            return prior.get("id")
         return append_event(project_root, event)
     except FinalizeGateError:
         # Fail-closed: propagate so the iterate halts with guidance rather than

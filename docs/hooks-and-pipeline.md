@@ -3679,8 +3679,13 @@ iterates; F5b stamps `intent` from the run's iterate entry when the extras omit 
 `spec_impact_reason_code_contradicts_change_type` for e.g. `docs-only` next to `change_type: tooling`,
 `spec_impact_intent_mismatch`), `fr_gate_specs_unparsed` (specs exist but parse to zero requirements,
 so a declared FR id cannot be verified), `change_type_not_covered_by_diff` (a no-FR `change_type`
-does not cover a changed path; `lib/change_type_paths.py`) and `change_type_diff_unavailable` (git is
-present but the fork-point diff is not: no trunk ref, a trunk with no shared history, git failing).
+does not cover a changed path; `lib/change_type_paths.py`; a requirement catalog
+`.shipwright/planning/<split>/spec.md` is covered by no label) and `change_type_diff_unavailable` (git is
+present but the fork-point diff is not: no trunk ref, a trunk with no shared history, git failing, or a
+`stack_base_ref` that is not an `iterate/*` ancestor of HEAD). A stacked campaign unit's event carries
+`stack_base_ref` (its parent unit branch) so the diff starts there instead of at the trunk. F5b's
+idempotent re-run (same `run_id`) returns the recorded event id only after these gates have judged the
+re-run's own event.
 F11 `check_spec_impact_recorded` WARNs (does not fail) on a justified `none` without a closed code.
 
 ## Phase Validators
@@ -4746,10 +4751,12 @@ audit adds two at medium+: `none` needs a closed `surface_none` reason code and 
 refused when the branch diff touches a UI / API-route / SSE-WS / message-contract
 file (`_surface_detect.py`); a real surface's numbers must be backed by this run's
 staged evidence at the verified revision (`_surface_evidence.py`; absent or stale fails;
-a trunk merge's hunks never make it stale, a later fix or amend does). Staging itself
+a trunk merge's hunks never make it stale, a later fix, an amend or a conflict resolved by hand
+inside a trunk merge does). Staging itself
 (`evidence_drop.stage`, `stage_f0_evidence.py`) refuses reports older than a
-branch-changed file (`lib/_evidence_drop_guard.py`), so the repair is always "re-run
-the tests, then stage".
+branch-changed file, deleted files included (dated by the removing commit, or for an
+uncommitted removal by the surviving parent directory's mtime; `lib/_evidence_drop_guard.py`),
+so the repair is always "re-run the tests, then stage".
 
 **Every `iterate_latest` reader must say whose run it is.** Since an iterate no
 longer commits `shipwright_test_results.json`, whatever sits at `HEAD` is

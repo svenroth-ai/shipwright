@@ -1,0 +1,1 @@
+finalization claims gates: no no-FR label covers a requirement catalog; finalize re-runs are re-gated; stacked units are measured from their parent (stack_base_ref); surface-evidence freshness counts hand-resolved merge conflicts and dates deleted files

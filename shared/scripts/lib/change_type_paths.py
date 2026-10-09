@@ -22,6 +22,10 @@ decision 2026-10-08: the broad monorepo rule stays (a replay of 167 historical
 no-FR events refused 82 under ``shared/scripts/**`` + ``scripts/**`` alone), so
 in this monorepo the diff check chiefly constrains ``docs``.
 
+**Requirement catalogs are never covered.** ``.shipwright/**`` is bookkeeping for
+every label, but ``.shipwright/planning/<split>/spec.md`` is the requirement
+catalog itself: a no-FR label cannot edit it (follow-up to U6).
+
 **Two carve-outs, because Markdown can be code.** In the monorepo the runtime
 prompts (skills, agents, ``shared/prompts/**``, ``shared/constitution.md``) are
 what the product executes, so ``docs`` does not cover them. Under a runtime root
@@ -42,6 +46,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from lib.fr_classification import CHANGE_TYPE_VALUES
+from lib.requirement_impact import is_requirement_spec
 
 __all__ = [
     "SHAPE_GENERIC", "SHAPE_MARKERS", "SHAPE_SHIPWRIGHT_MONOREPO",
@@ -89,6 +94,12 @@ _COMPLIANCE = (
     ".github/workflows/**", ".github/codeql/**", "THIRD_PARTY*", "**/sbom*",
     "shipwright_*.json", "shipwright_*.yaml", "audit_config.json",
 )
+#: The requirement catalogs: ``lib.requirement_impact.is_requirement_spec`` (a split's
+#: ``spec.md``, never an iterate's own ``iterate/<run_id>/spec.md``) plus the greenfield
+#: catalog ``.shipwright/agent_docs/spec.md``. Editing
+#: one changes the requirements, which is exactly what a no-FR label claims it did not
+#: do, so no label covers them, whatever else ``.shipwright/**`` bookkeeping covers.
+_GREENFIELD_CATALOG = ".shipwright/agent_docs/spec.md"
 #: Runtime trees: a path under one is covered only by file-name evidence.
 _RUNTIME_ROOTS = ("src/**", "app/**", "server/**", "pages/**", "**/src/**")
 #: Directory-name globs that say nothing about a file under a runtime root.
@@ -171,6 +182,8 @@ def matches(path: str, pattern: str) -> bool:
 
 
 def _covered(path: str, change_type: str, shape: str, patterns) -> bool:
+    if is_requirement_spec(path) or path == _GREENFIELD_CATALOG:
+        return False
     if shape == SHAPE_SHIPWRIGHT_MONOREPO and change_type == _DOCS_CT and any(
             matches(path, p) for p in _RUNTIME_PROMPTS):
         return False

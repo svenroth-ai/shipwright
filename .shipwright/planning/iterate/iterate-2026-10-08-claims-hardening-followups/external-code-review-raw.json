@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/change_type_diff.py:215\n- Finding: `change_type_diff_error` now reads `diff[\"shape_base\"]`, but `iterate_diff`\u2019s unborn-HEAD return still supplies only `paths`, `base`, and `base_ref`. A no-FR finalization in a newly initialized repository raises an uncaught `KeyError` instead of evaluating the changed paths.\n- Suggestion: Include `\"shape_base\": None` in the unborn-HEAD result. Add a test that invokes the gate before the repository\u2019s first commit.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/change_type_diff.py:157\n- Finding: `_stack_base` checks the branch namespace, ancestry of HEAD, and own-branch exclusion, but never validates AC3\u2019s on-trunk condition. For example, an unrelated `iterate/*` lineage merged into HEAD passes the ancestry check; `_fork_point(root)` can still succeed through HEAD\u2019s other parent, allowing that unrelated branch to become the diff base.\n- Suggestion: Validate the stack base\u2019s required relationship to the resolved trunk before accepting it, and refuse when that relationship cannot be established. Add a negative test where the supplied branch is an ancestor of HEAD through an unrelated-history merge.\n\nShip-with-fixes: the change addresses the main hardening paths, but the unborn-repository regression and missing stack-base validation need correction. Local inspection was blocked by execution policy; these findings are based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/change_type_diff.py (~line 185 / the unborn-HEAD early return, and ~line 213 in `change_type_diff_error`)\n  Finding: The unborn-HEAD early return in `iterate_diff` (`{\"paths\": ..., \"base\": None, \"base_ref\": \"unborn HEAD\"}`) does not include the new `shape_base` key, but `change_type_diff_error` now reads `diff[\"shape_base\"]` unconditionally. On a repo with an unborn HEAD and git present, this raises an uncaught `KeyError` instead of the intended warning/gate path (previously it read `diff[\"base\"]`, which existed).\n  Suggestion: Add `\"shape_base\": None` to the unborn-HEAD dict (or use `diff.get(\"shape_base\", diff[\"base\"])` in `change_type_diff_error`) and add a test for the unborn-HEAD + change_type path.\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/change_type_diff.py (`_stack_base`)\n  Finding: AC3 (and the Architecture Review's \"on-trunk\" reconciliation) requires the `stack_base_ref` to \"sit on the trunk\". `_stack_base` only checks the `iterate/*` name, resolvability, ancestry of HEAD, and not-own-branch \u2014 it never verifies the ref sits on the trunk, so an `iterate/*` branch grafted in from off-trunk history that happens to be an ancestor of HEAD would be accepted. The tests also never cover this case (`test_a_stack_base_on_another_branch_refuses` fails on the ancestor check, not an on-trunk check).\n  Suggestion: Add the on-trunk check (e.g. require the ref's merge-base with the trunk to equal the trunk fork point / that it is reachable from HEAD's first-parent chain through the trunk), plus a test with an off-trunk `iterate/*` branch merged into the unit.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_surface_revision.py (`_last_writes` age fallback)\n  Finding: `age.get(merge, 0) < age.get(owners[path], 0)` treats an unknown SHA as age 0 (newest), silently preferring the merge commit when ordering data is incomplete. Also, if a merge resolution write is newer than a non-merge write, the merge overwrites it correctly, but an unresolvable ordering silently biases rather than failing closed, unlike the module's stated posture.\n  Suggestion: Fail closed (return `None`/raise) if a sha from the resolution map is missing from the `rev-list` ordering instead of defaulting to newest.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_claims_hardening_followups_review.py (`test_trunk_merged_into_the_stacked_unit_keeps_the_stack_base_usable`)\n  Finding: The assertion `err is None or err[\"error\"] == \"change_type_not_covered_by_diff\"` accepts both \"clean\" and \"refused\" outcomes, so it would pass even if the trunk merge broke the stack base entirely (e.g. produced `change_type_diff_unavailable`) \u2014 no, it wouldn't pass for that, but it also doesn't verify the merge actually landed a covered path was over-flagged, so the \"over-flags, never under-flags\" property is only half-checked. This is acceptable given the design note, but the test does not distinguish \"usable\" from \"silently widening/narrowing\".\n  Suggestion: Tighten to assert the specific expected error for the merged trunk path (or that no `change_type_diff_unavailable` occurs AND the trunk-added path is the only flagged one).\n\nOverall assessment: the four follow-ups are implemented and mostly well-tested, but the missing `shape_base` key on the unborn-HEAD path is a real crash, and the AC3 \"sits on the trunk\" check is absent \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

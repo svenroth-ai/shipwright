@@ -381,24 +381,18 @@ def test_finalize_gate_rejects_malformed_change_type(project, monkeypatch):
             if e.get("type") == "work_completed"] == []
 
 
-def test_finalize_gate_preserves_idempotency_without_regating(project, monkeypatch):
-    """The idempotency early-return runs BEFORE the gate: a re-run with the
-    same run_id but invalid extras returns the existing event id and never
-    re-gates (no spurious rejection on operator / Stop-hook re-run)."""
+def test_finalize_rerun_is_idempotent_but_still_gated(project, monkeypatch):
+    """A re-run with the same run_id returns the existing event id (no second
+    event) yet the gate judges the re-run's own extras: invalid ones are refused."""
     monkeypatch.chdir(project)
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
     fi = _import_finalize()
-
-    first = fi.run(project, run_id="test-gate-idem-001",
-                   event_extras={"intent": "change", "change_type": "tooling", "spec_impact": "none", "spec_impact_reason_code": "tooling-only",
-                                 "none_reason": "first valid call"})
-    event_id = first["steps"]["event"]["id"]
-
-    # Second call: same run_id, now with INVALID extras (no FR/change_type).
-    # Must NOT raise — the early-return short-circuits before the gate.
-    second = fi.run(project, run_id="test-gate-idem-001",
-                    event_extras={"intent": "feature"})
-    assert second["steps"]["event"]["id"] == event_id
+    extras = {"intent": "change", "change_type": "tooling", "spec_impact": "none", "spec_impact_reason_code": "tooling-only",
+              "none_reason": "first valid call"}
+    event_id = fi.run(project, run_id="test-gate-idem-001", event_extras=extras)["steps"]["event"]["id"]
+    assert fi.run(project, run_id="test-gate-idem-001", event_extras=extras)["steps"]["event"]["id"] == event_id
+    with pytest.raises(fi.FinalizeGateError):
+        fi.run(project, run_id="test-gate-idem-001", event_extras={"intent": "feature"})
     assert len([e for e in _read_events_jsonl(project)
                 if e.get("type") == "work_completed"]) == 1
 
