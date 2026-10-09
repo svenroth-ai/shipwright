@@ -22,6 +22,7 @@ import github_api
 import github_workflow_api
 from triage import append_triage_item_idempotent, should_route_to_outbox
 
+from .finding_units import import_cards
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
 from .pr_ci import import_pr_ci_findings
 from .producer import (
@@ -35,6 +36,7 @@ from .producer import (
     security_action_unit_from_artifact,
 )
 from .resolve import SOURCE, migrate_legacy_items, resolve_stale
+from .state import record_security_run
 
 
 def import_findings(project_root) -> dict:
@@ -50,14 +52,9 @@ def import_findings(project_root) -> dict:
     value is the emission count this run, or ``None`` when that prefix's
     underlying fetch failed (auto-resolve is gated on success — ADR-052).
 
-    Iterate C (security-artifact-producer) adds the parallel artifact
-    ingestion path. When GHAS Code Scanning is unavailable
-    (``cs_alerts is None``), the ``shipwright-security`` workflow's
-    ``findings.json`` artifact is fetched as a third source and emitted
-    as the SAME ``gh-security:{owner}/{repo}`` action-unit. The
-    ``by_source`` map then carries an additional ``gh-security:artifact``
-    key whose value is the artifact-sourced emission count this run —
-    so telemetry / audit can distinguish API vs artifact emission.
+    Without GHAS Code Scanning the ``shipwright-security`` workflow artifact is
+    the SAST source (``by_source["gh-security:artifact"]``). Each critical/high
+    finding also gets its own card (``by_source["gh-security:cards"]``).
     """
     if not github_api.gh_available():
         return {
@@ -70,7 +67,8 @@ def import_findings(project_root) -> dict:
 
     owner_repo = github_api.owner_repo(project_root)
 
-    raw_runs = github_api.fetch_workflow_runs(github_api.default_branch())
+    default_branch = github_api.default_branch()
+    raw_runs = github_api.fetch_workflow_runs(default_branch)
     # Runs say what a workflow DID, never what it IS (trg-9b1a1286).
     ci_runs = None if raw_runs is None else latest_failed_ci_runs(
         raw_runs, workflow_state_fetcher=github_workflow_api.fetch_workflow_state
@@ -120,9 +118,7 @@ def import_findings(project_root) -> dict:
         "prompt": prompt_findings is not None,
     }
 
-    # Run the legacy-migration sweep FIRST so it never races against the
-    # action-unit append loop and never misclassifies a freshly-appended
-    # new-prefix item.
+    # Legacy-migration sweep FIRST: never races the append loop below.
     try:
         migrated = migrate_legacy_items(project_root, fetch_succeeded)
     except Exception as exc:  # noqa: BLE001
@@ -132,10 +128,8 @@ def import_findings(project_root) -> dict:
         )
         migrated = 0
 
-    # Build action-units (None when nothing to triage or repo unresolvable).
-    # Security requires BOTH GHAS feeds succeeded — emitting on partial fetch
-    # would freeze a payload claiming "0 X alerts" when X actually failed to
-    # fetch. Code review MED #1 of iterate-2026-05-20-triage-launch-surface.
+    # Security needs BOTH GHAS feeds: a partial fetch would freeze a payload
+    # claiming "0 X alerts" when X failed (iterate-2026-05-20 review MED #1).
     both_security_feeds_ok = (
         cs_alerts is not None and db_alerts is not None
     )
@@ -221,9 +215,10 @@ def import_findings(project_root) -> dict:
         by_source[PREFIX_SECURITY] = 1 if sec_id else 0
         if sec_id:
             appended += 1
+        n, keep = import_cards(project_root, owner_repo, _maybe_append, by_source,
+                               code_scanning=cs_alerts)
+        appended, current_keys = appended + n, current_keys | keep
     elif cs_alerts is None and fetch_succeeded["artifact"]:
-        # Artifact path. The auto-resolve gate is opened for PREFIX_SECURITY
-        # so a clean scan (0 findings) can dismiss a previously-open item.
         if owner_repo is not None:
             resolvable_prefixes.add(PREFIX_SECURITY)
         art_id = _maybe_append(artifact_unit)
@@ -231,6 +226,10 @@ def import_findings(project_root) -> dict:
         by_source["gh-security:artifact"] = 1 if art_id else 0
         if art_id:
             appended += 1
+        n, keep = import_cards(project_root, owner_repo, _maybe_append, by_source,
+                               artifact_findings=artifact_findings,
+                               run_url=(artifact_run or {}).get("html_url"))
+        appended, current_keys = appended + n, current_keys | keep
     else:
         by_source[PREFIX_SECURITY] = None
 
@@ -291,6 +290,7 @@ def import_findings(project_root) -> dict:
         resolved = 0
     resolved += pr_ci["resolved"]
 
+    record_security_run(project_root, (artifact_run or {}).get("id"), default_branch)  # see state.is_due
     return {
         "gh_available": True,
         "appended": appended,

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Delivers the approved proposal: per-finding cards for high/critical, machine-resolved items re-raisable, GHAS-independent artifact path, scan-driven freshness. CI-side writing step deliberately replaced by scan-run-id trigger (no new CI write permission)."},
+{"name":"Error Handling","verdict":"pass","note":"Freshness probe fails soft to the throttle; cards fail-soft per append like other units; missing location yields path 'unknown'."},
+{"name":"Security Basics","verdict":"pass","note":"Scanner-supplied rule/path reduced to [A-Za-z0-9._/@:+-], capped at 120; no finding descriptions on cards."},
+{"name":"Test Quality","verdict":"pass","note":"7 new tests, 2 verified red without the triage.py fix; 7 pre-existing expectations updated for the new card units."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra gh api call at session start only when the throttle has not expired."},
+{"name":"Naming & Structure","verdict":"pass","note":"New module finding_units.py; consumer.py held at 300 LOC; triage.py net 0 lines."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Boundary: github_import_state.json (backward compatible, extra optional key) and triage dedup contract (dismissed machine-resolved no longer durable)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff clean."}]}

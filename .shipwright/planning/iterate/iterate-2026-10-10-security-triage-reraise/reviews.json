@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-10-security-triage-reraise",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T22:33:40.963750+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T22:44:54.303714+00:00",
+      "disposition": "small change: no plan/architecture review rows; external code review not run for a small-complexity iterate",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/github_triage/consumer.py",
+          "line": null,
+          "finding": "Temporary code-scanning failure closes then reopens per-finding cards (artifact branch resolves cards built from the other feed).",
+          "suggestion": "FIXED: card keys carry the feed (cs/art); artifact run keeps live cs cards via kept_card_keys; test_code_scanning_outage_keeps_its_cards_open_and_parked.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_github_triage_artifact_fallback.py",
+          "line": null,
+          "finding": "Transition tests asserted cards >= 0 (never fails).",
+          "suggestion": "FIXED: assert real open-card sources per transition.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/github_triage/finding_units.py",
+          "line": null,
+          "finding": "Rule/path reach title, detail and launchPayload (charset-limited, capped only).",
+          "suggestion": "ACCEPTED as narrower, recorded guarantee: charset+cap, no description; card-level test added. AC18 roll-up test unchanged.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_github_triage_finding_cards.py",
+          "line": null,
+          "finding": "Card text test could not fail.",
+          "suggestion": "FIXED: checks real newline/ESC on parsed fields, replacement and cap.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_defer.py",
+          "line": null,
+          "finding": "is_durable_decision changed dedup for gh-ci/gh-secrets/gh-prompt too.",
+          "suggestion": "FIXED: limited to gh-security: keys; test pins gh-ci stays durable; docs state it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/triage_defer.py",
+          "line": null,
+          "finding": "Mangled single-line condition.",
+          "suggestion": "FIXED: parenthesised.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/github_triage/state.py",
+          "line": null,
+          "finding": "record_security_run made an extra default_branch call and wrote twice.",
+          "suggestion": "FIXED: branch passed from consumer, single write, OSError fail-soft.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/github_triage/consumer.py",
+          "line": null,
+          "finding": "Card emission not fail-soft.",
+          "suggestion": "FIXED: import_cards is fail-soft.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/guide.md",
+          "line": null,
+          "finding": "Guide said every critical/high finding.",
+          "suggestion": "FIXED wording; stale hook comment left on purpose.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T22:43:30.229100+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "failed card pass mass-closes cards",
+          "suggestion": "FIXED: import_cards returns all live card keys on failure; consumer uses keys on both feeds; test_failed_card_pass_closes_nothing",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "SARIF-fallback findings collapse into one unknown card",
+          "suggestion": "FIXED: findings with neither rule nor path are not carded; test added",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "cs blip raises duplicate art cards",
+          "suggestion": "FIXED: art cards only emitted when no live cs cards exist",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "roll-up and parked cards re-raise",
+          "suggestion": "FIXED for roll-up (durability limited to per-finding cards, test added); parked-card auto-close is the existing operator decision of 2026-07-27, ACCEPTED",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "anti-ratchet blocks two legacy test files",
+          "suggestion": "FIXED: helpers moved to gh_triage_helpers.py; both files back at baseline size",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "probe latency, local-scan card overlap, cs-cards never expire, cs severity fallback, 120-char collisions",
+          "suggestion": "ACCEPTED/documented: hook comment corrected; docstring corrected; rest out of scope",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T22:50:39.346311+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T22:44:54.303714+00:00",
+      "disposition": "small change: no plan/architecture review rows; external code review not run for a small-complexity iterate",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T22:35:37.456091+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T22:44:54.303714+00:00",
+      "disposition": "small change: no plan/architecture review rows; external code review not run for a small-complexity iterate",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T22:44:54.303714+00:00",
+      "disposition": "small change: no plan/architecture review rows; external code review not run for a small-complexity iterate",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

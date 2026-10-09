@@ -30,13 +30,12 @@ from typing import Any
 import pytest
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-if str(_SHARED_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SHARED_SCRIPTS))
+sys.path[:0] = [str(_SHARED_SCRIPTS), str(Path(__file__).parent)]  # + gh_triage_helpers
 
 import github_api  # noqa: E402
 import github_triage  # noqa: E402
+from gh_triage_helpers import is_rollup, open_card_sources  # noqa: E402
 from triage import read_all_items  # noqa: E402
-
 
 OWNER_REPO = "acme/foo"
 
@@ -172,7 +171,7 @@ def test_artifact_emits_when_cs_alerts_unavailable(
     assert result["appended"] >= 1
     # An action-unit with the standard gh-security: prefix landed.
     appends = _append_events(tmp_path)
-    sec_items = [a for a in appends if a["dedupKey"].startswith("gh-security:")]
+    sec_items = [a for a in appends if is_rollup(a["dedupKey"])]
     assert len(sec_items) == 1
     sec = sec_items[0]
     assert sec["dedupKey"] == f"gh-security:{OWNER_REPO}"
@@ -283,7 +282,7 @@ def test_artifact_clean_scan_auto_resolves_open_item(
     )
     github_triage.import_findings(tmp_path)
     open_items = [i for i in read_all_items(tmp_path)
-                  if i["dedupKey"].startswith("gh-security:")]
+                  if is_rollup(i["dedupKey"])]
     assert len(open_items) == 1
     assert open_items[0]["status"] == "triage"
 
@@ -297,7 +296,7 @@ def test_artifact_clean_scan_auto_resolves_open_item(
     )
     github_triage.import_findings(tmp_path)
     resolved = [i for i in read_all_items(tmp_path)
-                if i["dedupKey"].startswith("gh-security:")]
+                if is_rollup(i["dedupKey"])]
     assert len(resolved) == 1
     assert resolved[0]["status"] == "dismissed"
     assert resolved[0]["statusReason"] == "githubResolved"
@@ -323,7 +322,7 @@ def test_artifact_failure_does_not_mass_resolve(
     )
     github_triage.import_findings(tmp_path)
     [open_item] = [i for i in read_all_items(tmp_path)
-                   if i["dedupKey"].startswith("gh-security:")]
+                   if is_rollup(i["dedupKey"])]
     assert open_item["status"] == "triage"
 
     # Now: everything fails (gh down, artifact unreachable).
@@ -337,7 +336,7 @@ def test_artifact_failure_does_not_mass_resolve(
     github_triage.import_findings(tmp_path)
     # The open item is STILL open — a failed fetch never auto-resolves.
     [unchanged] = [i for i in read_all_items(tmp_path)
-                   if i["dedupKey"].startswith("gh-security:")]
+                   if is_rollup(i["dedupKey"])]
     assert unchanged["status"] == "triage", (
         "ADR-052 invariant: failed fetch (None) ≠ empty fetch ([]) — never mass-resolve"
     )
@@ -368,7 +367,7 @@ def test_transition_artifact_to_ghas_preserves_idempotency(
     github_triage.import_findings(tmp_path)
     [first_event] = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     original_payload = first_event["launchPayload"]
     assert "/shipwright-security" in original_payload
@@ -382,11 +381,11 @@ def test_transition_artifact_to_ghas_preserves_idempotency(
         ci_runs=[],
     )
     second_result = github_triage.import_findings(tmp_path)
-    # No new append — same dedup key.
-    assert second_result["appended"] == 0
+    # Same roll-up key; each feed owns its cards: artifact ones close, cs ones open.
+    assert open_card_sources(tmp_path) == {"cs"} and second_result["appended"] >= 1
     sec_events = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert len(sec_events) == 1  # still one event total
     # And the persisted launchPayload remains frozen at first emission.
@@ -408,7 +407,7 @@ def test_transition_ghas_to_artifact_preserves_idempotency(
     github_triage.import_findings(tmp_path)
     [first_event] = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     original_payload = first_event["launchPayload"]
 
@@ -420,11 +419,11 @@ def test_transition_ghas_to_artifact_preserves_idempotency(
         artifact_run=_build_run(),
         artifact_findings=ARTIFACT_FINDINGS_HIGH,
     )
-    second_result = github_triage.import_findings(tmp_path)
-    assert second_result["appended"] == 0
+    github_triage.import_findings(tmp_path)
+    assert open_card_sources(tmp_path) == {"cs"}  # a GHAS blip neither closes nor duplicates
     sec_events = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert len(sec_events) == 1
     assert sec_events[0]["launchPayload"] == original_payload
@@ -446,7 +445,7 @@ def test_transition_ghas_clean_then_artifact_findings(
     github_triage.import_findings(tmp_path)
     # No gh-security event because there's nothing to emit (no findings).
     assert not any(
-        e["dedupKey"].startswith("gh-security:")
+        is_rollup(e["dedupKey"])
         for e in _append_events(tmp_path)
     ), "clean GHAS state must not emit a gh-security item"
 
@@ -462,7 +461,7 @@ def test_transition_ghas_clean_then_artifact_findings(
     assert second["appended"] >= 1
     sec_events = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert len(sec_events) == 1
     assert second["by_source"].get("gh-security:artifact") == 1
@@ -487,7 +486,7 @@ def test_artifact_detail_renders_per_source_counts(
     github_triage.import_findings(tmp_path)
     [event] = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     detail = event["detail"]
     # Mentions the artifact source explicitly.
@@ -523,7 +522,7 @@ def test_artifact_detail_does_not_leak_raw_finding_strings(
     github_triage.import_findings(tmp_path)
     [event] = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     # None of the raw scanner-controlled strings should leak into the persisted item.
     for sentinel in (
@@ -559,7 +558,7 @@ def test_artifact_detail_respects_length_cap(
     github_triage.import_findings(tmp_path)
     [event] = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert len(event["detail"]) <= 1024
 
@@ -593,7 +592,7 @@ def test_artifact_severity_derived_from_findings_list(
     github_triage.import_findings(tmp_path)
     [event] = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert event["severity"] == "low"
 
@@ -638,7 +637,7 @@ def test_artifact_empty_list_with_no_prior_state_is_noop(
     result = github_triage.import_findings(tmp_path)
     sec_appends = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert not sec_appends
     assert result["by_source"].get("gh-security:artifact", 0) == 0
@@ -670,7 +669,7 @@ def test_no_ghas_with_dependabot_available_and_artifact_emits(
     assert result["appended"] >= 1
     sec_events = [
         e for e in _append_events(tmp_path)
-        if e["dedupKey"].startswith("gh-security:")
+        if is_rollup(e["dedupKey"])
     ]
     assert len(sec_events) == 1
     event = sec_events[0]
@@ -707,7 +706,7 @@ def test_no_ghas_with_dependabot_available_and_clean_artifact_auto_resolves(
     github_triage.import_findings(tmp_path)
     [open_item] = [
         i for i in read_all_items(tmp_path)
-        if i["dedupKey"].startswith("gh-security:")
+        if is_rollup(i["dedupKey"])
     ]
     assert open_item["status"] == "triage"
 
@@ -723,7 +722,7 @@ def test_no_ghas_with_dependabot_available_and_clean_artifact_auto_resolves(
     github_triage.import_findings(tmp_path)
     [resolved] = [
         i for i in read_all_items(tmp_path)
-        if i["dedupKey"].startswith("gh-security:")
+        if is_rollup(i["dedupKey"])
     ]
     assert resolved["status"] == "dismissed"
     assert resolved["statusReason"] == "githubResolved"

@@ -187,6 +187,29 @@ def apply_revisit_expiry(items: list[dict], *, today: date) -> list[dict]:
     return [resolve_revisit(item, today=today) for item in items]
 
 
+def _is_security_card(dedup_key) -> bool:
+    """``gh-security:{repo}:{cs|art}:...`` - a per-finding card, not the roll-up."""
+    parts = str(dedup_key or "").split(":", 3)
+    return parts[0] == "gh-security" and len(parts) == 4 and parts[2] in ("cs", "art")
+
+
+def is_durable_decision(item: dict) -> bool:
+    """Is this dismissed/promoted item an operator decision a producer must respect?
+
+    The GitHub importer's own auto-close of a ``gh-security:`` per-finding card
+    (``githubResolved``: the finding left GitHub's list) is NOT one - if the same finding comes back it is a new
+    problem, and treating the machine's close as final hid every later finding
+    of a repo behind one closed item.
+    """
+    status = item.get("status")
+    if (status == "dismissed"
+            and _is_security_card(item.get("dedupKey"))
+            and item.get("statusBy") == "githubImporter"
+            and item.get("statusReason") == "githubResolved"):
+        return False
+    return status in ("dismissed", "promoted")
+
+
 def suppresses_reimport(
     item: dict,
     *,

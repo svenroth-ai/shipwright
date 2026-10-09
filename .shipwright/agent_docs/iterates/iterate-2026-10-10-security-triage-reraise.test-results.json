@@ -1,0 +1,92 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-10-security-triage-reraise",
+    "date": "2026-10-10",
+    "unit": {
+      "status": "passed",
+      "passed": 22652,
+      "total": 22652
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_github_triage_finding_cards.py shared/tests/test_github_triage_artifact_fallback.py -q",
+      "exit_code": 0,
+      "tests_run": 31,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-10-security-triage-reraise/surface_verification.log",
+      "timestamp": "2026-10-09T22:57:51.873Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "importer auto-close of a gh-security finding card no longer blocks the same key; human dismissal, roll-up and gh-ci closes stay durable",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_machine_resolved_item_does_not_block_the_same_key, ::test_human_dismissal_still_blocks_the_same_key, ::test_rollup_close_stays_durable, ::test_other_importer_sources_keep_their_durable_dismissal PASSED"
+        },
+        {
+          "behavior": "each critical/high code-scanning finding is its own card; lower severities and rule/path-less findings are not carded",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_each_high_finding_is_its_own_card_and_low_is_not, ::test_findings_without_rule_and_path_are_not_carded PASSED"
+        },
+        {
+          "behavior": "artifact feed (no GHAS) yields the same cards under its own feed key",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_artifact_path_without_code_scanning_yields_the_same_cards PASSED"
+        },
+        {
+          "behavior": "card closes when its finding is fixed and reopens on regression (importer, store and resolve sweep compose)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_card_closes_when_fixed_and_reopens_on_regression PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a code-scanning outage keeps cs cards open/parked and raises no duplicate art cards; a failed card pass closes nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_code_scanning_outage_keeps_its_cards_open_and_parked, ::test_failed_card_pass_closes_nothing; test_github_triage_artifact_fallback.py::test_transition_* PASSED"
+        },
+        {
+          "behavior": "scanner-supplied rule/path reach card text only charset-limited and capped",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_card_text_is_charset_limited_and_capped PASSED"
+        },
+        {
+          "behavior": "a newer security scan makes the import due; the probe is one gh call using the stored branch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_finding_cards.py::test_newer_security_scan_makes_the_import_due, ::test_freshness_probe_is_a_single_gh_call_using_the_stored_branch PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-10-security-triage-reraise",
+    "commit": "5accb5d8215ba9c2e206ff7df901e657548d2777",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
