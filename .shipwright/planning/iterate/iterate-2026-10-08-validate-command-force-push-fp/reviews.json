@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-08-validate-command-force-push-fp",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:08:22.069720+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:15:35.921116+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 48,
+          "finding": "Round 1: _nested() only ran on the last segment of each line. FIXED: every emitted segment goes through _emit().",
+          "suggestion": "call _nested at both yield sites",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 45,
+          "finding": "Round 1: redirect tokens (2>&1, &>, >|) leaked into push args. FIXED.",
+          "suggestion": "classify redirects",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 34,
+          "finding": "Round 1: backslash continuations, bash -lc clusters, heredoc bodies and whole-line comments mishandled. FIXED.",
+          "suggestion": "normalise",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-build/scripts/hooks/validate_command.sh",
+          "line": 41,
+          "finding": "Round 1: extractor printed in the Windows locale code page; a non-cp1252 character blanked the command and all guards failed open. FIXED: UTF-8 bytes; emoji regression test.",
+          "suggestion": "write utf-8 bytes",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "plugins/shipwright-build/scripts/hooks/validate_command.sh",
+          "line": 74,
+          "finding": "PR review (twice) and delta review: with no interpreter / a missing or crashing guard only exit 3 blocked, so a force push to main/master passed silently. FIXED: exit 4 = cannot decide; any status other than 0/3 degrades to a coarse over-blocking check (push + force flag incl. +refspec + main/master anywhere); no interpreter no longer exits 0 at the top.",
+          "suggestion": "coarse fallback",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/validate_command.sh",
+          "line": 45,
+          "finding": "Delta review: when Python exists but its extractor fails (lone surrogate) the command was blank and every check was skipped. FIXED: encode errors=replace, and an empty result falls through to a portable sed extractor; test added.",
+          "suggestion": "sed fallback",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/validate_command.sh",
+          "line": 42,
+          "finding": "Delta review: sed alternation was a GNU BRE extension. FIXED: portable ERE (sed -nE).",
+          "suggestion": "use ERE",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/validate_command.sh",
+          "line": 78,
+          "finding": "Delta review: first coarse fallback let through git -C . push, HEAD:main, +main, tab-separated forms. FIXED: widened fallback and \\\\[nt] normalisation; cases added to tests; stderr notice cannot abort the block (|| true).",
+          "suggestion": "widen",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/tests/test_hooks.py",
+          "line": 305,
+          "finding": "Delta review: the no-interpreter test omitted the real guard, so it did not prove the interpreter was the cause. FIXED: real guard copied; sed-path cases added.",
+          "suggestion": "copy real guard",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 91,
+          "finding": "current_branch reads the hook cwd, not a cd'd or submodule repo. PARTIAL: git -C honoured; cd <dir> && and submodule foreach remain documented limits. --tags-only on main is a rare accepted false positive.",
+          "suggestion": "document",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T06:30:12.173064+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:15:35.731252+00:00",
+      "disposition": "no migration, async/concurrency, cross-plugin import or irreversible op; conditional Stage 3 does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "force_push_guard.py` — `segments()` / tokenization (new file, ~line 60–95)",
+          "line": null,
+          "finding": "With `punctuation_chars=True`, a command like `echo $(git push -f origin main)` tokenizes as `\"$(\"`, `git`, `push`, `-f`, ... — `_exe_index` returns index 0 (`\"$(\"`), which is not `git`, so `push_args` returns None and the force push is never inspected. Same for backticks/`$()` anywhere in the command. The old grep-based check would have caught this; the new one does not.",
+          "suggestion": "strip `$(` / `` ` `` / `${` sequences before tokenizing (or treat them as segment separators, like `;`), so nested commands are parsed rather than silently dropped.  2. Category: bug — Inline trailing comments are parsed as push arguments (false positive)",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "force_push_guard.py` — `_tokens()` sets `lex.commenters = \"\"` with the comment \"bash treats # as a comment only at word start\", but the word-start rule is never implemented",
+          "line": null,
+          "finding": "git push -f origin feature/x # pushing fix for main` tokenizes `#`, `pushing`, ... `main` as push arguments; `main` becomes a \"refspec\" with `forced=True`, so a legitimate force push to a feature branch is blocked. This is exactly the class of false positive the spec exists to eliminate (the docstring even acknowledges the rule but the code doesn't enforce it).",
+          "suggestion": "drop tokens from a word-start `#` to end of line (a `#` token or a token beginning with `#` after whitespace terminates the segment as bash does), rather than disabling comment handling altogether.  3. Category: bug — `_exe_index` mishandles wrappers with non-option arguments",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "force_push_guard.py` — `_exe_index()` (~line 120)",
+          "line": null,
+          "finding": "timeout 10 git push -f origin main` — `timeout` is a WRAPPER, but `10` doesn't start with `-`, so the loop returns the index of `10` as the executable. The push is never inspected. Tests only cover `sudo -u bob git` (option+value) and bare wrappers; `timeout <duration>` — a very common wrapper — silently bypasses the guard.",
+          "suggestion": "for value-taking wrappers with non-clustered value arguments, skip the wrapper's trailing non-option arguments too (or special-case `timeout`, which takes a mandatory duration operand), or scan forward for a `git` token when a wrapper's operand position doesn't resolve to an executable.  4. Category: edge-case — `--force-if-includes` not recognized",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "force_push_guard.py` — `blocked()` (~line 160)",
+          "line": null,
+          "finding": "arg == \"--force\" or arg.startswith(\"--force-with-lease\")` misses `--force-if-includes`, which (combined with `--force-with-lease` or a `+refspec`) forces the push. Low impact since it requires a `+`/lease flag too, which are matched, but `git push origin +main` is caught — so this is minor.",
+          "suggestion": "match any `--force` long option, or add `--force-if-includes` explicitly.  5. Category: test — tests mirror the implementation's blind spots",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "tests/test_hooks.py` — the two parametrize lists",
+          "line": null,
+          "finding": "Coverage is broad and genuinely behavioral (exit codes asserted, both directions), but all wrapper tests use forms that happen to work (`sudo -u bob`, bare `xargs`/`env`/`time`); no case for `timeout 30 git push -f origin main`, `$(...)` substitution, or trailing comments. A wrong-but-tested implementation passes while the cases above slip through. The `_bash()` CI-hardening and fail-open tests are good.",
+          "suggestion": "add regression cases for `timeout 10 git push -f origin main`, `echo $(git push -f origin main)`, and `git push -f origin feature/x # fix main`.  Non-issues checked: the two spec false positives (branch name containing `-f`, `--notes-file` + unrelated `checkout master`) are fixed and covered; `--force-with-lease` is explicit per spec; fail-open error path is intentional and tested; the validate_command.sh plumbing (bytes I/O for cp1252, exit-code propagation) is correct and preserves the existing block contract (exit 2, same message).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 37,
+          "finding": "Inline shell comments are parsed as push arguments. For example, `git push origin feature/x # --force main` is blocked even though Bash executes only a normal push to `feature/x`. This violates the requirement to inspect actual push arguments.",
+          "suggestion": "Recognize unquoted comments beginning at word boundaries while preserving literal mid-word `#` characters.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 54,
+          "finding": "Splitting into lines before tokenization loses multiline quote boundaries. A harmless command such as `git commit -m \"release notes\\n git push -f origin main\\n\"` is blocked because its message content is interpreted as a separate command.",
+          "suggestion": "Preserve quote state across newlines and split commands only at unquoted separators. Add a regression test with a multiline quoted message containing force-push text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+          "line": 190,
+          "finding": "Implicit push destinations are inferred from the hook’s repository and both HEAD/upstream names, rather than the command’s actual destination. `cd repo && git push -f` can therefore pass when `repo` is on `main` but the hook’s repository is on a feature branch. Conversely, with `push.default=current`, a feature branch tracking `origin/main` is incorrectly blocked even though it pushes to the feature branch.",
+          "suggestion": "Track the effective working directory and resolve implicit destinations using the selected remote and Git push configuration. Cover both directory changes and differing `push.default` behavior with repository-backed tests.  The two reported false positives have regression coverage, but the replacement introduces additional false blocks and can miss protected-branch pushes. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-08T22:15:35.560625+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n**1. Category: security — Command substitution bypasses the guard entirely**\n- File: `force_push_guard.py` — `segments()` / tokenization (new file, ~line 60–95)\n- Finding: With `punctuation_chars=True`, a command like `echo $(git push -f origin main)` tokenizes as `\"$(\"`, `git`, `push`, `-f`, ... — `_exe_index` returns index 0 (`\"$(\"`), which is not `git`, so `push_args` returns None and the force push is never inspected. Same for backticks/`$()` anywhere in the command. The old grep-based check would have caught this; the new one does not.\n- Suggestion: strip `$(` / `` ` `` / `${` sequences before tokenizing (or treat them as segment separators, like `;`), so nested commands are parsed rather than silently dropped.\n\n**2. Category: bug — Inline trailing comments are parsed as push arguments (false positive)**\n- File: `force_push_guard.py` — `_tokens()` sets `lex.commenters = \"\"` with the comment \"bash treats # as a comment only at word start\", but the word-start rule is never implemented\n- Finding: `git push -f origin feature/x # pushing fix for main` tokenizes `#`, `pushing`, ... `main` as push arguments; `main` becomes a \"refspec\" with `forced=True`, so a legitimate force push to a feature branch is blocked. This is exactly the class of false positive the spec exists to eliminate (the docstring even acknowledges the rule but the code doesn't enforce it).\n- Suggestion: drop tokens from a word-start `#` to end of line (a `#` token or a token beginning with `#` after whitespace terminates the segment as bash does), rather than disabling comment handling altogether.\n\n**3. Category: bug — `_exe_index` mishandles wrappers with non-option arguments**\n- File: `force_push_guard.py` — `_exe_index()` (~line 120)\n- Finding: `timeout 10 git push -f origin main` — `timeout` is a WRAPPER, but `10` doesn't start with `-`, so the loop returns the index of `10` as the executable. The push is never inspected. Tests only cover `sudo -u bob git` (option+valu […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-build/scripts/hooks/force_push_guard.py:37\n- Finding: Inline shell comments are parsed as push arguments. For example, `git push origin feature/x # --force main` is blocked even though Bash executes only a normal push to `feature/x`. This violates the requirement to inspect actual push arguments.\n- Suggestion: Recognize unquoted comments beginning at word boundaries while preserving literal mid-word `#` characters.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-build/scripts/hooks/force_push_guard.py:54\n- Finding: Splitting into lines before tokenization loses multiline quote boundaries. A harmless command such as `git commit -m \"release notes\\n git push -f origin main\\n\"` is blocked because its message content is interpreted as a separate command.\n- Suggestion: Preserve quote state across newlines and split commands only at unquoted separators. Add a regression test with a multiline quoted message containing force-push text.\n\n- Category: security\n- Severity: high\n- File: plugins/shipwright-build/scripts/hooks/force_push_guard.py:190\n- Finding: Implicit push destinations are inferred from the hook’s repository and both HEAD/upstream names, rather than the command’s actual destination. `cd repo && git push -f` can therefore pass when `repo` is on `main` but the hook’s repository is on a feature branch. Conversely, with `push.default=current`, a feature branch tracking `origin/main` is incorrectly blocked even though it pushes to the feature branch.\n- Suggestion: Track the effective working directory and resolve implicit destinations using the selected remote and Git push configuration. Cover both directory changes and differing `push.default` behavior with repository-backed tests.\n\nThe two reported false positives have regression coverage, but the replacement introduces additional false blocks and can miss protected-branch pushes. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:08:22.233447+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:15:35.921116+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-08T22:15:35.921116+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

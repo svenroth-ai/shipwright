@@ -1,0 +1,109 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-08-validate-command-force-push-fp",
+    "date": "2026-10-08",
+    "unit": {
+      "status": "passed",
+      "passed": 22120,
+      "total": 22217
+    },
+    "integration": {
+      "status": "skipped"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-build pytest tests/test_hooks.py -q",
+      "exit_code": 0,
+      "tests_run": 173,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-08-validate-command-force-push-fp/surface_verification.json",
+      "timestamp": "2026-10-09T06:30:11.888Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A branch name containing -f is not read as a force flag",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_validate_command_allows_false_positives[...lint-fail...] PASSED (173 passed)"
+        },
+        {
+          "behavior": "A chained --notes-file plus unrelated checkout master is allowed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_validate_command_allows_false_positives[...--notes-file...] PASSED (173 passed)"
+        },
+        {
+          "behavior": "Real force pushes to main/master (-f, clusters, --force, --force-with-lease, +refspec, --all) are still blocked",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_validate_command_still_blocks_real_force_push (exit 2) + test_force_push_guard_blocks_in_process PASSED (173 passed)"
+        },
+        {
+          "behavior": "Nested/multi-line/wrapped/redirected/continued push forms are inspected",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::BLOCKED_COMMANDS cases: bash -c, eval, sudo, timeout, newline, 2>&1, backslash continuation PASSED (173 passed)"
+        },
+        {
+          "behavior": "Words in echo arguments, heredoc bodies, comments and + refspecs of other branches do not block",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::ALLOWED_COMMANDS cases (e2e + in-process) PASSED (173 passed)"
+        },
+        {
+          "behavior": "A force push without a branch is judged by the checked-out branch",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_force_push_guard_without_explicit_branch_uses_checked_out_branch PASSED (173 passed)"
+        },
+        {
+          "behavior": "An internal inspector error reports undecided (exit 4) instead of a verdict; non-cp1252 characters do not blank the guard",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_force_push_guard_reports_undecided_on_internal_error + emoji case PASSED (173 passed)"
+        },
+        {
+          "behavior": "When the interpreter is missing or the guard is missing/crashes/cannot decide, the hook degrades to a coarse over-blocking check instead of allowing; Python extractor failure falls back to sed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_hook_degrades_to_coarse_check_when_guard_cannot_decide + test_hook_still_guards_when_no_python_interpreter_is_found + test_hook_still_checks_when_python_cannot_extract_the_command PASSED (173 passed)"
+        },
+        {
+          "behavior": "Integration: hooks.json registration -> validate_command.sh -> force_push_guard.py -> a real git checkout judges a bare force push by its branch",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-build/tests/test_hooks.py::test_registered_hook_judges_a_bare_force_push_by_the_real_checkout[main] and [feature/x] PASSED (173 passed)"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-08-validate-command-force-push-fp",
+    "commit": "2eb08ab286ceba42a2f6732e521d49ea7556d03d",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
