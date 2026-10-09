@@ -196,7 +196,7 @@ def _base_test_dirs(base: dict) -> set[str]:
 
 
 def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
-           extra_roots: set[str] | None = None) -> dict:
+           extra_roots: set[str] | None = None, prune_dirs: frozenset[str] | None = None) -> dict:
     # Honour ``traceability.test_roots`` / ``exclude_dirs`` (from ``root`` — the archived base OR
     # head tree, so a base predating the key falls back to defaults) so a layer covered ONLY by a
     # config-opted plugin/shared test is SEEN by the enforcing gate, not just the RTM. Two floors
@@ -219,7 +219,7 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
         root,
         spec_files=io.discover_specs(root),
         test_roots=test_roots,
-        prune_dirs=io.configured_prune_dirs(root),
+        prune_dirs=io.configured_prune_dirs(root) if prune_dirs is None else prune_dirs,
         evidence=evidence,
         source_commit=source_commit,
     )
@@ -229,8 +229,8 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
 # empty, tests clear them via ``clear_regen_cache``. The base manifest + rename map are evidence-
 # INDEPENDENT, so every gate shares one build; so is an evidence-FREE head (the removal and the
 # test-tag gate both read it), so it is built once per run too. Callers must not mutate either.
-_BASE_CACHE: dict[tuple[str, str], tuple[dict, dict[str, str]] | None] = {}
-_HEAD_CACHE: dict[tuple[str, str], dict] = {}
+_BASE_CACHE: dict[tuple[str, str], tuple[dict, dict[str, str], frozenset[str]] | None] = {}
+_HEAD_CACHE: dict[tuple[str, str, bool], dict] = {}
 
 
 def clear_regen_cache() -> None:
@@ -249,8 +249,9 @@ def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
             with tempfile.TemporaryDirectory(prefix="sw-trace-base-") as bd:
                 base_root = Path(bd)
                 if _archive_tree(project_root, base_sha, base_root):
-                    base = _build(test_links, io, base_root, {}, base_sha)
-                    result = (base, _rename_map(project_root, base_sha, commit_hash))
+                    prune = io.configured_prune_dirs(base_root)
+                    base = _build(test_links, io, base_root, {}, base_sha, prune_dirs=prune)
+                    result = (base, _rename_map(project_root, base_sha, commit_hash), prune)
         except (OSError, ValueError):
             result = None
     _BASE_CACHE[key] = result
@@ -259,12 +260,17 @@ def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
 
 def regenerate_base_head(
     project_root: Path, commit_hash: str, *, with_evidence: bool, run_id: str = "",
+    base_prune_only: bool = False,
 ) -> tuple[dict, dict, dict[str, str]] | None:
     """Regenerate ``(base_manifest, head_manifest, rename_map)`` from the base + head
     checkouts (R3). The base manifest + rename map are memoized per (root, commit) and shared
     between the two gates (SHOULD-FIX 8); only the HEAD manifest is rebuilt per call so the
     cross-layer gate can fold in this run's evidence (``with_evidence``). ``None`` = an infra gap
-    (git unavailable, no base ref, collector or archive failure) the caller renders as an ERROR."""
+    (git unavailable, no base ref, collector or archive failure) the caller renders as an ERROR.
+
+    ``base_prune_only`` (the test-tag gate): the head skips a folder only if BASE and HEAD both exclude it,
+    so a change cannot hide its own new tests by growing ``exclude_dirs``. The coverage gates leave it off:
+    for them the head's own ``exclude_dirs`` is the fixture fence (a fixture cannot credit a layer)."""
     if not commit_hash or git_context(project_root) != "work_tree":
         return None
     loaded = _load_collector()
@@ -274,8 +280,8 @@ def regenerate_base_head(
     br = _base_and_renames(project_root, commit_hash, test_links, io)
     if br is None:
         return None
-    base, rename_map = br
-    head_key = (str(project_root), commit_hash)
+    base, rename_map, base_prune = br
+    head_key = (str(project_root), commit_hash, base_prune_only)
     if not with_evidence and head_key in _HEAD_CACHE:
         return base, _HEAD_CACHE[head_key], rename_map
     evidence = fresh_evidence(project_root, run_id, commit_hash, evio) if with_evidence else {}
@@ -287,7 +293,9 @@ def regenerate_base_head(
             # Re-scan wherever the BASE found tests AND wherever a test git-renamed TO, so a config
             # narrowed/deleted between base and head can't hide a base-linked (or moved) test.
             extra = _base_test_dirs(base) | {Path(p).parent.as_posix() for p in rename_map.values() if p}
-            head = _build(test_links, io, head_root, evidence, commit_hash, extra_roots=extra)
+            head_prune = io.configured_prune_dirs(head_root)
+            head = _build(test_links, io, head_root, evidence, commit_hash, extra_roots=extra,
+                          prune_dirs=base_prune & head_prune if base_prune_only else head_prune)
     except (OSError, ValueError):
         return None
     if not with_evidence:

@@ -9,11 +9,13 @@ answered here by a normalised digest of the test's body:
 
 * **Python** (:mod:`._tag_binding_py`) — the ``ast`` dump of the function's arguments and
   body. The leading docstring is dropped and comments never reach the AST, so a docstring-
-  or comment-only edit digests the same. The name and the decorators are excluded: a rename
-  keeps its digest (so it is matched as a move) and a new parametrize case or mark is not a
-  body edit.
-* **TS/JS** (:mod:`._tag_binding_ts`) — the token stream of the call after the title
-  (comments stripped, every run of whitespace collapsed), up to the call's closing paren.
+  or comment-only edit digests the same. The name is excluded, so a rename keeps its digest
+  (and is matched as a move). The decorators of the function and its classes ARE part of the
+  digest, minus ``covers`` tags: un-skipping a test or editing its parametrize rows changes
+  what it runs, while tagging it does not.
+* **TS/JS** (:mod:`._tag_binding_ts`) — the callee (``test.skip``, an ``.each`` table) and the
+  token stream of the call after the title (comments stripped, whitespace collapsed; regex
+  literals and JSX text lexed whole), up to the call's closing paren.
 
 :func:`mechanically_renamed` decides the one edit the ``mechanical-refactor`` exemption may
 cover: equal shapes once the test's BINDINGS are anonymised (attributes and unbound names
@@ -43,7 +45,7 @@ def _shapes(text: str, path: str, name: str, anonymise: bool) -> list[tuple[str,
     if low.endswith(_PY):
         return py_shapes(text, name, anonymise)
     if low.endswith(_TS):
-        return ts_shapes(text, name, anonymise)
+        return ts_shapes(text, name, anonymise, path)
     return None
 
 

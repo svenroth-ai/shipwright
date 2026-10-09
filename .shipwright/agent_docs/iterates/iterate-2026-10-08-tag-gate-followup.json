@@ -1,0 +1,67 @@
+{
+  "run_id": "iterate-2026-10-08-tag-gate-followup",
+  "date": "2026-10-08T23:13:18.777108Z",
+  "event_at": "2026-10-08T20:51:39.114586+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "default",
+  "branch": "iterate/tag-gate-followup",
+  "spec": ".shipwright/planning/iterate/2026-10-08-tag-gate-followup.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-08-tag-gate-followup",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "data-driven it.each / test.each tests are enumerated by the collector and located by the gate (inline, wrapped, template, next-line title, tag below the title)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_followup.py + plugins/shipwright-compliance/tests/test_file_tags.py (AC42 cases) PASSED"
+      },
+      {
+        "behavior": "editing an .each table row, modifier or callee is an edit; consecutive and same-line .each tests keep their own digest",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_followup.py::test_editing_a_table_row_or_the_modifier_is_an_edit + test_consecutive_each_tests_keep_their_own_table_and_tags PASSED"
+      },
+      {
+        "behavior": "the head manifest skips a folder only if base and head both exclude it, for the tag gate only",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_followup.py real-git cases + shared/tests/test_layer_coverage_config_scope.py PASSED"
+      },
+      {
+        "behavior": "a quote inside a regex literal or JSX text does not hide a body edit; unclosed nesting lexes in bounded time",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_followup.py::test_lexer_combinations_keep_the_rest_of_the_body_visible + test_unclosed_nesting_lexes_in_bounded_time PASSED"
+      },
+      {
+        "behavior": "every Python decorator and class/module pytestmark except covers counts as an edit; a covers tag and a consistent parametrize rename do not",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_followup.py::test_a_covers_tag_is_not_an_edit_but_any_other_mark_or_decorator_is + test_same_line_second_each_test_and_parametrize_rename PASSED"
+      },
+      {
+        "behavior": "the finalization scenario asserts the expected skip set per complexity and that a broken gate was not skipped",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalization_claims_scenario.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-09T00:00:00+00:00",
+    "reason_code": "no-startable-surface",
+    "justification": "test-gate verifier and collector change; no startable surface, exercised through pytest"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
