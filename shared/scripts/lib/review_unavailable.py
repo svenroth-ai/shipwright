@@ -20,8 +20,10 @@ Evidence rule (:func:`artifact_problem`), in precedence order:
    PowerShell 5.1's ``>`` — is decoded) → it decides alone. It must be the
    adapter's own failure envelope: ``review_schema`` is the adapter's
    :data:`REVIEW_ENVELOPE_SCHEMA`, ``success`` is JSON ``false`` or ``degraded``
-   is JSON ``true``, a non-empty ``error`` or ``degraded_reason`` says why, and
-   ``mode`` is one this pass runs. Any other object refuses the claim whatever
+   is JSON ``true``, a non-empty ``error`` or ``degraded_reason`` says why,
+   ``mode`` is one this pass runs, and the adapter's own ``capture`` stamp
+   (``run_id`` + ISO ``at``, written by ``external_review.py --run-id``) names THIS
+   run. Any other object refuses the claim whatever
    stderr says: a reply that parses is the pass's answer, so a review that ran
    is recorded ``completed`` — and one whose every leg was ``skipped`` (no keys)
    is ``missing-keys``, not ``unavailable``.
@@ -31,8 +33,11 @@ Evidence rule (:func:`artifact_problem`), in precedence order:
 
 A capture that is a symlink is refused (its content would be the link target's,
 not the adapter's): ``lstat`` here, mode ``120000`` in a commit
-(``verifiers.git_blob_read``). This is a shape-plus-schema check, not a
-provenance check: a real failure the agent caused itself still counts.
+(``verifiers.git_blob_read``). The stamp binds an envelope to the run it was
+captured for (a copy from another run's directory fails); it is not
+cryptographic, and a real failure the agent caused itself still counts. A
+stderr-only capture (no JSON) carries no stamp and is unchanged. Its content is
+masked by ``lib.review_capture_redact`` when the row is recorded.
 
 Both redirects truncate on every invocation (``>`` / ``2>``), so a retry that
 succeeds overwrites the failure and the claim is refused — the artifact speaks
@@ -49,6 +54,7 @@ from __future__ import annotations
 import codecs
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -142,7 +148,23 @@ def _nonblank(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-def _envelope_problem(reply: dict, review_type: str) -> str | None:
+def _stamp_problem(reply: dict, run_id: str) -> str | None:
+    """Why the adapter's capture stamp (``capture: {run_id, at}``) does not vouch for ``run_id``."""
+    stamp = reply.get("capture")
+    try:
+        stamped = isinstance(stamp, dict) and stamp.get("run_id") == run_id
+        if stamped:
+            datetime.fromisoformat(str(stamp.get("at")))
+    except ValueError:
+        stamped = False
+    if stamped:
+        return None
+    return (f"carries no capture stamp for run {run_id} (`capture.run_id` + an ISO `capture.at`, written by "
+            f"external_review.py itself): re-run it with `--run-id {run_id}` — an envelope copied from "
+            "another run or typed by hand has none")
+
+
+def _envelope_problem(reply: dict, review_type: str, run_id: str) -> str | None:
     """Why ``reply`` is not this pass's failure envelope, or ``None`` when it is."""
     if reply.get("success") is not False and reply.get("degraded") is not True:
         legs = reply.get("reviews")
@@ -161,7 +183,7 @@ def _envelope_problem(reply: dict, review_type: str) -> str | None:
     if reply.get("mode") not in _PASS_MODES[review_type]:
         return (f"is an envelope from `--mode {reply.get('mode')}`, not one `{review_type}` runs "
                 f"({' / '.join(_PASS_MODES[review_type])})")
-    return None
+    return _stamp_problem(reply, run_id)
 
 
 def artifact_problem(run_id: str, review_type: str, read: Reader) -> tuple[str | None, str | None]:
@@ -171,7 +193,7 @@ def artifact_problem(run_id: str, review_type: str, read: Reader) -> tuple[str |
         raw_blob = read(raw_rel)
         reply = _first_object(_decode(raw_blob))
         if isinstance(reply, dict):
-            problem = _envelope_problem(reply, review_type)
+            problem = _envelope_problem(reply, review_type, run_id)
             return (f"{raw_rel} {problem}" if problem else None), raw_rel
         if raw_blob is not None and _decode(read(err_rel)):
             return None, err_rel

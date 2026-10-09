@@ -1,0 +1,14 @@
+{"review": [
+ {"severity": "medium", "category": "correctness", "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py", "finding": "Run-ID only accepted in the last 3 lines of the message; extra trailers push it out and the PR reads quiet. FIXED: exact Run-ID line anywhere in the message."},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py", "finding": "git log failure fell back to tip-only and log.showSignature could break parsing. FIXED: --no-show-signature, failure is unknown."},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/verifiers/cascade_trigger.py", "finding": "Wrong repair text for the nothing-recorded case. FIXED: dedicated repair."},
+ {"severity": "medium", "category": "security", "file": "shared/scripts/lib/review_capture_redact.py", "finding": "key=value pattern missed quoted and JSON shapes. FIXED, tested."},
+ {"severity": "medium", "category": "security", "file": "shared/scripts/tools/record_review_pass.py", "finding": "close-missing wrote unavailable rows without masking. FIXED: masks first."},
+ {"severity": "medium", "category": "security", "file": "shared/scripts/lib/review_capture_redact.py", "finding": "raw envelope not masked. FIXED: string values masked, capture stamp kept."},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/lib/review_capture_redact.py", "finding": "'Basic authentication' over-match. FIXED. UTF-16 odd-length latin-1 fallback is left as best-effort."},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/lib/review_companion.py", "finding": "docstring about skipped markers. FIXED."},
+ {"severity": "low", "category": "architecture", "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md", "finding": "--run-id without --project-root. FIXED in both campaign call sites."},
+ {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/skills/iterate/references/F5c.md", "finding": "risk_flags placeholder inside a list. FIXED."},
+ {"severity": "low", "category": "architecture", "file": "shared/scripts/tools/append_iterate_entry.py", "finding": "cosmetic refactor mixed in. Kept: it is the U0 follow-up (unpack the validator tuple) the task names."},
+ {"severity": "low", "category": "readability", "file": "shared/tests/test_review_capture_redact.py", "finding": "stray blank line. FIXED."}
+]}

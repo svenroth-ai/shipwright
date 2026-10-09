@@ -23,7 +23,9 @@ from _review_cli_harness import RUN_ID, make_project, run_tool  # noqa: E402
 from lib.review_unavailable import artifact_paths  # noqa: E402
 
 NOTE = str(_SHARED / "scripts" / "tools" / "review_unavailable_note.py")
-FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered", "mode": "code"})
+STAMP = {"run_id": RUN_ID, "at": "2026-10-08T00:00:00+00:00"}  # what external_review.py --run-id writes
+FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered", "mode": "code",
+                     "capture": STAMP})
 PLAN_FAILED = FAILED.replace('"code"', '"iterate"')
 
 

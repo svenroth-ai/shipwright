@@ -33,6 +33,7 @@ from triage import read_all_items  # noqa: E402
 NOTE = str(_SHARED / "scripts" / "tools" / "review_unavailable_note.py")
 SPEC_PASS = json.dumps({"stage": "spec", "verdict": "PASS", "spec_citations": []})
 ENVELOPE = json.dumps({"review_schema": 2, "success": False, "degraded": True, "mode": "code",
+                       "capture": {"run_id": RUN_ID, "at": "2026-10-08T00:00:00+00:00"},
                        "degraded_reason": "provider=openrouter but 0/2 reviews succeeded"})
 
 

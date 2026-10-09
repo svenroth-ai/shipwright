@@ -1,0 +1,1 @@
+The F5c entry carries a durable `risk_flags` list; a run with no plan, no re-check and no list reads as unknown (the small-run code review fires). A rebase-merged PR is measured over all its `Run-ID:` commits.

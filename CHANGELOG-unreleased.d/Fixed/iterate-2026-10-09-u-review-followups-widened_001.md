@@ -1,0 +1,1 @@
+Review recorder: a bare `--reason-code` marker repair writes the default reason, `make_entry` takes `reason_code`, and `record --force` can repair a skipped marker-bound row without `--marker-status`.

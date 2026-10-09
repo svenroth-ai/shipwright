@@ -1,0 +1,120 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-09-u-review-followups-widened",
+    "date": "2026-10-09",
+    "unit": {
+      "status": "passed",
+      "passed": 12885,
+      "total": 12885
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_review_followups_cli.py shared/tests/test_review_capture_redact.py shared/tests/test_cascade_trigger_durable_flags.py -q -p no:cacheprovider --junitxml=C:/Users/SvenRoth/AppData/Local/Temp/claude/C--01-Development-shipwright/bd494fab-c44a-4c1b-8d5d-8eb4b3ebd97a/scratchpad/f05b.xml",
+      "exit_code": 0,
+      "tests_run": 50,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\u-review-followups-widened\\.shipwright\\runs\\iterate-2026-10-09-u-review-followups-widened\\surface_verification.log",
+      "timestamp": "2026-10-09T16:18:39.145Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "make_entry takes reason_code; record and close-missing pass it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_followups_cli.py::test_make_entry_carries_reason_code_and_omits_it_when_absent PASSED"
+        },
+        {
+          "behavior": "bare --reason-code re-run repairs the marker with the default reason",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_followups_cli.py::test_a_bare_reason_code_rerun_repairs_the_marker_with_the_default_reason PASSED"
+        },
+        {
+          "behavior": "exemption scope refuses an absolute path in any :: part (and empty parts)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_exemption_record.py::test_unsafe_scopes_are_refused PASSED"
+        },
+        {
+          "behavior": "append_iterate_entry unpacks the validator tuple",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_append_iterate_entry*.py suites PASSED in the full shared/tests run (12885 passed)"
+        },
+        {
+          "behavior": "F11.md PR-body template keeps the blank line before Run-ID",
+          "disposition": "tested",
+          "evidence": "shared/tests/covered by the PR-body template prose tests in the full shared/tests run PASSED"
+        },
+        {
+          "behavior": "stage-1-rejected is a closed review_not_run code and the docs use it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_followups_cli.py::test_a_stage_1_reject_is_recorded_under_its_own_reason_code PASSED; test_campaign_step_3f_bis.py PASSED"
+        },
+        {
+          "behavior": "record --force repairs a skipped marker-bound row without --marker-status, still needs it for completed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_followups_cli.py::test_a_skipped_marker_bound_row_can_be_corrected_with_force_and_no_marker x2 PASSED; ::test_force_over_a_completed_marker_bound_row_still_needs_the_marker PASSED"
+        },
+        {
+          "behavior": "durable risk_flags in the F5c entry; nothing recorded or malformed or null is unknown (fires)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_cascade_trigger_durable_flags.py::test_a_run_with_no_plan_no_recheck_and_no_entry_flags_is_unknown_not_quiet PASSED; ::test_a_malformed_entry_list_is_unknown_never_empty x4 PASSED; ::test_an_explicit_null_entry_list_is_unknown_not_absent PASSED"
+        },
+        {
+          "behavior": "rebase-merged multi-commit PR measured over all Run-ID commits, other runs not counted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_cascade_trigger_durable_flags.py::test_a_rebase_merged_multi_commit_pr_is_measured_as_a_whole PASSED; ::test_a_rebase_merged_pr_counts_only_its_own_commits PASSED; ::test_a_git_failure_listing_the_run_commits_is_unknown_not_tip_only PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "external_review stamps capture; unavailable evidence refuses an envelope without this run's stamp",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_unavailable_capture.py PASSED; test_review_unavailable.py PASSED; test_review_unavailable_integration.py PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "record masks URLs and secret shapes in the unavailable captures (stderr and raw envelope)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_capture_redact.py (24 tests) PASSED; test_review_followups_cli.py::test_recording_unavailable_masks_urls_and_secrets_in_the_stderr_capture PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 11,
+        "covered_acs": 11
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-09-u-review-followups-widened",
+    "commit": "9629da8b40ac04251a322a2f787fc6900ed0f6a4",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -84,16 +84,20 @@ def lines(n: int) -> str:
 
 def write_run(root: Path, *, complexity=_UNSET, code: dict | None = None,
               plan_flags: list[str] | None = None, recheck_flags: list[str] | None = None,
-              plan_complexity: str | None = None) -> None:
+              plan_complexity: str | None = None, entry_flags=_UNSET) -> None:
     """Untracked bookkeeping for the run: F5c entry, review record, optional flag sources.
 
     ``complexity=None`` writes an entry without the key; the default is ``small``.
+    ``entry_flags`` is the F5c entry's durable ``risk_flags``: the default ``[]`` is "recorded: none";
+    ``None`` omits the key, so a run with no plan and no re-check either has recorded nothing.
     """
     iterates = root / ".shipwright" / "agent_docs" / "iterates"
     iterates.mkdir(parents=True, exist_ok=True)
     entry = {"run_id": RUN}
     if complexity is not None:
         entry["complexity"] = "small" if complexity is _UNSET else complexity
+    if entry_flags is not None:
+        entry["risk_flags"] = [] if entry_flags is _UNSET else entry_flags
     (iterates / f"{RUN}.json").write_text(json.dumps(entry), encoding="utf-8")
     if plan_flags is not None or plan_complexity is not None:
         plan = {"run_id": RUN, "risk_flags": plan_flags or []}

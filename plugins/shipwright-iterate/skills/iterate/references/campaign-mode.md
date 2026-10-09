@@ -1113,14 +1113,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        REJECTED. `completed` is wrong here — the native Stage-1 payload stores
        `spec_citations` and drops `verdict`, so a `completed` REJECT is
        byte-indistinguishable from a PASS to the next reader, human or gate.
-       `--reason-code delegated-to-orchestrator` is carried over only so the
-       record satisfies the gate; the disposition (`Stage-1 REJECTED …`) is what
-       holds the REJECT. This branch SKIPS `--mode ship` on a REJECT, so it re-derives
+       `--reason-code stage-1-rejected` is the machine-readable carrier of the
+       REJECT; the disposition (`Stage-1 REJECTED …`) holds the citations. This branch SKIPS `--mode ship` on a REJECT, so it re-derives
        `run_dir` itself (the identical gap as the promote-rows block above):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          … record --project-root "$unit_wt" --review-type spec --status not_run --force \
-             --recorded-by spec-reviewer --reason-code delegated-to-orchestrator \
+             --recorded-by spec-reviewer --reason-code stage-1-rejected \
              --disposition "Stage-1 REJECTED at 3f-bis: {the
              citations, spec_ref -> divergence}. Delivery stopped; PR left open." || STRICT-STOP
          git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP

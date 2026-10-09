@@ -25,8 +25,9 @@ from tools.verifiers.review_record_check import check_review_record  # noqa: E40
 
 RUN = "iterate-2026-10-08-unavailable"
 WHY = "the phase matrix does not run this pass at this complexity"
-FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered", "mode": "code"})
-DEGRADED = json.dumps({"review_schema": 2, "success": False, "degraded": True, "mode": "code",
+STAMP = {"capture": {"run_id": RUN, "at": "2026-10-08T00:00:00+00:00"}}  # what external_review.py --run-id writes
+FAILED = json.dumps({"review_schema": 2, "success": False, "error": "no provider answered", "mode": "code", **STAMP})
+DEGRADED = json.dumps({"review_schema": 2, "success": False, "degraded": True, "mode": "code", **STAMP,
                        "degraded_reason": "provider=openrouter but 0/2 reviews succeeded", "reviews": {}})
 SUCCEEDED = json.dumps({"review_schema": 2, "success": True, "degraded": False, "mode": "code", "reviews": {}})
 CAMPAIGN_BRANCH = "iterate/campaign-2026-10-07-finalization-claims-hardening--U10"

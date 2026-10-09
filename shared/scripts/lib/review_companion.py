@@ -15,17 +15,18 @@ unknown reader to be found first.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Callable
 
 from .review_marker import MARKER_SCHEMA as DEFAULT_MARKER_SCHEMA
-from .review_marker import build_marker, schema_for_roster, write_marker
+from .review_marker import build_marker, marker_filename, schema_for_roster, write_marker
 from .review_findings import PARSE_PARTIAL, PARSE_UNSTRUCTURED
-from .review_record_core import ReviewRecordError
+from .review_record_core import ReviewRecordError, entry_for, read_record
 from .review_record_ops import repair_companion
 from .review_verdict import contradiction_block
 
-__all__ = ["MARKER_TYPES", "marker_reason", "repair_markers", "write_markers"]
+__all__ = ["MARKER_TYPES", "force_strands_marker", "marker_reason", "repair_markers", "write_markers"]
 
 #: Review types that carry a legacy marker, mapped to the marker's own
 #: ``review_mode`` vocabulary (which predates the record's type names).
@@ -143,6 +144,32 @@ def repair_markers(
 
     _run_repair(project_root, run_id, review_type, rewrite)
     return written
+
+
+def force_strands_marker(project_root: Path | str, run_id: str, review_type: str, new_status: str) -> bool:
+    """Would a ``record --force`` of ``review_type`` leave a marker stating a superseded result?
+
+    Only a ``completed`` marker states a result. A skipped row (``missing-keys``,
+    ``unavailable``, ...) replaced by another skipped row strands no result (its skipped
+    marker states a reason, not a finding), so it is repairable without ``--marker-status``. An unreadable record, or a
+    review type with no legacy marker at all, is answered on the safe side
+    (``True`` / ``False`` respectively).
+    """
+    if review_type not in MARKER_TYPES:
+        return False
+    if new_status == "completed":
+        return True
+    try:
+        recorded = entry_for(read_record(project_root, run_id) or {}, review_type)
+    except ReviewRecordError:
+        return True
+    if recorded.get("status") == "completed":
+        return True
+    marker = Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id / marker_filename(MARKER_TYPES[review_type])
+    try:  # a half-failed earlier write can leave a completed marker beside a skipped row
+        return json.loads(marker.read_text(encoding="utf-8")).get("status") == "completed" if marker.is_file() else False
+    except (OSError, ValueError, AttributeError):
+        return True
 
 
 def _run_repair(

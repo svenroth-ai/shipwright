@@ -1,0 +1,16 @@
+# Mini-plan: widened U0/U3/U4/U10 review follow-ups (iterate-2026-10-09-u-review-followups-widened)
+
+Problem: four ADRs listed review-record / cascade-trigger / `unavailable`-evidence limits as "follow-up". A scan of the last 25 commits (to #873) shows none done (the crashed-claim-check name already uses `CHECK_NAME`, so that item is dropped). Each is small; together they touch the recorder, the F11 trigger and the adapter envelope.
+
+1. `lib/review_record_core.make_entry` gains `reason_code`; `record_review_pass.py` `record` and `close-missing` pass it (no post-construction `entry["reason_code"]`).
+2. Marker repair: `_cmd_repair_markers` uses `_disposition(args)` (a bare `--reason-code` re-run keeps its default text); `_disposition` reads `reason_code` via `getattr` because `repair-markers` has no such flag.
+3. `lib/exemption_record._scope_error` checks every `::` part for an absolute path; `append_iterate_entry` unpacks the validator tuple; `F11.md` gets the blank line before `Run-ID:`.
+4. `reason_codes.review_not_run` += `stage-1-rejected`; `iteration-reviews.md`, `campaign-mode.md` 3f-bis and `campaign-step-3-7` record a Stage-1 REJECT with it.
+5. `--force` marker rule: `lib/review_companion.force_strands_marker` (moved out of the capped CLI) requires `--marker-status` only when the new status is `completed` or the recorded row is `completed`; unreadable record stays on the safe side. Skipped -> skipped corrections need no marker.
+6. U4: F5c entry gets `risk_flags` (documented in `F5c.md`); `recorded_risk_flags(project_root, run_id, entry)` unions plan + re-check + entry list and returns UNKNOWN (gate fires) when all three are absent or the list is malformed. `measure_diff(..., run_id)`: for a tip already on a remote trunk, measure every non-merge commit under it carrying `Run-ID: <run_id>` (rebase-merged PR whole); no trailer -> tip alone as before.
+7. U10: `external_review.py` stamps `driver_record["capture"] = {run_id, at}` (all envelope paths share `driver_record`); `review_unavailable._stamp_problem` demands this run's stamp; the two documented call sites that lacked `--run-id` get it. New `lib/review_capture_redact.py`: `record` masks URLs / bearer / key-value / key-shape secrets in the stderr capture of an adapter-backed `unavailable` row (UTF-8 and UTF-16 BOM).
+8. Tests: new `test_review_followups_cli.py`, `test_review_capture_redact.py`, `test_cascade_trigger_durable_flags.py`; fixtures of the tightened gates (`_cascade_trigger_fixtures`, `_finalization_scenario_records`, the unavailable envelopes) carry the new fields; 3f-bis prose tests follow the doc change.
+
+Alternative considered: put `risk_flags` auto-stamping into `append_iterate_entry` (the writer) so no agent has to remember it - rejected because that file is a grandfathered bloat entry that must not grow, and the gate already fails closed (unknown = fired) when the agent forgets.
+
+Risks: (a) the new "unknown" reading makes a small run with no sidecar and no list need a recorded code review - intended; (b) envelopes captured before this change carry no stamp, so an `unavailable` row built on one is refused until the pass is re-run with `--run-id` - F11 verifies only the run being finalized; (c) `git log --grep` on the trailer assumes F6's `Run-ID:` footer; a PR without it keeps the tip-only measure.

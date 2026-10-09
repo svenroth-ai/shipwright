@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py:195\n- Finding: `git log -n 50` silently limits the run to 50 matching commits, although the specification requires measuring all stamped commits. A rebase-merged run with 51 commits adding two lines each is measured as 100 lines instead of 102, so the required review does not fire.\n- Suggestion: Remove the limit, or detect truncation and treat the measurement as unknown.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py:117\n- Finding: An explicitly recorded `\"risk_flags\": null` bypasses malformed-list validation because `None` also represents an absent field. With a valid empty plan or recheck, this malformed durable list can produce a quiet trigger instead of UNKNOWN.\n- Suggestion: Check whether the entry contains the key separately from validating its value. Any present value that is not a list of nonblank strings should produce UNKNOWN.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/lib/review_capture_redact.py:42\n- Finding: The private-key pattern masks only the PEM header, leaving the encoded private-key body in the stderr file that F6 commits. The key remains recoverable by restoring the standard header; the test checks only that the header disappears.\n- Suggestion: Mask the entire PEM private-key block, including its body and footer. Add a test asserting that encoded key material is removed.\n\nOverall assessment: ship-with-fixes. The main changes align with the specification, but the commit-count limit and malformed-list handling leave trigger gaps, and private-key redaction leaves secret material exposed.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: regression\n  Severity: medium\n  File: shared/scripts/lib/review_unavailable.py (`_stamp_problem`) / plugins and skills call sites\n  Finding: `artifact_problem` now refuses any envelope without this run's `capture` stamp, but the diff only updates two `external_review.py` invocation sites (`sub-iterate-runner.md`, `campaign-step-3-5-plan-review.md`) to pass `--run-id`. Any other invocation of `external_review.py` elsewhere in the repo/docs that is not shown (and, more importantly, any *already-recorded* `unavailable` row whose capture predates the stamp) can no longer be verified by F11 / `record`. The spec calls the tightening intended, but there is no legacy carve-out and no visible sweep for other call sites \u2014 a stale run dir re-verified after this change will fail with a repair message telling the operator to re-run a review that already failed.\n  Suggestion: Grep the repo for every `external_review.py` invocation and confirm each passes `--run-id`; consider accepting a missing `capture` key for envelopes that demonstrably predate the change (or accept the breakage explicitly in the docs).\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py (`_run_commits`)\n  Finding: `git log -n 50` silently truncates. A rebase-merged PR with more than 50 `Run-ID:`-stamped commits is under-counted, and under-counting changed lines is the *unsafe* direction here \u2014 the gate can report \"quiet\" for a >100-line PR. The function treats a git failure as `None` (unknown) precisely because under-counting is unsafe, but the cap reintroduces it silently.\n  Suggestion: Raise the limit substantially, drop `-n` in favour of a commit-range bound, or treat a result that hits the cap as unknown.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py (`_run_commits`)\n  Finding: The diff shows `out.split(\"\")` and `record.strip().partition(\"\")` \u2014 empty-string separators. In Python `str.split(\"\")` / `partition(\"\")` raise `ValueError`. If this is the actual source (control characters ` \\x1e`/`\\x1f` lost in diff rendering it is fine; if literal, every `_run_commits` call crashes on a non-empty log.\n  Suggestion: Confirm the source uses `out.split(\"\\x1e\")` and `.partition(\"\\x1f\")`; if the diff is faithful, fix immediately.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/exemption_record.py (`_scope_error`)\n  Finding: Empty `::` parts are accepted (`\"x.py::::t\"` splits into empty parts that pass every check), and a part that is just `C:` with no path is caught only by the drive-letter regex \u2014 fine \u2014 but a Windows UNC-ish part like `\\\\server\\share` becomes `//server/share`, starts with `/`, and is caught; only the empty-part case remains. Minor inconsistency, not exploitable.\n  Suggestion: Reject empty parts explicitly (`any(not p for p in parts)`).\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/record_review_pass.py (`_cmd_record`)\n  Finding: `redact_unavailable_stderr` rewrites the raw envelope and stderr *before* the record is built/written. If `make_entry`/`write_record` subsequently fails for an unrelated reason (bad `--recorded-by`, lock timeout), the on-disk capture is already reformatted (`json.dumps(indent=2)`) and masked even though no `unavailable` row landed. Harmless in outcome but the masked/reformatted file now backs nothing and its original bytes are gone.\n  Suggestion: Mask after the row is durably written, or accept and document the eager in-place rewrite.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_review_followups_cli.py (`test_a_bare_reason_code_rerun_repairs_the_marker_with_the_default_reason`)\n  Finding: The test unlinks `*review_state.json` then re-runs the same `record` and checks `reason == \"closed by reason_code user-opt-out\"` \u2014 but it never asserts the marker reason would have been `null` under the old code path, and it only checks `markers[0]`. With a single marker type in play this is fine, but the assertion is weaker than \"the default disposition, not null, and not the raw reason code\" \u2014 it would pass for an implementation that wrote e.g. just `\"user-opt-out\"`. Minor.\n  Suggestion: Assert the exact default-disposition string produced by `default_disposition(\"user-opt-out\")`.\n\nEverything else checks out against the ACs: `make_entry(reason_code=...)` used by both `record` and `close-missing`; the `--force` relax via `force_strands_marker` is conservative on unreadable state; the F5c unknown-not-quiet logic (none of three sources \u21d2 fired, malformed list \u21d2 fired) matches the spec; the stamp check covers wrong-run, missing-`at`, and malformed-`at`; redaction handles UTF-16, latin-1, symlinks, idempotency, and preserves the stamp; the rebase-merge tests cover neighbour-PR exclusion, prefix collision, body mention, and git failure.\n\nOverall: ship-with-fixes \u2014 the logic is sound and well-tested; the 50-commit truncation and the unstamped-legacy-envelope breakage are the two items worth closing before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-09-u-review-followups-widened",
+    "at": "2026-10-09T16:09:05.212136+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -3682,7 +3682,7 @@ table and the registry. Adding a gate = write the check, append it to `CLAIM_CHE
 |---|---|---|
 | `check_exemption_record` | `verifiers/exemption_record_check.py` | the F5c entry's `exemptions` block (`count` == `len(items)`, every item a path-safe `scope` plus a `reason_code` from an exemption family - today only `test_exemption` - in `lib/reason_codes.py`); absent = legacy, SKIPPED |
 | `check_test_tag_binding` | `verifiers/tag_binding_gate.py` | every test the diff adds or edits names the requirement it proves: regenerates base + head manifests through the compliance `test_links` collector (`_layer_coverage_regen`, memoised with the removal gate) and STOPs on an untagged added test, a stripped tag, an edited legacy untagged test, a new malformed or unresolvable tag, or a per-diff exemption; a move with an unchanged body, a docstring/comment-only edit and a parametrize-case addition pass; per-test `test_exemption` items (`fixture-or-helper`, `mechanical-refactor`) are verified, not trusted; a new tag outside the run's `affected_frs`/`new_frs` WARNs (no `work_completed` event: WARNs the check did not run), as do an untagged test in a file the diff did not touch (newly collected) and same-named siblings that all carry the same tags. Every complexity; every infra gap STOPs with a remediation, a non-git project included (no SKIP) |
-| `check_cascade_trigger` | `verifiers/cascade_trigger.py` | at `small`, when a risk flag is set (session plan, Step 3.4 record, or `cross_component` / CI paths recomputed from the diff) or the diff has more than 100 changed lines (`lib/review_diff_threshold.py`: added+removed vs the merge-base, finalization records excluded, exactly 100 does not trigger), the `code` row is `completed` with evidence, or `not_run` with `reason_code` `unavailable` / `delegated-to-orchestrator` / `user-opt-out` (an allowlist; `not_applicable` refused); an unmeasurable diff (incl. a trunk tip no remote trunk ref contains) or unreadable flag source counts as triggered; a missing complexity is in scope, the plan's higher complexity wins; medium+ and explicit trivial SKIPPED |
+| `check_cascade_trigger` | `verifiers/cascade_trigger.py` | at `small`, when a risk flag is set (session plan, Step 3.4 record, the F5c entry's own durable `risk_flags` list, or `cross_component` / CI paths recomputed from the diff; a run with none of the three recorded has said nothing, which counts as triggered) or the diff has more than 100 changed lines (`lib/review_diff_threshold.py`: added+removed vs the merge-base, finalization records excluded, exactly 100 does not trigger; a rebase-merged PR already on the trunk is measured over all its `Run-ID:`-stamped commits, a squash-merged one by its tip), the `code` row is `completed` with evidence, or `not_run` with `reason_code` `unavailable` / `delegated-to-orchestrator` / `user-opt-out` (an allowlist; `not_applicable` refused); an unmeasurable diff (incl. a trunk tip no remote trunk ref contains) or unreadable flag source counts as triggered; a missing complexity is in scope, the plan's higher complexity wins; medium+ and explicit trivial SKIPPED |
 <!-- claim-checks:end -->
 
 Closed vocabularies live in `shared/scripts/lib/reason_codes.py` (one frozen set per family:
@@ -4850,8 +4850,12 @@ properties beyond "no pending row":
 - **`unavailable` on an external pass needs the adapter's captured error.**
   `plan` / `external_code` closed `reason_code: unavailable` need, in the run
   dir, the adapter's failure envelope (its `review_schema`, `success: false` or
-  `degraded: true`, a non-empty `error` / `degraded_reason`, the pass's `mode`)
-  or — raw file present, no JSON — a non-empty `<raw stem>.stderr.txt`; symlinks,
+  `degraded: true`, a non-empty `error` / `degraded_reason`, the pass's `mode`, and
+  the `capture` stamp `external_review.py --run-id` writes naming THIS run — an
+  envelope copied from another run or typed by hand has none) or — raw file
+  present, no JSON — a non-empty `<raw stem>.stderr.txt` (best-effort masking of URLs and
+  key shapes in it and in the raw envelope by `lib/review_capture_redact.py` when
+  `record` / `close-missing` lands the row; the stamp binds a run, it is not provenance); symlinks,
   successful and all-legs-`skipped` replies refuse it. Read from the commit when
   the record is committed (`lib/review_unavailable.py`,
   `verifiers/review_record_unavailable.py`; `record_review_pass.py record` too).

@@ -1,0 +1,71 @@
+{
+ "stage": "doubt",
+ "doubts": [
+  {
+   "claim_under_doubt": "Stamp proves run binding, not provider failure; a pre-flight input error yields a valid unavailable envelope.",
+   "disproof_attempt": "REBUTTED/ACCEPTED: provenance is out of scope by the spec; the stamp is run binding (anti-reuse). Documented.",
+   "severity": "medium",
+   "file": "shared/scripts/tools/external_review.py"
+  },
+  {
+   "claim_under_doubt": "Masking only holds at record time; a retry rewrites captures unmasked.",
+   "disproof_attempt": "ACCEPTED LIMIT: documented; a re-run after a recorded row is a new attempt that needs a new record.",
+   "severity": "medium",
+   "file": "shared/scripts/tools/record_review_pass.py"
+  },
+  {
+   "claim_under_doubt": "Raw envelope skipped for UTF-16/BOM/stray text.",
+   "disproof_attempt": "FIXED: both captures are decoded (UTF-16/UTF-8/latin-1) and masked at text level; tested.",
+   "severity": "medium",
+   "file": "shared/scripts/lib/review_capture_redact.py"
+  },
+  {
+   "claim_under_doubt": "Patterns miss 'API key: X' and GLM shape.",
+   "disproof_attempt": "FIXED: api key with spaces and the id.secret shape added; tested.",
+   "severity": "medium",
+   "file": "shared/scripts/lib/review_capture_redact.py"
+  },
+  {
+   "claim_under_doubt": "Nothing reads stage-1-rejected; closure accepts it.",
+   "disproof_attempt": "REBUTTED: the code is a machine-readable carrier of the REJECT for the operator and the Mission view; the STRICT-STOP in the campaign flow is the gate. No F11 rule added (out of scope).",
+   "severity": "medium",
+   "file": "shared/scripts/tools/verifiers/review_record_closure.py"
+  },
+  {
+   "claim_under_doubt": "Commits without the trailer are dropped from the rebase-merge measure.",
+   "disproof_attempt": "ACCEPTED LIMIT: stated in the docs; still better than the tip alone.",
+   "severity": "low",
+   "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py"
+  },
+  {
+   "claim_under_doubt": "Entry risk_recheck.risk_flags ignored.",
+   "disproof_attempt": "FIXED: unioned; tested.",
+   "severity": "low",
+   "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py"
+  },
+  {
+   "claim_under_doubt": "risk_flags not validated at write time.",
+   "disproof_attempt": "REBUTTED: fails closed at F11; adding a writer check is a separate change.",
+   "severity": "low",
+   "file": "shared/scripts/tools/append_iterate_entry.py"
+  },
+  {
+   "claim_under_doubt": "Stale skipped marker after --force; check outside the lock.",
+   "disproof_attempt": "ACCEPTED LIMIT: only a completed marker states a result; documented.",
+   "severity": "low",
+   "file": "shared/scripts/lib/review_companion.py"
+  },
+  {
+   "claim_under_doubt": "Raw control bytes in source.",
+   "disproof_attempt": "FIXED: escapes.",
+   "severity": "low",
+   "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py"
+  },
+  {
+   "claim_under_doubt": "--run-id described as optional.",
+   "disproof_attempt": "FIXED.",
+   "severity": "low",
+   "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md"
+  }
+ ]
+}

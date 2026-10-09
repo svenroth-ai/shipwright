@@ -22,6 +22,7 @@ _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(_SCRIPTS))
 sys.path.insert(0, str(_SCRIPTS / "tools"))
 
+from test_hygiene import is_ci  # noqa: E402
 from lib.external_review_degraded import finalize_review_output  # noqa: E402
 from lib.review_record import REVIEW_TYPES, make_entry, new_record, upsert_review, write_record  # noqa: E402
 from lib.review_unavailable import artifact_paths, artifact_problem, worktree_reader  # noqa: E402
@@ -30,8 +31,12 @@ from tools.verifiers.review_record_check import check_review_record  # noqa: E40
 RUN = "iterate-2026-10-08-capture"
 
 
+STAMP = {"run_id": RUN, "at": "2026-10-08T00:00:00+00:00"}  # what external_review.py --run-id writes
+
+
 def _env(**fields) -> str:
-    return json.dumps({"review_schema": 2, "success": False, "error": "boom", "mode": "code", **fields})
+    return json.dumps({"review_schema": 2, "success": False, "error": "boom", "mode": "code",
+                       "capture": STAMP, **fields})
 
 
 def _problem(raw: str | None, err: str | None = None, review_type: str = "external_code") -> str | None:
@@ -50,6 +55,11 @@ def _problem(raw: str | None, err: str | None = None, review_type: str = "extern
     (_env(mode=None), None, "external_code", "--mode None"),           # no provenance
     (_env(mode="architecture"), None, "external_code", "--mode architecture"),
     (_env(), None, "plan", "--mode code"),                              # a code envelope cannot back `plan`
+    (_env(capture=None), None, "external_code", "no capture stamp"),     # typed by hand / predates the stamp
+    (_env(capture={"run_id": "iterate-2026-10-08-other", "at": STAMP["at"]}), None, "external_code",
+     "no capture stamp"),                                                # copied from another run's directory
+    (_env(capture={"run_id": RUN, "at": "yesterday"}), None, "external_code", "no capture stamp"),
+    (_env(capture={"run_id": RUN}), None, "external_code", "no capture stamp"),
     (None, "Traceback (most recent call last)", "external_code", "no captured adapter error"),
 ])
 def test_capture_is_refused_unless_it_is_this_pass_s_adapter_failure(raw, err, review_type, needle):
@@ -82,6 +92,8 @@ def _symlink_or_skip(link: Path, target: Path) -> None:
     try:
         os.symlink(target, link)
     except (OSError, NotImplementedError) as exc:
+        if is_ci():
+            pytest.fail(f"symlinks must work on CI ({exc})", pytrace=False)
         pytest.skip(f"this platform cannot create symlinks here ({exc})")
 
 
@@ -146,6 +158,7 @@ def test_captures_built_by_the_real_producers(monkeypatch, capsys, tmp_path):
     succeeded, _ = finalize_review_output("openrouter", {"glm": {"status": "success", "feedback": "ok"}})
     for output in (failed, succeeded):
         output["mode"] = "code"  # main() merges driver_record (which carries `--mode`) into every envelope
+        output["capture"] = STAMP  # ... and the capture stamp
     assert _problem(json.dumps(failed)) is None
     assert "not a failure envelope" in (_problem(json.dumps(succeeded)) or "")
 
@@ -153,6 +166,6 @@ def test_captures_built_by_the_real_producers(monkeypatch, capsys, tmp_path):
     spec.write_text("# Spec", encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["external_review.py", "--mode", "code", "--diff-file",
                                      str(tmp_path / "absent.diff"), "--spec-file", str(spec),
-                                     "--plugin-root", str(tmp_path), "--driver", "claude"])
+                                     "--plugin-root", str(tmp_path), "--run-id", RUN, "--driver", "claude"])
     assert external_review.main() == 1
     assert _problem(capsys.readouterr().out) is None

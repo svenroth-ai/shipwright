@@ -20,9 +20,16 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
     "test_completeness": { ...the F5 ledger block; at trivial {"status": "n/a", "reason_code": "trivial-auto"}... },
     "surface_verification": { ...the F0.5 block... },
     "declared_removals": [ {"path": "...", "reason": "..."} ],
-    "exemptions": {"count": 0, "items": []}
+    "exemptions": {"count": 0, "items": []},
+    "risk_flags": <JSON list of every risk flag this run carries (Stage-1 plan + Step 3.4 re-check), e.g. ["touches_auth"], or [] when none>
   }'
 ```
+
+**`risk_flags` (always write it; `[]` means "recorded: none").** The durable copy of the run's
+self-reported risk flags, so the small-run code-review trigger (`check_cascade_trigger`) does not depend
+on `plan.json` / `risk_recheck.json` still being there. A run with none of the three (this list, the
+plan, the re-check) recorded nothing — and F11 reads that as *unknown*, i.e. the trigger fired, never as
+"no flag". The diff-recomputed flags (`cross_component`, CI paths) need no entry here.
 
 **`exemptions` (always write it; `{"count": 0, "items": []}` when none — an entry without it prints
 `not recorded (legacy entry)`, never `0`).** The test-tag gate (`check_test_tag_binding`) reads its

@@ -135,6 +135,7 @@ def make_entry(
     model_tier: str | None = None,
     transport: str | None = None,
     transport_note: str | None = None,
+    reason_code: str | None = None,
 ) -> dict[str, Any]:
     """Build one review entry.
 
@@ -145,14 +146,11 @@ def make_entry(
     the session resolved for this role via
     ``lib.model_tier_config.resolve_model_tier`` and self-reports at
     recording time — a claim about the spawn, not independently verified
-    evidence of it, since nothing correlates this value with the Agent-tool
-    ``model=`` parameter actually passed at the spawn call. ``"inherit"`` is a
-    real, meaningful value here (it means "deferred to the session's tier,
-    which this row does not itself capture"), distinct from the key being
-    absent entirely (a caller that predates this field, or omitted the flag).
-    Omitted like ``verdicts``/``contradiction_resolution`` when not supplied,
-    so an old reader's ``.get("model_tier")`` sees absence, not a stray
-    ``null``.
+    evidence of it. ``"inherit"`` is a real value ("deferred to the session's
+    tier"), distinct from the key being absent. ``model_tier`` and
+    ``reason_code`` (the closed ``review_not_run`` code, validated by
+    :func:`lib.review_record_schema.validate_record`) are omitted when not
+    supplied, so an old reader's ``.get(...)`` sees absence, not a stray ``null``.
     """
     if review_type not in RECORDABLE_TYPES:
         raise ReviewRecordError(f"unknown review_type: {review_type!r}")
@@ -182,6 +180,8 @@ def make_entry(
         entry["contradiction_resolution"] = contradiction_resolution
     if model_tier is not None:
         entry["model_tier"] = model_tier
+    if reason_code is not None:
+        entry["reason_code"] = reason_code
     if transport is not None:
         entry["transport"] = transport
     if transport_note is not None:

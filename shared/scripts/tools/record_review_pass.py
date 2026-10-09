@@ -33,12 +33,13 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.file_lock import LockTimeout  # noqa: E402
 from lib.model_tier_config import TIERS  # noqa: E402
-from lib.review_companion import MARKER_TYPES, marker_reason, repair_markers, write_markers  # noqa: E402
+from lib.review_companion import MARKER_TYPES, force_strands_marker, marker_reason, repair_markers, write_markers  # noqa: E402
 from lib.review_entry_checks import REVIEW_FAMILY, default_disposition  # noqa: E402
 from lib.review_findings import ProseOverflowError, ReviewFindingsError  # noqa: E402
 from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
 from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error, unread_reply_warning  # noqa: E402
+from lib.review_capture_redact import redact_unavailable_stderr  # noqa: E402
 from lib.review_unavailable import write_time_error  # noqa: E402
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
@@ -67,9 +68,10 @@ def _fail(error: str, message: str, code: int = EXIT_ERROR) -> int:
 
 def _disposition(args: argparse.Namespace) -> str | None:
     """The free-text half; a bare ``--reason-code`` supplies a rule-naming default."""
-    if args.disposition or not args.reason_code:
+    code = getattr(args, "reason_code", None)  # `repair-markers` has no --reason-code
+    if args.disposition or not code:
         return args.disposition
-    return default_disposition(args.reason_code)
+    return default_disposition(code)
 
 
 def _cmd_init(args: argparse.Namespace) -> int:
@@ -97,7 +99,7 @@ def _cmd_repair_markers(
         markers = repair_markers(
             Path(args.project_root), args.run_id, args.review_type,
             marker_status=args.marker_status, provider=args.provider,
-            reason=args.disposition,
+            reason=_disposition(args),  # a bare --reason-code re-run keeps its default text
         )
     except ReviewRecordError as exc:
         if already_recorded_error is not None:
@@ -147,7 +149,8 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
         # tier verifier then skips checking for `transport: codex` rows
         # (doubt-reviewer, MEDIUM, 2026-09-17).
         return "--transport codex carries no legal Claude --model-tier; omit --model-tier"
-    if args.force and args.review_type in MARKER_TYPES and not args.marker_status:
+    if (args.force and not args.marker_status and
+            force_strands_marker(Path(args.project_root), args.run_id, args.review_type, args.status)):
         # Forced corrections must not leave the old companion marker behind.
         return (f"--force on {args.review_type} also requires --marker-status, so the "
                 "companion marker cannot be left stating the superseded result")
@@ -163,16 +166,18 @@ def _cmd_record(args: argparse.Namespace) -> int:
     if invalid:
         return _fail("invalid_arguments", invalid, EXIT_USAGE)
 
+    try:  # BEFORE the row lands: an `unavailable` row must never exist beside an unmasked capture
+        masked = redact_unavailable_stderr(Path(args.project_root), args.run_id, args.review_type, args.reason_code)
+    except OSError as exc:
+        return _fail("redaction_failed", f"could not mask the stderr capture ({exc}); nothing was recorded")
     try:
         findings, parse_status, raw, verdicts = build_review_evidence(
             args.review_from, args.payload_file)
     except (ReviewFindingsError, ProseOverflowError) as exc:
         return _fail("payload_unreadable", str(exc))
 
-    if args.status != STATUS_COMPLETED:
-        # A pass that did not run has no findings or reviewer verdicts.
-        findings, parse_status, raw = [], None, None
-        verdicts = None
+    if args.status != STATUS_COMPLETED:  # a pass that did not run has no findings or reviewer verdicts
+        findings, parse_status, raw, verdicts = [], None, None, None
 
     try:
         entry = make_entry(
@@ -182,11 +187,10 @@ def _cmd_record(args: argparse.Namespace) -> int:
             parse_status=parse_status, raw_excerpt=raw, verdicts=verdicts,
             contradiction_resolution=args.contradiction_resolution, model_tier=args.model_tier,
             transport=args.transport, transport_note=args.transport_note,
+            reason_code=args.reason_code or None,
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
-    if args.reason_code:
-        entry["reason_code"] = args.reason_code
     entry.update({k: v for k, v in (("verdict", args.verdict), ("reviewed_commit", args.reviewed_commit)) if v})
 
     project_root = Path(args.project_root)
@@ -230,6 +234,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
               "findings_count": len(findings), "parse_status": parse_status,
               "markers": markers, "pending": pending_types(record)}
     result.update(unread_reply_warning(args.review_type, args.status, args.review_from, args.payload_file))
+    result.update({"redacted": masked} if masked else {})  # URLs/secrets masked in the shipped stderr capture
     print(json.dumps(result, indent=2))
     return EXIT_OK
 
@@ -291,16 +296,16 @@ def _cmd_close_missing(args: argparse.Namespace) -> int:
                          EXIT_USAGE)
         targets = [t for t in targets if t in requested]
 
+    try:  # mask any unavailable capture first, as `record` does
+        for t in targets:
+            redact_unavailable_stderr(project_root, args.run_id, t, args.reason_code)
+    except OSError as exc:
+        return _fail("redaction_failed", f"cannot mask the stderr capture: {exc}")
     try:
-        # ONE batch write under ONE lock. Closing each type in its own
-        # acquisition meant a mid-loop failure left some types permanently
-        # closed as not_run and the rest open — an irreversible half-state that
-        # only --force could move, on the very command whose job is to unblock a
-        # stuck run.
+        # ONE batch write under ONE lock: a per-type write leaves an irreversible half-closed state on a mid-loop failure
         entries = [
-            {**make_entry(t, args.status, disposition=_disposition(args),
-                          completed_at=_now(), recorded_by="close-missing"),
-             **({"reason_code": args.reason_code} if args.reason_code else {})}
+            make_entry(t, args.status, disposition=_disposition(args), completed_at=_now(),
+                       recorded_by="close-missing", reason_code=args.reason_code or None)
             for t in targets
         ]
         record = close_pending(project_root, args.run_id, entries)

@@ -496,9 +496,9 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    monorepo, and the import silently fails. Resolution + a non-zero-exit /
    bad-stdout failure branch: [iteration-reviews.md](iteration-reviews.md) →
    "`{plan_plugin_root}` resolution and `uv run` failure".)
-   (`--run-id` is additive — it records this call's real boundary as an
-   `external_review` timing span, parent `planning`; omitting it just skips
-   the recording, see [iterate-timings](iterate-timings.md).)
+   (`--run-id` records this call's real boundary as an `external_review` timing
+   span, parent `planning` (see [iterate-timings](iterate-timings.md)), and stamps the
+   capture with the run: an `unavailable` row is refused without that stamp.)
    (`--plugin-root` is the plan plugin root — used only for plan-mode prompt
    lookup. For iterate-mode it is not consulted, but the argument remains
    required for CLI shape compatibility.) Present findings, integrate into

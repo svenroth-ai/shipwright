@@ -1,0 +1,509 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-u-review-followups-widened",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T16:02:16.349380+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Item 7's stamp requirement is applied retroactively: any `unavailable` envelope captured before this change has no `capture` stamp, so `_stamp_problem` will refuse it. The plan acknowledges this (\"refused until the pass is re-run\") but treats it as acceptable because \"F11 verifies only the run being finalized.\" If any historical run's evidence is re-read during repair, audit, or a `--force` path that touches older rows, those rows silently become invalid evidence.",
+          "suggestion": "Decide explicitly whether pre-stamp envelopes are refused (fail-closed, current plan) or grandfathered via a one-time migration/stamp, and add a test for the \"old envelope present\" case so the failure mode is documented and loud, not discovered in production finalization.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "measure_diff(..., run_id)` uses `git log --grep \"Run-ID: <run_id>\"`. Two practical issues: (1) `--grep` is a regex — if a run_id contains regex metacharacters or is a substring of another run_id, commits can be over- or under-counted. (2) `--grep` matches anywhere in the commit message, not only the trailer, so a body line quoting `Run-ID:` from a different run (e.g., a commit that reverts or references another PR) gets counted. The \"neighbour PR's 500-line commit is not counted\" probe covers the clean case, not the adversarial one.",
+          "suggestion": "Use `--grep=\"^Run-ID: <run_id>$\"` with fixed-string matching (`--fixed-strings` plus `-E` anchoring, or `-F` on the full line) and re.escape the run_id, or parse `git log --format=...` trailers in Python and match exactly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The rebase-merged measurement counts commits \"under\" the tip carrying the trailer. If a rebase-merged PR's commits are interleaved with other trunk commits, or if the same run_id appears in an earlier, already-merged PR (retry/re-run reusing an ID), the sum can double-count or pick up unrelated changes. Also unspecified: merge commits are excluded (\"non-merge\") — fine — but what about the diff base? Summing per-commit diffs under-counts a squashed-then-rebased history where the net diff differs from the sum.",
+          "suggestion": "Document the intended semantics (sum of per-commit diffs vs. diff from merge-base of the trailer set), and add a fixture with interleaved foreign commits between the trailer commits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "UTF-16 BOM stderr handling: after masking, the file is presumably rewritten. If the masking regex operates on the decoded text, fine; if any path re-reads the file assuming UTF-8 (e.g., `artifact_problem` on an already-redacted file), the round trip is tested once but the interaction between redaction and later reads isn't stated. Also, mixed/invalid encodings (UTF-16 without BOM, latin-1 stderr from a Windows adapter) will throw on decode — the plan doesn't say what happens (crash the record? keep the raw file?).",
+          "suggestion": "Specify the fallback: on undecodable capture, either keep the original unmasked file and flag it, or redact bytewise patterns; don't let the redaction step fail the whole `record`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The redaction is a best-effort pattern list (URLs, bearer, key-value, key-shapes) applied only to stderr captures backing `unavailable` rows. Risk: the successful path and other artifacts (stdout, JSON envelope fields, the driver_record itself) are not covered, and secrets in URL query strings are only masked if the URL pattern includes the query. The spec's out-of-scope note covers \"shapes no pattern knows\" but not URLs partially matched (e.g., masked scheme but leaked query token).",
+          "suggestion": "Ensure the URL regex includes query strings and fragments; consider a cheap test that a `?token=...` in a logged URL is masked. Note in docs that the raw JSON envelope remains unredacted (already out of scope, but say so where the stderr masking is documented, so users don't assume more).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Item 5's `--force` relaxation: \"unreadable record stays on the safe side\" means requiring `--marker-status`. If the record is unreadable because of a prior bug the repair path is meant to fix, the safe-side default could make the repair path inoperable in exactly the cases it exists for.",
+          "suggestion": "Confirm the safe-side branch has an escape (e.g., explicit `--marker-status missing` clears a stale `completed` marker), and test the unreadable-record case explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The alternative (auto-stamping `risk_flags` in `append_iterate_entry`) was rejected to avoid growing a grandfathered file, leaving correctness dependent on \"the gate fails closed when the agent forgets.\" That's defensible fail-closed design, but it means every historical F5c entry and every future agent omission produces a spurious code-review trigger — operational noise, not correctness. Just verify the noise is tolerable.",
+          "suggestion": "Acceptable as-is; optionally log a distinct message when the trigger fired due to missing `risk_flags` vs. real flags so the noise is diagnosable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The \"two documented call sites that lacked `--run-id`\" get it (item 7), but any undocumented call sites or scripts invoking `external_review.py` without `--run-id` will now produce unstamped envelopes that the tightened gate refuses. A grep of the repo for invocation sites is implied but not stated.",
+          "suggestion": "Verify with a repo-wide search for `external_review` invocations and note the count in the run record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "git log --grep` matches commit-message text, not necessarily an exact `Run-ID:` trailer. A prefix match, regex metacharacters in the run ID, or a mention in the message body could include another run’s commits. The neighbour-PR test does not establish exact matching.",
+          "suggestion": "Parse trailers and compare the complete run ID literally. Add fixtures for prefix-related IDs and a body-only mention.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `--force` rule checks the old and new row statuses, but the stated invariant concerns the marker’s actual status. If a partial write previously left a `completed` marker beside a skipped row, a skipped-to-skipped correction could preserve that inconsistency without requiring `--marker-status`.",
+          "suggestion": "Check the bound marker as well, or establish that row/marker consistency is validated before this rule runs. Test a skipped row with a stale completed marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Redaction rewrites the evidence file, but the approach does not specify failure ordering. A decoding or write failure could leave an `unavailable` row recorded while its stderr still contains the secrets this change promises to mask.",
+          "suggestion": "Complete redaction successfully before committing the row, use atomic replacement, and fail recording when redaction cannot finish. Test decoding and write failures alongside the UTF-16 round trip.  The approach is sound and appropriately scoped, with useful boundary tests and explicit compatibility limits. These three details should be resolved before approval; this review assesses the supplied approach because local code inspection was blocked by execution policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T16:05:32.760928+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: risk — Severity: high**\n**Finding:** Item 7's stamp requirement is applied retroactively: any `unavailable` envelope captured *before* this change has no `capture` stamp, so `_stamp_problem` will refuse it. The plan acknowledges this (\"refused until the pass is re-run\") but treats it as acceptable because \"F11 verifies only the run being finalized.\" If any historical run's evidence is re-read during repair, audit, or a `--force` path that touches older rows, those rows silently become invalid evidence.\n**Suggestion:** Decide explicitly whether pre-stamp envelopes are refused (fail-closed, current plan) or grandfathered via a one-time migration/stamp, and add a test for the \"old envelope present\" case so the failure mode is documented and loud, not discovered in production finalization.\n\n**Category: edge-case — Severity: medium**\n**Finding:** `measure_diff(..., run_id)` uses `git log --grep \"Run-ID: <run_id>\"`. Two practical issues: (1) `--grep` is a regex — if a run_id contains regex metacharacters or is a substring of another run_id, commits can be over- or under-counted. (2) `--grep` matches anywhere in the commit message, not only the trailer, so a body line quoting `Run-ID:` from a *different* run (e.g., a commit that reverts or references another PR) gets counted. The \"neighbour PR's 500-line commit is not counted\" probe covers the clean case, not the adversarial one.\n**Suggestion:** Use `--grep=\"^Run-ID: <run_id>$\"` with fixed-string matching (`--fixed-strings` plus `-E` anchoring, or `-F` on the full line) and re.escape the run_id, or parse `git log --format=...` trailers in Python and match exactly.\n\n**Category: edge-case — Severity: medium**\n**Finding:** The rebase-merged measurement counts commits \"under\" the tip carrying the trailer. If a rebase-merged PR's commits are interleaved with other trunk commits, or if the same run_id appears in an earlier, already-merged PR (retry/re-run reusing an ID), the sum can d […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `git log --grep` matches commit-message text, not necessarily an exact `Run-ID:` trailer. A prefix match, regex metacharacters in the run ID, or a mention in the message body could include another run’s commits. The neighbour-PR test does not establish exact matching.  \n   **Suggestion:** Parse trailers and compare the complete run ID literally. Add fixtures for prefix-related IDs and a body-only mention.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed `--force` rule checks the old and new row statuses, but the stated invariant concerns the marker’s actual status. If a partial write previously left a `completed` marker beside a skipped row, a skipped-to-skipped correction could preserve that inconsistency without requiring `--marker-status`.  \n   **Suggestion:** Check the bound marker as well, or establish that row/marker consistency is validated before this rule runs. Test a skipped row with a stale completed marker.\n\n3. **Category:** security  \n   **Severity:** medium  \n   **Finding:** Redaction rewrites the evidence file, but the approach does not specify failure ordering. A decoding or write failure could leave an `unavailable` row recorded while its stderr still contains the secrets this change promises to mask.  \n   **Suggestion:** Complete redaction successfully before committing the row, use atomic replacement, and fail recording when redaction cannot finish. Test decoding and write failures alongside the UTF-16 round trip.\n\nThe approach is sound and appropriately scoped, with useful boundary tests and explicit compatibility limits. These three details should be resolved before approval; this review assesses the supplied approach because local code inspection was blocked by execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Run-ID only accepted in the last 3 lines of the message; extra trailers push it out and the PR reads quiet. FIXED: exact Run-ID line anywhere in the message.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "git log failure fell back to tip-only and log.showSignature could break parsing. FIXED: --no-show-signature, failure is unknown.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/cascade_trigger.py",
+          "line": null,
+          "finding": "Wrong repair text for the nothing-recorded case. FIXED: dedicated repair.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/review_capture_redact.py",
+          "line": null,
+          "finding": "key=value pattern missed quoted and JSON shapes. FIXED, tested.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "close-missing wrote unavailable rows without masking. FIXED: masks first.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/review_capture_redact.py",
+          "line": null,
+          "finding": "raw envelope not masked. FIXED: string values masked, capture stamp kept.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_capture_redact.py",
+          "line": null,
+          "finding": "'Basic authentication' over-match. FIXED. UTF-16 odd-length latin-1 fallback is left as best-effort.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_companion.py",
+          "line": null,
+          "finding": "docstring about skipped markers. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": null,
+          "finding": "--run-id without --project-root. FIXED in both campaign call sites.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F5c.md",
+          "line": null,
+          "finding": "risk_flags placeholder inside a list. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/append_iterate_entry.py",
+          "line": null,
+          "finding": "cosmetic refactor mixed in. Kept: it is the U0 follow-up (unpack the validator tuple) the task names.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_review_capture_redact.py",
+          "line": null,
+          "finding": "stray blank line. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T16:08:31.752791+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/tools/external_review.py",
+          "line": null,
+          "finding": "Claim under doubt: Stamp proves run binding, not provider failure; a pre-flight input error yields a valid unavailable envelope. — REBUTTED/ACCEPTED: provenance is out of scope by the spec; the stamp is run binding (anti-reuse). Documented.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "Claim under doubt: Masking only holds at record time; a retry rewrites captures unmasked. — ACCEPTED LIMIT: documented; a re-run after a recorded row is a new attempt that needs a new record.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/lib/review_capture_redact.py",
+          "line": null,
+          "finding": "Claim under doubt: Raw envelope skipped for UTF-16/BOM/stray text. — FIXED: both captures are decoded (UTF-16/UTF-8/latin-1) and masked at text level; tested.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/lib/review_capture_redact.py",
+          "line": null,
+          "finding": "Claim under doubt: Patterns miss 'API key: X' and GLM shape. — FIXED: api key with spaces and the id.secret shape added; tested.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/review_record_closure.py",
+          "line": null,
+          "finding": "Claim under doubt: Nothing reads stage-1-rejected; closure accepts it. — REBUTTED: the code is a machine-readable carrier of the REJECT for the operator and the Mission view; the STRICT-STOP in the campaign flow is the gate. No F11 rule added (out of scope).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: Commits without the trailer are dropped from the rebase-merge measure. — ACCEPTED LIMIT: stated in the docs; still better than the tip alone.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: Entry risk_recheck.risk_flags ignored. — FIXED: unioned; tested.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/append_iterate_entry.py",
+          "line": null,
+          "finding": "Claim under doubt: risk_flags not validated at write time. — REBUTTED: fails closed at F11; adding a writer check is a separate change.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/lib/review_companion.py",
+          "line": null,
+          "finding": "Claim under doubt: Stale skipped marker after --force; check outside the lock. — ACCEPTED LIMIT: only a completed marker states a result; documented.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": null,
+          "finding": "Claim under doubt: Raw control bytes in source. — FIXED: escapes.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md",
+          "line": null,
+          "finding": "Claim under doubt: --run-id described as optional. — FIXED.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T16:17:24.617210+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/lib/review_unavailable.py (`_stamp_problem`) / plugins and skills call sites",
+          "line": null,
+          "finding": "artifact_problem` now refuses any envelope without this run's `capture` stamp, but the diff only updates two `external_review.py` invocation sites (`sub-iterate-runner.md`, `campaign-step-3-5-plan-review.md`) to pass `--run-id`. Any other invocation of `external_review.py` elsewhere in the repo/docs that is not shown (and, more importantly, any already-recorded `unavailable` row whose capture predates the stamp) can no longer be verified by F11 / `record`. The spec calls the tightening intended, but there is no legacy carve-out and no visible sweep for other call sites — a stale run dir re-verified after this change will fail with a repair message telling the operator to re-run a review that already failed.",
+          "suggestion": "Grep the repo for every `external_review.py` invocation and confirm each passes `--run-id`; consider accepting a missing `capture` key for envelopes that demonstrably predate the change (or accept the breakage explicitly in the docs).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py (`_run_commits`)",
+          "line": null,
+          "finding": "git log -n 50` silently truncates. A rebase-merged PR with more than 50 `Run-ID:`-stamped commits is under-counted, and under-counting changed lines is the unsafe direction here — the gate can report \"quiet\" for a >100-line PR. The function treats a git failure as `None` (unknown) precisely because under-counting is unsafe, but the cap reintroduces it silently.",
+          "suggestion": "Raise the limit substantially, drop `-n` in favour of a commit-range bound, or treat a result that hits the cap as unknown.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py (`_run_commits`)",
+          "line": null,
+          "finding": "The diff shows `out.split(\"\")` and `record.strip().partition(\"\")` — empty-string separators. In Python `str.split(\"\")` / `partition(\"\")` raise `ValueError`. If this is the actual source (control characters ` \\x1e`/`\\x1f` lost in diff rendering it is fine; if literal, every `_run_commits` call crashes on a non-empty log.",
+          "suggestion": "Confirm the source uses `out.split(\"\\x1e\")` and `.partition(\"\\x1f\")`; if the diff is faithful, fix immediately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/exemption_record.py (`_scope_error`)",
+          "line": null,
+          "finding": "Empty `::` parts are accepted (`\"x.py::::t\"` splits into empty parts that pass every check), and a part that is just `C:` with no path is caught only by the drive-letter regex — fine — but a Windows UNC-ish part like `\\\\server\\share` becomes `//server/share`, starts with `/`, and is caught; only the empty-part case remains. Minor inconsistency, not exploitable.",
+          "suggestion": "Reject empty parts explicitly (`any(not p for p in parts)`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/record_review_pass.py (`_cmd_record`)",
+          "line": null,
+          "finding": "redact_unavailable_stderr` rewrites the raw envelope and stderr before the record is built/written. If `make_entry`/`write_record` subsequently fails for an unrelated reason (bad `--recorded-by`, lock timeout), the on-disk capture is already reformatted (`json.dumps(indent=2)`) and masked even though no `unavailable` row landed. Harmless in outcome but the masked/reformatted file now backs nothing and its original bytes are gone.",
+          "suggestion": "Mask after the row is durably written, or accept and document the eager in-place rewrite.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_review_followups_cli.py (`test_a_bare_reason_code_rerun_repairs_the_marker_with_the_default_reason`)",
+          "line": null,
+          "finding": "The test unlinks `review_state.json` then re-runs the same `record` and checks `reason == \"closed by reason_code user-opt-out\"` — but it never asserts the marker reason would have been `null` under the old code path, and it only checks `markers[0]`. With a single marker type in play this is fine, but the assertion is weaker than \"the default disposition, not null, and not the raw reason code\" — it would pass for an implementation that wrote e.g. just `\"user-opt-out\"`. Minor.",
+          "suggestion": "Assert the exact default-disposition string produced by `default_disposition(\"user-opt-out\")`.  Everything else checks out against the ACs: `make_entry(reason_code=...)` used by both `record` and `close-missing`; the `--force` relax via `force_strands_marker` is conservative on unreadable state; the F5c unknown-not-quiet logic (none of three sources ⇒ fired, malformed list ⇒ fired) matches the spec; the stamp check covers wrong-run, missing-`at`, and malformed-`at`; redaction handles UTF-16, latin-1, symlinks, idempotency, and preserves the stamp; the rebase-merge tests cover neighbour-PR exclusion, prefix collision, body mention, and git failure.  Overall: ship-with-fixes — the logic is sound and well-tested; the 50-commit truncation and the unstamped-legacy-envelope breakage are the two items worth closing before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": 195,
+          "finding": "git log -n 50` silently limits the run to 50 matching commits, although the specification requires measuring all stamped commits. A rebase-merged run with 51 commits adding two lines each is measured as 100 lines instead of 102, so the required review does not fire.",
+          "suggestion": "Remove the limit, or detect truncation and treat the measurement as unknown.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_cascade_trigger_inputs.py",
+          "line": 117,
+          "finding": "An explicitly recorded `\"risk_flags\": null` bypasses malformed-list validation because `None` also represents an absent field. With a valid empty plan or recheck, this malformed durable list can produce a quiet trigger instead of UNKNOWN.",
+          "suggestion": "Check whether the entry contains the key separately from validating its value. Any present value that is not a list of nonblank strings should produce UNKNOWN.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/review_capture_redact.py",
+          "line": 42,
+          "finding": "The private-key pattern masks only the PEM header, leaving the encoded private-key body in the stderr file that F6 commits. The key remains recoverable by restoring the standard header; the test checks only that the header disappears.",
+          "suggestion": "Mask the entire PEM private-key block, including its body and footer. Add a test asserting that encoded key material is removed.  Overall assessment: ship-with-fixes. The main changes align with the specification, but the commit-count limit and malformed-list handling leave trigger gaps, and private-key redaction leaves secret material exposed.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T16:11:31.368965+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: regression\n  Severity: medium\n  File: shared/scripts/lib/review_unavailable.py (`_stamp_problem`) / plugins and skills call sites\n  Finding: `artifact_problem` now refuses any envelope without this run's `capture` stamp, but the diff only updates two `external_review.py` invocation sites (`sub-iterate-runner.md`, `campaign-step-3-5-plan-review.md`) to pass `--run-id`. Any other invocation of `external_review.py` elsewhere in the repo/docs that is not shown (and, more importantly, any *already-recorded* `unavailable` row whose capture predates the stamp) can no longer be verified by F11 / `record`. The spec calls the tightening intended, but there is no legacy carve-out and no visible sweep for other call sites — a stale run dir re-verified after this change will fail with a repair message telling the operator to re-run a review that already failed.\n  Suggestion: Grep the repo for every `external_review.py` invocation and confirm each passes `--run-id`; consider accepting a missing `capture` key for envelopes that demonstrably predate the change (or accept the breakage explicitly in the docs).\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py (`_run_commits`)\n  Finding: `git log -n 50` silently truncates. A rebase-merged PR with more than 50 `Run-ID:`-stamped commits is under-counted, and under-counting changed lines is the *unsafe* direction here — the gate can report \"quiet\" for a >100-line PR. The function treats a git failure as `None` (unknown) precisely because under-counting is unsafe, but the cap reintroduces it silently.\n  Suggestion: Raise the limit substantially, drop `-n` in favour of a commit-range bound, or treat a result that hits the cap as unknown.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py (`_run_commits`)\n  Finding: The diff shows `out.split(\"\")` and `record.strip().partition(\"\")` — empty-string sep […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py:195\n- Finding: `git log -n 50` silently limits the run to 50 matching commits, although the specification requires measuring all stamped commits. A rebase-merged run with 51 commits adding two lines each is measured as 100 lines instead of 102, so the required review does not fire.\n- Suggestion: Remove the limit, or detect truncation and treat the measurement as unknown.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_cascade_trigger_inputs.py:117\n- Finding: An explicitly recorded `\"risk_flags\": null` bypasses malformed-list validation because `None` also represents an absent field. With a valid empty plan or recheck, this malformed durable list can produce a quiet trigger instead of UNKNOWN.\n- Suggestion: Check whether the entry contains the key separately from validating its value. Any present value that is not a list of nonblank strings should produce UNKNOWN.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/lib/review_capture_redact.py:42\n- Finding: The private-key pattern masks only the PEM header, leaving the encoded private-key body in the stderr file that F6 commits. The key remains recoverable by restoring the standard header; the test checks only that the header disappears.\n- Suggestion: Mask the entire PEM private-key block, including its body and footer. Add a test asserting that encoded key material is removed.\n\nOverall assessment: ship-with-fixes. The main changes align with the specification, but the commit-count limit and malformed-list handling leave trigger gaps, and private-key redaction leaves secret material exposed.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T16:05:23.350895+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T16:08:46.543961+00:00",
+      "disposition": "opus-plan-reviewer: 9 findings (2 medium); applied: repair text, git-failure=unknown, extra secret shapes, atomic write; stderr scope documented",
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T16:10:50.517865+00:00",
+      "disposition": "build it; risk_flags self-attestation limit and capture 'at' informational documented; exact Run-ID match kept; redaction stays at record time (adapter-side masking out of scope)",
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
