@@ -51,6 +51,12 @@ the diff and re-review. Record `spec`, `code` (`--from code-reviewer`) and `doub
 (`doubt` is `not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply), and set
 `reviews.code.status: "completed"` in the result JSON.
 
+**Hand the reply over, or the findings are lost.** Each `completed` cascade row names its adapter AND the
+canonical reply file: `--from spec-reviewer|code-reviewer|doubt-reviewer --payload-file
+"{project_root}/.shipwright/planning/iterate/{run_id}/{spec|code|doubt}_review_reply.json"`. `--recorded-by`
+alone satisfies the evidence check but records `findings_count: 0` whatever the reviewer reported (a smoke
+campaign recorded one low finding as 0); the recorder now prints a `warning` for that shape.
+
 **Record the pair 3f-bis can verify.** Every `completed` `spec`/`code`/`doubt` call carries
 `--verdict pass --reviewed-commit "$reviewed"` -- the HEAD the reviewed diff was taken at, captured
 (`reviewed=$(git -C "{project_root}" rev-parse HEAD)`) BEFORE the spawn, never at record time (commit the code first, as Step 3.7's `git diff HEAD~1` already assumes). Code you change

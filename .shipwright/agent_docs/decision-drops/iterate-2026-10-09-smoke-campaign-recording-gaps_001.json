@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-09-smoke-campaign-recording-gaps",
+  "date": "2026-10-09",
+  "section": "Iterate — bug: smoke-campaign recording gaps",
+  "title": "Recorder warns on unread replies; F0.5 counts cases",
+  "context": "A smoke campaign recorded a code-review finding as 0 and F11 refused an honest parametrized tests_run (18 cases vs 10 folded ids).",
+  "decision": "The recorder warns when a completed spec/code/doubt row has no read reply; the surface check compares tests_run to passing pytest cases (read_junit_cases, distinct per id). No smoke exemption code is added.",
+  "consequences": "Metadata-only rows stay legal but loud; the evidence index keeps folding parametrized ids. Partial retries and multi-project Playwright runs undercount, which fails closed.",
+  "rationale": "Folding is the traceability identity so the gate adapts to the runner's unit. A smoke exemption would be a claimable bypass for untagged tests.",
+  "rejected": "Hard-refusing metadata-only rows (broke 15 tests, codex transport); changing the fold; a smoke exemption code; keying case identity on resolved file only (undercounts same-named methods in different classes).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
