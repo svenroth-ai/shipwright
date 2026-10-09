@@ -239,35 +239,16 @@ def test_behavior_changed_keys_new_fr_and_layer_change():
 # --- run_all_checks wiring drift guards ------------------------------------
 
 
-def test_safe_extract_rejects_path_traversal(tmp_path, monkeypatch):
-    # External-review finding: the 3.11 tar fallback must reject a `../escape` member — a
-    # string prefix check would let a sibling dir through, so it uses path containment.
-    import io as _io
-    import tarfile
+@pytest.mark.covers("FR-01.11/AC42")
+def test_write_blobs_rejects_path_traversal(tmp_path):
+    # A `../escape` entry must not leave `dest`; path CONTAINMENT, so a sibling dir cannot slip through.
+    from tools.verifiers import _tree_materialise as reg
 
-    from tools.verifiers import _layer_coverage_regen as reg
-
-    buf = _io.BytesIO()
-    with tarfile.open(fileobj=buf, mode="w") as tar:
-        for name in ("ok.txt", "../escape.txt"):
-            info = tarfile.TarInfo(name)
-            info.size = 1
-            tar.addfile(info, _io.BytesIO(b"x"))
-    buf.seek(0)
     dest = tmp_path / "dest"
     dest.mkdir()
-    orig = tarfile.TarFile.extractall
-
-    def _no_filter(self, path=None, members=None, **kw):
-        if "filter" in kw:
-            raise TypeError("simulated pre-3.11.4 (no data filter)")
-        return orig(self, path, members)
-
-    monkeypatch.setattr(tarfile.TarFile, "extractall", _no_filter)
-    with tarfile.open(fileobj=buf) as tar:
-        reg._safe_extract(tar, dest)
+    reg._write_blobs(dest, [(b"a", b"ok.txt"), (b"a", b"../escape.txt"), (b"a", b"../dest-evil/x.txt")], {b"a": b"x"})
     assert (dest / "ok.txt").is_file()
-    assert not (tmp_path / "escape.txt").exists()  # traversal blocked
+    assert not (tmp_path / "escape.txt").exists() and not (tmp_path / "dest-evil").exists()
 
 
 def test_both_gates_registered_in_run_all_checks(tmp_path):

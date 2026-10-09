@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "Both reported false positives allowed; real force pushes to main/master (incl. -f, clusters, --force-with-lease, +refspec, --all/--mirror) still blocked; target taken from push refspecs."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Inspector fails open on any internal error (exit 0); only exit 3 blocks. Unbalanced quotes fall back to a regex split. stdin decoded as utf-8 with replace."},
+  {"name": "Security Basics", "verdict": "pass", "note": "No new input reaches a shell; command is read from stdin and tokenised with shlex. Guard is still a best-effort denylist, not a sandbox."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Parametrized allow/block cases through the real bash hook plus direct unit tests for no-refspec branch logic and fail-open; independent code review findings each got a regression case."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One extra python process per Bash call, same order as the existing JSON-extraction call; git rev-parse only on forced pushes without an explicit branch."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Inspector extracted from inline bash to force_push_guard.py so it is unit-testable; no inline-quoting trap."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Hook contract unchanged: exit 2 + JSON additionalContext on block. hooks.json untouched. shared/scripts/hooks/validate_command.sh (unwired sibling) deliberately untouched."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings after wrapping the existing pytest.skip in a CI-gated pytest.fail."}
+]}

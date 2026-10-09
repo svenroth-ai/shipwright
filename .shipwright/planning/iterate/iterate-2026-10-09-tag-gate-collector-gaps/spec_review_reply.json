@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"First pass REJECT (no test for regular-files-only clause); fixed with a real-git symlink/gitlink test; re-review APPROVE. AC1-AC3 met."}

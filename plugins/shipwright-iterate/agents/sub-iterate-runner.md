@@ -1,7 +1,7 @@
 ---
 name: sub-iterate-runner
 description: Autonomous iterate agent for a single sub-iterate within a campaign. Spawned by campaign loop. Runs the iterate lifecycle (intent → build → test → finalize) for one sub-iterate, commits, pushes, writes result.json.
-tools: Read, Write, Edit, Bash, Glob, Grep
+tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: inherit
 ---
 
@@ -28,16 +28,19 @@ You receive these parameters in the prompt:
 
 ## Step-boundary liveness touches (campaign-dag-scheduler R2)
 
-When present (skip on a standalone iterate), touch the campaign session lock and this unit's lease at Step 1 (after branch setup), before Step 4, and before Step 5 — warn-and-continue on a non-zero exit. Mirror of `references/campaign-worktree.md`'s "Per-unit worktree path" section for the full rationale (incl. why `--worktree` here is `{project_root}`, not `{campaign_worktree}`).
+When present (skip on a standalone iterate), touch the campaign session lock and this unit's lease at Step 1 (after branch setup), before Step 4, and before Step 5. Mirror of `references/campaign-worktree.md`'s "Per-unit worktree path" section for the full rationale (incl. why `--worktree` here is `{project_root}`, not `{campaign_worktree}`).
 
 ```bash
 uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch \
   --campaign-worktree "{campaign_worktree}" --session-id "{session_id}"
 uv run "{shared_root}/scripts/checks/check_unit_lease.py" touch \
   --state "{state_path}" --unit-id "{sub_iterate_id}" \
+  --attempt "{attempt}" --attempt-id "{attempt_id}" \
   --worktree "{project_root}" --branch "{branch_name}" \
   --campaign-worktree "{campaign_worktree}"
 ```
+
+**The lease touch carries the claim's fencing token (`--attempt-id`):** Step 0.5 already claimed the row, and a token-less touch is refused (`attempt token required`), so the unit's `worktree` never reaches `loop_state.json` and `3f-bis` falls back to the shared campaign worktree — the wrong branch (trg-c23f2ee7). **A failed lease touch is loud** (the lock touch stays warn-and-continue): on `attempt token mismatch` (claim superseded) STOP — `status:"failed"`, `reason_code:"lease_superseded"`, push nothing; on any other non-zero exit print `LEASE-TOUCH-FAILED: {stderr}`, retry once, and — still failing — set `finalization.lease_touch: "failed"` in `result.json`; the build continues. **Cache lag:** a unit's own new CLI flag is absent from the installed plugin cache until its PR merges and the cache syncs — run only that script from your worktree's copy; gates and verifiers always run from `{shared_root}`.
 
 ## Workflow
 
@@ -115,6 +118,8 @@ when none of its three arms hold. **Full body — read it first:**
 - **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`): notice + skip both
   calls; record `skipped_config_disabled` in the ADR.
 
+**Internal arms (medium+ effective complexity, before the external calls, any branch):** spawn `shipwright-plan:architecture-internal-reviewer` and `shipwright-plan:opus-plan-reviewer` yourself with `model=opus` — procedure, recording, fallback: `references/campaign-step-3-7-internal-reviews.md`. An architecture-internal `reject` halts the unit like the external one below.
+
 Always record the `plan` row (command in the reference); a call that cannot run is recorded `unavailable` with its capture and the run continues, loudly (reference → *Unavailable*); every other row is listed at Step 3.7.
 
 ### Step 3.6: Self-Review (always, ADR-029 follow-up)
@@ -159,16 +164,12 @@ Cascade".
 
 **Procedure** when triggered:
 
-1. Internal reviewer cascade — `spec-reviewer` (HARD-GATE) →
-   `code-reviewer` → conditional `doubt-reviewer`. The runner's tools are
-   `Read, Write, Edit, Bash, Glob, Grep` — no `Agent` tool — so it CANNOT
-   spawn them and delegates to the orchestrator (`reviews.code` =
-   `delegated_to_orchestrator`, never `skipped_silently`). **That limit is a
-   fact about THIS subagent, not about iterates:** a standalone iterate spawns
-   the cascade itself (SKILL.md Step 8). The orchestrator runs it at
-   `campaign-mode.md` **3f-bis**, before the merge — so **record the rows
-   `not_run`**: true when you write them, and 3f-bis promotes them with
-   `--force`.
+1. Internal reviewer cascade — you carry `Agent`: spawn `spec-reviewer` (HARD-GATE) →
+   `code-reviewer` → conditional `doubt-reviewer` yourself, `model=opus` at every spawn,
+   each recorded `completed` (`--model-tier opus`); up to five reviewer runs per unit with
+   Step 3.5's two; Claude Code and Codextender only. Procedure, and the **fallback** when a
+   spawn cannot happen (`not_run --reason-code delegated-to-orchestrator` — the orchestrator's
+   `campaign-mode.md` **3f-bis** then runs and promotes it): `references/campaign-step-3-7-internal-reviews.md`.
 
 2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure — it saves `$?` first and re-exits with it, so a successful cleanup command can't mask a failed review as a pass. `RUN_ID='{run_id}'` — SINGLE quotes: they end only at a literal `'`, so unlike a heredoc's line-delimiter (breakable by an embedded newline + matching line, PR #676 round-11 finding) or double quotes (still expand `$()`), they safely contain anything — safe here because `run_id`'s `RUN_ID_STRICT` charset (`iterate_entry.py`) excludes `'` and newlines by construction:
 
@@ -192,14 +193,11 @@ Cascade".
    |---|---|---|
    | `self` (3.6) | runner | `completed` ONLY (with evidence) |
    | `plan` (3.5) | runner | `completed` / `not_run` + `--reason-code` |
-   | `spec` (Stage 1), `code`, `doubt` | orchestrator — NOT the runner | `not_run` ONLY + `--reason-code` (rule optional) |
+   | `spec` (Stage 1), `code`, `doubt` | the runner for each pass whose subagent it spawned and read; else the orchestrator (3f-bis) | `completed` ONLY for a pass its own subagent returned (`--model-tier opus`); otherwise `not_run` + `--reason-code delegated-to-orchestrator` (rule optional) |
    | `external_code` | runner (item 2) | `completed` / `not_run` + `--reason-code` (rule optional; marker `skipped_*`) |
-   | `plan_internal`/`architecture_internal` (3.5) | runner, permanently — never promoted | `not_run` ONLY + `--reason-code` (rule optional; documented gap) |
+   | `plan_internal`/`architecture_internal` (3.5) | runner (never promoted by 3f-bis) | `completed` when it spawned the reviewer (`--recorded-by … --model-tier opus`); else `not_applicable` (below medium) / `not_run --reason-code no-spawn-site` |
 
-   The runner may **never** write `code` or `doubt` as `completed`, nor `spec`
-   (Stage 1): it performed none. Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*.
-
-`reviews.code` / `reviews.external_code` record what fired and what deferred.
+   The runner may **never** write `spec`, `code`, `doubt`, `plan_internal` or `architecture_internal` as `completed` for a pass whose subagent it did not spawn and read ("completed by substitution" claims a pass that did not run). Commands: `references/iteration-reviews.md` → *Campaign sub-iterate rows*. `reviews.code` / `reviews.external_code` record what fired and what deferred.
 
 ### Step 3.8: Confidence Calibration (mandatory medium+ OR touches_io_boundary, ADR-029 follow-up)
 
@@ -248,7 +246,7 @@ perform; F6-verify checks all three ran.
   --since "$(git -C "{project_root}" merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
   (`profile.dev_server` → `shipwright_build_config.json#dev_url` → `package.json` autodetect →
   escalate), run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. JS errors:
-  inline retry (no Agent tool), max 3 (screenshot + `console_errors` → fix → re-run); still
+  inline retry (no browser-fixer spawn), max 3 (screenshot + `console_errors` → fix → re-run); still
   failing → `result.json` `status:"failed"` + DO NOT commit.
 - **F1:** Drift check (`artifact_sync.py`).
 - **F2 (architecture.md):** update on structural impact — new route / component / schema /

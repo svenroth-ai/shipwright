@@ -26,7 +26,13 @@ from __future__ import annotations
 import ast
 import re
 
+from ._lib_loader import load_shared_lib
 from ._suite_tags import propagate_suite_tags
+
+# The gate's own lexer (regex literals, JSX text, comments), so a wrapped ``.each`` table closes at
+# the same paren for the collector and the test-tag gate.
+_lex = load_shared_lib("ts_lexer").lex
+_JSX_SUFFIXES = (".tsx", ".jsx", ".js")  # same set as the gate; never ``.ts``, where ``<T>x`` is a cast
 
 # A declaration head left open at the end of its line, as a statement of its own:
 # ``test(`` / ``it.only(`` / ``test.describe(`` / ``describe(`` with nothing after the paren.
@@ -43,7 +49,7 @@ _TITLE_OPEN_RE =re.compile(r"[ \t]*\(\s*['\"`]")
 _MAX_TABLE_LINES = 400
 
 
-def join_multiline_decls(source: str) -> str:
+def join_multiline_decls(source: str, jsx: bool = True) -> str:
     """Fold a wrapped ``test(``/``it(``/``describe(`` head onto one line.
 
     Joins the open line with the following lines up to and including the first line that
@@ -51,13 +57,14 @@ def join_multiline_decls(source: str) -> str:
     for that declaration — when no callback line appears within ``_MAX_HEAD_LINES`` or a
     comment line interrupts the head, so an unusual shape degrades to the reference
     parser's behaviour instead of being mangled. Braces are preserved, only moved onto one
-    line, so the suite-scope brace depth is unchanged.
+    line, so the suite-scope brace depth is unchanged. ``jsx`` says whether JSX text is lexed
+    (the gate's rule: not for a ``.ts`` file).
     """
     lines = source.splitlines()
     out: list[str] = []
     i = 0
     while i < len(lines):
-        end = _each_end(lines, i)
+        end = _each_end(lines, i, jsx)
         if end is None and _OPEN_DECL_RE.search(lines[i]):
             end = _head_end(lines, i)
         if end is None:
@@ -69,7 +76,7 @@ def join_multiline_decls(source: str) -> str:
     return "\n".join(out) + ("\n" if source.endswith("\n") else "")
 
 
-def _each_end(lines: list[str], start: int) -> int | None:
+def _each_end(lines: list[str], start: int, jsx: bool = True) -> int | None:
     """Index of the line where the ``.each`` table opened at ``start`` closes and the title
     quote follows (``])('title'``); ``None`` when the head is one line or not a data-driven head."""
     first = lines[start]
@@ -85,30 +92,12 @@ def _each_end(lines: list[str], start: int) -> int | None:
         if i is None:
             return None
     else:
-        depth = 0
-        while i < n:
-            ch = text[i]
-            if text.startswith("//", i):  # a comment holds quotes and parens that are not the table's
-                nl = text.find("\n", i)
-                i = n if nl == -1 else nl
-                continue
-            if text.startswith("/*", i):
-                end = text.find("*/", i + 2)
-                if end == -1:
-                    return None
-                i = end + 2
-                continue
-            if ch in "'\"`":
-                i = _quoted_end(text, i)
-                if i is None:
-                    return None
-                continue
-            i += 1
-            depth += (ch == "(") - (ch == ")")
-            if depth == 0:
-                break
-        else:
+        # `i` is at the table's `(`; the lexer skips strings, comments, regex literals and JSX text and
+        # stops at the `)` that closes it.
+        _, close = _lex(text, i + 1, jsx, stop=True)
+        if close >= n or text[close] != ")":
             return None
+        i = close + 1
     title = _TITLE_OPEN_RE.match(text, i)
     if not title:
         return None
@@ -219,7 +208,7 @@ def parse_file(rel_path: str, source: str, grammar):
     is dropped: ``ast.parse`` rejects it, which used to hide every test in such a file."""
     source = source[1:] if source.startswith("\ufeff") else source
     if rel_path.lower().endswith(grammar._TS_SUFFIXES):
-        source = join_multiline_decls(source)
+        source = join_multiline_decls(source, rel_path.lower().endswith(_JSX_SUFFIXES))
     res = grammar.parse_source(rel_path, source)
     scope_hits, scope_invalid = propagate_suite_tags(source, rel_path, grammar)
     if rel_path.lower().endswith(".py"):

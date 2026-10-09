@@ -209,8 +209,8 @@ def delegated_while_unavailable(record: dict, entry: dict | None) -> bool:
     """A campaign unit's ``code`` is delegated to the orchestrator while ``external_code`` could not run.
 
     The one shape in which the medium+ code-review floor cannot be met at the
-    runner's own F6-verify: the runner has no Agent tool, so its code review
-    arrives at campaign-mode 3f-bis, which promotes ``code`` to ``completed``
+    runner's own F6-verify: the runner could not spawn the reviewer (Agent tool
+    unavailable at runtime), so its code review arrives at campaign-mode 3f-bis, which promotes ``code`` to ``completed``
     (with the reviewer's evidence) before any merge — or STRICT-STOPs. The
     external half normally carries the floor until then; when it was
     ``unavailable`` the run may still continue (operator decision §5.2), loudly.

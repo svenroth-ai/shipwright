@@ -13,6 +13,8 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+import pytest
+pytestmark = pytest.mark.covers("FR-01.11")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -40,22 +42,22 @@ def test_runner_assigns_the_external_run_and_the_internal_pass_to_different_rows
     assert "| external_code | runner" in body, (
         "the actor table must assign external_code to the runner"
     )
-    assert "| spec (stage 1), code, doubt | orchestrator - not the runner |" in body, (
-        "the actor table must assign the three internal rows away from the "
-        "runner — it performs none of them"
+    assert "| spec (stage 1), code, doubt | the runner for each pass whose subagent it spawned" in body, (
+        "the actor table must give the three internal rows to the runner only "
+        "for passes its own subagent performed"
     )
-    assert "not_run only" in body, (
-        "the internal rows must be writable by the runner ONLY as not_run"
+    assert "completed only for a pass its own subagent returned" in body, (
+        "the internal rows may be `completed` ONLY for a returned subagent"
     )
 
 
 def test_runner_never_marks_internal_code_completed_from_an_external_run():
     body = _norm(_section(RUNNER_DOC, "### Step 3.7:"))
     assert "--review-type code --status completed" not in body, (
-        "the runner performs no internal cascade, so it may never write "
-        "code=completed; that is the mislabelling this fix removes"
+        "an external run must never close the internal `code` row; "
+        "that is the mislabelling this fix removes"
     )
-    assert "may never write code or doubt as completed" in body
+    assert "as completed for a pass whose subagent it did not spawn and read" in body
 
 
 def test_the_campaign_recording_commands_exist_where_the_runner_is_sent():

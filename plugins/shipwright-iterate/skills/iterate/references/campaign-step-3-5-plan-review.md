@@ -6,7 +6,9 @@ stops carrying its own inlined copy of `references/iteration-planning.md` Step 4
 the skill, the guide and the spec all claimed "every medium+ Branch A"). Where
 this file and `iteration-planning.md` disagree on the *review itself*, that file
 wins; this one owns only what differs in an **autonomous** runner — it cannot ask
-an operator, it has no `Agent` tool, and it resolves its own `--driver`.
+an operator, and it resolves its own `--driver`. (It does carry the `Agent` tool: the internal
+arms — `architecture-internal-reviewer`, `opus-plan-reviewer`, `model=opus` — are spawned by the
+runner itself, per `agents/sub-iterate-runner.md` Step 3.5.)
 
 **Trigger** — from Step 3.4's `plan_review_required`: effective complexity
 `medium`+, OR any canonical risk flag, OR diff > 100 lines. **Skip** only when

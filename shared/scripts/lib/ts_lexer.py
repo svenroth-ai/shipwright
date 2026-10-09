@@ -1,4 +1,7 @@
-"""Lexer for the TS/JS half of the test-tag gate: strings, templates, comments, regex literals, JSX.
+"""Lexer for TS/JS test sources: strings, templates, comments, regex literals, JSX.
+
+Shared by the test-tag gate (``tools.verifiers._tag_binding_ts``) and the compliance collector
+(``_file_tags``), so a wrapped ``.each`` table is closed at the same paren by both. Stdlib only.
 
 The gate compares a test's body as a token stream (``_tag_binding_ts``). A regex-only tokenizer
 reads a quote inside a regex literal (``/it's/``) or inside JSX text (``<p>Don't</p>``) as the

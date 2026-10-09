@@ -8,7 +8,7 @@ a required layer covered ONLY by a plugin-dir test reads ``ok`` in the committed
 path. This pins that the gate now mirrors ``test_links.generate_file``: it scans the
 config-opted roots (and excludes ``exclude_dirs``) on EACH of the regenerated base/head trees.
 
-Base-side asymmetry (the tricky part): the gate regenerates base+head via ``git archive`` and
+Base-side asymmetry (the tricky part): the gate regenerates base+head via the tree materialiser (ls-tree + cat-file) and
 each side resolves config from ITS OWN tree. A base commit predating the ``traceability`` config
 has no key → ``configured_test_roots`` already falls back to ``default_test_roots``. These tests
 pin: base-without-config + head-with-config → default on base, configured on head, no crash, no

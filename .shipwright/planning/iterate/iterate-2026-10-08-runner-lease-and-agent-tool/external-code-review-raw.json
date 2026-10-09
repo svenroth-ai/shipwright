@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. It covers the lease fencing token, loud failure handling, test environment isolation, runner review spawns, fallback recording, and retention of the orchestrator\u2019s independent gate.\n\nThe lease test exercises the CLI against a claimed row; the review-spawn tests primarily pin instructions rather than verify runtime execution. That limits the evidence for actual spawning, but does not establish a defect in this instruction-driven change.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**1. Category: spec / bug \u2014 Severity: medium**\n- File: `plugins/shipwright-iterate/agents/sub-iterate-runner.md` (~line 38\u201345, the lease-touch bash block)\n- Finding: The runnable code block still invokes `uv run \"{shared_root}/scripts/checks/check_unit_lease.py\" touch \u2026 --attempt \"{attempt}\" --attempt-id \"{attempt_id}\"`, while the new prose paragraph immediately below says \"Cache lag: a unit's own new CLI flag is absent from the installed plugin cache until its PR merges\u2026 run only that script from your worktree's copy\". An autonomous runner that executes the literal block (which is what runners do) will hit the stale cached script that doesn't recognize `--attempt`/`--attempt-id`, fail both attempts, and set `finalization.lease_touch: \"failed\"` \u2014 i.e. the exact defect this change fixes reproduces on the very first campaign run against an unsynced cache. The prose override is easy to miss next to a copy-pasteable command.\n- Suggestion: Change the block itself to run the worktree's copy for `check_unit_lease.py` (e.g. `uv run \"{project_root}/scripts/checks/check_unit_lease.py\"` or an explicit `# run from {project_root}, not {shared_root} \u2014 cache lag` annotation inside the fence), and keep `{shared_root}` only for the session-lock touch which gains no new flag.\n\n**2. Category: test \u2014 Severity: low**\n- File: `shared/tests/test_runner_agent_tool_and_lease_token.py` (`test_the_runner_briefs_touch_writes_the_worktree_on_a_claimed_row`)\n- Finding: The test imports and drives the *repo's current* `check_unit_lease.py`, not the copy the brief's command block actually points at (`{shared_root}`/plugin-cache copy). It validates the CLI accepts the flags and that the brief *prints* the flags, but it cannot detect the cache-lag mismatch in finding 1 \u2014 the block's `{shared_root}` path is never exercised. A runner whose installed cache lags would still fail in production while this test stays green.\n- Suggestion: Additionally assert that the lease-touch block in the brief references the worktree-local script path (or at least that the block and the cache-lag prose don't contradict each other), so the doc-level fix is pinned.\n\n**3. Category: edge-case \u2014 Severity: low**\n- File: `plugins/shipwright-iterate/agents/sub_iterate_runner_contract.schema.json` (`lease_touch`)\n- Finding: The new `lease_touch` enum is `[\"failed\"]` only, and the brief's `attempt token mismatch` path STOPs with `reason_code: \"lease_superseded\"` and \"push nothing\". If a runner writes `finalization.lease_touch` on that path too (plausible, since the touch did fail), the enum rejects it; if it doesn't, downstream consumers can't distinguish \"worktree untrustworthy, build continued\" from \"claim superseded, unit aborted\" from `finalization` alone. Not a hard failure, but an ambiguity on the loud-failure path AC1 introduces.\n- Suggestion: Either widen the enum (e.g. add `\"superseded\"`) or state explicitly in the brief/schema description that the superseded STOP path never writes `lease_touch`.\n\n**4. Category: test \u2014 Severity: low**\n- File: `shared/tests/test_runner_agent_tool_and_lease_token.py` (`test_shared_tests_do_not_inherit_the_campaign_loop_env`)\n- Finding: AC2 claims 15 failures across 5 files were reproduced, but the regression test pins only `test_generate_handoff_on_stop.py`. If the conftest scrub is ever narrowed, the other four files' leak sensitivity is unprotected. Also, spawning a nested pytest with `timeout=300` makes this test slow and a potential CI flake source.\n- Suggestion: Acceptable as a smoke pin, but consider asserting on the conftest scrub directly (e.g. that the fixture deletes both env names) as the cheap, fast half of the pin.\n\nEverything else checks out: AC4/AC5's spawn + fallback semantics are consistently described across the runner brief, the new reference, `campaign-mode.md`, `iteration-reviews.md`, `guide.md`, and the schema; the `LEASE-FALLBACK` echo, `reason_codes.py` comment updates, and the rewritten prose tests all match the new contract. No security issues \u2014 the changes are prose/docs/fixtures plus tests, and the conftest change only *removes* env leakage.\n\nOverall: ship-with-fixes \u2014 the substance is sound and well-pinned, but the lease-touch code block contradicting its own cache-lag prose is a real production-path defect that the new tests can't catch.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

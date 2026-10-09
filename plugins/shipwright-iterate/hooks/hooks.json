@@ -33,6 +33,15 @@
             "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/iterate_worktree_gate.py\""
           }
         ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/runner_spawn_guard.py\""
+          }
+        ]
       }
     ],
     "Stop": [
