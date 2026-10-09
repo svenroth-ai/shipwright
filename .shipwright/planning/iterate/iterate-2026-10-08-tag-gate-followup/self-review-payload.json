@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec compliance","verdict":"pass","note":"FR-01.11 AC42 covers (a)-(d) and U11; each has a test"},
+{"name":"Tests","verdict":"pass","note":"shared/tests 12729 passed, shared/scripts/tests 517, integration 574, compliance 1974; ruff clean; verify_local green"},
+{"name":"Edge cases","verdict":"pass","note":"consecutive and same-line .each, next-line title with tag, long tables, unclosed nesting time-bound"},
+{"name":"Boundaries","verdict":"pass","note":"collector vs gate declaration agreement covered by real-git integration tests"},
+{"name":"Scope","verdict":"pass","note":"limits (a)-(d) closed in shape; remaining caps disclosed in Out of Scope"},
+{"name":"Docs","verdict":"pass","note":"iterate spec, AC42, module docstrings updated"},
+{"name":"Security","verdict":"n/a","note":"no new input surface; lexer is bounded"},
+{"name":"Performance","verdict":"pass","note":"lexer memo bounds unclosed nesting; quadratic .each search disclosed"}
+]}

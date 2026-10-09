@@ -1,7 +1,8 @@
 """Python half of the test-tag gate's identity: body shapes, rename bindings, collection, tags.
 
 A test's body is the ``ast`` dump of its arguments and statements, leading docstring
-dropped (comments never reach the AST). For ``mechanical-refactor`` only BINDINGS are
+dropped (comments never reach the AST), plus its decorators (and its classes') other than
+``covers`` tags. For ``mechanical-refactor`` only BINDINGS are
 anonymised: the function's arguments (fixtures), names it assigns, names a local import
 binds (the ``as`` alias - the imported name itself stays), nested ``def``/``class`` and
 ``except ... as`` names. An attribute (``self.assertTrue``, ``resp.ok``), a keyword
@@ -96,6 +97,15 @@ class _Bindings(ast.NodeTransformer):
             node.id = f"<import {self.imports[node.id]}>"
         return node
 
+    def visit_Call(self, node: ast.Call) -> ast.AST:
+        self.generic_visit(node)
+        func = node.func
+        if isinstance(func, ast.Attribute) and func.attr == "parametrize" and node.args and \
+                isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+            names = [n.strip() for n in node.args[0].value.split(",")]
+            node.args[0] = ast.Constant(",".join("_" if n in self.bound else n for n in names))
+        return node
+
     def visit_arg(self, node: ast.arg) -> ast.AST:
         self.generic_visit(node)
         node.arg = self._anon(node.arg)
@@ -128,20 +138,59 @@ def _body(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> list[ast.stmt]:
     return body
 
 
+def _is_covers(dec: ast.expr) -> bool:
+    """A ``covers`` tag (``pytest.mark.covers(...)`` or ``mark.covers(...)``): tagging is not a body edit."""
+    target = dec.func if isinstance(dec, ast.Call) else dec
+    return isinstance(target, ast.Attribute) and target.attr == "covers"
+
+
+def _scope_marks(body: list[ast.stmt]) -> list[ast.expr]:
+    """Non-``covers`` marks of a ``pytestmark = ...`` / ``pytestmark: T = ...`` / ``pytestmark += ...``
+    in a module or class body (one mark or a list of them): they change what every test in it runs."""
+    out: list[ast.expr] = []
+    for stmt in body:
+        if isinstance(stmt, ast.Assign):
+            targets = stmt.targets
+        elif isinstance(stmt, (ast.AnnAssign, ast.AugAssign)):
+            targets = [stmt.target]
+        else:
+            continue
+        if stmt.value is not None and any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in targets):
+            marks = stmt.value.elts if isinstance(stmt.value, (ast.List, ast.Tuple)) else [stmt.value]
+            out += [m for m in marks if not _is_covers(m)]
+    return out
+
+
+def _behavioural_decorators(fn: ast.AST, classes: tuple) -> list[ast.expr]:
+    """The decorators and marks that change what the test DOES or whether it runs: every decorator on
+    the function and on its classes (``skip``, ``xfail``, ``parametrize``, ``patch``, ``slow`` - a
+    project can deselect by marker - ``unittest.skip`` ...) and the class-body ``pytestmark``.
+    Never a ``covers`` tag: tagging a test is not a body edit, but un-skipping one or swapping its rows is."""
+    out = [d for d in getattr(fn, "decorator_list", []) if not _is_covers(d)]
+    for cls in classes:
+        out += [d for d in cls.decorator_list if not _is_covers(d)]
+        out += _scope_marks(cls.body)
+    return out
+
+
 def py_shapes(text: str, name: str, anonymise: bool) -> list[tuple[str, list[str]]] | None:
     """``[(digest, bound names)]`` per function named ``name``; names only when anonymised."""
     tree = parse(text)
     if tree is None:
         return None
     imports = _module_imports(tree) if anonymise else {}
+    module_marks = _scope_marks(tree.body)
     out: list[tuple[str, list[str]]] = []
-    for fn, _classes in _functions(tree.body, name):
+    for fn, classes in _functions(tree.body, name):
         args = copy.deepcopy(fn.args)
         body = ast.Module(body=[copy.deepcopy(s) for s in _body(fn)], type_ignores=[])
+        decs = ast.Module(body=[], type_ignores=[])
+        decs.body = [ast.Expr(value=copy.deepcopy(d)) for d in _behavioural_decorators(fn, classes) + module_marks]
         anon = _Bindings(_local_bindings(fn), imports)
         if anonymise:
-            args, body = anon.visit(args), anon.visit(body)
-        digest = hashlib.sha256((ast.dump(args) + "|" + ast.dump(body)).encode("utf-8")).hexdigest()
+            args, body, decs = anon.visit(args), anon.visit(body), anon.visit(decs)
+        digest = hashlib.sha256(
+            (ast.dump(args) + "|" + ast.dump(body) + "|" + ast.dump(decs)).encode("utf-8")).hexdigest()
         out.append((digest, anon.seen))
     return out
 
