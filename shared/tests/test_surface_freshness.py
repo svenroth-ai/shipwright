@@ -214,6 +214,18 @@ def test_a_gitignored_scratch_tree_inside_the_repo_is_not_guarded_against_the_ou
     assert evidence_drop.read_provenance(scratch)["run_id"] == "r"
 
 
+@pytest.mark.covers("FR-01.11/AC07")
+def test_a_nested_checkout_in_an_ignored_dir_other_than_scratch_stays_guarded(tmp_path):
+    outer, _ = make_repo(tmp_path, {"README.md": "x\n", ".gitignore": "vendored/\n"})
+    (outer / "vendored").mkdir()
+    inner, _ = make_repo(outer / "vendored", {**TEST_FILE, "src/a.py": "x = 1\n"})
+    report = _report(inner)
+    commit(inner, "src/a.py", "x = 2\n", "fix: later")
+    _touch_later(inner / "src" / "a.py")
+    with pytest.raises(evidence_drop.ReportsOlderThanCodeError, match="src/a.py"):
+        evidence_drop.stage_reports(inner, run_id="r", head_commit="h", junit_reports=[("", report)])
+
+
 # --- the detector reads a deleted file whose path has spaces ----------------------
 
 @pytest.mark.covers("FR-01.11/AC07")
