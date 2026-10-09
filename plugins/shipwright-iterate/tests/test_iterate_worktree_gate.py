@@ -241,7 +241,7 @@ def test_hook_is_registered_for_both_events():
     for event in ("UserPromptSubmit", "PreToolUse"):
         commands = [h["command"] for g in hooks[event] for h in g["hooks"]]
         assert any("iterate_worktree_gate.py" in c for c in commands), event
-    (pre,) = hooks["PreToolUse"]
+    (pre,) = [g for g in hooks["PreToolUse"] if any("iterate_worktree_gate.py" in h["command"] for h in g["hooks"])]
     assert {"Skill", "Write", "Edit", "MultiEdit", "NotebookEdit", "Bash", "PowerShell"} <= set(pre["matcher"].split("|"))
 
 

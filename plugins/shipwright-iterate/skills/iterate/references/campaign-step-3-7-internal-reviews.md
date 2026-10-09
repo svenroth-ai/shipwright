@@ -53,8 +53,12 @@ REJECT reads as a PASS). Record `spec not_run --reason-code delegated-to-orchest
 "Stage-1 REJECTED: {citations}"`, fix the diff, re-review, then re-record `completed` with `--force` once
 it PASSes (or leave the `not_run` row on cap exhaustion). A Stage-2 high finding must be fixed before F6.
 
-**Known limits (disclosed, not solved here).** The five-type allow-list and the 2-round cap are prose —
-no hook inspects `subagent_type` yet (follow-up: a PreToolUse guard when `SHIPWRIGHT_LOOP_UNIT_ID` is set);
+**Enforced, not just asked.** The `runner_spawn_guard.py` PreToolUse hook denies any `Agent` spawn from a
+runner (recognised by the payload's `agent_type`, not by env) outside the five types, and a 4th spawn of one
+type (first review + 2 re-reviews). `SHIPWRIGHT_RUNNER_SPAWN_GUARD=off` is the user's lever, not yours.
+
+**Known limits (disclosed, not solved here).** The guard is cooperative, like the worktree gate; it does not
+choose the model;
 the spec/code/doubt reviewers live in `shipwright-build`, so a consumer without it takes the fallback. The
 `SubagentStop` salvage hook resolves its root from the session cwd, not the unit worktree, so in a campaign
 it refuses and only "record the instant the reply returns" protects a reply. The `*_review_reply.json` files

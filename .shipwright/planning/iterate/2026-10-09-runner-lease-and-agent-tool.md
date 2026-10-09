@@ -15,6 +15,7 @@ internal reviews, instead of recording them `not_run` and leaving the cascade to
 - [x] AC3 (Part 1c): the runner brief says a unit's new CLI flag is absent from the plugin cache until its PR merges, so it runs its worktree's own copy of the script.
 - [x] AC4 (Part 2): `sub-iterate-runner` lists the `Agent` tool and spawns `architecture-internal-reviewer`, `opus-plan-reviewer` (Step 3.5, medium+) and the `spec`→`code`→`doubt` cascade (Step 3.7) with `model=opus`, recording rows `completed`.
 - [x] AC5: `3f-bis` stays the fallback — a runner whose spawn fails records `not_run --reason-code delegated-to-orchestrator` / `no-spawn-site`. 3f-bis is NOT skipped for a runner that did spawn: the runner's rows are self-attested (no verdict or reviewed-head binding), so the orchestrator's independent gate re-runs and `--force`-promotes (internal plan review + architecture review, high findings). Skipping is a follow-up that needs verdict + reviewed-head evidence.
+- [x] AC7 (added after the PR Review gate's blocking finding): a `runner_spawn_guard.py` PreToolUse hook (matcher `Agent|Task`) denies a runner's spawn outside the five reviewers and a 4th spawn of one type; the runner is recognised from the payload's `agent_id`/`agent_type` (hooks cannot see env exported in a subagent's Bash); fail-open, `SHIPWRIGHT_RUNNER_SPAWN_GUARD=off`.
 - [x] AC6: `campaign-mode.md`, `iteration-reviews.md` (Campaign sub-iterate rows), `docs/`, the result schema and the tests that pinned "runner has no Agent tool" describe the new contract.
 
 ## Spec Impact
