@@ -198,6 +198,34 @@ def test_staging_reports_older_than_a_code_change_is_refused(tmp_path, capsys):
     assert evidence_drop.read_provenance(root)["run_id"] == "r"
 
 
+@pytest.mark.covers("FR-01.11/AC07")
+def test_a_gitignored_scratch_tree_inside_the_repo_is_not_guarded_against_the_outer_branch(tmp_path):
+    root, _ = make_repo(tmp_path, {**TEST_FILE, "src/a.py": "x = 1\n", ".gitignore": ".scratch/\n"})
+    report = _report(root)
+    (root / "src" / "a.py").write_text("x = 2  # uncommitted\n", encoding="utf-8")
+    scratch = root / ".scratch" / "acr-1"
+    (scratch / "src").mkdir(parents=True)
+    (scratch / "src" / "a.py").write_text("x = 2  # uncommitted\n", encoding="utf-8")
+    _touch_later(scratch / "src" / "a.py")
+    _touch_later(root / "src" / "a.py")
+    with pytest.raises(evidence_drop.ReportsOlderThanCodeError):  # the real tree stays guarded
+        evidence_drop.stage_reports(root, run_id="r", head_commit="h", junit_reports=[("", report)])
+    evidence_drop.stage_reports(scratch, run_id="r", head_commit="h", junit_reports=[("", report)])
+    assert evidence_drop.read_provenance(scratch)["run_id"] == "r"
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_a_nested_checkout_in_an_ignored_dir_other_than_scratch_stays_guarded(tmp_path):
+    outer, _ = make_repo(tmp_path, {"README.md": "x\n", ".gitignore": "vendored/\n"})
+    (outer / "vendored").mkdir()
+    inner, _ = make_repo(outer / "vendored", {**TEST_FILE, "src/a.py": "x = 1\n"})
+    report = _report(inner)
+    commit(inner, "src/a.py", "x = 2\n", "fix: later")
+    _touch_later(inner / "src" / "a.py")
+    with pytest.raises(evidence_drop.ReportsOlderThanCodeError, match="src/a.py"):
+        evidence_drop.stage_reports(inner, run_id="r", head_commit="h", junit_reports=[("", report)])
+
+
 # --- the detector reads a deleted file whose path has spaces ----------------------
 
 @pytest.mark.covers("FR-01.11/AC07")
