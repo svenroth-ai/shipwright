@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-09-smoke-campaign-recording-gaps",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T11:25:04.712170+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T11:43:20.462193+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_payloads.py",
+          "line": 261,
+          "finding": "unread_reply_warning is skipped whenever payload_file is set, but adapter none never reads the payload; --payload-file without --from records findings_count 0 with no warning.",
+          "suggestion": "Warn whenever adapter is none on a completed spec/code/doubt row; sharper message when a payload was ignored; add test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_surface_runner.py",
+          "line": 112,
+          "finding": "Later-report-wins can undercount after a partial retry (fail-closed); docstring does not say so.",
+          "suggestion": "Document it and pin with a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_surface_runner.py",
+          "line": 117,
+          "finding": "Docstring claims Playwright ids are one result per test, but the reader folds projects into one id; multi-project runs undercount (fail-closed).",
+          "suggestion": "Correct the docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_surface_parametrized_cases.py",
+          "line": 28,
+          "finding": "Test gaps: whole-suite path, retry= replacement, non-empty base, mixed JUnit+Playwright.",
+          "suggestion": "Add tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_record_review_pass_payload_warning.py",
+          "line": 423,
+          "finding": "Stray empty comment; the two tests parse output differently.",
+          "suggestion": "Parse both the same way.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_execution_evidence_paths.py",
+          "line": 200,
+          "finding": "read_junit_cases test does not check agreement with read_junit on classname fallback and base.",
+          "suggestion": "Add agreement test.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T11:27:33.095141+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3b95ed15bd2413759398ca4a5ad7b0a3d4fbb59c"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "concurrency & ordering / boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": null,
+          "finding": "Claim under doubt: the surface check never credits more cases than really passed — read_junit_cases counts raw testcase rows per folded id; two identical passing rows inside one report (a concatenated junit-NN.xml) count as 2, so tests_run equal to twice the real count would pass F11. Across reports counts replace, not sum.",
+          "suggestion": "Count distinct (classname, raw name) per id and pin with a duplicate-row test.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-09T11:31:19.871042+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3b95ed15bd2413759398ca4a5ad7b0a3d4fbb59c"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/review_payloads.py:267–270 (`unread_reply_warning`)",
+          "line": null,
+          "finding": "The warning only fires when `adapter == \"none\"`. A row recorded with `--from code-reviewer` but a missing/mis-parsed payload is not warned unless `build_review_evidence` hard-errors on that shape — if it can return 0 findings for a native adapter with no payload, the spec's \"warn when a completed row is recorded without its reviewer reply\" is only partially implemented (exactly the failure mode the smoke campaign hit: the runner did pass `--from`, the reply just wasn't read). The diff itself can't show whether that path raises; if it doesn't, this is a live gap.",
+          "suggestion": "Warn whenever a completed spec/code/doubt row ends with `findings_count == 0` and no reply text was actually parsed, regardless of adapter; or verify and pin with a test that `--from code-reviewer` without a readable payload cannot silently record 0.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py:144 (`read_junit_cases`)",
+          "line": null,
+          "finding": "The distinct-case key is `(classname, name)`, but the id also folds on the `file` attribute. Two rows for the same test — one carrying `file` (empty/absent classname) and one carrying `classname` (fallback path) — produce different keys and count 2 for one real case. In a concatenated multi-report junit-NN.xml (the exact scenario the doubt finding called out), this is a fail-open overcount: `tests_run` equal to the inflated count would pass F11. The duplicate-row test only covers identical rows and same-attr rows.",
+          "suggestion": "Key distinctness on a normalized identity consistent with id folding (e.g. `(resolved file path, name)` rather than raw `(classname, name)`), and add a mixed file/classname duplicate test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_record_review_pass_payload_warning.py:26,37",
+          "line": null,
+          "finding": "Test 1 uses `json.loads(out)` directly while tests 2–3 use `raw_decode(out[out.index(\"{\"):])` with a comment saying run_tool merges stderr into stdout. If that's true, test 1 is the broken one (it would raise on any stderr noise); if false, the inconsistency is harmless but the reason is unverified. Either way, one of the three tests encodes a wrong assumption about the harness.",
+          "suggestion": "Parse identically in all three tests, using whichever form matches the harness's actual output contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_surface_runner.py:127–130 (`passing_case_counts`)",
+          "line": null,
+          "finding": "An unreadable/unparseable staged report is skipped entirely and previously-known counts from an earlier report for the same ids are kept — but a parseable but partial report replaces them. This is documented fail-closed, so not a bug per se, but the interaction with `counts.update` also means a report that parses but is truncated mid-stream (ET succeeds on well-formed prefix? no — ParseError returns {}) is fine; the only real residual risk is the mixed-attr overcount above. No action needed beyond the item above.  Everything else checks out: the recorder stays at spec'd size with the helper in `lib`, the campaign doc names `--from`/`--payload-file`, no smoke exemption code was added, the F11 check now compares in the runner's case unit via `read_junit_cases` while keeping the fail-closed `cases < tests_run` refusal, and the three new surface tests cover accepted-count, overstated-count, failing-case, whole-suite, and partial-retry paths — these are behavioral, not just call-through.  Overall: ship-with-fixes — the mixed-attribute overcount is a genuine fail-open hole in an otherwise deliberately fail-closed gate, and the warning condition should be tightened or proven complete.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-09T11:33:04.231039+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/review_payloads.py:267–270 (`unread_reply_warning`)\n  Finding: The warning only fires when `adapter == \"none\"`. A row recorded with `--from code-reviewer` but a missing/mis-parsed payload is not warned unless `build_review_evidence` hard-errors on that shape — if it can return 0 findings for a native adapter with no payload, the spec's \"warn when a completed row is recorded without its reviewer reply\" is only partially implemented (exactly the failure mode the smoke campaign hit: the runner did pass `--from`, the reply just wasn't read). The diff itself can't show whether that path raises; if it doesn't, this is a live gap.\n  Suggestion: Warn whenever a completed spec/code/doubt row ends with `findings_count == 0` and no reply text was actually parsed, regardless of adapter; or verify and pin with a test that `--from code-reviewer` without a readable payload cannot silently record 0.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py:144 (`read_junit_cases`)\n  Finding: The distinct-case key is `(classname, name)`, but the id also folds on the `file` attribute. Two rows for the *same* test — one carrying `file` (empty/absent classname) and one carrying `classname` (fallback path) — produce different keys and count 2 for one real case. In a concatenated multi-report junit-NN.xml (the exact scenario the doubt finding called out), this is a fail-**open** overcount: `tests_run` equal to the inflated count would pass F11. The duplicate-row test only covers identical rows and same-attr rows.\n  Suggestion: Key distinctness on a normalized identity consistent with id folding (e.g. `(resolved file path, name)` rather than raw `(classname, name)`), and add a mixed file/classname duplicate test.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_record_review_pass_payload_warning.py:26,37\n  Finding: Test 1 use […truncated]\n\n[openai] No concrete defects found in the supplied diff. It implements the missing-reply warning, documents `--from`/`--payload-file`, compares F11 against passing case counts, adds no smoke exemption, and preserves the recorder’s line count.\n\nThe tests assert acceptance and rejection behavior, including overstated counts, failing cases, duplicate rows, and partial retries. Local inspection and test execution were blocked by the environment, so this assessment is based on the supplied diff.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T11:25:51.340132+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3b95ed15bd2413759398ca4a5ad7b0a3d4fbb59c"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T11:43:20.586431+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-09T11:43:20.711767+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

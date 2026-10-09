@@ -1,0 +1,72 @@
+{
+  "run_id": "iterate-2026-10-09-smoke-campaign-recording-gaps",
+  "date": "2026-10-09T11:43:02.282927Z",
+  "event_at": "2026-10-09T10:17:59.388654+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/smoke-campaign-recording-gaps",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-09-smoke-campaign-recording-gaps",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "recorder warns on a completed spec/code/doubt row recorded with adapter none (with or without a payload file)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_record_review_pass_payload_warning.py (4 passed)"
+      },
+      {
+        "behavior": "a native adapter without a payload still fails (cannot silently record 0)",
+        "disposition": "tested",
+        "evidence": "test_a_native_adapter_without_a_payload_cannot_silently_record_zero PASSED"
+      },
+      {
+        "behavior": "F11 surface check compares tests_run to passing pytest cases; accepts honest parametrized count",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_surface_parametrized_cases.py::test_a_runner_case_count_above_the_folded_id_count_is_accepted PASSED"
+      },
+      {
+        "behavior": "overstated tests_run, failing case and partial retry stay refused (fail-closed)",
+        "disposition": "tested",
+        "evidence": "test_surface_parametrized_cases.py (overstated, failing-case, partial-retry) PASSED"
+      },
+      {
+        "behavior": "read_junit_cases agrees with read_junit ids, counts distinct cases",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_execution_evidence_paths.py (10 passed)"
+      },
+      {
+        "behavior": "runner contract doc names --from/--payload-file for cascade rows",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "prose instruction in a runtime prompt; behavior it steers is covered by the warning tests"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_surface_parametrized_cases.py shared/tests/test_record_review_pass_payload_warning.py -q",
+    "exit_code": 0,
+    "tests_run": 9,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-09-smoke-campaign-recording-gaps/surface_verification.log",
+    "timestamp": "2026-10-09T11:42:25.603Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}

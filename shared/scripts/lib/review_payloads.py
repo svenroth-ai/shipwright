@@ -30,7 +30,7 @@ from .review_verdict import CURRENT_REVIEWER_ROSTERS, HISTORICAL_REVIEWER_PAIRS,
 
 __all__ = [
     "ADAPTERS", "CANONICAL_PAYLOAD_BASENAMES", "MAX_RAW_EXCERPT",
-    "canonical_basename_error", "build_findings", "build_review_evidence",
+    "canonical_basename_error", "unread_reply_warning", "build_findings", "build_review_evidence",
     "build_reviewer_verdicts",
 ]
 
@@ -255,3 +255,26 @@ def build_reviewer_verdicts(
     if not payload_file:
         raise ReviewFindingsError("--from external-review-json requires --payload-file")
     return _verdicts_from_text(adapter, _read(payload_file))
+
+
+#: Reviewer review types whose reply the recorder can read, with the adapter that reads it.
+_NATIVE_REPLY_ADAPTERS = {"spec": "spec-reviewer", "code": "code-reviewer", "doubt": "doubt-reviewer"}
+
+
+def unread_reply_warning(
+    review_type: str, status: str, adapter: str, payload_file: str | None
+) -> dict[str, str]:
+    """``{"warning": …}`` — why ``findings_count`` 0 may be wrong: a completed reviewer row with no reply handed over.
+
+    ``--recorded-by`` satisfies the evidence check while findings stay ``[]`` — "ran, found
+    nothing" whatever the reviewer said. Metadata-only stays legal (codex-transport rows carry
+    no reply), so this is a warning, not a refusal. ``--payload-file`` with adapter ``none`` is
+    warned too: ``build_review_evidence`` never reads a payload for ``none``.
+    """
+    native = _NATIVE_REPLY_ADAPTERS.get(review_type)
+    if status != "completed" or not native or adapter != "none":
+        return {}
+    ignored = " (the --payload-file given was NOT read: adapter none ignores it)" if payload_file else ""
+    return {"warning": (f"findings_count is 0 because no reply was read{ignored}; to record the "
+                        f"reviewer's findings pass --from {native} --payload-file <the canonical "
+                        "reply file> (re-record with --force)")}

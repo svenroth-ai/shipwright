@@ -1,0 +1,37 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. It implements the missing-reply warning, documents `--from`/`--payload-file`, compares F11 against passing case counts, adds no smoke exemption, and preserves the recorder\u2019s line count.\n\nThe tests assert acceptance and rejection behavior, including overstated counts, failing cases, duplicate rows, and partial retries. Local inspection and test execution were blocked by the environment, so this assessment is based on the supplied diff.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "### Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/review_payloads.py:267\u2013270 (`unread_reply_warning`)\n  Finding: The warning only fires when `adapter == \"none\"`. A row recorded with `--from code-reviewer` but a missing/mis-parsed payload is not warned unless `build_review_evidence` hard-errors on that shape \u2014 if it can return 0 findings for a native adapter with no payload, the spec's \"warn when a completed row is recorded without its reviewer reply\" is only partially implemented (exactly the failure mode the smoke campaign hit: the runner did pass `--from`, the reply just wasn't read). The diff itself can't show whether that path raises; if it doesn't, this is a live gap.\n  Suggestion: Warn whenever a completed spec/code/doubt row ends with `findings_count == 0` and no reply text was actually parsed, regardless of adapter; or verify and pin with a test that `--from code-reviewer` without a readable payload cannot silently record 0.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py:144 (`read_junit_cases`)\n  Finding: The distinct-case key is `(classname, name)`, but the id also folds on the `file` attribute. Two rows for the *same* test \u2014 one carrying `file` (empty/absent classname) and one carrying `classname` (fallback path) \u2014 produce different keys and count 2 for one real case. In a concatenated multi-report junit-NN.xml (the exact scenario the doubt finding called out), this is a fail-**open** overcount: `tests_run` equal to the inflated count would pass F11. The duplicate-row test only covers identical rows and same-attr rows.\n  Suggestion: Key distinctness on a normalized identity consistent with id folding (e.g. `(resolved file path, name)` rather than raw `(classname, name)`), and add a mixed file/classname duplicate test.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_record_review_pass_payload_warning.py:26,37\n  Finding: Test 1 uses `json.loads(out)` directly while tests 2\u20133 use `raw_decode(out[out.index(\"{\"):])` with a comment saying run_tool merges stderr into stdout. If that's true, test 1 is the broken one (it would raise on any stderr noise); if false, the inconsistency is harmless but the reason is unverified. Either way, one of the three tests encodes a wrong assumption about the harness.\n  Suggestion: Parse identically in all three tests, using whichever form matches the harness's actual output contract.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_surface_runner.py:127\u2013130 (`passing_case_counts`)\n  Finding: An unreadable/unparseable staged report is skipped entirely and previously-known counts from an earlier report for the same ids are kept \u2014 but a *parseable but partial* report replaces them. This is documented fail-closed, so not a bug per se, but the interaction with `counts.update` also means a report that parses but is truncated mid-stream (ET succeeds on well-formed prefix? no \u2014 ParseError returns {}) is fine; the only real residual risk is the mixed-attr overcount above. No action needed beyond the item above.\n\nEverything else checks out: the recorder stays at spec'd size with the helper in `lib`, the campaign doc names `--from`/`--payload-file`, no smoke exemption code was added, the F11 check now compares in the runner's case unit via `read_junit_cases` while keeping the fail-closed `cases < tests_run` refusal, and the three new surface tests cover accepted-count, overstated-count, failing-case, whole-suite, and partial-retry paths \u2014 these are behavioral, not just call-through.\n\nOverall: ship-with-fixes \u2014 the mixed-attribute overcount is a genuine fail-open hole in an otherwise deliberately fail-closed gate, and the warning condition should be tightened or proven complete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

@@ -118,6 +118,36 @@ def read_junit(text: str, root: Path | None = None, base: str = "") -> dict:
     return out
 
 
+def read_junit_cases(text: str, root: Path | None = None, base: str = "") -> dict[str, int]:
+    """``{folded id → passing <testcase> count}`` — the runner's own unit.
+
+    :func:`read_junit` folds ``test_foo[a]`` / ``test_foo[b]`` into ONE id (the
+    fail-closed identity traceability joins on), so ``len(results)`` undercounts what
+    pytest prints as "N passed". A runner-reported ``tests_run`` is that case count;
+    this keeps the same ids and counts the cases behind each, so a gate can compare
+    like with like. Only passing cases count, and ids resolve exactly as ``read_junit``
+    resolves them.
+    """
+    seen: dict[str, set[tuple[str, str]]] = {}
+    if len(text.encode("utf-8", "ignore")) > _MAX_XML_BYTES:
+        return {}
+    try:
+        node = ET.fromstring(text)
+    except ET.ParseError:
+        return {}
+    for tc in node.iter("testcase"):
+        name = tc.get("name")
+        file = tc.get("file") or _classname_to_path(tc.get("classname"))
+        if not name or not file:
+            continue
+        if any(tc.find(tag) is not None for tag in ("skipped", "failure", "error")):
+            continue
+        tid = f"{norm_path(file, root, base)}::{_PARAM_SUFFIX.sub('', name)}"
+        # DISTINCT cases: a concatenated report repeating a row must not count twice
+        seen.setdefault(tid, set()).add((tc.get("classname") or "", name))
+    return {tid: len(cases) for tid, cases in seen.items()}
+
+
 def _project_verdict(test: dict) -> tuple[str, str]:
     """Reduce ONE Playwright ``tests[]`` entry (a single project/browser, whose
     ``results[]`` are retries) to a ``(status, executed)`` verdict."""
