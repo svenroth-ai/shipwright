@@ -36,6 +36,11 @@ _OPEN_DECL_RE = re.compile(r"^\s*(?:await\s+)?(?:it|test|describe)(?:\.\w+)*\s*\
 _CALLBACK_RE = re.compile(r"=>|\bfunction\b")
 _STRING_RE = re.compile(r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`")
 _MAX_HEAD_LINES = 8
+# A data-driven head whose table wraps: ``it.each([`` / ``test.each(`` / ``test.each`` + backtick.
+_EACH_OPEN_RE = re.compile(r"^\s*(?:await\s+)?(?:it|test)(?:\.(?!(?:describe|step)\b)\w+)*\.each\s*(?=[(`])")
+_EACH_BARE_RE = re.compile(r"^\s*(?:await\s+)?(?:it|test)(?:\.(?!(?:describe|step)\b)\w+)*\.each\s*$")
+_TITLE_OPEN_RE =re.compile(r"[ \t]*\(\s*['\"`]")
+_MAX_TABLE_LINES = 400
 
 
 def join_multiline_decls(source: str) -> str:
@@ -52,7 +57,9 @@ def join_multiline_decls(source: str) -> str:
     out: list[str] = []
     i = 0
     while i < len(lines):
-        end = _head_end(lines, i) if _OPEN_DECL_RE.search(lines[i]) else None
+        end = _each_end(lines, i)
+        if end is None and _OPEN_DECL_RE.search(lines[i]):
+            end = _head_end(lines, i)
         if end is None:
             out.append(lines[i])
             i += 1
@@ -60,6 +67,74 @@ def join_multiline_decls(source: str) -> str:
         out.append(" ".join([lines[i].rstrip()] + [ln.strip() for ln in lines[i + 1:end + 1]]))
         i = end + 1
     return "\n".join(out) + ("\n" if source.endswith("\n") else "")
+
+
+def _each_end(lines: list[str], start: int) -> int | None:
+    """Index of the line where the ``.each`` table opened at ``start`` closes and the title
+    quote follows (``])('title'``); ``None`` when the head is one line or not a data-driven head."""
+    first = lines[start]
+    if not (_EACH_OPEN_RE.match(first) or _EACH_BARE_RE.match(first)):  # `.each` alone: the table opens below
+        return None
+    text = "\n".join(lines[start:start + _MAX_TABLE_LINES])
+    m = _EACH_OPEN_RE.match(text)
+    if not m:
+        return None
+    i, n = m.end(), len(text)
+    if text[i] == "`":
+        i = _quoted_end(text, i)
+        if i is None:
+            return None
+    else:
+        depth = 0
+        while i < n:
+            ch = text[i]
+            if text.startswith("//", i):  # a comment holds quotes and parens that are not the table's
+                nl = text.find("\n", i)
+                i = n if nl == -1 else nl
+                continue
+            if text.startswith("/*", i):
+                end = text.find("*/", i + 2)
+                if end == -1:
+                    return None
+                i = end + 2
+                continue
+            if ch in "'\"`":
+                i = _quoted_end(text, i)
+                if i is None:
+                    return None
+                continue
+            i += 1
+            depth += (ch == "(") - (ch == ")")
+            if depth == 0:
+                break
+        else:
+            return None
+    title = _TITLE_OPEN_RE.match(text, i)
+    if not title:
+        return None
+    line = text.count("\n", 0, title.end())
+    if not line:
+        return None
+    # The title may sit on its own line with the `{ tag: [...] }` option and callback below it:
+    # keep folding to the callback line, like a plain wrapped head.
+    if _CALLBACK_RE.search(_STRING_RE.sub("''", lines[start + line])):
+        return start + line
+    return _head_end(lines, start + line) or start + line
+
+
+def _quoted_end(text: str, i: int) -> int | None:
+    """End (exclusive) of the string/template literal opening at ``i``, else ``None``."""
+    quote, j, n = text[i], i + 1, len(text)
+    while j < n:
+        if text[j] == "\\":
+            j += 2
+        elif text[j] == quote:
+            return j + 1
+        elif text[j] == "\n" and quote != "`":  # only a template literal may span lines
+            return None
+        else:
+            j += 1
+    return None
 
 
 def _head_end(lines: list[str], start: int) -> int | None:

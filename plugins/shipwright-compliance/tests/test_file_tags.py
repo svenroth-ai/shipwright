@@ -124,3 +124,66 @@ def test_a_utf8_bom_file_is_still_enumerated(tmp_path):
     path.write_bytes(b"\xef\xbb\xbfdef test_hidden():\n    pass\n")
     m = build_manifest(tmp_path, spec_files=[tmp_path / "spec.md"], test_roots=[tmp_path])
     assert m["untagged_tests"] == ["tests/test_bom.py::test_hidden"]
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_a_data_driven_test_is_enumerated_and_a_native_tag_binds_it(tmp_path):
+    body = ("it.each([1, 2])('adds %i', (n) => {});\n"
+            "test.each([3])('tagged $n', { tag: ['@FR-02.01'] }, (n) => {});\n"
+            "describe.each([1])('a suite', () => {});\n")
+    m = _manifest(tmp_path, "e2e/t.spec.ts", body)
+    assert _bound(m) == {"e2e/t.spec.ts::tagged $n": {"FR-02.01"}}
+    assert m["untagged_tests"] == ["e2e/t.spec.ts::adds %i"]
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_a_wrapped_table_is_folded_onto_the_title_line(tmp_path):
+    body = ("it.each([\n  [1, 2],\n  ['a)', 'b('],\n])('wrapped %i', { tag: ['@FR-02.01'] }, (a, b) => {\n"
+            "  expect(a).toBe(b);\n});\n"
+            "test.each`\n  a | b\n  ${1} | ${2}\n`('template $a', (t) => {});\n")
+    joined = join_multiline_decls(body)
+    assert "])('wrapped %i'" in joined
+    assert len(joined.splitlines()) == 4
+    m = _manifest(tmp_path, "e2e/t.spec.ts", body)
+    assert _bound(m) == {"e2e/t.spec.ts::wrapped %i": {"FR-02.01"}}
+    assert m["untagged_tests"] == ["e2e/t.spec.ts::template $a"]
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_an_each_table_that_never_reaches_a_title_is_left_untouched():
+    unfinished = "it.each([\n  [1, 2],\n])\n(foo);\nconst x = 1;\n"
+    assert join_multiline_decls(unfinished) == unfinished
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_a_table_whose_title_sits_on_the_next_line_is_folded_and_enumerated(tmp_path):
+    body = "it.each([\n  [1, 2],\n])(\n  'long title %i',\n  (a, b) => {\n    expect(a).toBe(b);\n  },\n);\n"
+    m = _manifest(tmp_path, "e2e/t.spec.ts", body)
+    assert m["untagged_tests"] == ["e2e/t.spec.ts::long title %i"]
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_comments_with_quotes_and_parens_inside_a_wrapped_table_do_not_break_the_fold(tmp_path):
+    body = ("it.each([\n  1, // don't ) stop\n  /* ) ' */ 2,\n])('commented %i', (n) => {});\n"
+            "test.each\n`\n  a | b\n`('bare %s', (t) => {});\n")
+    m = _manifest(tmp_path, "e2e/t.spec.ts", body)
+    assert m["untagged_tests"] == ["e2e/t.spec.ts::bare %s", "e2e/t.spec.ts::commented %i"]
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_a_bare_each_opener_with_a_long_table_is_folded_and_enumerated(tmp_path):
+    rows = "".join(f"  [{i}, {i + 1}],\n" for i in range(12))
+    body = f"it.each(\n[\n{rows}])('long table %i', (a, b) => {{}});\n"
+    joined = join_multiline_decls(body)
+    assert "])('long table %i'" in joined
+    assert len(joined.splitlines()) == 1
+    m = _manifest(tmp_path, "e2e/t.spec.ts", body)
+    assert m["untagged_tests"] == ["e2e/t.spec.ts::long table %i"]
+
+
+@pytest.mark.covers("FR-01.11/AC42")
+def test_a_tag_on_the_line_after_a_next_line_title_still_binds(tmp_path):
+    body = ("it.each([1, 2])(\n  'long data-driven title %i',\n  { tag: ['@FR-02.01'] },\n"
+            "  (n) => {\n    expect(n).toBe(n);\n  },\n);\n")
+    m = _manifest(tmp_path, "e2e/t.spec.ts", body)
+    assert _bound(m) == {"e2e/t.spec.ts::long data-driven title %i": {"FR-02.01"}}
