@@ -26,6 +26,7 @@ Output (JSON):
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -143,6 +144,9 @@ _PROFILE_LAYER_KEYS = {"unit": "unit", "integration": "integration",
                        "pgtap": "db_tests", "e2e": "e2e"}
 
 
+_PROFILE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
 def default_profile_path(profile: str | None) -> Path | None:
     """Locate shared/profiles/<profile>.json relative to this file.
 
@@ -150,7 +154,7 @@ def default_profile_path(profile: str | None) -> Path | None:
     plugin cache (<marketplace>/shipwright-test/<ver>/scripts/lib) both keep
     `shared/` beside the plugin directories, i.e. under parents[4].
     """
-    if not profile:
+    if not profile or not _PROFILE_NAME_RE.match(profile):
         return None
     candidate = Path(__file__).resolve().parents[4] / "shared" / "profiles" / f"{profile}.json"
     return candidate if candidate.exists() else None
@@ -163,7 +167,7 @@ def resolve_profile_name(cli_profile: str | None, cwd: str | None) -> str:
     run_config = Path(cwd or ".") / "shipwright_run_config.json"
     try:
         name = json.loads(run_config.read_text(encoding="utf-8")).get("profile")
-        if isinstance(name, str) and name:
+        if isinstance(name, str) and _PROFILE_NAME_RE.match(name):
             return name
     except (json.JSONDecodeError, OSError, AttributeError):
         pass

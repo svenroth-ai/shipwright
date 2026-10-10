@@ -171,3 +171,13 @@ def test_profile_helpers_tolerate_bad_input(tmp_path):
     assert profile_declares_no_layer({"testing": {}}, "supabase-nextjs", "e2e") is False
     assert profile_declares_no_layer({"testing": {}}, "other", "unit") is False
     assert profile_declares_no_layer({"testing": {"e2e": {}}}, "other", "e2e") is False
+
+
+@pytest.mark.covers("FR-01.06/AC01")
+def test_profile_name_is_validated_before_touching_the_filesystem(tmp_path):
+    from lib.test_runner import default_profile_path, resolve_profile_name
+
+    assert default_profile_path("../../x") is None
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"profile": "../../etc/x"}), encoding="utf-8")
+    assert resolve_profile_name(None, str(tmp_path)) == "supabase-nextjs"

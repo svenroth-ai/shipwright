@@ -63,11 +63,12 @@ Parse the JSON output. If `"running": true`, skip to Step 5.
 #### Step 4: Start Dev Server
 
 Start the dev server using the project's own stack profile. Read `profile` from
-`${SHIPWRIGHT_PROJECT_ROOT}/shipwright_run_config.json` (do not assume a stack):
+`${SHIPWRIGHT_PROJECT_ROOT}/shipwright_run_config.json` (do not assume a stack). The name
+must match `^[a-z0-9][a-z0-9-]*$` and exist as `shared/profiles/{profile}.json`; otherwise stop:
 
 ```bash
 uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" \
-  start --profile {profile} --cwd ${SHIPWRIGHT_PROJECT_ROOT}
+  start --profile "{profile}" --cwd ${SHIPWRIGHT_PROJECT_ROOT}
 ```
 
 Parse the JSON output:
