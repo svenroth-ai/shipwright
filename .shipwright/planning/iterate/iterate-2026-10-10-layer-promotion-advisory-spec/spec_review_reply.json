@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All four acceptance points met: evaluate_fr skips advisory_spec_never_promoted for 01-adopted before any promote return; the 4 guard tests are untouched; new function-level and end-to-end tests pin the behaviour (other specs still promote); docs updated."}

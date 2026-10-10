@@ -50,7 +50,7 @@ from scripts.ci_execution_evidence import ExecutionEvidence  # noqa: E402
 from scripts.lib.fr_table_shape import FR_TABLE_HEADER, FR_TABLE_SEPARATOR  # noqa: E402
 from scripts.lib.layer_promotion_ledger import ledger_path, load_ledger  # noqa: E402
 
-_SPEC_RELPATH = ".shipwright/planning/01-adopted/spec.md"
+_SPEC_RELPATH = ".shipwright/planning/02-feature/spec.md"
 _MANIFEST_RELPATH = ".shipwright/compliance/test-traceability.json"
 
 
@@ -86,7 +86,7 @@ def _write_project(tmp_path, requirements: dict, *, spec_rows: str, commit: bool
     (tmp_path / ".shipwright" / "compliance" / "test-traceability.json").write_text(
         json.dumps(manifest), encoding="utf-8",
     )
-    spec_dir = tmp_path / ".shipwright" / "planning" / "01-adopted"
+    spec_dir = tmp_path / ".shipwright" / "planning" / "02-feature"
     spec_dir.mkdir(parents=True, exist_ok=True)
     doc = "\n".join([
         "# Spec", "", "## Functional Requirements", "",
@@ -1099,7 +1099,7 @@ def test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed(tmp_pa
     # changed at all. Promoting here would write into the NEW spec.md using
     # evidence from a CI run that only ever covered the OLD one.
     old_spec_relpath = _SPEC_RELPATH
-    new_spec_relpath = ".shipwright/planning/01-adopted/spec-moved.md"
+    new_spec_relpath = ".shipwright/planning/02-feature/spec-moved.md"
     row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
 
     requirements = {"01::FR-01.01": _node("FR-01.01", spec_path=old_spec_relpath)}
@@ -1108,7 +1108,7 @@ def test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed(tmp_pa
 
     # HEAD: the FR's spec_path moves to a new file (added, never covered by
     # the anchor's CI run); the bound test file (`t::unit`) never changes.
-    (project / ".shipwright" / "planning" / "01-adopted" / "spec-moved.md").write_text(
+    (project / ".shipwright" / "planning" / "02-feature" / "spec-moved.md").write_text(
         "\n".join([
             "# Spec", "", "## Functional Requirements", "",
             FR_TABLE_HEADER, FR_TABLE_SEPARATOR, row, "",

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-layer-promotion-advisory-spec",
+  "date": "2026-10-10",
+  "section": "Iterate — bug: layer promotion skips the advisory adopted spec",
+  "title": "Layer promotion never touches the advisory adopted spec",
+  "context": "PR #876 (auto layer promotion) rewrote 16 live FR Layers cells from (inferred) to explicit; four integration guards pin them advisory per SPEC 6.2/ADR-108 because explicit provenance hard-aborts the layer-coverage gate on any gap.",
+  "decision": "evaluate_fr returns the named skip advisory_spec_never_promoted for any FR in a 01-adopted split (lib/layer_promotion_policy.is_advisory_spec). Operator chose this over per-FR guards or relaxed guards (2026-10-10). Other specs promote as before.",
+  "consequences": "The sweep no longer opens a promotion PR the guards reject. The 16 adopted FRs are never strictly enforced by promotion; revisiting needs a guard redesign.",
+  "rationale": "The evidence was real (12-845 bound unit tests per FR), so this is a policy collision, not a predicate bug; the lenient catalog is the smaller, safer side.",
+  "rejected": "Per-FR guards (bigger rewrite, CI flake could hard-block builds); relaxing guards (drops the protection, also widens FR-01.10/11 to integration).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
