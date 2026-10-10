@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-release-event-before-merge",
+  "date": "2026-10-10",
+  "section": "Iterate - bug: release changelog event before the merge",
+  "title": "Record the release changelog event in the release PR",
+  "context": "The changelog skill recorded its event after the merge into the main checkout, where nothing committed it; main stayed dirty and the event never reached history.",
+  "decision": "Record, commit (explicit pathspec) and push the event before merging the release PR; on main, before the single tag push.",
+  "consequences": "The event arrives with the release; the post-merge phase-complete writers (dashboard, handoff, run-config) are unchanged and remain a separate concern.",
+  "rationale": "The event is part of the release and belongs in its PR, like the changelog entry itself.",
+  "rejected": "Committing the event to main after the merge (extra direct push to main, races other merges).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

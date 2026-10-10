@@ -86,4 +86,11 @@ the NEXT release's setup step advisory-checks (never blocks) whether the
 immediately preceding tag has a release, and prints a notice if not — so
 the gap surfaces once, at the next release, instead of never.
 
+## Why the changelog event is recorded before the merge
 
+The `phase_completed`/changelog event is written and committed into the release PR
+(explicit pathspec, never `-A`) before it merges. Written after the merge it landed in the
+main checkout as uncommitted drift, blocked the next `git pull --ff-only` and never reached
+the event history. The Step 6 tag stays on the release commit; the event commit rides in the
+same PR. Scope: this moves the event log only - files written after the merge (dashboard,
+handoff, run-config phase history) are not covered by it.

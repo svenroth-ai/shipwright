@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Operator-chosen variant 1: the changelog event is recorded and committed into the release PR before the merge; on-main case records before the one push."},
+{"name":"Error Handling","verdict":"pass","note":"Prose change only; commit by explicit pathspec, no -A; old post-merge recording removed so it cannot run twice."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs or secrets; detail text is version and PR URL as before."},
+{"name":"Test Quality","verdict":"pass","note":"4 prose-order tests pin: single record call, before merge and tag push, explicit pathspec plus push, on-main before the one push."},
+{"name":"Performance Basics","verdict":"pass","note":"No runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Skill step reordered in place; hooks-and-pipeline event row updated."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Boundary: release branch vs main checkout event log; the tag stays on the release commit and the event follow-up commit rides in the same PR."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"no skips added."}]}

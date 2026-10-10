@@ -342,6 +342,15 @@ gh pr create \
 > [release-workflow.md](references/release-workflow.md); full conventions live
 > in `/shipwright-iterate` B1a.
 
+**Record the changelog event BEFORE the merge** (why and scope: [release-workflow.md](references/release-workflow.md)). STOP if any step fails; `{shared_root}` = `{plugin_root}/../../shared`. On main (no PR) use `--detail "v{version} - tagged on main"`, drop the `git push origin HEAD` line (never push main untagged), and run it BEFORE `git push --tags origin main`:
+```bash
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" \
+  --type phase_completed --phase changelog --detail "v{version} - {PR_URL}" \
+&& git add shipwright_events.jsonl \
+&& git commit -m "chore(release): record v{version} changelog event" -- shipwright_events.jsonl \
+&& git push origin HEAD   # PR flow ONLY: on main OMIT this line - the single tag push below carries the commit
+```
+
 **Autonomous mode:** After creating the PR, merge it immediately:
 ```bash
 gh pr merge --merge --delete-branch
@@ -368,17 +377,7 @@ Read `status` from the JSON and add ONE line to the closing summary:
 `ok`/`exists` (with `url`) print the release link; `skipped`/`failed` print
 `reason` verbatim — never swallowed, never a hard stop.
 
-**Record changelog event** (captures version and PR URL for downstream consumers):
-```bash
-uv run "{shared_root}/scripts/tools/record_event.py" \
-  --project-root "$(pwd)" \
-  --type phase_completed \
-  --phase changelog \
-  --detail "v{version} — {PR_URL}"
-```
-Where `{shared_root}` = `{plugin_root}/../../shared`.
-
-If no PR was created (on main), use `--detail "v{version} — tagged on main"`.
+**Changelog event:** already recorded before the merge (Step 7) - do NOT record it again here.
 
 **Phase complete — update pipeline state:**
 
