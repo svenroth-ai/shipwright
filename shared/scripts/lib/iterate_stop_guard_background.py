@@ -40,6 +40,30 @@ def _launch_kind(result: object) -> str | None:
     return None
 
 
+def _notice_text(line: str) -> str:
+    """The text a harness notice can arrive in: a queue entry's ``content`` or a user entry's own
+    text blocks. Assistant text and tool_result output (a grep or a Read of a transcript) are never
+    notices, so quoting one cannot clear a pending task."""
+    try:
+        entry = json.loads(line)
+    except ValueError:
+        return ""
+    if not isinstance(entry, dict) or entry.get("type") == "assistant":
+        return ""
+    parts = [entry["content"]] if isinstance(entry.get("content"), str) else []
+    attachment = entry.get("attachment")
+    if isinstance(attachment, dict):
+        parts += [v for v in attachment.values() if isinstance(v, str)]
+    message = entry.get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, str):
+        parts.append(content)
+    for block in content if isinstance(content, list) else []:
+        if isinstance(block, dict) and block.get("type") == "text":
+            parts.append(str(block.get("text", "")))
+    return chr(10).join(parts)
+
+
 def track(pending: dict, line: str, now: datetime | None = None) -> None:
     """Update ``pending`` (``{tool_use_id: {"ts", "kind"}}``) from one transcript line."""
     if '"toolUseResult"' in line:
@@ -63,7 +87,7 @@ def track(pending: dict, line: str, now: datetime | None = None) -> None:
                 del pending[key]  # expired / unreadable entries would only bloat the state file
             pending[str(block["tool_use_id"])] = {"ts": stamp, "kind": kind}
     if "<task-notification>" in line:  # AFTER the launches: a notice batched with its own launch must win
-        for segment in line.split("<task-notification>")[1:]:
+        for segment in _notice_text(line).split("<task-notification>")[1:]:
             found = _NOTICE.search(segment)
             if found and found.group(2) in _TERMINAL:
                 pending.pop(found.group(1), None)

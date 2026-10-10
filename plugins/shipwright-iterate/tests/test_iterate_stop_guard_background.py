@@ -94,6 +94,20 @@ def test_a_notice_on_the_same_line_as_its_own_launch_wins() -> None:
     assert pending == {}
 
 
+def test_a_notice_quoted_in_tool_output_or_assistant_text_clears_nothing() -> None:
+    notice = ("<task-notification><tool-use-id>t1</tool-use-id><status>completed</status></task-notification>")
+    pending: dict = {}
+    bg.track(pending, _launch("t1"))
+    quoted_result = json.dumps({"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": "g", "content": notice}]}})
+    quoted_assistant = json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": notice}]}})
+    bg.track(pending, quoted_result)
+    bg.track(pending, quoted_assistant)
+    assert "t1" in pending
+    bg.track(pending, _done("t1"))  # the real queue entry still clears it
+    assert pending == {}
+
+
 def test_a_poison_transcript_line_does_not_stop_the_scan(tmp_path: Path) -> None:
     path = tmp_path / "t.jsonl"
     path.write_text('{"toolUseResult": {"isAsync": true}, "message": 5}' + chr(10) + _launch("t1") + chr(10),
