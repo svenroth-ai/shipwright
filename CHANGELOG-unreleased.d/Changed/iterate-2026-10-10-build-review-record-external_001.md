@@ -1,0 +1,1 @@
+`/shipwright-build` Step 6c external code review now runs by default after the internal spec/code/doubt cascade (opt out with `external_code_review.enabled: false`), matching `/shipwright-iterate`; the diff-exposure warning and docs are updated.

@@ -1,0 +1,54 @@
+{
+  "run_id": "iterate-2026-10-10-build-review-record-external",
+  "date": "2026-10-10T20:23:20.519267Z",
+  "event_at": "2026-10-10T07:55:39.677894+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/build-review-record-external",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-10-build-review-record-external",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Build Step 6c external code review defaults to on (opt-out) like iterate",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-build/tests/test_reviewer_orchestration.py::test_external_cascade_6c_is_default_on_like_iterate PASSED"
+      },
+      {
+        "behavior": "Docs (guide.md, iteration-reviews.md, SKILL.md) no longer state build 6c is opt-in/default off",
+        "disposition": "tested",
+        "evidence": "same pin test asserts the runtime-prompt wording; full F0 suite 18/18 units GREEN incl. docs consistency tests"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-10T20:23:00.113Z",
+    "attempts": 0,
+    "justification": "Prose/doc-only change to build runtime prompts and guide; no startable surface, pinned by a structural pytest.",
+    "reason_code": "no-behavior-change"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

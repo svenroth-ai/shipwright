@@ -168,39 +168,41 @@ uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 6 --detail "Code review" --session-id "$SHIPWRIGHT_SESSION_ID"
 ```
 
-## 6c: External Code Review Cascade (opt-in, default off)
+## 6c: External Code Review Cascade (default on, opt-out)
 
-After the internal `code-reviewer` subagent finishes, optionally cascade an
+After the internal cascade (spec → code → doubt) has finished, cascade an
 external LLM review of the same diff against the section spec. This is a
-second-opinion gate, not a replacement for Step 6b.
+second-opinion gate, not a replacement for Step 6b. The order is always
+internal first, external second — the same as `/shipwright-iterate`.
 
-**Trigger:** `external_code_review.enabled: true` in
+**Trigger:** runs unless `external_code_review.enabled` is `false` in
 `shipwright_build_config.json` (per-project or per-section override).
-Default value when absent: `false`. The nested form keeps the door open for
-future settings (`external_code_review.providers`,
+Default value when absent: `true`, the shared default
+(`is_external_code_review_enabled`) that iterate also uses. The nested form
+keeps the door open for future settings (`external_code_review.providers`,
 `external_code_review.max_diff_lines`, etc.) without breaking the read
-contract; iterate uses the same shape.
+contract.
 
 ```jsonc
-// shipwright_build_config.json — example opt-in
+// shipwright_build_config.json — example opt-out
 {
   "external_code_review": {
-    "enabled": true
+    "enabled": false
   },
   "sections": [...]
 }
 ```
 
-**Operator warning — diff exposure:** Enabling this option transmits the
+**Operator warning — diff exposure:** This cascade is on by default and transmits the
 contents of the staged diff (including any code, comments, or strings
 present in the changed files) to a third-party LLM provider (OpenRouter
-or OpenAI direct, depending on which keys are configured). Do NOT
-enable it for projects where the diff may contain secrets, customer data,
-or code under restrictive license/NDA terms. The diff already written for
+or OpenAI direct, depending on which keys are configured). Set
+`external_code_review.enabled: false` for projects where the diff may contain
+secrets, customer data, or code under restrictive license/NDA terms. The diff already written for
 Step 6b (resolved via `review_scratch.py`, private per-run, never inside
 the repo — see the box below) is what gets sent.
 
-**Skip rules (no opt-in needed):**
+**Skip rules (no config needed):**
 
 - Missing API keys -> cascade silently skipped, marker records `skipped_config_disabled`.
 - Empty diff (the resolved diff file is 0 bytes / whitespace only) -> CLI short-circuits, no provider call, marker records `skipped_user_opt_out` with reason "empty_diff".

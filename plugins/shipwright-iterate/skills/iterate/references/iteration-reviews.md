@@ -301,7 +301,7 @@ does not disappear:
 otherwise the gate would be passable by re-labelling. See
 `shared/scripts/tools/verifiers/review_record_check.py`.
 
-For build (per-section opt-in, default off) see
+For build (default on, per-project/section opt-out) see
 `{build_plugin_root}/skills/build/SKILL.md` Step 6c.
 
 ### Operator Warning — Diff Exposure

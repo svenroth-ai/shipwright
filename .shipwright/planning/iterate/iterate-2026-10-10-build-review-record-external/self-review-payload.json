@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec compliance","verdict":"pass","note":"Build 6c now default-on/opt-out, matching shared is_external_code_review_enabled (default True) and iterate."},
+{"name":"Error handling","verdict":"n/a","note":"Prose/doc change only; skip rules (missing keys, empty diff) unchanged."},
+{"name":"Security","verdict":"pass","note":"Diff-exposure warning rewritten for default-on; opt-out documented in code-review.md and guide.md."},
+{"name":"Test quality","verdict":"pass","note":"Pin test test_external_cascade_6c_is_default_on_like_iterate added; build suite 326 passed."},
+{"name":"Naming/consistency","verdict":"pass","note":"All stale opt-in/default-off mentions for build 6c updated (SKILL.md, code-review.md, guide.md x4, iteration-reviews.md)."},
+{"name":"Docs sync","verdict":"pass","note":"guide.md Chapter 6 + command reference updated; no hook changes so hooks-and-pipeline.md untouched."},
+{"name":"Affected boundaries","verdict":"n/a","note":"No IO boundary touched."}]}
