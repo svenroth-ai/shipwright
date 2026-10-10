@@ -212,6 +212,7 @@ def test_stage2_rejects_any_force_push_since_stage1_started(path: Path) -> None:
     assert '[[ "$forced" =~ ^[0-9]+$ ]]' in code
 
 
+@pytest.mark.covers("FR-01.17/AC07")
 @pytest.mark.parametrize("path", ALL_STAGE2)
 def test_stage2_refuses_a_second_check_run_claiming_its_context(path: Path) -> None:
     """Stage 1 is contributor-controlled and cannot mint the required name."""

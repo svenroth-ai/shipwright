@@ -51,6 +51,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 class TestWorkflowPathConstants:
     """Deployed-file path constants must match GitHub Actions conventions."""
 
+    @pytest.mark.covers("FR-01.13/AC01")
     @pytest.mark.parametrize("path", [WORKFLOW_PATH])
     def test_workflow_path_under_dot_github(self, path: str) -> None:
         assert path.startswith(".github/workflows/"), (
