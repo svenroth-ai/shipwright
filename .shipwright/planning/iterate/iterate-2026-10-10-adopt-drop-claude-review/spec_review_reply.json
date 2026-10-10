@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Re-review passes: test_claude_review_scaffolder_is_retired now asserts ci_workflow.py contains no CLAUDE_REVIEW_ constant; scaffolder module and claude-review*.yml.template are absent. Earlier REJECT (AC-2 assertion missing) fixed."}

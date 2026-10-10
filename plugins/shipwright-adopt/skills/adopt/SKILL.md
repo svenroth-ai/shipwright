@@ -148,7 +148,7 @@ Writes, in order: `CLAUDE.md` · agent_docs · planning spec (with the
 **derived-and-unconfirmed provenance block**) · `.shipwright/adopt/derived-catalogue.json`
 · six configs (`shipwright_run_config.json` LAST) · events.jsonl · baseline E2E
 spec · visual docs (Tier 5) · prior-art harvest · sibling-test ACs · TODO/FIXME
-inventory · cross-links · security / CI / CodeQL / Claude-Review scaffolds ·
+inventory · cross-links · security / CI / CodeQL scaffolds ·
 `AUTOMERGE_SETUP.md` (LAST — its Required-Check names are parsed from the
 workflow files just written). Vite DX templates are offer-only, never
 auto-applied; existing configs are never overwritten. Immediately after the generator, seed deterministic brownfield ownership via `uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/tools/area_catalog.py" seed-brownfield --project-root <cwd> --source adopt`; never overload the requirements-honesty artifact.

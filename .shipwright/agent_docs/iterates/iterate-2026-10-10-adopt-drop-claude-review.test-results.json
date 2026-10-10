@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+    "date": "2026-10-10",
+    "unit": {
+      "status": "passed",
+      "passed": 22578,
+      "total": 22675
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 4,
+      "total": 4
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-adopt pytest plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py -q",
+      "exit_code": 0,
+      "tests_run": 33,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-10-adopt-drop-claude-review/surface_verification.json",
+      "timestamp": "2026-10-10T20:53:16.396Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "adopt writes no claude-review*.yml and its result payload has no claude_review_* keys",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py PASSED"
+        },
+        {
+          "behavior": "scaffolder module, both templates and CLAUDE_REVIEW_* constants are gone",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py::test_claude_review_scaffolder_is_retired PASSED"
+        },
+        {
+          "behavior": "required-check list and AUTOMERGE_SETUP.md omit the review context, no active row, leftover claude-review files stay unlisted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_automerge_readiness.py + plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py PASSED"
+        },
+        {
+          "behavior": "monorepo pr-review fail-closed / fork-trust invariants still hold for the remaining pair",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_fail_closed.py + test_pr_review_fork_trust.py PASSED"
+        },
+        {
+          "behavior": "ci/security/codeql scaffolds and convention/registry drift tests unchanged and green",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_workflow_convention.py + test_ci_template_registry_completeness.py PASSED"
+        },
+        {
+          "behavior": "required-checks drift does not call an earlier-adopted repo's posted Claude Code Review a phantom",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_required_checks_drift_legacy.py::test_legacy_adopted_review_context_is_not_a_phantom PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+    "commit": "c68d17a505b1a2b5a2fe7a5f0b90ab07fcd0cbff",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

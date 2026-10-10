@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-10T20:29:32.395839+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Adopted repos that already have `claude-review.yml` / `claude-review-run.yml` and (critically) the Claude review status context in their GitHub branch-protection required-check list will be left with a permanently-pending/red required check, blocking merges. The CHANGELOG \"delete the two files\" note covers the workflow files but not the branch-protection required-check entry, which must be removed via repo settings before merges unblock.",
+          "suggestion": "Extend the CHANGELOG note (and the retire note in `AUTOMERGE_SETUP.md` history if applicable) to explicitly tell adopted-repo owners to remove the review context from required checks, not just delete the files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Shrinking `automerge_readiness.KNOWN_WORKFLOWS` to exactly three means the drift/readiness checker will now see a `claude-review.yml` file in already-adopted repos as an unknown workflow. Depending on how drift is reported (warning vs. failure), this could turn an informational drift signal into noise or a false failure for existing users.",
+          "suggestion": "Verify the drift path treats unknown workflow files as a documented warning with a clear remediation message (\"retired in CHANGELOG entry X — delete manually\"), rather than a hard failure. If it fails hard, add the two filenames to an explicit \"known-retired, warn-only\" list rather than silently ignoring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The results-dict key removal (`claude_review_workflow` / `claude_review_run_workflow`) is a payload format change. Any consumer that hard-fails on missing keys — or old run artifacts / golden snapshots under `.shipwright/runs/` compared against new output — could break. The boundary table lists tests and the step-e doc as consumers, but there may also be a shared template-registry test (`test_ci_template_registry_completeness`) that enumerates templates; the plan touches it, which is good.",
+          "suggestion": "Confirm no other reader (e.g., a summary renderer or adopt report formatter) iterates or asserts on those keys; a repo-wide grep for `claude_review` was run, so this is likely covered — just make sure the grep included non-Python files (JSON fixtures, golden files).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "POSTED_STATUS_CONTEXTS` retains `pr-review-run.yml`. Since `claude-review-run.yml` is deleted but the retained context is a similarly-named different file, any string-matching or `in`-based check that distinguishes them by substring (`review-run`) could misfire in either direction.",
+          "suggestion": "Double-check the context string is matched exactly, not by prefix/substring, in `automerge_readiness` and the AUTOMERGE_SETUP renderer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The alternative (ship dormant via `workflow_dispatch`) was correctly rejected; the pure-removal approach is the right call and the test strategy (absence assertions + retired-module test) is appropriate and not over-built.",
+          "suggestion": "None — approach is sound and proportionate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The migration note tells already-adopted repos to delete the two workflow files, but omits removing their required status checks from branch protection or rulesets. Repos that previously configured the generated required-check list could then have PRs blocked waiting for a review check that no longer runs.",
+          "suggestion": "Extend the CHANGELOG migration instructions to identify the retired check contexts and tell users to remove any corresponding required checks when deleting the workflows. Keep this migration manual, consistent with the stated scope.  The removal approach is sound and appropriately scoped, with focused absence assertions and regression coverage for the retained workflows. Complete the migration guidance before proceeding; this assessment is based on the supplied approach because workspace inspection was blocked by execution policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-10T20:28:40.936914+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: risk — Severity: medium**\n  **Finding:** Adopted repos that already have `claude-review.yml` / `claude-review-run.yml` and (critically) the Claude review status context in their GitHub branch-protection required-check list will be left with a permanently-pending/red required check, blocking merges. The CHANGELOG \"delete the two files\" note covers the workflow files but not the branch-protection required-check entry, which must be removed via repo settings before merges unblock.\n  **Suggestion:** Extend the CHANGELOG note (and the retire note in `AUTOMERGE_SETUP.md` history if applicable) to explicitly tell adopted-repo owners to remove the review context from required checks, not just delete the files.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** Shrinking `automerge_readiness.KNOWN_WORKFLOWS` to exactly three means the drift/readiness checker will now see a `claude-review.yml` file in already-adopted repos as an *unknown* workflow. Depending on how drift is reported (warning vs. failure), this could turn an informational drift signal into noise or a false failure for existing users.\n  **Suggestion:** Verify the drift path treats unknown workflow files as a documented warning with a clear remediation message (\"retired in CHANGELOG entry X — delete manually\"), rather than a hard failure. If it fails hard, add the two filenames to an explicit \"known-retired, warn-only\" list rather than silently ignoring.\n\n- **Category: dependency — Severity: low**\n  **Finding:** The results-dict key removal (`claude_review_workflow` / `claude_review_run_workflow`) is a payload format change. Any consumer that hard-fails on missing keys — or old run artifacts / golden snapshots under `.shipwright/runs/` compared against new output — could break. The boundary table lists tests and the step-e doc as consumers, but there may also be a shared template-registry test (`test_ci_template_registry_completeness`) that enumerates templates;  […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The migration note tells already-adopted repos to delete the two workflow files, but omits removing their required status checks from branch protection or rulesets. Repos that previously configured the generated required-check list could then have PRs blocked waiting for a review check that no longer runs.  \n   **Suggestion:** Extend the CHANGELOG migration instructions to identify the retired check contexts and tell users to remove any corresponding required checks when deleting the workflows. Keep this migration manual, consistent with the stated scope.\n\nThe removal approach is sound and appropriately scoped, with focused absence assertions and regression coverage for the retained workflows. Complete the migration guidance before proceeding; this assessment is based on the supplied approach because workspace inspection was blocked by execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4649,
+          "finding": "'five workflows' stale; KNOWN_WORKFLOWS now three.",
+          "suggestion": "say three",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_required_checks_drift.py",
+          "line": 15,
+          "finding": "docstring says five workflows",
+          "suggestion": "three",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/tests/test_shared_loader.py",
+          "line": 92,
+          "finding": "stale eight/ninth counts",
+          "suggestion": "seven/eighth",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/_pr_review_workflows.py",
+          "line": 24,
+          "finding": "TEMPLATES constant dead",
+          "suggestion": "delete",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_pr_review_fail_closed.py",
+          "line": 135,
+          "finding": "inconsistent claude-code-review handling; docstrings mention shipped template",
+          "suggestion": "keep both names, reword docstrings",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
+          "line": 580,
+          "finding": "placeholder comment records deleted code",
+          "suggestion": "remove",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_automerge_readiness.py",
+          "line": 141,
+          "finding": "stray blank line; comment covers one file",
+          "suggestion": "tidy",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-10T20:32:26.289200+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c68d17a505b1a2b5a2fe7a5f0b90ab07fcd0cbff"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Removing claude-review entries only affects AUTOMERGE_SETUP.md render — POSTED_STATUS_CONTEXTS is also read by required_checks_drift in every adopted repo; dropping the entry makes a kept review's context a false phantom.",
+          "suggestion": "Keep a LEGACY entry and pin it with a drift test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "pipeline gate",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: F11 passes with risk_flags [] — Deleted shared/templates/github-actions/** matches touches_ci_supplychain; no ack recorded.",
+          "suggestion": "record_ci_supplychain_ack.py for this run.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-10T20:35:25.398414+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c68d17a505b1a2b5a2fe7a5f0b90ab07fcd0cbff"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py` (new `test_claude_review_scaffolder_is_retired`)",
+          "line": null,
+          "finding": "Acceptance criterion 2 states the retired-test asserts that `ci_workflow.py` carries no `CLAUDE_REVIEW_` constant, but the new test only checks that the scaffolder module and the two template files are absent. Nothing fails if someone reintroduces `CLAUDE_REVIEW_TEMPLATE_PATH` etc. into `ci_workflow.py`.",
+          "suggestion": "Add e.g. `assert not [n for n in dir(ci_workflow) if n.startswith(\"CLAUDE_REVIEW_\")]` (or read the source and assert the substring is absent) to the retired test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/tests/test_automerge_readiness.py` (`test_required_check_names_match_deployed_workflows`)",
+          "line": null,
+          "finding": "The \"leftover from an earlier adopt\" plant covers only stage 1 (`claude-review.yml`). A leftover stage-2 `claude-review-run.yml` is the riskier file: its required context was previously supplied by `POSTED_STATUS_CONTEXTS`, which no longer knows it, so if the derivation visits all deployed workflow files the doc could now derive a job name (\"Review and post verdict\") for it — a check branch protection can never satisfy on a re-render. The spec discloses omission, but a wrong derived name is worse than omission and is untested.",
+          "suggestion": "Extend the plant (or add a case) with a stage-2-style leftover and assert its job names are not listed either; if they are, decide and pin the intended behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_pr_review_fail_closed.py` (`test_stage1_owns_no_pr_review_context`)",
+          "line": null,
+          "finding": "The change strips `\"Claude Code Review\"` from the monorepo stage-1 forbidden-name list too. Since only the monorepo pair remains in `STAGE1_STAGE2`, this silently weakens an invariant for the surviving files — a monorepo stage-1 job named `Claude Code Review` would now pass. There's no remaining reason to weaken it.",
+          "suggestion": "Keep the assertion as an exact set `(\"pr review\",)` only if that's deliberate; otherwise restore both names — the check is harmless for the monorepo pair.  Everything else checks out: the call-site removal in `generate_adoption_artifacts.py` drops both result keys, `KNOWN_WORKFLOWS`/`POSTED_STATUS_CONTEXTS` match AC 3 exactly, ci/security/codeql scaffolds are untouched, the docs/changelog changes (including the branch-protection-first migration ordering both external reviewers asked for) are present, and the subprocess e2e test now asserts absence of both files and both payload keys.  Overall assessment: ship-with-fixes — a clean, well-tested removal with one explicit acceptance criterion (constant-absence assertion) unimplemented and two small test-coverage gaps.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-10T20:30:13.534138+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec | Severity: medium\n  File: `plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py` (new `test_claude_review_scaffolder_is_retired`)\n  Finding: Acceptance criterion 2 states the retired-test asserts that `ci_workflow.py` carries no `CLAUDE_REVIEW_*` constant, but the new test only checks that the scaffolder module and the two template files are absent. Nothing fails if someone reintroduces `CLAUDE_REVIEW_TEMPLATE_PATH` etc. into `ci_workflow.py`.\n  Suggestion: Add e.g. `assert not [n for n in dir(ci_workflow) if n.startswith(\"CLAUDE_REVIEW_\")]` (or read the source and assert the substring is absent) to the retired test.\n\n- Category: edge-case | Severity: low\n  File: `shared/tests/test_automerge_readiness.py` (`test_required_check_names_match_deployed_workflows`)\n  Finding: The \"leftover from an earlier adopt\" plant covers only stage 1 (`claude-review.yml`). A leftover stage-2 `claude-review-run.yml` is the riskier file: its required context was previously supplied by `POSTED_STATUS_CONTEXTS`, which no longer knows it, so if the derivation visits all deployed workflow files the doc could now derive a job name (\"Review and post verdict\") for it — a check branch protection can never satisfy on a re-render. The spec discloses omission, but a wrong derived name is worse than omission and is untested.\n  Suggestion: Extend the plant (or add a case) with a stage-2-style leftover and assert its job names are not listed either; if they are, decide and pin the intended behavior.\n\n- Category: test | Severity: low\n  File: `shared/tests/test_pr_review_fail_closed.py` (`test_stage1_owns_no_pr_review_context`)\n  Finding: The change strips `\"Claude Code Review\"` from the monorepo stage-1 forbidden-name list too. Since only the monorepo pair remains in `STAGE1_STAGE2`, this silently weakens an invariant for the surviving files — a monorepo stage-1 job named `Claude Code Review` would now pass. There's no remaining reason to weaken it.\n […truncated]\n\n[openai] No concrete defects found in the supplied diff. It removes the adoption calls, result keys, scaffolder, templates, and constants; limits automerge discovery to the three retained workflows; and preserves the monorepo review pair. Migration guidance correctly tells existing adopters to remove the required check before deleting the workflows.\n\nThe absence assertions validate generated files and payloads, while retained review tests remain scoped to the monorepo pair. Workspace inspection was blocked by execution policy, so I could not independently verify remaining callers or run tests.\n\nOverall assessment: ship-as-is based on the supplied diff.\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-10T20:31:04.166441+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c68d17a505b1a2b5a2fe7a5f0b90ab07fcd0cbff"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-10T20:28:40.693087+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-10T20:28:40.814313+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

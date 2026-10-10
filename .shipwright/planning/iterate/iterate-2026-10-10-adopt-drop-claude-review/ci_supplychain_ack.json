@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+    "paths_fingerprint": "e9e7628a1e6cc2dd808b9da18779a815269af062aacc9f224382b363f1eb018a",
+    "consistent_with": "iterate-2026-10-10-adopt-drop-claude-review",
+    "statement": "Deletes the two adopter-facing PR-review workflow templates (claude-review.yml.template, claude-review-run.yml.template); adds no workflow, secret or permission. Reduces adopted repos' secret-consuming CI surface; ci/security/codeql templates and Shipwright's own pr-review workflows are untouched. Operator decision 2026-10-10.",
+    "ci_paths": [
+      "shared/templates/github-actions/claude-review-run.yml.template",
+      "shared/templates/github-actions/claude-review.yml.template"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}

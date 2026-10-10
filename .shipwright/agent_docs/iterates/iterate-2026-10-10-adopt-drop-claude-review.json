@@ -1,0 +1,86 @@
+{
+  "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+  "date": "2026-10-10T20:54:00.266297Z",
+  "event_at": "2026-10-10T19:53:32.307946+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/adopt-drop-claude-review",
+  "spec": ".shipwright/planning/iterate/2026-10-10-adopt-drop-claude-review.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-10-adopt-drop-claude-review",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "adopt writes no claude-review*.yml and its result payload has no claude_review_* keys",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py PASSED"
+      },
+      {
+        "behavior": "scaffolder module, both templates and CLAUDE_REVIEW_* constants are gone",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py::test_claude_review_scaffolder_is_retired PASSED"
+      },
+      {
+        "behavior": "required-check list and AUTOMERGE_SETUP.md omit the review context, no active row, leftover claude-review files stay unlisted",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_automerge_readiness.py + plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py PASSED"
+      },
+      {
+        "behavior": "monorepo pr-review fail-closed / fork-trust invariants still hold for the remaining pair",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_pr_review_fail_closed.py + test_pr_review_fork_trust.py PASSED"
+      },
+      {
+        "behavior": "ci/security/codeql scaffolds and convention/registry drift tests unchanged and green",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ci_workflow_convention.py + test_ci_template_registry_completeness.py PASSED"
+      },
+      {
+        "behavior": "required-checks drift does not call an earlier-adopted repo's posted Claude Code Review a phantom",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_required_checks_drift_legacy.py::test_legacy_adopted_review_context_is_not_a_phantom PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-adopt pytest plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py -q",
+    "exit_code": 0,
+    "tests_run": 33,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-10-adopt-drop-claude-review/surface_verification.json",
+    "timestamp": "2026-10-10T20:53:16.396Z"
+  },
+  "declared_removals": [
+    {
+      "path": "plugins/shipwright-adopt/scripts/lib/claude_review_workflow_scaffolder.py",
+      "reason": "Step E.15 retired by operator decision 2026-10-10"
+    },
+    {
+      "path": "shared/templates/github-actions/claude-review.yml.template",
+      "reason": "Step E.15 retired by operator decision 2026-10-10"
+    },
+    {
+      "path": "shared/templates/github-actions/claude-review-run.yml.template",
+      "reason": "Step E.15a retired by operator decision 2026-10-10"
+    }
+  ],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_ci_supplychain"
+  ]
+}

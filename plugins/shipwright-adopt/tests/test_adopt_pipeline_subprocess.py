@@ -199,12 +199,11 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert "fail-fast: false" in ci_text
     assert "client-checks" in ci_text  # vite-hono template has 2 jobs
 
-    # Step E.15 — Claude-Review workflow scaffold landed (profile-agnostic).
-    cr_wf = tmp_path / ".github" / "workflows" / "claude-review.yml"
-    assert cr_wf.exists(), "Step E.15 did not scaffold .github/workflows/claude-review.yml"
-    cr_payload = payload["claude_review_workflow"]
-    assert cr_payload["wrote"] is True
-    assert cr_payload["reason"] == "scaffolded"
+    # Step E.15 retired (2026-10-10) — adopt scaffolds no PR-review workflow.
+    wf_dir = tmp_path / ".github" / "workflows"
+    assert not list(wf_dir.glob("claude-review*.yml")), "adopt must not scaffold claude-review*.yml"
+    assert "claude_review_workflow" not in payload
+    assert "claude_review_run_workflow" not in payload
 
     # Step E.13b — Gitleaks allowlist scaffold landed (companion to security.yml).
     # security.yml runs `gitleaks detect --no-git` with no `--config`, so the

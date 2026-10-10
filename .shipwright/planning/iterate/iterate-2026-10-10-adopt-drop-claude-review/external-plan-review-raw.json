@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** Adopted repos that already have `claude-review.yml` / `claude-review-run.yml` and (critically) the Claude review status context in their GitHub branch-protection required-check list will be left with a permanently-pending/red required check, blocking merges. The CHANGELOG \"delete the two files\" note covers the workflow files but not the branch-protection required-check entry, which must be removed via repo settings before merges unblock.\n  **Suggestion:** Extend the CHANGELOG note (and the retire note in `AUTOMERGE_SETUP.md` history if applicable) to explicitly tell adopted-repo owners to remove the review context from required checks, not just delete the files.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** Shrinking `automerge_readiness.KNOWN_WORKFLOWS` to exactly three means the drift/readiness checker will now see a `claude-review.yml` file in already-adopted repos as an *unknown* workflow. Depending on how drift is reported (warning vs. failure), this could turn an informational drift signal into noise or a false failure for existing users.\n  **Suggestion:** Verify the drift path treats unknown workflow files as a documented warning with a clear remediation message (\"retired in CHANGELOG entry X \u2014 delete manually\"), rather than a hard failure. If it fails hard, add the two filenames to an explicit \"known-retired, warn-only\" list rather than silently ignoring.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** The results-dict key removal (`claude_review_workflow` / `claude_review_run_workflow`) is a payload format change. Any consumer that hard-fails on missing keys \u2014 or old run artifacts / golden snapshots under `.shipwright/runs/` compared against new output \u2014 could break. The boundary table lists tests and the step-e doc as consumers, but there may also be a shared template-registry test (`test_ci_template_registry_completeness`) that enumerates templates; the plan touches it, which is good.\n  **Suggestion:** Confirm no other reader (e.g., a summary renderer or adopt report formatter) iterates or asserts on those keys; a repo-wide grep for `claude_review` was run, so this is likely covered \u2014 just make sure the grep included non-Python files (JSON fixtures, golden files).\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** `POSTED_STATUS_CONTEXTS` retains `pr-review-run.yml`. Since `claude-review-run.yml` is deleted but the retained context is a similarly-named different file, any string-matching or `in`-based check that distinguishes them by substring (`review-run`) could misfire in either direction.\n  **Suggestion:** Double-check the context string is matched exactly, not by prefix/substring, in `automerge_readiness` and the AUTOMERGE_SETUP renderer.\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** The alternative (ship dormant via `workflow_dispatch`) was correctly rejected; the pure-removal approach is the right call and the test strategy (absence assertions + retired-module test) is appropriate and not over-built.\n  **Suggestion:** None \u2014 approach is sound and proportionate.\n\n## Overall Assessment\n\nA clean, well-scoped removal with solid absence-based test coverage and a reasonable dormant-workflow alternative already considered and rejected. The only real gaps are migration ergonomics for already-adopted repos (branch-protection required checks and drift-checker noise), both cheaply addressed in docs and the warning path.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The migration note tells already-adopted repos to delete the two workflow files, but omits removing their required status checks from branch protection or rulesets. Repos that previously configured the generated required-check list could then have PRs blocked waiting for a review check that no longer runs.  \n   **Suggestion:** Extend the CHANGELOG migration instructions to identify the retired check contexts and tell users to remove any corresponding required checks when deleting the workflows. Keep this migration manual, consistent with the stated scope.\n\nThe removal approach is sound and appropriately scoped, with focused absence assertions and regression coverage for the retained workflows. Complete the migration guidance before proceeding; this assessment is based on the supplied approach because workspace inspection was blocked by execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+    "at": "2026-10-10T20:27:25.740879+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

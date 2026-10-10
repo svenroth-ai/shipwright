@@ -4,10 +4,10 @@ Adopted brownfield repos arrive without a CodeQL workflow. /shipwright-adopt
 lands a dormant `codeql.yml` whose `language:` matrix is rendered from the
 detected stack profile, so the repo can offer the `Analyze (<language>)`
 Required-Check job names that B4.5-style automerge branch protection needs
-(alongside `ci.yml`, `security.yml`, `claude-review.yml`). Activation +
+(alongside `ci.yml` and `security.yml`). Activation +
 branch-protection wiring is documented in the scaffolded `AUTOMERGE_SETUP.md`.
 
-Unlike the pure-copy CI / security / Claude-Review scaffolders, this one
+Unlike the pure-copy CI / security scaffolders, this one
 RENDERS: it substitutes the `${SHIPWRIGHT_CODEQL_LANGUAGES}` placeholder in the
 template for the profile's YAML language list before writing. The convention
 lock (`shared/scripts/lib/codeql_workflow.py`) owns the placeholder, the

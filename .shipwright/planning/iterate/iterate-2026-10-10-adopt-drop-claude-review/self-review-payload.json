@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All 5 ACs map to removed code + absence tests; docs retired."},
+{"name":"Error Handling","verdict":"n/a","note":"Pure removal."},
+{"name":"Security Basics","verdict":"pass","note":"Removes a secret-consuming PR workflow template; no new surface."},
+{"name":"Test Quality","verdict":"pass","note":"Absence assertions incl. planted legacy file; adopt 705 + shared filtered 385 pass; ruff clean."},
+{"name":"Performance Basics","verdict":"n/a","note":"n/a"},
+{"name":"Naming & Structure","verdict":"pass","note":"Step number E.15 kept as retired stub so numbering/results stay stable."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Result-dict keys and KNOWN_WORKFLOWS covered; POSTED_STATUS_CONTEXTS keeps pr-review-run for deliver_pr_non_converging."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips added."}]}

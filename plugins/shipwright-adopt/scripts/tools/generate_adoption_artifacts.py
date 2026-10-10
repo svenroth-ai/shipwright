@@ -577,20 +577,6 @@ def generate(
     if codeql_result["wrote"]:
         results["written"].append(codeql_result["path"])
 
-    # Step E.15/E.15a — Claude-Review scaffold, BOTH stages (FR-01.17); neither
-    # works alone. Shape + rationale: docs/hooks-and-pipeline.md.
-    from claude_review_workflow_scaffolder import (  # type: ignore
-        scaffold_claude_review_run_workflow,
-        scaffold_claude_review_workflow,
-    )
-    for _key, _fn in (
-            ("claude_review_workflow", scaffold_claude_review_workflow),
-            ("claude_review_run_workflow", scaffold_claude_review_run_workflow)):
-        _res = _fn(project_root)
-        results[_key] = _res
-        if _res["wrote"]:
-            results["written"].append(_res["path"])
-
     # Step E.15b — Automerge-readiness doc. MUST run AFTER every workflow
     # scaffold above: it derives the Required-Check job names by PARSING the
     # deployed `.github/workflows/*.yml` (matrix-expanded), so a wrong name can

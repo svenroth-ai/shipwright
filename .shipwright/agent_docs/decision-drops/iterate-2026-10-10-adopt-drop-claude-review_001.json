@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+  "date": "2026-10-10",
+  "section": "Iterate — change: adopt stops scaffolding Claude-Review workflows",
+  "title": "Adopted repos no longer get the Claude-Code-Review workflows",
+  "context": "Adopt wrote claude-review.yml + claude-review-run.yml, active on every PR but needing an ANTHROPIC_API_KEY secret most adopted repos lack, leaving a red/pending check on every PR; AUTOMERGE_SETUP.md told adopters to require it, so merges could hang.",
+  "decision": "Remove Step E.15/E.15a: scaffolder, both templates, CLAUDE_REVIEW_* constants, the Required-Check entry and docs. Keep a LEGACY posted-status entry so required-checks drift still understands repos that kept the files. Already-adopted repos are untouched.",
+  "consequences": "Adopted repos get only ci/security/codeql (dormant). Independent review stays inside each iterate. Adopters who want to remove the old files drop the required check first, then delete the files (CHANGELOG note). Optional dormant gateway PR review is a deferred follow-up.",
+  "rationale": "Operator decision 2026-10-10; CI setup beyond the shipped security chain is individual; reviews already run in each iterate.",
+  "rejected": "Ship the workflows dormant (workflow_dispatch only): still ships a template needing a secret nobody asked for. Internal plan, architecture and doubt reviews all confirmed pure removal.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

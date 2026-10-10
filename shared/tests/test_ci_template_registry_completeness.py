@@ -10,14 +10,11 @@ This test pins the reverse: *every ``ci-*.yml.template`` file in
 Failure mode covered: orphan template files that ship in the repo but
 are unreachable from the scaffolder because nobody wired them up in the
 registry. This is the canonical pattern that landed two zero-caller
-orphans (``ci-nextjs.yml.template`` + ``claude-review.yml.template``)
+orphans (``ci-nextjs.yml.template`` + a since-retired review template)
 in iterate-2026-05-10-adopt-ci-scaffolders before they were detected.
 
-The ``claude-review.yml.template`` is profile-agnostic by design and
-lives outside ``ci-*`` namespace — it's bound to its own
-``CLAUDE_REVIEW_TEMPLATE_PATH`` constant. ``security.yml.template`` is
-similarly profile-agnostic. Both are excluded by the explicit
-``ci-*.yml.template`` glob.
+``security.yml.template`` is profile-agnostic and lives outside the ``ci-*``
+namespace; it is excluded by the explicit ``ci-*.yml.template`` glob.
 """
 
 from __future__ import annotations

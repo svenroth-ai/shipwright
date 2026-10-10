@@ -216,7 +216,7 @@ def test_stage2_rejects_any_force_push_since_stage1_started(path: Path) -> None:
 def test_stage2_refuses_a_second_check_run_claiming_its_context(path: Path) -> None:
     """Stage 1 is contributor-controlled and cannot mint the required name."""
     code = shell_code(path)
-    expected = "Claude Code Review" if "claude-review-run" in path.name else "PR Review"
+    expected = "PR Review"
     assert "checks: read" in text(path)
     assert "commits/$HEAD_SHA/check-runs" in code
     assert f'.name == "{expected}"' in code
@@ -257,7 +257,7 @@ def test_stage2_posts_the_verdict_onto_the_change(path: Path) -> None:
     not a placeholder."""
     body = text(path)
     assert "statuses" in body, f"{path.name}: must post the commit status"
-    assert re.search(r'context="(PR Review|Claude Code Review)"', body), (
+    assert re.search(r'context="PR Review"', body), (
         f"{path.name}: must post the required context by name — it is the sole "
         f"producer, and an absent status blocks the merge"
     )

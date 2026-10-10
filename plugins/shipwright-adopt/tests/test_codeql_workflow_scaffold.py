@@ -1,6 +1,6 @@
 """Tests for the CodeQL workflow scaffolder used by /shipwright-adopt.
 
-Unlike the pure-copy CI / Claude-Review scaffolders, this one RENDERS the
+Unlike the pure-copy CI scaffolder, this one RENDERS the
 `${SHIPWRIGHT_CODEQL_LANGUAGES}` placeholder for the detected profile's
 language list before writing. It mirrors the same structured-result contract:
 

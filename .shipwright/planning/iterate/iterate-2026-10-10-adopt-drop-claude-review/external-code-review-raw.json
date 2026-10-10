@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. It removes the adoption calls, result keys, scaffolder, templates, and constants; limits automerge discovery to the three retained workflows; and preserves the monorepo review pair. Migration guidance correctly tells existing adopters to remove the required check before deleting the workflows.\n\nThe absence assertions validate generated files and payloads, while retained review tests remain scoped to the monorepo pair. Workspace inspection was blocked by execution policy, so I could not independently verify remaining callers or run tests.\n\nOverall assessment: ship-as-is based on the supplied diff.\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: spec | Severity: medium\n  File: `plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py` (new `test_claude_review_scaffolder_is_retired`)\n  Finding: Acceptance criterion 2 states the retired-test asserts that `ci_workflow.py` carries no `CLAUDE_REVIEW_*` constant, but the new test only checks that the scaffolder module and the two template files are absent. Nothing fails if someone reintroduces `CLAUDE_REVIEW_TEMPLATE_PATH` etc. into `ci_workflow.py`.\n  Suggestion: Add e.g. `assert not [n for n in dir(ci_workflow) if n.startswith(\"CLAUDE_REVIEW_\")]` (or read the source and assert the substring is absent) to the retired test.\n\n- Category: edge-case | Severity: low\n  File: `shared/tests/test_automerge_readiness.py` (`test_required_check_names_match_deployed_workflows`)\n  Finding: The \"leftover from an earlier adopt\" plant covers only stage 1 (`claude-review.yml`). A leftover stage-2 `claude-review-run.yml` is the riskier file: its required context was previously supplied by `POSTED_STATUS_CONTEXTS`, which no longer knows it, so if the derivation visits all deployed workflow files the doc could now derive a job name (\"Review and post verdict\") for it \u2014 a check branch protection can never satisfy on a re-render. The spec discloses omission, but a wrong derived name is worse than omission and is untested.\n  Suggestion: Extend the plant (or add a case) with a stage-2-style leftover and assert its job names are not listed either; if they are, decide and pin the intended behavior.\n\n- Category: test | Severity: low\n  File: `shared/tests/test_pr_review_fail_closed.py` (`test_stage1_owns_no_pr_review_context`)\n  Finding: The change strips `\"Claude Code Review\"` from the monorepo stage-1 forbidden-name list too. Since only the monorepo pair remains in `STAGE1_STAGE2`, this silently weakens an invariant for the surviving files \u2014 a monorepo stage-1 job named `Claude Code Review` would now pass. There's no remaining reason to weaken it.\n  Suggestion: Keep the assertion as an exact set `(\"pr review\",)` only if that's deliberate; otherwise restore both names \u2014 the check is harmless for the monorepo pair.\n\nEverything else checks out: the call-site removal in `generate_adoption_artifacts.py` drops both result keys, `KNOWN_WORKFLOWS`/`POSTED_STATUS_CONTEXTS` match AC 3 exactly, ci/security/codeql scaffolds are untouched, the docs/changelog changes (including the branch-protection-first migration ordering both external reviewers asked for) are present, and the subprocess e2e test now asserts absence of both files and both payload keys.\n\n**Overall assessment:** ship-with-fixes \u2014 a clean, well-tested removal with one explicit acceptance criterion (constant-absence assertion) unimplemented and two small test-coverage gaps.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
+    "at": "2026-10-10T20:29:41.296814+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

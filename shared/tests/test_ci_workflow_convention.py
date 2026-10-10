@@ -1,11 +1,9 @@
-"""Drift test pinning the CI + Claude-Review workflow templates to the constants.
+"""Drift test pinning the CI workflow templates to the constants.
 
 The convention lock at ``shared/scripts/lib/ci_workflow.py`` is consumed by:
 
 - ``ci_workflow_scaffolder.py`` — writes the profile-specific CI template into
   target repos at ``WORKFLOW_PATH``.
-- ``claude_review_workflow_scaffolder.py`` — writes the Claude-Review template
-  into target repos at ``CLAUDE_REVIEW_WORKFLOW_PATH``.
 
 Without this test the constants module is a lie: a template could lose its
 cross-platform matrix block, accidentally activate auto-triggers, or drop
@@ -25,9 +23,6 @@ Failure modes deliberately covered (external-review findings #5 + #6):
 4. Explicit ``permissions:`` block missing — implicit token permissions
    are org-policy-dependent and surface as silent CI failures
    (external-review #G3 + #O13).
-5. Claude-Review template missing the convention-locked permissions
-   (``contents: read``, ``pull-requests: write``) — needed to read the diff
-   and post the review comment.
 """
 
 from __future__ import annotations
@@ -39,8 +34,6 @@ import pytest
 yaml = pytest.importorskip("yaml")  # PyYAML — root + adopt + compliance deps
 
 from lib.ci_workflow import (  # noqa: E402
-    CLAUDE_REVIEW_TEMPLATE_PATH,
-    CLAUDE_REVIEW_WORKFLOW_PATH,
     MATRIX_FAIL_FAST,
     MATRIX_OS_VALUES,
     TEMPLATE_BY_PROFILE,
@@ -58,7 +51,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 class TestWorkflowPathConstants:
     """Deployed-file path constants must match GitHub Actions conventions."""
 
-    @pytest.mark.parametrize("path", [WORKFLOW_PATH, CLAUDE_REVIEW_WORKFLOW_PATH])
+    @pytest.mark.parametrize("path", [WORKFLOW_PATH])
     def test_workflow_path_under_dot_github(self, path: str) -> None:
         assert path.startswith(".github/workflows/"), (
             f"WORKFLOW_PATH={path!r} is not under .github/workflows/ — "
@@ -84,13 +77,6 @@ class TestTemplateRegistryResolves:
             f"profile {profile!r}: template at {template} declared in "
             f"TEMPLATE_BY_PROFILE but does not exist on disk.\n"
             f"  Either author the template or unregister the profile."
-        )
-
-    def test_claude_review_template_exists(self) -> None:
-        template = REPO_ROOT / CLAUDE_REVIEW_TEMPLATE_PATH
-        assert template.exists(), (
-            f"Claude-Review template at {template} declared in "
-            f"CLAUDE_REVIEW_TEMPLATE_PATH but does not exist on disk."
         )
 
 
@@ -286,45 +272,4 @@ class TestCITemplatesExplicitPermissions:
         assert permissions.get("contents") == "read", (
             f"profile {profile!r}: permissions.contents != 'read' — "
             f"actions/checkout@v4 needs this to fetch the repo."
-        )
-
-
-class TestClaudeReviewTemplate:
-    """Claude-Review template invariants — separate from CI per AC-2.
-
-    The Claude-Review workflow:
-    - Runs only on pull_request (active trigger by design — independent
-      review fires on PR events).
-    - Is profile-agnostic (no matrix, single runner).
-    - Needs explicit permissions: contents:read + pull-requests:write.
-    """
-
-    @pytest.fixture(scope="class")
-    def parsed(self) -> dict:
-        template = REPO_ROOT / CLAUDE_REVIEW_TEMPLATE_PATH
-        return yaml.safe_load(template.read_text(encoding="utf-8"))
-
-    def test_pull_request_trigger_active(self, parsed: dict) -> None:
-        # Claude-Review is the one workflow where pull_request is the
-        # intended trigger — it fires on PRs by design.
-        triggers = parsed.get("on") or parsed.get(True) or {}
-        assert "pull_request" in triggers, (
-            "claude-review template: pull_request trigger missing — "
-            "this workflow has no purpose without PR events."
-        )
-
-    def test_has_explicit_permissions(self, parsed: dict) -> None:
-        permissions = parsed.get("permissions") or {}
-        assert isinstance(permissions, dict), (
-            "claude-review template: permissions must be a mapping."
-        )
-        # Stage 1 runs on fork PRs and posts nothing, so it holds no write scope.
-        assert permissions.get("contents") == "read", (
-            "claude-review template: permissions.contents != 'read' — "
-            "actions/checkout@v4 needs this."
-        )
-        writes = [k for k, v in permissions.items() if str(v) == "write"]
-        assert not writes, (
-            f"claude-review template (stage 1) must hold no write scope; found "
-            f"{writes}. Posting belongs to stage 2 — FR-01.17 (E)5."
         )

@@ -1,0 +1,8 @@
+{"section":"iterate-2026-10-10-adopt-drop-claude-review","review_type":"full-review","verdict":"PASS","summary":"Removal complete; no live imports/loaders reference deleted pieces. One medium docs fix (stale 'five workflows' count) plus low readability items.","review":[
+{"severity":"medium","category":"correctness","file":"docs/hooks-and-pipeline.md","line":4649,"finding":"'five workflows' stale; KNOWN_WORKFLOWS now three.","suggestion":"say three"},
+{"severity":"low","category":"readability","file":"shared/tests/test_required_checks_drift.py","line":15,"finding":"docstring says five workflows","suggestion":"three"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-adopt/tests/test_shared_loader.py","line":92,"finding":"stale eight/ninth counts","suggestion":"seven/eighth"},
+{"severity":"low","category":"readability","file":"shared/tests/_pr_review_workflows.py","line":24,"finding":"TEMPLATES constant dead","suggestion":"delete"},
+{"severity":"low","category":"readability","file":"shared/tests/test_pr_review_fail_closed.py","line":135,"finding":"inconsistent claude-code-review handling; docstrings mention shipped template","suggestion":"keep both names, reword docstrings"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py","line":580,"finding":"placeholder comment records deleted code","suggestion":"remove"},
+{"severity":"low","category":"readability","file":"shared/tests/test_automerge_readiness.py","line":141,"finding":"stray blank line; comment covers one file","suggestion":"tidy"}]}

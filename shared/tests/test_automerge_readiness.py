@@ -3,7 +3,7 @@
 
 The card's defensive constraint: "wrong job names → branch protection silently
 never matches". For each of the 3 stack profiles, build a sample adopted repo
-from the REAL workflow templates (CI/security/claude copied; CodeQL rendered for
+from the REAL workflow templates (CI/security copied; CodeQL rendered for
 the profile's languages), then assert ``required_check_names`` returns exactly
 the UNCONDITIONAL names those deployed workflows declare, that `if:`-gated deploy
 jobs are split out as conditional (never requireable), and that the rendered doc
@@ -21,10 +21,6 @@ yaml = pytest.importorskip("yaml")
 
 from lib import automerge_readiness as ar  # noqa: E402
 from lib.ci_workflow import (  # noqa: E402
-    CLAUDE_REVIEW_RUN_TEMPLATE_PATH,
-    CLAUDE_REVIEW_RUN_WORKFLOW_PATH,
-    CLAUDE_REVIEW_TEMPLATE_PATH,
-    CLAUDE_REVIEW_WORKFLOW_PATH,
     TEMPLATE_BY_PROFILE,
     WORKFLOW_PATH as CI_WORKFLOW_PATH,
 )
@@ -55,8 +51,6 @@ def test_known_workflows_match_convention_modules() -> None:
         Path(CI_WORKFLOW_PATH).name,
         Path(SECURITY_WORKFLOW_PATH).name,
         Path(CODEQL_WORKFLOW_PATH).name,
-        Path(CLAUDE_REVIEW_WORKFLOW_PATH).name,
-        Path(CLAUDE_REVIEW_RUN_WORKFLOW_PATH).name,
     }
     assert set(ar.KNOWN_WORKFLOWS) == expected
 
@@ -68,7 +62,7 @@ def test_posted_status_contexts_name_known_workflows() -> None:
     scopes, and an entry is live if EITHER visits it:
 
     - ``gather_required_checks`` renders adopt's AUTOMERGE_SETUP.md and visits
-      ``KNOWN_WORKFLOWS`` — the five workflows ``/shipwright-adopt`` scaffolds
+      ``KNOWN_WORKFLOWS`` — the three workflows ``/shipwright-adopt`` scaffolds
       into a target repo.
     - ``required_checks_drift.all_workflow_check_names`` polices a repo's OWN
       must-pass configuration and enumerates every file in
@@ -77,13 +71,14 @@ def test_posted_status_contexts_name_known_workflows() -> None:
     Restricting this to ``KNOWN_WORKFLOWS`` (as it did while adopt was the only
     consumer) would forbid teaching the drift producer about `pr-review-run.yml`,
     whose `PR Review` context is a posted commit status here for exactly the
-    reason `Claude Code Review` is one in an adopted repo — and deriving job
-    names for it instead would name a check branch protection can never match.
+    reason a posted-status context never matches a derived job name — and deriving
+    job names for it instead would name a check branch protection can never match.
     A typo'd key still fails: it is in neither set.
     """
     visited = set(ar.KNOWN_WORKFLOWS) | {
         p.name for p in (REPO_ROOT / ".github" / "workflows").glob("*.y*ml")
     }
+    visited |= set(ar.LEGACY_POSTED_STATUS_WORKFLOWS)
     unknown = set(ar.POSTED_STATUS_CONTEXTS) - visited
     assert not unknown, f"posted-status entries no consumer inspects: {unknown}"
 
@@ -96,7 +91,7 @@ def test_posted_status_contexts_name_known_workflows() -> None:
 def _build_sample_repo(root: Path, profile: str) -> None:
     """Materialise the workflows /shipwright-adopt would scaffold for a profile.
 
-    CI/security/claude-review are pure copies; CodeQL is rendered for the
+    CI/security are pure copies; CodeQL is rendered for the
     profile's language list (the scaffolder's exact substitution)."""
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True)
@@ -107,10 +102,6 @@ def _build_sample_repo(root: Path, profile: str) -> None:
 
     _copy(TEMPLATE_BY_PROFILE[profile], CI_WORKFLOW_PATH)
     _copy(SECURITY_TEMPLATE_PATH, SECURITY_WORKFLOW_PATH)
-    _copy(CLAUDE_REVIEW_TEMPLATE_PATH, CLAUDE_REVIEW_WORKFLOW_PATH)
-    # Both review stages, as adopt scaffolds them — stage 2 is where the
-    # required status context actually comes from.
-    _copy(CLAUDE_REVIEW_RUN_TEMPLATE_PATH, CLAUDE_REVIEW_RUN_WORKFLOW_PATH)
 
     codeql_src = (REPO_ROOT / CODEQL_TEMPLATE_PATH).read_text(encoding="utf-8")
     langs = CODEQL_LANGUAGES_BY_PROFILE[profile]
@@ -150,23 +141,50 @@ def test_required_check_names_match_deployed_workflows(
     tmp_path: Path, profile: str
 ) -> None:
     _build_sample_repo(tmp_path, profile)
+    # Leftovers from an earlier adopt (both stages): must stay unlisted.
+    (tmp_path / ".github" / "workflows" / "claude-review.yml").write_text(
+        "\n".join([
+            "name: Claude Review",
+            "on: pull_request",
+            "jobs:",
+            "  claude-review:",
+            "    runs-on: ubuntu-latest",
+            "    steps: []",
+            "",
+        ]),
+        encoding="utf-8",
+    )
+    (tmp_path / ".github" / "workflows" / "claude-review-run.yml").write_text(
+        "\n".join([
+            "name: Claude Review Run",
+            "on: workflow_run",
+            "jobs:",
+            "  review:",
+            "    name: Review and post verdict",
+            "    runs-on: ubuntu-latest",
+            "    steps: []",
+            "",
+        ]),
+        encoding="utf-8",
+    )
 
     derived = ar.required_check_names(tmp_path)
     expected = _expected_requireable_names(tmp_path)
+    assert "Review and post verdict" not in derived
 
     assert derived == expected, (
         f"profile {profile!r}: doc would list {derived!r} but the deployed "
         f"workflows declare {expected!r} — a mismatch means branch protection "
         f"silently never matches."
     )
-    # The codeql + security + review checks must concretely appear.
+    # The codeql + security checks must concretely appear.
     for lang in CODEQL_LANGUAGES_BY_PROFILE[profile]:
         assert f"Analyze ({lang})" in derived
     assert "Shipwright Security Scan" in derived
-    # The review gate is the status stage 2 POSTS, not a job name. Requiring a
-    # stage-1 job name instead would gate on the artifact being prepared while
-    # the review itself could still never run — the hole FR-01.17 closes.
-    assert "Claude Code Review" in derived
+    # Adopt scaffolds no PR-review workflow (2026-10-10), so no review context
+    # may be listed — a pending required context would hang every merge.
+    assert "Claude Code Review" not in derived
+    assert not any("claude-review" in n for n in derived)
     # CI is matrix-expanded over both OSes.
     assert any("ubuntu-latest" in n for n in derived)
     assert any("windows-latest" in n for n in derived)
@@ -229,9 +247,9 @@ def test_render_automerge_setup_substitutes_everything(
     assert "dormant" in doc.lower()
     assert "pull_request" in doc
     assert "signed commits" in doc.lower() or "required_signatures" in doc
-    # CodeQL/CI/security are dormant; claude-review is active.
+    # CodeQL/CI/security are all dormant; no workflow is active.
     assert "| dormant |" in doc
-    assert "| active |" in doc
+    assert "| active |" not in doc
 
 
 def test_render_warns_about_conditional_deploy_jobs(tmp_path: Path) -> None:

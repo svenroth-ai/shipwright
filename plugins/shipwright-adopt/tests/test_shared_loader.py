@@ -89,7 +89,7 @@ def test_registers_before_exec_so_a_shared_module_resolves_its_own_name(tmp_path
 
 
 def test_every_rewired_scaffolder_still_resolves_its_shared_symbol():
-    # The eight rewired scaffolders, plus test_acceptance_miner (the ninth
+    # The seven rewired scaffolders, plus test_acceptance_miner (the eighth
     # consumer, added by trg-ac2ef362's fix — doubt review, low: the census
     # undercounted the plugin's shared/ dependency surface by one), load
     # their shared helper at import time. Importing each must succeed on a
@@ -98,7 +98,6 @@ def test_every_rewired_scaffolder_still_resolves_its_shared_symbol():
         automerge_setup_scaffolder,
         baseline_generator,
         ci_workflow_scaffolder,
-        claude_review_workflow_scaffolder,
         codeql_workflow_scaffolder,
         gitattributes_scaffolder,
         gitleaks_config_scaffolder,

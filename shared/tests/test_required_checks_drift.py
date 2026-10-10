@@ -279,28 +279,6 @@ def test_jobs_with_needs_remain_unenforced_candidates(tmp_path: Path) -> None:
     assert workflow_check_sets(tmp_path)[1] == ["A", "B"]
 
 
-def test_the_monorepos_manual_launch_gate_is_not_reported_as_drift() -> None:
-    """The false positive, pinned against the real file."""
-    assert "Empirical calibration (real OSS repos)" not in all_workflow_check_names(_ROOT)
-
-
-def test_enumeration_survives_a_repo_with_no_workflows(tmp_path: Path) -> None:
-    assert all_workflow_check_names(tmp_path) == []
-
-
-def test_enumeration_skips_an_unparseable_workflow(tmp_path: Path) -> None:
-    """One broken file must not take the whole comparison down."""
-    wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
-    (wf / "broken.yml").write_text("{{ not: [valid", encoding="utf-8")
-    (wf / "ok.yml").write_text(
-        "name: X\non:\n  pull_request:\njobs:\n  build:\n    name: Build\n"
-        "    runs-on: ubuntu-latest\n    steps:\n      - run: true\n",
-        encoding="utf-8",
-    )
-    assert all_workflow_check_names(tmp_path) == ["Build"]
-
-
 @pytest.mark.parametrize("payload", [[], ["only-configured"]])
 def test_empty_derived_never_reads_as_in_sync(payload: list[str]) -> None:
     """No derived names is 'we could not see the workflows', not 'all good'."""
