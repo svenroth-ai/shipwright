@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-10-10-layer-promotion-advisory-spec",
-  "date": "2026-10-10T20:52:55.218290Z",
-  "event_at": "2026-10-10T19:53:32.307946+00:00",
+  "date": "2026-10-10T20:55:32.120673Z",
+  "event_at": "2026-10-10T20:52:55.438716+00:00",
   "type": "bug",
   "complexity": "small",
   "prior_source": "history",
@@ -55,8 +55,14 @@
   },
   "declared_removals": [],
   "exemptions": {
-    "count": 0,
-    "items": []
+    "count": 1,
+    "items": [
+      {
+        "kind": "test_exemption",
+        "scope": "shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed",
+        "reason_code": "mechanical-refactor"
+      }
+    ]
   },
   "risk_flags": []
 }

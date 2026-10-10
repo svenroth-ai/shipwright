@@ -66,6 +66,7 @@ def _project(tmp_path: Path, split: str) -> tuple[Path, str, ExecutionEvidence]:
     return tmp_path, spec_rel, ExecutionEvidence("confirmed", "test", 1, ci)
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_adopted_spec_is_not_rewritten_and_no_ledger_is_created(tmp_path, monkeypatch, capsys):
     project, spec_rel, evidence = _project(tmp_path, "01-adopted")
     monkeypatch.setattr(mod, "resolve_execution_evidence", lambda *a, **k: evidence)
@@ -80,6 +81,7 @@ def test_the_adopted_spec_is_not_rewritten_and_no_ledger_is_created(tmp_path, mo
     assert not ledger_path(project).exists()
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_same_evidence_still_promotes_in_any_other_spec(tmp_path, monkeypatch, capsys):
     project, spec_rel, evidence = _project(tmp_path, "02-feature")
     monkeypatch.setattr(mod, "resolve_execution_evidence", lambda *a, **k: evidence)
@@ -98,6 +100,7 @@ def _fr(spec_path):
     }
 
 
+@pytest.mark.covers("FR-01.10")
 def test_evaluate_fr_skips_the_adopted_spec_but_still_promotes_elsewhere():
     skipped = evaluate_fr(_fr(".shipwright/planning/01-adopted/spec.md"), is_collision=False)
     assert skipped == {"fr": "FR-01.11", "action": "skip", "reason_code": SKIP_ADVISORY_SPEC}
@@ -105,6 +108,7 @@ def test_evaluate_fr_skips_the_adopted_spec_but_still_promotes_elsewhere():
     assert promoted["action"] == "promote"
 
 
+@pytest.mark.covers("FR-01.10")
 @pytest.mark.parametrize("path,expected", [
     (None, False), ("", False), ("spec.md", False),
     ("01-adopted/spec.md", True),
@@ -112,5 +116,6 @@ def test_evaluate_fr_skips_the_adopted_spec_but_still_promotes_elsewhere():
     (".shipwright/planning/01-adopted-x/spec.md", False),
     (".shipwright/planning/02-feature/spec.md", False),
 ])
+@pytest.mark.covers("FR-01.10")
 def test_is_advisory_spec_path_matching(path, expected):
     assert is_advisory_spec(path) is expected
