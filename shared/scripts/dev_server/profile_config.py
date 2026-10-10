@@ -102,6 +102,9 @@ def _profiles_dir() -> Path:
     return Path(_PROFILES_DIR)
 
 
+_PROFILE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
 def _load_profile_data(profile_name: str | None) -> dict | None:
     """Load <profiles_dir>/<name>.json. Falls back to PROFILE_DEV_SERVERS map.
 
@@ -111,6 +114,8 @@ def _load_profile_data(profile_name: str | None) -> dict | None:
     """
     if not profile_name:
         return None
+    if not _PROFILE_NAME_RE.match(profile_name):
+        raise ValueError(f"invalid profile name {profile_name!r}")
     profiles_dir = _pkg()._profiles_dir()
     candidate = profiles_dir / f"{profile_name}.json"
     if candidate.exists():

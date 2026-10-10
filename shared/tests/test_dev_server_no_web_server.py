@@ -60,3 +60,10 @@ def test_non_object_dev_server_is_a_clear_error_not_a_crash(tmp_path, monkeypatc
     result = dev_server.cmd_start(tmp_path, profile="p")
     assert result["running"] is False and "invalid services" in result["error"]
     assert "no_dev_server" not in result
+
+
+@pytest.mark.covers("FR-01.12/AC01")
+def test_path_like_profile_names_are_rejected(tmp_path):
+    result = dev_server.cmd_start(tmp_path, profile="../../etc/x")
+    assert result["running"] is False
+    assert "invalid profile name" in result["error"]
