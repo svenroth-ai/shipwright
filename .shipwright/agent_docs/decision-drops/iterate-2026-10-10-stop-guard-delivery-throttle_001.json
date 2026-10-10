@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-stop-guard-delivery-throttle",
+  "date": "2026-10-10",
+  "section": "Iterate — bug: stop-guard noise while a reviewer or background task runs",
+  "title": "The Stop guard stays silent while a launched background task is unfinished",
+  "context": "The guard's own advice, end the turn without tool calls and resume on the notification, triggered the very block it warns about, so sessions waiting on a reviewer subagent or a background shell showed a stream of Stop hook errors.",
+  "decision": "Track background launches and their terminal notifications in the transcript scan (structured toolUseResult isAsync / backgroundTaskId / non-persistent monitor taskId, paired per tool-use-id with a terminal status) and let the Stop through, counting nothing, while one is unfinished; bounded to 2 h for an agent and 30 min for a shell.",
+  "consequences": "A reviewer wait no longer produces hook errors. A background shell that never ends combined with an agent that stops early is an accepted gap of up to 30 minutes, because nothing wakes the agent and so no later Stop exists to block. A blocker recorded meanwhile is preserved by one write helper.",
+  "rationale": "A silent Stop is only safe when a completion notice will wake the agent again; reviewers and delivery watches always end, and the age bound caps every other case.",
+  "rejected": "Throttling blocks while the run's own PR is open: a Stop that is not blocked ends the turn and nothing wakes the agent, so it would be a permanent release. Detecting launches by launch text alone: ordinary tool output that quotes the sentence would silence the guard.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

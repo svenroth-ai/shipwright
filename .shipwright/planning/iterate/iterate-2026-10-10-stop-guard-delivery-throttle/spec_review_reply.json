@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Round 2 REJECT (stale 'only' sentence in autonomous-contract.md, over-wide persistent check) fixed; code, docs and tests match the spec: background silence, no open-PR throttle, merged-PR release."}

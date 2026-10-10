@@ -47,7 +47,7 @@ def test_flag_inside_a_description_and_campaign_parents_are_not_autonomous(tmp_p
 
 def test_incremental_scan_resumes_and_survives_a_shrunk_file(tmp_path: Path) -> None:
     path = _transcript(tmp_path, tools=2)
-    auto, tools, offset, _ = guard.scan_transcript(str(path))
+    auto, tools, offset, *_ = guard.scan_transcript(str(path))
     assert (auto, tools) == (True, 2) and offset == path.stat().st_size
     with open(path, "a", encoding="utf-8") as fh:
         fh.write(json.dumps({"type": "assistant", "message": {"content": [

@@ -14,6 +14,8 @@ pointer is live, unless one of the legitimate exits holds:
   ``--campaign`` parent, whose sub-runs never open a PR of their own),
 * a hard blocker was recorded (``record_hard_blocker.py``),
 * the operator set ``SHIPWRIGHT_ITERATE_STOP_GUARD=0``,
+* a background task the session launched (reviewer, shell) is unfinished: its
+  completion notice wakes the agent again, so waiting is the job (nothing is counted),
 * the run's PR was merged after the run started (``delivered``;
   ``SHIPWRIGHT_ITERATE_STOP_GUARD_GH=0`` skips the ``gh`` call),
 * the bounded counters ran out: ``MAX_FUTILE_BLOCKS`` consecutive blocks with no
@@ -42,6 +44,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from lib.events_log import resolve_events_path
+from lib.iterate_stop_guard_background import waiting as background_waiting
 from lib.iterate_stop_guard_transcript import (  # noqa: F401 - re-exported API
     MAX_POINTER_AGE_HOURS,
     Scan,
@@ -183,7 +186,7 @@ def _utc(text: object) -> datetime | None:
     return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
-def _delivered_out_of_band(worktree: Path, branch: str, run_started: str, state: dict) -> bool:
+def _merged_out_of_band(worktree: Path, branch: str, run_started: str, state: dict) -> bool:
     """True when THIS run's PR is already MERGED although its pointer is still live
     (merged by auto-merge or by hand, so ``deliver_pr.py`` never retired it). One
     ``gh`` call, re-asked at most every ``MERGED_RECHECK_SECONDS`` and only on a Stop
@@ -205,6 +208,12 @@ def _delivered_out_of_band(worktree: Path, branch: str, run_started: str, state:
                for p in prs)
 
 
+def _write_keeping_blocker(main_root: Path, run_id: str, state: dict) -> None:
+    """Persist ``state``; a blocker recorded since it was read (``gh`` can take 8 s) survives."""
+    fresh = read_state(main_root, run_id).get("blocker")
+    write_state(main_root, run_id, {**state, **({"blocker": fresh} if fresh else {})})
+
+
 def decide(*, main_root: Path, run_id: str, worktree: Path, branch: str,
            autonomous: bool, tool_count: int, scan: dict | None = None,
            run_started: str = "") -> str | None:
@@ -215,12 +224,20 @@ def decide(*, main_root: Path, run_id: str, worktree: Path, branch: str,
     state = {**state, **(scan or {})}  # persist the scan on EVERY Stop with a live pointer
     last_tools = -1 if (scan or {}).get("reset") else int(state.get("tool_count", -1))
     state.pop("reset", None)
-    if not autonomous or state.get("blocker"):
+    if not autonomous:
+        _write_keeping_blocker(main_root, run_id, state)
+        return None
+    if state.get("blocker"):
         write_state(main_root, run_id, state)
         return None
-    if state.get("delivered") or _delivered_out_of_band(worktree, branch, run_started, state):
-        fresh = read_state(main_root, run_id).get("blocker")  # recorded during the gh call: keep it
-        write_state(main_root, run_id, {**state, "delivered": True, **({"blocker": fresh} if fresh else {})})
+    bg = state.get("bg")
+    if isinstance(bg, dict) and background_waiting(bg):
+        _write_keeping_blocker(main_root, run_id, state)  # its notice wakes the agent: waiting is the job
+        print(f"[iterate_stop_guard] stop allowed for {_safe(run_id)}: waiting on {len(bg)} background task(s)",
+              file=sys.stderr)
+        return None
+    if state.get("delivered") or _merged_out_of_band(worktree, branch, run_started, state):
+        _write_keeping_blocker(main_root, run_id, {**state, "delivered": True})
         print(f"[iterate_stop_guard] stop allowed for {_safe(run_id)}: its PR is already MERGED",
               file=sys.stderr)
         return None
@@ -235,12 +252,11 @@ def decide(*, main_root: Path, run_id: str, worktree: Path, branch: str,
         if futile >= MAX_FUTILE_BLOCKS:
             release = f"{MAX_FUTILE_BLOCKS} consecutive blocks without a tool call"
     if release:
-        write_state(main_root, run_id, {**state, "futile": futile})
+        _write_keeping_blocker(main_root, run_id, {**state, "futile": futile})
         print(f"[iterate_stop_guard] stop allowed for {_safe(run_id)}: {release}", file=sys.stderr)
         return None
-    fresh = read_state(main_root, run_id).get("blocker")  # recorded since our read: keep it
-    write_state(main_root, run_id, {**state, "blocks": total + 1, "futile": futile,
-                                    "tool_count": tool_count, **({"blocker": fresh} if fresh else {})})
+    _write_keeping_blocker(main_root, run_id, {**state, "blocks": total + 1, "futile": futile,
+                                               "tool_count": tool_count})
     hint = next_phase_hint(worktree, run_id, branch)
     return (
         f"Autonomous iterate {_safe(run_id)} is not finished: its PR is not MERGED with green checks "

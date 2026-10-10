@@ -62,7 +62,7 @@ def main() -> int:
             branch=str(pointer.get("branch") or ""), autonomous=autonomous,
             tool_count=scan.tools, run_started=str(pointer.get("created_at") or ""),
             scan={"autonomous": scan.autonomous, "tools": scan.tools, "offset": scan.offset,
-                  "path": transcript, "reset": scan.reset},
+                  "path": transcript, "reset": scan.reset, "bg": scan.background or {}},
         )
     except Exception as exc:  # noqa: BLE001
         print(f"[iterate_stop_guard] skipped: {type(exc).__name__}: {exc}", file=sys.stderr)
