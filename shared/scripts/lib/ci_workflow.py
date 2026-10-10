@@ -1,14 +1,11 @@
-"""Convention lock for the GitHub Actions CI + Claude-Review workflows.
+"""Convention lock for the GitHub Actions CI workflow.
 
-`/shipwright-adopt` scaffolds three different workflow files into adopted
-target repos depending on profile:
+`/shipwright-adopt` scaffolds `.github/workflows/ci.yml` into adopted target
+repos — profile-specific (Vite-Hono, Supabase-Next.js, Python-Plugin-Monorepo),
+chosen via `TEMPLATE_BY_PROFILE`. Adopt no longer scaffolds a PR-review
+workflow (decision 2026-10-10): the independent review runs inside each iterate.
 
-1. `.github/workflows/ci.yml` — profile-specific (Vite-Hono, Supabase-Next.js,
-   Python-Plugin-Monorepo). Chosen via `TEMPLATE_BY_PROFILE`.
-2. `.github/workflows/claude-review.yml` — profile-agnostic Claude Code
-   independent-reviewer workflow. Single template, no profile branching.
-
-Both scaffolders read these constants directly. The drift test at
+The scaffolder reads these constants directly. The drift test at
 `shared/tests/test_ci_workflow_convention.py` pins every referenced
 template path on disk and asserts each template carries the canonical
 cross-platform matrix block + dormant-trigger contract.
@@ -18,10 +15,6 @@ regression — four Windows-pathing tests silently failing on Linux runners
 because adopt never landed a Windows job — drives this. Every CI template
 must declare `os: [ubuntu-latest, windows-latest]` so test-portability
 bugs surface at PR time, not at runtime in production-like deploy paths.
-
-Profile-agnostic Claude-Review stays Linux-only by design: the
-`claude-code-base-action` is platform-neutral and Linux runner minutes
-are cheaper. Single-OS is correct for that workflow type.
 """
 
 from __future__ import annotations
@@ -32,15 +25,6 @@ from __future__ import annotations
 
 # Where the rendered CI workflow lives in a target repository.
 WORKFLOW_PATH = ".github/workflows/ci.yml"
-
-# Where the rendered Claude-Review workflow lives in a target repository.
-# Two files, because the review is two-stage (FR-01.17): stage 1 runs on every
-# PR including forks and holds no credentials; stage 2 is triggered by its
-# completion, holds the API key, reads stage 1's artifact as data, and posts the
-# verdict. Both must be scaffolded — stage 1 alone would prepare a review that
-# nothing ever runs, and stage 2 alone would never be triggered.
-CLAUDE_REVIEW_WORKFLOW_PATH = ".github/workflows/claude-review.yml"
-CLAUDE_REVIEW_RUN_WORKFLOW_PATH = ".github/workflows/claude-review-run.yml"
 
 # ---------------------------------------------------------------------------
 # Template paths in the shipwright monorepo
@@ -57,12 +41,6 @@ TEMPLATE_BY_PROFILE: dict[str, str] = {
     "vite-hono": "shared/templates/github-actions/ci-vite-hono.yml.template",
     "python-plugin-monorepo": "shared/templates/github-actions/ci-python-plugin-monorepo.yml.template",
 }
-
-# Profile-agnostic Claude-Review templates — stage 1 and stage 2 (FR-01.17).
-CLAUDE_REVIEW_TEMPLATE_PATH = "shared/templates/github-actions/claude-review.yml.template"
-CLAUDE_REVIEW_RUN_TEMPLATE_PATH = (
-    "shared/templates/github-actions/claude-review-run.yml.template"
-)
 
 # ---------------------------------------------------------------------------
 # Convention-lock invariants

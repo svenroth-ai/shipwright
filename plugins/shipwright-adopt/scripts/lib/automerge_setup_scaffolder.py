@@ -3,7 +3,7 @@
 Lands a profile-aware branch-protection / auto-merge guide at the repo root.
 The doc lists the Required-Check job names that the repo's ACTUALLY-scaffolded
 workflows produce (derived by parsing the deployed `.github/workflows/*.yml`),
-so it must run AFTER the ci / security / codeql / claude-review scaffolders.
+so it must run AFTER the ci / security / codeql scaffolders.
 
 Never overwrites a pre-existing `AUTOMERGE_SETUP.md` (a user may have edited it).
 

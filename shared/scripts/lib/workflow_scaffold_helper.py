@@ -1,7 +1,7 @@
 """Shared idempotent workflow-file copy helper.
 
 Adopted from the `security_workflow_scaffolder.py` pattern but extracted
-so the new CI + Claude-Review scaffolders share the path-creation +
+so the new CI scaffolders share the path-creation +
 idempotency + structured-result logic (external-review #O11). The
 security scaffolder is intentionally NOT migrated to this helper in the
 same iterate — separate diff to keep this iterate's blast radius

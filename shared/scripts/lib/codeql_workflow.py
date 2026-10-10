@@ -3,7 +3,7 @@
 `/shipwright-adopt` scaffolds `.github/workflows/codeql.yml` into adopted
 target repos so a brownfield repo can offer the `Analyze (<language>)`
 Required-Check job names that B4.5-style automerge branch-protection needs
-(alongside `ci.yml`, `security.yml`, `claude-review.yml`).
+(alongside `ci.yml` and `security.yml`).
 
 Unlike the profile-specific CI templates, CodeQL needs ONE template whose
 `language:` matrix is parametrized at scaffold time from the detected stack

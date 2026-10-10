@@ -1,7 +1,7 @@
 """Render the per-repo AUTOMERGE_SETUP.md doc /shipwright-adopt scaffolds.
 
 A freshly adopted repo carries dormant `ci.yml` / `security.yml` / `codeql.yml`
-workflows plus an active `claude-review.yml`. To turn on B4.5-style automerge,
+workflows. To turn on B4.5-style automerge,
 the adopter must require the *exact* GitHub check names or branch protection
 waits forever. This module derives them from **deployed** workflow files
 (matrix-expanded), rather than guessing.
@@ -34,8 +34,6 @@ KNOWN_WORKFLOWS: tuple[str, ...] = (
     "ci.yml",
     "security.yml",
     "codeql.yml",
-    "claude-review.yml",
-    "claude-review-run.yml",
 )
 
 # Workflows whose Required-Check is a commit status POSTED by a job, not a job
@@ -43,9 +41,16 @@ KNOWN_WORKFLOWS: tuple[str, ...] = (
 # branch protection can never match, and the `pull_request`-trigger test would
 # call stage 2 dormant when it works as designed. Scopes: its drift test.
 POSTED_STATUS_CONTEXTS: dict[str, str] = {
-    "claude-review-run.yml": "Claude Code Review",   # adopted repos
     "pr-review-run.yml": "PR Review",                # this monorepo + the webui
+    # LEGACY: adopt stopped scaffolding this (2026-10-10), but repos adopted earlier
+    # keep it. Without the entry, required-checks drift would call their still-
+    # posted `Claude Code Review` context a phantom (stage 2 reads as dormant).
+    "claude-review-run.yml": "Claude Code Review",
 }
+
+# Posted-status workflows no longer scaffolded by adopt (so absent from
+# KNOWN_WORKFLOWS) but still honoured for repos adopted before the retirement.
+LEGACY_POSTED_STATUS_WORKFLOWS: frozenset[str] = frozenset({"claude-review-run.yml"})
 
 # Placeholders the template carries.
 PROFILE_PLACEHOLDER = "{PROFILE}"

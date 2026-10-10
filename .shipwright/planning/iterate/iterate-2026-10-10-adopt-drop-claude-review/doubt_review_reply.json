@@ -1,0 +1,4 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","lens":"hidden coupling","claim_under_doubt":"Removing claude-review entries only affects AUTOMERGE_SETUP.md render","disproof_attempt":"POSTED_STATUS_CONTEXTS is also read by required_checks_drift in every adopted repo; dropping the entry makes a kept review's context a false phantom.","what_would_resolve_it":"Keep a LEGACY entry and pin it with a drift test."},
+{"severity":"medium","lens":"pipeline gate","claim_under_doubt":"F11 passes with risk_flags []","disproof_attempt":"Deleted shared/templates/github-actions/** matches touches_ci_supplychain; no ack recorded.","what_would_resolve_it":"record_ci_supplychain_ack.py for this run."}],
+"summary":"2 medium doubts, both addressed: LEGACY posted-status entry + drift test restored; supply-chain ack recorded."}

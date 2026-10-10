@@ -92,7 +92,7 @@ One test per crawled route. Each test checks:
 
 Scaffolded in Step E into the target repo's `.github/workflows/` (and repo
 root for the doc). All are never-overwrite; CI + Security + CodeQL ship
-**dormant** (`workflow_dispatch:` only); Claude-Review is active on PRs.
+**dormant** (`workflow_dispatch:` only). No PR-review workflow is scaffolded.
 
 | Template | Deployed path | Profile-aware? | SSoT / convention lock |
 |---|---|---|---|
@@ -100,7 +100,6 @@ root for the doc). All are never-overwrite; CI + Security + CodeQL ship
 | `github-actions/security.yml.template` | `.github/workflows/security.yml` | no | `shared/scripts/lib/security_workflow.py` |
 | `github-actions/gitleaks.toml.template` | `.gitleaks.toml` | no | `shared/scripts/lib/security_workflow.py` |
 | `github-actions/codeql.yml.template` | `.github/workflows/codeql.yml` | yes — `${SHIPWRIGHT_CODEQL_LANGUAGES}` placeholder rendered per profile | `shared/scripts/lib/codeql_workflow.py` |
-| `github-actions/claude-review.yml.template` | `.github/workflows/claude-review.yml` | no | `shared/scripts/lib/ci_workflow.py` |
 | `AUTOMERGE_SETUP.md.template` | `AUTOMERGE_SETUP.md` | yes — `{PROFILE}` + `{REQUIRED_CHECKS_TABLE}` rendered from deployed workflows | `shared/scripts/lib/automerge_readiness.py` |
 
 ### `github-actions/codeql.yml.template`

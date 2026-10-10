@@ -21,21 +21,14 @@ import yaml
 
 _ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = _ROOT / ".github" / "workflows"
-TEMPLATES = _ROOT / "shared" / "templates" / "github-actions"
 
-# (stage-1 path, stage-2 path). Both the monorepo's own gate and the template
-# shipped into every adopted repo must satisfy the same invariants — the whole
-# point of the card is that the shipped one was weaker than ours.
+# (stage-1 path, stage-2 path). The monorepo's own gate is the only pair left:
+# adopt stopped shipping a review-workflow template (decision 2026-10-10).
 STAGE1_STAGE2 = [
     pytest.param(
         WORKFLOWS / "pr-review.yml",
         WORKFLOWS / "pr-review-run.yml",
         id="monorepo",
-    ),
-    pytest.param(
-        TEMPLATES / "claude-review.yml.template",
-        TEMPLATES / "claude-review-run.yml.template",
-        id="shipped-template",
     ),
 ]
 

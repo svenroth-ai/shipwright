@@ -272,18 +272,15 @@ Writes — **in order**:
     `shared/tests/test_codeql_workflow_convention.py`. Result lands in
     `results.codeql_workflow` as `{wrote, path, reason, languages}`.
 
-15. **Claude-Review workflow scaffold.** Adopt writes the independent
-    Claude-Code-review workflow to `<root>/.github/workflows/claude-review.yml`.
-    Profile-agnostic — single template, no profile branching.
-
-    Unlike CI + Security, this workflow is **NOT dormant by default**:
-    `on: pull_request` is the active trigger because firing on PR
-    events is the workflow's entire purpose. Same byte-equal idempotency
-    contract (pre-existing files preserved). Result lands in
-    `results.claude_review_workflow`.
-
-    Origin: commit `8aac61d` (Anthropic Architect Certification best
-    practice — "write in one session, review in a different one").
+15. **(Retired) Claude-Review workflow scaffold.** Adopt no longer writes
+    `claude-review.yml` / `claude-review-run.yml` (decision 2026-10-10): an
+    always-active PR review needs an `ANTHROPIC_API_KEY` secret most adopted
+    repos lack, leaving a red/pending check on every PR, and the independent
+    review already runs inside each iterate. Repos adopted earlier keep their
+    files untouched; to remove them, first drop `Claude Code Review` from the
+    branch-protection required checks, then delete the two files. The step number is
+    kept so later numbering and `results` keys stay stable; no
+    `results.claude_review_*` key is produced.
 
 16. **Automerge-readiness doc (`AUTOMERGE_SETUP.md`).** Written **LAST**,
     after every workflow scaffold above, because it derives the

@@ -10,7 +10,7 @@ raw text, because these workflows document the holes they close.
 Three fail-open paths are pinned shut, each of which let a change reach ``main``
 with the required ``PR Review`` context green and no review performed:
 
-1. **Size.** The shipped template skipped the review above a diff threshold and
+1. **Size.** The original review workflow skipped the review above a diff threshold and
    the skipping step *succeeded* — the largest changes passed by not being
    reviewed.
 2. **Crash.** The reviewer's exit code was discarded (``|| true``), and output
@@ -47,7 +47,7 @@ from _pr_review_workflows import (
 )  # noqa: E402
 
 # --------------------------------------------------------------------------
-# 1. Size / crash / unparseable output — the shipped template fails closed
+# 1. Size / crash / unparseable output — the review workflow fails closed
 # --------------------------------------------------------------------------
 
 
@@ -128,7 +128,7 @@ def test_stage1_owns_no_pr_review_context(path: Path) -> None:
     separate field a job could post under any job name at all. The name-only
     check above stays (it is still a real, if narrower, guard), but the
     binding for AC02 rests on this second assertion: no stage-1 shell body
-    may post either producer's context string under ANY job name (doubt
+    may post the required context string under ANY job name (doubt
     review, req3-05 t9)."""
     for job_id, job in jobs(path).items():
         name = (job.get("name") or job_id).strip()

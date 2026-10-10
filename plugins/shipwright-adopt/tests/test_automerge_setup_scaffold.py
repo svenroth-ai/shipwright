@@ -1,6 +1,6 @@
 """Tests for the AUTOMERGE_SETUP.md scaffolder used by /shipwright-adopt.
 
-End-to-end: scaffold the four workflows (ci / security / codeql / claude-review)
+End-to-end: scaffold the three workflows (ci / security / codeql)
 with the real adopt scaffolders, THEN render the doc — so the test exercises the
 same ordering the orchestrator uses and proves the doc lists the check names the
 deployed workflows actually declare.
@@ -14,7 +14,6 @@ import pytest
 
 from lib.automerge_setup_scaffolder import scaffold_automerge_setup
 from lib.ci_workflow_scaffolder import scaffold_ci_workflow
-from lib.claude_review_workflow_scaffolder import scaffold_claude_review_workflow
 from lib.codeql_workflow_scaffolder import scaffold_codeql_workflow
 from lib.security_workflow_scaffolder import scaffold_security_workflow
 
@@ -35,7 +34,6 @@ def _scaffold_workflows(project: Path, profile: str) -> None:
     scaffold_ci_workflow(project, profile_name=profile)
     scaffold_security_workflow(project)
     scaffold_codeql_workflow(project, profile_name=profile)
-    scaffold_claude_review_workflow(project)
 
 
 def _doc(project: Path) -> Path:
@@ -47,6 +45,7 @@ def _doc(project: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestAutomergeSetupScaffolder:
     @pytest.mark.parametrize("profile", PROFILES)
     def test_writes_doc_after_workflows(self, tmp_project: Path, profile: str) -> None:
@@ -71,7 +70,8 @@ class TestAutomergeSetupScaffolder:
         # ...including the concrete per-profile codeql + security + advisory.
         assert f"Analyze ({CODEQL_LANG[profile]})" in content
         assert "Shipwright Security Scan" in content
-        assert "claude-review" in content
+        assert "claude-review" not in content
+        assert "Claude Code Review" not in content
         # Profile label rendered.
         assert profile in content
 
@@ -80,9 +80,9 @@ class TestAutomergeSetupScaffolder:
         _scaffold_workflows(tmp_project, profile)
         scaffold_automerge_setup(tmp_project, profile_name=profile)
         content = _doc(tmp_project).read_text(encoding="utf-8")
-        # ci/security/codeql ship dormant; claude-review is active.
+        # ci/security/codeql all ship dormant; no workflow is active.
         assert "| dormant |" in content
-        assert "| active |" in content
+        assert "| active |" not in content
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +90,7 @@ class TestAutomergeSetupScaffolder:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestAutomergeSetupIdempotency:
     def test_existing_doc_preserved(self, tmp_project: Path) -> None:
         _scaffold_workflows(tmp_project, "vite-hono")

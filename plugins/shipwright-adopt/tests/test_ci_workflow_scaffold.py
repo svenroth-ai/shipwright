@@ -1,6 +1,6 @@
-"""Tests for the CI + Claude-Review workflow scaffolders used by /shipwright-adopt.
+"""Tests for the CI workflow scaffolder used by /shipwright-adopt.
 
-Both scaffolders mirror the established `security_workflow_scaffolder.py`
+The scaffolder mirrors the established `security_workflow_scaffolder.py`
 contract (Auto-write on absence + Never overwrite + Structured ScaffoldResult).
 The CI scaffolder additionally accepts a profile_name argument: profile is
 loaded by `generate_adoption_artifacts.py` from snapshot.json and passed
@@ -24,10 +24,6 @@ from pathlib import Path
 import pytest
 
 from lib.ci_workflow_scaffolder import scaffold_ci_workflow
-from lib.claude_review_workflow_scaffolder import (
-    scaffold_claude_review_run_workflow,
-    scaffold_claude_review_workflow,
-)
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +42,7 @@ def tmp_project(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestCIScaffolderWritesWhenAbsent:
     @pytest.mark.parametrize(
         "profile_name",
@@ -102,6 +99,7 @@ class TestCIScaffolderWritesWhenAbsent:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestCIScaffolderIdempotency:
     def test_existing_file_preserved(self, tmp_project: Path) -> None:
         workflow_dir = tmp_project / ".github" / "workflows"
@@ -131,6 +129,7 @@ class TestCIScaffolderIdempotency:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestCIScaffolderProfileResolution:
     """External-review #O12: distinguish profile-unresolved from no-template."""
 
@@ -162,89 +161,18 @@ class TestCIScaffolderProfileResolution:
 
 
 # ---------------------------------------------------------------------------
-# Claude-Review scaffolder
+# Claude-Review scaffolder — retired (decision 2026-10-10)
 # ---------------------------------------------------------------------------
 
 
-class TestClaudeReviewScaffolder:
-    """Profile-agnostic — single template, no profile argument."""
-
-    def test_writes_when_absent(self, tmp_project: Path) -> None:
-        result = scaffold_claude_review_workflow(tmp_project)
-
-        assert result["wrote"] is True
-        assert result["reason"] == "scaffolded"
-        workflow = tmp_project / ".github" / "workflows" / "claude-review.yml"
-        assert workflow.exists()
-        assert result["path"] == str(workflow)
-
-    def test_creates_parent_dirs(self, tmp_project: Path) -> None:
-        assert not (tmp_project / ".github").exists()
-
-        scaffold_claude_review_workflow(tmp_project)
-
-        assert (tmp_project / ".github" / "workflows").is_dir()
-
-    def test_content_matches_template(self, tmp_project: Path) -> None:
-        scaffold_claude_review_workflow(tmp_project)
-
-        written = (
-            tmp_project / ".github" / "workflows" / "claude-review.yml"
-        ).read_text(encoding="utf-8")
-        repo_root = Path(__file__).resolve().parents[3]
-        template = (
-            repo_root / "shared" / "templates" / "github-actions"
-            / "claude-review.yml.template"
-        ).read_text(encoding="utf-8")
-        assert written == template
-
-    def test_existing_file_preserved(self, tmp_project: Path) -> None:
-        workflow_dir = tmp_project / ".github" / "workflows"
-        workflow_dir.mkdir(parents=True)
-        workflow = workflow_dir / "claude-review.yml"
-        user_content = "# user-customized review workflow\n"
-        workflow.write_text(user_content, encoding="utf-8")
-
-        result = scaffold_claude_review_workflow(tmp_project)
-
-        assert result["wrote"] is False
-        assert result["reason"] == "already_exists"
-        assert workflow.read_text(encoding="utf-8") == user_content
-
-    def test_stage2_lands_too(self, tmp_project: Path) -> None:
-        """@FR-01.17 — stage 1 alone prepares a review that nothing ever runs.
-
-        Stage 2 is the half holding the API key that a fork's `pull_request`
-        run is denied, and the sole producer of the required status. An adopted
-        repo that got only stage 1 would have a gate nothing can satisfy.
-        """
-        result = scaffold_claude_review_run_workflow(tmp_project)
-
-        assert result["wrote"] is True
-        assert result["reason"] == "scaffolded"
-        workflow = tmp_project / ".github" / "workflows" / "claude-review-run.yml"
-        assert workflow.exists()
-        body = workflow.read_text(encoding="utf-8")
-        assert "workflow_run" in body, "stage 2 must trigger on stage 1 completing"
-        assert "statuses" in body, "stage 2 posts the required status context"
-
-    def test_stage2_existing_file_preserved(self, tmp_project: Path) -> None:
-        workflow_dir = tmp_project / ".github" / "workflows"
-        workflow_dir.mkdir(parents=True)
-        workflow = workflow_dir / "claude-review-run.yml"
-        user_content = "# user-customized review runner\n"
-        workflow.write_text(user_content, encoding="utf-8")
-
-        result = scaffold_claude_review_run_workflow(tmp_project)
-
-        assert result["wrote"] is False
-        assert result["reason"] == "already_exists"
-        assert workflow.read_text(encoding="utf-8") == user_content
-
-    def test_second_call_is_noop(self, tmp_project: Path) -> None:
-        first = scaffold_claude_review_workflow(tmp_project)
-        second = scaffold_claude_review_workflow(tmp_project)
-
-        assert first["wrote"] is True
-        assert second["wrote"] is False
-        assert second["reason"] == "already_exists"
+@pytest.mark.covers("FR-01.13/AC01")
+def test_claude_review_scaffolder_is_retired() -> None:
+    """Adopt writes no PR-review workflow: it needs an ANTHROPIC_API_KEY most
+    adopted repos lack (red/pending check on every PR), and the independent
+    review already runs inside each iterate."""
+    scripts_lib = Path(__file__).resolve().parents[1] / "scripts" / "lib"
+    assert not (scripts_lib / "claude_review_workflow_scaffolder.py").exists()
+    templates = Path(__file__).resolve().parents[3] / "shared" / "templates" / "github-actions"
+    assert not list(templates.glob("claude-review*.yml.template"))
+    constants = (templates.parents[1] / "scripts" / "lib" / "ci_workflow.py").read_text(encoding="utf-8")
+    assert "CLAUDE_REVIEW_" not in constants
