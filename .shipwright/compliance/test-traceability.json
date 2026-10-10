@@ -1,8 +1,8 @@
 {
   "schema_version": 4,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-10-09T16:20:00.102137+00:00",
-  "source_commit": "6ae44444f5b2c99ecc66b040599b1ff0d16a372f",
+  "generated_at": "2026-10-09T22:59:02.124377+00:00",
+  "source_commit": "3d082d11112274d3120bff69bcd14ac85a06e2f8",
   "spec_hash": "sha256:94f0b4fedd7afbebc9baf137d2388a3536a55e95f224723198a0375c853ff10d",
   "requirements": {
     "01::FR-01.01": {
@@ -4778,6 +4778,33 @@
             "status": "enabled",
             "executed": "not_run",
             "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_doctype_report",
+            "path": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_doctype_report",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC04"
+          },
+          {
+            "id": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_utf16_doctype_report",
+            "path": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_utf16_doctype_report",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC04"
+          },
+          {
+            "id": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_an_oversized_report",
+            "path": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_an_oversized_report",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC04"
           }
         ]
       },
@@ -4827,6 +4854,33 @@
               {
                 "id": "plugins/shipwright-test/tests/test_test_runner.py::test_skip_if_missing_records_not_run_with_a_reason_never_a_pass",
                 "path": "plugins/shipwright-test/tests/test_test_runner.py::test_skip_if_missing_records_not_run_with_a_reason_never_a_pass",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC04"
+              },
+              {
+                "id": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_doctype_report",
+                "path": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_doctype_report",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC04"
+              },
+              {
+                "id": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_utf16_doctype_report",
+                "path": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_a_utf16_doctype_report",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC04"
+              },
+              {
+                "id": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_an_oversized_report",
+                "path": "shared/scripts/tools/tests/test_suite_failed_only.py::test_parse_refuses_an_oversized_report",
                 "layer": "unit",
                 "status": "enabled",
                 "executed": "not_run",
@@ -12373,6 +12427,69 @@
           {
             "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_operator_kill_switch_and_counter_boundaries",
             "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard.py::test_operator_kill_switch_and_counter_boundaries",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_merged_pr_releases_the_guard_and_stays_released",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_merged_pr_releases_the_guard_and_stays_released",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_only_this_runs_merged_pr_releases",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_only_this_runs_merged_pr_releases",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_an_unknown_start_or_branch_never_asks_gh",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_an_unknown_start_or_branch_never_asks_gh",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_is_asked_at_most_once_per_recheck_window",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_is_asked_at_most_once_per_recheck_window",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_blocker_recorded_during_the_gh_call_survives_the_release",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_blocker_recorded_during_the_gh_call_survives_the_release",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_failure_modes_never_raise_and_never_release",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_failure_modes_never_raise_and_never_release",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC43"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_the_env_switch_skips_gh_entirely",
+            "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_the_env_switch_skips_gh_entirely",
             "layer": "unit",
             "status": "enabled",
             "executed": "not_run",
@@ -22671,6 +22788,69 @@
                 "ac_id": "AC43"
               },
               {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_merged_pr_releases_the_guard_and_stays_released",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_merged_pr_releases_the_guard_and_stays_released",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_only_this_runs_merged_pr_releases",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_only_this_runs_merged_pr_releases",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_an_unknown_start_or_branch_never_asks_gh",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_an_unknown_start_or_branch_never_asks_gh",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_is_asked_at_most_once_per_recheck_window",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_is_asked_at_most_once_per_recheck_window",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_blocker_recorded_during_the_gh_call_survives_the_release",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_a_blocker_recorded_during_the_gh_call_survives_the_release",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_failure_modes_never_raise_and_never_release",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_gh_failure_modes_never_raise_and_never_release",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
+                "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_the_env_switch_skips_gh_entirely",
+                "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_delivered.py::test_the_env_switch_skips_gh_entirely",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC43"
+              },
+              {
                 "id": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_real_transcript_shape_and_list_content_are_read",
                 "path": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_real_transcript_shape_and_list_content_are_read",
                 "layer": "unit",
@@ -24801,6 +24981,15 @@
             "ac_id": "AC05"
           },
           {
+            "id": "shared/tests/test_github_triage_action_units.py::test_import_findings_idempotent_payload_frozen",
+            "path": "shared/tests/test_github_triage_action_units.py::test_import_findings_idempotent_payload_frozen",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
+          },
+          {
             "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_emits_when_cs_alerts_unavailable",
             "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_emits_when_cs_alerts_unavailable",
             "layer": "unit",
@@ -24967,6 +25156,132 @@
             "executed": "not_run",
             "tag_source": "pytest_marker",
             "ac_id": "AC19"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_machine_resolved_item_does_not_block_the_same_key",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_machine_resolved_item_does_not_block_the_same_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_human_dismissal_still_blocks_the_same_key",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_human_dismissal_still_blocks_the_same_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_each_high_finding_is_its_own_card_and_low_is_not",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_each_high_finding_is_its_own_card_and_low_is_not",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_artifact_path_without_code_scanning_yields_the_same_cards",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_artifact_path_without_code_scanning_yields_the_same_cards",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_card_closes_when_fixed_and_reopens_on_regression",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_card_closes_when_fixed_and_reopens_on_regression",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_card_text_is_charset_limited_and_capped",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_card_text_is_charset_limited_and_capped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_code_scanning_outage_keeps_its_cards_open_and_parked",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_code_scanning_outage_keeps_its_cards_open_and_parked",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_other_importer_sources_keep_their_durable_dismissal",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_other_importer_sources_keep_their_durable_dismissal",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_failed_card_pass_closes_nothing",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_failed_card_pass_closes_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_findings_without_rule_and_path_are_not_carded",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_findings_without_rule_and_path_are_not_carded",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_rollup_close_stays_durable",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_rollup_close_stays_durable",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_newer_security_scan_makes_the_import_due",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_newer_security_scan_makes_the_import_due",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_freshness_probe_is_a_single_gh_call_using_the_stored_branch",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_freshness_probe_is_a_single_gh_call_using_the_stored_branch",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
+          },
+          {
+            "id": "shared/tests/test_github_triage_finding_cards.py::test_closed_code_scanning_cards_do_not_suppress_artifact_cards",
+            "path": "shared/tests/test_github_triage_finding_cards.py::test_closed_code_scanning_cards_do_not_suppress_artifact_cards",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC14"
           },
           {
             "id": "shared/tests/test_github_triage_prompt_artifact.py::test_sast_findings_stay_gated_when_code_scanning_available",
@@ -25533,6 +25848,15 @@
                 "ac_id": "AC05"
               },
               {
+                "id": "shared/tests/test_github_triage_action_units.py::test_import_findings_idempotent_payload_frozen",
+                "path": "shared/tests/test_github_triage_action_units.py::test_import_findings_idempotent_payload_frozen",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
                 "id": "shared/tests/test_triage_aggregator.py::test_github_action_unit_missing_payload_renders_visible_placeholder",
                 "path": "shared/tests/test_triage_aggregator.py::test_github_action_unit_missing_payload_renders_visible_placeholder",
                 "layer": "unit",
@@ -25760,6 +26084,132 @@
               {
                 "id": "shared/tests/test_github_triage_artifact_fallback.py::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds",
                 "path": "shared/tests/test_github_triage_artifact_fallback.py::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_machine_resolved_item_does_not_block_the_same_key",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_machine_resolved_item_does_not_block_the_same_key",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_human_dismissal_still_blocks_the_same_key",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_human_dismissal_still_blocks_the_same_key",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_each_high_finding_is_its_own_card_and_low_is_not",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_each_high_finding_is_its_own_card_and_low_is_not",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_artifact_path_without_code_scanning_yields_the_same_cards",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_artifact_path_without_code_scanning_yields_the_same_cards",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_card_closes_when_fixed_and_reopens_on_regression",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_card_closes_when_fixed_and_reopens_on_regression",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_card_text_is_charset_limited_and_capped",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_card_text_is_charset_limited_and_capped",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_code_scanning_outage_keeps_its_cards_open_and_parked",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_code_scanning_outage_keeps_its_cards_open_and_parked",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_other_importer_sources_keep_their_durable_dismissal",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_other_importer_sources_keep_their_durable_dismissal",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_failed_card_pass_closes_nothing",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_failed_card_pass_closes_nothing",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_findings_without_rule_and_path_are_not_carded",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_findings_without_rule_and_path_are_not_carded",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_rollup_close_stays_durable",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_rollup_close_stays_durable",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_newer_security_scan_makes_the_import_due",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_newer_security_scan_makes_the_import_due",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_freshness_probe_is_a_single_gh_call_using_the_stored_branch",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_freshness_probe_is_a_single_gh_call_using_the_stored_branch",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC14"
+              },
+              {
+                "id": "shared/tests/test_github_triage_finding_cards.py::test_closed_code_scanning_cards_do_not_suppress_artifact_cards",
+                "path": "shared/tests/test_github_triage_finding_cards.py::test_closed_code_scanning_cards_do_not_suppress_artifact_cards",
                 "layer": "unit",
                 "status": "enabled",
                 "executed": "not_run",
@@ -39709,7 +40159,6 @@
     "shared/tests/test_github_triage_action_units.py::test_ci_action_unit_drops_sha_from_dedup_key",
     "shared/tests/test_github_triage_action_units.py::test_ci_action_unit_payload_uses_workflow_page_url",
     "shared/tests/test_github_triage_action_units.py::test_ci_action_unit_returns_none_when_owner_repo_none",
-    "shared/tests/test_github_triage_action_units.py::test_import_findings_idempotent_payload_frozen",
     "shared/tests/test_github_triage_action_units.py::test_import_findings_skips_repo_scoped_when_owner_repo_none",
     "shared/tests/test_github_triage_action_units.py::test_legacy_items_migrated_when_all_fetches_succeed",
     "shared/tests/test_github_triage_action_units.py::test_legacy_migration_is_idempotent",
