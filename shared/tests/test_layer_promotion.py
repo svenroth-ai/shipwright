@@ -29,7 +29,7 @@ def _link(*, layer, status="enabled", executed="pass"):
 def _node(**overrides):
     node = {
         "id": "FR-01.11",
-        "spec_path": ".shipwright/planning/01-adopted/spec.md",
+        "spec_path": ".shipwright/planning/02-feature/spec.md",
         "status": "active",
         "required_layers": ["unit"],
         "required_layers_source": "inferred_legacy",

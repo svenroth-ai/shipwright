@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-10-layer-promotion-advisory-spec",
+    "date": "2026-10-10",
+    "unit": {
+      "status": "passed",
+      "passed": 320,
+      "total": 320
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 20,
+      "total": 20
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests/test_promote_required_layers_advisory.py -q",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\layer-promotion-advisory-spec\\.shipwright\\runs\\iterate-2026-10-10-layer-promotion-advisory-spec\\surface_verification.log",
+      "timestamp": "2026-10-10T20:50:56.979Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "evaluate_fr skips (advisory_spec_never_promoted) an FR whose spec lives in 01-adopted even with promotable evidence",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_promotion.py::test_the_advisory_adopted_spec_is_never_promoted PASSED"
+        },
+        {
+          "behavior": "promote_required_layers on the adopted spec rewrites nothing, writes no ledger, exits 0",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers_advisory.py::test_the_adopted_spec_is_not_rewritten_and_no_ledger_is_created PASSED"
+        },
+        {
+          "behavior": "same evidence still promotes in any other spec (mechanism intact)",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers_advisory.py::test_the_same_evidence_still_promotes_in_any_other_spec PASSED; test_promote_required_layers.py 48 PASSED"
+        },
+        {
+          "behavior": "the 4 guard tests stay green on the live adopted spec",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_shape_convergence.py + test_requirements_catalog_contract.py 20 PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "declared_removals": []
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-10-layer-promotion-advisory-spec",
+    "commit": "90b866f914fab0b23a80202f5aad02e3273065a3",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
