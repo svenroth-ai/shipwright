@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-10-09T16:20:00.102137+00:00
-Source-State: run=iterate-2026-10-09-u-review-followups-widened base=6ae44444f5b2 release=v0.34.0
+Generated: 2026-10-09T22:59:02.124377+00:00
+Source-State: run=iterate-2026-10-10-security-triage-reraise base=3d082d111122
 Consistency-audit: last run 2026-07-28 (73 days earlier) — FAIL
-Total commits: 1647
+Total commits: 1651
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 564
+    "fix" : 567
     "feat" : 445
-    "chore" : 283
+    "chore" : 284
     "docs" : 170
     "refactor" : 100
     "test" : 52
@@ -23,10 +23,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 564 commits
+### Fixes (fix) — 567 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-10-10 | triage | raise one card per critical/high security finding and re-raise returning ones (#879) | 3d082d111122 |
+| 2026-10-10 | iterate | stop guard releases a run whose PR is already merged (#878) | a1dd883cdff4 |
+| 2026-10-10 | security | clear the 5 open High findings (urllib3 2.8.0, hardened JUnit parse) (#877) | 5accb5d8215b |
 | 2026-10-09 | review | close the U0/U3/U4/U10 review-record follow-ups (#874) | 6ae44444f5b2 |
 | 2026-10-09 | iterate | recorder warns on unread reviewer replies; F0.5 surface check counts pytest cases (#870) | bea31d3749a7 |
 | 2026-10-09 | iterate | reports-older-than-code guard skips gitignored scratch trees (#865) | e5436a5913bf |
@@ -1042,10 +1045,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 283 commits
+### Chores (chore) — 284 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-10-09 | release | v0.34.0 (#875) | fc782f611f71 |
 | 2026-10-08 | ci | bump actions/upload-artifact from 4 to 6 (#850) | b0464b6ae0e3 |
 | 2026-10-08 | ci | bump astral-sh/setup-uv (#854) | 590a042effc5 |
 | 2026-10-08 | ci | bump actions/checkout from 4 to 7 (#853) | 82d4760481fb |
@@ -1724,7 +1728,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1647 |
+| Total commits | 1651 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1647 |
+| Human-authored commits | 1651 |
 
