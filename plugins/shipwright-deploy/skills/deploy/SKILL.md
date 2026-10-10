@@ -47,7 +47,7 @@ Environments:
 uv run "{plugin_root}/scripts/checks/validate-deploy.py" --project-root "{project_root}"
 ```
 
-Checks for:
+Checks for (all skipped when the run config says `deploy_target: "none"` - the script returns `skipped: true`):
 - `JELASTIC_TOKEN` environment variable
 - Optionally: `SUPABASE_ACCESS_TOKEN` (for migrations)
 - Optionally: git repo with remote (for git-based deploy)

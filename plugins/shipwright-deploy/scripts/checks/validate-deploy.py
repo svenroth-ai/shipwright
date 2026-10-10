@@ -65,6 +65,18 @@ def _is_supabase_linked(project_root: Path) -> bool:
     return has_config and has_link
 
 
+def _deploy_target(project_root: Path) -> str | None:
+    """The run config's deploy_target, or None when unreadable/absent."""
+    try:
+        data = json.loads(
+            (project_root / "shipwright_run_config.json").read_text(encoding="utf-8")
+        )
+        target = data.get("deploy_target")
+        return target if isinstance(target, str) else None
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate deployment prerequisites")
     parser.add_argument("--project-root", help="Path to project root")
@@ -75,6 +87,16 @@ def main() -> int:
     args = parser.parse_args()
 
     project_root = Path(args.project_root) if args.project_root else Path.cwd()
+
+    if _deploy_target(project_root) == "none":
+        print(json.dumps({
+            "success": True,
+            "skipped": True,
+            "deploy_target": "none",
+            "warnings": ["deploy_target is 'none' - no deployment configured; nothing to validate"],
+            "errors": [],
+        }, indent=2))
+        return 0
 
     warnings: list[str] = []
     errors: list[str] = []

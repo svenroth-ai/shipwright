@@ -38,7 +38,7 @@ from lib.handoff_phase_status import (  # noqa: E402
 )
 
 
-def build_pipeline() -> list[str]:
+def build_pipeline(deploy_target: Optional[str] = None) -> list[str]:
     """Return the static orchestrator phase list.
 
     Iterate ``sec-report-and-orchestrator-decouple`` removed the conditional-
@@ -46,6 +46,8 @@ def build_pipeline() -> list[str]:
     ``/shipwright-security`` manually or activate
     ``.github/workflows/security.yml``.
     """
+    if deploy_target == "none":
+        return [s for s in PIPELINE_STEPS if s != "deploy"]
     return PIPELINE_STEPS.copy()
 
 
@@ -164,7 +166,7 @@ def create_config(
         raise ValueError(
             f"invalid mode {mode!r}; expected one of {', '.join(RUN_MODES)}"
         )
-    pipeline = build_pipeline()
+    pipeline = build_pipeline(deploy_target)
     now_iso = datetime.now(timezone.utc).isoformat()
     run_id = _new_run_id()
 

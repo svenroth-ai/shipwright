@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-profile-aware-phases",
+  "date": "2026-10-10",
+  "section": "Iterate — change: profile-aware preview/test/dev-server and deploy_target none",
+  "title": "Phases honor the project's profile and deploy_target none",
+  "context": "Preview, test runner and dev_server hardcoded supabase-nextjs/npm assumptions; profiles without a web server crashed; deploy_target none was never read.",
+  "decision": "Resolve the profile from the run config everywhere; NoDevServerError gives a clear no_dev_server result; test_runner reads the profile testing block and skips undeclared layers; deploy_target none ends the pipeline after changelog and skips Jelastic validation.",
+  "consequences": "supabase-nextjs pgTAP now runs the profile's bare 'supabase test db' instead of npx; vite-hono integration is skipped when undeclared.",
+  "rationale": "Single source of truth is the profile JSON and run_config.",
+  "rejected": "Reading deploy from the profile (deploy: null): the run config deploy_target stays the sole switch.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
