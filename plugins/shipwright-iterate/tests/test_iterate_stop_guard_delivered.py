@@ -62,7 +62,7 @@ def test_an_unknown_start_or_branch_never_asks_gh(tmp_path: Path, monkeypatch) -
 
 def test_gh_is_asked_at_most_once_per_recheck_window(tmp_path: Path, monkeypatch) -> None:
     calls: list[str] = []
-    _prs(monkeypatch, [], calls)  # no PR yet: every Stop blocks, gh is still asked rarely
+    _prs(monkeypatch, [{"state": "OPEN", "mergedAt": None}], calls)
     assert _decide(tmp_path) and _decide(tmp_path)
     assert len(calls) == 1
     guard.write_state(tmp_path, RUN, {**guard.read_state(tmp_path, RUN), "merged_checked_at": 0})

@@ -1,10 +1,10 @@
 {"items":[
-{"name":"Spec Compliance","verdict":"pass","note":"Guard stays silent while a launched background task is unfinished and blocks at most once per 10 minutes while the run's own PR is open; docs, contract and module docstring updated."},
-{"name":"Error Handling","verdict":"pass","note":"Unparsable timestamps, odd lines and gh failures never release or raise; a task that never reports stops counting after 2 hours."},
-{"name":"Security Basics","verdict":"pass","note":"No new inputs beyond transcript text parsed with regexes and json.loads in try/except; no shell."},
-{"name":"Test Quality","verdict":"pass","note":"Background tracking tested on launch/terminal/non-terminal/false-launch/age bound/incremental scan/decide/real hook subprocess; throttle tested for interval, no-PR, reused branch, gh outage, merge. Replayed against a real session: 8 of 9 blocks would have been silent."},
-{"name":"Performance Basics","verdict":"pass","note":"The scan stays incremental; tracking adds substring checks per line."},
-{"name":"Naming & Structure","verdict":"pass","note":"New iterate_stop_guard_background.py (57 lines); lib 270 lines."},
-{"name":"Affected Boundaries","verdict":"pass","note":"Transcript launch tool_result and task-notification (tool-use-id, status) formats verified against a real transcript on disk."},
+{"name":"Spec Compliance","verdict":"pass","note":"Guard stays silent while a launched background reviewer or shell is unfinished; no throttle on an open PR (a silent Stop ends the turn, so it was rejected); docs, contract and module docstring match."},
+{"name":"Error Handling","verdict":"pass","note":"Unparsable, missing or future timestamps never silence the guard; a poison transcript line is skipped; a task that never reports stops counting after its bound (2 h agent, 30 min shell)."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs beyond transcript JSON parsed with json.loads in try/except and one anchored regex; no shell."},
+{"name":"Test Quality","verdict":"pass","note":"Background tracking tested on launch/terminal/non-terminal/false-launch/persistent monitor/same-line notice/age bound/future timestamp/pruning/incremental scan/poison line/decide/blocker preserved/real hook subprocess."},
+{"name":"Performance Basics","verdict":"pass","note":"The scan stays incremental; tracking adds substring checks per line and pruning only on a launch."},
+{"name":"Naming & Structure","verdict":"pass","note":"New iterate_stop_guard_background.py (about 100 lines); guard module under the 300-line limit."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Transcript launch toolUseResult and task-notification (tool-use-id, status) formats verified against real transcripts on disk."},
 {"name":"Test Hygiene Probe","verdict":"pass","note":"No tests skipped or weakened; one tuple unpack widened for the new Scan field."}
 ]}
