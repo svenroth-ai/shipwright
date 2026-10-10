@@ -1092,11 +1092,11 @@ def test_anchor_promotion_reports_stale_reason_code_in_the_result(tmp_path, monk
     assert out["skipped"][0]["reason_code"] == "evidence_stale_since_anchor"
 
 
+@pytest.mark.covers("FR-01.10")
 def test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed(tmp_path, monkeypatch):
     # Regression pin for external review (openai/high + glm/low): the FR's
     # spec_path itself moved to a DIFFERENT spec.md between the anchor and
-    # HEAD, while nothing else (the bound test file, the OLD spec.md)
-    # changed at all. Promoting here would write into the NEW spec.md using
+    # HEAD, nothing else (the bound test file, the OLD spec.md) changed. Promoting here would write into the NEW spec.md using
     # evidence from a CI run that only ever covered the OLD one.
     old_spec_relpath = _SPEC_RELPATH
     new_spec_relpath = ".shipwright/planning/02-feature/spec-moved.md"
