@@ -1,0 +1,1 @@
+{"stage":"doubt","doubts":[],"summary":"All 6 doubts addressed: notice processed after launch on same line; launch requires structured toolUseResult (also covers timed-out auto-backgrounded commands); per-line try/except in scan; stderr line on silence. Rebutted: stale blocker write-back on the non-autonomous path is a millisecond cross-session window that predates this change."}

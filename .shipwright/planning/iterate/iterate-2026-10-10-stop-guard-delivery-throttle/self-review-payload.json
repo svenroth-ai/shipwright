@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Guard stays silent while a launched background reviewer or shell is unfinished; no throttle on an open PR (a silent Stop ends the turn, so it was rejected); docs, contract and module docstring match."},
+{"name":"Error Handling","verdict":"pass","note":"Unparsable, missing or future timestamps never silence the guard; a poison transcript line is skipped; a task that never reports stops counting after its bound (2 h agent, 30 min shell)."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs beyond transcript JSON parsed with json.loads in try/except and one anchored regex; no shell."},
+{"name":"Test Quality","verdict":"pass","note":"Background tracking tested on launch/terminal/non-terminal/false-launch/persistent monitor/same-line notice/age bound/future timestamp/pruning/incremental scan/poison line/decide/blocker preserved/real hook subprocess."},
+{"name":"Performance Basics","verdict":"pass","note":"The scan stays incremental; tracking adds substring checks per line and pruning only on a launch."},
+{"name":"Naming & Structure","verdict":"pass","note":"New iterate_stop_guard_background.py (about 100 lines); guard module under the 300-line limit."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Transcript launch toolUseResult and task-notification (tool-use-id, status) formats verified against real transcripts on disk."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No tests skipped or weakened; one tuple unpack widened for the new Scan field."}
+]}

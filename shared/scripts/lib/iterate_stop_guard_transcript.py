@@ -13,6 +13,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import NamedTuple
 
+from lib.iterate_stop_guard_background import track as track_background
+
 _ITERATE_CMD = re.compile(
     r"<command-name>/?(?:shipwright-iterate:)?(?:shipwright-)?iterate</command-name>"
 )
@@ -31,6 +33,7 @@ class Scan(NamedTuple):
     tools: int
     offset: int
     reset: bool = False
+    background: dict | None = None  # {tool_use_id: {"ts", "kind"}} of unfinished background tasks
 
 
 def parse_flags(args: str) -> tuple[bool, bool]:
@@ -140,9 +143,12 @@ def scan_transcript(transcript_path: str, state: dict | None = None) -> Scan:
     state = state or {}
     autonomous, tools, start = bool(state.get("autonomous")), int(state.get("tools", 0)), int(state.get("offset", 0))
     reset = False
+    saved = state.get("bg")
+    background = {k: v for k, v in saved.items() if isinstance(v, dict)} if isinstance(saved, dict) else {}
     try:
         if state.get("path") not in (None, transcript_path) or start > os.path.getsize(transcript_path):
             autonomous, tools, start, reset = False, 0, 0, bool(state)
+            background = {}
         consumed = start
         with open(transcript_path, "rb") as fh:
             fh.seek(start)
@@ -151,6 +157,10 @@ def scan_transcript(transcript_path: str, state: dict | None = None) -> Scan:
                     break  # never count a half-written last line
                 consumed += len(raw)
                 line = raw.decode("utf-8", errors="replace")
+                try:
+                    track_background(background, line)
+                except Exception:  # noqa: BLE001 - one poison line must not disable the guard for the run
+                    pass
                 if '"tool_use"' in line:
                     tools += line.count('"type":"tool_use"') or line.count('"type": "tool_use"')
                 if "iterate" in line and ("command-name" in line or '"Skill"' in line):
@@ -162,4 +172,4 @@ def scan_transcript(transcript_path: str, state: dict | None = None) -> Scan:
                         autonomous = found
     except OSError:
         return Scan(False, 0, 0)
-    return Scan(autonomous, tools, consumed, reset)
+    return Scan(autonomous, tools, consumed, reset, background)

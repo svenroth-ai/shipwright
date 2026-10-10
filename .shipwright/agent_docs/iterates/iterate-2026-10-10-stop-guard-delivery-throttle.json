@@ -1,0 +1,76 @@
+{
+  "run_id": "iterate-2026-10-10-stop-guard-delivery-throttle",
+  "date": "2026-10-10T07:55:39.461416Z",
+  "event_at": "2026-10-09T22:59:13.117280+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/stop-guard-delivery-throttle",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-10-stop-guard-delivery-throttle",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A background agent or shell launch is pending until its own terminal notification; each id is paired with its own status",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_a_launch_is_pending_until_its_terminal_notification, test_each_id_is_paired_with_its_own_status, test_only_a_terminal_status_finishes_a_task PASSED"
+      },
+      {
+        "behavior": "Only a structured launch counts: quoted launch sentences, synchronous output, persistent monitors and isAsync false do not",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_these_results_are_not_launches PASSED"
+      },
+      {
+        "behavior": "Non-persistent monitors and timed-out auto-backgrounded commands are launches; a notice on the same line as its launch wins",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_a_non_persistent_monitor_and_a_timed_out_command_are_launches, test_a_notice_on_the_same_line_as_its_own_launch_wins PASSED"
+      },
+      {
+        "behavior": "Silence is bounded: per-kind age bound, missing timestamp replaced, unreadable or future timestamp never silences, expired entries pruned",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_a_task_that_never_reports_stops_counting_after_its_bound, test_a_missing_launch_timestamp_is_replaced_and_an_unreadable_one_never_silences, test_a_future_timestamp_does_not_extend_the_silence, test_a_notice_batched_with_a_tool_result_still_clears_and_expired_entries_are_pruned PASSED"
+      },
+      {
+        "behavior": "The incremental scan carries pending tasks, ignores a malformed saved value and survives a poison line",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_the_scan_collects_pending_tasks_incrementally, test_a_malformed_saved_bg_value_is_ignored, test_a_poison_transcript_line_does_not_stop_the_scan PASSED"
+      },
+      {
+        "behavior": "decide stays silent and counts nothing while a task runs, blocks again after, keeps a blocker recorded meanwhile, and an open PR alone never silences it",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_decide_stays_silent_while_a_background_task_runs_and_blocks_after, test_a_blocker_recorded_since_the_read_survives_a_silent_stop, test_an_open_pr_alone_never_silences_the_guard PASSED"
+      },
+      {
+        "behavior": "Hook as a real subprocess against a real git worktree is silent while a reviewer runs and blocks once it reports",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_the_hook_in_a_real_worktree_is_silent_while_a_reviewer_runs PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-iterate pytest tests/test_iterate_stop_guard_background.py tests/test_iterate_stop_guard_delivered.py tests/test_iterate_stop_guard_scan.py -q",
+    "exit_code": 0,
+    "tests_run": 52,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-10-stop-guard-delivery-throttle/surface_verification.json",
+    "timestamp": "2026-10-10T07:54:33.767Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  }
+}
