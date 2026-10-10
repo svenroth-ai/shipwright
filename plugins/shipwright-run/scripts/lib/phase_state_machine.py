@@ -72,6 +72,7 @@ def next_phase_task(
     run_conditions: RunConditions,
     splits_frozen: list[str],
     completed: CompletedPhaseTask,
+    deploy_enabled: bool = True,
 ) -> Optional[NextPhaseSpec]:
     """Return spec for next phase task, or None if the pipeline is terminal.
 
@@ -88,8 +89,12 @@ def next_phase_task(
           the structural successor regardless of status; the caller decides
           whether to materialize it.
 
+    ``deploy_enabled=False`` (run_config ``deploy_target: "none"``) makes
+    changelog pipeline-terminal: no deploy phase is scheduled.
+
     Returns None when:
         - Predecessor is deploy (pipeline-terminal), OR
+        - Predecessor is changelog and ``deploy_enabled`` is False, OR
         - splits_frozen is depleted in the build/<split> branch.
     """
     phase = completed["phase"]
@@ -141,6 +146,8 @@ def next_phase_task(
         return _spec("changelog", split_id=None, prereqs=prereq)
 
     if phase == "changelog":
+        if not deploy_enabled:
+            return None  # deploy_target "none" — nothing to deploy to
         return _spec("deploy", split_id=None, prereqs=prereq)
 
     if phase == "deploy":

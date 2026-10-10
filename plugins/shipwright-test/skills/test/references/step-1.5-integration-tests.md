@@ -17,6 +17,7 @@ Or via runner script:
 ```bash
 uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
+  --profile-path "{shared_root}/profiles/{profile}.json" \
   --layer integration \
   --cwd {project_root} \
   --skip-if-missing

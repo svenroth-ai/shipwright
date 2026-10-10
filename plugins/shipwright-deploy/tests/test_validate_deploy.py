@@ -1,6 +1,7 @@
 """Tests for validate-deploy.py."""
 
 import json
+import pytest
 import subprocess
 import sys
 from pathlib import Path
@@ -258,3 +259,14 @@ def test_test_gate_e2e_skipped_status_does_not_block(tmp_path):
     output = _run_with_project_root(tmp_path)
     assert output["test_gate"] == "passed"
     assert output["success"] is True
+
+
+@pytest.mark.covers("FR-01.08/AC01")
+def test_deploy_target_none_skips_jelastic_validation(tmp_path):
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"deploy_target": "none"}), encoding="utf-8"
+    )
+    out = run_validate(env={"JELASTIC_TOKEN": ""}, project_root=tmp_path)
+    assert out["success"] is True
+    assert out["skipped"] is True
+    assert out["errors"] == []

@@ -2,8 +2,9 @@
 """Profile-aware test runner.
 
 Determines the correct test command based on stack profile and runs it.
-Reads commands dynamically from profile JSON when --profile-path is provided,
-falling back to hardcoded defaults otherwise.
+Order: --command, then the profile JSON (--profile-path, else located from
+--profile / the run config's `profile`), then hardcoded defaults. A non-unit
+layer a non-legacy profile does not declare is skipped, not run via a default.
 
 Usage:
     uv run test_runner.py --profile <name> --layer <unit|integration|pgtap|e2e|all>
@@ -25,6 +26,7 @@ Output (JSON):
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -137,30 +139,92 @@ def run_tests(command: str, cwd: str | None = None) -> dict:
         }
 
 
+# Layer name -> the key the profile's `testing` block files it under.
+_PROFILE_LAYER_KEYS = {"unit": "unit", "integration": "integration",
+                       "pgtap": "db_tests", "e2e": "e2e"}
+
+
+_PROFILE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def default_profile_path(profile: str | None) -> Path | None:
+    """Locate shared/profiles/<profile>.json relative to this file.
+
+    Monorepo (<root>/plugins/shipwright-test/scripts/lib) and the installed
+    plugin cache (<marketplace>/shipwright-test/<ver>/scripts/lib) both keep
+    `shared/` beside the plugin directories, i.e. under parents[4].
+    """
+    if not profile or not _PROFILE_NAME_RE.match(profile):
+        return None
+    candidate = Path(__file__).resolve().parents[4] / "shared" / "profiles" / f"{profile}.json"
+    return candidate if candidate.exists() else None
+
+
+def resolve_profile_name(cli_profile: str | None, cwd: str | None) -> str:
+    """The active profile: --profile, else the project's run config, else legacy default."""
+    if cli_profile:
+        return cli_profile
+    run_config = Path(cwd or ".") / "shipwright_run_config.json"
+    try:
+        name = json.loads(run_config.read_text(encoding="utf-8")).get("profile")
+        if isinstance(name, str) and _PROFILE_NAME_RE.match(name):
+            return name
+    except (json.JSONDecodeError, OSError, AttributeError):
+        pass
+    return "supabase-nextjs"
+
+
+def _load_profile(profile_path: Path | None) -> dict | None:
+    if profile_path and profile_path.exists():
+        try:
+            data = json.loads(profile_path.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else None
+        except (json.JSONDecodeError, OSError):
+            return None
+    return None
+
+
+def _profile_layer_command(profile_data: dict, layer: str) -> str:
+    """The profile's own command for a layer, or "" when it declares none."""
+    testing = profile_data.get("testing")
+    if not isinstance(testing, dict):
+        return ""
+    entry = testing.get(_PROFILE_LAYER_KEYS.get(layer, layer))
+    if isinstance(entry, dict) and entry.get("command"):
+        return entry["command"]
+    if layer == "unit" and isinstance(testing.get("command"), str) and testing["command"]:
+        return testing["command"]  # profile-wide runner, e.g. "uv run pytest"
+    if isinstance(entry, str) and entry:
+        return entry  # flat form, e.g. "unit": "pytest"
+    return ""
+
+
+def profile_declares_no_layer(profile_data: dict | None, profile: str, layer: str) -> bool:
+    """True when a loaded, non-legacy profile has no entry at all for a non-unit layer.
+
+    The hardcoded `npx vitest` / `npx playwright` fallbacks only make sense for a
+    node stack; running them for e.g. a Python profile is a wrong command, not a
+    default. Unit always falls back (a project must have some unit command).
+    """
+    if profile_data is None or layer == "unit" or profile in PROFILE_TEST_COMMANDS:
+        return False
+    testing = profile_data.get("testing")
+    key = _PROFILE_LAYER_KEYS.get(layer, layer)
+    return not (isinstance(testing, dict) and key in testing)
+
+
 def get_test_command(profile: str, layer: str, profile_path: Path | None = None) -> str:
     """Get the test command for a profile and layer.
 
-    When profile_path is provided, reads commands dynamically from the profile
-    JSON file (single source of truth). Falls back to hardcoded defaults otherwise.
+    The profile JSON (single source of truth) wins; when `profile_path` is not
+    given it is located from `profile` via shared/profiles. Hardcoded defaults
+    apply only when the profile declares no command for the layer.
     """
-    if profile_path and profile_path.exists():
-        try:
-            profile_data = json.loads(profile_path.read_text(encoding="utf-8"))
-            testing = profile_data.get("testing", {})
-            if layer == "integration":
-                cmd = testing.get("integration", {}).get("command", "")
-                if cmd:
-                    return cmd
-            elif layer == "pgtap":
-                cmd = testing.get("db_tests", {}).get("command", "")
-                if cmd:
-                    return cmd
-            elif layer in testing:
-                layer_config = testing[layer]
-                if isinstance(layer_config, dict) and "command" in layer_config:
-                    return layer_config["command"]
-        except (json.JSONDecodeError, OSError):
-            pass  # Fall back to hardcoded defaults
+    profile_data = _load_profile(profile_path or default_profile_path(profile))
+    if profile_data is not None:
+        cmd = _profile_layer_command(profile_data, layer)
+        if cmd:
+            return cmd
 
     commands = PROFILE_TEST_COMMANDS.get(profile, DEFAULT_COMMANDS)
     return commands.get(layer, DEFAULT_COMMANDS.get(layer, f"echo 'No test command for {layer}'"))
@@ -168,7 +232,8 @@ def get_test_command(profile: str, layer: str, profile_path: Path | None = None)
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Profile-aware test runner")
-    parser.add_argument("--profile", default="supabase-nextjs", help="Stack profile name")
+    parser.add_argument("--profile", default=None,
+                        help="Stack profile name (default: the project's run-config profile)")
     parser.add_argument("--layer", default="unit", choices=["unit", "integration", "pgtap", "e2e", "all"])
     parser.add_argument("--command", help="Custom test command (overrides profile)")
     parser.add_argument("--cwd", help="Working directory for test execution")
@@ -177,7 +242,9 @@ def main() -> int:
                         help="Skip gracefully if test dir does not exist (integration/pgtap)")
     args = parser.parse_args()
 
-    profile_path = Path(args.profile_path) if args.profile_path else None
+    profile = resolve_profile_name(args.profile, args.cwd)
+    profile_path = Path(args.profile_path) if args.profile_path else default_profile_path(profile)
+    profile_data = _load_profile(profile_path)
 
     if args.layer == "all":
         layers = ["unit", "integration", "pgtap", "e2e"]
@@ -213,13 +280,29 @@ def main() -> int:
                 })
                 continue
 
+        if not args.command and profile_declares_no_layer(profile_data, profile, layer):
+            results.append({
+                "success": True,
+                "layer": layer,
+                "command": "skipped",
+                "exit_code": 0,
+                "passed": 0,
+                "failed": 0,
+                "total": 0,
+                "duration_seconds": 0,
+                "output": f"Skipped: profile '{profile}' defines no {layer} tests",
+                "skipped": True,
+                "skip_reason": f"profile '{profile}' defines no {layer} layer",
+            })
+            continue
+
         if layer == "e2e" and not args.command and args.cwd:
             # Use Playwright runner for structured E2E results
             from playwright_runner import run_playwright
             result = run_playwright(Path(args.cwd))
             result["layer"] = "e2e"
         else:
-            command = args.command or get_test_command(args.profile, layer, profile_path)
+            command = args.command or get_test_command(profile, layer, profile_path)
             result = run_tests(command, args.cwd)
             result["layer"] = layer
         results.append(result)

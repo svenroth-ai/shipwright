@@ -3,8 +3,14 @@
 ```bash
 uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
+  --profile-path "{shared_root}/profiles/{profile}.json" \
+  --cwd "{project_root}" \
   --layer unit
 ```
+
+The runner takes the unit command from the profile's `testing` block (a
+profile with no web stack, e.g. `python-plugin-monorepo`, runs `uv run pytest`,
+not `npm test`).
 
 **Expected output:** Test results with pass/fail counts.
 

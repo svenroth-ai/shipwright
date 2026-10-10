@@ -1,0 +1,72 @@
+{
+  "run_id": "iterate-2026-10-10-profile-aware-phases",
+  "date": "2026-10-10T19:53:32.089706Z",
+  "event_at": "2026-10-10T07:55:39.677894+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/profile-aware-phases",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-10-profile-aware-phases",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "services:[]/null and dev_server:null give NoDevServerError; cmd_start returns no_dev_server",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_dev_server_multiservice.py::test_profile_without_web_server_raises_clear_error PASSED"
+      },
+      {
+        "behavior": "non-object dev_server is a clear invalid-services error",
+        "disposition": "tested",
+        "evidence": "test_non_object_dev_server_is_a_clear_error_not_a_crash PASSED"
+      },
+      {
+        "behavior": "test_runner resolves profile commands (python profile -> uv run pytest), reads run-config profile, skips undeclared layers",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner.py 15 PASSED"
+      },
+      {
+        "behavior": "deploy_target none: changelog terminal, pipeline omits deploy, run completes",
+        "disposition": "tested",
+        "evidence": "test_phase_state_machine.py + test_phase_task_lifecycle.py::test_deploy_target_none_completes_run_after_changelog PASSED"
+      },
+      {
+        "behavior": "validate-deploy skips credential checks for deploy_target none",
+        "disposition": "tested",
+        "evidence": "test_validate_deploy.py::test_deploy_target_none_skips_jelastic_validation PASSED"
+      },
+      {
+        "behavior": "preview SKILL uses run-config profile (prompt text)",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "runtime prompt prose, no executable surface"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-test pytest tests/test_test_runner.py -q",
+    "exit_code": 0,
+    "tests_run": 15,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\profile-aware-phases\\.shipwright\\runs\\iterate-2026-10-10-profile-aware-phases\\surface_verification.log",
+    "timestamp": "2026-10-10T19:53:17.934Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
