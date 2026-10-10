@@ -1,0 +1,74 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-10-release-event-before-merge",
+    "date": "2026-10-10",
+    "unit": {
+      "status": "passed",
+      "passed": 22574,
+      "total": 22672
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_changelog_release_event_before_merge.py shared/tests/test_release_pathspec_doc_sync.py -q",
+      "exit_code": 0,
+      "tests_run": 9,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-10-release-event-before-merge/surface_verification.log",
+      "timestamp": "2026-10-10T06:21:05.928Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the release skill records its changelog event exactly once, in the release PR before the merge and before the tag push",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_release_event_before_merge.py::test_the_event_is_recorded_exactly_once, ::test_the_event_is_recorded_before_the_merge_and_the_tag_push PASSED"
+        },
+        {
+          "behavior": "the event is committed by explicit pathspec (never -A) and pushed with the release PR",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_release_event_before_merge.py::test_the_event_is_committed_by_explicit_pathspec_and_pushed PASSED"
+        },
+        {
+          "behavior": "record, add, commit and push are chained so a failed record stops the merge",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_release_event_before_merge.py::test_the_steps_are_chained_so_a_failed_record_stops_the_merge PASSED"
+        },
+        {
+          "behavior": "on main (no PR) the event is recorded before the single tag push and without the branch push",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_release_event_before_merge.py::test_the_on_main_case_records_before_the_one_push PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-10-release-event-before-merge",
+    "commit": "f7402f5a0510c211735cc8f7c1637add6999c8b4",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

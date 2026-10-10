@@ -4166,7 +4166,7 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed | — |
 | Test SKILL.md (Step 5) | `test_run` | Full test suite executed | unit/e2e/smoke layer counts |
 | Deploy SKILL.md (Step 5) | `phase_completed` (phase=deploy) | Deploy smoke test passed | Deploy URL via `--detail` |
-| Changelog SKILL.md (Step 7) | `phase_completed` (phase=changelog) | PR created or tag pushed | Version + PR URL via `--detail` |
+| Changelog SKILL.md (Step 7) | `phase_completed` (phase=changelog) | PR created (recorded and committed into the release PR BEFORE the merge; on main: before the one `git push --tags`) | Version + PR URL via `--detail` |
 | Compliance `_grade_snapshot.py` | `grade_snapshot` | A Control-Grade dashboard regen that MOVES the grade (M-Pre-3) | `grade` + `score`, plus the tree attribution below (incl. `dirty`, captured before any producer in the run wrote — at `update_compliance` entry, or earlier still at `finalize_iterate` entry, whichever came first). One per regen **that changes the grade** — see the dedup note below |
 
 All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
