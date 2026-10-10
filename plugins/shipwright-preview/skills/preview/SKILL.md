@@ -62,14 +62,17 @@ Parse the JSON output. If `"running": true`, skip to Step 5.
 
 #### Step 4: Start Dev Server
 
-Start the dev server using the stack profile:
+Start the dev server using the project's own stack profile. Read `profile` from
+`${SHIPWRIGHT_PROJECT_ROOT}/shipwright_run_config.json` (do not assume a stack):
 
 ```bash
 uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" \
-  start --profile supabase-nextjs --cwd ${SHIPWRIGHT_PROJECT_ROOT}
+  start --profile {profile} --cwd ${SHIPWRIGHT_PROJECT_ROOT}
 ```
 
 Parse the JSON output:
+- `"no_dev_server": true` → the profile declares no web dev server (a library,
+  CLI or plugin project). Tell the user there is nothing to preview and stop.
 - `"ready": true` → proceed to Step 5
 - `"ready": false` or error → investigate. Read the server logs, check for port conflicts, missing dependencies, or build errors. Fix the issue and retry. Do not just report the error — help resolve it.
 
@@ -88,7 +91,7 @@ Display the preview URL prominently:
 └────────────────────────────────────────────┘
 ```
 
-The port comes from the dev server status output (default: 3000 for supabase-nextjs).
+The port comes from the dev server status output (it is whatever the profile's dev server declares; do not assume 3000).
 
 ## Stopping the Preview
 

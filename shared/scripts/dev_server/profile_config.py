@@ -171,6 +171,18 @@ def _normalize_service_entry(entry: dict, default_primary: bool = False) -> dict
     }
 
 
+class NoDevServerError(ValueError):
+    """The active profile declares no web dev server (a library/CLI/plugin stack)."""
+
+
+def _no_dev_server_message(profile_name: str | None) -> str:
+    label = f"profile '{profile_name}'" if profile_name else "this profile"
+    return (
+        f"{label} declares no web dev server (dev_server is null and services is "
+        "empty) - there is nothing to start or preview"
+    )
+
+
 def _service_url(service: dict) -> str:
     host = service.get("host", "localhost")
     scheme = service.get("scheme", "http")
@@ -186,19 +198,30 @@ def _get_services(
     """Resolve a normalized service list + warning messages."""
     warnings: list[str] = []
     profile_data = _load_profile_data(profile_name)
-    return _services_from_profile_data(profile_data, cwd, warnings)
+    return _services_from_profile_data(
+        profile_data, cwd, warnings, profile_name=profile_name
+    )
 
 
 def _services_from_profile_data(
-    profile_data: dict | None, cwd: Path, warnings: list[str]
+    profile_data: dict | None,
+    cwd: Path,
+    warnings: list[str],
+    profile_name: str | None = None,
 ) -> tuple[list[dict], list[str]]:
     if profile_data and "services" in profile_data:
-        if "dev_server" in profile_data:
+        raw = profile_data["services"]
+        legacy = profile_data.get("dev_server")
+        if not raw and isinstance(legacy, dict) and not isinstance(raw, (str, dict)):
+            # An empty list declares nothing; the legacy block still does.
+            return [_normalize_legacy_dev_server(legacy)], warnings
+        if not raw and not isinstance(raw, (str, dict)):
+            raise NoDevServerError(_no_dev_server_message(profile_name))
+        if legacy is not None:
             warnings.append(
                 "both 'services' and 'dev_server' present in profile; ignoring 'dev_server'"
             )
-        raw = profile_data["services"]
-        if not isinstance(raw, list) or len(raw) == 0:
+        if not isinstance(raw, list):
             raise ValueError("profile 'services' must be a non-empty array")
         services: list[dict] = []
         for i, entry in enumerate(raw):
@@ -208,7 +231,12 @@ def _services_from_profile_data(
         return services, warnings
 
     if profile_data and "dev_server" in profile_data:
-        return [_normalize_legacy_dev_server(profile_data["dev_server"])], warnings
+        legacy = profile_data["dev_server"]
+        if legacy is None:
+            raise NoDevServerError(_no_dev_server_message(profile_name))
+        if not isinstance(legacy, dict):
+            raise ValueError("profile 'dev_server' must be an object or null")
+        return [_normalize_legacy_dev_server(legacy)], warnings
 
     # Build config fallback
     build_config = cwd / "shipwright_build_config.json"

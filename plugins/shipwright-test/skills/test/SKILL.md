@@ -121,7 +121,8 @@ Full body: see [step-0-phase-session](references/step-0-phase-session.md).
 ## Step 1: Run Unit Tests
 
 ```bash
-uv run "{plugin_root}/scripts/lib/test_runner.py" --profile "{profile}" --layer unit
+uv run "{plugin_root}/scripts/lib/test_runner.py" --profile "{profile}" \
+  --profile-path "{shared_root}/profiles/{profile}.json" --cwd "{project_root}" --layer unit
 ```
 
 Autonomous mode auto-applies `--fix` behavior. Max 3 retries, structured

@@ -639,7 +639,7 @@ def _plan_next_inplace(
     spec: Optional[NextPhaseSpec] = next_phase_task(
         run_conditions=config["runConditions"],
         splits_frozen=list(config.get("splits_frozen") or []),
-        completed=completed,
+        completed=completed, deploy_enabled=config.get("deploy_target") != "none",
     )
     if spec is None:
         return None

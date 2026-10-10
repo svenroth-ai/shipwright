@@ -1356,13 +1356,15 @@ orchestrator wraps it and materialises new `phase_tasks[]` entries.
 | `("build", split[i])`               | `i+1 == len(splits)` (last split)         | `("test", null)`                   |
 | `("build", null)`                   | always (split-less)                       | `("test", null)`                   |
 | `("test", null)`                    | always                                    | `("changelog", null)`              |
-| `("changelog", null)`               | always                                    | `("deploy", null)`                 |
+| `("changelog", null)`               | `deploy_target != "none"`                 | `("deploy", null)`                 |
+| `("changelog", null)`               | `deploy_target == "none"` (run_config)    | `None` (pipeline-terminal)         |
 | `("deploy", null)`                  | always                                    | `None` (pipeline-terminal)         |
 
 > The previous security-conditional branch (`("test", null) → ("security", null) → ("changelog", null)` gated by `runConditions.securityEnabled`) was removed in iterate `sec-report-and-orchestrator-decouple`. Security is now an out-of-band skill — invoke `/shipwright-security` manually after test, or activate `.github/workflows/security.yml`. The state machine no longer plans a security phase task.
 
 **Run-completion invariant:** `run.status = complete` requires (1) deploy
-task is `done` AND (2) all other `phase_tasks[]` are terminal (`done` or
+task is `done` (or, for `deploy_target: "none"`, the changelog task — no deploy
+phase is scheduled and `pipeline` omits `deploy`) AND (2) all other `phase_tasks[]` are terminal (`done` or
 `skipped`). When (1) holds but (2) doesn't, `run.status =
 "needs_validation"` plus a `pipeline_completion_blocked` event. **Failure
 is terminal:** any `failed` task immediately flips `run.status = failed`.
