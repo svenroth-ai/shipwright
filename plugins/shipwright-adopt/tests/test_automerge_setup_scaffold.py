@@ -45,6 +45,7 @@ def _doc(project: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestAutomergeSetupScaffolder:
     @pytest.mark.parametrize("profile", PROFILES)
     def test_writes_doc_after_workflows(self, tmp_project: Path, profile: str) -> None:
@@ -89,6 +90,7 @@ class TestAutomergeSetupScaffolder:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestAutomergeSetupIdempotency:
     def test_existing_doc_preserved(self, tmp_project: Path) -> None:
         _scaffold_workflows(tmp_project, "vite-hono")

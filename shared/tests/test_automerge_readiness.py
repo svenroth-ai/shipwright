@@ -44,6 +44,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_known_workflows_match_convention_modules() -> None:
     """KNOWN_WORKFLOWS basenames must match the per-workflow convention modules'
     deployed paths, else the doc would inspect the wrong files."""
@@ -55,6 +56,7 @@ def test_known_workflows_match_convention_modules() -> None:
     assert set(ar.KNOWN_WORKFLOWS) == expected
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_posted_status_contexts_name_known_workflows() -> None:
     """A posted-status entry for a file nothing ever inspects is dead config.
 
@@ -136,6 +138,7 @@ def _expected_requireable_names(root: Path) -> list[str]:
     return names
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 @pytest.mark.parametrize("profile", sorted(CODEQL_LANGUAGES_BY_PROFILE))
 def test_required_check_names_match_deployed_workflows(
     tmp_path: Path, profile: str
@@ -228,6 +231,7 @@ def test_yaml_scalar_if_values_are_classified_in_report(tmp_path: Path) -> None:
     ]
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 @pytest.mark.parametrize("profile", sorted(CODEQL_LANGUAGES_BY_PROFILE))
 def test_render_automerge_setup_substitutes_everything(
     tmp_path: Path, profile: str

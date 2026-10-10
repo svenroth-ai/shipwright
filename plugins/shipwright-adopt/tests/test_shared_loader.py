@@ -88,6 +88,7 @@ def test_registers_before_exec_so_a_shared_module_resolves_its_own_name(tmp_path
         sys.modules.pop(sentinel, None)
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_every_rewired_scaffolder_still_resolves_its_shared_symbol():
     # The seven rewired scaffolders, plus test_acceptance_miner (the eighth
     # consumer, added by trg-ac2ef362's fix — doubt review, low: the census

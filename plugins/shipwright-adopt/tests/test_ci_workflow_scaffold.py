@@ -42,6 +42,7 @@ def tmp_project(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestCIScaffolderWritesWhenAbsent:
     @pytest.mark.parametrize(
         "profile_name",
@@ -98,6 +99,7 @@ class TestCIScaffolderWritesWhenAbsent:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestCIScaffolderIdempotency:
     def test_existing_file_preserved(self, tmp_project: Path) -> None:
         workflow_dir = tmp_project / ".github" / "workflows"
@@ -127,6 +129,7 @@ class TestCIScaffolderIdempotency:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 class TestCIScaffolderProfileResolution:
     """External-review #O12: distinguish profile-unresolved from no-template."""
 
@@ -162,6 +165,7 @@ class TestCIScaffolderProfileResolution:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_claude_review_scaffolder_is_retired() -> None:
     """Adopt writes no PR-review workflow: it needs an ANTHROPIC_API_KEY most
     adopted repos lack (red/pending check on every PR), and the independent
