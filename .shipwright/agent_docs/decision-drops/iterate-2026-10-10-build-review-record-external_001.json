@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-10-build-review-record-external",
+  "date": "2026-10-10",
+  "section": "Iterate — change: build 6c external code review default on",
+  "title": "Build Step 6c external code review is default-on (opt-out), matching iterate",
+  "context": "Build documented 6c as opt-in/default off while the shared helper is_external_code_review_enabled defaults to True and iterate runs the external pass by default; a known SKILL-vs-code drift.",
+  "decision": "Build 6c now runs after the internal spec/code/doubt cascade unless external_code_review.enabled is false. Missing keys and empty diffs still skip with a marker. Docs and a pin test updated.",
+  "consequences": "Build users with review keys now send the section diff to the external providers by default; projects with sensitive diffs must set enabled:false. Order stays internal first, external second.",
+  "rationale": "One default across build and iterate; the opt-out and the diff-exposure warning remain documented.",
+  "rejected": "Keeping build opt-in (drift with the helper); making the pass mandatory (iterate itself is opt-out, not mandatory).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

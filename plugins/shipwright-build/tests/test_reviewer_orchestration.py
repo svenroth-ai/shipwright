@@ -285,3 +285,19 @@ def test_build_kern_still_under_300_loc() -> None:
         f"build Kern SKILL.md is {loc} LOC, must stay <= 300 — push orchestration "
         "detail into references/code-review.md, not the Kern."
     )
+
+
+@pytest.mark.covers("FR-01.05/AC08")
+def test_external_cascade_6c_is_default_on_like_iterate() -> None:
+    """6c runs after the internal cascade unless explicitly disabled.
+
+    The shared helper ``is_external_code_review_enabled`` defaults to True and
+    iterate relies on it; build's prose must not contradict it (the drift was
+    "build 6c opt-in vs helper default True").
+    """
+    ref = _read(CODE_REVIEW_REF)
+    skill = _read(KERN_SKILL)
+    assert "default on, opt-out" in ref
+    assert "default on, opt-out" in skill
+    assert "`enabled: true` in" not in ref
+    assert "opt-in, default off" not in ref

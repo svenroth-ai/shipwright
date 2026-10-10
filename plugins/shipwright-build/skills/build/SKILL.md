@@ -206,7 +206,7 @@ See [code-review](references/code-review.md) for the full cascade (incl. its "Di
 - **6a Self-Review (always):** 5-point checklist per [self-review-checklist](references/self-review-checklist.md). Fix all failures.
 - **Stage 1 — `spec-reviewer` (HARD-GATE):** spec-compliance gate; runs **whenever 6b runs** (same trigger, so Stage 1 always precedes Stage 2). On REJECT, fix and re-review; **6b does NOT run until PASS**.
 - **6b Full Review — `code-reviewer` (Stage 2, conditional):** triggered when diff > 100 lines, section `risk: high`, or security-sensitive files. Full flow per [code-review-protocol](references/code-review-protocol.md); user interaction per [code-review-interview](references/code-review-interview.md).
-- **6c External Cascade (opt-in):** `external_code_review.enabled: true` in `shipwright_build_config.json`. Generic code-quality second opinion only — the internal `spec-reviewer`/`doubt-reviewer` do NOT cascade externally. See [code-review](references/code-review.md).
+- **6c External Cascade (default on, opt-out):** runs after the internal cascade unless `external_code_review.enabled: false` in `shipwright_build_config.json` (same default as iterate). Generic code-quality second opinion only — the internal `spec-reviewer`/`doubt-reviewer` do NOT cascade externally. See [code-review](references/code-review.md).
 - **Stage 3 — `doubt-reviewer` (conditional, advisory):** after 6b passes, a fresh-context disprove pass for non-trivial touches (migrations, async/concurrency, cross-plugin imports, irreversible ops). Implementer must address each doubt.
 
 ---
