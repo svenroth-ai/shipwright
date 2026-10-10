@@ -40,9 +40,11 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 try:  # Package context (shared/tests: `shared/scripts` on sys.path).
     from .fr_layer_cell_writer import _LAYER_TOKEN_RE
     from .layer_promotion_ledger import fingerprint_drifted
+    from .layer_promotion_policy import SKIP_ADVISORY_SPEC, is_advisory_spec
 except ImportError:  # Loaded by file path.
     from fr_layer_cell_writer import _LAYER_TOKEN_RE  # type: ignore
     from layer_promotion_ledger import fingerprint_drifted  # type: ignore
+    from layer_promotion_policy import SKIP_ADVISORY_SPEC, is_advisory_spec  # type: ignore
 
 from tools.verifiers._layer_coverage_binding import (  # noqa: E402
     _highest_ok_layer as _shared_highest_ok_layer,
@@ -317,20 +319,15 @@ def evaluate_fr(
         return _skip(fr_id, SKIP_EXISTING_REQUIRED_NOT_VERIFIED)
 
     if live_cell_has_non_canonical_content:
-        # A named SKIP, not an escalation (Stage-1 spec-review REJECT, P3.5
-        # post-push round): the predicate demonstrably HOLDS here (highest_ok
-        # is not None, evidence is unambiguous, every existing required layer
-        # is verified, no ledger contradiction) -- the spec's escalation list
-        # is closed to the three named undecidable cases, and "the predicate
-        # holds but the cell has other text" is not one of them. Reporting
-        # REASON_LAYER_UNDETERMINABLE here was also untruthful: that code
-        # means "the highest observable layer cannot be determined from the
-        # manifest" -- it WAS determined, just above. What is actually true
-        # is narrower and different in kind: the live spec.md cell (not the
-        # manifest) carries text an automated rewrite would silently delete,
-        # so this run defers rather than overwrites it -- same data-
-        # protection outcome as before, reported honestly as a skip.
+        # A named SKIP, not an escalation (Stage-1 spec-review REJECT): the
+        # predicate HOLDS; the live cell, not the manifest, carries text an
+        # automated rewrite would delete, so this run defers rather than
+        # overwrites it.
         return _skip(fr_id, SKIP_LIVE_CELL_HAS_RESIDUAL_TEXT)
+
+    if is_advisory_spec(node.get("spec_path")):
+        # The live adopted spec stays `(inferred)` by decision (SPEC 6.2).
+        return _skip(fr_id, SKIP_ADVISORY_SPEC)
 
     # Widen by the single highest observable layer only, never by every
     # currently-ok layer: the spec's predicate names ONE layer ("the binding
@@ -358,6 +355,7 @@ __all__ = [
     "SKIP_NO_EVIDENCE_YET",
     "SKIP_EXISTING_REQUIRED_NOT_VERIFIED",
     "SKIP_LIVE_CELL_HAS_RESIDUAL_TEXT",
+    "SKIP_ADVISORY_SPEC",
     "highest_ok_layer",
     "bound_but_absent_layers",
     "evaluate_fr",

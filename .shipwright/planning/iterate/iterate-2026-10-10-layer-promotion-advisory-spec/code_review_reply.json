@@ -1,0 +1,4 @@
+{"section": "iterate-2026-10-10-layer-promotion-advisory-spec", "review": [
+ {"severity": "medium", "category": "correctness", "file": "shared/scripts/lib/layer_promotion_policy.py", "line": 21, "finding": "Policy keys on split name 01-adopted, also adopt's default for consumer projects.", "suggestion": "Document as intentional.", "disposition": "accepted-and-fixed"},
+ {"severity": "low", "category": "correctness", "file": "shared/tests/test_layer_promotion.py", "line": 657, "finding": "No direct is_advisory_spec edge-case test.", "suggestion": "Add parametrized test.", "disposition": "accepted-and-fixed"},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/lib/layer_promotion.py", "line": 328, "finding": "Advisory skip runs after escalation branches.", "suggestion": "Optionally move earlier.", "disposition": "rejected-with-reason: keeps ledger contradictions on the adopted spec visible"}]}

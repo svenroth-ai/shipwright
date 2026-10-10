@@ -2831,7 +2831,8 @@ that PR to merge or be reviewed (fire-and-forget is correct here — it is an
 opportunistic side artifact, not this run's deliverable). Result shape + `sweep_warnings()` live in a sibling module,
 `shared/scripts/lib/layer_promotion_sweep_result.py`, split out purely to
 keep `layer_promotion_sweep.py` under the file-size guideline (mirrors the
-existing `lib.sweep_result` split for the outbox sweep). **Never a gate:**
+existing `lib.sweep_result` split for the outbox sweep). **Advisory specs are never promoted:** the live adopted spec (`<planning>/01-adopted/spec.md`) keeps every `Layers` cell `(inferred)` by SPEC 6.2 — four integration guards pin it, because an unmarked cell flips provenance to `explicit` and a coverage gap then hard-aborts. `lib/layer_promotion_policy.is_advisory_spec` makes `evaluate_fr` return the named skip `advisory_spec_never_promoted` for any FR in such a split, so the sweep no longer opens a promotion PR those guards reject. Other specs promote as before. The rule keys on the split name, so a brownfield project's own `01-adopted` spec (which `/shipwright-adopt` seeds `(inferred)` too) stays advisory as well — on purpose.
+**Never a gate:**
 every non-decisive outcome (no traceability manifest — most consumer
 projects, no network, a `gh`-auth failure, evidence not yet confirmed, an
 existing open promotion PR, `SHIPWRIGHT_ITERATE_NO_FETCH=1`) degrades to a
