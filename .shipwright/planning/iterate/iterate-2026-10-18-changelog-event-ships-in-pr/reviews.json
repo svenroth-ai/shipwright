@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-18-changelog-event-ships-in-pr",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:17:32.861285+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:20:19.576822+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 358,
+          "finding": "git diff --quiet (no HEAD) compares worktree to index; a staged-but-uncommitted log is skipped.",
+          "suggestion": "Use git diff --quiet HEAD -- shipwright_events.jsonl || git commit ...",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py",
+          "line": 20,
+          "finding": "Ordering test does not require record after gh pr create nor pin the diff-quiet guard.",
+          "suggestion": "assert create < record < guard < commit < push < merge",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py",
+          "line": 33,
+          "finding": "On-main test is a layout check only.",
+          "suggestion": "Also assert the instruction text 'before `git push --tags origin main`'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 367,
+          "finding": "Merge right after push may be refused by pending required checks (pre-existing race).",
+          "suggestion": "Optional --auto note; out of scope.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-18T14:20:19.326760+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:20:19.458172+00:00",
+      "disposition": "docs-only skill prose + test; doubt pass is conditional (no migrations/async/irreversible ops)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:20:19.576822+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:18:44.851952+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:20:19.576822+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-18T14:20:19.576822+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
