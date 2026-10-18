@@ -1,0 +1,49 @@
+{
+  "run_id": "iterate-2026-10-18-changelog-event-ships-in-pr",
+  "date": "2026-10-18T14:20:53.154073Z",
+  "event_at": "2026-10-10T20:54:12.334973+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/changelog-event-ships-in-pr",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-18-changelog-event-ships-in-pr",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Step 7 records the changelog event after gh pr create and commits+pushes it before gh pr merge",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py::test_event_is_recorded_and_committed_before_merge PASSED"
+      },
+      {
+        "behavior": "event recorded exactly once (no post-merge duplicate)",
+        "disposition": "tested",
+        "evidence": "test_skill_event_ships_in_release_pr.py::test_event_is_recorded_once PASSED"
+      },
+      {
+        "behavior": "on-main case records before the tag push",
+        "disposition": "tested",
+        "evidence": "test_skill_event_ships_in_release_pr.py::test_on_main_case_records_before_tag_push PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_billing"
+  ]
+}

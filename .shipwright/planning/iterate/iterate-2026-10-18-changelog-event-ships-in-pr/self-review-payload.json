@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Event now recorded+committed+pushed on the release branch before gh pr merge; on-main case before tag push."},
+{"name":"Error Handling","verdict":"pass","note":"commit_event_followup.py no-ops for gitignored/untracked/clean/staged; failure does not skip merge semantics beyond a visible non-zero."},
+{"name":"Security Basics","verdict":"pass","note":"Doc/test only; no secrets."},
+{"name":"Test Quality","verdict":"pass","note":"3 tests pin ordering record<commit<push<merge, single record_event, on-main ordering."},
+{"name":"Performance Basics","verdict":"n/a","note":"Skill prose."},
+{"name":"Naming & Structure","verdict":"pass","note":"Test file follows sibling test style."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No IO-boundary code touched; SKILL.md prose only."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips/sleeps."}]}

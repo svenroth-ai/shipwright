@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-18-changelog-event-ships-in-pr",
+  "date": "2026-10-18",
+  "section": "Iterate — bug: changelog event ships in release PR",
+  "title": "Changelog phase_completed event ships in the release PR",
+  "context": "The changelog skill appended the release phase_completed event to shipwright_events.jsonl after the release PR merged and never committed it (webui v0.28.0, monorepo v0.34.0), leaving a stray line that needed a manual follow-up PR and later blocked a fast-forward.",
+  "decision": "Step 7 now records the event on the release branch right after gh pr create, commits it path-scoped (no-op when the log is ignored/unchanged), pushes, and only then merges; the on-main case records before the tag push.",
+  "consequences": "The event line merges with the release PR; no post-merge main-checkout writes remain. The event is recorded before the merge completes.",
+  "rationale": "Writing into the release PR needs no extra PR and keeps the PR URL in the detail.",
+  "rejected": "Follow-up PR after merge: a second PR per release and still racy; commit_event_followup.py: hardcoded iterate wording and main-root redirect.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

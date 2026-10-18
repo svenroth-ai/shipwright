@@ -342,6 +342,13 @@ gh pr create \
 > [release-workflow.md](references/release-workflow.md); full conventions live
 > in `/shipwright-iterate` B1a.
 
+**Record changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). Needs `{PR_URL}`; with no PR (on main) use `--detail "v{version} — tagged on main"` and run it before `git push --tags origin main`. `{shared_root}` = `{plugin_root}/../../shared`.
+```bash
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — {PR_URL}"
+git diff --quiet HEAD -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl
+git push origin HEAD
+```
+
 **Autonomous mode:** After creating the PR, merge it immediately:
 ```bash
 gh pr merge --merge --delete-branch
@@ -367,18 +374,6 @@ uv run "{shared_root}/scripts/tools/publish_release_notes.py" \
 Read `status` from the JSON and add ONE line to the closing summary:
 `ok`/`exists` (with `url`) print the release link; `skipped`/`failed` print
 `reason` verbatim — never swallowed, never a hard stop.
-
-**Record changelog event** (captures version and PR URL for downstream consumers):
-```bash
-uv run "{shared_root}/scripts/tools/record_event.py" \
-  --project-root "$(pwd)" \
-  --type phase_completed \
-  --phase changelog \
-  --detail "v{version} — {PR_URL}"
-```
-Where `{shared_root}` = `{plugin_root}/../../shared`.
-
-If no PR was created (on main), use `--detail "v{version} — tagged on main"`.
 
 **Phase complete — update pipeline state:**
 
