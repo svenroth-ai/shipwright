@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"A cancelled check run superseded by a later-started run of the same name no longer counts as failing; the card's stated cause (PR 889/888) is reproduced from live check-run data."},
+{"name":"Error Handling","verdict":"pass","note":"Non-dict entries and runs without started_at fall back to the old behaviour (still counted), so unknown input never hides a failure."},
+{"name":"Security Basics","verdict":"pass","note":"Pure classifier over API data; names still pass through _sanitize_name; no new I/O."},
+{"name":"Test Quality","verdict":"pass","note":"Three new tests: superseded cancel ignored, latest cancel still fails, real failure never masked; existing 26 tests unchanged and green."},
+{"name":"Performance Basics","verdict":"pass","note":"Two linear passes over at most 100 check runs."},
+{"name":"Naming & Structure","verdict":"pass","note":"Same module and style; no new file; function stays small."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; the card payload shape is untouched."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips added."}
+]}

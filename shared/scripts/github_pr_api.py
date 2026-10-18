@@ -61,14 +61,41 @@ def _failing_check_names(check_runs: list[dict] | None) -> list[str]:
     Pure. Only ``status == "completed"`` runs with a failing ``conclusion``
     count — a pending / queued check is not a failure. Sorting + dedup make the
     derived payload deterministic regardless of API ordering.
+
+    A ``cancelled`` run is superseded — not a failure — when a later-started run
+    of the same name exists. ``filter=latest`` does not collapse these: a workflow
+    with ``concurrency: cancel-in-progress`` (``pr-review.yml``) cancels its
+    earlier runs when Dependabot fires ``opened``/``labeled``/``synchronize`` in
+    quick succession, and each cancelled run is a distinct workflow run. Only
+    ``cancelled`` is discounted this way: a real failure is never masked by a
+    later same-named run. Check runs carry no workflow identity here, so a
+    cancelled run is also discounted by a later same-named run of a *different*
+    workflow; that is accepted (a cancel is not a verdict, and a same-named
+    failing run still counts). ``started_at`` values compare as strings, which
+    is sound for GitHub's fixed ``YYYY-MM-DDTHH:MM:SSZ`` format.
     """
+    runs = [r for r in (check_runs or []) if isinstance(r, dict)]
+    latest_start: dict[str, str] = {}
+    for run in runs:
+        started = run.get("started_at")
+        if isinstance(started, str):
+            name = _sanitize_name(run.get("name"))
+            latest_start[name] = max(started, latest_start.get(name, ""))
+
     names: set[str] = set()
-    for run in check_runs or []:
-        if not isinstance(run, dict) or run.get("status") != "completed":
+    for run in runs:
+        if run.get("status") != "completed":
             continue
         conclusion = run.get("conclusion")
-        if isinstance(conclusion, str) and conclusion.lower() in _FAILED_CONCLUSIONS:
-            names.add(_sanitize_name(run.get("name")))
+        if not (isinstance(conclusion, str)
+                and conclusion.lower() in _FAILED_CONCLUSIONS):
+            continue
+        name = _sanitize_name(run.get("name"))
+        started = run.get("started_at")
+        if (conclusion.lower() == "cancelled" and isinstance(started, str)
+                and latest_start.get(name, "") > started):
+            continue
+        names.add(name)
     return sorted(names)
 
 

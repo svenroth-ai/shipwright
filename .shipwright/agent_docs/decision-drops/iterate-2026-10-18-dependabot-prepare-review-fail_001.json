@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-18-dependabot-prepare-review-fail",
+  "date": "2026-10-18",
+  "section": "Iterate — bug: superseded cancelled check runs raised false gh-pr-ci cards",
+  "title": "Ignore a cancelled check run once a later same-named run exists",
+  "context": "PR 888/889 (Dependabot) produced gh-pr-ci triage cards naming Prepare review request, which was green. pr-review.yml cancel-in-progress cancels the earlier runs of Dependabot's opened/labeled/synchronize burst, and filter=latest still lists those cancelled runs.",
+  "decision": "github_pr_api._failing_check_names drops a cancelled run when a later-started run with the same name exists. Only cancelled is discounted; real failures are never masked.",
+  "consequences": "No more false cards from concurrency-superseded runs. The PR Review commit status (the real blocker on workflow-file PRs) is still not read by the producer.",
+  "rationale": "Narrow by design: only cancelled is discounted, so a genuine failure is never hidden by a later same-named run. A cancelled run may be discounted by a same-named run of another workflow; accepted, a cancel is not a verdict.",
+  "rejected": "Per-name newest-wins for all conclusions: could mask a failure behind a same-named job from another workflow.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

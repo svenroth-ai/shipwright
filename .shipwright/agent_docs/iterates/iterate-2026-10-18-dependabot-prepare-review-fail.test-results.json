@@ -1,0 +1,79 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-18-dependabot-prepare-review-fail",
+    "date": "2026-10-18",
+    "unit": {
+      "status": "passed",
+      "passed": 29,
+      "total": 29
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "cancelled check run superseded by a later same-named run is not reported failing",
+          "disposition": "tested",
+          "evidence": "test_github_pr_api_superseded_cancel.py::test_cancelled_run_superseded_by_later_run_is_not_failing PASSED"
+        },
+        {
+          "behavior": "a cancelled run that is the latest still counts as failing",
+          "disposition": "tested",
+          "evidence": "test_github_pr_api_superseded_cancel.py::test_cancelled_run_that_is_the_latest_still_fails PASSED"
+        },
+        {
+          "behavior": "a real failure is never masked by a later same-named run",
+          "disposition": "tested",
+          "evidence": "test_github_pr_api_superseded_cancel.py::test_real_failure_is_never_masked_by_a_later_same_named_run PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_github_pr_api_superseded_cancel.py shared/tests/test_github_triage_pr_ci.py -q",
+      "exit_code": 0,
+      "tests_run": 29,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\dependabot-prepare-review-fail\\.shipwright\\runs\\iterate-2026-10-18-dependabot-prepare-review-fail\\surface_verification.log",
+      "timestamp": "2026-10-18T18:23:15.087Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-18-dependabot-prepare-review-fail",
+    "commit": "837dfda6337b5137d0e1c33a1155182c72ea2f78",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
