@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-23-fix-certifi-ghsa-6q48",
+  "date": "2026-10-23",
+  "section": "Iterate — change: certifi lock bump",
+  "title": "Bump certifi to 2026.10.23 in three uv.lock files",
+  "context": "Trivy reported GHSA-6q48-6c7w-9gw2 (critical, emSign root CAs with compromised intermediate keys) in uv.lock, plugins/shipwright-plan/uv.lock and plugins/shipwright-security/uv.lock, failing the required Shipwright Security Scan on every PR.",
+  "decision": "uv lock --upgrade-package certifi in the three directories: 2026.2.25 -> 2026.10.23 (fix version 2026.10.19).",
+  "consequences": "Only the certifi entries changed. No other lock pins certifi and no pyproject caps it.",
+  "rationale": "Fix the vulnerability instead of suppressing it.",
+  "rejected": "Accepting the risk in the scanner register: a fix version exists.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
