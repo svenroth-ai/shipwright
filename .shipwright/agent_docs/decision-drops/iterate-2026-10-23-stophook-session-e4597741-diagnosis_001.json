@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-23-stophook-session-e4597741-diagnosis",
+  "date": "2026-10-23",
+  "section": "Iterate — bug: worktree gate never armed on adopted projects",
+  "title": "Worktree gate also arms for adopted projects",
+  "context": "An autonomous iterate in the shipwright-webui repo edited the main checkout because iterate_worktree_gate._iterate_eligible only accepted status complete or a non-empty iterate_history; an adopted repo drops back to in_progress with an empty history.",
+  "decision": "_iterate_eligible also accepts a non-empty adoption object (same rule as project_facts.is_adopted_run_config); SKILL.md step B and the hooks doc state the same rule.",
+  "consequences": "Adopted repos get the worktree gate. Empty or non-object adoption, in_progress alone, empty config and invalid JSON still do not arm. suggest_iterate still branches on status alone (advisory only).",
+  "rationale": "Gate and skill step B must agree, and adoption is the existing signal for an onboarded project.",
+  "rejected": "Setting status complete in the webui run_config: fixes one repo, leaves every adopted repo ungated.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

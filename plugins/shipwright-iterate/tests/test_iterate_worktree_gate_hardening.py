@@ -121,6 +121,23 @@ def test_iterate_history_alone_makes_a_project_eligible(repo):
     assert handle_payload(_prompt(repo)) is not None
 
 
+@pytest.mark.covers("FR-01.11/AC40")
+def test_adopted_project_is_eligible_even_while_in_progress_with_empty_history(repo):
+    """An adopted repo (webui) drops back to ``in_progress`` after a later phase; its history stays empty."""
+    config = '{"status": "in_progress", "iterate_history": [], "adoption": {"adopted_at": "2026-04-30"}}'
+    (repo / "shipwright_run_config.json").write_text(config, encoding="utf-8")
+    assert handle_payload(_prompt(repo)) is not None
+    assert handle_payload(_tool(repo, "Bash", command="rm -rf x"))["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+@pytest.mark.covers("FR-01.11/AC40")
+@pytest.mark.parametrize("adoption", ["{}", "null", "true", '"yes"', "[1]"])
+def test_empty_or_non_object_adoption_does_not_arm(repo, adoption):
+    (repo / "shipwright_run_config.json").write_text('{"status": "in_progress", "adoption": %s}' % adoption, encoding="utf-8")
+    assert handle_payload(_prompt(repo)) is None
+    assert handle_payload(_tool(repo, "Bash", command="rm -rf x")) is None
+
+
 @COVERS
 @pytest.mark.parametrize("command", [
     "echo hi\rRemove-Item a.txt",

@@ -215,13 +215,20 @@ def handle_payload(payload: dict) -> dict | None:
 
 def _iterate_eligible(main_root: Path) -> bool:
     """SKILL.md step B: iterate only runs on a completed project (run_config
-    ``status: complete`` or an ``iterate_history``). Arming a project the skill
-    will refuse would block its session for 24 h for nothing."""
+    ``status: complete``, an ``iterate_history``, or a non-empty ``adoption``
+    object: an adopted repo drops back to ``in_progress`` once a later pipeline
+    phase runs on it, while its ``iterate_history`` stays empty — iterates live
+    in files — yet it is exactly what iterate is for). Arming a project the
+    skill will refuse would block its session for 24 h for nothing."""
     try:
         config = json.loads((main_root / "shipwright_run_config.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
-    return isinstance(config, dict) and (config.get("status") == "complete" or bool(config.get("iterate_history")))
+    if not isinstance(config, dict):
+        return False
+    adoption = config.get("adoption")  # same rule as project_facts.is_adopted_run_config
+    adopted = isinstance(adoption, dict) and bool(adoption)
+    return config.get("status") == "complete" or bool(config.get("iterate_history")) or adopted
 
 
 def _is_campaign(prompt: object, tool_input: object) -> bool:
