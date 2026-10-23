@@ -1,0 +1,75 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-23-fix-certifi-ghsa-6q48",
+    "date": "2026-10-23",
+    "unit": {
+      "status": "passed",
+      "passed": 1077,
+      "total": 1077
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "lockfile bump to certifi 2026.10.23 keeps the security plugin test suite green (the plugin that resolves certifi)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests: 1077 passed, 7 skipped with the new lock"
+        },
+        {
+          "behavior": "Trivy no longer reports GHSA-6q48-6c7w-9gw2 for the three locks",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the advisory database lives in the CI scanner; the PR's Shipwright Security Scan check is the verification"
+        }
+      ],
+      "counts": {
+        "testable": 1,
+        "tested": 1,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-security --extra dev pytest plugins/shipwright-security/tests -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 1077,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\fix-certifi-ghsa-6q48\\.shipwright\\runs\\iterate-2026-10-23-fix-certifi-ghsa-6q48\\surface_verification.log",
+      "timestamp": "2026-10-23T21:29:20.028Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-23-fix-certifi-ghsa-6q48",
+    "commit": "0202d31aa2750e3ce375d75cfa1039a9d65c38af",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
