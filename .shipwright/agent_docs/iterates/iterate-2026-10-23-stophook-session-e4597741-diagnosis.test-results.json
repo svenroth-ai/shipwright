@@ -1,0 +1,80 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-23-stophook-session-e4597741-diagnosis",
+    "date": "2026-10-23",
+    "unit": {
+      "status": "passed",
+      "passed": 39,
+      "total": 39
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "adopted project (in_progress, empty iterate_history, non-empty adoption) arms the worktree gate and the gate then denies a main-checkout write",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_iterate_worktree_gate_hardening.py::test_adopted_project_is_eligible_even_while_in_progress_with_empty_history PASSED"
+        },
+        {
+          "behavior": "empty or non-object adoption (null, {}, true, string, list) never arms the gate and allows later tool calls",
+          "disposition": "tested",
+          "evidence": "test_iterate_worktree_gate_hardening.py::test_empty_or_non_object_adoption_does_not_arm PASSED (5 cases)"
+        },
+        {
+          "behavior": "in_progress without adoption, empty config and invalid JSON still never arm",
+          "disposition": "tested",
+          "evidence": "test_iterate_worktree_gate_hardening.py::test_project_the_skill_would_refuse_is_never_armed PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-iterate --extra dev pytest plugins/shipwright-iterate/tests/test_iterate_worktree_gate_hardening.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 39,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\stophook-session-e4597741-diagnosis\\.shipwright\\runs\\iterate-2026-10-23-stophook-session-e4597741-diagnosis\\surface_verification.log",
+      "timestamp": "2026-10-23T21:13:09.477Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-23-stophook-session-e4597741-diagnosis",
+    "commit": "5d1098c7f7b9d2a009c561406a3afbbff79730ff",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

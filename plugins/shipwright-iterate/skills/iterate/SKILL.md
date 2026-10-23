@@ -54,7 +54,7 @@ In plain words (shared index → docs/guide.md Appendix A):
 
 ### B. Validate Project
 
-Verify `shipwright_run_config.json` exists with `status: "complete"` (or `iterate_history` exists). Otherwise print the "Completed Project Required" notice and **stop**.
+Verify `shipwright_run_config.json` exists with `status: "complete"` (or `iterate_history` exists, or a non-empty `adoption` block from `/shipwright-adopt`). Otherwise print the "Completed Project Required" notice and **stop**.
 
 ### B1. Resumable Iterate Run
 

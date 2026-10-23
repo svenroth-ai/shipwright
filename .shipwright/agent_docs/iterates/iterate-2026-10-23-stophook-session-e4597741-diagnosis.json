@@ -1,0 +1,60 @@
+{
+  "run_id": "iterate-2026-10-23-stophook-session-e4597741-diagnosis",
+  "date": "2026-10-23T21:13:38.428591Z",
+  "event_at": "2026-10-18T18:23:40.164928+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/stophook-session-e4597741-diagnosis",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-23-stophook-session-e4597741-diagnosis",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "adopted project (in_progress, empty iterate_history, non-empty adoption) arms the worktree gate and the gate then denies a main-checkout write",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_iterate_worktree_gate_hardening.py::test_adopted_project_is_eligible_even_while_in_progress_with_empty_history PASSED"
+      },
+      {
+        "behavior": "empty or non-object adoption (null, {}, true, string, list) never arms the gate and allows later tool calls",
+        "disposition": "tested",
+        "evidence": "test_iterate_worktree_gate_hardening.py::test_empty_or_non_object_adoption_does_not_arm PASSED (5 cases)"
+      },
+      {
+        "behavior": "in_progress without adoption, empty config and invalid JSON still never arm",
+        "disposition": "tested",
+        "evidence": "test_iterate_worktree_gate_hardening.py::test_project_the_skill_would_refuse_is_never_armed PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-iterate --extra dev pytest plugins/shipwright-iterate/tests/test_iterate_worktree_gate_hardening.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 39,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\stophook-session-e4597741-diagnosis\\.shipwright\\runs\\iterate-2026-10-23-stophook-session-e4597741-diagnosis\\surface_verification.log",
+    "timestamp": "2026-10-23T21:13:09.477Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component"
+  ]
+}
