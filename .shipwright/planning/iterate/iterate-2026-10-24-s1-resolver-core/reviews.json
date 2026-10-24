@@ -142,69 +142,33 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 8,
+      "findings_count": 6,
       "findings": [
         {
           "severity": "medium",
-          "category": "correctness",
-          "file": "shared/scripts/profile_resolver.py",
+          "category": "performance",
+          "file": "shared/scripts/profile_test_isolation.py",
           "line": null,
-          "finding": "Python 3.11 raises RuntimeError on a symlink loop in Path.resolve(), escaping the ValueError error contract and crashing list_profiles.",
-          "suggestion": "Catch RuntimeError; map to ProfileInvalid; add test.",
+          "finding": "Autouse fixture calls tmp_path_factory.mktemp per test in 9 roots; make_numbered_dir scans basetemp each call (pytest's own tmp_path already does the same, so this at most doubles an existing cost).",
+          "suggestion": "One session-scoped base dir plus tempfile.mkdtemp per test; re-measure F0.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "shared/scripts/profile_resolver.py",
-          "line": null,
-          "finding": "list_profiles does not skip duplicate directories like resolve_profile does.",
-          "suggestion": "Apply the seen-set.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/profile_resolver.py",
-          "line": null,
-          "finding": "load_profile_file with bare-path dirs mis-ranks shadows.",
-          "suggestion": "Use directory index.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
           "file": "shared/tests/test_profile_resolver.py",
           "line": null,
-          "finding": "test_windows_path_logic_runs_everywhere asserts test data.",
-          "suggestion": "Delete.",
+          "finding": "test_non_profile_files_not_resolvable asserts only ValueError; the deploy-profile.schema entry is unreachable (name rule rejects first).",
+          "suggestion": "Assert kind per case.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "architecture",
-          "file": "shared/tests/fixtures/profile_list_contract_v1.json",
+          "file": "shared/tests/test_profile_resolver.py",
           "line": null,
-          "finding": "Fixture pins the set of bundled names.",
-          "suggestion": "Filter bundled rows.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "boundary probes",
-          "line": null,
-          "finding": "Canary asserts tempdir, wrong under --basetemp.",
-          "suggestion": "Compare with the fixture value.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/profile_model.py",
-          "line": null,
-          "finding": "Four blank lines.",
-          "suggestion": "Collapse.",
+          "finding": "test_non_profile_files_never_listed pins the exact bundled name set.",
+          "suggestion": "Use bundled_names() and disjointness.",
           "source": "code-reviewer"
         },
         {
@@ -212,81 +176,122 @@
           "category": "architecture",
           "file": "shared/tests/test_resolve_profile_cli.py",
           "line": null,
-          "finding": "tools dir stays on sys.path for the shared/tests process.",
-          "suggestion": "Load by file path or remove after import.",
+          "finding": "shared/scripts/tools permanently appended to sys.path in test process.",
+          "suggestion": "Load by file path or restore sys.path.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/profile_model.py",
+          "line": null,
+          "finding": "os.path.isabs accepts drive-less rooted path on py3.11/3.12 Windows for SHIPWRIGHT_USER_PROFILES_DIR.",
+          "suggestion": "Require a drive/UNC root on nt.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/profile_resolver.py",
+          "line": null,
+          "finding": "Duplicate bundled-shadow warning block in resolve_profile and load_profile_file.",
+          "suggestion": "Extract helper.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T10:09:30.936194+00:00",
+      "completed_at": "2026-10-24T10:46:29.901461+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "6e31eb3acf4b20ab710c0ec0d9a6349f2137a575"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 8,
       "findings": [
         {
           "severity": "medium",
-          "category": "hidden coupling",
-          "file": null,
+          "category": "boundary D1",
+          "file": "shared/scripts/profile_resolver.py",
           "line": null,
-          "finding": "Claim under doubt: boundary probes leave sys.path as found — sys.path.remove deletes the first match, moving shared/scripts from index 0 to the end",
-          "suggestion": "restore sys.path exactly",
+          "finding": "Claim under doubt: Unreadable project profiles dir never silently falls through — A dangling .shipwright/profiles symlink is treated as absent by _listdir (lexists never consulted), so a project profile shadowing a bundled name silently resolves to bundled.",
+          "suggestion": "Raise ProfileInvalid for non-user sources when lexists(dir) but not isdir(dir); warn in list. Disposition: routed to S2 (loader rewiring, no-silent-fallback unit).",
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "boundary",
-          "file": null,
+          "category": "hidden coupling",
+          "file": "shared/scripts/profile_test_isolation.py; */tests/test_profile_resolver_boundary.py",
           "line": null,
-          "finding": "Claim under doubt: a broken candidate never breaks list — deeply nested JSON raises RecursionError, outside the ValueError contract",
-          "suggestion": "map RecursionError to ProfileInvalid",
+          "finding": "Claim under doubt: Boundary probe proves autouse isolation is active — Probes request the fixture by name so deleting autouse=True leaves them green; fixture does not redirect HOME/USERPROFILE; function scope misses collection-time calls.",
+          "suggestion": "Probe asserts os.environ value without requesting the fixture; optionally redirect HOME. Disposition: routed to S2 (first loader that reads the user dir).",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "boundary",
-          "file": null,
+          "category": "TOCTOU",
+          "file": "shared/scripts/profile_resolver.py:256",
           "line": null,
-          "finding": "Claim under doubt: schema-valid means loader-valid — port 3000.0 passes the schema but dev_server validation rejects floats",
-          "suggestion": "S2 normaliser coerces integral floats",
+          "finding": "_row re-resolves between containment check and _load; same trust class as writer of the dir.",
+          "suggestion": "Pass resolved path to _load.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "blast radius",
-          "file": null,
+          "category": "output injection",
+          "file": "shared/scripts/tools/resolve_profile.py:73",
           "line": null,
-          "finding": "Claim under doubt: gitignore negation re-includes only profile JSON — no tmp re-exclusion for atomic writes",
-          "suggestion": "add /.shipwright/profiles/*.tmp",
+          "finding": "list text mode prints raw stems/paths with control chars.",
+          "suggestion": "repr/escape in text mode.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "trust",
-          "file": null,
+          "category": "fixture namespace",
+          "file": "shared/tests/profile_test_fixtures.py",
           "line": null,
-          "finding": "Claim under doubt: source labels are trustworthy — relative SHIPWRIGHT_USER_PROFILES_DIR resolves against repo-controlled cwd",
-          "suggestion": "require an absolute env path; note user is not a trust elevation",
+          "finding": "Global fixtures named project/user_dir in shared/tests.",
+          "suggestion": "Rename.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "schema-vs-loader",
+          "file": "shared/scripts/profile_resolver.py:52",
+          "line": null,
+          "finding": "NaN/Infinity/1e300 accepted by json.load.",
+          "suggestion": "parse_constant reject; S2 normaliser hand-off.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "gitignore blast radius",
+          "file": ".gitignore",
+          "line": null,
+          "finding": "Negation re-exposes backups/swap files in profiles dir.",
+          "suggestion": "JSON-only negation or documented residual.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "user source dropped",
+          "file": "shared/scripts/profile_model.py:112",
+          "line": null,
+          "finding": "Relative SHIPWRIGHT_USER_PROFILES_DIR silently ignored without list warning.",
+          "suggestion": "List warning.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T10:14:11.925859+00:00",
+      "completed_at": "2026-10-24T10:51:28.146361+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "312af64b6ab06835c15e3bf50b43f79d98f806c2"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -392,14 +397,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T10:04:43.039224+00:00",
+      "completed_at": "2026-10-24T10:42:52.854488+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "df2cdd15dc2e6e8e764d4f63fd346c9d2f5d01d4"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
