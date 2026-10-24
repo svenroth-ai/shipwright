@@ -1,0 +1,9 @@
+{"section":"A3-validator-fixes","review":[
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/phase_task_planning.py","line":69,"finding":"Split resolver read with utf-8 not utf-8-sig; a BOM config yields no splits and the design gate asks.","suggestion":"utf-8-sig and catch UnicodeDecodeError."},
+{"severity":"low","category":"architecture","file":"plugins/shipwright-run/scripts/lib/phase_validators_split.py","line":16,"finding":"Importing phase_task_planning pulls phase_task_core and its sys.path.insert(0) side effect.","suggestion":"Accept and document, or move the resolver into a leaf module."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/phase_validators_split.py","line":143,"finding":"Plan validator does not check split_id membership (design does).","suggestion":"Same membership check as design."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/phase_validators_canon.py","line":118,"finding":"v1 completions without SHIPWRIGHT_RUN_ID record a canon-degraded inform note each (dashboard churn) until A4.","suggestion":"No change if A4 is next."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/phase_validators_late.py","line":16,"finding":"_skip_reason is stricter (non-blank str) than before; undocumented.","suggestion":"Document in the docs test row."},
+{"severity":"low","category":"readability","file":"docs/hooks-and-pipeline.md","line":3742,"finding":"Plan row omits the archived-split fallback.","suggestion":"Append the archive fallback."},
+{"severity":"low","category":"architecture","file":"plugins/shipwright-run/tests/test_phase_validators_split.py","line":845,"finding":"Late and canon tests live in the split test file at ~300 LOC.","suggestion":"Move them to their own modules' test files."}
+]}
