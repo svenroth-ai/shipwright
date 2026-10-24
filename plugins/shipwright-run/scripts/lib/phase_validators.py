@@ -26,7 +26,7 @@ _LIB_DIR = str(Path(__file__).resolve().parent)
 if _LIB_DIR not in sys.path:
     sys.path.append(_LIB_DIR)
 
-from phase_validators_canon import _run_canon_checks  # noqa: E402,F401
+from phase_validators_canon import _run_canon_checks  # noqa: E402
 from phase_validators_late import (  # noqa: E402
     _validate_changelog,
     _validate_compliance,

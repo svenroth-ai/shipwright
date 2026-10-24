@@ -16,7 +16,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Optional, ParamSpec
 
-# Local lib imports — phase_state_machine lives next to us
+# Local lib imports — sibling modules (run_config_store) live next to us
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from run_config_store import (  # noqa: E402
@@ -74,7 +74,7 @@ class _PhaseTasksLock(FileLock):
     both directions — see ``test_phase_tasks_lock.py``). Uses
     ``run_config_store.DEFAULT_LOCK_TIMEOUT_SECONDS`` (30s), not the class's
     600s default sized for the triage sweep — this guards the same fast RMW
-    the 30s bound was chosen for. Every caller below catches
+    the 30s bound was chosen for. Every caller (lifecycle/recovery/planning modules) catches
     :class:`LockTimeout` to keep the module's ``ok: False`` contract.
 
     Reentrancy is a hang guardrail, not licence to nest: no caller does

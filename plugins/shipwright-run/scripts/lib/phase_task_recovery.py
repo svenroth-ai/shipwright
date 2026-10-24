@@ -1,4 +1,5 @@
 """Phase-task recovery (user escape hatch), extracted from ``phase_task_lifecycle``."""
+# Import only through ``phase_task_lifecycle`` (it puts this lib dir on sys.path first).
 from __future__ import annotations
 
 from pathlib import Path

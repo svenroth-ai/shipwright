@@ -1,4 +1,5 @@
 """Splits freeze and next-phase planning, extracted from ``phase_task_lifecycle``."""
+# Import only through ``phase_task_lifecycle`` (it puts this lib dir on sys.path first).
 from __future__ import annotations
 
 import json

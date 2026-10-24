@@ -250,8 +250,9 @@ def test_phase_task_lifecycle_still_exposes_every_mutator_the_loop_needs():
     # The mutators live in phase_task_lifecycle plus the sibling modules it re-exports
     # (A2 extraction); the facade must still name every one of them.
     src = facade + "".join(
-        (lib / f"phase_task_{part}.py").read_text(encoding="utf-8")
-        for part in ("core", "lookup", "planning", "recovery")
+        path.read_text(encoding="utf-8")
+        for path in sorted(lib.glob("phase_task_*.py"))
+        if path.name != "phase_task_lifecycle.py"
     )
     for fn in (
         "def claim_phase_task",
