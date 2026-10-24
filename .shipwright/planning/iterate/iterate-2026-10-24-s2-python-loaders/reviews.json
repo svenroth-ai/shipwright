@@ -69,29 +69,76 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": 297,
+          "finding": "With --layer all, a custom profile whose e2e layer has no command fails after the unit suite already ran, discarding the unit results. The skill prose calls one layer at a time, so it is not reachable today.",
+          "suggestion": "Optionally pre-validate every requested layer before running anything.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": 214,
+          "finding": "The fix hint always says to add testing.unit, even when the failing layer is e2e/integration/pgtap (pgtap needs testing.db_tests).",
+          "suggestion": "Name the key via _PROFILE_LAYER_KEYS.get(layer, layer).",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T12:23:45.168914+00:00",
-      "disposition": "Stage 2 gated behind the Stage-1 spec review, which did not pass (D2 hot-file question escalated); delegated to the campaign orchestrator 3f-bis re-run",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T14:57:58.775580+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": 214,
+          "finding": "Claim under doubt: A verbatim copy of a bundled node profile (the documented way to start a custom one) declares testing.unit/e2e without a command, so test_runner exits 3 for the unit layer and skips the Playwright runner for e2e; the hint always names testing.unit. — A verbatim copy of a bundled node profile (the documented way to start a custom one) declares testing.unit/e2e without a command, so test_runner exits 3 for the unit layer and skips the Playwright runner for e2e; the hint always names testing.unit.",
+          "suggestion": "Name the real key per layer (testing.<key>.command) with a test that copies the bundled profile verbatim; S5 docs must say a copy needs an explicit command per declared layer. Routed to S5.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-iterate/skills/iterate/references/design-and-testing.md",
+          "line": 149,
+          "finding": "Claim under doubt: dev_server now exits 2/3 with kind on profile errors, but iterate/build/adopt prose sites send any start failure into fix/retry loops; iterate has no earlier profile gate. — dev_server now exits 2/3 with kind on profile errors, but iterate/build/adopt prose sites send any start failure into fix/retry loops; iterate has no earlier profile gate.",
+          "suggestion": "Add the one-sentence stop-on-profile-error rule at the dev_server call sites. Routed to S4.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 5180,
+          "finding": "Claim under doubt: The dev_server row says the dev_url fallback applies only with no profile or a sentinel; code also falls back for any resolved profile declaring neither services nor dev_server. — The dev_server row says the dev_url fallback applies only with no profile or a sentinel; code also falls back for any resolved profile declaring neither services nor dev_server.",
+          "suggestion": "Correct the row. Routed to S5 docs sweep.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T12:23:45.283903+00:00",
-      "disposition": "Stage 3 runs only behind a Stage 2 pass, and Stage 2 did not run in this sub-iterate; delegated to the campaign orchestrator re-run",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T15:04:42.482716+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -206,7 +253,7 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T13:00:23.085620+00:00",
+      "completed_at": "2026-10-24T14:55:25.966971+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
