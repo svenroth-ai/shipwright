@@ -22,15 +22,27 @@ from __future__ import annotations
 
 import re
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from .html_tag_scanner import parse_tags  # loaded as lib.design_gate_extras (shared/tests)
+    # loaded as lib.design_gate_extras (shared/tests)
+    from .design_gate_feedback import iteration_touched_flagged_screens, parse_feedback_round
+    from .design_gate_html import (
+        chrome_nav_targets_consistent,
+        screen_declares_nav,
+        standalone_html_violations,
+    )
+    from .design_gate_result import GateResult
 except ImportError:
     # loaded as top-level design_gate_extras — check-design-gates.py puts
     # shared/scripts/lib itself on sys.path.
-    from html_tag_scanner import parse_tags
+    from design_gate_feedback import iteration_touched_flagged_screens, parse_feedback_round
+    from design_gate_html import (
+        chrome_nav_targets_consistent,
+        screen_declares_nav,
+        standalone_html_violations,
+    )
+    from design_gate_result import GateResult
 
 __all__ = [
     "GateResult",
@@ -43,13 +55,6 @@ __all__ = [
     "uploads_preserved",
     "visual_tokens_present",
 ]
-
-
-@dataclass(frozen=True)
-class GateResult:
-    ok: bool
-    detail: str
-    warnings: tuple[str, ...] = ()
 
 
 # --------------------------------------------------------------------------- #
@@ -126,104 +131,6 @@ def flows_present_for_multi_screen_app(screen_count: int, flow_count: int) -> Ga
 
 
 # --------------------------------------------------------------------------- #
-# #5 — shared chrome from one definition
-# --------------------------------------------------------------------------- #
-
-
-def _nav_targets(html: str) -> set[str]:
-    targets = set()
-    for attrs in parse_tags(html):
-        classes = attrs.get("class", "").split()
-        href = attrs.get("href")
-        if href and ("nav-item" in classes or "topnav-link" in classes):
-            targets.add(href)
-    return targets
-
-
-def screen_declares_nav(html: str) -> bool:
-    """Whether a screen's markup carries any ``nav-item``/``topnav-link``
-    anchor at all — tells "genuinely no shared chrome" apart from "no chrome
-    definition despite screens plainly using one" (external review)."""
-    return bool(_nav_targets(html))
-
-
-def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str) -> GateResult:
-    """**#5** — a screen's nav targets (``href`` values on its ``nav-item``/
-    ``topnav-link`` anchors) must be the SAME SET the chrome definition
-    declares — byte-identical markup isn't required, a different target set
-    is. No-nav screens (Layout C / auth) are exempt. An EXISTING but empty/
-    malformed definition is NOT itself an exemption — a screen that plainly
-    uses nav markup still has to draw it from somewhere (round 9)."""
-    chrome_targets = _nav_targets(chrome_definition_html)
-    screen_targets = _nav_targets(screen_html)
-    if not chrome_targets:
-        if screen_targets:
-            return GateResult(
-                False,
-                f"chrome definition declares no nav targets, but the screen "
-                f"declares {sorted(screen_targets)} — not drawn from it",
-            )
-        return GateResult(True, "chrome definition declares no nav targets to compare")
-    if not screen_targets:
-        return GateResult(True, "screen has no nav markup (e.g. an auth/Layout-C screen) — exempt")
-    if screen_targets != chrome_targets:
-        return GateResult(
-            False,
-            f"nav targets {sorted(screen_targets)} do not match the chrome "
-            f"definition's {sorted(chrome_targets)}",
-        )
-    return GateResult(True, f"{len(screen_targets)} nav target(s) match the chrome definition")
-
-
-# --------------------------------------------------------------------------- #
-# #6 — standalone HTML
-# --------------------------------------------------------------------------- #
-
-#: Google Fonts is the one documented exception (`step-4-generate-screens.md`
-#: "no external dependencies except optional CDN font").
-_ALLOWED_EXTERNAL_HOSTS = ("fonts.googleapis.com", "fonts.gstatic.com")
-
-_WHITESPACE_STRIP_RE = re.compile(r"[\t\n\r]")
-
-
-def _external_host(raw: str) -> str | None:
-    """The value's hostname if external (``http``/``https`` or protocol-
-    relative), else ``None``. Decided by SCHEME, not leading-slash count —
-    a real browser also resolves ``https:evil.example`` (0 slashes) and
-    ``https:/evil.example`` (1) externally (round 8b). Tab/newline are
-    stripped from anywhere in the value, not just the ends, since a literal
-    one inside a quoted attribute is valid HTML. Never a substring match —
-    ``https://evil.example/?=fonts.googleapis.com`` must not pass."""
-    from urllib.parse import urlparse
-
-    normalized = _WHITESPACE_STRIP_RE.sub("", raw).strip().replace("\\", "/")
-    if not normalized:
-        return None
-    if normalized.startswith("//"):
-        parsed = urlparse(f"https:{normalized}")
-    else:
-        parsed = urlparse(normalized)
-        if parsed.scheme not in ("http", "https"):
-            return None
-    return (parsed.hostname or "").lower()
-
-
-def standalone_html_violations(html: str) -> list[str]:
-    """**#6** — every external ``src``/``href`` reference outside the one
-    allowed font-CDN exception. Empty list means the file is standalone."""
-    violations = []
-    for attrs in parse_tags(html):
-        for name in ("src", "href"):
-            raw = attrs.get(name)
-            if not raw:
-                continue
-            host = _external_host(raw)
-            if host is not None and host not in _ALLOWED_EXTERNAL_HOSTS:
-                violations.append(raw)
-    return violations
-
-
-# --------------------------------------------------------------------------- #
 # #8 — uploads preserved
 # --------------------------------------------------------------------------- #
 
@@ -256,45 +163,3 @@ def uploads_preserved(project_root: Path, uploads_dir: Path) -> GateResult:
     if modified:
         return GateResult(False, f"{len(modified)} uploaded file(s) modified after being supplied: {modified[:3]}")
     return GateResult(True, "no supplied upload was modified")
-
-
-# --------------------------------------------------------------------------- #
-# #9 — iteration touches only the flagged screen(s)
-# --------------------------------------------------------------------------- #
-
-_ROUND_ENTRY_RE = re.compile(
-    r"^###\s+#\d+\s+.+?\s+—\s+(?P<status>CHANGES|REJECTED|APPROVED|REVIEWED)\s*$"
-    r"\n\n\*\*File:\*\*\s*(?P<file>\S+)",
-    re.MULTILINE,
-)
-
-
-def parse_feedback_round(content: str) -> list[tuple[str, str]]:
-    """``[(file, status)]`` for every per-screen entry in a
-    ``design-feedback-round{N}.md`` export (format:
-    ``review-viewer-template.md``'s ``exportFeedback``)."""
-    return [(m.group("file"), m.group("status")) for m in _ROUND_ENTRY_RE.finditer(content)]
-
-
-def iteration_touched_flagged_screens(
-    flagged_files: list[str], git_modified_files: list[str]
-) -> GateResult:
-    """**#9** — every screen flagged CHANGES/REJECTED in this round must
-    actually have been touched. Extra modified files beyond the flagged set
-    are a warning, not a failure: Chrome Change Propagation legitimately
-    touches every screen in one round, indistinguishable from a drive-by
-    change without reading the decision log."""
-    modified = set(git_modified_files)
-    untouched = [f for f in flagged_files if f not in modified]
-    if untouched:
-        return GateResult(
-            False,
-            f"{len(untouched)} flagged screen(s) were not actually regenerated: {untouched}",
-        )
-    extra = sorted(modified - set(flagged_files))
-    warnings = (
-        (f"{len(extra)} screen(s) changed beyond the flagged set: {extra} — "
-         "legitimate if this round was a chrome-wide propagation",)
-        if extra else ()
-    )
-    return GateResult(True, f"all {len(flagged_files)} flagged screen(s) were touched", warnings)

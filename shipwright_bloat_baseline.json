@@ -585,20 +585,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
-      "limit": 300,
-      "current": 725,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-run/scripts/lib/phase_validators.py",
-      "limit": 300,
-      "current": 495,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-run/tests/test_orchestrator.py",
       "limit": 300,
       "current": 611,
@@ -889,13 +875,6 @@
       "path": "shared/scripts/lib/fr_layer_cell_writer.py",
       "limit": 300,
       "current": 359,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "shared/scripts/lib/gate_policy.py",
-      "limit": 300,
-      "current": 301,
       "state": "grandfathered",
       "adr": null
     },
