@@ -28,8 +28,9 @@ import unicodedata
 from pathlib import Path, PurePosixPath
 
 from .brief_package_manifest import (  # noqa: F401  (re-exported public surface)
-    BRIEF_VERSION, HASH_EXCLUDED_BRIEF_KEYS, PathCollision, _excluded, _walk, iter_package_files,
-    loads_strict, manifest, package_sha256, verify_hash,
+    BRIEF_VERSION, HASH_EXCLUDED_BRIEF_KEYS, PackageUnreadable, PathCollision, Scan, _digest,
+    iter_package_files, loads_strict, manifest, package_sha256, scan_package, unreported_exclusions,
+    verify_hash,
 )
 
 REQUIRED_FILES = ("brief.json", "brief.md", "scope.md", "screen-map.json", "visual-guidelines.md")
@@ -127,29 +128,26 @@ def validate_layout(brief_dir: Path) -> list[dict[str, str]]:
     file reference must name a file the hash covers. Hash freshness is a separate
     question -- see :func:`verify_hash`.
     """
-    root = Path(brief_dir)
-    if not root.is_dir():
+    if not Path(brief_dir).is_dir():
         return [_issue("missing_dir", str(brief_dir), "brief directory does not exist")]
-    issues = [_issue("symlink", link, "links and junctions are not allowed") for link in _walk(root)[1]]
-    for path in _walk(root)[0]:
-        rel = PurePosixPath(*path.relative_to(root).parts)
-        quiet = rel.parts[0] == "evidence" or (rel.name == ".gitkeep" and path.stat().st_size == 0)
-        if _excluded(rel) and not quiet:
-            issues.append(_issue("excluded_content", rel.as_posix(),
-                                 "excluded from the hash but present: remove it (a phase could still read it)"))
-    keys: set[str] = set()
+    found = scan_package(brief_dir)
+    root = found.root
+    issues = [_issue("symlink", link, "links and junctions are not allowed") for link in found.links]
+    issues += [_issue("unreadable_file", ".", f"cannot read: {err}") for err in found.errors]
+    issues += [_issue("excluded_content", rel,
+                      "excluded from the hash but present: remove it (a phase could still read it)")
+               for rel in unreported_exclusions(found)]
+    keys = {k for k, _ in iter_package_files(root, found)}
     try:
-        keys = set(manifest(root))
-        package_sha256(root)
+        _digest(manifest(root, found))
+    except PackageUnreadable:
+        pass  # already reported above, with the failing path
     except PathCollision as exc:
         issues.append(_issue("path_collision", ".", str(exc)))
-        keys = {k for k, _ in iter_package_files(root)}
     except OSError as exc:
         issues.append(_issue("unreadable_file", ".", f"a packaged file cannot be read: {exc}"))
-        keys = {k for k, _ in iter_package_files(root)}
     except ValueError as exc:  # also UnicodeEncodeError (lone surrogate in JSON or a file name)
         issues.append(_issue("unhashable_package", ".", f"the package cannot be hashed: {exc}"))
-        keys = {k for k, _ in iter_package_files(root)}
     brief: dict | None = None
     for name in REQUIRED_FILES:
         if name not in keys:

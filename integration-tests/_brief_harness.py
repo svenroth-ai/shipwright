@@ -187,7 +187,7 @@ def run_harness(project: Path, *, fixture: str = "synthetic-1", mode: str = "dry
     ok = not issues and hash_ok
     autonomy, approved_by = "unknown", None
     try:
-        brief = json.loads((brief_dir / "brief.json").read_text(encoding="utf-8-sig"))
+        brief = brief_package.loads_strict((brief_dir / "brief.json").read_text(encoding="utf-8-sig"))
         autonomy, approved_by = brief.get("autonomy"), brief.get("approved_by")
         autonomy = autonomy if isinstance(autonomy, str) and autonomy.strip() else "unknown"
     except (OSError, ValueError, AttributeError):

@@ -35,6 +35,7 @@ import os
 import unicodedata
 from collections.abc import Iterator
 from pathlib import Path, PurePosixPath
+from typing import NamedTuple
 
 BRIEF_VERSION = 2
 #: Excluded from the hash and never read by a phase (matched case-insensitively).
@@ -81,33 +82,74 @@ def _excluded(rel: PurePosixPath) -> bool:
     return rel.parts[0].lower() in EXCLUDED_TOP_DIRS or _is_junk(rel)
 
 
-def _walk(root: Path) -> tuple[list[Path], list[str]]:
-    """``(files, links)`` below ``root``; a link or junction is reported once, never entered."""
-    resolved = root.resolve()
+class PackageUnreadable(OSError):
+    """A directory or file of the package could not be read."""
+
+
+class Scan(NamedTuple):
+    """One walk of a package: the resolved root, plain files, links, read errors."""
+
+    root: Path
+    files: list[Path]
+    links: list[str]
+    errors: list[str]
+
+
+def scan_package(brief_dir: Path) -> Scan:
+    """Walk ``brief_dir`` once. The root is resolved first and the RESOLVED path is
+    walked, so a relative root, a Windows 8.3 short name or a linked parent directory
+    all behave like the plain absolute path. A link or junction below the root is
+    reported once and never entered; an unreadable directory is recorded in ``errors``."""
+    root = Path(brief_dir).resolve()
     files: list[Path] = []
     links: list[str] = []
-    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+    errors: list[str] = []
+
+    def onerror(exc: OSError) -> None:
+        errors.append(f"{exc.filename}: {exc.strerror or exc}")
+
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False, onerror=onerror):
         here = Path(dirpath)
         plain = []
         for name in dirnames:
-            if _is_link(here / name, resolved):
+            if _is_link(here / name, root):
                 links.append((here / name).relative_to(root).as_posix())
             else:
                 plain.append(name)
         dirnames[:] = plain
         for name in filenames:
-            if _is_link(here / name, resolved):
+            if _is_link(here / name, root):
                 links.append((here / name).relative_to(root).as_posix())
             else:
                 files.append(here / name)
-    return files, links
+    return Scan(root, files, links, errors)
 
 
-def iter_package_files(brief_dir: Path) -> Iterator[tuple[str, Path]]:
+def _quiet_exclusion(rel: PurePosixPath, path: Path) -> bool:
+    """Excluded entries that need no report: the exact-case ``evidence/`` top dir and an empty ``.gitkeep``."""
+    if rel.parts[0] == "evidence":
+        return True
+    try:
+        return rel.name == ".gitkeep" and path.stat().st_size == 0
+    except OSError:
+        return False
+
+
+def unreported_exclusions(found: Scan) -> list[str]:
+    """Paths excluded from the hash that are nevertheless present (a phase could read them)."""
+    out = []
+    for path in found.files:
+        rel = PurePosixPath(*path.relative_to(found.root).parts)
+        if _excluded(rel) and not _quiet_exclusion(rel, path):
+            out.append(rel.as_posix())
+    return out
+
+
+def iter_package_files(brief_dir: Path, _found: Scan | None = None) -> Iterator[tuple[str, Path]]:
     """Yield ``(NFC POSIX relative path, path)`` for every file that belongs to the package."""
-    root = Path(brief_dir)
-    for path in _walk(root)[0]:
-        rel = PurePosixPath(*path.relative_to(root).parts)
+    found = _found or scan_package(brief_dir)
+    for path in found.files:
+        rel = PurePosixPath(*path.relative_to(found.root).parts)
         if not _excluded(rel):
             yield unicodedata.normalize("NFC", rel.as_posix()), path
 
@@ -148,18 +190,23 @@ def _file_digest(path: Path) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def manifest(brief_dir: Path) -> dict[str, str]:
+def manifest(brief_dir: Path, _found: Scan | None = None) -> dict[str, str]:
     """NFC POSIX relative path -> SHA-256 for every packaged file, sorted by path.
 
     Links are skipped here (``validate_layout`` rejects them and :func:`verify_hash`
     fails on them, so a skipped link can never hide content in an accepted package).
     Text (by content, see ``_is_text``) is hashed after CRLF->LF; everything else
     byte-exact. Raises ``PathCollision`` when two files collapse to one NFC path or
-    differ only by case, and ``ValueError`` when ``brief.json`` is not a JSON object.
+    differ only by case, ``PackageUnreadable`` when a directory could not be read (a
+    silently skipped directory would hash as if it were empty), and ``ValueError``
+    when ``brief.json`` is not a JSON object.
     """
+    found = _found or scan_package(brief_dir)
+    if found.errors:
+        raise PackageUnreadable("; ".join(found.errors))
     out: dict[str, str] = {}
     seen: set[str] = set()
-    for key, path in iter_package_files(brief_dir):
+    for key, path in iter_package_files(brief_dir, found):
         if key.casefold() in seen:
             raise PathCollision(f"two files collide on a case-insensitive filesystem: {key!r}")
         seen.add(key.casefold())
@@ -185,16 +232,21 @@ def verify_hash(brief_dir: Path, expected: str | None = None) -> tuple[bool, str
     ``package_sha256`` recorded in its ``brief.json``).
 
     Fails when the package holds a link or junction (its target is outside the
-    hash). Trust anchor: the recorded hash lives INSIDE the package, so by default
+    hash), an unreadable directory, or excluded-but-present content. Trust anchor: the recorded hash lives INSIDE the package, so by default
     this detects an edit of the content or consent fields since the hash was
     recorded, not a rewrite of the whole directory (hash included). Callers that
     need that (approval) pass the ``expected`` hash they hold outside the package.
     """
     try:
-        if _walk(Path(brief_dir))[1]:
+        found = scan_package(brief_dir)
+        if found.links:
             return False, "package contains links or junctions"
-        recorded = expected if expected is not None else             _load_brief(Path(brief_dir) / "brief.json").get("package_sha256")
-        actual = package_sha256(brief_dir)
+        if found.errors:
+            return False, f"unreadable package: {'; '.join(found.errors)}"
+        if unreported_exclusions(found):
+            return False, "package contains excluded content (unhashed files a phase could read)"
+        recorded = expected if expected is not None else _load_brief(found.root / "brief.json").get("package_sha256")
+        actual = _digest(manifest(brief_dir, found))
     except (OSError, ValueError) as exc:  # UnicodeEncodeError is a ValueError
         return False, f"unreadable package: {exc}"
     if not isinstance(recorded, str) or not recorded:

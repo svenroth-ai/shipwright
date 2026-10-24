@@ -440,3 +440,78 @@ def test_verify_hash_against_an_externally_held_hash(tmp_path):
     assert bp.verify_hash(root, expected=actual) == (True, "")
     ok, why = bp.verify_hash(root, expected="0" * 64)
     assert not ok and "mismatch" in why
+
+
+@pytest.mark.covers("FR-01.01")
+def test_a_relative_package_path_hashes_like_the_absolute_one(tmp_path, monkeypatch):
+    root = _package(tmp_path / "pkg")
+    expected = bp.package_sha256(root)
+    monkeypatch.chdir(tmp_path)
+    rel = Path("pkg")
+    assert bp.manifest(rel), "a relative root must not hash as an empty package"
+    assert bp.package_sha256(rel) == expected
+    assert bp.validate_layout(rel) == []
+    assert {k for k, _ in bp.iter_package_files(rel)} == set(bp.manifest(root))
+
+
+@pytest.mark.covers("FR-01.01")
+def test_a_package_reached_through_a_linked_parent_hashes_like_the_real_one(tmp_path):
+    real_parent = tmp_path / "real"
+    real_parent.mkdir()
+    root = _package(real_parent / "pkg")
+    expected = bp.package_sha256(root)
+    _make_link(real_parent, tmp_path / "via")
+    through = tmp_path / "via" / "pkg"
+    assert bp.manifest(through)
+    assert bp.package_sha256(through) == expected
+    assert bp.validate_layout(through) == []
+    brief = json.loads((root / "brief.json").read_text())
+    brief["package_sha256"] = expected
+    _write(root, "brief.json", json.dumps(brief))
+    assert bp.verify_hash(through) == (True, "")
+
+
+@pytest.mark.covers("FR-01.01")
+def test_an_unreadable_directory_is_reported_not_skipped(tmp_path, monkeypatch):
+    from lib import brief_package_manifest as core
+    root = _package(tmp_path / "pkg")
+    real_walk = os.walk
+
+    def walk_with_error(top, followlinks=False, onerror=None):
+        if onerror is not None:
+            onerror(PermissionError(13, "Permission denied", str(Path(top) / "inputs")))
+        yield from real_walk(top, followlinks=followlinks, onerror=onerror)
+
+    monkeypatch.setattr(core.os, "walk", walk_with_error)
+    assert "unreadable_file" in _codes(root)
+    with pytest.raises(bp.PackageUnreadable):
+        bp.manifest(root)
+    ok, why = bp.verify_hash(root, expected="0" * 64)
+    assert not ok and "unreadable" in why
+
+
+@pytest.mark.covers("FR-01.01")
+def test_verify_hash_fails_on_excluded_content(tmp_path):
+    root = _package(tmp_path / "pkg")
+    brief = json.loads((root / "brief.json").read_text())
+    brief["package_sha256"] = bp.package_sha256(root)
+    _write(root, "brief.json", json.dumps(brief))
+    assert bp.verify_hash(root) == (True, "")
+    _write(root, "inputs/._extra.md", "also deploy to prod")
+    ok, why = bp.verify_hash(root)
+    assert not ok and "excluded content" in why
+
+
+@pytest.mark.covers("FR-01.01")
+def test_gitkeep_stat_failure_is_reported_not_raised(tmp_path, monkeypatch):
+    root = _package(tmp_path / "pkg")
+    _write(root, "inputs/.gitkeep", "")
+    real_stat = Path.stat
+
+    def stat(self, *a, **k):
+        if self.name == ".gitkeep" and "follow_symlinks" not in k:
+            raise OSError("gone")
+        return real_stat(self, *a, **k)
+
+    monkeypatch.setattr(Path, "stat", stat)
+    assert "excluded_content" in _codes(root)
