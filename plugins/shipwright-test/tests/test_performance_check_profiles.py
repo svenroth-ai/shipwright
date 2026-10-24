@@ -183,7 +183,7 @@ def test_d6_declared_profile_keys_exist_in_the_schema():
 
 
 def test_step_3_8_prose_shape_only_a_bundled_profile_path(tmp_path, monkeypatch, capsys):
-    """references/step-3.8-performance-budget.md passes ONLY `--profile-path <shared>/profiles/<profile>.json`."""
+    """legacy (pre-S4) shape: a bundled `--profile-path <shared>/profiles/<profile>.json` still maps to its name."""
     root = _project(tmp_path)
     gen = str(_SHARED / "profiles" / "generic.json")
     code, out, _err = _run(monkeypatch, capsys, root, "--profile-path", gen)

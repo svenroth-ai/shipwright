@@ -64,7 +64,7 @@ If Pipeline mode, read profile:
   ...
 }
 ```
-Load profile from `{plugin_root}/../../shared/profiles/{profile}.json`.
+Load profile: `uv run --no-project "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry).
 
 ### C. Select Scanner Backend
 

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-s4-skill-prose",
+  "date": "2026-10-24",
+  "section": "Iterate - change: skill prose through the resolver",
+  "title": "Skill prose uses the stack-profile resolver",
+  "context": "Skill prose built the bundled profile path by hand, so project and user profiles were invisible to read-only sites and a mistyped name looked like a missing file.",
+  "decision": "Read-only sites call resolve_profile.py --path-only, command-running test layers pass the profile NAME, preview gates on the exit code, and a markdown guard test plus a snippet-runner test pin it.",
+  "consequences": "A new hand-built bundled profile path in prose fails the guard unless allowlisted; docs/ is allowlisted until S5.",
+  "rationale": "Prose is runtime code; the CLI already exists, so the smallest fix is to call it and guard against regression.",
+  "rejected": "Keep paths and rely on name_over_bundled_path (custom profiles stay invisible); warn only; do nothing.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-24-s4-skill-prose-skill-prose-uses-the-resolver.md"
+}

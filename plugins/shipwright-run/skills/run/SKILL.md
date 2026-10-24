@@ -155,7 +155,7 @@ valid value). The orchestrator:
 - Subsequent phase tasks are appended by `complete-phase-task` → `plan-next-phase` as each phase finishes. **The master never plans phases directly** — it drives the loop; the lifecycle plans.
 
 **Important — always pass `--profile`:** the WebUI Preview button keys off
-`shipwright_run_config.json.profile` + `shared/profiles/{name}.json` to decide
+`shipwright_run_config.json.profile` (resolved by name) to decide
 whether Preview can launch a dev server. Omitting it leaves the field null and
 Preview never appears — always include the Step 2 profile (Next.js/Supabase → `supabase-nextjs`; local-only default → `vite-hono`).
 

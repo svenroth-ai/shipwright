@@ -184,7 +184,7 @@ Key sub-flows (see reference for the verbatim shell commands and
 templates):
 
 1. **Profile detection** — match interview against
-   `{plugin_root}/../../shared/profiles/` JSONs; supabase-nextjs is the
+   the profiles from `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}" --json`; supabase-nextjs is the
    primary supported profile.
 2. **Generate** CLAUDE.md, AGENTS.md, `architecture.md`, `decision_log.md`,
    `conventions.md`, and `.claude/rules/*.md`.

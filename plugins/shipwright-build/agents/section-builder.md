@@ -159,7 +159,7 @@ If this section adds new user-facing routes/pages or modifies existing user flow
 
 **CRITICAL — Serialization:** Migration creation and application is a critical section. If you detect that another section-builder has uncommitted migration files (check `git status` for `{migrations.dir}`), wait or yield. Only one agent may create/apply migrations at a time.
 
-Read `migrations` config from the stack profile (`shared/profiles/{profile}.json`).
+Read `migrations` config from the stack profile (`uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile}" --path-only`; exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
 
 1. Run `{migrations.preflight_cmd}` — verify environment ready
 2. If preflight fails: log warning, note that tests depending on new schema may fail
@@ -262,8 +262,7 @@ uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
 uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
 ```
-
-If JS errors: read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`,
+If `dev_server.py start` exits 2/3 (profile problem): stop and show the message, do not retry. Otherwise, if JS errors: read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`,
 diagnose, fix (max 3 retries). Hand off to `browser-fixer` subagent after the
 first failed retry.
 

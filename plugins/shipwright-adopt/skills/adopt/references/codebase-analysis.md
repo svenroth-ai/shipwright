@@ -8,7 +8,7 @@ All detectors live in `scripts/lib/` and are composed by
 | Detector | Inputs | Output keys |
 |---|---|---|
 | `stack_detector` | `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json` | `stack.{primary_language,runtime,frontend,backend,database,auth,signals}` |
-| `profile_matcher` | Stack signature + `shared/profiles/*.json` | `profile.{matched,confidence,candidates}` |
+| `profile_matcher` | Stack signature + stack profiles (bundled; project/user lookup order in `resolve_profile.py`) | `profile.{matched,confidence,candidates}` |
 | `convention_detector` | `.eslintrc*`, flat `eslint.config.*`, `.prettierrc*`, `tsconfig.json`, `.editorconfig`, `pyproject.toml` `[tool.ruff]`/`[tool.black]` | `conventions.{linter,formatter,tsconfig_strict,editorconfig,python_style}` |
 | `test_framework_detector` | `package.json` deps, `pytest.ini`, `pyproject.toml` `[tool.pytest]`, `go.mod`, `Cargo.toml`, `supabase/tests/database/` | `test_frameworks.{unit,integration,e2e,db,coverage_tool}` |
 | `ci_detector` | `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/config.yml`, `Jenkinsfile`, `.travis.yml` | `ci_pipeline.{provider,workflows}` |

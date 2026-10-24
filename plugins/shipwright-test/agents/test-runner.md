@@ -27,7 +27,7 @@ Execute these steps **in order**.
 
 1. Read `CLAUDE.md` from `{project_root}` for project conventions
 2. Read `{project_root}/shipwright_build_config.json` for section info
-3. Load profile from `{shared_root}/profiles/{profile}.json`
+3. The profile is looked up by NAME (project, user, bundled); the runner scripts resolve it from `--profile {profile}`. To read it (`testing.*`, `component_library`): `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
 
 ### Step 2: Run Unit Tests
 
@@ -35,6 +35,8 @@ Execute these steps **in order**.
 uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" --cwd "{project_root}" --layer unit
 ```
+
+Exit 2/3 = profile problem: stop, show the message, do not edit project code or retry.
 
 Parse output for pass/fail counts.
 
@@ -176,6 +178,8 @@ uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
 ```bash
 uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 ```
+
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
 
 3. **Run E2E tests:**
 ```bash

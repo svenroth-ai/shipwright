@@ -8,7 +8,7 @@ See also [migration-safety.md](migration-safety.md) for `down.sql` and destructi
 
 Apply migrations immediately after their `up.sql` / `down.sql` files exist in the working tree and before re-running tests — otherwise tests run against a stale schema.
 
-Read `migrations` config from the stack profile (via `shipwright_run_config.json` -> `profile` -> `shared/profiles/{profile}.json`).
+Read `migrations` config from the stack profile (via `shipwright_run_config.json` -> `profile` -> `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile}" --path-only`; exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
 
 ## Preflight Sequence (mandatory before apply)
 

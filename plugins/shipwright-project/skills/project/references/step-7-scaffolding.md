@@ -10,7 +10,7 @@ See [project-scaffolding.md](project-scaffolding.md) for details.
 
 1. Read the interview transcript and requirements
 2. Match against known profiles (e.g., "Supabase" + "Next.js" → `supabase-nextjs`)
-3. Load profile from `{plugin_root}/../../shared/profiles/{profile_name}.json`
+3. Load the profile: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile_name}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop)
 4. If no match: use a generic profile structure
 
 ## Generate these files in the project root

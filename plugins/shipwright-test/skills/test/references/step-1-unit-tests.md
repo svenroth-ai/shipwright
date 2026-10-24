@@ -3,7 +3,6 @@
 ```bash
 uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
-  --profile-path "{shared_root}/profiles/{profile}.json" \
   --cwd "{project_root}" \
   --layer unit
 ```

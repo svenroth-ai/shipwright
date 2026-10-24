@@ -1,0 +1,72 @@
+{
+  "run_id": "iterate-2026-10-24-s4-skill-prose",
+  "date": "2026-10-24T15:57:49.970074Z",
+  "event_at": "2026-10-24T15:57:33.925319+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-stack-profile-resolver--S4",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-s4-skill-prose",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "prose resolver commands run against a tmp project (exit 0 + path, unknown name exit 2, generic empty)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_stack_profile_prose_commands.py::test_snippet_runs_against_fixture PASSED"
+      },
+      {
+        "behavior": "guard red on a planted hand-built bundled path (md, hooks.json, escaped Windows form), green on fixed form",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_prose_guard.py::test_guard_is_red_on_a_planted_path_and_green_on_the_fixed_form PASSED"
+      },
+      {
+        "behavior": "zero guard findings outside the allowlist; each allowlist entry excuses a real finding",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_prose_guard.py::test_no_prose_builds_a_bundled_stack_profile_path PASSED"
+      },
+      {
+        "behavior": "test-layer prose passes the profile NAME, never --profile-path (D8f)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_prose_commands.py::test_test_layer_prose_passes_the_name_never_a_bundled_path PASSED"
+      },
+      {
+        "behavior": "stop-on-profile-error sentence follows every dev_server --profile start block",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_prose_commands.py::test_dev_server_sites_carry_the_stop_on_profile_error_sentence PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-24T15:49:36.396Z",
+    "attempts": 0,
+    "justification": "Markdown skill prose and tests only; no startable surface",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_io_boundary"
+  ]
+}

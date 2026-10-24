@@ -23,7 +23,7 @@ that dep on first invocation.
 ```bash
 uv run "{plugin_root}/scripts/lib/performance_check.py" \
   --cwd "{project_root}" \
-  --profile-path "{shared_root}/profiles/{profile}.json" \
+  --profile "{profile}" --project-root "{project_root}" \
   --dev-url "{dev_url}" \
   --gate inherit
 ```

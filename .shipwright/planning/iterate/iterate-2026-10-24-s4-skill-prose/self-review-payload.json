@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Every S4 acceptance item has a pinned test: path replacement at all listed sites, D8f name passing, preview exit-code gate, hand-off sentence at all dev_server sites, guard and snippet tests."},
+{"name":"Error Handling","verdict":"pass","note":"Each resolver snippet states empty output = built-in defaults and exit 2/3 = stop and show the message; no retry or fallback."},
+{"name":"Security Basics","verdict":"pass","note":"Names are resolved by the resolver (D3 validation, containment); no new shell surface in prose beyond the CLI."},
+{"name":"Test Quality","verdict":"pass","note":"Guard test has a planted-path red case, hooks.json case, reverse allowlist test; snippet test runs real subprocesses and checks exit 0, exit 2 and the sentinel."},
+{"name":"Performance Basics","verdict":"pass","note":"Prose and test-only change; the guard reads tracked md files once."},
+{"name":"Naming & Structure","verdict":"pass","note":"Edits are section-local; section-builder 484 (cap 485), security SKILL.md unchanged at 434; docs untouched."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer (resolve_profile.py output) and consumer (prose snippets) probed by running every snippet against a tmp fixture project."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No existing test was edited."}
+]}

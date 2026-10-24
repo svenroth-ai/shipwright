@@ -1,0 +1,9 @@
+{"section":"S4 - Skill prose + prose guard","review":[
+{"severity":"medium","category":"correctness","file":"shared/tests/test_stack_profile_prose_guard.py","line":98,"finding":"Reverse allowlist check only tested that a prefix matches a file, not that an excused finding exists; two entries were dead. FIXED: per-entry would-be-finding check, dead entries removed."},
+{"severity":"medium","category":"correctness","file":"shared/tests/test_stack_profile_prose_guard.py","line":27,"finding":"Guard regex false negatives (shared_root variants, case, scripts/../profiles, unanchored exemptions). FIXED: widened, IGNORECASE, anchored exemptions, planted cases."},
+{"severity":"low","category":"readability","file":"shared/tests/test_stack_profile_prose_commands.py","line":44,"finding":"Dead branches in extraction. FIXED: removed."},
+{"severity":"low","category":"correctness","file":"shared/tests/test_stack_profile_prose_commands.py","line":68,"finding":"Snippet count was global not per file. FIXED: per-file set equality."},
+{"severity":"low","category":"correctness","file":"shared/tests/test_stack_profile_prose_commands.py","line":79,"finding":"No timeout/encoding on subprocess calls. FIXED."},
+{"severity":"low","category":"readability","file":"plugins/shipwright-project/skills/project/SKILL.md","line":205,"finding":"Inline mention of resolve_profile.py list without full path. ACCEPTED: reference files give the full form."},
+{"severity":"low","category":"architecture","file":"plugins/shipwright-preview/skills/preview/SKILL.md","line":67,"finding":"Pre-gate duplicates dev_server's exit 2/3. REJECTED: brief S4 item 1 prescribes the preview gate."}
+]}

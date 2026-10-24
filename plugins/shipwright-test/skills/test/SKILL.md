@@ -72,9 +72,9 @@ Test layers:
 
 ### B. Detect Profile
 
-Read `shipwright_project_config.json` from project root and load profile from
-`{plugin_root}/../../shared/profiles/{profile}.json`. If no config, detect from
-`package.json` / `pyproject.toml` (the detected name must be a bundled profile name in `shared/profiles`, or `generic` when unsure; never an invented name). Full detection rules: see
+Read `shipwright_project_config.json` from project root; the profile is looked up by NAME
+(project, then user, then bundled; the runners below resolve it themselves). If no config, detect from
+`package.json` / `pyproject.toml` (the detected name must be a known profile name -- see `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}"` -- or `generic` when unsure; never an invented name). Full detection rules: see
 [first-actions](references/first-actions.md).
 
 ### B2. Detect Invocation Mode
@@ -122,7 +122,7 @@ Full body: see [step-0-phase-session](references/step-0-phase-session.md).
 
 ```bash
 uv run "{plugin_root}/scripts/lib/test_runner.py" --profile "{profile}" \
-  --profile-path "{shared_root}/profiles/{profile}.json" --cwd "{project_root}" --layer unit
+  --cwd "{project_root}" --layer unit
 ```
 
 Autonomous mode auto-applies `--fix` behavior. Max 3 retries, structured
@@ -171,7 +171,7 @@ profile has no UI); otherwise scan `.shipwright/planning/` for
 ## Step 3: Run Playwright E2E (if applicable)
 
 Prereqs: UI profile + smoke test passed. Run `playwright_setup.py`,
-`dev_server.py start`, then `playwright_runner.py --cwd {project_root}`.
+`dev_server.py start` (exit 2/3 = profile problem: stop, show the message), then `playwright_runner.py --cwd {project_root}`.
 Auto-fix groups failures by root cause (auth / selector / data / network /
 other), fixes per group with commits, parks unresolvable groups after 3
 attempts and ASKs the user.
