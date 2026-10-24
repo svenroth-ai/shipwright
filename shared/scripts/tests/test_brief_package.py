@@ -197,8 +197,8 @@ def test_rename_and_add_and_remove_change_hash(tmp_path):
 
 def test_binary_files_are_hashed_byte_exact(tmp_path):
     a, b = _package(tmp_path / "a"), _package(tmp_path / "b")
-    (a / "mockups" / "x.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    (b / "mockups" / "x.png").write_bytes(b"\x89PNG\n\x1a\n")
+    (a / "mockups" / "x.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00")
+    (b / "mockups" / "x.png").write_bytes(b"\x89PNG\n\x1a\n\x00")
     assert bp.package_sha256(a) != bp.package_sha256(b)
 
 
@@ -342,3 +342,62 @@ def test_verify_hash_fails_on_a_link_even_when_the_hash_matches(tmp_path):
     assert bp.verify_hash(root) == (True, "")
     _make_link(tmp_path, root / "inputs")
     assert bp.verify_hash(root)[0] is False
+
+
+@pytest.mark.parametrize("planted", [
+    "inputs/._requirements.md", "inputs/__MACOSX/extra.md", "mockups/.git/notes.html",
+    "inputs/Thumbs.db", "Evidence/run.log",
+])
+def test_excluded_content_is_reported_not_silently_ignored(tmp_path, planted):
+    root = _package(tmp_path / "a")
+    before = bp.package_sha256(root)
+    _write(root, planted, "also implement admin export")
+    assert bp.package_sha256(root) == before  # excluded from the hash ...
+    assert "excluded_content" in _codes(root)  # ... so the validator must refuse it
+
+
+def test_empty_gitkeep_and_exact_evidence_dir_are_allowed(tmp_path):
+    root = _package(tmp_path / "a")
+    _write(root, "inputs/.gitkeep", "")
+    _write(root, "evidence/run.log", "noise")
+    assert bp.validate_layout(root) == []
+
+
+def test_duplicate_json_keys_are_refused(tmp_path):
+    root = _package(tmp_path / "a")
+    text = (root / "brief.json").read_text()
+    (root / "brief.json").write_text(text.replace("{", '{"autonomy": "guided", ', 1))
+    assert "invalid_json" in _codes(root)
+    with pytest.raises(ValueError):
+        bp.manifest(root)
+    assert bp.verify_hash(root)[0] is False
+
+
+def test_deeply_nested_json_is_a_defect_not_a_crash(tmp_path):
+    root = _package(tmp_path / "a")
+    (root / "screen-map.json").write_text("[" * 200000)
+    assert "invalid_json" in _codes(root)
+
+
+def test_a_lone_surrogate_is_reported_as_unhashable(tmp_path):
+    root = _package(tmp_path / "a")
+    brief = (root / "brief.json").read_text().replace('"vite-hono"', '"\\ud800"')
+    (root / "brief.json").write_text(brief)
+    assert "unhashable_package" in _codes(root)
+
+
+def test_text_detection_matches_git_not_utf8(tmp_path):
+    a, b = _package(tmp_path / "a"), _package(tmp_path / "b")
+    (a / "inputs").mkdir()
+    (b / "inputs").mkdir()
+    (a / "inputs" / "legacy.csv").write_bytes("café\r\n".encode("cp1252"))
+    (b / "inputs" / "legacy.csv").write_bytes("café\n".encode("cp1252"))
+    assert bp.package_sha256(a) == bp.package_sha256(b)
+
+
+def test_verify_hash_against_an_externally_held_hash(tmp_path):
+    root = _package(tmp_path / "a")
+    actual = bp.package_sha256(root)
+    assert bp.verify_hash(root, expected=actual) == (True, "")
+    ok, why = bp.verify_hash(root, expected="0" * 64)
+    assert not ok and "mismatch" in why

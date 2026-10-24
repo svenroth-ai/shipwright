@@ -44,23 +44,17 @@ JUNK_NAMES = frozenset({".ds_store", "thumbs.db", "desktop.ini", ".gitkeep"})
 JUNK_DIRS = frozenset({"__macosx", ".git"})
 #: Consent/approval fields removed from ``brief.json`` before hashing.
 HASH_EXCLUDED_BRIEF_KEYS = frozenset({"package_sha256", "approved_by", "approved_at"})
-#: A file is text (CRLF->LF before hashing) when its first 8 KiB hold no NUL byte and the
-#: whole file is valid UTF-8; anything else is hashed byte-exact. Content, not extension,
-#: decides, so a ``.tsx`` or extensionless file normalises like a ``.md``.
-_SNIFF_BYTES = 8192
+#: A file is text (CRLF->LF before hashing) when its first 8000 bytes hold no NUL byte --
+#: git's own heuristic, so a checkout with ``core.autocrlf`` hashes the same as one without.
+#: Content, not extension, decides (a ``.tsx`` or extensionless file normalises like a ``.md``).
+_SNIFF_BYTES = 8000
 
 class PathCollision(ValueError):
     """Two packaged files collapse to one NFC path or differ only by case."""
 
 
 def _is_text(raw: bytes) -> bool:
-    if 0 in raw[:_SNIFF_BYTES]:
-        return False
-    try:
-        raw.decode("utf-8")
-    except UnicodeDecodeError:
-        return False
-    return True
+    return 0 not in raw[:_SNIFF_BYTES]
 
 
 def _is_link(path: Path, root: Path) -> bool:
@@ -122,8 +116,26 @@ def _canonical_json(obj: object) -> bytes:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
+def _no_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
+    out: dict = {}
+    for key, value in pairs:
+        if key in out:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        out[key] = value
+    return out
+
+
+def loads_strict(text: str) -> object:
+    """``json.loads`` that refuses duplicate keys (a raw-text reader and a parser would
+    disagree on them) and turns absurd nesting into a ``ValueError``."""
+    try:
+        return json.loads(text, object_pairs_hook=_no_duplicate_keys)
+    except RecursionError as exc:
+        raise ValueError("JSON nesting is too deep") from exc
+
+
 def _load_brief(path: Path) -> dict:
-    data = json.loads(path.read_text(encoding="utf-8-sig"))
+    data = loads_strict(path.read_text(encoding="utf-8-sig"))
     if not isinstance(data, dict):
         raise ValueError("brief.json must be a JSON object")
     return data
@@ -168,21 +180,22 @@ def package_sha256(brief_dir: Path) -> str:
     return _digest(manifest(brief_dir))
 
 
-def verify_hash(brief_dir: Path) -> tuple[bool, str]:
-    """``(True, "")`` when ``brief.json``'s recorded ``package_sha256`` matches.
+def verify_hash(brief_dir: Path, expected: str | None = None) -> tuple[bool, str]:
+    """``(True, "")`` when the package hashes to ``expected`` (default: the
+    ``package_sha256`` recorded in its ``brief.json``).
 
     Fails when the package holds a link or junction (its target is outside the
-    hash). Trust anchor: the recorded hash lives INSIDE the package, so this detects
-    an edit of the content or consent fields since the hash was recorded, not a
-    rewrite of the whole directory (hash included). Callers that need that
-    (approval) compare against a hash they hold outside the package.
+    hash). Trust anchor: the recorded hash lives INSIDE the package, so by default
+    this detects an edit of the content or consent fields since the hash was
+    recorded, not a rewrite of the whole directory (hash included). Callers that
+    need that (approval) pass the ``expected`` hash they hold outside the package.
     """
     try:
         if _walk(Path(brief_dir))[1]:
             return False, "package contains links or junctions"
-        recorded = _load_brief(Path(brief_dir) / "brief.json").get("package_sha256")
+        recorded = expected if expected is not None else             _load_brief(Path(brief_dir) / "brief.json").get("package_sha256")
         actual = package_sha256(brief_dir)
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError) as exc:  # UnicodeEncodeError is a ValueError
         return False, f"unreadable package: {exc}"
     if not isinstance(recorded, str) or not recorded:
         return False, "brief.json has no package_sha256"
