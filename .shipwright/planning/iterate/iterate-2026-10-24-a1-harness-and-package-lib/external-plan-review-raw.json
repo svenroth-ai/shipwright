@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** The spec says symlinks are *excluded* from hashing. Silently excluding symlinks means a package could ship a symlink swap (pointing to /etc/passwd or an attacker-controlled path outside the package) and still produce the same hash as a symlink-free package. \"Excluded\" is only safe if the validator *rejects* symlinks as a defect rather than skipping them.\n**Suggestion:** `validate_layout` should treat any symlink inside the package as a planted defect (reject), not silently ignore. If the brief mandates exclusion, at minimum document that symlink presence fails validation.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** The \"tamper detected\" test and `verify_hash` depend on where the expected hash is stored. If the recorded `package_sha256` lives in `brief.json` and `brief.json`'s content is itself excluded from the hash (which it is \u2014 the canonical-JSON-minus-fields trick), an attacker who can rewrite the whole directory can also rewrite `brief.json`'s recorded hash, making verification circular.\n**Suggestion:** Confirm verification is anchored to a hash the harness derives independently (e.g., computed fresh, compared against a value passed in from the caller/test), not read from the package being verified. State explicitly in `verify_hash` docs where the trust anchor is.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** \"OS junk excluded\" is unpinned \u2014 which files count? `.DS_Store`, `Thumbs.db`, `desktop.ini`, `__pycache__`, `.pytest_cache`? An over-broad exclusion list lets a tamperer hide changes in a filename like `.DS_Store`; an under-broad one makes cross-platform checkouts flake.\n**Suggestion:** Pin the exact exclusion list (probably just `.DS_Store`, `Thumbs.db`, and `evidence/`) in the plan and test that an excluded filename can't smuggle content changes... or accept the trade-off explicitly and document that excluded files are unverified.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** CRLF\u2192LF normalization presumably applies only to \"text files,\" but the plan doesn't say how text vs binary is decided. Heuristic sniffing (null-byte detection) is nondeterministic across platforms/tooling; extension allowlists miss extensionless files.\n**Suggestion:** Specify the mechanism \u2014 e.g., normalize only known text extensions (json, md, txt, yaml), hash everything else byte-exact \u2014 and test a binary file (fixture 1 should include one, e.g., a small PNG) to pin behavior.\n\n**Category: risk \u2014 Severity: low**\n**Finding:** \"Dry mode runs without model calls\" is asserted via \"dry run makes no subprocess,\" but subprocess is a weaker proxy \u2014 an HTTP call to a model API needs no subprocess. If the harness ever gains an HTTP client path, the test won't catch it.\n**Suggestion:** For this iterate, testing \"no subprocess launched\" is acceptable; note the follow-up to add a network-kill assertion (e.g., `socket.socket` guard) when live mode lands.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** The manifest maps paths \u2192 hashes, so *renaming* or *moving* a file changes the hash even with identical content, and an empty directory leaves no manifest trace (deleting an empty dir won't change the hash). Probably fine, but worth confirming it matches the intent in BRIEF D1/D10.\n**Suggestion:** Add one test pinning rename-sensitivity so the behavior is intentional, not accidental.\n\n**Category: dependency \u2014 Severity: low**\n**Finding:** Fixture 1 is \"classic vite-hono, deploy none,\" built by code but not fully specified \u2014 file list, whether node_modules presence is simulated, package.json content. A later iterate will pin its hash; drift between iterations is the failure mode the mini-plan's alternative analysis already worried about.\n**Suggestion:** Have the fixture builder log/assert its own package_sha256 on every test run so drift surfaces immediately in CI rather than in a later iterate.\n\n## Overall assessment\n\nSound, well-scoped, new-files-only with good test coverage of the hash invariants. The main real risks are the symlink-exclusion-as-skip issue and the unspecified text/binary and OS-junk rules \u2014 all cheap to fix in the plan before writing code.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Review based on the supplied specification and mini-plan; repository access was blocked by execution policy, so I could not verify D1/D10 or the full A1 contract.\n\n1. **Category: edge-case | Severity: medium**  \n   **Finding:** NFC normalization can map two distinct filenames to the same manifest key. Building a dictionary directly could silently omit a file from the package hash.  \n   **Suggestion:** Detect duplicate normalized paths before constructing the manifest and reject the package. Add a collision test.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** Generating the fixture\u2019s expected hash with `package_sha256()` makes the happy-path verification circular. The planned invariance tests would not catch consistently omitting a required file or serializing the manifest incorrectly.  \n   **Suggestion:** Keep the generated fixture, but add one small, independently calculated manifest and expected digest. Test that adding, removing, renaming, and changing included files changes the hash.\n\n3. **Category: security | Severity: medium**  \n   **Finding:** \u201cDry run makes no subprocess\u201d does not establish \u201cno model calls\u201d; an SDK or HTTP client can call a model within the process.  \n   **Suggestion:** Ensure dry mode cannot enter the model execution path, and test with the application\u2019s model-call boundary replaced by a function that fails immediately if invoked. Retain the subprocess assertion.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Excluding symlinks from hashing leaves their handling during validation and scratch preparation unspecified. If scratch preparation follows a link or Windows junction, it could copy content outside the package that the hash never covered.  \n   **Suggestion:** Explicitly reject links and junctions during layout validation, or ensure scratch preparation excludes them without traversing them. Add a test proving external content cannot enter the scratch project.\n\nThe approach is appropriately small, and generating the fixture is reasonable. Address the hash verification blind spots and explicitly enforce the dry-mode and filesystem boundaries before implementation is considered ready.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a1-harness-and-package-lib",
+    "at": "2026-10-24T13:21:54.082720+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

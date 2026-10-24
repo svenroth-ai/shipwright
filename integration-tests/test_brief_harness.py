@@ -14,6 +14,7 @@ import _brief_harness as h
 PINNED_FIXTURE_1_SHA256 = "0a5a534ac2d264dcb780a5a91ab79255bda620d5db3779c85e8c1b1a0e87a87e"
 
 
+@pytest.mark.covers("FR-01.01")
 def test_fixture_1_is_accepted_by_the_library(tmp_path):
     from lib import brief_package
     pkg = h.build_fixture_1(tmp_path / "pkg")
@@ -21,6 +22,7 @@ def test_fixture_1_is_accepted_by_the_library(tmp_path):
     assert brief_package.verify_hash(pkg) == (True, "")
 
 
+@pytest.mark.covers("FR-01.01")
 def test_fixture_hash_is_line_ending_independent(tmp_path):
     from lib import brief_package
     a = h.build_fixture_1(tmp_path / "lf")
@@ -29,6 +31,7 @@ def test_fixture_hash_is_line_ending_independent(tmp_path):
     assert brief_package.verify_hash(b) == (True, "")
 
 
+@pytest.mark.covers("FR-01.01")
 def test_fixture_1_is_classic_bundled_with_no_deploy(tmp_path):
     brief = json.loads((h.build_fixture_1(tmp_path / "p") / "brief.json").read_text())
     assert (brief["profile"], brief["deploy_target"], brief["ux_shape"]) == ("vite-hono", "none", "classic")
@@ -36,6 +39,7 @@ def test_fixture_1_is_classic_bundled_with_no_deploy(tmp_path):
     assert brief["env_preflight"] == []
 
 
+@pytest.mark.covers("FR-01.01")
 def test_dry_run_passes_makes_no_model_call_and_no_subprocess(tmp_path, monkeypatch):
     def boom(*a, **k):
         raise AssertionError("dry mode must not start a process")
@@ -51,6 +55,7 @@ def test_dry_run_passes_makes_no_model_call_and_no_subprocess(tmp_path, monkeypa
     assert on_disk == report and h.validate_report(on_disk) == []
 
 
+@pytest.mark.covers("FR-01.01")
 def test_dry_run_reports_a_planted_defect(tmp_path):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
     (project / "brief" / "scope.md").unlink()
@@ -60,6 +65,7 @@ def test_dry_run_reports_a_planted_defect(tmp_path):
     assert any(i["code"] == "missing_file" for i in report["package"]["issues"])
 
 
+@pytest.mark.covers("FR-01.01")
 def test_dry_run_reports_a_tampered_consent_field(tmp_path):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
     f = project / "brief" / "brief.json"
@@ -71,11 +77,13 @@ def test_dry_run_reports_a_tampered_consent_field(tmp_path):
     assert [s["name"] for s in report["stages"] if s["status"] == "failed"] == ["hash"]
 
 
+@pytest.mark.covers("FR-01.01")
 def test_live_mode_is_refused(tmp_path):
     with pytest.raises(NotImplementedError):
         h.run_harness(tmp_path, mode="live")
 
 
+@pytest.mark.covers("FR-01.01")
 def test_report_schema_is_pinned():
     assert h.REPORT_SCHEMA_VERSION == 1
     assert h.REPORT_KEYS == (
@@ -89,6 +97,7 @@ def test_report_schema_is_pinned():
     assert h.OUTCOMES == ("dry-ok", "dry-failed", "complete", "escalated", "failed")
 
 
+@pytest.mark.covers("FR-01.01")
 def test_report_validation_rejects_drift(tmp_path):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
     good = h.run_harness(project)
@@ -119,18 +128,21 @@ def test_report_validation_rejects_drift(tmp_path):
     assert not (tmp_path / "nope.json").exists()
 
 
+@pytest.mark.covers("FR-01.01")
 def test_cli_dry_mode_writes_a_conforming_report(tmp_path):
     assert h.main(["--report", str(tmp_path / "r.json")]) == 0
     assert h.validate_report(json.loads((tmp_path / "r.json").read_text())) == []
     assert h.main(["--mode", "live", "--report", str(tmp_path / "r2.json")]) == 2
 
 
+@pytest.mark.covers("FR-01.01")
 def test_fixture_1_hash_is_pinned_so_drift_is_a_visible_change(tmp_path):
     from lib import brief_package
     sha = brief_package.package_sha256(h.build_fixture_1(tmp_path / "pkg"))
     assert sha == PINNED_FIXTURE_1_SHA256
 
 
+@pytest.mark.covers("FR-01.01")
 def test_scratch_project_never_follows_symlinks(tmp_path, monkeypatch):
     pkg = h.build_fixture_1(tmp_path / "pkg")
     (pkg / "leak.md").write_text("secret")
@@ -140,6 +152,7 @@ def test_scratch_project_never_follows_symlinks(tmp_path, monkeypatch):
     assert not (project / "brief" / "leak.md").exists()
 
 
+@pytest.mark.covers("FR-01.01")
 def test_a_live_report_may_carry_the_operators_stop_point(tmp_path):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
     report = h.run_harness(project)
@@ -147,6 +160,7 @@ def test_a_live_report_may_carry_the_operators_stop_point(tmp_path):
     assert h.validate_report(live) == []
 
 
+@pytest.mark.covers("FR-01.01")
 def test_fixture_approval_acceptance_is_recorded(tmp_path, monkeypatch):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
     monkeypatch.delenv(h.FIXTURE_APPROVAL_ENV, raising=False)
@@ -157,6 +171,7 @@ def test_fixture_approval_acceptance_is_recorded(tmp_path, monkeypatch):
     assert on == {"approved_by": "fixture:synthetic-1", "accepted_via_env": True}
 
 
+@pytest.mark.covers("FR-01.01")
 def test_scratch_project_refuses_a_dirty_target(tmp_path):
     pkg = h.build_fixture_1(tmp_path / "pkg")
     project = h.prepare_scratch_project(tmp_path / "proj", pkg)
@@ -164,6 +179,7 @@ def test_scratch_project_refuses_a_dirty_target(tmp_path):
         h.prepare_scratch_project(project, pkg)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_an_unreadable_packaged_file_gives_a_failure_report_not_a_crash(tmp_path, monkeypatch):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
     real = Path.read_bytes
@@ -179,6 +195,7 @@ def test_an_unreadable_packaged_file_gives_a_failure_report_not_a_crash(tmp_path
     assert any(i["code"] == "unreadable_file" for i in report["package"]["issues"])
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("bad", [5, "", None, ["x"]])
 def test_a_defective_autonomy_still_produces_a_failure_report(tmp_path, bad):
     project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-a1-harness-and-package-lib",
+  "date": "2026-10-24",
+  "section": "Iterate — feat: brief package library and dry-mode harness",
+  "title": "Brief package manifest hash lives in one shared library",
+  "context": "Brief-driven unattended runs need a way to prove a committed Brief package is unchanged since approval, and CI needs to exercise the flow without model calls.",
+  "decision": "Add shared/scripts/lib/brief_package.py (layout validator plus manifest hash over NFC POSIX paths, content-sniffed CRLF->LF, brief.json canonical minus approval fields) and a test-side dry-mode harness with a schema-pinned report.",
+  "consequences": "B and U import the one hash; the in-package hash is a tamper-evidence check only, so approval must compare against a hash held outside the package. Report schema changes become reviewed changes.",
+  "rationale": "One implementation prevents diverging hashes; consent fields (autonomy, parallel builders, deploy target) stay protected because only the approval trio is excluded.",
+  "rejected": "JSON-schema-only validation (cannot detect post-approval edits); deferring the hash to the first consuming unit (risks several diverging copies).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

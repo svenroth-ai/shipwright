@@ -1,0 +1,5 @@
+{"section":"A1-harness-and-package-lib","review_type":"full-review","review":[
+{"severity":"high","category":"correctness","file":"shared/scripts/lib/brief_package.py","finding":"Windows junctions reported but still walked by rglob (loop / external tree). FIXED: os.walk with pruning of links and junctions; real junction tests."},
+{"severity":"medium","category":"security","file":"shared/scripts/lib/brief_package.py","finding":"File references checked against the filesystem, not the hashed manifest (evidence/, junk, ADS, case). FIXED: references must be manifest keys; ':' refused."},
+{"severity":"medium","category":"correctness","file":"integration-tests/_brief_harness.py","finding":"run_harness crashed on non-string autonomy. FIXED with test."},
+{"severity":"low","category":"correctness","finding":"fallback key list, case-sensitive evidence exclusion, verify_hash with links, formatting, private _is_link use, O(n^2) collision check, mode/outcome agreement, schema_version bool. FIXED."}]}

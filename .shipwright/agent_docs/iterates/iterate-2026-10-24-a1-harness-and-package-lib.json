@@ -1,0 +1,85 @@
+{
+  "run_id": "iterate-2026-10-24-a1-harness-and-package-lib",
+  "date": "2026-10-24T13:45:19.372055Z",
+  "event_at": "2026-10-24T12:52:12.190285+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/a1-harness-and-package-lib",
+  "spec": "campaign brief-driven-run-a-real-gates sub-iterate A1",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-a1-harness-and-package-lib",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "library accepts a valid package and fixture 1",
+        "disposition": "tested",
+        "evidence": "test_brief_package.py::test_accepts_a_valid_package and test_brief_harness.py::test_fixture_1_is_accepted_by_the_library PASSED"
+      },
+      {
+        "behavior": "library rejects planted defects (missing/empty/invalid files, bad fields, links, junction loops, outside refs, excluded content, duplicate keys)",
+        "disposition": "tested",
+        "evidence": "test_brief_package.py::test_rejects_planted_defects and the junction/excluded-content/duplicate-key tests PASSED"
+      },
+      {
+        "behavior": "manifest hash identical for LF and CRLF checkouts",
+        "disposition": "tested",
+        "evidence": "test_brief_package.py::test_hash_identical_for_lf_and_crlf PASSED"
+      },
+      {
+        "behavior": "consent-field change changes the hash; approval fields do not",
+        "disposition": "tested",
+        "evidence": "test_brief_package.py::test_consent_field_change_changes_hash and test_approval_fields_do_not_change_hash PASSED"
+      },
+      {
+        "behavior": "report schema pinned and drift refused",
+        "disposition": "tested",
+        "evidence": "test_brief_harness.py::test_report_schema_is_pinned and test_report_validation_rejects_drift PASSED"
+      },
+      {
+        "behavior": "dry mode runs without model calls, subprocess or socket",
+        "disposition": "tested",
+        "evidence": "test_brief_harness.py::test_dry_run_passes_makes_no_model_call_and_no_subprocess PASSED"
+      },
+      {
+        "behavior": "components compose: fixture builder, library, scratch project and report writer end to end",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "test_brief_harness.py::test_cli_dry_mode_writes_a_conforming_report PASSED"
+      },
+      {
+        "behavior": "live mode against a real claude run",
+        "disposition": "untestable",
+        "reason_code": "requires-prod-credential",
+        "reason": "live mode is the operator's after campaign U; it needs a model and is refused in A1"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 1,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-24T13:44:05.326Z",
+    "attempts": 0,
+    "justification": "Library module and test-side harness only: no UI, API, or startable surface; behaviour is exercised by 62 unit and 20 integration tests.",
+    "reason_code": "no-startable-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_migrations",
+    "touches_shared_infra"
+  ]
+}

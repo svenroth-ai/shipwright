@@ -46,10 +46,12 @@ def _codes(root: Path) -> set[str]:
     return {i["code"] for i in bp.validate_layout(root)}
 
 
+@pytest.mark.covers("FR-01.01")
 def test_accepts_a_valid_package(tmp_path):
     assert bp.validate_layout(_package(tmp_path / "p")) == []
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("victim,code", [
     ("brief.md", "missing_file"), ("scope.md", "missing_file"), ("screen-map.json", "missing_file"),
     ("visual-guidelines.md", "missing_file"), ("brief.json", "missing_file"),
@@ -60,6 +62,7 @@ def test_rejects_each_missing_required_file(tmp_path, victim, code):
     assert code in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_rejects_planted_defects(tmp_path):
     cases = {
         "empty_file": lambda r: (r / "scope.md").write_text("  \n"),
@@ -80,12 +83,14 @@ def test_rejects_planted_defects(tmp_path):
         assert code in _codes(root), code
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("bad", ["/abs", "C:/abs", "../up", "a/../../b", "\\\\share"])
 def test_rejects_non_relative_brief_dir(tmp_path, bad):
     root = _package(tmp_path / "p", brief_dir=bad)
     assert "bad_brief_dir" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_rejects_symlink(tmp_path, monkeypatch):
     root = _package(tmp_path / "p")
     # Unprivileged Windows cannot create real links; make one path report as a link.
@@ -96,10 +101,12 @@ def test_rejects_symlink(tmp_path, monkeypatch):
     assert "link.md" not in bp.manifest(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_missing_directory(tmp_path):
     assert _codes(tmp_path / "absent") == {"missing_dir"}
 
 
+@pytest.mark.covers("FR-01.01")
 def test_hash_identical_for_lf_and_crlf(tmp_path):
     lf = bp.package_sha256(_package(tmp_path / "lf"))
     crlf = bp.package_sha256(_package(tmp_path / "crlf", nl="\r\n"))
@@ -107,6 +114,7 @@ def test_hash_identical_for_lf_and_crlf(tmp_path):
     assert bp.manifest(tmp_path / "lf") == bp.manifest(tmp_path / "crlf")
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("field,value", [
     ("autonomy", "guided"), ("allow_parallel_builders", True), ("deploy_target", "jelastic-dev"),
 ])
@@ -116,6 +124,7 @@ def test_consent_field_change_changes_hash(tmp_path, field, value):
     assert before != after
 
 
+@pytest.mark.covers("FR-01.01")
 def test_approval_fields_do_not_change_hash(tmp_path):
     a = bp.package_sha256(_package(tmp_path / "a"))
     b = bp.package_sha256(_package(tmp_path / "b", approved_by="someone", approved_at="2030-01-01",
@@ -123,6 +132,7 @@ def test_approval_fields_do_not_change_hash(tmp_path):
     assert a == b
 
 
+@pytest.mark.covers("FR-01.01")
 def test_content_change_changes_hash(tmp_path):
     root = _package(tmp_path / "a")
     before = bp.package_sha256(root)
@@ -130,6 +140,7 @@ def test_content_change_changes_hash(tmp_path):
     assert bp.package_sha256(root) != before
 
 
+@pytest.mark.covers("FR-01.01")
 def test_excluded_files_do_not_change_hash(tmp_path):
     root = _package(tmp_path / "a")
     before = bp.package_sha256(root)
@@ -140,6 +151,7 @@ def test_excluded_files_do_not_change_hash(tmp_path):
     assert bp.package_sha256(root) == before
 
 
+@pytest.mark.covers("FR-01.01")
 def test_manifest_is_posix_nfc_sorted(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "inputs/cafe\u0301.md", "x")  # decomposed e + combining accent
@@ -149,6 +161,7 @@ def test_manifest_is_posix_nfc_sorted(tmp_path):
     assert all("\\" not in k for k in keys)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_verify_hash_roundtrip(tmp_path):
     root = _package(tmp_path / "a")
     ok, why = bp.verify_hash(root)
@@ -163,12 +176,14 @@ def test_verify_hash_roundtrip(tmp_path):
     assert not ok and "mismatch" in why
 
 
+@pytest.mark.covers("FR-01.01")
 def test_verify_hash_unreadable_brief(tmp_path):
     root = _package(tmp_path / "a")
     (root / "brief.json").write_text("{bad")
     assert bp.verify_hash(root)[0] is False
 
 
+@pytest.mark.covers("FR-01.01")
 def test_nfc_path_collision_is_detected(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "inputs/caf\u00e9.md", "x")
@@ -181,6 +196,7 @@ def test_nfc_path_collision_is_detected(tmp_path):
     assert "path_collision" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_rename_and_add_and_remove_change_hash(tmp_path):
     root = _package(tmp_path / "a")
     base = bp.package_sha256(root)
@@ -195,6 +211,7 @@ def test_rename_and_add_and_remove_change_hash(tmp_path):
     assert bp.package_sha256(root) == base
 
 
+@pytest.mark.covers("FR-01.01")
 def test_binary_files_are_hashed_byte_exact(tmp_path):
     a, b = _package(tmp_path / "a"), _package(tmp_path / "b")
     (a / "mockups" / "x.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00")
@@ -202,6 +219,7 @@ def test_binary_files_are_hashed_byte_exact(tmp_path):
     assert bp.package_sha256(a) != bp.package_sha256(b)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_hash_matches_an_independent_computation(tmp_path):
     import hashlib
     root = tmp_path / "tiny"
@@ -215,6 +233,7 @@ def test_hash_matches_an_independent_computation(tmp_path):
     assert bp.package_sha256(root) == sha(expected_manifest.encode("utf-8"))
 
 
+@pytest.mark.covers("FR-01.01")
 def test_text_is_decided_by_content_not_extension(tmp_path):
     a, b = _package(tmp_path / "a"), _package(tmp_path / "b")
     (a / "mockups" / "x.tsx").write_bytes(b"const a = 1;\r\n")
@@ -226,12 +245,14 @@ def test_text_is_decided_by_content_not_extension(tmp_path):
     assert bp.package_sha256(a) == bp.package_sha256(b)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_non_utf8_required_file_is_a_defect_not_a_crash(tmp_path):
     root = _package(tmp_path / "a")
     (root / "scope.md").write_bytes(b"\xff\xfe\x00bad")
     assert "bad_encoding" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("mockup", ["../brief.md", "/etc/hosts", "C:/Windows/win.ini", "sub/../../brief.md", ""])
 def test_screen_map_cannot_point_outside_mockups(tmp_path, mockup):
     root = _package(tmp_path / "a")
@@ -239,16 +260,19 @@ def test_screen_map_cannot_point_outside_mockups(tmp_path, mockup):
     assert "dangling_mockup" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("bad", ["./.shipwright/x", ".Shipwright/x", "a/.shipwright/b", "", 5, None])
 def test_brief_dir_edge_cases(tmp_path, bad):
     root = _package(tmp_path / "a", brief_dir=bad)
     assert "bad_brief_dir" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_brief_dir_with_shipwright_prefix_name_is_fine(tmp_path):
     assert bp.validate_layout(_package(tmp_path / "a", brief_dir=".shipwrightfoo/brief")) == []
 
 
+@pytest.mark.covers("FR-01.01")
 def test_required_fields_and_types(tmp_path):
     for key in ("ui_host", "env_preflight"):
         root = _package(tmp_path / key)
@@ -262,6 +286,7 @@ def test_required_fields_and_types(tmp_path):
     assert "dangling_ref" in _codes(_package(tmp_path / "t4", design_system="../x"))
 
 
+@pytest.mark.covers("FR-01.01")
 def test_mockups_with_only_junk_is_not_a_mockup_dir(tmp_path):
     root = _package(tmp_path / "a")
     (root / "mockups" / "01.html").unlink()
@@ -269,6 +294,7 @@ def test_mockups_with_only_junk_is_not_a_mockup_dir(tmp_path):
     assert "missing_dir" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_case_only_difference_is_a_collision(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "inputs/A.md", "x")
@@ -279,6 +305,7 @@ def test_case_only_difference_is_a_collision(tmp_path):
         bp.manifest(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_colon_in_a_reference_is_refused_it_can_be_a_windows_data_stream(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "screen-map.json", json.dumps({"screens": [{"mockup": "01.html:x"}]}))
@@ -295,6 +322,7 @@ def _make_link(target: Path, link: Path) -> None:
         os.symlink(target, link, target_is_directory=True)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_a_junction_loop_is_reported_not_walked(tmp_path):
     root = _package(tmp_path / "a")
     _make_link(root, root / "loop")
@@ -304,6 +332,7 @@ def test_a_junction_loop_is_reported_not_walked(tmp_path):
     assert bp.verify_hash(root) == (False, "package contains links or junctions")
 
 
+@pytest.mark.covers("FR-01.01")
 def test_a_link_to_an_outside_tree_is_not_hashed_or_copied(tmp_path):
     outside = tmp_path / "outside"
     outside.mkdir()
@@ -316,6 +345,7 @@ def test_a_link_to_an_outside_tree_is_not_hashed_or_copied(tmp_path):
     assert not any("secret" in rel for rel, _ in bp.iter_package_files(root))
 
 
+@pytest.mark.covers("FR-01.01")
 def test_references_must_name_hashed_files(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "evidence/scope.md", "x")
@@ -327,6 +357,7 @@ def test_references_must_name_hashed_files(tmp_path):
     assert "dangling_mockup" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_evidence_exclusion_is_case_insensitive(tmp_path):
     root = _package(tmp_path / "a")
     before = bp.package_sha256(root)
@@ -334,6 +365,7 @@ def test_evidence_exclusion_is_case_insensitive(tmp_path):
     assert bp.package_sha256(root) == before
 
 
+@pytest.mark.covers("FR-01.01")
 def test_verify_hash_fails_on_a_link_even_when_the_hash_matches(tmp_path):
     root = _package(tmp_path / "a")
     brief = json.loads((root / "brief.json").read_text())
@@ -344,6 +376,7 @@ def test_verify_hash_fails_on_a_link_even_when_the_hash_matches(tmp_path):
     assert bp.verify_hash(root)[0] is False
 
 
+@pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("planted", [
     "inputs/._requirements.md", "inputs/__MACOSX/extra.md", "mockups/.git/notes.html",
     "inputs/Thumbs.db", "Evidence/run.log",
@@ -356,6 +389,7 @@ def test_excluded_content_is_reported_not_silently_ignored(tmp_path, planted):
     assert "excluded_content" in _codes(root)  # ... so the validator must refuse it
 
 
+@pytest.mark.covers("FR-01.01")
 def test_empty_gitkeep_and_exact_evidence_dir_are_allowed(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "inputs/.gitkeep", "")
@@ -363,6 +397,7 @@ def test_empty_gitkeep_and_exact_evidence_dir_are_allowed(tmp_path):
     assert bp.validate_layout(root) == []
 
 
+@pytest.mark.covers("FR-01.01")
 def test_duplicate_json_keys_are_refused(tmp_path):
     root = _package(tmp_path / "a")
     text = (root / "brief.json").read_text()
@@ -373,12 +408,14 @@ def test_duplicate_json_keys_are_refused(tmp_path):
     assert bp.verify_hash(root)[0] is False
 
 
+@pytest.mark.covers("FR-01.01")
 def test_deeply_nested_json_is_a_defect_not_a_crash(tmp_path):
     root = _package(tmp_path / "a")
     (root / "screen-map.json").write_text("[" * 200000)
     assert "invalid_json" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_a_lone_surrogate_is_reported_as_unhashable(tmp_path):
     root = _package(tmp_path / "a")
     brief = (root / "brief.json").read_text().replace('"vite-hono"', '"\\ud800"')
@@ -386,6 +423,7 @@ def test_a_lone_surrogate_is_reported_as_unhashable(tmp_path):
     assert "unhashable_package" in _codes(root)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_text_detection_matches_git_not_utf8(tmp_path):
     a, b = _package(tmp_path / "a"), _package(tmp_path / "b")
     (a / "inputs").mkdir()
@@ -395,6 +433,7 @@ def test_text_detection_matches_git_not_utf8(tmp_path):
     assert bp.package_sha256(a) == bp.package_sha256(b)
 
 
+@pytest.mark.covers("FR-01.01")
 def test_verify_hash_against_an_externally_held_hash(tmp_path):
     root = _package(tmp_path / "a")
     actual = bp.package_sha256(root)
