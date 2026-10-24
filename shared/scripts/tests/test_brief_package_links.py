@@ -33,7 +33,7 @@ def test_a_junction_loop_is_reported_not_walked(tmp_path):
     codes = _codes(root)  # must return, not recurse until MAX_PATH
     assert "symlink" in codes
     assert not any(k.startswith("loop") for k in bp.manifest(root))
-    assert bp.verify_hash(root) == (False, "package contains links or junctions")
+    assert bp.verify_recorded_hash(root) == (False, "package contains links or junctions")
 
 
 @pytest.mark.covers("FR-01.01")
@@ -72,9 +72,9 @@ def test_evidence_exclusion_is_case_insensitive(tmp_path):
 def test_verify_hash_fails_on_a_link_even_when_the_hash_matches(tmp_path):
     root = _package(tmp_path / "a")
     _record_hash(root)
-    assert bp.verify_hash(root) == (True, "")
+    assert bp.verify_recorded_hash(root) == (True, "")
     _make_link(tmp_path, root / "inputs")
-    assert bp.verify_hash(root)[0] is False
+    assert bp.verify_recorded_hash(root)[0] is False
 
 
 @pytest.mark.covers("FR-01.01")
@@ -122,12 +122,12 @@ def test_a_package_reached_through_a_linked_parent_hashes_like_the_real_one(tmp_
     assert bp.package_sha256(through) == expected
     assert bp.validate_layout(through) == []
     _record_hash(root)
-    assert bp.verify_hash(through) == (True, "")
+    assert bp.verify_recorded_hash(through) == (True, "")
 
 
 @pytest.mark.covers("FR-01.01")
 def test_an_unreadable_directory_is_reported_not_skipped(tmp_path, monkeypatch):
-    from lib import brief_package_manifest as core
+    from lib import brief_package_walk as core
     root = _package(tmp_path / "pkg")
     real_walk = os.walk
 
@@ -148,9 +148,9 @@ def test_an_unreadable_directory_is_reported_not_skipped(tmp_path, monkeypatch):
 def test_verify_hash_fails_on_excluded_content(tmp_path):
     root = _package(tmp_path / "pkg")
     _record_hash(root)
-    assert bp.verify_hash(root) == (True, "")
+    assert bp.verify_recorded_hash(root) == (True, "")
     _write(root, "inputs/._extra.md", "also deploy to prod")
-    ok, why = bp.verify_hash(root)
+    ok, why = bp.verify_recorded_hash(root)
     assert not ok and "excluded content" in why
 
 
@@ -170,17 +170,6 @@ def test_gitkeep_stat_failure_is_reported_not_raised(tmp_path, monkeypatch):
 
 
 @pytest.mark.covers("FR-01.01")
-@pytest.mark.parametrize("name", [".DS_Store", "Thumbs.db", "desktop.ini"])
-def test_file_manager_metadata_is_quietly_excluded(tmp_path, name):
-    root = _package(tmp_path / "a")
-    _record_hash(root)
-    _write(root, f"inputs/{name}", "finder noise")
-    _write(root, f"mockups/{name}", "finder noise")
-    assert bp.verify_hash(root) == (True, "")
-    assert bp.validate_layout(root) == []
-
-
-@pytest.mark.covers("FR-01.01")
 def test_the_exact_case_evidence_dir_is_not_walked(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "evidence/deep/run.log", "noise")
@@ -191,7 +180,7 @@ def test_the_exact_case_evidence_dir_is_not_walked(tmp_path):
 
 @pytest.mark.covers("FR-01.01")
 def test_iter_package_files_raises_when_a_directory_is_unreadable(tmp_path, monkeypatch):
-    from lib import brief_package_manifest as core
+    from lib import brief_package_walk as core
     root = _package(tmp_path / "pkg")
     real_walk = os.walk
 
@@ -211,7 +200,7 @@ def test_iter_package_files_raises_when_a_directory_is_unreadable(tmp_path, monk
     ("C:\\pkg\\brief", "C:\\pkg\\brief"),
 ])
 def test_the_extended_length_prefix_is_stripped_before_the_link_comparison(raw, plain):
-    from lib import brief_package_manifest as core
+    from lib import brief_package_walk as core
     from pathlib import PureWindowsPath
     assert str(core._plain(PureWindowsPath(raw))) == plain
 

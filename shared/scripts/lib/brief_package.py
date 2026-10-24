@@ -8,6 +8,8 @@ never part of the package.
 
 This is the ONE public surface; later units import it and never re-implement it:
 
+* :func:`verify_package` -- **what consumers call**: layout rules AND the hash compare
+  from one scan, against a hash the caller holds outside the package.
 * :func:`validate_layout` -- structural defects, as a list (empty = accepted).
 * :func:`iter_package_files` -- the files that belong to the package (links,
   junctions, ``evidence/`` and OS junk are never yielded, and never descended into).
@@ -16,10 +18,22 @@ This is the ONE public surface; later units import it and never re-implement it:
   so an LF and a CRLF checkout hash the same. ``brief.json`` is hashed as canonical
   JSON WITHOUT ``package_sha256`` / ``approved_by`` / ``approved_at``, so every other
   field (``autonomy``, ``allow_parallel_builders``, ``deploy_target``...) is protected.
-* :func:`verify_hash` -- recorded hash vs. recomputed hash.
+* :func:`verify_hash` (``expected=`` required) / :func:`verify_recorded_hash` -- hash
+  compare only; the second is tamper-evidence, NOT approval.
 
-The hash proves the package is **unchanged since approval**, not that a person
-approved it: any agent can recompute it.
+What the hash does and does not promise (obligations are B2/U3's, not code here):
+
+* It proves the package is **unchanged since the hash was taken**. It does not prove a
+  person approved it: ``approved_by`` / ``approved_at`` sit outside the hash by design
+  (D1), and any agent can recompute it. Consumers anchor the approval and the expected
+  hash OUTSIDE the package (run_config, an event).
+* No snapshot: the package is read file by file, so a file can change between the check
+  and a phase's later read (TOCTOU). Consumers hand phases a snapshot COPY after
+  verifying it (``prepare_scratch_project`` in the harness is the pattern).
+* Line endings of NUL-free files are not protected: CRLF and LF hash the same.
+* Case-folding over-approximates path collisions (fails closed), and ``.gitattributes``
+  drift (``eol``/``text`` rules) is not detected. A portable-charset rule for file names
+  is out of scope here.
 """
 
 from __future__ import annotations
@@ -28,9 +42,11 @@ import unicodedata
 from pathlib import Path, PurePosixPath
 
 from .brief_package_manifest import (  # noqa: F401  (re-exported public surface)
-    BRIEF_VERSION, HASH_EXCLUDED_BRIEF_KEYS, PackageUnreadable, PathCollision, Scan, _digest,
-    _package_files, iter_package_files, loads_strict, manifest, package_sha256, scan_package, unreported_exclusions,
-    verify_hash,
+    BRIEF_VERSION, HASH_EXCLUDED_BRIEF_KEYS, PathCollision, _digest, check_hash, loads_strict,
+    manifest, package_sha256, verify_hash, verify_recorded_hash,
+)
+from .brief_package_walk import (  # noqa: F401  (re-exported public surface)
+    PackageUnreadable, Scan, iter_package_files, package_files, scan_package, unreported_exclusions,
 )
 
 REQUIRED_FILES = ("brief.json", "brief.md", "scope.md", "screen-map.json", "visual-guidelines.md")
@@ -126,18 +142,36 @@ def validate_layout(brief_dir: Path) -> list[dict[str, str]]:
     not raise. Required ``brief.json`` fields: ``REQUIRED_BRIEF_KEYS`` (D1's v2 set
     except the consent/approval trio, which the hash and preflight own). Every
     file reference must name a file the hash covers. Hash freshness is a separate
-    question -- see :func:`verify_hash`.
+    question -- see :func:`verify_package`.
     """
     if not Path(brief_dir).is_dir():
         return [_issue("missing_dir", str(brief_dir), "brief directory does not exist")]
+    return _validate(scan_package(brief_dir))
+
+
+def verify_package(brief_dir: Path, *, expected: str) -> tuple[bool, list[dict[str, str]]]:
+    """The call consumers use: ``(ok, issues)`` from ONE scan -- the layout rules of
+    :func:`validate_layout` plus the hash compare against ``expected`` (a hash held
+    outside the package; see the module docstring). ``verify_hash`` alone runs no layout
+    rule, and ``validate_layout`` alone proves nothing about changes."""
+    if not Path(brief_dir).is_dir():
+        return False, [_issue("missing_dir", str(brief_dir), "brief directory does not exist")]
     found = scan_package(brief_dir)
+    issues = _validate(found)
+    hash_ok, why = check_hash(found, expected)
+    if not hash_ok:
+        issues.append(_issue("hash_mismatch", ".", why))
+    return not issues, issues
+
+
+def _validate(found: Scan) -> list[dict[str, str]]:
     root = found.root
     issues = [_issue("symlink", link, "links and junctions are not allowed") for link in found.links]
     issues += [_issue("unreadable_file", ".", f"cannot read: {err}") for err in found.errors]
     issues += [_issue("excluded_content", rel,
                       "excluded from the hash but present: remove it (a phase could still read it)")
                for rel in unreported_exclusions(found)]
-    keys = {k for k, _ in _package_files(found)}
+    keys = {k for k, _ in package_files(found)}
     try:
         _digest(manifest(root, found))
     except PackageUnreadable:

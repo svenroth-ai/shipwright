@@ -142,7 +142,7 @@ def test_duplicate_json_keys_are_refused(tmp_path):
     assert "invalid_json" in _codes(root)
     with pytest.raises(ValueError):
         bp.manifest(root)
-    assert bp.verify_hash(root)[0] is False
+    assert bp.verify_recorded_hash(root)[0] is False
 
 
 @pytest.mark.covers("FR-01.01")

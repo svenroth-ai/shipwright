@@ -181,7 +181,7 @@ def run_harness(project: Path, *, fixture: str = "synthetic-1", mode: str = "dry
                "detail": f"{len(issues)} defect(s)"}]
     sha, hash_ok = "", False
     if not issues:
-        hash_ok, why = brief_package.verify_hash(brief_dir)
+        hash_ok, why = brief_package.verify_recorded_hash(brief_dir)
         sha = brief_package.package_sha256(brief_dir)
         stages.append({"name": "hash", "status": "passed" if hash_ok else "failed", "detail": why or "match"})
     ok = not issues and hash_ok

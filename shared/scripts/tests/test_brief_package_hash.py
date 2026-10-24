@@ -62,14 +62,14 @@ def test_manifest_is_posix_nfc_sorted(tmp_path):
 @pytest.mark.covers("FR-01.01")
 def test_verify_hash_roundtrip(tmp_path):
     root = _package(tmp_path / "a")
-    ok, why = bp.verify_hash(root)
+    ok, why = bp.verify_recorded_hash(root)
     assert not ok and "no package_sha256" in why
     _record_hash(root)
-    assert bp.verify_hash(root) == (True, "")
+    assert bp.verify_recorded_hash(root) == (True, "")
     brief = json.loads((root / "brief.json").read_text())
     brief["autonomy"] = "guided"
     _write(root, "brief.json", json.dumps(brief))
-    ok, why = bp.verify_hash(root)
+    ok, why = bp.verify_recorded_hash(root)
     assert not ok and "mismatch" in why
 
 
@@ -77,7 +77,7 @@ def test_verify_hash_roundtrip(tmp_path):
 def test_verify_hash_unreadable_brief(tmp_path):
     root = _package(tmp_path / "a")
     (root / "brief.json").write_text("{bad")
-    assert bp.verify_hash(root)[0] is False
+    assert bp.verify_recorded_hash(root)[0] is False
 
 
 @pytest.mark.covers("FR-01.01")

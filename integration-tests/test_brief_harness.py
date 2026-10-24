@@ -19,7 +19,7 @@ def test_fixture_1_is_accepted_by_the_library(tmp_path):
     from lib import brief_package
     pkg = h.build_fixture_1(tmp_path / "pkg")
     assert brief_package.validate_layout(pkg) == []
-    assert brief_package.verify_hash(pkg) == (True, "")
+    assert brief_package.verify_recorded_hash(pkg) == (True, "")
 
 
 @pytest.mark.covers("FR-01.01")
@@ -28,7 +28,7 @@ def test_fixture_hash_is_line_ending_independent(tmp_path):
     a = h.build_fixture_1(tmp_path / "lf")
     b = h.build_fixture_1(tmp_path / "crlf", crlf=True)
     assert brief_package.package_sha256(a) == brief_package.package_sha256(b)
-    assert brief_package.verify_hash(b) == (True, "")
+    assert brief_package.verify_recorded_hash(b) == (True, "")
 
 
 @pytest.mark.covers("FR-01.01")
@@ -212,7 +212,7 @@ def test_a_defective_autonomy_still_produces_a_failure_report(tmp_path, bad):
 def test_scratch_project_refuses_an_unreadable_package_directory(tmp_path, monkeypatch):
     import os
 
-    from lib import brief_package_manifest as core
+    from lib import brief_package_walk as core
     pkg = h.build_fixture_1(tmp_path / "pkg")
     real_walk = os.walk
 
