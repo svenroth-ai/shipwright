@@ -141,6 +141,22 @@ def test_test_phase_skips_with_reasons_pass(tmp_path):
     assert valid and issues == []
 
 
+@pytest.mark.parametrize("key", ["reason", "skip_reason"])
+def test_test_layers_accept_either_skip_key(tmp_path, key):
+    _write_results(tmp_path, {
+        "unit": {"total": 1, "passed": 1},
+        "integration": {"skipped": True, key: "no db"},
+        "smoke": {"status": "skip", key: "no server"},
+        "e2e": {"skipped": True, key: "no browser"},
+    })
+    assert validate_phase("test", tmp_path) == (True, [])
+
+
+def test_skip_reason_accepts_only_non_blank_strings():
+    assert late._skip_reason({"reason": {"x": 1}, "skip_reason": " no db "}) == "no db"
+    assert late._skip_reason({"reason": ["a"]}) == ""
+
+
 def test_changelog_phase(tmp_path):
     valid, issues = validate_phase("changelog", tmp_path)
     assert not valid and "No CHANGELOG.md" in _messages(issues)

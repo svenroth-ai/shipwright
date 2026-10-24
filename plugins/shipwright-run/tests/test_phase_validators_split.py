@@ -1,5 +1,5 @@
 """Campaign A3: design / plan validators share freeze_splits' split authority and judge
-the TASK's split; both skip keys count; the canon bridge never swallows a degraded run."""
+the TASK's split; a no-UI run skips only the screen check, never the canon checks."""
 
 from __future__ import annotations
 
@@ -21,8 +21,6 @@ _pv = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_pv)
 
 # importable by bare name once phase_validators has put its lib dir on sys.path
-import phase_validators_canon as canon  # noqa: E402
-import phase_validators_late as late  # noqa: E402
 import phase_validators_split as split  # noqa: E402
 
 validate_phase = _pv.validate_phase
@@ -111,19 +109,34 @@ def test_non_object_design_config_falls_back_to_project_splits(tmp_path, canon_c
     assert validate_phase("design", tmp_path)[0] is True
 
 
-def test_non_ui_scope_passes_design_with_a_note(tmp_path, canon_calls):
+def test_non_ui_scope_skips_only_the_screen_check(tmp_path, canon_calls):
+    _json(tmp_path, "shipwright_run_config.json", {"scope": "library"})
+    valid, issues = validate_phase("design", tmp_path, run_id="r5")
+    assert valid and [i["severity"] for i in issues] == ["inform"]
+    assert "not applicable" in _msgs(issues) and canon_calls == [("design", "r5")]
+
+
+def test_non_ui_scope_still_reports_a_broken_canon_check(tmp_path, monkeypatch):
+    def broken(_phase, _root, issues, *, run_id=None):
+        issues.append({"severity": "ask", "message": "[canon] C1: no phase_completed event"})
+
+    monkeypatch.setattr(split, "_run_canon_checks", broken)
     _json(tmp_path, "shipwright_run_config.json", {"scope": "library"})
     valid, issues = validate_phase("design", tmp_path)
-    assert valid and [i["severity"] for i in issues] == ["inform"]
-    assert "not applicable" in _msgs(issues) and canon_calls == []
+    assert not valid and "[canon] C1" in _msgs(issues)
 
 
-def test_design_task_skipped_by_the_orchestrator_passes(tmp_path, canon_calls):
-    _json(tmp_path, "shipwright_run_config.json",
-          {"phase_tasks": [{"phase": "project", "status": "done"},
-                           {"phase": "design", "status": "skipped"}]})
+def test_recover_to_skipped_then_complete_does_not_launder_design(tmp_path, canon_calls):
+    """`recover-phase-task --force-status skipped` is no exemption for a later completion."""
+    import phase_task_lifecycle as lifecycle
+
+    _json(tmp_path, "shipwright_run_config.json", {"phase_tasks": [
+        {"phaseTaskId": "pt-design", "phase": "design", "splitId": None,
+         "status": "in_progress", "version": 1}]})
+    assert lifecycle.recover_phase_task(tmp_path, phase_task_id="pt-design",
+                                        force_status="skipped")["ok"]
     valid, issues = validate_phase("design", tmp_path)
-    assert valid and "marked skipped" in _msgs(issues) and canon_calls == []
+    assert not valid and "No mockups found" in _msgs(issues) and canon_calls == []
 
 
 def test_a_self_recorded_design_skip_does_not_pass_its_own_gate(tmp_path, canon_calls):
@@ -184,6 +197,23 @@ def test_plan_without_split_id_falls_back_to_current_split(tmp_path, canon_calls
     assert validate_phase("plan", tmp_path) == (True, [])
 
 
+def test_plan_split_id_outside_the_resolved_splits_asks(tmp_path, canon_calls):
+    _json(tmp_path, "shipwright_project_config.json", {"splits": [{"name": "01-a"}]})
+    _plan_project(tmp_path, current_split="", files_in="../escape")
+    valid, issues = validate_phase("plan", tmp_path, split_id="../escape")
+    assert not valid and "is not one of this run's splits (01-a)" in _msgs(issues)
+    assert canon_calls == []
+
+
+def test_split_resolver_tolerates_a_bom_and_undecodable_bytes(tmp_path):
+    from phase_task_planning import _resolve_splits_with_fallback
+
+    (tmp_path / "shipwright_design_config.json").write_bytes(bytes([0xFF, 0xFE, 0x00]) + b"garbage")
+    (tmp_path / "shipwright_project_config.json").write_text(
+        json.dumps({"splits": [{"name": "01-a"}]}), encoding="utf-8-sig")
+    assert _resolve_splits_with_fallback(tmp_path) == (["01-a"], "project", None)
+
+
 def test_plan_missing_sections_and_files(tmp_path, canon_calls):
     _json(tmp_path, "shipwright_build_config.json", {"sections": []})
     assert "No sections found" in _msgs(validate_phase("plan", tmp_path)[1])
@@ -200,101 +230,3 @@ def test_build_forwards_the_run_id_to_the_canon_bridge(tmp_path, monkeypatch):
           {"sections": [{"name": "s1", "status": "complete", "tests_total": 3}]})
     assert validate_phase("build", tmp_path, split_id="01-a", run_id="r4") == (True, [])
     assert calls == [("build", "r4")]
-
-
-@pytest.mark.parametrize("key", ["reason", "skip_reason"])
-def test_test_layers_accept_either_skip_key(tmp_path, monkeypatch, key):
-    monkeypatch.setattr(late, "_run_canon_checks", lambda *_a, **_k: None)
-    _json(tmp_path, "shipwright_test_results.json", {
-        "unit": {"total": 1, "passed": 1},
-        "integration": {"skipped": True, key: "no db"},
-        "smoke": {"status": "skip", key: "no server"},
-        "e2e": {"skipped": True, key: "no browser"},
-    })
-    assert validate_phase("test", tmp_path) == (True, [])
-
-
-def _hide_verifiers(monkeypatch):
-    """Make ``tools.verifiers`` unlocatable, including submodules an earlier test cached."""
-    for name in [m for m in sys.modules if m == "tools.verifiers" or m.startswith("tools.verifiers.")]:
-        monkeypatch.setitem(sys.modules, name, None)
-    monkeypatch.setitem(sys.modules, "tools.verifiers", None)
-
-
-def test_skip_reason_accepts_only_non_blank_strings():
-    assert late._skip_reason({"reason": {"x": 1}, "skip_reason": " no db "}) == "no db"
-    assert late._skip_reason({"reason": ["a"]}) == ""
-
-
-def test_absent_canon_package_is_a_visible_degraded_note(tmp_path, monkeypatch):
-    _hide_verifiers(monkeypatch)
-    issues: list[dict] = []
-    canon._run_canon_checks("plan", tmp_path, issues, run_id="r3")
-    assert len(issues) == 1
-    assert issues[0]["severity"] == "inform" and issues[0]["kind"] == "canon_degraded"
-    assert issues[0]["message"].startswith(f"{canon.DEGRADED_PREFIX} plan: canon verifiers are not importable")
-
-
-def test_broken_canon_module_import_is_ask_level(tmp_path, monkeypatch):
-    """The package is locatable, so a submodule that fails to import is broken, not absent."""
-    monkeypatch.setitem(sys.modules, "tools.verifiers.plan_checks", None)
-    issues: list[dict] = []
-    canon._run_canon_checks("plan", tmp_path, issues, run_id="r3")
-    assert [(i["severity"], i["kind"]) for i in issues] == [("ask", "canon_degraded")]
-    assert "a canon verifier failed to import" in issues[0]["message"]
-
-
-def test_explicit_empty_run_id_is_ask_level(tmp_path):
-    issues: list[dict] = []
-    canon._run_canon_checks("plan", tmp_path, issues, run_id="  ")
-    assert [(i["severity"], i["kind"]) for i in issues] == [("ask", "canon_degraded")]
-    assert "empty run id" in issues[0]["message"]
-
-
-def test_degraded_note_reaches_the_gate_consumer(tmp_path, monkeypatch):
-    """run_phase_gate (the v1 path's consumer, A4's v2 seam) keeps the note as inform."""
-    _hide_verifiers(monkeypatch)
-    (tmp_path / "CHANGELOG.md").write_text("# Changelog\n", encoding="utf-8")
-    from orchestrator_pkg.validation_record import run_phase_gate
-
-    ask, inform, checked = run_phase_gate(tmp_path, "changelog")
-    assert checked and ask == []
-    assert [i.get("kind") for i in inform] == ["canon_degraded"]
-
-
-def _stub_plan_checks(monkeypatch, seen: list):
-    from tools.verifiers import plan_checks
-
-    def stub(_root, *, run_id):
-        seen.append(run_id)
-        return []
-
-    monkeypatch.setattr(plan_checks, "run_plan_checks", stub)
-
-
-def test_explicit_run_id_beats_the_environment(tmp_path, monkeypatch):
-    seen: list = []
-    _stub_plan_checks(monkeypatch, seen)
-    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "from-env")
-    issues: list[dict] = []
-    canon._run_canon_checks("plan", tmp_path, issues, run_id="explicit")
-    assert seen == ["explicit"] and issues == []
-
-
-def test_missing_run_id_is_a_visible_degraded_note(tmp_path, monkeypatch):
-    seen: list = []
-    _stub_plan_checks(monkeypatch, seen)
-    monkeypatch.delenv("SHIPWRIGHT_RUN_ID", raising=False)
-    issues: list[dict] = []
-    canon._run_canon_checks("plan", tmp_path, issues)
-    assert seen == [""]
-    assert [i["kind"] for i in issues] == ["canon_degraded"]
-    assert "phase_history[plan] was not checked" in issues[0]["message"]
-
-
-def test_an_unlocatable_verifier_package_reads_as_absent(monkeypatch):
-    def boom(_name):
-        raise ValueError("tools.verifiers.__spec__ is None")
-
-    monkeypatch.setattr(canon.importlib.util, "find_spec", boom)
-    assert canon._verifiers_present() is False

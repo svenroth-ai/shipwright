@@ -35,23 +35,18 @@ def _has_html(directory: Path) -> bool:
 
 
 def _design_not_applicable(project_root: Path) -> Optional[str]:
-    """Why this run has no design to check, or None when it should have one.
+    """Why this run has no screens to check, or None when it should have them.
 
-    Read only from ``shipwright_run_config.json`` — orchestrator-owned state, never a
-    file the gated design phase writes itself (a phase that could mark its own design
-    "skipped" would pass its own gate). Two cases: the run's scope has no UI
-    (``scope=library``, same rule as the design verifier), or the run's design phase
-    task is ``skipped`` in ``phase_tasks[]``.
+    Only the run's scope decides (``scope=library`` in ``shipwright_run_config.json``,
+    the same rule as the design verifier's ``_is_no_ui_scope``). A ``skipped`` design
+    task in ``phase_tasks[]`` is deliberately NOT an exemption: a skipped task is
+    terminal and never gated, and the status is reachable through
+    ``recover-phase-task --force-status skipped``, so honouring it here would let a
+    later completion launder a skip into a clean pass.
     """
     run_config = _read_json(project_root / "shipwright_run_config.json")
     if run_config.get("scope") in _NO_UI_SCOPES:
         return f"scope={run_config['scope']} has no UI surface"
-    tasks = run_config.get("phase_tasks")
-    if isinstance(tasks, list) and any(
-        isinstance(t, dict) and t.get("phase") == "design" and t.get("status") == "skipped"
-        for t in tasks
-    ):
-        return "the run's design phase task is marked skipped"
     return None
 
 
@@ -64,19 +59,17 @@ def _validate_design(
     skill writes them). Only when that directory has none is the older per-split layout
     (``.shipwright/planning/<split>/mockups/*.html``) consulted, and then EVERY split —
     or the task's own split when one is given — must have mockups. No screens and no
-    splits is a failure, not a vacuous pass. A run with no UI, or whose design phase task
-    the orchestrator marked skipped, passes with an inform note.
+    splits is a failure, not a vacuous pass. A run with no UI skips only this presence
+    check (inform note); the canon verifier still runs, as ``design_checks`` does.
     """
     issues: list[dict[str, str]] = []
     not_applicable = _design_not_applicable(project_root)
     if not_applicable:
         issues.append({
             "severity": "inform",
-            "message": f"Design check not applicable: {not_applicable}.",
+            "message": f"Design screen check not applicable: {not_applicable}.",
         })
-        return True, issues
-
-    if not _has_html(project_root / ".shipwright" / "designs" / "screens"):
+    elif not _has_html(project_root / ".shipwright" / "designs" / "screens"):
         splits, _source, _warning = _resolve_splits_with_fallback(project_root)
         wanted = [split_id] if split_id else splits
         missing = [
@@ -105,7 +98,9 @@ def _validate_plan(
 ) -> tuple[bool, list[dict[str, str]]]:
     """Plan phase: sections defined and section files exist for the TASK's split.
 
-    ``split_id`` is the plan task's own split. Without one (a split-less run, or a caller
+    ``split_id`` is the plan task's own split and must be one of the run's resolved
+    splits when there are any (this also keeps it from naming a path outside
+    ``.shipwright/planning/``). Without one (a split-less run, or a caller
     that does not know it) the build config's ``current_split`` is used, as before. When
     both are known and differ, the task split's archived sections are used; if there are
     none, that is reported instead of checking the wrong directory. With neither split
@@ -114,6 +109,18 @@ def _validate_plan(
     """
     issues: list[dict[str, str]] = []
     build_config = read_config("build", project_root)
+
+    if split_id:
+        splits, _source, _warning = _resolve_splits_with_fallback(project_root)
+        if splits and split_id not in splits:
+            issues.append({
+                "severity": "ask",
+                "message": (
+                    f"Plan task split '{split_id}' is not one of this run's splits "
+                    f"({', '.join(splits)}). Is the task's split correct?"
+                ),
+            })
+            return False, issues
 
     recorded_split = build_config.get("current_split", "") or ""
     sections = build_config.get("sections", [])
