@@ -172,6 +172,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Expected version (CAS check vs current task.version)")
     p.add_argument("--result-json", required=True,
                    help="Path to a JSON file containing the phase-runner result payload")
+    p.add_argument("--override-reason", default=None,
+                   help="Complete over a failed phase gate (ASK FIRST: a human's decision). "
+                        "The gate still runs; its findings and this reason are recorded in "
+                        "validation_overrides[]. A blank reason is refused.")
 
     # SS4: rebuild orchestrator context on resume — from run_config + compact
     # phase_tasks[].result summaries, never a transcript (context-budget bound).

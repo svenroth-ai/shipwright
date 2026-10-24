@@ -74,8 +74,12 @@
 - Rollback decisions
 - Skipping test layers (must provide valid skip reason)
 - Migration apply failures (stop immediately, do not run tests, do not attempt further schema changes — database may be in partial state)
-- Overriding phase validation gates (`--force`, which requires `--force-reason "<why>"` —
-  the check still runs and what it found is recorded with your reason)
+- Overriding phase validation gates (`update-step --force`, which requires
+  `--force-reason "<why>"`, or, in a driven run, `single-session-apply --override-reason
+  "<why>"` — the check still runs and what it found is recorded with your reason).
+  Only on a person's explicit answer, never because retries ran out; only a `guided` or
+  `autonomous` run can override (`unattended`, or no autonomy set, cannot), and a
+  phase-runner never overrides its own phase
 - Changing stack profile settings
 - Continuing after 3 failed fix attempts (or 2 with same root cause)
 - When you put a question to the user (confirmation, decision, or clarification), phrase it in plain, functional language a non-senior developer or normal user understands: lead with what changes for the user, avoid unexplained jargon (add a short gloss if a term is unavoidable), and give concrete, comparable options with their real-world trade-offs. This governs phrasing only — it never lowers the rigor of the work. (See "Tool Call Discipline — AskUserQuestion" below.)

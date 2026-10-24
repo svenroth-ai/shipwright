@@ -1,0 +1,380 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-a4-gate-seam-and-override",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T20:34:03.834179+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Either track gate-rejection count separately from dispatch attempts, or have the gate/apply path distinguish \"attempt since last gate failure\" when computing `retries_exhausted`. At minimum, add a test for crash-resume exhaustion so the behaviour is deliberate.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Confirm `mark_phase_failed` exists with the needed signature; if it needs extension (issue summary, CAS semantics, pointer advance), add it to the touch set explicitly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "State explicitly in the plan that the master contract is enforced by the apply payload fields; test those fields directly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Specify what the driver does on `ask_human` (halt the loop / exit non-zero) in `single-session-loop.md`, even if it's the existing ask convention.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Add an explicit byte-diff regression test of the completion write with enforcement off, and ensure `on_complete=None` short-circuits before any serialization change.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Document that unknown autonomy levels are treated as autonomous/failed, and assert it in a test.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Verify `record_validation_override` uses the existing JSON writer; add a cap or note none is needed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Read the attempt from one place only (loop_state under the existing lock, or pass it in), or document that `retry_position` is only for display and the cap decision uses loop_state.  Overall assessment: The approach is sound and faithfully follows the binding D4 design, including the hand-offs (run_id None-not-empty, degraded promotion, CAS/idempotency preservation). The main gaps are the dispatch-vs-rejection attempt accounting (which can spuriously terminal-fail a crash-resumed task) and unconfirmed `mark_phase_failed` availability; both are addressable within the current design without rework.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 makes an exhausted autonomous `phase_gate_failed` response mutate task state and advance the loop pointer. This conflicts with the binding contract that a gate rejection is non-mutating and leaves the task in progress. It also makes the same rejection reason represent two different lifecycle outcomes.",
+          "suggestion": "Keep apply rejection non-mutating. Let the master invoke `mark_phase_failed` as a separate terminal action after exhaustion, or explicitly resolve the contract discrepancy before implementation. Test rejection immutability separately from terminal failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "retry_position` treats missing or mismatched loop state as attempt zero. Repeated applies in that state can keep returning `retries_exhausted: false`, defeating the hard cap. Malformed attempt values are also unspecified.",
+          "suggestion": "Distinguish an unknown attempt from a valid zero. Under enforcement, require valid matching retry state before automatic redispatch; return a recoverable state error otherwise. Test missing, mismatched, and malformed state alongside the initial-dispatch-plus-two-retries boundary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "terminal_for` maps every unrecognized autonomy value to automatic failure, explicitly including future modes. A typo or newly introduced mode could therefore authorize a terminal mutation without a defined policy.",
+          "suggestion": "Map supported autonomy values explicitly. Treat unknown values as a configuration error or require human intervention; add a test for an unsupported value.  The injectable gate and single completion path are sound, and the proposed tests cover the main acceptance cases. Resolve the rejection contract and make retry-state and autonomy handling explicit before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T20:28:22.854356+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: edge-case** — **Severity: medium** — The retry cap counts **dispatches**, not gate rejections. A crash-resume re-dispatch of an in-progress task increments `loop_state.attempt`, so a task that crashed twice and then fails the gate once can hit `MAX_GATE_RETRIES` and terminal-fail (autonomous: `mark_phase_failed`) without ever having had `MAX` real gate retries. The plan acknowledges this in Risks but doesn't handle it.\n  **Suggestion:** Either track gate-rejection count separately from dispatch attempts, or have the gate/apply path distinguish \"attempt since last gate failure\" when computing `retries_exhausted`. At minimum, add a test for crash-resume exhaustion so the behaviour is deliberate.\n\n- **Category: dependency** — **Severity: medium** — `mark_phase_failed` is invoked on the autonomous terminal path, but the touch set only lists `phase_task_lifecycle.complete_phase_task`'s new `on_complete` hook. If `mark_phase_failed` doesn't already exist (or doesn't accept an issue summary), that's a missing dependency and code change.\n  **Suggestion:** Confirm `mark_phase_failed` exists with the needed signature; if it needs extension (issue summary, CAS semantics, pointer advance), add it to the touch set explicitly.\n\n- **Category: approach** — **Severity: medium** — The master's rejection handling (re-dispatch with `issues[]` brief, cap enforcement, terminal per autonomy) is realized only as prose/doc changes (`single-session-loop.md`, `SKILL.md` Step 5, `phase-runner.md`). If the master is genuinely an LLM following skill prose, fine — but then acceptance A4's \"retries stop at MAX_GATE_RETRIES with the specified terminal\" is tested only through the apply-path payload fields (`retries_exhausted`, `terminal`), not through any dispatcher behavior. Make sure the acceptance test actually exercises the apply-side payload and not an imagined master.\n  **Suggestion:** State explicitly in the plan that the master contract is enfor […truncated]\n\n[openai] 1. **Category: approach · Severity: high**  \n   **Finding:** Step 4 makes an exhausted autonomous `phase_gate_failed` response mutate task state and advance the loop pointer. This conflicts with the binding contract that a gate rejection is non-mutating and leaves the task in progress. It also makes the same rejection reason represent two different lifecycle outcomes.  \n   **Suggestion:** Keep apply rejection non-mutating. Let the master invoke `mark_phase_failed` as a separate terminal action after exhaustion, or explicitly resolve the contract discrepancy before implementation. Test rejection immutability separately from terminal failure.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** `retry_position` treats missing or mismatched loop state as attempt zero. Repeated applies in that state can keep returning `retries_exhausted: false`, defeating the hard cap. Malformed attempt values are also unspecified.  \n   **Suggestion:** Distinguish an unknown attempt from a valid zero. Under enforcement, require valid matching retry state before automatic redispatch; return a recoverable state error otherwise. Test missing, mismatched, and malformed state alongside the initial-dispatch-plus-two-retries boundary.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** `terminal_for` maps every unrecognized autonomy value to automatic failure, explicitly including future modes. A typo or newly introduced mode could therefore authorize a terminal mutation without a defined policy.  \n   **Suggestion:** Map supported autonomy values explicitly. Treat unknown values as a configuration error or require human intervention; add a test for an unsupported value.\n\nThe injectable gate and single completion path are sound, and the proposed tests cover the main acceptance cases. Resolve the rejection contract and make retry-state and autonomy handling explicit before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": 290,
+          "finding": "retry_position matches loop state by runId only, not currentPhaseTaskId == task.phaseTaskId; a moved pointer reads another task's attempt.",
+          "suggestion": "Return unknown (no cap) when the pointer names another task.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": 358,
+          "finding": "failure_error prints 'after None dispatch(es)' when attempt is unknown.",
+          "suggestion": "Say 'dispatch count unknown'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/skills/run/references/single-session-loop.md",
+          "line": 85,
+          "finding": "The cap only advances on single-session-next; re-applying without next never trips it.",
+          "suggestion": "Document that every retry goes through next, or count rejections.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/tests/test_single_session_gate_seam.py",
+          "line": 1305,
+          "finding": "test_unknown_autonomy_takes_the_non_destructive_terminal also parametrises unattended->failed; name misstates it.",
+          "suggestion": "Rename or split.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T21:44:56.437573+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py",
+          "line": null,
+          "finding": "Once enforcement is on a driven run cannot complete a phase past a failed gate without an override record",
+          "suggestion": "Raw complete-phase-task on a single_session config completes with no gate; refuse it while enforced.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "The override is a human decision and an unattended run cannot override",
+          "suggestion": "Allowlist {guided,autonomous}, read autonomy from the locked config, forbid the phase-runner from calling apply/complete/override.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": null,
+          "finding": "A5 can flip enforcement without bricking runs",
+          "suggestion": "canon_degraded promoted to ask reverses the documented inform-not-ask decision; keep, document, and make proving tools.verifiers ships in every cache layout an A5 precondition.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "A driven run is always capped at MAX_GATE_RETRIES",
+          "suggestion": "The cap counts only next calls in a deletable loop_state; count rejections durably.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+          "line": null,
+          "finding": "A failed gate cannot be laundered",
+          "suggestion": "No change for A4.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "Override record and completion describe the same state",
+          "suggestion": "Read autonomy from the locked config in the hook.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": null,
+          "finding": "Enforcement OFF leaves apply unchanged",
+          "suggestion": "Reword; failed-task refusal and attempt realignment apply regardless.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/validation_record.py",
+          "line": null,
+          "finding": "Critical-gate findings are retryable",
+          "suggestion": "Mark non-retryable.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T21:44:56.576399+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py` (~line 165–172, `elif override_reason is not None: override_reason = None`)",
+          "line": null,
+          "finding": "A non-blank `--override-reason` on a double apply of a done task is silently dropped and the apply returns the idempotent success without ever writing the override record. The caller (master, per the new SKILL.md text) may believe the override was recorded. Docs do say \"a double apply keeps its idempotent answer\", so this is arguably specified — but the response shape carries no signal that the override was discarded.",
+          "suggestion": "On the idempotent branch when `override_reason` was supplied, add a field (e.g. `\"override_skipped\": \"idempotent\"`) so the master can distinguish \"recorded\" from \"dropped\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py` — `rejection()",
+          "line": null,
+          "finding": "When `retry_position` returns `None` (no matching loop state, e.g. a library-driven apply without `single-session-next`), `exhausted` is always False and a retryable finding never reaches a terminal — the cap is unbounded in that configuration. The docstring acknowledges it (\"no cap applies\"), but the spec says \"retries stop at MAX_GATE_RETRIES\", with no unknown-state carve-out.",
+          "suggestion": "Either treat unknown `attempt` as exhausted for the non-guided terminals, or document this divergence explicitly in the hooks doc row (which currently claims the cap unconditionally).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py` — `_gate_rejected` mark_phase_failed failure branch",
+          "line": null,
+          "finding": "If `mark_phase_failed` itself fails, the return is `{\"ok\": False, \"completion\": failed, \"reason\": failed.get(\"reason\")}` — a third response shape on the apply path (neither the rejection shape nor the strict-stop shape). The CLI exit-code map and the master's handling in single-session-loop.md only describe the two intended shapes.",
+          "suggestion": "Document this shape in the hooks doc, or normalize it to the rejection shape with a marker so the master's `terminal` handling still works.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py` — `invalid_status_for_completion",
+          "line": null,
+          "finding": "The new refusal of `ok:true` completions of `failed`/`skipped` tasks is a behavior change to a public lifecycle function beyond the A4 touch set, and `mark_phase_failed` does not bump `version` — so any existing caller that re-applies an `ok:true` result after a fail (e.g. crash-recovery flows that re-claim and re-apply without `single-session-recover`) now hard-fails. The diff asserts this is the intended root fix and the docs say exit 2, but the CLI's exit-code mapping for this new reason is not shown in the diff — if `dispatch_single_session` maps all `completion.ok:False` to a generic code, the documented \"exit 2\" claim may not hold.",
+          "suggestion": "Verify (or add a test asserting) that `single-session-apply` on a failed task exits 2, not 1; otherwise the docs and the CLI disagree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py` — `evaluate_gate",
+          "line": null,
+          "finding": "The injected-`gate` exception handler builds the `[gate-error]` issue but the check `is_retryable` uses `str(i.get(\"message\",\"\")).startswith(GATE_ERROR_PREFIX)`; if `run_phase_gate`'s own internal error formatting ever changes prefix placement (it goes through `_gate_error`, same constant — fine today), the retryable classification silently breaks. This is a string-prefix coupling across modules with no shared test for the cross-module case.",
+          "suggestion": "Add a `kind: \"gate_error\"` marker to gate-error issues and classify on that instead of the message prefix.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": 83,
+          "finding": "evaluate_gate` converts an explicitly empty or whitespace-only `config.runId` to `None`. The binding hand-off requires passing `config.get(\"runId\")` unchanged: an explicit empty ID should produce an ask-level canon issue. Converting it to `None` permits environment fallback, potentially validating against a different run instead of rejecting invalid configuration. The new blank-ID test enshrines this incorrect behavior.",
+          "suggestion": "Forward `config.get(\"runId\")` directly. Update the tests to distinguish an absent ID (`None`) from an explicitly blank ID and verify that the latter triggers the canon rejection.  Ship-with-fixes: the overall gate and override approach follows the specification, but run-ID handling needs correction. Review was limited to the supplied diff because local inspection was blocked; tests were not run.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T20:31:18.178323+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: low\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py` (~line 165–172, `elif override_reason is not None: override_reason = None`)\n  Finding: A non-blank `--override-reason` on a double apply of a *done* task is silently dropped and the apply returns the idempotent success without ever writing the override record. The caller (master, per the new SKILL.md text) may believe the override was recorded. Docs do say \"a double apply keeps its idempotent answer\", so this is arguably specified — but the response shape carries no signal that the override was discarded.\n  Suggestion: On the idempotent branch when `override_reason` was supplied, add a field (e.g. `\"override_skipped\": \"idempotent\"`) so the master can distinguish \"recorded\" from \"dropped\".\n\n- Category: bug\n  Severity: low\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py` — `rejection()`\n  Finding: When `retry_position` returns `None` (no matching loop state, e.g. a library-driven apply without `single-session-next`), `exhausted` is always False and a retryable finding never reaches a terminal — the cap is unbounded in that configuration. The docstring acknowledges it (\"no cap applies\"), but the spec says \"retries stop at MAX_GATE_RETRIES\", with no unknown-state carve-out.\n  Suggestion: Either treat unknown `attempt` as exhausted for the non-guided terminals, or document this divergence explicitly in the hooks doc row (which currently claims the cap unconditionally).\n\n- Category: bug\n  Severity: low\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py` — `_gate_rejected` mark_phase_failed failure branch\n  Finding: If `mark_phase_failed` itself fails, the return is `{\"ok\": False, \"completion\": failed, \"reason\": failed.get(\"reason\")}` — a third response shape on the apply path (neither the rejection shape nor the strict-stop shape). The CLI exit-code map and the master's  […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py:83`\n- Finding: `evaluate_gate` converts an explicitly empty or whitespace-only `config.runId` to `None`. The binding hand-off requires passing `config.get(\"runId\")` unchanged: an explicit empty ID should produce an ask-level canon issue. Converting it to `None` permits environment fallback, potentially validating against a different run instead of rejecting invalid configuration. The new blank-ID test enshrines this incorrect behavior.\n- Suggestion: Forward `config.get(\"runId\")` directly. Update the tests to distinguish an absent ID (`None`) from an explicitly blank ID and verify that the latter triggers the canon rejection.\n\nShip-with-fixes: the overall gate and override approach follows the specification, but run-ID handling needs correction. Review was limited to the supplied diff because local inspection was blocked; tests were not run.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T21:44:56.297244+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T20:28:22.975649+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T20:28:23.104387+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

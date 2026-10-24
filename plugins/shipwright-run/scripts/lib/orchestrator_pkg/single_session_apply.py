@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # ``single_session`` is a PURE data package (contracts only, no mutators) — safe to
 # import at module top. ``scripts/lib`` must be on the path for it; ``constants``
@@ -33,12 +33,14 @@ from single_session import observability as obs  # noqa: E402
 from single_session.loop_state import (  # noqa: E402
     advance_pointer,
     load_loop_state,
+    record_gate_rejection,
     save_loop_state,
     set_status,
 )
 from single_session.orchestrator_context import verify_artifacts_exist  # noqa: E402
 from single_session.result_contract import validate_phase_runner_result  # noqa: E402
 
+from . import phase_gate  # noqa: E402
 from .config_io import is_single_session, load_run_config, mode_rejection  # noqa: E402
 
 
@@ -98,9 +100,26 @@ def apply_phase_result(
     session_uuid: str,
     expected_version: int,
     result: dict[str, Any],
+    override_reason: Optional[str] = None,
+    enforce_gate: Optional[bool] = None,
+    gate: Optional[phase_gate.GateFn] = None,
 ) -> dict[str, Any]:
     """``single-session-apply`` core: guard, contract-validate, persistence-guard,
-    complete, advance.
+    phase gate, complete, advance.
+
+    PHASE GATE (A4, between (2) and (3)): runs only for an ``ok`` result on a current
+    (``cas_current``) ``in_progress`` task — a stale or double apply keeps its CAS /
+    idempotent answer — and only when enforcing (``enforce_gate``, default
+    ``phase_gate.ENFORCE_PHASE_GATE_DEFAULT`` = off) or overriding. Off and no override:
+    the gate is never called. A failed gate without an override returns the
+    ``phase_gate_failed`` rejection (counted in loop state); once ``MAX_GATE_RETRIES`` is exhausted
+    (or at once for a non-retryable finding) it carries a ``terminal``: ``ask_human``
+    (guided — still non-mutating) or ``failed`` (autonomous — ``mark_phase_failed``
+    through the lifecycle, returned as a strict-stop, recoverable with
+    ``single-session-recover``). ``override_reason`` (not None) runs the gate, then
+    writes the override record and the completion under ONE lock through
+    ``complete_phase_task(on_complete=...)``. ``gate`` injects the gate function
+    (tests; default ``validation_record.run_phase_gate``).
 
     (0) FIRST: the DRIVABILITY guard. ``apply`` is the loop's most destructive entry
     point — it completes a phase task, plans its successor, can flip ``run.status`` to
@@ -144,6 +163,17 @@ def apply_phase_result(
         and task.get("sessionUuid") == session_uuid
     )
 
+    # The gate (and so an override) only applies to a current, still-open task: a stale
+    # or double apply keeps its CAS / idempotent answer, even with --override-reason.
+    gate_due = cas_current and task.get("status") == "in_progress"
+    override_skipped = override_reason is not None and not gate_due
+    if override_reason is not None and gate_due:
+        override_reason, refused = phase_gate.check_override(config, result, override_reason)
+        if refused:
+            return refused
+    elif override_skipped:
+        override_reason = None
+
     # A successful, current apply must have PERSISTED every artifact it claims.
     # Verify on disk before any mutation — a claimed-but-unwritten artifact is
     # the exact silent-loss failure SS4 exists to prevent. (After task-existence
@@ -153,6 +183,19 @@ def apply_phase_result(
         missing = verify_artifacts_exist(project_root, result.get("artifacts", []))
         if missing:
             return {"ok": False, "reason": "artifacts_missing", "missing": missing}
+
+    enforce = phase_gate.ENFORCE_PHASE_GATE_DEFAULT if enforce_gate is None else enforce_gate
+    verdict = None
+    on_complete = override_written = None
+    if result.get("ok") and gate_due and (enforce or override_reason is not None):
+        verdict = phase_gate.evaluate_gate(project_root, task, config, gate=gate)
+        if override_reason is not None:
+            on_complete, override_written = phase_gate.override_hook(
+                reason=override_reason, verdict=verdict,
+            )
+        elif verdict["ask"]:
+            return _gate_rejected(project_root, config, verdict, phase_task_id=phase_task_id,
+                                  session_uuid=session_uuid, expected_version=expected_version)
 
     if phase == "design" and result.get("ok"):
         try:
@@ -170,20 +213,67 @@ def apply_phase_result(
         session_uuid=session_uuid,
         expected_version=expected_version,
         result=result,
+        on_complete=on_complete,
     )
     if not completion.get("ok"):
         # CAS reject (stale) — surface verbatim; loop_state left untouched.
-        return {"ok": False, "completion": completion, "reason": completion.get("reason")}
+        reason = completion.get("reason")
+        if str(completion.get("blockMessage", "")).startswith(phase_gate.OverrideRefused.__name__):
+            reason = "override_requires_human"  # the locked config lost its human
+        return {"ok": False, "completion": completion, "reason": reason}
 
     _advance_loop_state(project_root, completed_phase_task_id=phase_task_id, completion=completion)
 
-    # Lazy: the loop re-exports this function, so importing it at module level would
-    # close an import cycle. By call time ``single_session_loop`` is fully loaded.
-    from .single_session_loop import resolve_next_dispatch
-
-    return {
+    applied: dict[str, Any] = {
         "ok": True,
         "completion": completion,
         "run_status": completion.get("run_status"),
-        "next": resolve_next_dispatch(project_root),
+        "next": _resolve_next(project_root),
     }
+    if verdict is not None:
+        applied["gate"] = phase_gate.gate_summary(verdict)
+    if override_written:
+        applied["override"] = override_written
+    if override_skipped:
+        # The task was no longer open (a double apply): nothing was overridden or recorded.
+        applied["override_skipped"] = "task_not_open"
+    return applied
+
+
+def _resolve_next(project_root: Path) -> dict[str, Any]:
+    # Lazy: the loop re-exports apply_phase_result, so importing it at module level would
+    # close an import cycle. By call time ``single_session_loop`` is fully loaded.
+    from .single_session_loop import resolve_next_dispatch
+
+    return resolve_next_dispatch(project_root)
+
+
+def _gate_rejected(
+    project_root: Path, config: dict[str, Any], verdict: dict[str, Any], *,
+    phase_task_id: str, session_uuid: str, expected_version: int,
+) -> dict[str, Any]:
+    """A failed gate: the ``phase_gate_failed`` rejection (``ok: false``; run_config and the
+    task unchanged, the rejection counted in loop state when it describes this task), or —
+    terminal ``failed`` — the strict-stop through ``mark_phase_failed`` (CAS-checked),
+    returned in the SAME shape as an ``ok: false`` phase result's strict-stop (``ok: true``,
+    ``run_status: failed``) plus the ``gate`` block, so the exit code, ``record_phase_end``
+    and the master's ``failed`` handling are unchanged. ``ok: false`` means run_config and
+    the task are unchanged; only the loop-state rejection count moved."""
+    state = phase_gate.retry_state(project_root, config, phase_task_id)
+    rejected = phase_gate.rejection(config, verdict, state)
+    if state is not None:
+        # Durable count, so re-applying without a new single-session-next still hits the cap.
+        save_loop_state(project_root, record_gate_rejection(state))
+    if rejected["terminal"] != "failed":
+        return rejected
+    failed = _lifecycle().mark_phase_failed(
+        project_root, phase_task_id=phase_task_id, session_uuid=session_uuid,
+        expected_version=expected_version,
+        error=phase_gate.failure_error(verdict, rejected["attempt"]),
+    )
+    if not failed.get("ok"):
+        return {"ok": False, "completion": failed, "reason": failed.get("reason")}
+    _advance_loop_state(project_root, completed_phase_task_id=phase_task_id, completion=failed)
+    gate_block = {k: v for k, v in rejected.items() if k != "ok"}
+    return {"ok": True, "completion": failed, "run_status": failed.get("run_status"),
+            "next": _resolve_next(project_root), "gate": gate_block}

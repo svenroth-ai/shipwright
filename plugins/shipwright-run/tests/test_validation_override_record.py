@@ -71,12 +71,13 @@ def _overrides(project_root):
 
 # The check runs regardless (AC1)
 
+@pytest.mark.covers("FR-01.01/AC02")
 def test_force_still_runs_the_phase_gate(run_project, mocker):
     """The regression this whole iterate exists for: `not force` used to gate the
     validator call itself, so an override produced no finding to record."""
     spy = _gate(mocker)
     update_step(run_project, "project", "complete", force=True, force_reason=REASON)
-    spy.assert_called_once_with("project", run_project)
+    spy.assert_called_once_with("project", run_project, split_id=None, run_id=None)
 
 
 def test_the_validate_phase_patch_target_still_intercepts(run_project, mocker):

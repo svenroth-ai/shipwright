@@ -1,0 +1,6 @@
+{"section":"A4-gate-seam-and-override","review":[
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py","line":290,"finding":"retry_position matches loop state by runId only, not currentPhaseTaskId == task.phaseTaskId; a moved pointer reads another task's attempt.","suggestion":"Return unknown (no cap) when the pointer names another task."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py","line":358,"finding":"failure_error prints 'after None dispatch(es)' when attempt is unknown.","suggestion":"Say 'dispatch count unknown'."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/skills/run/references/single-session-loop.md","line":85,"finding":"The cap only advances on single-session-next; re-applying without next never trips it.","suggestion":"Document that every retry goes through next, or count rejections."},
+{"severity":"low","category":"readability","file":"plugins/shipwright-run/tests/test_single_session_gate_seam.py","line":1305,"finding":"test_unknown_autonomy_takes_the_non_destructive_terminal also parametrises unattended->failed; name misstates it.","suggestion":"Rename or split."}
+]}

@@ -23,7 +23,7 @@ from typing import Any
 FAIL_CLOSED_REASONS: frozenset[str] = frozenset({
     "wrong_skill", "duplicate_claim", "phase_already_terminal",
     "prereqs_unmet", "stale_version", "stale_session",
-    "invalid_status", "invalid_status_for_completion",
+    "invalid_status", "invalid_status_for_completion", "use_single_session_apply",
 })
 
 LIFECYCLE_COMMANDS: frozenset[str] = frozenset({
@@ -63,13 +63,35 @@ _ADVANCING_COMMANDS: frozenset[str] = frozenset({
 #     cannot advance a pipeline — it only RELEASES a claim and bumps the CAS version.
 
 
+def _gated_completion_refusal(config: Any, payload: Any) -> dict[str, Any] | None:
+    """Refuse a raw ``ok:true`` completion of a driven run while the phase gate is enforced.
+
+    ``single-session-apply`` runs the phase gate and records any override; the raw
+    ``complete-phase-task`` runs neither, so with enforcement on it would be a way round the
+    gate. Enforcement off (``phase_gate.ENFORCE_PHASE_GATE_DEFAULT``, the same switch apply
+    uses): None, the command behaves as before. An ``ok:false`` (strict-stop) result is
+    never gated, so it stays allowed.
+    """
+    from . import phase_gate
+    from .config_io import is_single_session
+
+    if not (phase_gate.ENFORCE_PHASE_GATE_DEFAULT and isinstance(payload, dict)
+            and payload.get("ok") and isinstance(config, dict) and is_single_session(config)):
+        return None
+    return {"ok": False, "reason": "use_single_session_apply",
+            "error": "the phase gate is enforced for this single_session run: complete the "
+                     "phase with `orchestrator.py single-session-apply` (it runs the gate and "
+                     "records any --override-reason); complete-phase-task would skip both."}
+
+
 def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
     """Run an F2 phase-lifecycle subcommand. Returns process exit code.
 
     Exit code map:
         0 -> result["ok"] is True
         2 -> fail-closed reasons (wrong_skill, duplicate_claim,
-             phase_already_terminal, prereqs_unmet, stale_version, stale_session)
+             phase_already_terminal, prereqs_unmet, stale_version, stale_session,
+             use_single_session_apply: a gated ok:true complete-phase-task)
         1 -> generic error (not_found, invalid args, mode_unsupported)
     """
     # Fail closed BEFORE any mutation when the config is not drivable — a stale
@@ -150,7 +172,7 @@ def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
             print(json.dumps({"ok": False, "reason": "result_json_parse_error",
                               "error": str(exc)}), file=sys.stderr)
             return 1
-        result = complete_phase_task(
+        result = _gated_completion_refusal(config, payload) or complete_phase_task(
             project_root,
             phase_task_id=args.phase_task_id,
             session_uuid=args.session_uuid,

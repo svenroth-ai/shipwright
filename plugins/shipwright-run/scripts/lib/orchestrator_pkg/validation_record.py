@@ -30,8 +30,9 @@ advisory lock, the compliance subprocess, or a pipeline.
 Scope: this is the **v1** completion path (advances ``phase_tasks[]`` directly,
 campaign p4-04-retire-write-once-steps sub-iterate s5 — no CAS, no session),
 which serves standalone / legacy / adopted runs. The v2 driven path
-(``single-session-apply`` → ``phase_task_lifecycle``) has no ``--force`` and is
-untouched.
+(``single-session-apply`` → ``phase_task_lifecycle``) reuses ``run_phase_gate`` and
+``record_validation_override`` through ``phase_gate`` (its override is
+``--override-reason``, written under the lifecycle lock).
 """
 from __future__ import annotations
 
@@ -85,13 +86,19 @@ def _gate_error(step: str, exc: BaseException, what: str) -> dict[str, Any]:
 
 
 def run_phase_gate(
-    project_root: Path, step: str,
+    project_root: Path, step: str, *, split_id: str | None = None, run_id: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], bool]:
     """Run the phase's own validation plus the opt-in Phase-Quality critical gate.
 
     Returns ``(ask_issues, inform_issues, checked)``. Read-only: touches no config
     and holds no lock, so the caller runs it OUTSIDE ``run_config_lock`` exactly
     as the inline version did (audit WP2/F11).
+
+    ``split_id`` / ``run_id`` are forwarded to ``validate_phase`` unchanged. The v1
+    path passes neither (None: the plan validator falls back to ``current_split`` and
+    the canon bridge to ``SHIPWRIGHT_RUN_ID``); the driven path (``phase_gate``) passes
+    the task's split and ``config.get("runId")`` — None when absent, never ``""``,
+    because an explicit empty run id is ask-level in the canon bridge.
 
     ``checked`` is False when **no validator exists for this step**.
     ``validate_phase`` returns ``(True, [])`` for an unknown step — indistinguishable
@@ -132,7 +139,7 @@ def run_phase_gate(
         # test_run_phase_gate_reports_whether_a_validator_existed, which fails
         # if _VALIDATORS is ever refactored away.
         checked = step in _VALIDATORS
-        _valid, issues = validate_phase(step, project_root)
+        _valid, issues = validate_phase(step, project_root, split_id=split_id, run_id=run_id)
         ask_issues = [i for i in issues if i.get("severity") == "ask"]
         inform_issues = [i for i in issues if i.get("severity") == "inform"]
     except Exception as exc:  # noqa: BLE001 — a broken gate must not wedge the run
@@ -211,8 +218,18 @@ def record_validation_override(
     ask_issues: list[dict[str, Any]],
     inform_issues: list[dict[str, Any]],
     checked: bool = True,
+    via: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Append one durable "this phase was completed under override" record, in place.
+
+    ``via`` carries the driven path's identity (``phase_task_id``, ``split_id``,
+    ``autonomy``, ``entrypoint``); its non-None values are merged into the record so
+    a v2 override names the task it completed. The v1 path passes none, so its
+    record shape is unchanged.
+
+    ``gate_result: "degraded"`` — no ask-level issue, but a ``kind: canon_degraded``
+    note says the canon checks did not (fully) run, so "pass" would claim more than
+    was checked.
 
     ``waived`` is the load-bearing field. ``True`` means the gate FOUND ask-level
     issues and a person decided to go ahead anyway; ``overridden_issues`` carries
@@ -236,10 +253,12 @@ def record_validation_override(
     """
     if ask_issues:
         gate_result = "fail"
-    elif checked:
-        gate_result = "pass"
-    else:
+    elif not checked:
         gate_result = "not_checked"
+    elif any(i.get("kind") == "canon_degraded" for i in inform_issues):
+        gate_result = "degraded"
+    else:
+        gate_result = "pass"
 
     record = {
         "step": step,
@@ -249,6 +268,7 @@ def record_validation_override(
         "gate_result": gate_result,
         "overridden_issues": [dict(i) for i in ask_issues],
         "inform_count": len(inform_issues),
+        **{k: v for k, v in (via or {}).items() if v is not None},
     }
 
     log = list(config.get(VALIDATION_OVERRIDES_KEY) or [])

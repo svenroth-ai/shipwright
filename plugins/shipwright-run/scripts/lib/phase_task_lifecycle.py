@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 # Local lib imports — sibling modules live next to us
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -187,6 +187,7 @@ def complete_phase_task(
     session_uuid: str,
     expected_version: int,
     result: dict[str, Any],
+    on_complete: Callable[[dict[str, Any], dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Owner+version-checked terminal transition.
 
@@ -196,6 +197,17 @@ def complete_phase_task(
     deploy + others non-terminal -> needs_validation).
 
     Idempotent: if status already done by this owner+version, no-op.
+
+    ``on_complete(config, task)`` is the lifecycle hook for a write that must land
+    WITH the completion (the v2 gate override record): called under the lock after
+    the task is marked done and before the single write, so both or neither persist.
+    Never called on the not-found / CAS-reject / idempotent branches or for an
+    ok=False result. It must only mutate the passed config in place (no I/O, no
+    lifecycle call — the lock is not re-entrant); a raising hook aborts the write
+    and returns ``on_complete_failed``.
+
+    An ok=True result for a ``failed`` / ``skipped`` task is refused
+    ``invalid_status_for_completion``: only recover re-opens a terminal task.
     """
     if not result.get("ok", False):
         # Failure branch — Plan v4 §phase_session_stop.py
@@ -220,6 +232,16 @@ def complete_phase_task(
         if task.get("status") == "done":
             # Idempotent — already completed by this owner+version
             return _ok(task, idempotent=True)
+        if task.get("status") in TERMINAL_STATUSES:
+            # failed / skipped: _check_owner_version lets terminal statuses through for the
+            # idempotency checks, and mark_phase_failed does not bump the version, so an
+            # ok=True re-apply would turn a failed task done — past its gate and past
+            # recover. Only recover-phase-task re-opens a terminal task.
+            return _fail(
+                "invalid_status_for_completion",
+                message=(f"Phase task {phase_task_id} is '{task.get('status')}'; recover it "
+                         "(single-session-recover) before completing it."),
+            )
 
         # Mark done
         task["status"] = "done"
@@ -230,6 +252,11 @@ def complete_phase_task(
         if phase_task_id not in completed_ids:
             completed_ids.append(phase_task_id)
         config["completed_phase_task_ids"] = completed_ids
+        if on_complete is not None:
+            try:
+                on_complete(config, task)
+            except Exception as exc:  # noqa: BLE001 — nothing written; report, don't crash
+                return _fail("on_complete_failed", message=f"{type(exc).__name__}: {exc}")
 
         # Plan next or apply run-completion invariant
         next_task = _plan_next_inplace(config, task)

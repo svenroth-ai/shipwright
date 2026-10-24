@@ -44,6 +44,26 @@ LOOP_STATE_REL_PATH = Path(".shipwright") / "run_loop_state.json"
 # recovery).
 LOOP_STATUSES = ("running", "paused_human_gate", "stopped", "complete", "failed")
 
+# Cap on gate rejections of ONE phase task. Two durable counters feed it: ``attempt``
+# counts every dispatch of the current task (the first one, each re-dispatch after any
+# apply rejection, and crash-resume re-claims); ``gateRejections`` counts the gate
+# rejections ``single-session-apply`` recorded for it, so re-applying without a new
+# ``single-session-next`` still reaches the cap. Both reset to 0 when the loop advances,
+# the task is recovered, or the pointer is realigned to another task. The cap means "at
+# most 1 + MAX_GATE_RETRIES dispatches or rejections before a gate rejection is terminal".
+MAX_GATE_RETRIES = 2
+
+
+def gate_retries_exhausted(attempt: int, prior_rejections: int = 0) -> bool:
+    """True once a gate rejection must take the terminal: at dispatch ``attempt``, or as
+    rejection number ``prior_rejections + 1`` of the same task, whichever is further."""
+    return max(int(attempt), int(prior_rejections) + 1) > MAX_GATE_RETRIES
+
+
+def record_gate_rejection(state: dict[str, Any]) -> dict[str, Any]:
+    """Return a new state with the current task's ``gateRejections`` incremented."""
+    return {**state, "gateRejections": int(state.get("gateRejections", 0)) + 1}
+
 
 def loop_state_path(project_root: Path) -> Path:
     """Canonical loop-state path for a project."""
@@ -115,7 +135,7 @@ def advance_pointer(
 
     Records ``completed_phase_task_id`` as the last completed task, points
     ``currentPhaseTaskId`` at the successor (None at pipeline-terminal), and
-    resets ``attempt`` to 0 for the fresh task. This only moves the
+    resets ``attempt`` and ``gateRejections`` to 0 for the fresh task. This only moves the
     orchestrator's POINTER — the completed/next tasks' authoritative status was
     already set by ``phase_task_lifecycle``.
     """
@@ -124,6 +144,7 @@ def advance_pointer(
         "lastCompletedPhaseTaskId": completed_phase_task_id,
         "currentPhaseTaskId": next_phase_task_id,
         "attempt": 0,
+        "gateRejections": 0,
     }
 
 

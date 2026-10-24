@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-a4-gate-seam-and-override",
+  "date": "2026-10-24",
+  "section": "Iterate - feature: phase gate seam, rejection mechanics, v2 override (campaign A4)",
+  "title": "Driven single-session apply gains an off-by-default phase gate and a human-only override",
+  "context": "single-session-apply completed a phase task without running the phase validators, so a driven run could advance past a phase whose artifacts fail its gate. v1 had update-step --force with a recorded override; v2 had nothing. Campaign brief D4 asks for a real gate with bounded retries and an auditable override.",
+  "decision": "New phase_gate module evaluates run_phase_gate(split_id, run_id) before completion when enforcement is on (default OFF in A4). A failed gate is a non-mutating phase_gate_failed rejection; after MAX_GATE_RETRIES=2 the autonomy decides: guided asks a human, autonomous/unattended mark the task failed. --override-reason completes via a lifecycle hook that writes validation_overrides[] under the lock; unattended runs cannot override.",
+  "consequences": "Enforcement off keeps existing behaviour byte-identical. Degraded canon and gate crashes count as ASK and are non-retryable. A failed task can no longer be re-applied to done. gate_result gains a degraded value. A5 flips the default and migrates stub-artifact tests.",
+  "rationale": "A completion hook keeps the override record and the done transition atomic under one lock without adding a lifecycle entrypoint; a function-parameter seam keeps tests deterministic.",
+  "rejected": "A new lifecycle entrypoint for overrides (widens the completion surface); enforcing on by default now (about a dozen tests use stub artifacts); retrying degraded canon (it cannot change between dispatches).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

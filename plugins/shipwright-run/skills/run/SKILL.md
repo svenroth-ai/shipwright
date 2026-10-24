@@ -204,6 +204,14 @@ alternate `single-session-next` (resolve + claim the frontier phase) and
 `shipwright-run:phase-runner` subagent in between, until a terminal signal
 (`complete` / `failed` / `needs_validation`).
 
+**When apply says `phase_gate_failed`** (the phase's own checks found problems — the
+gate is off by default for now), nothing was completed: follow the reference's
+`terminal` handling — re-dispatch with the `issues[]` while retries remain, then ask the
+person (guided) or stop failed (autonomous). Completing over the checks
+(`single-session-apply --override-reason "<why>"`) is **ASK FIRST**: only on the
+person's explicit answer, never on your own, and never by a phase-runner. Send every
+retry through `single-session-next` (the retry cap counts there and at apply).
+
 `pipelineLength` = `len(config.pipeline)` (always 7 post-decouple — security is
 no longer an orchestrator phase).
 

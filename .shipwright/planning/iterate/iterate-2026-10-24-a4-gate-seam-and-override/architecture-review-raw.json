@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a gate in the driven path should exist, and option A is the right shape: almost all of it reuses machinery that already has to stay correct (the eight validators, `run_phase_gate`, the `attempt` counter, the lifecycle module, the override record format), so the new standing surface is thin.\n\n2. **The smallest thing that would do.** Option A, with one observation: the master already re-dispatches an in-progress task on exit-1, so the rejection mechanics are mostly \"don't complete the task and return a reason\" \u2014 the genuinely new standing parts are the gate call site in apply, the `issues[]` input to the phase-runner contract, and the retry cap (a constant on an existing counter). I see no materially smaller version that still answers \"what happens when a phase fails.\" Option B (report-only) defers exactly the part that is undefined today; a recorded-but-ignored finding is the same as no finding for an unattended run. Option C makes the failing party its own judge. Option D leaves a real hole the campaign is explicitly about closing.\n\n3. **What it costs to keep.** The pipeline maintainers own: the gate ordering invariant (between artifact guard and `freeze_splits`, only when `ok and cas_current`), the retry-cap semantics, the per-autonomy terminal behaviour, and the override hook's \"gate then complete under one lock\" guarantee. This is real but proportionate \u2014 the validators themselves already exist and are maintained for the manual path; this change makes them load-bearing in one more place rather than creating a second checker.\n\n4. **What it forecloses.** Once the gate is enforcing (A5), any future change to validators or to the apply path must reason about gate rejections; a flaky validator can no longer be waved off silently, it blocks runs. That is the intended effect, but it means the canon checks' degradation semantics (the A3 hand-off on `canon_degraded`) become a permanent correctness obligation of the gate. None of it forecloses a future option.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The rejection machinery (issues[] brief, MAX_GATE_RETRIES, terminal-per-autonomy) is added in the same change as the seam while enforcement is still OFF, so it is dead behaviour until A5 and will be reasoned about on any interim change to apply or the loop.\n- Suggestion: Acceptable as-is if A5 lands immediately after; otherwise consider landing the seam and the override first and the retry/terminal semantics with the A5 flip, since the retry cap is only meaningful once rejections can occur.\n\n- Category: ownership\n- Severity: low\n- Finding: The override path (`--override-reason` plus lifecycle hook writing record and completion under one lock) is a second writer of the completion state alongside normal apply; whoever maintains apply must now keep both lock-wise.\n- Suggestion: Ensure the hook funnels through the same lifecycle completion call that normal apply uses, so there is one completion write path and the hook only prepends the gate+override steps \u2014 the binding design's \"through a lifecycle hook\" reads as intending exactly this; keep it that way.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014option A should exist:** driven runs need the existing validation boundary before completion, with bounded recovery when validation fails.\n\n2. **Smallest thing that would do:** reuse `run_phase_gate` inside apply, the existing attempt counter, lifecycle transitions, recovery command, and override records. Return findings to the phase runner, cap retries, and use the specified autonomy outcomes. The disabled default is justified as a migration stage before A5 enables enforcement.\n\n3. **What it costs to keep:** pipeline maintainers must keep both execution paths aligned on validation and override semantics, and maintain the master\u2019s rejection, retry, and terminal behaviour. B leaves invalid completion possible, C makes validation depend on the producer\u2019s cooperation, and D preserves the demonstrated gap.\n\n4. **What it forecloses:** unattended advancement despite blocking findings. Future validator changes become operational policy changes because they can halt driven runs; proceeding requires repair or a human override.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a4-gate-seam-and-override",
+    "at": "2026-10-24T20:17:46.115442+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

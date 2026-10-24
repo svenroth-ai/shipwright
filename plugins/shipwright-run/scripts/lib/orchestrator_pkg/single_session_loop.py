@@ -177,6 +177,11 @@ def begin_dispatch(project_root: Path, *, phase_task_id: str) -> dict[str, Any]:
         # Fresh run, or a stale loop-state from a PRIOR run in this dir — never attach a
         # new run to an old pointer (mirrors the recovery-path runId guard).
         state = init_loop_state(run_id, current_phase_task_id=phase_task_id)
+    elif state.get("currentPhaseTaskId") != phase_task_id:
+        # The pointer drifted from the frontier (a recover onto another task, a None
+        # pointer after a strict-stop): ``attempt`` must count THIS task's dispatches, or
+        # the gate retry cap (MAX_GATE_RETRIES) never trips.
+        state = {**state, "currentPhaseTaskId": phase_task_id, "attempt": 0, "gateRejections": 0}
     state = record_dispatch(state)
     save_loop_state(project_root, state)
 
