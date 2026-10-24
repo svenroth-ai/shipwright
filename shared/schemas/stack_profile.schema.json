@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.dev/schemas/stack_profile.schema.json",
+  "title": "Shipwright stack profile",
+  "description": "Minimal schema for a stack profile (bundled, user-level or project-level). Deliberately lax: additionalProperties is true everywhere, and only keys whose wrong type would crash or misroute a loader are typed. Keys starting with '_' are comments. 'version' is the profile's own documentation string and is NOT 'schema_version'. shared/scripts/profile_resolver.py enforces this file with a small checker that supports exactly the keywords used here and rejects any other keyword loudly.",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Profile name; must equal the file stem for name lookups."
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of THIS schema the profile was written for. Absent means 1."
+    },
+    "services": {
+      "type": ["array", "null"],
+      "description": "Multi-service dev-server definition (dev_server/profile_config.py).",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "name": {"type": "string"},
+          "command": {"type": "string"},
+          "port": {
+            "type": ["integer", "string"],
+            "description": "Integer or a placeholder such as \"${PORT:-3847}\"."
+          },
+          "ready_path": {"type": "string"},
+          "depends_on": {"type": "array", "items": {"type": "string"}},
+          "primary": {"type": "boolean"}
+        }
+      }
+    },
+    "dev_server": {
+      "type": ["object", "null"],
+      "description": "Legacy single-service block; null means no web dev server."
+    },
+    "testing": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "unit": {"type": ["string", "object"]},
+        "command": {"type": "string"},
+        "integration": {"type": ["object", "string"]},
+        "e2e": {"type": ["object", "string"]},
+        "db_tests": {"type": ["object", "string"]},
+        "performance": {"type": ["object", "null"]}
+      }
+    },
+    "required_env_vars": {"type": ["object", "null"]},
+    "rules": {"type": ["array", "null"]},
+    "folder_structure": {"type": ["object", "null"]},
+    "migrations": {"type": ["object", "null"]},
+    "design_system": {"type": ["object", "null"]}
+  }
+}

@@ -1,0 +1,7 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","lens":"hidden coupling","claim_under_doubt":"boundary probes leave sys.path as found","disproof_attempt":"sys.path.remove deletes the first match, moving shared/scripts from index 0 to the end","what_would_resolve_it":"restore sys.path exactly"},
+{"severity":"medium","lens":"boundary","claim_under_doubt":"a broken candidate never breaks list","disproof_attempt":"deeply nested JSON raises RecursionError, outside the ValueError contract","what_would_resolve_it":"map RecursionError to ProfileInvalid"},
+{"severity":"low","lens":"boundary","claim_under_doubt":"schema-valid means loader-valid","disproof_attempt":"port 3000.0 passes the schema but dev_server validation rejects floats","what_would_resolve_it":"S2 normaliser coerces integral floats"},
+{"severity":"low","lens":"blast radius","claim_under_doubt":"gitignore negation re-includes only profile JSON","disproof_attempt":"no tmp re-exclusion for atomic writes","what_would_resolve_it":"add /.shipwright/profiles/*.tmp"},
+{"severity":"low","lens":"trust","claim_under_doubt":"source labels are trustworthy","disproof_attempt":"relative SHIPWRIGHT_USER_PROFILES_DIR resolves against repo-controlled cwd","what_would_resolve_it":"require an absolute env path; note user is not a trust elevation"}],
+"summary":"2 medium, 3 low; no high."}

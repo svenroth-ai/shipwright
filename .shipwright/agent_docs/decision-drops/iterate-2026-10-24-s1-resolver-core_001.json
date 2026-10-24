@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-s1-resolver-core",
+  "date": "2026-10-24",
+  "section": "Iterate - feature: stack-profile resolver core (S1)",
+  "title": "One resolver for stack profiles: project, user, bundled",
+  "context": "Stack profiles lived only in the plugin tree and every phase hard-coded that path, so user profiles were lost on update and a broken profile silently became another stack's defaults.",
+  "decision": "Add a stdlib-only resolver (first file wins, no fall-through), a list/resolve/validate CLI, a lax stack_profile schema, a committable .shipwright/profiles dir and a shared test-isolation fixture. No loader changes in this unit.",
+  "consequences": "Later units (S2-S5) rewire loaders and prose onto it. A project or user profile that shadows a bundled name carries a prominent warning; ~/.shipwright/profiles commands run in every project (accepted residual).",
+  "rationale": "One implementation avoids six drifting copies; a hand checker plus a jsonschema parity test keeps runtime stdlib-only without two definitions of valid.",
+  "rejected": "Per-loader custom-dir lookups (multiplies silent fallbacks); documenting re-copy after updates; doing nothing.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-24-s1-resolver-core-stack-profile-resolver.md"
+}

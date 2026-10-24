@@ -58,3 +58,18 @@ def tmp_project_with_designs(tmp_project):
     (designs / "flows" / "auth-flow.html").write_text("<html><body>Auth Flow</body></html>")
 
     return tmp_project
+
+
+# Stack-profile test isolation (campaign stack-profile-resolver, D4): keeps the
+# developer's real ~/.shipwright/profiles out of every test in this root.
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_isolation_dir = str(_Path(__file__).resolve().parents[3] / "shared" / "scripts")
+_added = _isolation_dir not in _sys.path
+if _added:
+    _sys.path.append(_isolation_dir)
+from profile_test_isolation import isolate_user_profiles_dir  # noqa: E402,F401
+
+if _added:  # leave sys.path as found: shared/scripts holds a `tools` package that would shadow a plugin's
+    _sys.path.remove(_isolation_dir)

@@ -158,6 +158,11 @@ Spec/
 !/.shipwright/compliance/
 !/.shipwright/designs/
 !/.shipwright/planning/
+# Hand-authored custom stack profiles (campaign stack-profile-resolver, D10): committable so
+# every checkout, iterate worktree, teammate and CI sees them.
+!/.shipwright/profiles/
+# Hard-killed atomic writes must not be committed by a directory-level add.
+/.shipwright/profiles/*.tmp
 # triage.jsonl is the tracked SSoT backlog (mirrors shipwright_events.jsonl); the
 # .lock + .bak stay ignored by the /.shipwright/* wildcard above (negation is exact).
 !/.shipwright/triage.jsonl

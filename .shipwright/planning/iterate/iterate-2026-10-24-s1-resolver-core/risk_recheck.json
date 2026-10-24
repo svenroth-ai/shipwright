@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-s1-resolver-core",
+  "risk_recheck": {
+    "changed_file_count": 34,
+    "diff_loc": 1739,
+    "risk_flags": [
+      "touches_build",
+      "touches_migrations"
+    ],
+    "diff_risk_flags": [
+      "touches_build"
+    ],
+    "complexity_floor": "small",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

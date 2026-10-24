@@ -22,5 +22,6 @@ python_functions = ["test_*"]
 addopts = "-v --tb=short"
 pythonpath = [".", "scripts"]
 markers = [
+    "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
     "integration: marks tests as integration tests",
 ]
