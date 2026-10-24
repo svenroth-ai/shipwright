@@ -69,6 +69,8 @@ def _resolve_splits_with_fallback(project_root: Path) -> tuple[list[str], str, O
             data = json.loads(candidate.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
+        if not isinstance(data, dict):
+            continue
         raw_splits = data.get("splits")
         if isinstance(raw_splits, list):
             normalised = _normalise_splits(raw_splits)

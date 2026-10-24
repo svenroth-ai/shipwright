@@ -1,0 +1,106 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-24-a3-validator-fixes",
+    "date": "2026-10-24",
+    "unit": {
+      "status": "passed",
+      "passed": 22486,
+      "total": 22486
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 600,
+      "total": 600
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "design passes on project-global .shipwright/designs/screens/",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_design_passes_on_project_global_screens PASSED"
+        },
+        {
+          "behavior": "design per-split fallback uses the freeze_splits authority (design config before project config)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_design_config_splits_win_over_project_config + test_design_per_split_mockups_missing_for_one_split PASSED"
+        },
+        {
+          "behavior": "design with no screens and no splits asks (no vacuous pass); split_id outside resolved splits asks",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_design_without_screens_or_splits_is_not_a_vacuous_pass + test_design_split_id_outside_the_resolved_splits_asks PASSED"
+        },
+        {
+          "behavior": "non-UI run (scope=library) and an orchestrator-skipped design task pass design; a self-recorded skip does not",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_non_ui_scope_passes_design_with_a_note + test_design_task_skipped_by_the_orchestrator_passes + test_a_self_recorded_design_skip_does_not_pass_its_own_gate PASSED"
+        },
+        {
+          "behavior": "plan validator uses the task's split, incl. archived split sections, and reports a foreign current_split",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_uses_the_tasks_split + test_plan_finds_an_archived_split_after_current_split_moved_on + test_plan_reports_build_config_for_another_split PASSED"
+        },
+        {
+          "behavior": "test layers accept reason or skip_reason",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_test_layers_accept_either_skip_key PASSED"
+        },
+        {
+          "behavior": "canon ImportError surfaces as a visible degraded result (absent=inform, broken=ask) and reaches run_phase_gate",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_absent_canon_package_is_a_visible_degraded_note + test_broken_canon_module_import_is_ask_level + test_degraded_note_reaches_the_gate_consumer PASSED"
+        },
+        {
+          "behavior": "run id: explicit beats env; missing is a degraded note; explicit empty is ask",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_explicit_run_id_beats_the_environment + test_missing_run_id_is_a_visible_degraded_note + test_explicit_empty_run_id_is_ask_level PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-run --extra dev pytest tests/test_phase_validators_split.py tests/test_phase_validators_late.py tests/test_validation_record_honesty.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 67,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-a-real-gates--A3\\.shipwright\\runs\\iterate-2026-10-24-a3-validator-fixes\\surface_verification.log",
+      "timestamp": "2026-10-24T19:13:20.800Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-24-a3-validator-fixes",
+    "commit": "cd5a854c16c020e2cc48fa6a07697fd4510e539d",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

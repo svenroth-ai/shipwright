@@ -151,13 +151,13 @@ def test_changelog_phase(tmp_path):
 def test_deploy_phase_returns_the_canon_verdict(tmp_path, monkeypatch):
     calls = []
 
-    def recorder(phase, project_root, issues):
-        calls.append((phase, project_root))
+    def recorder(phase, project_root, issues, *, run_id=None):
+        calls.append((phase, project_root, run_id))
         issues.append({"severity": "ask", "message": "[canon] x: y"})
 
     monkeypatch.setattr(late, "_run_canon_checks", recorder)
-    valid, issues = validate_phase("deploy", tmp_path)
-    assert calls == [("deploy", tmp_path)]
+    valid, issues = validate_phase("deploy", tmp_path, run_id="run-7")
+    assert calls == [("deploy", tmp_path, "run-7")]
     assert valid is False and [i["severity"] for i in issues] == ["ask"]
 
 

@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-a3-validator-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:12:37.919849+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Plan ownership remains ambiguous when `split_id` is supplied but `build_config.current_split` is absent. The proposed mismatch check does not cover this state, so existing sections could satisfy validation without evidence that they belong to the task’s split.",
+          "suggestion": "Define this case explicitly. Validate split-specific sections where available; otherwise return `ask` when section ownership cannot be established. Add a test with populated sections, an explicit task split, and no `current_split`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Converting every caught `ImportError` into an informational degradation can hide a broken canon installation—for example, an available canon module whose internal dependency fails to import. That differs from the supported legacy environment where canon is unavailable.",
+          "suggestion": "Limit the degradation handler to the optional canon import and distinguish an absent canon module from failures inside it. Preserve the normal failure behavior for internal import errors, with separate tests for both cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "A structured `kind: canon_degraded` note does not by itself establish the required visible degraded result. The listed tests do not explicitly verify that the existing result formatter or v1 history path preserves and displays it.",
+          "suggestion": "Add a focused test through the current result consumer for both unavailable canon and missing run ID, confirming that the degradation reaches the user-visible output.  The approach is focused and largely sound, including reuse of the split authority and backward-compatible keyword arguments. Resolve the ownership gap and narrow the import-error handling before proceeding to A4.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T19:07:30.011014+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] <no review returned: openai package not installed>\n\n[openai] Review based on the supplied mini-plan; local file access was blocked, so I could not verify BRIEF acceptance A3 or the existing implementation.\n\n1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Plan ownership remains ambiguous when `split_id` is supplied but `build_config.current_split` is absent. The proposed mismatch check does not cover this state, so existing sections could satisfy validation without evidence that they belong to the task’s split.  \n   **Suggestion:** Define this case explicitly. Validate split-specific sections where available; otherwise return `ask` when section ownership cannot be established. Add a test with populated sections, an explicit task split, and no `current_split`.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Converting every caught `ImportError` into an informational degradation can hide a broken canon installation—for example, an available canon module whose internal dependency fails to import. That differs from the supported legacy environment where canon is unavailable.  \n   **Suggestion:** Limit the degradation handler to the optional canon import and distinguish an absent canon module from failures inside it. Preserve the normal failure behavior for internal import errors, with separate tests for both cases.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** A structured `kind: canon_degraded` note does not by itself establish the required visible degraded result. The listed tests do not explicitly verify that the existing result formatter or v1 history path preserves and displays it.  \n   **Suggestion:** Add a focused test through the current result consumer for both unavailable canon and missing run ID, confirming that the degradation reaches the user-visible output.\n\nThe approach is focused and largely sound, including reuse of the split authority and backward-compatible keyword arguments. Resolve the ownership gap and narrow the import-error handl […truncated]",
+      "verdicts": {
+        "glm": "unavailable",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:12:38.292780+00:00",
+      "disposition": "campaign orchestrator instructed this runner not to spawn the review cascade; code-reviewer delegated to the orchestrator's 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:12:38.488232+00:00",
+      "disposition": "Stage 3 runs only behind a Stage 2 pass, and the internal cascade is delegated to the campaign orchestrator in this sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": 80,
+          "finding": "Supplying `split_id` bypasses the required failure when no splits resolve. With no split configuration, no global screens, and an HTML file under `planning/01-a/mockups/`, `validate_phase(\"design\", ..., split_id=\"01-a\")` passes the local check because `wanted` becomes nonempty and membership validation is conditional on `splits` being nonempty. This contradicts the stated “no screens and no splits is a failure” behavior.",
+          "suggestion": "Reject an empty resolved split list before constructing `wanted`, and require an explicit `split_id` to belong to that list. Add a regression test supplying an explicit split and existing mockups without any configured splits.  Ship-with-fixes: the diff largely implements the described changes, but the design gate has a concrete split-validation bypass. The full BRIEF was unavailable, so compliance beyond the supplied specification could not be verified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T19:12:26.093975+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] <no review returned: openai package not installed>\n\n[openai] - Category: edge-case\n- Severity: medium\n- File: plugins/shipwright-run/scripts/lib/phase_validators_split.py:80\n- Finding: Supplying `split_id` bypasses the required failure when no splits resolve. With no split configuration, no global screens, and an HTML file under `planning/01-a/mockups/`, `validate_phase(\"design\", ..., split_id=\"01-a\")` passes the local check because `wanted` becomes nonempty and membership validation is conditional on `splits` being nonempty. This contradicts the stated “no screens and no splits is a failure” behavior.\n- Suggestion: Reject an empty resolved split list before constructing `wanted`, and require an explicit `split_id` to belong to that list. Add a regression test supplying an explicit split and existing mockups without any configured splits.\n\nShip-with-fixes: the diff largely implements the described changes, but the design gate has a concrete split-validation bypass. The full BRIEF was unavailable, so compliance beyond the supplied specification could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "unavailable",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:12:38.109376+00:00",
+      "disposition": "campaign orchestrator instructed this runner not to spawn the review cascade; Stage-1 spec-reviewer delegated to the orchestrator's 3f-bis with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:09:09.970460+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:07:29.837117+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
