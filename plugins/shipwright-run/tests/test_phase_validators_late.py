@@ -10,6 +10,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -147,8 +148,17 @@ def test_changelog_phase(tmp_path):
     assert validate_phase("changelog", tmp_path) == (True, [])
 
 
-def test_deploy_phase_has_only_canon_checks(tmp_path):
-    assert validate_phase("deploy", tmp_path) == (True, [])
+def test_deploy_phase_returns_the_canon_verdict(tmp_path, monkeypatch):
+    calls = []
+
+    def recorder(phase, project_root, issues):
+        calls.append((phase, project_root))
+        issues.append({"severity": "ask", "message": "[canon] x: y"})
+
+    monkeypatch.setattr(late, "_run_canon_checks", recorder)
+    valid, issues = validate_phase("deploy", tmp_path)
+    assert calls == [("deploy", tmp_path)]
+    assert valid is False and [i["severity"] for i in issues] == ["ask"]
 
 
 def test_compliance_phase_reports_missing_then_all_present(tmp_path):
@@ -162,12 +172,51 @@ def test_compliance_phase_reports_missing_then_all_present(tmp_path):
     assert valid and "All 5 compliance artifacts present" in issues[0]["message"]
 
 
-@pytest.mark.parametrize("phase", ["project", "design", "plan", "build", "test", "changelog", "deploy"])
+_CANON_STUBS = {
+    "project": ("project_checks", "run_project_checks"),
+    "design": ("design_checks", "run_design_checks"),
+    "plan": ("plan_checks", "run_plan_checks"),
+    "build": ("build_checks", "run_build_checks"),
+    "test": ("test_checks", "run_test_checks"),
+    "changelog": ("changelog_checks", "run_changelog_checks"),
+    "deploy": ("deploy_checks", "run_deploy_checks"),
+}
+
+
+@pytest.mark.parametrize("phase", sorted(_CANON_STUBS))
 def test_canon_bridge_dispatches_every_phase(tmp_path, monkeypatch, phase):
+    import importlib
+
+    from tools.verifiers.common import Severity
+
+    def result(name, *, ok, skipped, severity):
+        return SimpleNamespace(name=name, detail=f"{name}-detail", ok=ok, is_skipped=skipped,
+                               severity=severity)
+
+    seen = []
+
+    def stub(project_root, *, run_id):
+        seen.append((project_root, run_id))
+        return [
+            result("err", ok=False, skipped=False, severity=Severity.ERROR.value),
+            result("warn", ok=False, skipped=False, severity=Severity.WARNING.value),
+            result("skipped", ok=False, skipped=True, severity=Severity.ERROR.value),
+            result("green", ok=True, skipped=False, severity=Severity.ERROR.value),
+        ]
+
+    module_name, func_name = _CANON_STUBS[phase]
+    module = importlib.import_module(f"tools.verifiers.{module_name}")
+    monkeypatch.setattr(module, func_name, stub)
     monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "run-x")
+
     issues: list[dict] = []
     canon._run_canon_checks(phase, tmp_path, issues)
-    assert all(i["severity"] in {"ask", "inform"} and i["message"].startswith("[canon] ") for i in issues)
+
+    assert seen == [(tmp_path, "run-x")]
+    assert issues == [
+        {"severity": "ask", "message": "[canon] err: err-detail"},
+        {"severity": "inform", "message": "[canon] warn: warn-detail"},
+    ]
 
 
 def test_canon_bridge_unknown_phase_is_a_noop(tmp_path):

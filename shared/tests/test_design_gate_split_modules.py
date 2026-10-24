@@ -20,16 +20,24 @@ from lib.design_gate_html import (
 from lib.design_gate_result import GateResult
 from lib.gate_catalog_render import _cell, render_catalog_doc
 
-pytestmark = pytest.mark.covers("FR-01.01/AC01")
-
 _LIB = Path(__file__).resolve().parents[1] / "scripts" / "lib"
 _BARE = ("design_gate_result", "design_gate_html", "design_gate_feedback", "design_gate_extras")
+
+
+@pytest.fixture(autouse=True)
+def _no_bare_module_leak():
+    """Drop any bare-named module a test imported, so other tests see only ``lib.*``."""
+    before = set(sys.modules)
+    yield
+    for name in set(sys.modules) - before:
+        if name in _BARE:
+            del sys.modules[name]
 
 
 def _load_bare(monkeypatch, name: str):
     """Import ``name`` the way check-design-gates.py does: bare, lib dir on sys.path."""
     monkeypatch.syspath_prepend(str(_LIB))
-    for mod in _BARE:  # leave no bare module behind for other tests
+    for mod in _BARE:  # force a fresh bare import
         monkeypatch.delitem(sys.modules, mod, raising=False)
     spec = importlib.util.spec_from_file_location(f"{name}_under_test", _LIB / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
@@ -73,7 +81,8 @@ def test_external_host_edge_cases():
     assert _external_host("local.css") is None
     assert _external_host("mailto:a@b.example") is None
     assert _external_host("//cdn.example/x.js") == "cdn.example"
-    assert _external_host("https:evil.example/x") is not None  # scheme decides, not slash count
+    assert _external_host("https:evil.example/x") == ""  # external scheme, no host
+    assert standalone_html_violations('<img src="https:evil.example/x">') == ["https:evil.example/x"]
 
 
 def test_standalone_flags_only_external_non_font_hosts():
