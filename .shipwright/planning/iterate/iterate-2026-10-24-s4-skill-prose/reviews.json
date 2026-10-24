@@ -61,94 +61,38 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 7,
-      "findings": [
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/tests/test_stack_profile_prose_guard.py",
-          "line": 98,
-          "finding": "Reverse allowlist check only tested that a prefix matches a file, not that an excused finding exists; two entries were dead. FIXED: per-entry would-be-finding check, dead entries removed.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/tests/test_stack_profile_prose_guard.py",
-          "line": 27,
-          "finding": "Guard regex false negatives (shared_root variants, case, scripts/../profiles, unanchored exemptions). FIXED: widened, IGNORECASE, anchored exemptions, planted cases.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/tests/test_stack_profile_prose_commands.py",
-          "line": 44,
-          "finding": "Dead branches in extraction. FIXED: removed.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/tests/test_stack_profile_prose_commands.py",
-          "line": 68,
-          "finding": "Snippet count was global not per file. FIXED: per-file set equality.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/tests/test_stack_profile_prose_commands.py",
-          "line": 79,
-          "finding": "No timeout/encoding on subprocess calls. FIXED.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-project/skills/project/SKILL.md",
-          "line": 205,
-          "finding": "Inline mention of resolve_profile.py list without full path. ACCEPTED: reference files give the full form.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "architecture",
-          "file": "plugins/shipwright-preview/skills/preview/SKILL.md",
-          "line": 67,
-          "finding": "Pre-gate duplicates dev_server's exit 2/3. REJECTED: brief S4 item 1 prescribes the preview gate.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        }
-      ],
+      "findings_count": 0,
+      "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T15:49:27.587072+00:00",
+      "completed_at": "2026-10-24T17:20:19.439768+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "3d3e132b98eadf8b6525ec51d99ce88e592ea198"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_applicable",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: The triage_inbox entry goes stale only when trg-647df2d8 closes — Snoozed cards render without their launch payload and eviction from the top 50 drops the lines too; an unrelated Stop-hook re-render then turns the reverse test red.",
+          "suggestion": "Accepted: hand-off wording widened; a red guard is loud and fixable.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T15:49:27.738460+00:00",
-      "disposition": "Stage 3 not applicable: markdown prose and tests only, no migrations, concurrency, cross-plugin imports or irreversible operations",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T17:20:59.041961+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -236,14 +180,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T15:45:49.817632+00:00",
+      "completed_at": "2026-10-24T17:20:13.962544+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "3b831ff88d68c96a7725c1a214ccd15014d6609d"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
