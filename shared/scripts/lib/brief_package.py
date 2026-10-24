@@ -29,7 +29,7 @@ from pathlib import Path, PurePosixPath
 
 from .brief_package_manifest import (  # noqa: F401  (re-exported public surface)
     BRIEF_VERSION, HASH_EXCLUDED_BRIEF_KEYS, PackageUnreadable, PathCollision, Scan, _digest,
-    iter_package_files, loads_strict, manifest, package_sha256, scan_package, unreported_exclusions,
+    _package_files, iter_package_files, loads_strict, manifest, package_sha256, scan_package, unreported_exclusions,
     verify_hash,
 )
 
@@ -137,7 +137,7 @@ def validate_layout(brief_dir: Path) -> list[dict[str, str]]:
     issues += [_issue("excluded_content", rel,
                       "excluded from the hash but present: remove it (a phase could still read it)")
                for rel in unreported_exclusions(found)]
-    keys = {k for k, _ in iter_package_files(root, found)}
+    keys = {k for k, _ in _package_files(found)}
     try:
         _digest(manifest(root, found))
     except PackageUnreadable:

@@ -206,3 +206,20 @@ def test_a_defective_autonomy_still_produces_a_failure_report(tmp_path, bad):
     report = h.run_harness(project, report_path=tmp_path / "r.json")
     assert report["outcome"] == "dry-failed" and report["autonomy"] == "unknown"
     assert (tmp_path / "r.json").exists()
+
+
+@pytest.mark.covers("FR-01.01")
+def test_scratch_project_refuses_an_unreadable_package_directory(tmp_path, monkeypatch):
+    import os
+
+    from lib import brief_package_manifest as core
+    pkg = h.build_fixture_1(tmp_path / "pkg")
+    real_walk = os.walk
+
+    def walk_with_error(top, followlinks=False, onerror=None):
+        onerror(PermissionError(13, "Permission denied", str(Path(top) / "mockups")))
+        yield from real_walk(top, followlinks=followlinks, onerror=onerror)
+
+    monkeypatch.setattr(core.os, "walk", walk_with_error)
+    with pytest.raises(OSError):
+        h.prepare_scratch_project(tmp_path / "proj", pkg)

@@ -43,6 +43,8 @@ EXCLUDED_TOP_DIRS = frozenset({"evidence"})
 #: Operating-system litter that must not change the hash.
 JUNK_NAMES = frozenset({".ds_store", "thumbs.db", "desktop.ini", ".gitkeep"})
 JUNK_DIRS = frozenset({"__macosx", ".git"})
+#: File-manager metadata nothing reads as content: excluded from the hash and not reported.
+METADATA_NAMES = frozenset({".ds_store", "thumbs.db", "desktop.ini"})
 #: Consent/approval fields removed from ``brief.json`` before hashing.
 HASH_EXCLUDED_BRIEF_KEYS = frozenset({"package_sha256", "approved_by", "approved_at"})
 #: A file is text (CRLF->LF before hashing) when its first 8000 bytes hold no NUL byte --
@@ -58,6 +60,17 @@ def _is_text(raw: bytes) -> bool:
     return 0 not in raw[:_SNIFF_BYTES]
 
 
+def _plain(path: Path) -> Path:
+    """``path.resolve()`` without the Windows extended-length prefix (``\\\\?\\``), which
+    ``resolve()`` adds to long paths and which would make every path look like a link."""
+    text = str(path)
+    if text.startswith("\\\\?\\UNC\\"):
+        return Path("\\\\" + text[8:])
+    if text.startswith("\\\\?\\"):
+        return Path(text[4:])
+    return path
+
+
 def _is_link(path: Path, root: Path) -> bool:
     """A symlink, or anything reached through a link/junction (Windows junctions included).
 
@@ -67,7 +80,7 @@ def _is_link(path: Path, root: Path) -> bool:
     if path.is_symlink():
         return True
     try:
-        return path.resolve() != root / path.relative_to(root)
+        return _plain(path.resolve()) != root / path.relative_to(root)
     except (OSError, ValueError):
         return True
 
@@ -100,7 +113,7 @@ def scan_package(brief_dir: Path) -> Scan:
     walked, so a relative root, a Windows 8.3 short name or a linked parent directory
     all behave like the plain absolute path. A link or junction below the root is
     reported once and never entered; an unreadable directory is recorded in ``errors``."""
-    root = Path(brief_dir).resolve()
+    root = _plain(Path(brief_dir).resolve())
     files: list[Path] = []
     links: list[str] = []
     errors: list[str] = []
@@ -116,6 +129,8 @@ def scan_package(brief_dir: Path) -> Scan:
                 links.append((here / name).relative_to(root).as_posix())
             else:
                 plain.append(name)
+        if here == root and "evidence" in plain:
+            plain.remove("evidence")  # never read by a phase: not walked, not hashed
         dirnames[:] = plain
         for name in filenames:
             if _is_link(here / name, root):
@@ -126,8 +141,9 @@ def scan_package(brief_dir: Path) -> Scan:
 
 
 def _quiet_exclusion(rel: PurePosixPath, path: Path) -> bool:
-    """Excluded entries that need no report: the exact-case ``evidence/`` top dir and an empty ``.gitkeep``."""
-    if rel.parts[0] == "evidence":
+    """Excluded entries that need no report: the exact-case ``evidence/`` top dir, file-manager
+    metadata (``METADATA_NAMES``) and an empty ``.gitkeep``."""
+    if rel.parts[0] == "evidence" or rel.name.lower() in METADATA_NAMES:
         return True
     try:
         return rel.name == ".gitkeep" and path.stat().st_size == 0
@@ -145,9 +161,18 @@ def unreported_exclusions(found: Scan) -> list[str]:
     return out
 
 
-def iter_package_files(brief_dir: Path, _found: Scan | None = None) -> Iterator[tuple[str, Path]]:
-    """Yield ``(NFC POSIX relative path, path)`` for every file that belongs to the package."""
-    found = _found or scan_package(brief_dir)
+def iter_package_files(brief_dir: Path) -> Iterator[tuple[str, Path]]:
+    """Yield ``(NFC POSIX relative path, path)`` for every file that belongs to the package.
+
+    Raises ``PackageUnreadable`` when a directory could not be read (a skipped directory
+    would silently shorten the package)."""
+    found = scan_package(brief_dir)
+    if found.errors:
+        raise PackageUnreadable("; ".join(found.errors))
+    yield from _package_files(found)
+
+
+def _package_files(found: Scan) -> Iterator[tuple[str, Path]]:
     for path in found.files:
         rel = PurePosixPath(*path.relative_to(found.root).parts)
         if not _excluded(rel):
@@ -206,7 +231,7 @@ def manifest(brief_dir: Path, _found: Scan | None = None) -> dict[str, str]:
         raise PackageUnreadable("; ".join(found.errors))
     out: dict[str, str] = {}
     seen: set[str] = set()
-    for key, path in iter_package_files(brief_dir, found):
+    for key, path in _package_files(found):
         if key.casefold() in seen:
             raise PathCollision(f"two files collide on a case-insensitive filesystem: {key!r}")
         seen.add(key.casefold())
