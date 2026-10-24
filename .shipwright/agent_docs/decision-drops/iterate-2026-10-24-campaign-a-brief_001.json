@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-campaign-a-brief",
+  "date": "2026-10-24",
+  "section": "Iterate — change: campaign brief for real gates and unattended runs",
+  "title": "Brief-driven unattended run planned as three campaigns",
+  "context": "Existing apps should become Shipwright apps via a Brief package, but phase validators never run in driven runs and no unattended mode exists.",
+  "decision": "Split the work into campaign A (real gates, harness), B (brief intake, design, SC profile) and U (unattended mode), with cross-campaign order as operator start conditions.",
+  "consequences": "Campaign A can start now; B waits for A and the stack-profile resolver; U waits for B and a WebUI tolerance card.",
+  "rationale": "Two Opus plan reviews showed gates must be fixed before they are enforced and that depends_on cannot cross campaigns.",
+  "rejected": "One large campaign with cross-campaign edges; enforcing gates before migrating the stub-artifact tests.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
