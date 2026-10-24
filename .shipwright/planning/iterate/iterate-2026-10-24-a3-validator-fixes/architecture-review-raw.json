@@ -1,0 +1,45 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "status": "error",
+      "reason": "openai package not installed"
+    },
+    "openai": {
+      "feedback": "1. No new standing mechanism is needed; correcting the existing validators and canon reporting is proportionate to the false failures and false clean passes described.\n\n2. The smallest thing that would do is to update those checks using the existing split authority, the task\u2019s split, accepted skip semantics, and visible degraded results when canon cannot establish a pass.\n\n3. What it costs to keep: maintaining agreement between validators, phase outputs, split authority, and canon result meanings; a sibling module adds no separate operational lifecycle.\n\n4. What it forecloses: none identified.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "partially_degraded": true,
+  "partially_degraded_legs": [
+    "glm"
+  ],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a3-validator-fixes",
+    "at": "2026-10-24T19:02:41.477025+00:00"
+  },
+  "verdicts": {
+    "glm": "unavailable",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "error",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 glm did not (glm=unavailable, openai=approve)"
+  }
+}

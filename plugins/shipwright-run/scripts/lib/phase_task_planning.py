@@ -66,8 +66,10 @@ def _resolve_splits_with_fallback(project_root: Path) -> tuple[list[str], str, O
         if not candidate.exists():
             continue
         try:
-            data = json.loads(candidate.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            data = json.loads(candidate.read_text(encoding="utf-8-sig"))
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+            continue
+        if not isinstance(data, dict):
             continue
         raw_splits = data.get("splits")
         if isinstance(raw_splits, list):

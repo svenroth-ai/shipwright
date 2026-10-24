@@ -1,7 +1,8 @@
 """Post-build phase validators: test, changelog, deploy, compliance.
 
-Extracted from ``phase_validators`` (which re-imports them into ``_VALIDATORS``);
-behaviour unchanged.
+Extracted from ``phase_validators`` (which re-imports them into ``_VALIDATORS``). Every
+validator takes ``split_id`` / ``run_id`` keywords; none here is split-aware, and all but
+compliance hand ``run_id`` to the canon bridge.
 """
 
 from __future__ import annotations
@@ -12,9 +13,21 @@ from pathlib import Path
 from phase_validators_canon import _run_canon_checks
 
 
-def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def _skip_reason(block: dict) -> str:
+    """The skip reason under either key producers write (``reason`` / ``skip_reason``)."""
+    for key in ("reason", "skip_reason"):
+        value = block.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _validate_test(
+    project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Test phase: results file exists, all layers have results or valid skip reasons.
 
+    A skipped layer's reason is accepted under ``reason`` or ``skip_reason``.
     Standalone-mode results (mode == "standalone") are ignored by the pipeline
     validator — the test phase must run again within the pipeline context.
     """
@@ -72,7 +85,7 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
                 ),
             })
             has_ask = True
-    elif integration_skipped and not integration.get("skip_reason") and not integration.get("reason"):
+    elif integration_skipped and not _skip_reason(integration):
         issues.append({
             "severity": "ask",
             "message": "Integration tests were skipped without a reason. Was this intentional?",
@@ -102,7 +115,7 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
             "message": "Smoke test layer has no result. Continue without smoke test?",
         })
         has_ask = True
-    elif smoke_status == "skip" and not smoke.get("reason"):
+    elif smoke_status == "skip" and not _skip_reason(smoke):
         issues.append({
             "severity": "ask",
             "message": "Smoke test was skipped without a reason. Was this intentional?",
@@ -118,7 +131,7 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
             "message": "E2E test layer has no result. Continue without E2E tests?",
         })
         has_ask = True
-    elif e2e_skipped and not e2e.get("reason"):
+    elif e2e_skipped and not _skip_reason(e2e):
         issues.append({
             "severity": "ask",
             "message": "E2E tests were skipped without a reason. Was this intentional?",
@@ -172,12 +185,14 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
                 ),
             })
 
-    _run_canon_checks("test", project_root, issues)
+    _run_canon_checks("test", project_root, issues, run_id=run_id)
     has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 
 
-def _validate_changelog(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def _validate_changelog(
+    project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Changelog phase: CHANGELOG.md exists. Iterate 12.4 augments with
     the modular ``changelog_checks`` verifier (canon C1/C2/C3 +
     Sonder-Checks ``check_git_tag_exists`` and
@@ -193,24 +208,28 @@ def _validate_changelog(project_root: Path) -> tuple[bool, list[dict[str, str]]]
         })
         return False, issues
 
-    _run_canon_checks("changelog", project_root, issues)
+    _run_canon_checks("changelog", project_root, issues, run_id=run_id)
     has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 
 
-def _validate_deploy(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def _validate_deploy(
+    project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Deploy phase: iterate 12.4 wires the modular ``deploy_checks``
     verifier (test-gate pre-condition + canon C1/C2/C3 + phase_history
     + ADR integrity). C4/C5 are skipped by policy (deploy is execution
     + operational history, not a decision or product change).
     """
     issues: list[dict[str, str]] = []
-    _run_canon_checks("deploy", project_root, issues)
+    _run_canon_checks("deploy", project_root, issues, run_id=run_id)
     has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 
 
-def _validate_compliance(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def _validate_compliance(
+    project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Compliance phase: check artifacts exist. INFORM only — non-blocking."""
     issues: list[dict[str, str]] = []
     compliance_dir = project_root / ".shipwright" / "compliance"
