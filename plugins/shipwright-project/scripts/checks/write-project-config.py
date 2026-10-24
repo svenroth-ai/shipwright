@@ -70,7 +70,7 @@ def main() -> int:
         raw_planning = Path(args.planning_dir).absolute()  # not resolved: a linked .shipwright keeps its name
         lookup_root = raw_planning.parent.parent if raw_planning.parent.name == ".shipwright" else project_root
 
-    from lib.profile_check import profile_error  # project's own lib (path set above)
+    from lib.profile_check import check_profile, describe  # project's own lib (path set above)
 
     # The early phase-tracking call (in_progress + reserved sentinel) names no profile file, so it
     # must not gain a new failure mode; a missing shared tree degrades like the gitignore merge there
@@ -78,15 +78,14 @@ def main() -> int:
     early_sentinel = args.status == "in_progress" and args.profile in ("generic", "detecting")
     if not early_sentinel:
         try:
-            reason = profile_error(args.profile, lookup_root)
+            check_profile(args.profile, lookup_root)
         except ImportError as exc:
             if args.status != "in_progress":  # a complete scaffold never writes an unvalidated profile name
                 print(f"ERROR: {exc}", file=sys.stderr)
                 return 1
             print(f"[write-project-config] profile check skipped: {exc}", file=sys.stderr)
-            reason = None
-        if reason:
-            print(f"ERROR: {reason}", file=sys.stderr)
+        except ValueError as exc:
+            print(f"ERROR: {describe(args.profile, exc)}", file=sys.stderr)
             return 4
 
     if args.status == "in_progress":

@@ -16,10 +16,20 @@ from pathlib import Path
 
 import pytest
 
-from lib.profile_check import profile_error
+from lib.profile_check import check_profile, describe
 from write_run_config import main as run_config_main
 
 pytestmark = pytest.mark.covers("FR-01.06")
+
+
+def profile_error(name, root):
+    """Test adapter: the writers catch ``ValueError`` themselves and print ``describe(...)``; this keeps the
+    assertions below on the same (None | reason string) shape."""
+    try:
+        check_profile(name, root)
+    except ValueError as exc:
+        return describe(name, exc)
+    return None
 
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 _PROJECT_CONFIG = _SCRIPTS / "checks" / "write-project-config.py"
@@ -111,12 +121,15 @@ def test_profile_check_imports_the_resolver_through_the_plugin_layout(tmp_path):
     shutil.copytree(repo / "shared" / "schemas", root / "shared" / "schemas")
     proj = tmp_path / "proj"
     _profile(proj, "my-stack")
-    code = (
-        "import importlib.util as u;"
-        f"s = u.spec_from_file_location('profile_check', r'{lib / 'profile_check.py'}');"
-        "m = u.module_from_spec(s); s.loader.exec_module(m);"
-        f"print(m.profile_error('my-stack', r'{proj}'), m.profile_error('nope-stack', r'{proj}') is not None)"
-    )
+    code = "\n".join([
+        "import importlib.util as u",
+        f"s = u.spec_from_file_location('profile_check', r'{lib / 'profile_check.py'}')",
+        "m = u.module_from_spec(s); s.loader.exec_module(m)",
+        "def err(n):",
+        f"    try: m.check_profile(n, r'{proj}')",
+        "    except ValueError as e: return m.describe(n, e)",
+        "print(err('my-stack'), err('nope-stack') is not None)",
+    ])
     env = {**os.environ, "SHIPWRIGHT_USER_PROFILES_DIR": str(tmp_path / "u")}
     done = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, env=env, check=False)
     assert done.returncode == 0, done.stderr
@@ -162,7 +175,7 @@ def test_missing_shared_tree_is_an_install_error_not_a_bad_name(tmp_path, monkey
 
     monkeypatch.setattr(profile_check, "_SHARED_SCRIPTS", str(tmp_path / "nowhere"))
     with pytest.raises(ImportError):
-        profile_check.profile_error("vite-hono", tmp_path)
+        profile_check.check_profile("vite-hono", tmp_path)
     monkeypatch.setattr(sys, "argv", ["write_run_config.py", "--project-root", str(tmp_path), "--profile", "vite-hono"])
     assert run_config_main() == 1
     assert "shared/` tree is incomplete" in capsys.readouterr().err
@@ -201,9 +214,9 @@ def test_early_sentinel_call_skips_the_profile_check(tmp_path, monkeypatch, sent
     import lib.profile_check as profile_check
 
     def boom(*_a, **_k):
-        raise AssertionError("profile_error must not run for the early sentinel call")
+        raise AssertionError("check_profile must not run for the early sentinel call")
 
-    monkeypatch.setattr(profile_check, "profile_error", boom)
+    monkeypatch.setattr(profile_check, "check_profile", boom)
     module = _load_project_config_module()
     plan_dir = tmp_path / "notes"
     plan_dir.mkdir()

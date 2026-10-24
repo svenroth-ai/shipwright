@@ -62,3 +62,22 @@ Boundaries: resolver CLI/loader output consumed by four command loaders, and the
 | e2e helper leaked the developer's git setup; `.gitignore` canon not applied; main-checkout copy could satisfy the asserts | accepted-and-fixed: `core.excludesFile=` neutralised and `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE` stripped; the managed gitignore is merged before `git add .`; the main checkout's profile directory is removed after the worktree is created (D10); private-API reason kept in a comment |
 
 The swallow allowlist is larger than the BRIEF's single S3 matcher entry. Added, each reverse-checked and with a reason: `profile_matcher._discover` (BRIEF, `warnings[]`), `adopt_profile.hint_warning` (feeds the same `warnings[]`), `profile_resolver._row` (builds the `valid:false` discovery row, the D1 skip), `profile_check.profile_error` (returns the reason string; both callers exit 4). Operator decision to keep the guard (BRIEF rev 3) stands.
+
+## Review-Cascade-Round-2-Reconciliation
+
+| Finding | Disposition |
+|---|---|
+| BRIEF S5 item 3 allows a single swallow exception; `profile_check.profile_error` was a second | accepted-and-fixed: `profile_error` is gone. `check_profile` lets the resolver's `ValueError` through and `describe` formats the reason; `write_run_config.py` and `write-project-config.py` each catch it, print it and `return 4` (same exit codes and messages; the unit tests keep their assertions through a test-side adapter). `check_profile` is a pinned wrapper, so a caller that swallowed it would be red |
+| `profile_resolver._row` is the resolver itself, not a caller | accepted-and-fixed: `RESOLVER_MODULES` (`profile_resolver.py`, `profile_model.py`) are excluded from the swallow scan by location, like rule 1's allowlist (reverse-checked: they must still exist); the allowlist entry is removed |
+| Remaining swallow allowlist | exactly two entries, pinned by a test: the S3 matcher `_discover` and `adopt_profile.hint_warning`. `hint_warning` belongs to the same S3 `warnings[]` family: its string is appended to the snapshot's `profile.warnings[]`, and the hint is resolved again, loudly, at generation |
+| `raise SystemExit` / `raise SystemExit from e` | accepted-and-fixed: a bare-name `SystemExit` is a zero exit; planted reds |
+| A re-raising handler still counted as protecting a helper | accepted-and-fixed: a `try` protects only through a handler that does not propagate (bare `raise`, `raise exc`, `raise ... from exc`); a re-raise as another type protects; planted red (re-raising local wrapper inside a swallowing `try`) and green |
+| `return str(e)` / `return log.warning(e)` / `return _skipped(p, n, e)` counted as handling | accepted-and-fixed: conversion and logging callees are neutral, and a returned call is loud only when it is a failure builder (name pattern) handed the exception; planted reds |
+| `_get_services_resolved` (multiservice `cmd_start`) not covered; `kind` through a local | accepted-and-fixed: pinned wrapper (reverse-checked) and `_branches_on_kind` follows one `kind = getattr(e, 'kind', ...)` / `e.kind` assignment into a later test; multiservice's real handler is green, its kind-dropped variant red |
+| `ast.TryStar`, `contextlib.suppress(ValueError)` | accepted-and-fixed: both scanned; planted reds |
+| Loud forms searched inside nested functions of a handler | accepted-and-fixed: handler scans stop at nested functions, classes and lambdas |
+| Guard parses every file repeatedly | accepted-and-fixed: parsed trees and `_all_swallows()` are cached; the guard test module runs in about 7 s |
+| e2e: scrubbed env only for `_git`; commit hooks | accepted-and-fixed: one `_env()` (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE stripped) used by `_git` and `_run`; `core.hooksPath=` empty |
+| Import aliases, lambda / `partial` wrappers, any-path loudness, `except BadProfile` via alias | accepted as documented blind spots (module docstring); the guard is a heuristic and this is the last hardening round |
+
+The guard rules were split into `stack_profile_py_rules.py` and `stack_profile_py_handlers.py` for the 300-line cap.

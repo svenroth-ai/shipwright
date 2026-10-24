@@ -1,8 +1,9 @@
 """Tests of the ``*.py`` stack-profile guard (campaign stack-profile-resolver S5).
 
-The rules, allowlists and the reasoning live in ``stack_profile_py_rules.py``; this module runs
-them over the tracked tree and pins them with planted red and green cases. Reads the git INDEX.
-Tagged to FR-01.06; see test_profile_resolver.py for the FR note.
+The rules, allowlists and the reasoning live in ``stack_profile_py_rules.py`` (handler heuristics in
+``stack_profile_py_handlers.py``); this module runs them over the tracked tree and pins them with
+planted red and green cases. Reads the git INDEX. Tagged to FR-01.06; see test_profile_resolver.py
+for the FR note.
 """
 
 from __future__ import annotations
@@ -13,11 +14,18 @@ import textwrap
 import pytest
 
 from shared.tests.stack_profile_py_rules import (
-    ALLOWLIST, PINNED_WRAPPERS, SWALLOW_ALLOWLIST, _all_swallows, _is_test_file, _modules, path_findings,
-    swallow_findings,
+    ALLOWLIST, PINNED_WRAPPERS, RESOLVER_MODULES, SWALLOW_ALLOWLIST, _all_swallows, _is_test_file, _modules,
+    path_findings, swallow_findings,
 )
 
 pytestmark = pytest.mark.covers("FR-01.06")
+
+_RERAISER = (
+    "def _helper(n):\n    try:\n        return pr.resolve_profile(n)\n    except ValueError as exc:\n"
+    "        raise with_hint(exc, n) from exc\n\n\n")
+_RAISES_OTHER = (
+    "def _wrap(n):\n    try:\n        return pr.resolve_profile(n)\n    except ValueError as e:\n"
+    "        raise RuntimeError(str(e))\n\n\n")
 
 
 def test_production_modules_with_a_test_prefix_are_scanned():
@@ -42,6 +50,14 @@ def test_pinned_wrappers_still_exist():
     defined = {f.name for src in _modules().values() for f in ast.walk(ast.parse(src))
                if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))}
     assert not (PINNED_WRAPPERS - defined), f"pinned wrappers no longer defined: {PINNED_WRAPPERS - defined}"
+
+
+def test_resolver_modules_are_excluded_by_location_and_the_allowlist_is_the_s3_family_only():
+    assert RESOLVER_MODULES <= set(_modules())
+    assert all(rel not in RESOLVER_MODULES for rel, _, _ in _all_swallows())
+    assert set(SWALLOW_ALLOWLIST) == {
+        ("plugins/shipwright-adopt/scripts/lib/profile_matcher.py", "_discover"),
+        ("plugins/shipwright-adopt/scripts/lib/adopt_profile.py", "hint_warning")}
 
 
 def test_no_module_builds_a_stack_profile_path_outside_the_resolver():
@@ -93,16 +109,21 @@ def test_swallow_rule_is_red_on_planted_handlers():
         _try("pr.resolve_profile(n)", "sys.exit(0)"),
         _try("pr.resolve_profile(n)", "sys.exit()"),
         _try("pr.resolve_profile(n)", "raise SystemExit(0)"),
+        _try("pr.resolve_profile(n)", "raise SystemExit"),  # a bare name is a zero exit too
+        _try("pr.resolve_profile(n)", "raise SystemExit from e"),
         "class C:\n    def f(self):\n        try:\n            pr.resolve_profile(n)\n"
         "        except ValueError:\n            return None\n",
         # .kind only mentioned (message / log), not branched on
         _try("pr.resolve_profile(n)", "print(e.kind)\nreturn None"),
         _try("pr.resolve_profile(n)", "return f'bad {e.kind}'"),
         _try("pr.resolve_profile(n)", "log(getattr(e, 'kind', 'x'))\nreturn None"),
-        # returned calls that do not receive the exception
+        # returned calls that do not receive the exception, or only convert / log it, or are no failure builder
         _try("pr.resolve_profile(n)", "return _defaults()"),
         _try("pr.resolve_profile(n)", "return dict()"),
         _try("pr.resolve_profile(n)", "return _skipped(phase, name, 'x')"),
+        _try("pr.resolve_profile(n)", "return str(e)"),
+        _try("pr.resolve_profile(n)", "return log.warning(e)"),
+        _try("pr.resolve_profile(n)", "return _skipped(p, n, e)"),
         # the Profile* family
         _try("pr.resolve_profile(n)", "return None", "pc.ProfileInvalid"),
         _try("pr.resolve_profile(n)", "return None", "ProfileNotFound"),
@@ -111,9 +132,15 @@ def test_swallow_rule_is_red_on_planted_handlers():
         _try("pc.resolve_in_dir(n, d)", "return None"),
         _try("pc.config_profile(root)", "return None"),
         _try("pr.check_name(n)", "return None"),
-        # a wrapper of the resolver in the same module
+        # wrappers: same module, a re-raising helper (still a wrapper), pinned cross-module
         _try("_resolve(root, name)", "return None", prefix="def _resolve(r, n):\n    return pr.resolve_profile(n, r)\n\n\n"),
-        _try("load_resolved(p, None, cwd)", "return None"),  # pinned cross-module wrapper
+        _try("_helper(n)", "return None", prefix=_RERAISER),
+        _try("load_resolved(p, None, cwd)", "return None"),
+        # the pinned dev-server wrapper, kind read into a local and then dropped
+        _try("_get_services_resolved(profile, cwd)", "kind = getattr(e, 'kind', None)\nreturn {'error': str(e)}"),
+        # contextlib.suppress, and try/except*
+        "def f():\n    with contextlib.suppress(ValueError):\n        pr.resolve_profile(n)\n",
+        _try("pr.resolve_profile(n)", "return None").replace("except ", "except* "),
     ]
     for src in swallowed:
         assert swallow_findings(src), src
@@ -131,6 +158,12 @@ def test_swallow_rule_is_green_on_the_loud_handlers_and_the_neighbours():
         _try("pr.resolve_profile(n)", "return e.exit_code"),
         _try("json.loads(s)", "return None"),  # not a resolver call
         _try("check_name(entry)", "return None"),  # a plain helper named like the resolver's, not an attribute call
+        # multiservice's real handler: the kind goes through one local into a test
+        _try("_get_services_resolved(profile, cwd)",
+             "kind = getattr(e, 'kind', None)\nif kind:\n    return {'error': str(e), 'kind': kind}\n"
+             "return {'error': f'invalid services: {e}'}"),
+        # a re-raise as another type protects the helper's own call, so the caller is not a wrapper caller
+        _try("_wrap(n)", "return None", prefix=_RAISES_OTHER),
         # a wrapper that protects its own call is not a wrapper
         _try("_safe(root, name)", "return None", prefix=(
             "def _safe(r, n):\n    try:\n        return pr.resolve_profile(n, r)\n    except ValueError as e:\n"

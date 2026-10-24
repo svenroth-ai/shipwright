@@ -4,8 +4,8 @@
     "date": "2026-10-24",
     "unit": {
       "status": "passed",
-      "passed": 14313,
-      "total": 14313
+      "passed": 14314,
+      "total": 14314
     },
     "integration": {
       "status": "passed",
@@ -25,7 +25,7 @@
       "status": "not_run"
     },
     "degraded": [
-      "round 2 re-ran only the affected roots (shared/tests 13147, plugins/shipwright-project 97, plugins/shipwright-adopt 755, plugins/shipwright-test 314); the other roots are untouched by the review fixes",
+      "round 3 re-ran only the affected roots (shared/tests 13148, plugins/shipwright-project 97, plugins/shipwright-adopt 755, plugins/shipwright-test 314); the other roots are untouched by the review fixes",
       "plugins/shipwright-run root: 51 fixture errors (pytest-mock absent in this local env), root untouched by this change and excluded from the unit count"
     ],
     "test_completeness": {
@@ -97,7 +97,7 @@
       "exit_code": 0,
       "tests_run": 6,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-stack-profile-resolver--S5\\.shipwright\\runs\\iterate-2026-10-24-s5-interview-docs-e2e\\surface_verification.log",
-      "timestamp": "2026-10-24T20:42:10.177Z",
+      "timestamp": "2026-10-24T21:20:32.983Z",
       "attempts": 1
     }
   },
@@ -109,7 +109,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
-    "commit": "4ac61176fe1c0e30f4aea32bc48b4ae982b92be8",
+    "commit": "bbe1d8425a2cc33081444337c8e46cff1d425709",
     "dirty": true,
     "base": null,
     "release": null

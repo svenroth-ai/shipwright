@@ -37,13 +37,19 @@ BUNDLED_VITE_HONO = SHARED / "profiles" / "vite-hono.json"
 DRIFT_CORE = ("unsupported schema_version 99", "supports stack-profile schema_version 1")
 
 
+# One scrubbed environment (built by _env) for git AND the subprocess runs: no GIT_DIR & co. inherited from a hook or a
+# worktree shell, which would point every command at the developer's own repository.
+def _env() -> dict[str, str]:  # read per call: the conftest sets SHIPWRIGHT_USER_PROFILES_DIR per test
+    return {**{k: v for k, v in os.environ.items() if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")},
+            "PYTHONIOENCODING": "utf-8"}
+
+
 def _git(root: Path, *args: str) -> None:
-    """Run git against ``root`` with the developer's own git setup neutralised: no global excludes file
-    (it could ignore ``.shipwright``), and no ``GIT_DIR`` & co. inherited from a hook or worktree shell."""
-    env = {k: v for k, v in os.environ.items() if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
-    subprocess.run(["git", "-C", str(root), "-c", "core.excludesFile=", "-c", "user.name=t",
+    """Run git against ``root`` with the developer's own setup neutralised: no global excludes file (it could
+    ignore ``.shipwright``) and no hooks."""
+    subprocess.run(["git", "-C", str(root), "-c", "core.excludesFile=", "-c", "core.hooksPath=", "-c", "user.name=t",
                     "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", *args],
-                   check=True, capture_output=True, text=True, env=env)
+                   check=True, capture_output=True, text=True, env=_env())
 
 
 def _profile_data(name: str, **patch) -> dict:
@@ -91,7 +97,7 @@ def _make_project(tmp_path: Path, profile_name: str | None, data: dict | None = 
 
 def _run(*argv: str | Path, cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, *map(str, argv)], cwd=cwd, capture_output=True, text=True,
-                          encoding="utf-8", timeout=180, check=False, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                          encoding="utf-8", timeout=180, check=False, env=_env())
 
 
 def _json(done: subprocess.CompletedProcess) -> dict:
