@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -168,7 +169,6 @@ def test_verify_hash_unreadable_brief(tmp_path):
     assert bp.verify_hash(root)[0] is False
 
 
-
 def test_nfc_path_collision_is_detected(tmp_path):
     root = _package(tmp_path / "a")
     _write(root, "inputs/caf\u00e9.md", "x")
@@ -279,8 +279,66 @@ def test_case_only_difference_is_a_collision(tmp_path):
         bp.manifest(root)
 
 
-def test_colon_in_a_posix_filename_is_not_a_drive(tmp_path):
+def test_colon_in_a_reference_is_refused_it_can_be_a_windows_data_stream(tmp_path):
     root = _package(tmp_path / "a")
-    _write(root, "mockups/notes:v2.html", "<html></html>")
-    _write(root, "screen-map.json", json.dumps({"screens": [{"mockup": "notes:v2.html"}]}))
-    assert bp.validate_layout(root) == []
+    _write(root, "screen-map.json", json.dumps({"screens": [{"mockup": "01.html:x"}]}))
+    assert "dangling_mockup" in _codes(root)
+    assert "dangling_ref" in _codes(_package(tmp_path / "b", scope="scope.md:x"))
+
+
+def _make_link(target: Path, link: Path) -> None:
+    """A real directory link: a junction on Windows (no privilege needed), else a symlink."""
+    if os.name == "nt":
+        import _winapi
+        _winapi.CreateJunction(str(target), str(link))
+    else:
+        os.symlink(target, link, target_is_directory=True)
+
+
+def test_a_junction_loop_is_reported_not_walked(tmp_path):
+    root = _package(tmp_path / "a")
+    _make_link(root, root / "loop")
+    codes = _codes(root)  # must return, not recurse until MAX_PATH
+    assert "symlink" in codes
+    assert not any(k.startswith("loop") for k in bp.manifest(root))
+    assert bp.verify_hash(root) == (False, "package contains links or junctions")
+
+
+def test_a_link_to_an_outside_tree_is_not_hashed_or_copied(tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.md").write_text("s")
+    root = _package(tmp_path / "a")
+    before = bp.package_sha256(root)
+    _make_link(outside, root / "inputs")
+    assert "symlink" in _codes(root)
+    assert bp.package_sha256(root) == before
+    assert not any("secret" in rel for rel, _ in bp.iter_package_files(root))
+
+
+def test_references_must_name_hashed_files(tmp_path):
+    root = _package(tmp_path / "a")
+    _write(root, "evidence/scope.md", "x")
+    assert "dangling_ref" in _codes(_package(tmp_path / "b", scope="evidence/scope.md"))
+    (root / "mockups" / "01.html").unlink()
+    _write(root, "mockups/02.html", "<html></html>")
+    _write(root, "mockups/.gitkeep", "")
+    _write(root, "screen-map.json", json.dumps({"screens": [{"mockup": ".gitkeep"}]}))
+    assert "dangling_mockup" in _codes(root)
+
+
+def test_evidence_exclusion_is_case_insensitive(tmp_path):
+    root = _package(tmp_path / "a")
+    before = bp.package_sha256(root)
+    _write(root, "Evidence/run.log", "noise")
+    assert bp.package_sha256(root) == before
+
+
+def test_verify_hash_fails_on_a_link_even_when_the_hash_matches(tmp_path):
+    root = _package(tmp_path / "a")
+    brief = json.loads((root / "brief.json").read_text())
+    brief["package_sha256"] = bp.package_sha256(root)
+    _write(root, "brief.json", json.dumps(brief))
+    assert bp.verify_hash(root) == (True, "")
+    _make_link(tmp_path, root / "inputs")
+    assert bp.verify_hash(root)[0] is False

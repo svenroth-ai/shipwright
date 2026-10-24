@@ -105,6 +105,9 @@ def test_report_validation_rejects_drift(tmp_path):
         lambda r: r["spend"].update(usd="unknown"),
         lambda r: r["stages"][0].update(detail=[]),
         lambda r: r.update(started_at=5),
+        lambda r: r.update(schema_version=True),
+        lambda r: r.update(mode="live"),  # dry-ok outcome under a live mode
+        lambda r: r.update(outcome="complete"),  # live outcome under a dry mode
         lambda r: r["spend"].update(model_calls="0"),
         lambda r: r["stages"].append({"name": "x"}),
     ):
@@ -174,3 +177,15 @@ def test_an_unreadable_packaged_file_gives_a_failure_report_not_a_crash(tmp_path
     report = h.run_harness(project, report_path=tmp_path / "r.json")
     assert report["outcome"] == "dry-failed"
     assert any(i["code"] == "unreadable_file" for i in report["package"]["issues"])
+
+
+@pytest.mark.parametrize("bad", [5, "", None, ["x"]])
+def test_a_defective_autonomy_still_produces_a_failure_report(tmp_path, bad):
+    project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
+    f = project / "brief" / "brief.json"
+    data = json.loads(f.read_text())
+    data["autonomy"] = bad
+    f.write_text(json.dumps(data))
+    report = h.run_harness(project, report_path=tmp_path / "r.json")
+    assert report["outcome"] == "dry-failed" and report["autonomy"] == "unknown"
+    assert (tmp_path / "r.json").exists()
