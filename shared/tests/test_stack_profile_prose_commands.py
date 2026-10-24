@@ -119,14 +119,15 @@ def test_dev_server_sites_carry_the_stop_on_profile_error_sentence():
 
 
 def _path_only_gaps(lines: list[str]) -> list[int]:
-    """Line numbers of ``--path-only`` snippets lacking the empty-output and exit-2/3 clauses nearby."""
+    """Line numbers of ``--path-only`` snippets lacking the empty-output, stop and name-pattern clauses nearby."""
     gaps = []
     for i, ln in enumerate(lines):
         if "resolve_profile.py" in ln and "--path-only" in " ".join(lines[i:i + 3]):
             near = " ".join(lines[max(0, i - 4):i + 5]).lower()
             ok_empty = "built-in defaults" in near and "empty" in near and "exit 0" in near
             ok_stop = "non-zero" in near and "stop and show the message" in near  # exit 4/1 also have empty stdout
-            if not (ok_empty and ok_stop):
+            ok_name = "a-z0-9" in near  # the name pattern is the real guard against shell metacharacters
+            if not (ok_empty and ok_stop and ok_name):
                 gaps.append(i + 1)
     return gaps
 
@@ -142,5 +143,7 @@ def test_path_only_branch_check_is_red_on_a_planted_omission_and_green_when_fixe
     assert _path_only_gaps(bare) == [1]
     old_wording = [bare[0][:-1] + " (empty = built-in defaults; exit 2/3: stop, show message)."]
     assert _path_only_gaps(old_wording) == [1]  # exit 4/1 would read as "defaults"
-    fixed = [bare[0][:-1] + " (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry)."]
+    fixed = [bare[0][:-1] + " (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop)."]
     assert _path_only_gaps(fixed) == []
+    no_name = [bare[0][:-1] + " (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry)."]
+    assert _path_only_gaps(no_name) == [1]  # a site may not drop the name-pattern clause

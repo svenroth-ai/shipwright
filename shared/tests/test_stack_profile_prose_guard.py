@@ -38,9 +38,18 @@ ALLOWLIST: dict[str, str] = {
     ".shipwright/planning/": "historical specs, briefs and ADR records",
     ".shipwright/agent_docs/conventions.md": "convention records describing the resolver itself",
     ".shipwright/agent_docs/decision_log.md": "ADR history",
-    ".shipwright/agent_docs/triage_inbox.md": "triage card text describing this campaign",
     "CHANGELOG": "history",
 }
+
+# Re-rendered at every finalize from event / card / ADR text, so they copy any
+# prose that quotes the bundled directory and drift with unrelated runs. Excused
+# from the forward scan and deliberately NOT subject to the reverse test.
+GENERATED = (
+    ".shipwright/agent_docs/triage_inbox.md",
+    ".shipwright/agent_docs/session_handoff.md",
+    ".shipwright/agent_docs/build_dashboard.md",
+    ".shipwright/agent_docs/decision_log_index.md",
+)
 
 
 def _tracked() -> list[str]:
@@ -52,7 +61,7 @@ def _tracked() -> list[str]:
 
 
 def _allowed(rel: str) -> bool:
-    return any(rel.startswith(prefix) for prefix in ALLOWLIST)
+    return any(rel.startswith(prefix) for prefix in (*ALLOWLIST, *GENERATED))
 
 
 def scan_text(text: str) -> list[tuple[int, str]]:
