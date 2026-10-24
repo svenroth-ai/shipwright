@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "A1 meets the spec: all Acceptance A1 items and the D1 hash/layout contract are present and in scope. Non-blocking notes: .gitkeep/.git exclusion goes slightly beyond 'OS junk'; FR/AC tags are minted by producers at finalization."}

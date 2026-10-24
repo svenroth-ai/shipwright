@@ -1,0 +1,5 @@
+{"stage":"doubt","gating":"advisory-must-address","trigger":"irreversible consent boundary + shared public surface","doubts":[
+{"severity":"medium","lens":"concurrency & ordering","claim_under_doubt":"Docs describe the snapshot step as verify-then-copy","file":"shared/scripts/lib/brief_package.py","what_would_resolve_it":"Copy first, then verify the copy against an externally held hash. ADDRESSED: docstrings rewritten in b7b21fc8 (docs-only)."},
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"evidence/ is never read by a phase","file":"shared/scripts/lib/brief_package_walk.py","what_would_resolve_it":"State that this holds only because the snapshot omits evidence/ (B2/U3 own it). ADDRESSED in docs."},
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"Every visible name is hashed or reported","file":"shared/scripts/lib/brief_package_walk.py","what_would_resolve_it":"Document that empty directories are neither hashed nor reported. ADDRESSED in docs."}
+],"summary":"1 medium + 2 low, all documentation; addressed in a docs-only commit. Prior highs (spoofable sniff) fixed by failing closed."}

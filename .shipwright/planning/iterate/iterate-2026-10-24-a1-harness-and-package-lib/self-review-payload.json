@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Library accepts fixture, rejects planted defects; LF/CRLF hash equal; consent change changes hash; report schema pinned; dry mode runs without model calls. New files only."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable or non-object brief.json yields defects or (False, reason), NFC collisions raise PathCollision; live mode refused loudly."},
+{"name":"Security Basics","verdict":"pass","note":"Symlinks rejected by validator and never copied to the scratch project; brief_dir traversal and absolute paths rejected; trust anchor of the in-package hash documented."},
+{"name":"Test Quality","verdict":"pass","note":"Independent hand-computed digest, pinned fixture hash, tamper and defect cases, no-subprocess and no-socket dry mode; no skips."},
+{"name":"Performance Basics","verdict":"pass","note":"Single pass over a small directory; no unbounded reads."},
+{"name":"Naming & Structure","verdict":"pass","note":"lib module under 300 lines; harness is a flat helper beside its tests per integration-tests convention."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer/consumer of brief.json hash: round-trip probed (build fixture, verify_hash, CRLF variant, tampered copy)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff: no findings."}]}
