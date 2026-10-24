@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-10-24-stack-profile-resolver-campaign",
+  "date": "2026-10-24T07:08:33.377491Z",
+  "event_at": "2026-10-23T21:29:20.780117+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "keyword",
+  "branch": "iterate/stack-profile-resolver-campaign",
+  "spec": ".shipwright/planning/campaigns/2026-10-24-stack-profile-resolver-BRIEF.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-stack-profile-resolver-campaign",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

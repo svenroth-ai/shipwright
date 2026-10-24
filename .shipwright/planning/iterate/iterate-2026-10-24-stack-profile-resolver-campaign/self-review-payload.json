@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Correctness",
+      "verdict": "pass",
+      "note": "Every cited file:line in the brief was verified by two independent reviewers against HEAD 35dd16d88; corrections integrated in rev 2/3."
+    },
+    {
+      "name": "Security",
+      "verdict": "pass",
+      "note": "Trust decision D8 for command-running profiles was challenged by internal and external reviewers; accepted with shadow warning and decision-drop."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Brief specifies fail-loud behaviour per loader incl. sentinel table; silent-fallback paths enumerated."
+    },
+    {
+      "name": "Test Coverage",
+      "verdict": "pass",
+      "note": "Each unit lists testable acceptance criteria; Windows behaviour covered by Linux-runnable unit tests."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "Planning document, no runtime code."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Resolver placement follows existing top-level shared/scripts precedent (ADR-044/045); waves and touch sets checked for disjointness."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Cross-repo WebUI contract (list --json, snapshot schema) versioned; plugin-cache staleness handled."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "n/a",
+      "note": "No tests changed in this diff."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-stack-profile-resolver-campaign",
+  "date": "2026-10-24",
+  "section": "Iterate — change: stack-profile resolver campaign brief",
+  "title": "Custom stack profiles: resolver with project, user, bundled lookup and no silent fallback",
+  "context": "Stack profiles load only from the installed plugin tree, which an update replaces, and several loaders silently substitute other behaviour for a broken or unknown profile.",
+  "decision": "Campaign stack-profile-resolver (S1-S5): one stdlib resolver with project, user, bundled lookup, D5 schema validation, a CLI for skill prose, fail-loud loaders; project profiles made committable via a gitignore negation.",
+  "consequences": "Named profiles that fail to resolve become errors instead of silent defaults; a project or user profile may shadow a bundled name and runs commands from the repo, accepted as the same trust class as package.json scripts with a prominent shadow warning.",
+  "rationale": "Reviewed by internal Opus plan and architecture reviewers and external GPT and GLM in two rounds; all high and medium findings are integrated in the brief.",
+  "rejected": "User-directory-only lookup, per-project profile copies, and documenting re-adding after each update.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

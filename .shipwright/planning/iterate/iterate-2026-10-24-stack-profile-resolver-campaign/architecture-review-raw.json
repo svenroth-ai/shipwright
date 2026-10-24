@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes\u2014option A should exist:** custom profiles need storage outside the replaceable installation and one consistent way for every phase to resolve them.\n\n2. **Smallest thing that would do:** one shared, read-only resolver with project \u2192 user \u2192 bundled lookup, validation of fields consumers use, and a thin CLI for prose consumers. Preserve bundled defaults and stop when a named profile cannot load. B loses project portability; C adds a maintained copy to every scaffolded project; D leaves the loss unresolved.\n\n3. **What it costs to keep:** maintainers own lookup precedence, schema compatibility, loader adoption, and the CLI contract. Users own custom profile contents and any migration required by future consumer changes. No running service or scheduled maintenance is needed.\n\n4. **What it forecloses:** consumers cannot independently change profile interpretation; schema changes require coordination. Name shadowing also means a bundled-profile update may not reach projects using a custom copy. These are reasonable costs for consistent, durable configuration. Project commands share the repository-script trust boundary already accepted here; a separate approval gate is not warranted by this change.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**1. The question, answered in one sentence.** Yes \u2014 a resolver that looks in project \u2192 user \u2192 bundled and fails loudly should exist, because it fixes two real, current problems (custom profiles destroyed on update, and loaders that silently substitute the wrong stack's behaviour on a bad file), but Option A as specced carries a schema-version and meta-test apparatus whose standing cost is out of proportion to that goal.\n\n**2. The smallest thing that would do.** A single resolver module (D1\u2013D4) with the three-location lookup, fail-loud-on-broken-file semantics, and name validation; wire the five Python loaders and the adopt/matcher/CI sites through it (S2, S3); a minimal `--path-only` CLI for the prose sites (S4). That's it. Skip the `schema_version` drift machinery and both halves of the D6 registry meta-test.\n\n**3. What it costs to keep.** Every loader change must now reason about the resolver and the shadowing rule; the schema must be updated in lockstep with every new key any loader reads, forever; the D6 meta-tests make \"add a key\" a multi-file change with a test that goes red when you forget; the S4 guard test adds an allowlist that every new path-building site must register against.\n\n**4. What it forecloses.** The strict-typed schema plus meta-test makes evolving profile shape slower (adding a loader-read key now requires schema edit + meta-test satisfaction). `additionalProperties: true` softens this but the forward direction of D6 still bites. Otherwise: the fail-loud rule forecloses the current lenient fallbacks \u2014 that foreclosure is the point, and a good one.\n\n**5. Findings**\n\n- Category: proportionality\n- Severity: medium\n- Finding: The `schema_version` drift machinery (D5) is a versioning scheme for a three-file format that has never shipped a version. Users hit it only if Shipwright changes a consumed key's type \u2014 a rare event the strict typing alone already catches at load time.\n- Suggestion: Keep the schema as pure validation (strict types on consumed keys, `additionalProperties: true`), drop `schema_version` and the drift error class. If the format ever actually breaks compatibility, add versioning then \u2014 the resolver can be extended without users changing anything.\n\n- Category: proportionality\n- Severity: medium\n- Finding: The D6 registry meta-test (both directions, plus the `NON_PROFILE_FILES` registry) is a standing rule every future change must satisfy \u2014 three coupled registries (schema, readers, non-profile files) kept in sync by test pressure.\n- Suggestion: Keep only the cheap direction: a test that all bundled profiles validate against the schema, and that `shared/profiles/*.json` non-profile files are listed. Drop the \"every schema key has a reader\" reverse check; the schema's permissive default already means unreferenced keys are harmless documentation.\n\n- Category: existence\n- Severity: low\n- Finding: Independent of custom profiles, the silent-fallback bugs (`_load_profile_data` \u2192 `None`, `test_runner` \u2192 hardcoded npm commands, `validate_env` \u2192 silent skip) are worth fixing on their own; if the campaign were cut down, this half should be the part that survives.\n- Suggestion: Order the work so S2's fail-loud semantics land even if the schema and meta-test layers are descoped \u2014 they need only the resolver's lookup, not its validation.\n\n- Category: forecloses\n- Severity: low\n- Finding: The `contract_version: 1` on `list --json` commits this repo to a cross-repo contract with the WebUI before the WebUI unit exists.\n- Suggestion: Acceptable, but pin the version field now and treat any change to the list shape as a major-version bump \u2014 otherwise the WebUI will silently break on a monorepo update.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-24-stack-profile-resolver-campaign",
+    "at": "2026-10-24T06:48:28.866008+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}
