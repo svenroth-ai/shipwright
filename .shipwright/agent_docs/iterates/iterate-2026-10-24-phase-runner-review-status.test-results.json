@@ -1,0 +1,78 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-24-phase-runner-review-status",
+    "date": "2026-10-24",
+    "unit": {
+      "status": "passed",
+      "passed": 22605,
+      "total": 22702
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-run pytest tests/test_phase_runner_agent.py -q",
+      "exit_code": 0,
+      "tests_run": 8,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-24-phase-runner-review-status/surface_verification.json",
+      "timestamp": "2026-10-24T08:46:30Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "phase-runner frontmatter carries Agent and the prompt restricts spawning to reviewers (no section-builder fan-out)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_runner_agent.py::test_phase_runner_has_agent_tool_for_reviewers_only PASSED"
+        },
+        {
+          "behavior": "build code-review.md documents a not_run branch with reason code delegated-to-orchestrator",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_runner_agent.py::test_build_code_review_has_not_run_branch PASSED"
+        },
+        {
+          "behavior": "review_status is optional (absent stays valid) and invalid shapes are rejected",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_runner_agent.py::test_review_status_is_backward_compatible_and_validated PASSED"
+        },
+        {
+          "behavior": "a phase-runner-spawned reviewer returns a verdict in a live driven run",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a live model-driven subagent spawn; probed manually after the plugin cache sync, not in CI"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-24-phase-runner-review-status",
+    "commit": "f91a32660423ea334ad3bd23c0c954f5b55ccb44",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -32,6 +32,27 @@ spawn the Agent-tool subagent as normal (proxy-mapped to `sol`). The doc
 covers the invocation and how to record the result, incl. what to do when the
 Codex transport fails.
 
+### When the spawn fails (`not_run` branch — never a silent skip)
+
+A cascade pass that is due must end in exactly one of two states: it ran and
+returned a verdict, or it is **recorded** as not run. If the `Agent` spawn
+fails, errors, returns no verdict, or the `Agent` tool is not available to this
+agent (e.g. a driven `phase-runner`), do NOT proceed as if the review passed and
+do NOT skip it quietly:
+
+1. Record each due, unrun pass (`spec` / `code` / `doubt`) with
+   `record_review_pass.py record --run-id "{run_id}" --review-type <type>
+   --status not_run --reason-code delegated-to-orchestrator --model-tier
+   "{resolved_review_tier}" --disposition "<the spawn error, one line>"`. This is the code a campaign runner uses too; the orchestrator
+   (campaign `3f-bis`, or the `/shipwright-run` master) then runs the pass.
+2. An unrun `spec` pass keeps the Stage-1 HARD-GATE closed: the
+   `code-reviewer` is not spawned either; record it the same way.
+3. As a `phase-runner`, say so in the result: `review_status`
+   `{"state": "deferred", "reason_code": "delegated-to-orchestrator",
+   "passes": {...}}` (`partial` if some passes did return verdicts).
+
+A pass counts as `completed` only when its subagent returned a verdict you read.
+
 ### Stage 1 — `spec-reviewer` (HARD-GATE)
 
 Spawn the `spec-reviewer` subagent with the section/iterate spec path and the

@@ -1,0 +1,4 @@
+{"section":"iterate-2026-10-24-phase-runner-review-status","review":[
+{"severity":"low","category":"correctness","file":"plugins/shipwright-build/skills/build/references/code-review.md","line":44,"finding":"not_run snippet omitted --run-id/--model-tier/--disposition (fixed)","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-run/scripts/lib/single_session/result_contract.py","line":159,"finding":"reason_code free-form (documented as intentional)","suggestion":"documented"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-run/tests/test_phase_runner_agent.py","line":252,"finding":"redundant phase key (fixed)","suggestion":"fixed"}]}

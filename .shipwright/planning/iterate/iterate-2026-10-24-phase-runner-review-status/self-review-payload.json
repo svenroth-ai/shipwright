@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Agent tool added with reviewers-only prompt rule; code-review.md not_run branch; optional review_status in contract; master doc reads it."},
+{"name":"Error Handling","verdict":"pass","note":"review_status validated: non-dict, bad state, missing reason_code, bad passes all produce errors."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs/secrets; prompt-level spawn restriction."},
+{"name":"Test Quality","verdict":"pass","note":"Tests cover tools frontmatter, prompt rule, code-review branch, valid and invalid review_status."},
+{"name":"Performance Basics","verdict":"n/a","note":"No hot paths."},
+{"name":"Naming & Structure","verdict":"pass","note":"Matches existing contract style; reason code reuses existing closed vocab."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Contract boundary: field optional so older runners still validate (tested)."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No skips added."}
+]}
