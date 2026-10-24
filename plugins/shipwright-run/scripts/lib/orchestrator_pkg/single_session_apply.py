@@ -110,7 +110,7 @@ def apply_phase_result(
     PHASE GATE (A4, between (2) and (3)): runs only for an ``ok`` result on a current
     (``cas_current``) ``in_progress`` task — a stale or double apply keeps its CAS /
     idempotent answer — and only when enforcing (``enforce_gate``, default
-    ``phase_gate.ENFORCE_PHASE_GATE_DEFAULT`` = off) or overriding. Off and no override:
+    ``phase_gate.ENFORCE_PHASE_GATE_DEFAULT`` = on since A5) or overriding. Off and no override:
     the gate is never called. A failed gate without an override returns the
     ``phase_gate_failed`` rejection (counted in loop state); once ``MAX_GATE_RETRIES`` is exhausted
     (or at once for a non-retryable finding) it carries a ``terminal``: ``ask_human``

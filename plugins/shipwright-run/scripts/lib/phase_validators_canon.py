@@ -55,7 +55,11 @@ def _import_failure(phase: str, exc: ImportError) -> dict[str, str]:
     than passing unchecked.
     """
     if not _verifiers_present():
-        return _degraded(phase, f"canon verifiers are not importable ({exc}); no canon check ran")
+        return _degraded(phase, (
+            f"canon verifiers are not importable ({exc}); no canon check ran. This is an "
+            "installation problem, not a problem in this phase's artifacts: the plugin "
+            "cache is missing its shared/ tree (restart the session so the SessionStart "
+            "healer restores it, or reinstall the plugins)"))
     return {
         "severity": "ask",
         "kind": "canon_degraded",

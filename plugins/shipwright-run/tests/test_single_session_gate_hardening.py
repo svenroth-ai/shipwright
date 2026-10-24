@@ -3,15 +3,14 @@
 The raw ``complete-phase-task`` is refused while the gate is enforced; the override is an
 autonomy ALLOWLIST checked again on the locked config; gate rejections are counted durably
 in loop state, so re-applying without ``single-session-next`` still reaches the cap; a loop
-pointer at another task means "unknown" (no cap); critical-gate findings are not retried;
-and the canon verifiers the gate depends on resolve from the installed plugin layout.
+pointer at another task means "unknown" (no cap); critical-gate findings are not retried.
+The canon verifiers' plugin-cache layouts: ``test_phase_gate_cache_layouts.py``.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import json
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -37,8 +36,6 @@ pytestmark = pytest.mark.covers("FR-01.01/AC02")
 
 ASK = {"severity": "ask", "message": "Sections not complete: 01. Continue?"}
 WHY = "the reviewer confirmed the sections are deliberately deferred"
-_LIB = Path(__file__).resolve().parent.parent / "scripts" / "lib"
-_SHARED_SCRIPTS = Path(__file__).resolve().parents[3] / "shared" / "scripts"
 
 
 def _config(root: Path, autonomy: str = "guided") -> dict:
@@ -95,9 +92,9 @@ def _raw_complete(root, d, result, capsys):
 
 
 def test_raw_completion_is_refused_while_the_gate_is_enforced(tmp_project, monkeypatch, capsys):
+    assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is True  # A5: on by default
     _config(tmp_project)
     d = _dispatch(tmp_project)
-    monkeypatch.setattr(phase_gate, "ENFORCE_PHASE_GATE_DEFAULT", True)
     code, out = _raw_complete(tmp_project, d, _result(tmp_project), capsys)
     assert (code, out["reason"]) == (2, "use_single_session_apply")
     assert "single-session-apply" in out["error"]
@@ -107,8 +104,8 @@ def test_raw_completion_is_refused_while_the_gate_is_enforced(tmp_project, monke
     assert code == 0 and _status(tmp_project, d) == "failed"
 
 
-def test_raw_completion_is_unchanged_with_enforcement_off(tmp_project, capsys):
-    assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is False
+def test_raw_completion_is_unchanged_with_enforcement_off(tmp_project, monkeypatch, capsys):
+    monkeypatch.setattr(phase_gate, "ENFORCE_PHASE_GATE_DEFAULT", False)
     _config(tmp_project)
     d = _dispatch(tmp_project)
     code, out = _raw_complete(tmp_project, d, _result(tmp_project), capsys)
@@ -252,30 +249,28 @@ def test_a_critical_gate_finding_is_not_retryable(tmp_project):
     assert (out["retryable"], out["terminal"]) == (False, "ask_human")
 
 
-# --- 3. the canon verifiers resolve from the installed plugin layout ------------------
+# --- 7. the gate's per-call off switch is a test seam, never a production bypass -------
 
-def test_the_gate_finds_the_canon_verifiers_in_the_plugin_cache_layout(tmp_path):
-    """Installed: <cache>/shipwright/<plugin>/<version>/scripts/lib + <cache>/shipwright/shared.
+_REPO = Path(__file__).resolve().parents[3]
 
-    A5 precondition: this layout is proven here; every other layout the cache may use
-    must be proven too before enforcement is flipped on."""
-    cache = tmp_path / "shipwright"
-    lib = cache / "shipwright-run" / "9.9.9" / "scripts" / "lib"
-    skip = shutil.ignore_patterns("tests", "__pycache__", "*.pyc")
-    shutil.copytree(_LIB, lib, ignore=skip)
-    shutil.copytree(_SHARED_SCRIPTS, cache / "shared" / "scripts", ignore=skip)
-    phases = ("project", "design", "plan", "build", "test", "changelog", "deploy")
-    probe = (
-        "import sys, importlib, importlib.util\n"
-        f"sys.path.insert(0, {str(lib)!r})\n"
-        "import phase_validators  # puts <cache>/shared/scripts on sys.path\n"
-        "importlib.import_module('tools.verifiers.common')\n"
-        f"for phase in {phases!r}:\n"
-        "    importlib.import_module(f'tools.verifiers.{phase}_checks')\n"
-        "print(importlib.util.find_spec('tools.verifiers').origin)\n"
-    )
-    proc = subprocess.run([sys.executable, "-I", "-c", probe], cwd=tmp_path,
-                          capture_output=True, text=True, encoding="utf-8", check=False)
-    assert proc.returncode == 0, proc.stderr
-    origin = Path(proc.stdout.strip()).resolve()
-    assert origin.is_relative_to((cache / "shared" / "scripts").resolve())
+
+def test_no_shipped_code_switches_the_gate_off():
+    """Only ``--override-reason`` (recorded) may complete a phase over the gate: a shipped
+    caller passing ``enforce_gate=False`` would bypass it with no record, so no shipped call
+    passes ``enforce_gate`` at all (the default is the only production value)."""
+    roots = [_REPO / "shared" / "scripts", *(_REPO / "plugins").glob("*/scripts")]
+    offenders = [
+        str(path.relative_to(_REPO)) for root in roots for path in root.rglob("*.py")
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.keyword) and node.arg == "enforce_gate"
+        and not (isinstance(node.value, ast.Constant) and node.value.value is None)
+    ]
+    assert roots[1:], "no plugin scripts trees found: the scan would pass vacuously"
+    assert offenders == []
+
+
+def test_every_phase_a_driven_run_can_dispatch_has_a_validator():
+    """Enforcing means checked: a pipeline phase with no validator would pass ``not_checked``."""
+    from orchestrator_pkg.config_factory import PIPELINE_STEPS
+    from phase_validators import _VALIDATORS
+    assert set(PIPELINE_STEPS) <= set(_VALIDATORS), set(PIPELINE_STEPS) - set(_VALIDATORS)

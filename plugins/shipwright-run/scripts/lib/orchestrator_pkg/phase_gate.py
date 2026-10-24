@@ -14,10 +14,10 @@ validators, and it owns the policy around their answer:
     gate_summary       the ``gate`` block of a successful apply
     failure_error      the issue summary a gate-terminal mark_phase_failed records
 
-Enforcement is OFF by default (``ENFORCE_PHASE_GATE_DEFAULT``): with it off and no override,
-apply never calls the gate and its behaviour is unchanged. A5 migrates the stub-artifact tests
-and flips the default. The switch is a function parameter only — no run-config key and no
-environment variable can turn the gate off.
+Enforcement is ON by default (``ENFORCE_PHASE_GATE_DEFAULT``, flipped by A5 once every apply
+test ran on real minimal artifacts — ``shared/testkit/minimal_valid_project.py``). Off (a test
+passing ``enforce_gate=False``) and no override, apply never calls the gate. The switch is a
+function parameter only — no run-config key and no environment variable can turn the gate off.
 
 Nothing here writes: run_config mutations stay in ``phase_task_lifecycle``, and the apply
 path counts each rejection in loop state (``gateRejections``).
@@ -46,8 +46,8 @@ from .validation_record import (  # noqa: E402
     run_phase_gate,
 )
 
-# A5 flips this to True once every apply test runs on real minimal artifacts.
-ENFORCE_PHASE_GATE_DEFAULT = False
+# On since A5: every driven apply runs the phase gate (tests opt out per call).
+ENFORCE_PHASE_GATE_DEFAULT = True
 
 # What a gate rejection does once MAX_GATE_RETRIES is exhausted, per run autonomy.
 # ``unattended`` (campaign U) behaves at least as autonomous. An unknown value takes the
@@ -106,9 +106,9 @@ def evaluate_gate(
     ``[gate-error]`` issue, as ``run_phase_gate`` does for its own.
 
     The promotion deliberately REVERSES ``phase_validators_canon._degraded``'s "inform,
-    not ask" on this path only: the gate exists to fail closed. Precondition for A5's
-    flip: ``shared/scripts/tools/verifiers`` must ship in every plugin-cache layout, or
-    every enforced apply stops on a degraded canon run.
+    not ask" on this path only: the gate exists to fail closed. That is why A5 proved
+    ``shared/scripts/tools/verifiers`` resolves in every layout the plugin ships in
+    (``tests/test_phase_gate_cache_layouts.py``) before flipping enforcement on.
     """
     phase = task["phase"]
     try:

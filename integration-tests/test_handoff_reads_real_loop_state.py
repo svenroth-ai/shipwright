@@ -30,7 +30,9 @@ RUN_LIB = REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib"
 ORCHESTRATOR = str(RUN_LIB / "orchestrator.py")
 
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
 
+import minimal_valid_project as mvp  # noqa: E402
 from lib.handoff_pipeline import LOOP_STATE_REL_PATH, render_pipeline_phases  # noqa: E402
 
 
@@ -114,18 +116,16 @@ def test_the_renderer_reads_the_loop_state_the_orchestrator_wrote(dispatched_run
 
 
 @pytest.mark.integration
+@pytest.mark.covers("FR-01.01/AC04")
 def test_a_phase_the_orchestrator_completed_is_reported_as_finished(dispatched_run):
     """Complete the dispatched phase through the real apply path, then re-render:
     the status the lifecycle wrote must move the row from interrupted to finished."""
     project, dispatch = dispatched_run
 
-    artifact = project / "artifacts" / f"{dispatch['phase']}.md"
-    artifact.parent.mkdir(parents=True, exist_ok=True)
-    artifact.write_text(f"# {dispatch['phase']}\n", encoding="utf-8")
-    result_path = project / "result.json"
+    result_path = project / "result.json"  # the phase's real artifacts: the gate checks them
     result_path.write_text(json.dumps({
         "ok": True, "phase": dispatch["phase"], "summary": "done",
-        "artifacts": [f"artifacts/{dispatch['phase']}.md"],
+        "artifacts": mvp.write_phase(project, dispatch["phase"], dispatch.get("splitId")),
     }), encoding="utf-8")
 
     res = _run_cli([

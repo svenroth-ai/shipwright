@@ -28,10 +28,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ORCHESTRATOR = str(
     REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py",
 )
+sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
+import minimal_valid_project as mvp  # noqa: E402
 
 
 # ---------- helpers -----------------------------------------------------
@@ -78,10 +82,16 @@ def _claim(project: Path, *, phase_task_id: str, session_uuid: str,
 
 def _complete(project: Path, *, phase_task_id: str, session_uuid: str,
               version: int) -> subprocess.CompletedProcess:
+    """Complete the project task through ``single-session-apply``: with the phase gate
+    enforced it is the only ok:true completion of a single_session run (the raw
+    ``complete-phase-task`` is refused), and it runs the SAME lifecycle CAS fence."""
     result_path = project / f".result-{phase_task_id}.json"
-    result_path.write_text(json.dumps({"ok": True}), encoding="utf-8")
+    result_path.write_text(json.dumps({
+        "ok": True, "phase": "project", "summary": "project done",
+        "artifacts": mvp.write_phase(project, "project"),
+    }), encoding="utf-8")
     return _run_cli([
-        "complete-phase-task", "--phase-task-id", phase_task_id,
+        "single-session-apply", "--phase-task-id", phase_task_id,
         "--session-uuid", session_uuid, "--version", str(version),
         "--result-json", str(result_path),
     ], project)
@@ -119,6 +129,7 @@ class TestCrashedPhaseRecoversAndAdvances:
     deletion did not take them — or the version-CAS fence — with it.
     """
 
+    @pytest.mark.covers("FR-01.01/AC04")
     def test_crash_recover_reclaim_complete_advances(self, tmp_path):
         project = tmp_path / "crash-resume"
         project.mkdir()
@@ -145,6 +156,7 @@ class TestCrashedPhaseRecoversAndAdvances:
         stale = _complete(project, phase_task_id=first["phaseTaskId"],
                           session_uuid=first["sessionUuid"], version=crashed_version)
         assert stale.returncode == 2, stale.stdout
+        assert json.loads(stale.stdout)["reason"] == "stale_version"  # the CAS fence, not the gate
 
         # 4. POSITIVE HALF: the recovered task is re-claimed on its BUMPED version and
         #    completed. sessionUuid is bound to the TASK (it is the CAS claim token,

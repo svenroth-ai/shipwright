@@ -205,7 +205,7 @@ alternate `single-session-next` (resolve + claim the frontier phase) and
 (`complete` / `failed` / `needs_validation`).
 
 **When apply says `phase_gate_failed`** (the phase's own checks found problems — the
-gate is off by default for now), nothing was completed: follow the reference's
+gate is enforced by default), nothing was completed: follow the reference's
 `terminal` handling — re-dispatch with the `issues[]` while retries remain, then ask the
 person (guided) or stop failed (autonomous). Completing over the checks
 (`single-session-apply --override-reason "<why>"`) is **ASK FIRST**: only on the
