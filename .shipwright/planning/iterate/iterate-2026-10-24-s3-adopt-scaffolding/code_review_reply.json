@@ -1,0 +1,1 @@
+{"section":"S3","review":[{"severity":"medium","category":"correctness","finding":"corrupt snapshot becomes generic; ties by name; template default open (all fixed or documented in commit)"},{"severity":"low","category":"readability","finding":"hint dict one-liner (fixed)"}]}

@@ -191,4 +191,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Requirement gate bypasses closed (campaign unit U6)](iterate-2026-10-08-u6-requirement-gate-reviews.md)
 - [Stack-profile resolver core (campaign stack-profile-resolver, unit S1)](iterate-2026-10-24-s1-resolver-core-stack-profile-resolver.md)
 - [Python loaders use the stack-profile resolver, no silent fallback](iterate-2026-10-24-s2-python-loaders-python-loaders-use-the-resolver.md)
-- [Skill prose uses the stack-profile resolver](iterate-2026-10-24-s4-skill-prose-skill-prose-uses-the-resolver.md)
+- [Adopt, matcher, CI/CodeQL scaffolds and run-config writers use the stack-profile resolver](iterate-2026-10-24-s3-adopt-scaffolding-adopt-uses-the-profile-resolver.md)

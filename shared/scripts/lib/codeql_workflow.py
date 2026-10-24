@@ -34,6 +34,23 @@ Two non-negotiable invariants mirror the other workflow templates:
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+
+
+def _bundled_sources() -> tuple:
+    # One definition (ci_workflow.BUNDLED_SOURCES), loaded by file path: this module is
+    # itself loaded standalone by the adopt scaffolders, where `lib` is not this package.
+    spec = importlib.util.spec_from_file_location(
+        "_shipwright_ci_workflow_sources", Path(__file__).with_name("ci_workflow.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.BUNDLED_SOURCES
+
+
+BUNDLED_SOURCES = _bundled_sources()
+
 # ---------------------------------------------------------------------------
 # Deployed-file path in target repos + template path in the monorepo
 # ---------------------------------------------------------------------------
@@ -84,13 +101,16 @@ REQUIRED_PERMISSIONS: dict[str, str] = {
 }
 
 
-def languages_for_profile(profile_name: str | None) -> list[str] | None:
+def languages_for_profile(profile_name: str | None, source: str | None = None) -> list[str] | None:
     """Return the CodeQL language list for a profile, or None if unmapped.
+
+    ``source`` is the resolver provenance (D9): only a bundled (or built-in) profile
+    gets the name-keyed languages; ``None`` = legacy name-only lookup.
 
     None lets the scaffolder short-circuit with a graceful
     `no_codeql_for_profile` result instead of writing a broken matrix.
     """
-    if profile_name is None:
+    if profile_name is None or source not in BUNDLED_SOURCES:
         return None
     return CODEQL_LANGUAGES_BY_PROFILE.get(profile_name.strip())
 
