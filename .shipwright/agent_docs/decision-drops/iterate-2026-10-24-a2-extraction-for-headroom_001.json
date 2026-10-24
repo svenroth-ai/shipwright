@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-a2-extraction-for-headroom",
+  "date": "2026-10-24",
+  "section": "Iterate - change: extraction for headroom (campaign A2)",
+  "title": "Extract renderer, late validators, phase-task transitions and design gates behind re-exports",
+  "context": "gate_policy (301), design_gate_extras (300), phase_validators (495) and phase_task_lifecycle (725) were at or over the 300-line cap while later campaign units must add code to them.",
+  "decision": "Move cohesive chunks into repo-unique sibling modules (gate_catalog_render, phase_validators_canon/late, phase_task_core/lookup/planning/recovery, design_gate_result/html/feedback); originals re-export every name. Bodies verbatim; one source-text test (test_multi_session_removal_residue) now reads the sibling files.",
+  "consequences": "All four files now 165-258 lines; three baseline entries removed (downward only). Old import paths and monkeypatch targets keep working; new modules rely on the lib dir being on sys.path via their parent module.",
+  "rationale": "Planned code motion with zero behaviour change is cheaper than per-unit baseline exceptions. F2: no route/schema/service/write-surface/convention added, so no architecture.md edit.",
+  "rejected": "Do nothing (later units ratchet the baseline); convert lifecycle into a package (changes every import path); move only renderer and late validators (leaves lifecycle at 725).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

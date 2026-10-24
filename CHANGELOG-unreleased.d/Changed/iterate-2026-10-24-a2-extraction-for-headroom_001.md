@@ -1,0 +1,1 @@
+refactor(run,shared): extract the gate-catalog renderer, late-phase validators, phase-task transitions and design gates into sibling modules with re-exports; behaviour unchanged, bloat baseline lowered

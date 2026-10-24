@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. The extracted function bodies preserve their existing logic, and the public entry points remain available through wrappers or re-exports. No security issues are apparent.\n\nShip-as-is based on static review. Workspace access was blocked, so I could not read BRIEF section 2/A2, run existing tests, or independently verify file-size limits and baseline update ordering.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Audit of this extraction diff:\n\n**Spec compliance.** The spec asks for: render_catalog_markdown + ASCII helpers out of gate_policy.py into a renderer module with re-export (done \u2014 `gate_catalog_render.py`, `render_catalog_markdown` remains the public entry and passes the policy constants to avoid a cycle); extraction from phase_validators.py (done \u2014 `_run_canon_checks` \u2192 `phase_validators_canon.py`, the four late validators \u2192 `phase_validators_late.py`, `_VALIDATORS` untouched); phase_task_lifecycle.py (done \u2014 core/lookup/planning/recovery, with `phase_task_lifecycle` re-exporting everything, so existing imports of e.g. `claim_phase_task`, `complete_phase_task`, `PLUGIN_PHASE_MAP`, `_check_owner_version` keep working); design_gate_extras.py (done \u2014 #5/#6 \u2192 `design_gate_html.py`, #9 \u2192 `design_gate_feedback.py`, GateResult \u2192 `design_gate_result.py`, re-exported via the existing relative/top-level dual import). Baseline entries removed for the three shrinking files \u2014 downward only, as required. The moved code is byte-identical everywhere I compared (including the quirks like `recover_phase_task`'s `\"failed\" in (old_status or \"\")` check), so behaviour is unchanged.\n\nFindings:\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-run/scripts/lib/phase_task_lookup.py:10 (same pattern in phase_task_planning.py:11, phase_task_recovery.py:8, phase_validators_late.py:14, phase_validators_canon.py:1)\n  Finding: The extracted sibling modules import each other by bare name (`from phase_task_core import ...`) but never insert their own directory into `sys.path` \u2014 unlike `phase_task_core.py` and `phase_validators.py`, which do their own path setup. They only work because `phase_task_lifecycle.py`/`phase_validators.py` happened to mutate `sys.path` first. Any tool or test that loads e.g. `phase_task_recovery.py` directly by file path (the loading-by-path pattern this codebase explicitly uses elsewhere \u2014 see the comment \"this file is also loaded by path\" in phase_validators.py) gets an ImportError.\n  Suggestion: Either replicate the two-line `sys.path.insert` preamble in each extracted module, or verify by grep that nothing loads these by path and note the constraint in each module docstring.\n\n- Category: regression\n  Severity: low\n  File: shared/scripts/lib/design_gate_extras.py:25-45\n  Finding: The relative-import fallback now wraps five imports instead of one. If any single one of the new sibling modules is missing on a checkout (e.g., partial deploy or stale test fixture dir with old `html_tag_scanner` but no `design_gate_result.py`), the whole `except ImportError` branch falls through to the top-level imports, which will then fail with a second ImportError whose traceback points at the fallback rather than the missing file \u2014 slightly worse diagnosability, not a behaviour change.\n  Suggestion: Acceptable as-is; optionally split the try/except per-module if misfires occur.\n\n- Category: test\n  Severity: low\n  File: diff generally\n  Finding: The spec's AC (\"existing tests green, edited only for imports\") is not verifiable from this diff \u2014 no test edits or tests-are-green evidence are included, and the new modules add no direct import-of-each-extracted-module coverage, so a broken extraction of, say, `phase_task_planning` would only be caught if an existing test transitively imports it through `phase_task_lifecycle`.\n  Suggestion: Confirm the existing suite imports every re-exported name from `phase_task_lifecycle` (a smoke import test would pin that).\n\nNo security issues, no logic changes in moved code, no hardcoded secrets, no off-by-ones introduced.\n\nOverall: a clean, faithful extraction with preserved public surfaces; the only substantive concern is the path-setup asymmetry in the extracted siblings, which is worth fixing but unlikely to bite in the current wiring. Ship-with-fixes (the sys.path preamble), otherwise sound.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a2-extraction-for-headroom",
+    "at": "2026-10-24T13:32:06.982960+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
