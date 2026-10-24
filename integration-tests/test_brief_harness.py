@@ -143,13 +143,25 @@ def test_fixture_1_hash_is_pinned_so_drift_is_a_visible_change(tmp_path):
 
 
 @pytest.mark.covers("FR-01.01")
-def test_scratch_project_never_follows_symlinks(tmp_path, monkeypatch):
+def test_scratch_project_refuses_a_package_with_a_link(tmp_path, monkeypatch):
     pkg = h.build_fixture_1(tmp_path / "pkg")
     (pkg / "leak.md").write_text("secret")
     real = Path.is_symlink
     monkeypatch.setattr(Path, "is_symlink", lambda self: self.name == "leak.md" or real(self))
-    project = h.prepare_scratch_project(tmp_path / "proj", pkg)
-    assert not (project / "brief" / "leak.md").exists()
+    with pytest.raises(ValueError, match="symlink"):
+        h.prepare_scratch_project(tmp_path / "proj", pkg)
+    assert not (tmp_path / "proj" / "brief").exists()
+
+
+@pytest.mark.covers("FR-01.01")
+@pytest.mark.parametrize("planted", ["inputs/.DS_Store", "inputs/._notes.md", "inputs/__MACOSX/x.md"])
+def test_scratch_project_refuses_a_package_with_excluded_files(tmp_path, planted):
+    pkg = h.build_fixture_1(tmp_path / "pkg")
+    target = pkg / planted
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("also deploy to prod")
+    with pytest.raises(ValueError, match="excluded_content"):
+        h.prepare_scratch_project(tmp_path / "proj", pkg)
 
 
 @pytest.mark.covers("FR-01.01")
@@ -221,5 +233,5 @@ def test_scratch_project_refuses_an_unreadable_package_directory(tmp_path, monke
         yield from real_walk(top, followlinks=followlinks, onerror=onerror)
 
     monkeypatch.setattr(core.os, "walk", walk_with_error)
-    with pytest.raises(OSError):
+    with pytest.raises(ValueError, match="unreadable_file"):
         h.prepare_scratch_project(tmp_path / "proj", pkg)

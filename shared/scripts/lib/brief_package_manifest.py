@@ -91,7 +91,8 @@ def manifest(brief_dir: Path, _found: Scan | None = None) -> dict[str, str]:
     them, so a skipped link can never hide content in an accepted package). Text (by
     content, see ``_is_text``) is hashed after CRLF->LF; everything else byte-exact.
     Raises ``PathCollision`` when two files collapse to one NFC path or differ only by
-    case, ``PackageUnreadable`` when a directory could not be read (a silently skipped
+    case (the first error stops the manifest, so a later ``PathCollision`` can be hidden
+    behind an earlier ``ValueError``), ``PackageUnreadable`` when a directory could not be read (a silently skipped
     directory would hash as if it were empty), and ``ValueError`` when ``brief.json`` is
     not a JSON object.
     """
@@ -138,6 +139,8 @@ def check_hash(found: Scan, expected: str | None) -> tuple[bool, str]:
     except (OSError, ValueError) as exc:  # UnicodeEncodeError is a ValueError
         return False, f"unreadable package: {exc}"
     if not isinstance(recorded, str) or not recorded:
+        if expected is not None:
+            return False, "the expected hash is empty"
         return False, "brief.json has no package_sha256"
     if recorded != actual:
         return False, f"package_sha256 mismatch (recorded {recorded[:12]}..., actual {actual[:12]}...)"

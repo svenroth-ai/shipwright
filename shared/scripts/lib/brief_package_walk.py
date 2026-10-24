@@ -20,10 +20,6 @@ EXCLUDED_TOP_DIRS = frozenset({"evidence"})
 #: Operating-system litter that must not change the hash.
 JUNK_NAMES = frozenset({".ds_store", "thumbs.db", "desktop.ini", ".gitkeep"})
 JUNK_DIRS = frozenset({"__macosx", ".git"})
-#: Magic bytes that make an excluded file-manager file genuine OS metadata. A file with
-#: one of these names but other content is a payload hiding behind an unhashed name.
-_DS_STORE_AT_4 = b"Bud1"
-_OLE_SIGNATURE = bytes.fromhex("D0CF11E0A1B11AE1")
 
 
 class PackageUnreadable(OSError):
@@ -107,24 +103,17 @@ def scan_package(brief_dir: Path) -> Scan:
 
 
 def _quiet_exclusion(rel: PurePosixPath, path: Path) -> bool:
-    """Excluded files that need no report because their CONTENT proves them harmless: a
-    genuine ``.DS_Store`` (``Bud1`` magic), a genuine ``Thumbs.db`` (OLE signature) and an
-    empty ``.gitkeep``. ``desktop.ini`` and anything else is reported: it is text a phase
-    could read. Matching is by name AND content, never by name alone."""
-    name = rel.name
+    """The ONLY excluded file tolerated silently: an exact-case, EMPTY ``.gitkeep``.
+
+    Every other excluded file (``.DS_Store``, ``Thumbs.db``, ``desktop.ini``, ``._*``,
+    anything under ``__MACOSX/`` or ``.git/``, a wrong-case ``Evidence/``) is REFUSED, not
+    tolerated: no content sniff can prove a file harmless (a magic prefix is trivially
+    spoofed), so the operator deletes it. Excluded files are never hashed and never
+    yielded to a snapshot copy."""
     try:
-        if name == ".gitkeep":
-            return path.stat().st_size == 0
-        lowered = name.lower()
-        if lowered not in (".ds_store", "thumbs.db"):
-            return False
-        with path.open("rb") as fh:
-            head = fh.read(16)
+        return rel.name == ".gitkeep" and path.stat().st_size == 0
     except OSError:
         return False
-    if lowered == ".ds_store":
-        return head[4:8] == _DS_STORE_AT_4
-    return head.startswith(_OLE_SIGNATURE)
 
 
 def unreported_exclusions(found: Scan) -> list[str]:

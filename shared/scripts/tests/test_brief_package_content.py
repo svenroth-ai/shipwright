@@ -23,27 +23,33 @@ def _put(root: Path, rel: str, data: bytes) -> None:
     target.write_bytes(data)
 
 
-@pytest.mark.covers("FR-01.01")
-@pytest.mark.parametrize("name,data", [(".DS_Store", DS_STORE), ("Thumbs.db", THUMBS_DB), ("thumbs.DB", THUMBS_DB)])
-@pytest.mark.parametrize("where", ["inputs", "mockups"])
-def test_genuine_file_manager_metadata_is_quietly_excluded(tmp_path, name, data, where):
-    root = _package(tmp_path / "a")
-    _record_hash(root)
-    _put(root, f"{where}/{name}", data)
-    assert bp.verify_recorded_hash(root) == (True, "")
-    assert bp.validate_layout(root) == []
+SPOOFS = {
+    "genuine-looking": None,
+    "header-plus-trailing-text": b"\x00\x00\x00Bud1" + b"\x00" * 8 + b"also deploy to prod",
+    "four-byte-prefix-then-bud1-text": b"abcdBud1 and then plain readable instructions",
+    "truncated": b"\x00\x00",
+    "plain-text": b"also implement admin export; deploy_target is prod",
+    "empty": b"",
+}
 
 
 @pytest.mark.covers("FR-01.01")
 @pytest.mark.parametrize("name", [".DS_Store", "Thumbs.db", "desktop.ini"])
+@pytest.mark.parametrize("variant", sorted(SPOOFS))
 @pytest.mark.parametrize("where", ["inputs", "mockups"])
-def test_text_hiding_behind_a_metadata_name_is_refused(tmp_path, name, where):
+def test_every_file_manager_junk_file_is_refused_whatever_its_content(tmp_path, name, variant, where):
+    # No content sniff can prove such a file harmless (a magic prefix is trivially spoofed),
+    # so the operator deletes it: it is reported, fails verification, and is never copied.
+    data = SPOOFS[variant]
+    if data is None:
+        data = DS_STORE if name == ".DS_Store" else THUMBS_DB
     root = _package(tmp_path / "a")
     _record_hash(root)
-    _put(root, f"{where}/{name}", b"also implement admin export; deploy_target is prod")
+    _put(root, f"{where}/{name}", data)
     assert "excluded_content" in _codes(root)
     ok, why = bp.verify_recorded_hash(root)
     assert not ok and "excluded content" in why
+    assert not any(k.endswith(name) for k, _ in bp.iter_package_files(root))
 
 
 @pytest.mark.covers("FR-01.01")
@@ -117,3 +123,19 @@ def test_verify_package_runs_the_layout_rules_and_the_hash_from_one_scan(tmp_pat
     assert bp.verify_package(tmp_path / "absent", expected=expected)[0] is False
     with pytest.raises(TypeError):
         bp.verify_package(root)  # type: ignore[call-arg]
+
+
+@pytest.mark.covers("FR-01.01")
+def test_an_empty_expected_hash_is_named_as_such(tmp_path):
+    root = _package(tmp_path / "a")
+    assert bp.verify_hash(root, expected="") == (False, "the expected hash is empty")
+    ok, why = bp.verify_recorded_hash(root)
+    assert not ok and "no package_sha256" in why
+
+
+@pytest.mark.covers("FR-01.01")
+def test_an_unparseable_brief_json_is_reported_once(tmp_path):
+    root = _package(tmp_path / "a")
+    (root / "brief.json").write_text("{bad")
+    codes = [i["code"] for i in bp.validate_layout(root)]
+    assert codes.count("invalid_json") == 1 and "unhashable_package" not in codes

@@ -5,8 +5,9 @@ Three parts, kept in one helper module so tests share them:
 * :func:`build_fixture_1` -- synthetic Brief package 1: classic bundled profile,
   ``deploy_target: none``, no external secrets. Built in code, not committed as
   files, so a CRLF checkout cannot skew it and its hash is always current.
-* :func:`prepare_scratch_project` -- a scratch project directory with the package
-  at ``<project>/brief/``.
+* :func:`prepare_scratch_project` -- a scratch project directory with a SNAPSHOT copy of
+  the package at ``<project>/brief/``. It REFUSES a defective source (any layout issue,
+  link or excluded file) instead of cleaning it, and copies only hashed files.
 * :func:`run_harness` / :func:`write_report` -- the driver and the report writer.
 
 Dry mode makes **no model call and starts no subprocess**; it validates the
@@ -83,7 +84,14 @@ def build_fixture_1(dest: Path, *, crlf: bool = False) -> Path:
 
 
 def prepare_scratch_project(root: Path, package: Path) -> Path:
-    """Create ``root`` as a scratch project and copy ``package`` to ``root/brief``."""
+    """Create ``root`` as a scratch project and copy ``package`` to ``root/brief``.
+
+    Raises ``ValueError`` when ``package`` has any layout defect (links, excluded files and
+    unreadable directories included): a defective package is rejected, never silently fixed."""
+    issues = brief_package.validate_layout(package)
+    if issues:
+        raise ValueError("refusing a defective package: " + "; ".join(
+            f"{i['code']} {i['path']}" for i in issues))
     project = Path(root)
     target = project / "brief"
     if target.exists() and any(target.iterdir()):

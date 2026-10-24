@@ -150,7 +150,8 @@ def validate_layout(brief_dir: Path) -> list[dict[str, str]]:
 
 
 def verify_package(brief_dir: Path, *, expected: str) -> tuple[bool, list[dict[str, str]]]:
-    """The call consumers use: ``(ok, issues)`` from ONE scan -- the layout rules of
+    """The call consumers use: ``(ok, issues)`` from ONE directory walk (file contents are
+    re-read afterwards; see the TOCTOU note above) -- the layout rules of
     :func:`validate_layout` plus the hash compare against ``expected`` (a hash held
     outside the package; see the module docstring). ``verify_hash`` alone runs no layout
     rule, and ``validate_layout`` alone proves nothing about changes."""
@@ -212,4 +213,7 @@ def _validate(found: Scan) -> list[dict[str, str]]:
             issues.append(_issue("missing_file", "chat-map.json", "chat-first packages need chat-map.json"))
         if brief.get("ux_shape") == "classic" and "chat-map.json" in keys:
             issues.append(_issue("unexpected_file", "chat-map.json", "chat-map.json is chat-first only"))
+    if any(i["code"] == "invalid_json" and i["path"] == "brief.json" for i in issues):
+        # the same defect, reported once: an unparseable brief.json also makes the package unhashable
+        issues = [i for i in issues if i["code"] != "unhashable_package"]
     return issues
