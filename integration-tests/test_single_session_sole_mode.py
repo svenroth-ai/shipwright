@@ -42,6 +42,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py"
+sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
+import minimal_valid_project as mvp  # noqa: E402
 
 CONFIG_NAME = "shipwright_run_config.json"
 PIPELINE_PHASES = ("project", "design", "plan", "build", "test", "changelog", "deploy")
@@ -80,21 +82,16 @@ def _run_phase(project_root: Path, dispatch: dict) -> subprocess.CompletedProces
     would be vacuous.
     """
     split = dispatch["splitId"]
-    artifact_rel = f"artifacts/{dispatch['phase']}{'-' + split if split else ''}.md"
-    artifact = project_root / artifact_rel
-    artifact.parent.mkdir(parents=True, exist_ok=True)
-    artifact.write_text(f"# {dispatch['phase']}\n", encoding="utf-8")
-
     if dispatch["phase"] == "design":
         (project_root / "shipwright_design_config.json").write_text(
             json.dumps({"status": "complete", "splits": list(SPLITS)}), encoding="utf-8",
         )
 
-    result = {
+    result = {  # the phase's real artifacts: the enforced phase gate checks them
         "ok": True,
         "phase": dispatch["phase"],
         "summary": f"{dispatch['phase']} done",
-        "artifacts": [artifact_rel],
+        "artifacts": mvp.write_phase(project_root, dispatch["phase"], split, splits=SPLITS),
     }
     if split:
         result["splitId"] = split

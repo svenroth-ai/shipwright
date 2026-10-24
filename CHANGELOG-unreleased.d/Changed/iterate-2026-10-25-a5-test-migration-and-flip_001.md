@@ -1,0 +1,1 @@
+Driven pipeline runs now check every phase's work before moving on: single-session-apply runs the phase validators and canon checks by default, a broken artifact stops the run (guided asks you, autonomous fails the phase, recoverable), and a plugin install missing its shared checks fails closed with a fix hint

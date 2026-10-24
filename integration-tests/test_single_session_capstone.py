@@ -34,6 +34,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 ORCHESTRATOR = str(
     REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py",
 )
+sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
+import minimal_valid_project as mvp  # noqa: E402
 
 
 # ---------- helpers -----------------------------------------------------
@@ -85,21 +87,19 @@ def _next(project: Path, *, env_extra: dict | None = None) -> dict:
 
 def _apply(project: Path, dispatch: dict, *, ok: bool = True, persist: bool = True,
            env_extra: dict | None = None) -> tuple[int, dict]:
-    """Play the phase-runner: (optionally) persist the claimed artifact to disk,
-    then call apply. ``persist=False`` models the section-writer bug — an ok result
-    that CLAIMS an artifact it never wrote."""
+    """Play the phase-runner: (optionally) persist the phase's real artifacts to disk
+    (the enforced phase gate checks them), then call apply. ``persist=False`` models the
+    section-writer bug — an ok result that CLAIMS an artifact it never wrote."""
     phase = dispatch["phase"]
-    artifact_rel = f"artifacts/{phase}{'-' + dispatch['splitId'] if dispatch.get('splitId') else ''}.md"
-    payload = {"ok": ok, "phase": phase, "artifacts": [artifact_rel],
+    artifacts = [f"artifacts/{phase}{'-' + dispatch['splitId'] if dispatch.get('splitId') else ''}.md"]
+    if ok and persist:
+        artifacts = mvp.write_phase(project, phase, dispatch.get("splitId"))
+    payload = {"ok": ok, "phase": phase, "artifacts": artifacts,
                "summary": f"{phase} {'done' if ok else 'failed'}"}
     if dispatch.get("splitId"):
         payload["splitId"] = dispatch["splitId"]
     if not ok:
         payload["reason"] = f"{phase} failed in the runner"
-    if ok and persist:
-        art = project / artifact_rel
-        art.parent.mkdir(parents=True, exist_ok=True)
-        art.write_text(f"# {phase}\n", encoding="utf-8")
     result_path = project / f".result-{dispatch['phaseTaskId']}.json"
     result_path.write_text(json.dumps(payload), encoding="utf-8")
     res = _run_cli([

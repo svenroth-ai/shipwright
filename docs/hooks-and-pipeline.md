@@ -1137,7 +1137,7 @@ After build completes: shows split summary table. After test completes: shows te
 > CONTRACT, **verifies on disk that every artifact an `ok:true` result claims
 > exists** (`orchestrator_context.verify_artifacts_exist` — a claimed-but-unwritten
 > artifact is rejected `artifacts_missing`, no completion), runs the phase gate when
-> enforcing or overriding (`orchestrator_pkg/phase_gate.py`, off by default — see
+> enforcing or overriding (`orchestrator_pkg/phase_gate.py`, on by default — see
 > § Override mechanism → *Driven-run gate and override*), freezes splits when a
 > design phase completes (so build fans out per split), routes the result through
 > `complete_phase_task` (an `ok:false` result strict-stops via `mark_phase_failed`,
@@ -1399,7 +1399,7 @@ MASTER writes shipwright_run_config.json (mode: single_session), then LOOPS:
    |       - validate the RESULT CONTRACT
    |       - verify_artifacts_exist  (a claimed-but-unwritten artifact ->
    |                                  artifacts_missing, NO completion)
-   |       - phase gate (phase_gate.py; enforcement OFF by default, or
+   |       - phase gate (phase_gate.py; enforced by default, and on
    |         --override-reason): run_phase_gate for the task's split + runId;
    |         ask issues -> phase_gate_failed, NO mutation (master re-dispatches
    |         with issues[]; MAX_GATE_RETRIES then ask_human | mark_phase_failed)
@@ -3832,23 +3832,46 @@ override over it records `fail`, not `degraded`), and a degraded or crashed (`[g
 check is `retryable: false`, as is a Phase-Quality critical-gate finding (`kind:
 critical_gate`, read from the latest Stop-hook audit file, which a re-dispatch need not
 refresh). The promotion reverses `phase_validators_canon._degraded`'s "inform, not ask" on
-this path only. **A5 precondition:** prove `shared/scripts/tools/verifiers` ships in every
-plugin-cache layout before flipping enforcement on (the layout with
-`<cache>/shipwright/<plugin>/<version>` next to `<cache>/shipwright/shared` is proven by
-`test_single_session_gate_hardening.py`).
+this path only. Because a missing verifiers package therefore stops EVERY enforced apply,
+A5 proved `shared/scripts/tools/verifiers` resolves (and the real gate runs clean) in every
+layout the run plugin ships in before turning enforcement on —
+`plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py`: the Claude cache
+`<cache>/shipwright/shipwright-run/<version>` and its `plugins/shipwright-run` mirror (both
+next to `<cache>/shipwright/shared`), the Codex umbrella bundle (`<bundle>/origin/
+shipwright-run` + `<bundle>/shared`), and the dev checkout / git worktree. The `shared/`
+tree must be present (the SessionStart healer `ensure_shared_cache.py` mirrors it on a fresh
+install); where the verifiers are missing the gate fails closed, never open.
 
-- **Enforcement is OFF by default** (`ENFORCE_PHASE_GATE_DEFAULT`, a function parameter —
-  no config key or environment variable). Off and no override: the gate is not called (the
-  failed-task refusal and the attempt realignment below apply regardless). A5 flips the
-  default. While it is ON, a raw `orchestrator.py complete-phase-task` with an `ok:true`
-  result on a `single_session` run is refused `use_single_session_apply` (exit 2) — it would
-  skip the gate and the override record; an `ok:false` strict-stop still goes through.
-  **Known, deliberate escape hatch:** `recover-phase-task --force-status skipped` (and
-  `single-session-recover --force-status skipped`) moves an `in_progress` task to terminal
-  `skipped` with no gate and no override record. It stays on purpose: `skipped` is
-  distinguishable from `done`, and no successor is planned, so the pipeline does not
-  advance on it. Whether skipping under enforcement needs a recorded reason is an A5
-  decision.
+- **Enforcement is ON by default** (`ENFORCE_PHASE_GATE_DEFAULT = True` since A5, a function
+  parameter — no config key or environment variable can turn it off; a test passes
+  `enforce_gate=False`). Off and no override: the gate is not called (the failed-task
+  refusal and the attempt realignment below apply regardless). A raw
+  `orchestrator.py complete-phase-task` with an `ok:true` result on a `single_session` run is
+  refused `use_single_session_apply` (exit 2) — it would skip the gate and the override
+  record; an `ok:false` strict-stop still goes through. Nothing in the repo completes a
+  driven phase that way: the master completes through `single-session-apply`, and the tests
+  that drive a run play an honest phase-runner with real minimal artifacts
+  (`shared/testkit/minimal_valid_project.py`, importable from both test roots; a change to a
+  phase validator or canon check that the builder no longer satisfies must update the
+  builder in the same diff). A run started before A5 and resumed after it is gated from its
+  next apply on: its artifacts are checked like any other, and the documented way past a
+  phase it cannot satisfy is `--override-reason`. Only this gate changed: the separate
+  `SHIPWRIGHT_ENFORCE_CRITICAL_GATES` switch (the W5/W6/W7 critical-gate promotion) stays
+  opt-in.
+  **Deliberate escape hatch, no recorded reason (A5 decision):** `recover-phase-task
+  --force-status skipped` (and `single-session-recover --force-status skipped`) moves an
+  `in_progress` task to terminal `skipped` with no gate and no override record. A reason is
+  not required because a skip cannot be mistaken for a pass, which is what the override's
+  reason exists to prevent (FR-01.01): `skipped` stays distinct from `done` in
+  `phase_tasks[]`, the design validator refuses to treat a skipped task as an exemption, and
+  no successor is planned, so the pipeline does not advance past a skipped phase (the next
+  `single-session-next` answers `blocked`). It is an operator command; `phase-runner.md`
+  forbids a phase-runner recovering anything.
+- **Inform notes are returned, not persisted (A5 decision):** on a passing apply the
+  `gate` block carries the gate's `inform` notes (warnings that never block); nothing
+  writes them to `run_config`. The master relays them; the full canon re-runs at the
+  phase's own checks and at compliance, so persisting a second copy would add a run_config
+  write outside the lifecycle for no new information.
 - **Rejection:** `{ok:false, reason:"phase_gate_failed", issues, inform, checked, attempt,
   gate_rejections, max_gate_retries, retries_exhausted, retryable, terminal,
   override_allowed}`, exit 1 (`override_allowed` is false when the run's autonomy is not
@@ -3865,7 +3888,7 @@ plugin-cache layout before flipping enforcement on (the layout with
   `failed` (autonomous / unattended): apply calls `mark_phase_failed` with the issues and
   returns the ordinary strict-stop shape (`ok:true`, `run_status:"failed"`) plus a `gate`
   block; recoverable with `single-session-recover`.
-- **Override:** `--override-reason "<why>"` runs the gate (even with enforcement off) and
+- **Override:** `--override-reason "<why>"` runs the gate (enforced or not) and
   writes the `validation_overrides[]` record — plus `phase_task_id`, `split_id`,
   `autonomy`, `entrypoint: "single-session-apply"` — in the **same locked write** as the
   completion (`complete_phase_task(on_complete=...)`; a raising hook writes nothing and

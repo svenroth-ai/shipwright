@@ -11,8 +11,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
+
+import minimal_valid_project as mvp  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import single_session_recovery as rec  # noqa: E402
 from single_session import observability as obs  # noqa: E402
@@ -266,6 +270,7 @@ def test_recover_unrelated_task_does_not_lift_failed_run(tmp_project):
     assert load_loop_state(tmp_project)["status"] == "failed"  # loop must agree, not "running"
 
 
+@pytest.mark.covers("FR-01.01/AC04")
 def test_double_apply_is_idempotent_and_preserves_pointer(tmp_project):
     """#5: a double-apply of an already-done task must not null the loop pointer or
     emit a spurious runStatus=null phase_result."""
@@ -273,10 +278,8 @@ def test_double_apply_is_idempotent_and_preserves_pointer(tmp_project):
     from single_session.result_contract import build_phase_runner_result
     _ss_config(tmp_project)
     d = loop.next_dispatch(tmp_project)["dispatch"]
-    (tmp_project / "artifacts").mkdir(exist_ok=True)
-    (tmp_project / "artifacts" / "project.md").write_text("x", "utf-8")
-    result = build_phase_runner_result(
-        ok=True, phase="project", summary="done", artifacts=["artifacts/project.md"],
+    result = build_phase_runner_result(  # the phase's real artifacts, so the gate passes
+        ok=True, phase="project", summary="done", artifacts=mvp.write_phase(tmp_project, "project"),
     )
     apply_kwargs = dict(phase_task_id=d["phaseTaskId"], session_uuid=d["sessionUuid"],
                         expected_version=d["version"], result=result)

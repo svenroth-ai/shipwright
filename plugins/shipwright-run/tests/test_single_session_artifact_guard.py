@@ -15,8 +15,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
+
+import minimal_valid_project as mvp  # noqa: E402
 import phase_task_lifecycle  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import single_session_loop as loop  # noqa: E402
@@ -70,21 +74,22 @@ def test_apply_rejects_missing_artifact_before_lifecycle(tmp_project):
     assert cfg["status"] == "in_progress"
 
 
+@pytest.mark.covers("FR-01.01/AC01")
 def test_apply_accepts_when_claimed_artifact_on_disk(tmp_project):
     _ss_config(tmp_project)
     dispatch = _dispatch_seed(tmp_project)
 
-    # Phase-runner persisted its artifact to disk before returning — guard passes.
-    art = tmp_project / "artifacts" / "project.md"
-    art.parent.mkdir(parents=True, exist_ok=True)
-    art.write_text("# project\n", encoding="utf-8")
+    # Phase-runner persisted its (real, gate-valid) artifacts before returning — guard passes.
+    result = _result("project")
+    result["artifacts"] = mvp.write_phase(tmp_project, "project")
+    assert all((tmp_project / rel).is_file() for rel in result["artifacts"])
 
     applied = loop.apply_phase_result(
         tmp_project,
         phase_task_id=dispatch["phaseTaskId"],
         session_uuid=dispatch["sessionUuid"],
         expected_version=dispatch["version"],
-        result=_result("project"),
+        result=result,
     )
     assert applied["ok"] is True
     assert applied["next"]["action"] == "dispatch"

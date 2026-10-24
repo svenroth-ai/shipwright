@@ -68,9 +68,9 @@ def _gated_completion_refusal(config: Any, payload: Any) -> dict[str, Any] | Non
 
     ``single-session-apply`` runs the phase gate and records any override; the raw
     ``complete-phase-task`` runs neither, so with enforcement on it would be a way round the
-    gate. Enforcement off (``phase_gate.ENFORCE_PHASE_GATE_DEFAULT``, the same switch apply
-    uses): None, the command behaves as before. An ``ok:false`` (strict-stop) result is
-    never gated, so it stays allowed.
+    gate. Enforcement is on by default (``phase_gate.ENFORCE_PHASE_GATE_DEFAULT``, the same
+    switch apply uses); off: None, the command behaves as before. An ``ok:false``
+    (strict-stop) result is never gated, so it stays allowed.
     """
     from . import phase_gate
     from .config_io import is_single_session

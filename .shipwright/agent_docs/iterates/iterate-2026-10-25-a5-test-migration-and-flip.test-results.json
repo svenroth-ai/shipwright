@@ -1,0 +1,130 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-a5-test-migration-and-flip",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 22688,
+      "total": 22688
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 608,
+      "total": 608
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "phase gate enforced by default: an apply with no enforce parameter calls the gate",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_enforcement_is_on_by_default PASSED"
+        },
+        {
+          "behavior": "explicit enforce_gate=False never calls the gate",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_enforcement_off_never_calls_the_gate PASSED"
+        },
+        {
+          "behavior": "raw complete-phase-task ok:true refused use_single_session_apply (exit 2, task stays in_progress); ok:false strict-stop still completes",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_lifecycle_cli.py::test_claim_then_complete_via_cli PASSED"
+        },
+        {
+          "behavior": "canon verifiers resolve in the Claude cache, mirror, Codex bundle and checkout layouts (gate clean, verifiers from that layout's shared tree)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py::test_the_enforced_gate_runs_its_canon_checks_in_every_layout PASSED (4 params)"
+        },
+        {
+          "behavior": "a layout without verifiers fails closed: canon_degraded ask naming the installation fix",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py::test_a_layout_without_the_verifiers_stops_the_gate_loudly PASSED"
+        },
+        {
+          "behavior": "no shipped code passes enforce_gate (override-reason is the only production bypass)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_no_shipped_code_switches_the_gate_off PASSED"
+        },
+        {
+          "behavior": "every pipeline phase a driven run can dispatch has a validator",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_every_phase_a_driven_run_can_dispatch_has_a_validator PASSED"
+        },
+        {
+          "behavior": "guided driven run: a broken design artifact is rejected at every retry via single-session-next (no completion, no successor), ends at ask_human, passes once fixed and drives to complete",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_driven_run_real_gate_e2e.py::test_guided_run_stops_at_the_broken_artifact_and_passes_when_fixed PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "autonomous driven run: the capped rejection fails the phase; recover + fix passes and drives to complete",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_driven_run_real_gate_e2e.py::test_autonomous_run_fails_the_phase_at_the_cap_and_recovers_when_fixed PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "full 7-phase split-fanned pipeline completes on real minimal artifacts under the enforced gate",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_single_session_sole_mode.py::test_full_pipeline_runs_to_complete_without_the_engine PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "migrated run-root drives (loop, artifact guard, CLI, phase_started, resume) green on real minimal artifacts",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests suite 709 passed (F0)"
+        },
+        {
+          "behavior": "migrated integration drives (pipeline, capstone, resume, handoff, cross-surface CAS fence, invocation mode) green on real minimal artifacts",
+          "disposition": "tested",
+          "evidence": "integration-tests suite 608 passed (F0)",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_driven_run_real_gate_e2e.py integration-tests/test_single_session_sole_mode.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 9,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-a-real-gates--A5\\.shipwright\\runs\\iterate-2026-10-25-a5-test-migration-and-flip\\surface_verification.log",
+      "timestamp": "2026-10-24T22:57:30.143Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

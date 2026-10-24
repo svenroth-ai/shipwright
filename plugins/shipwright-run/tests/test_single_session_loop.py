@@ -25,7 +25,9 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
 
+import minimal_valid_project as mvp  # noqa: E402
 import phase_task_lifecycle  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import single_session_loop as loop  # noqa: E402
@@ -57,13 +59,9 @@ def _result(phase: str, *, ok: bool = True, split_id: str | None = None):
 
 
 def _persist_claimed_artifacts(project_root: Path, result: dict) -> None:
-    """Play the phase-runner's disk write: create every artifact the result
-    claims so the loop's on-disk persistence guard (SS4) passes. A real
-    phase-runner writes its outputs to disk BEFORE returning the contract."""
-    for rel in result.get("artifacts", []):
-        p = project_root / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(f"# {rel}\n", encoding="utf-8")
+    """Play the phase-runner honestly: leave on disk what the phase really writes
+    (the enforced phase gate checks it) and claim exactly that (SS4 guard)."""
+    result["artifacts"] = mvp.write_phase(project_root, result["phase"], result.get("splitId"))
 
 
 def _drive(project_root: Path, expected_phase: str, *, ok: bool = True,
