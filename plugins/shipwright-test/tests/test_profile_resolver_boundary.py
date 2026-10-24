@@ -16,7 +16,7 @@ _SCRIPTS = Path(__file__).resolve().parents[3] / "shared" / "scripts"
 
 
 @pytest.mark.covers("FR-01.06")
-def test_resolver_importable_and_user_profiles_isolated(tmp_path, isolate_user_profiles_dir):
+def test_resolver_importable_and_user_profiles_isolated(tmp_path):
     before = list(sys.path)
     if str(_SCRIPTS) not in sys.path:
         sys.path.append(str(_SCRIPTS))
@@ -28,7 +28,9 @@ def test_resolver_importable_and_user_profiles_isolated(tmp_path, isolate_user_p
     res = profile_resolver.resolve_profile("vite-hono", tmp_path)
     assert res.source == "bundled" and not res.custom
     assert profile_resolver.resolve_profile("generic", tmp_path).source == "builtin"
+    # Read from the environment, NOT by requesting the fixture by name: a by-name request
+    # would keep this green after `autouse=True` is removed. KeyError here = not active.
     user = os.environ["SHIPWRIGHT_USER_PROFILES_DIR"]
-    assert user == str(isolate_user_profiles_dir)  # the autouse fixture is active
+    assert Path(user).is_dir() and not list(Path(user).iterdir())  # an empty, fresh tmp dir
     assert not Path(user).resolve().is_relative_to((Path.home() / ".shipwright").resolve())
     assert profile_resolver.user_dir() == user

@@ -26,6 +26,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.screen_registry import scan_designs_dir
 
+# Stack-profile resolution (project > user > bundled). Appended, then removed again:
+# shared/scripts holds a `tools` package that would shadow this plugin's own.
+_SHARED = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
+_ADDED = _SHARED not in sys.path
+if _ADDED:
+    sys.path.append(_SHARED)
+import profile_consumer as pc  # noqa: E402
+
+if _ADDED:
+    sys.path.remove(_SHARED)
+
+PROJECT_CONFIG = "shipwright_project_config.json"
+PROFILE_KEYS_READ = ("design_system",)  # D6: consumed profile keys (checked against the schema)
+
 
 def _discovery():
     # Shared planning walk, loaded by FILE LOCATION under a sentinel name so no
@@ -69,21 +83,14 @@ def find_specs(project_root: Path) -> list[str]:
     return sorted(specs)
 
 
-def load_project_config(project_root: Path) -> dict:
-    """Load shipwright_project_config.json."""
-    config_path = project_root / "shipwright_project_config.json"
-    if config_path.exists():
-        return json.loads(config_path.read_text(encoding="utf-8"))
-    return {}
+def load_profile_design_system(project_root: Path, profile_name: str) -> tuple[dict, str]:
+    """design_system of the resolved stack profile, and where it came from.
 
-
-def load_profile_design_system(plugin_root: Path, profile_name: str) -> dict:
-    """Load design_system config from stack profile."""
-    profile_path = plugin_root.parent.parent / "shared" / "profiles" / f"{profile_name}.json"
-    if profile_path.exists():
-        profile = json.loads(profile_path.read_text(encoding="utf-8"))
-        return profile.get("design_system", {})
-    return {}
+    A reserved sentinel (``generic`` / ``detecting``) means built-in defaults (``{}``).
+    An unknown or invalid profile raises (ValueError with ``.kind``) - never ``{}``.
+    """
+    res = pc.resolve_named(profile_name, project_root, origin=PROJECT_CONFIG)
+    return (res.data.get("design_system") or {}), res.source
 
 
 def detect_mode(project_root: Path) -> str:
@@ -107,15 +114,21 @@ def detect_mode(project_root: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Setup design session")
     parser.add_argument("--project-root", required=True)
-    parser.add_argument("--plugin-root", required=True)
+    parser.add_argument("--plugin-root", required=True)  # accepted for compatibility; profiles resolve via the resolver
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
-    plugin_root = Path(args.plugin_root).resolve()
 
-    project_config = load_project_config(project_root)
-    profile_name = project_config.get("profile", "supabase-nextjs")
-    design_system = load_profile_design_system(plugin_root, profile_name)
+    profile_name = None
+    try:
+        # absent / null / empty -> the legacy default; a corrupt config is an error, not a traceback
+        profile_name = pc.config_profile(project_root, PROJECT_CONFIG) or "supabase-nextjs"
+        design_system, profile_source = load_profile_design_system(project_root, profile_name)
+    except ValueError as exc:  # unknown / invalid / too new: stop, name the file, no fallback
+        sys.stderr.write(f"error: {exc}\n")
+        print(json.dumps({"success": False, "project_root": str(project_root),
+                          "profile": profile_name, **pc.error_fields(exc)}, indent=2))
+        return pc.exit_code(exc)
     specs = find_specs(project_root)
     mode = detect_mode(project_root)
 
@@ -131,6 +144,7 @@ def main() -> int:
         "success": True,
         "project_root": str(project_root),
         "profile": profile_name,
+        "profile_source": profile_source,
         "design_system": design_system,
         "specs_found": specs,
         "existing_designs": existing,

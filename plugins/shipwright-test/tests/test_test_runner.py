@@ -24,9 +24,15 @@ def test_get_command_supabase_nextjs_e2e():
     assert "playwright" in cmd
 
 
-def test_get_command_unknown_profile():
-    cmd = get_test_command("unknown-profile", "unit")
-    assert "npm test" in cmd
+@pytest.mark.covers("FR-01.06")
+def test_get_command_unknown_profile_is_an_error_not_npm_test():
+    with pytest.raises(ValueError, match="unknown-profile"):
+        get_test_command("unknown-profile", "unit")
+
+
+@pytest.mark.covers("FR-01.06")
+def test_get_command_generic_sentinel_uses_the_built_in_defaults():
+    assert get_test_command("generic", "unit") == "npm test"
 
 
 def test_parse_vitest_output():
@@ -92,7 +98,7 @@ def test_python_profile_unit_command_comes_from_profile():
 @pytest.mark.covers("FR-01.06/AC01")
 def test_profile_path_flat_unit_string(tmp_path):
     p = tmp_path / "x.json"
-    p.write_text(json.dumps({"testing": {"unit": "make test"}}), encoding="utf-8")
+    p.write_text(json.dumps({"name": "x", "testing": {"unit": "make test"}}), encoding="utf-8")
     assert get_test_command("x", "unit", p) == "make test"
 
 
@@ -155,29 +161,32 @@ def test_main_runs_profile_command_from_run_config(monkeypatch, capsys, tmp_path
 
 @pytest.mark.covers("FR-01.06/AC01")
 def test_profile_helpers_tolerate_bad_input(tmp_path):
-    from lib.test_runner import (_load_profile, _profile_layer_command,
-                                 default_profile_path, profile_declares_no_layer)
+    from types import SimpleNamespace as NS
 
-    assert default_profile_path(None) is None
-    assert default_profile_path("no-such-profile") is None
-    bad = tmp_path / "bad.json"
-    bad.write_text("[1]", encoding="utf-8")
-    assert _load_profile(bad) is None
-    bad.write_text("{oops", encoding="utf-8")
-    assert _load_profile(bad) is None
+    from lib.test_runner import _profile_layer_command, profile_declares_no_layer
+
+    def res(source, name, data):
+        return NS(source=source, name=name, data=data)
+
     assert _profile_layer_command({}, "unit") == ""
     assert _profile_layer_command({"testing": {"integration": {"command": "x"}}}, "integration") == "x"
-    assert profile_declares_no_layer(None, "p", "e2e") is False
-    assert profile_declares_no_layer({"testing": {}}, "supabase-nextjs", "e2e") is False
-    assert profile_declares_no_layer({"testing": {}}, "other", "unit") is False
-    assert profile_declares_no_layer({"testing": {"e2e": {}}}, "other", "e2e") is False
+    assert profile_declares_no_layer(None, "e2e") is False
+    assert profile_declares_no_layer(res("builtin", "generic", {}), "e2e") is False
+    assert profile_declares_no_layer(res("bundled", "supabase-nextjs", {"testing": {}}), "e2e") is False
+    assert profile_declares_no_layer(res("bundled", "other", {"testing": {}}), "unit") is False
+    assert profile_declares_no_layer(res("bundled", "other", {"testing": {"e2e": {}}}), "e2e") is False
+    # D9: provenance, not the name, selects the legacy table - a PROJECT profile named
+    # supabase-nextjs that declares no e2e layer is skipped, not run via `npx playwright`.
+    assert profile_declares_no_layer(res("project", "supabase-nextjs", {"testing": {}}), "e2e") is True
 
 
 @pytest.mark.covers("FR-01.06/AC01")
 def test_profile_name_is_validated_before_touching_the_filesystem(tmp_path):
-    from lib.test_runner import default_profile_path, resolve_profile_name
+    from lib.test_runner import load_resolved, resolve_profile_name
 
-    assert default_profile_path("../../x") is None
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({"profile": "../../etc/x"}), encoding="utf-8")
-    assert resolve_profile_name(None, str(tmp_path)) == "supabase-nextjs"
+    name = resolve_profile_name(None, str(tmp_path))
+    assert name == "../../etc/x"  # NOT silently supabase-nextjs (S2: no silent fallback)
+    with pytest.raises(ValueError, match="Invalid profile name"):
+        load_resolved(name, None, str(tmp_path), quiet=True)

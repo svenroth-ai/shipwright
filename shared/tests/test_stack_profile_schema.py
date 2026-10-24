@@ -17,6 +17,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1] / "scripts"))
 import profile_resolver as pr  # noqa: E402
 import profile_schema_check as psc  # noqa: E402
 from shared.tests.profile_test_fixtures import proj_dir, write_profile  # noqa: E402
+from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: E402,F401  (module-local fixtures: "project", "user_dir")
 
 pytestmark = pytest.mark.covers("FR-01.06")
 _SCHEMA = json.loads(Path(pr.schema_path()).read_text(encoding="utf-8"))

@@ -15,6 +15,7 @@ import pytest
 sys.path.append(str(Path(__file__).resolve().parents[1] / "scripts" / "tools"))
 import resolve_profile as cli  # noqa: E402
 from shared.tests.profile_test_fixtures import proj_dir, write_profile  # noqa: E402
+from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: E402,F401  (module-local fixtures: "project", "user_dir")
 
 pytestmark = pytest.mark.covers("FR-01.06")
 _CLI = Path(cli.__file__)
@@ -142,3 +143,8 @@ def test_list_json_matches_checked_in_contract_fixture(project, user_dir, capsys
     expected = json.loads(fixture.read_text(encoding="utf-8"))
     assert _contract_view(json.loads(out), project) == expected, (
         "list --json is a cross-repo contract (WebUI): a shape change is a major bump")
+
+
+def test_plain_escapes_control_characters_in_list_output():
+    assert cli._plain("a\x1b[31mb\nc") == "a\\x1b[31mb\\nc"
+    assert cli._plain("plain-name") == "plain-name"

@@ -154,6 +154,7 @@ class TestSkipConditions:
         assert result["skipped"] is True
         assert "No profile set" in result["skip_reason"]
 
+    @pytest.mark.covers("FR-01.06")
     def test_missing_profile_file(self, tmp_path, profile_dir):
         project = tmp_path / "bad_profile"
         project.mkdir()
@@ -161,9 +162,8 @@ class TestSkipConditions:
             json.dumps({"profile": "nonexistent"}), encoding="utf-8"
         )
         result = validate(project, "build", profile_dir)
-        assert result["success"] is True
-        assert result["skipped"] is True
-        assert "not found" in result["skip_reason"]
+        assert (result["success"], result["skipped"]) == (False, False)  # S2: named+unknown = error
+        assert result["kind"] == "not_found" and "nonexistent" in result["error"]
 
     def test_no_required_env_vars_for_phase(self, tmp_path):
         profiles = tmp_path / "profiles"
@@ -309,6 +309,7 @@ class TestFrameworkVarsMerge:
         assert result["action"] == "skipped"
         assert not (empty_project / ".env.local").exists()
 
+    @pytest.mark.covers("FR-01.06")
     def test_framework_dedup_when_profile_already_lists_key(
         self, tmp_path,
     ):
@@ -316,8 +317,8 @@ class TestFrameworkVarsMerge:
         suppressed and the profile's description wins."""
         profiles = tmp_path / "p"
         profiles.mkdir()
-        (profiles / "with_or.json").write_text(json.dumps({
-            "name": "with_or",
+        (profiles / "with-or.json").write_text(json.dumps({
+            "name": "with-or",
             "required_env_vars": {
                 "build": [],
                 "deploy": [],
@@ -331,7 +332,7 @@ class TestFrameworkVarsMerge:
         proj = tmp_path / "proj"
         proj.mkdir()
         (proj / "shipwright_run_config.json").write_text(
-            json.dumps({"profile": "with_or"}), encoding="utf-8",
+            json.dumps({"profile": "with-or"}), encoding="utf-8",
         )
         init_env_file(proj, "all", profiles, include_framework=True)
         env_text = (proj / ".env.local").read_text(encoding="utf-8")
