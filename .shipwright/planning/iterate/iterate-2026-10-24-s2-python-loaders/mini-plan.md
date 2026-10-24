@@ -1,0 +1,11 @@
+# Mini-plan: S2 Python loaders use the resolver
+
+Files: new `shared/scripts/profile_consumer.py` (loader glue: run-config profile read, `resolve_named` with remediation text + stderr provenance, `resolve_in_dir`, error fields); `shared/scripts/dev_server/{profile_config,_profile_input,multiservice}.py`; `shared/scripts/validate_env.py`; `plugins/shipwright-test/scripts/lib/{test_runner,performance_check,performance_profile}.py`; `plugins/shipwright-design/scripts/checks/setup-design-session.py`; adopt `_scaffold_env_local`; `docs/hooks-and-pipeline.md` (one row + one table). S1 hand-offs: dangling `.shipwright/profiles` symlink is a broken source (resolver), NaN/Infinity rejected in profile JSON, dev_server integral-float ports, isolation fixture made tamper-evident (probe reads the env var, session base + mkdtemp), sys.path never left holding `shared/scripts`.
+
+Approach: every loader resolves the NAME through the resolver (project > user > bundled) via one glue module, so the cutover rules (sentinel / no profile / unknown) exist once. Unknown, corrupt, invalid or too-new profile = error with the resolver's text plus the remediation line; sentinel and "no profile" keep each loader's documented behaviour (BRIEF 1a table, one test per cell). `PROFILE_TEST_COMMANDS` / `DEFAULT_COMMANDS` and `profile_declares_no_layer` key on provenance (D9). Provenance goes to stderr, `profile_source` into each JSON.
+
+Alternative considered: patch each loader's fixed path to also look in a custom dir. Rejected: five copies of the lookup and the silent fallbacks stay.
+
+Tests: new files per root (dev_server, resolver gaps, validate_env, test_runner, performance_check, setup-design-session, adopt scaffold), each with a plugin-cache-layout import test; existing tests fixed in place (`test_missing_profile_file` rewritten, `with_or` renamed, helpers moved to provenance).
+
+Risks: bloat caps (every touched grandfathered file net-zero: validate_env 602->591, performance_check 795->794, generate_adoption_artifacts 700->697, test_runner 324->323, profile_config 309->301 via the extracted `_profile_input.py`); the legacy `PROFILE_DEV_SERVERS` fallback is gone for a missing bundled file (a broken install now errors).

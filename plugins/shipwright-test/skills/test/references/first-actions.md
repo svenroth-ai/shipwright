@@ -43,7 +43,7 @@ Read `shipwright_project_config.json` from project root:
 
 Load profile from `{plugin_root}/../../shared/profiles/{profile}.json`.
 
-If no config: detect from package.json / pyproject.toml.
+If no config: detect from package.json / pyproject.toml; the detected name must be a bundled profile name (see `shared/profiles`) or `generic` when unsure, never an invented name.
 
 ## B2. Detect Invocation Mode
 

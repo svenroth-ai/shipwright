@@ -5177,8 +5177,28 @@ Origin: iterate-2026-08-04-iterate-timing-attribution.
 
 | Script | Self-Healing | Details |
 |---|---|---|
-| `dev_server.py` | Reads `shipwright_build_config.json` for `dev_url` when profile is unknown | Fallback for custom profiles |
+| `dev_server.py` | Reads `shipwright_build_config.json` for `dev_url` only when no profile is named or the profile is a reserved sentinel (`generic`, `detecting`) | An unknown, corrupt or too-new profile is an error (non-zero exit, `kind` in the JSON), never this fallback |
 | `playwright_setup.py` | Substitutes port from build config into template | Prevents hardcoded port 3000 |
+
+**Stack-profile reads (campaign `stack-profile-resolver`, S2).** These Python loaders no
+longer open `shared/profiles/<name>.json` themselves; each resolves the profile NAME
+through `shared/scripts/profile_resolver.py` (project `.shipwright/profiles/` > user
+`~/.shipwright/profiles/` > bundled, first file wins, no fall-through) via the loader glue
+`shared/scripts/profile_consumer.py`. Every resolution writes a `source=` line (and the
+shadow warning when a project/user profile reuses a bundled name) to stderr, and the JSON
+result carries `profile_source`. Skill prose still builds paths itself until S4; S5 reconciles this section.
+
+| Loader | Reads | Profile named but unknown / corrupt / too new | Sentinel (`generic`, `detecting`) / no profile |
+|---|---|---|---|
+| `dev_server` (`profile_config`) | `services` / `dev_server` | error JSON with `kind` | `dev_url` fallback from `shipwright_build_config.json` |
+| `validate_env.py` (`--init`, adopt `_scaffold_env_local`) | `required_env_vars`; run-config `profile` | `success:false` / `action:"error"`, exit 2 or 3 | skipped (no framework-only scaffold); no profile: skipped |
+| `shipwright-test` `test_runner.py` | `testing.*`; run-config `profile` | JSON `{success:false, kind}`, exit 2 or 3 | sentinel: built-in default commands; run config names nothing: legacy `supabase-nextjs` |
+| `shipwright-test` `performance_check.py` (`--profile` / `--profile-path`) | `testing.performance` | JSON error, exit 2 or 3 | skip "no budgets (no profile)", exit 0 |
+| `shipwright-design` `setup-design-session.py` | `design_system`; project-config `profile` | JSON error, exit 2 or 3 | sentinel: built-in defaults; absent: `supabase-nextjs` |
+
+Command-running loaders (`test_runner` runs `shell=True`, `dev_server` spawns `services[].command`)
+execute only inside a phase the user invoked (`/shipwright-test`, `/shipwright-preview`,
+`/shipwright-build` browser verify); nothing resolves a profile and runs its commands from a hook.
 
 ---
 

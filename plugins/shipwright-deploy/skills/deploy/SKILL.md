@@ -90,7 +90,7 @@ Parse the JSON output:
 
 1. **`skipped == true`**: No profile or no vars defined — continue.
 2. **`success == true`**: All required deploy vars present — continue.
-3. **`success == false`**: Missing required vars — **use AskUserQuestion**:
+3. **`success == false`**: Missing required vars — **use AskUserQuestion** (but a result with `error` / `kind` (exit 2/3) is a profile problem: stop and show the message, do not ask for env vars or edit `.env.local`):
 
    > **Missing environment variables for deployment**
    >

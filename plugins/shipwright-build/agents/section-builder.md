@@ -62,7 +62,7 @@ uv run "{shared_root}/scripts/validate_env.py" --project-root "{project_root}" -
 uv run "{shared_root}/scripts/validate_env.py" --project-root "{project_root}" --phase build
 ```
 
-If `success == false` (missing required vars): note in result JSON but continue — autonomous mode does not block on env vars.
+If `success == false` (missing required vars): note in result JSON but continue — autonomous mode does not block on env vars; but `action: "error"` / `kind` / exit 2-3 is a profile problem: stop and show the message.
 
 ### Step 4: Dashboard — Reading Spec
 

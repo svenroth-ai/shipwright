@@ -38,13 +38,15 @@ def _scaffold_env_local(project_root: Path) -> dict[str, Any]:
     vars, framework_keys, missing_keys, …) — caller stores it under
     ``results["env_local"]``. On import failure (corrupted shared
     tree), returns an action=skipped record rather than crashing the
-    whole adopt run; subsequent steps continue.
+    whole adopt run; subsequent steps continue. A run config naming a
+    profile that is unknown / invalid comes back as ``action: "error"``
+    (with ``error`` / ``kind``) and is stored as-is; the profile is resolved
+    project > user > bundled, so custom profiles scaffold too.
     """
     # Repo layout:
     #   plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py
     #   ↑[0]tools  ↑[1]scripts  ↑[2]shipwright-adopt  ↑[3]plugins  ↑[4]repo-root
     repo_root = Path(__file__).resolve().parents[4]
-    profile_dir = repo_root / "shared" / "profiles"
 
     # Make `shared.scripts.validate_env` importable. We add the repo root so
     # the existing test-suite import path (`from shared.scripts.validate_env
@@ -62,12 +64,7 @@ def _scaffold_env_local(project_root: Path) -> dict[str, Any]:
             "path": str(project_root / ".env.local"),
         }
 
-    return init_env_file(
-        project_root,
-        "all",
-        profile_dir,
-        include_framework=True,
-    )
+    return init_env_file(project_root, "all", include_framework=True)
 
 
 def _read_json(path: Path) -> dict[str, Any]:

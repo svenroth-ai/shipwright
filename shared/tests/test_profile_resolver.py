@@ -17,6 +17,7 @@ import pytest
 sys.path.append(str(Path(__file__).resolve().parents[1] / "scripts"))
 import profile_resolver as pr  # noqa: E402
 from shared.tests.profile_test_fixtures import proj_dir as _proj_dir, write_profile as _write  # noqa: E402
+from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: E402,F401  (module-local fixtures: "project", "user_dir")
 
 pytestmark = pytest.mark.covers("FR-01.06")
 

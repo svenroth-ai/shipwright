@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-s2-python-loaders",
+  "date": "2026-10-24",
+  "section": "Iterate - feature: Python loaders use the stack-profile resolver (S2)",
+  "title": "Loaders resolve profiles through the resolver, no silent fallback",
+  "context": "Five Python loaders opened the bundled profile file themselves and, on a broken file or unknown name, silently carried on with another stack's defaults; user profiles were invisible to them.",
+  "decision": "Route dev_server, validate_env, test_runner, performance_check and setup-design-session through the S1 resolver via a thin profile_consumer glue; unknown, corrupt or too-new profiles fail loud (exit 2/3); name-keyed defaults apply only to bundled profiles (D9).",
+  "consequences": "A custom profile works in every loader and is reported as profile_source; a typo in a name is an error. Design setup: a null or empty profile now means supabase-nextjs. Commands run only inside invoked phases; residuals: user-dir profiles in untrusted clones, _expand_env.",
+  "rationale": "One shared cutover keeps five loaders from drifting; lookup stays in the resolver. Edits to S1-owned resolver files were handed to S2 by the dispatch and are escalated for the D2 hot-file ruling.",
+  "rejected": "Per-loader copies of the cutover rules; keeping silent fallbacks with a warning; leaving loaders unchanged.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-24-s2-python-loaders-python-loaders-use-the-resolver.md"
+}

@@ -1,7 +1,8 @@
 """Fixtures + helpers for the stack-profile resolver tests.
 
-Registered through ``pytest_plugins`` in ``conftest.py`` (fixtures ``project``,
-``user_dir``); the helpers are imported by the tests directly.
+Fixtures ``project`` / ``user_dir`` are imported by name into each profile test
+module (module-local: they are NOT registered globally, so they cannot shadow a
+``project`` parameter elsewhere in ``shared/tests``); the helpers are imported directly.
 """
 
 from __future__ import annotations
@@ -28,13 +29,13 @@ def proj_dir(project: Path) -> Path:
     return project / ".shipwright" / "profiles"
 
 
-@pytest.fixture
-def project(tmp_path):
+@pytest.fixture(name="project")
+def profile_project(tmp_path):
     root = tmp_path / "proj"
     root.mkdir()
     return root
 
 
-@pytest.fixture
-def user_dir(isolate_user_profiles_dir):
+@pytest.fixture(name="user_dir")
+def profile_user_dir(isolate_user_profiles_dir):
     return isolate_user_profiles_dir
