@@ -133,3 +133,25 @@ acceptances:
       dist-tag means maintained, not patched. Re-fix when a 2.1.3 backport ships
       or lighthouse moves minimatch off the v2 line. Operational entry lives in
       .trivyignore.yaml (Trivy's --ignorefile input).
+
+  - id: ar-2026-10-24-zod-dev-only
+    target: trivy-ignore
+    rule: CVE-2023-54404
+    scope:
+      paths:
+        - "plugins/shipwright-test/scripts/perf/package-lock.json"
+    expires: 2027-01-24
+    rationale_ref: iterate-2026-10-24-security-zod-accept
+    statement: >-
+      zod 3.25.76 denial of service via unbounded container validation: an
+      unbounded z.array()/set/map accumulates one issue per failing element and
+      exhausts memory. Transitive and dev-only: it reaches this repo solely
+      through the Lighthouse perf-runner (lighthouse -> chromium-bidi -> zod),
+      which validates WebDriver BiDi messages from the local Chrome it launched,
+      so no attacker-controlled oversized array reaches it. No fix exists: the
+      advisory says no released version remediates the default unbounded case,
+      the partial 4.6.6 change only helps schemas with a declared bound, npm
+      latest (4.6.7) is still listed affected, and chromium-bidi pins ^3. Re-fix
+      when zod ships an unbounded-case remediation or lighthouse moves off this
+      tree. Operational entry lives in .trivyignore.yaml (Trivy's --ignorefile
+      input).
