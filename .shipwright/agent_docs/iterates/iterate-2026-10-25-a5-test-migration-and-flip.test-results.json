@@ -4,13 +4,13 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 22688,
-      "total": 22688
+      "passed": 22720,
+      "total": 22720
     },
     "integration": {
       "status": "passed",
-      "passed": 608,
-      "total": 608
+      "passed": 611,
+      "total": 611
     },
     "pgtap": {
       "status": "not_run"
@@ -44,7 +44,7 @@
           "evidence": "plugins/shipwright-run/tests/test_lifecycle_cli.py::test_claim_then_complete_via_cli PASSED"
         },
         {
-          "behavior": "canon verifiers resolve in the Claude cache, mirror, Codex bundle and checkout layouts (gate clean, verifiers from that layout's shared tree)",
+          "behavior": "canon verifiers resolve in the Claude cache, mirror, Codex bundle and checkout layouts (gate clean, verifiers from that layout's shared tree) ; common + all seven phases' check modules import from it",
           "disposition": "tested",
           "evidence": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py::test_the_enforced_gate_runs_its_canon_checks_in_every_layout PASSED (4 params)"
         },
@@ -54,14 +54,14 @@
           "evidence": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py::test_a_layout_without_the_verifiers_stops_the_gate_loudly PASSED"
         },
         {
-          "behavior": "no shipped code passes enforce_gate (override-reason is the only production bypass)",
+          "behavior": "no shipped code passes enforce_gate or a gate= swap, or assigns ENFORCE_PHASE_GATE_DEFAULT (override-reason is the only production bypass)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_no_shipped_code_switches_the_gate_off PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py::test_no_shipped_code_switches_the_gate_off_or_swaps_it + test_the_scan_catches_each_bypass_shape PASSED"
         },
         {
           "behavior": "every pipeline phase a driven run can dispatch has a validator",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_every_phase_a_driven_run_can_dispatch_has_a_validator PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py::test_every_phase_a_driven_run_can_dispatch_has_a_validator PASSED"
         },
         {
           "behavior": "guided driven run: a broken design artifact is rejected at every retry via single-session-next (no completion, no successor), ends at ask_human, passes once fixed and drives to complete",
@@ -91,11 +91,39 @@
           "disposition": "tested",
           "evidence": "integration-tests suite 608 passed (F0)",
           "category": "integration"
+        },
+        {
+          "behavior": "the canon phase_history run id is the run's runId, else the newest entry since this task was claimed (split-matched); older entries never count; no/naive claim time = runId only",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_run_id.py (21 cases) PASSED"
+        },
+        {
+          "behavior": "the real project/design/plan finalization blocks (extracted from the skill docs) pass the enforced gate, with a skill-minted id and with the runner-exported runId",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate PASSED (2 params)",
+          "category": "integration"
+        },
+        {
+          "behavior": "a phase whose finalization writes no phase_history entry is still rejected",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_a_phase_that_writes_no_audit_entry_is_still_rejected PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "known event loss pinned: the skill's phase_completed wins the dedup, the loop's end event for that (phase, splitId) is dropped",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "an unknown/foreign/malformed retry state makes an enforced rejection terminal at once (guided ask_human, autonomous failed)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_without_loop_state_the_first_rejection_is_terminal + test_a_loop_state_for_another_task_or_malformed_is_unknown PASSED"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 17,
+        "tested": 17,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -106,11 +134,11 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_driven_run_real_gate_e2e.py integration-tests/test_single_session_sole_mode.py -q -p no:cacheprovider",
+      "runner": "uv run pytest integration-tests/test_driven_run_real_gate_e2e.py integration-tests/test_phase_gate_real_skill_canon.py integration-tests/test_single_session_sole_mode.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 9,
+      "tests_run": 12,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-a-real-gates--A5\\.shipwright\\runs\\iterate-2026-10-25-a5-test-migration-and-flip\\surface_verification.log",
-      "timestamp": "2026-10-24T22:57:30.143Z",
+      "timestamp": "2026-10-24T23:49:08.215Z",
       "attempts": 1
     }
   },

@@ -3825,9 +3825,17 @@ brief-driven-run-a-real-gates A4).** The same validators run inside apply throug
 `orchestrator_pkg/phase_gate.py`, between the artifact guard and `freeze_splits`, only for
 an `ok:true` result on a current (`version` + `sessionUuid`) `in_progress` task — so a
 stale apply keeps `stale_version` / `stale_session` and a double apply its idempotent
-answer. `run_phase_gate` gets the task's `splitId` and `config.get("runId")` unchanged
-(None when absent, so the canon bridge falls back to `SHIPWRIGHT_RUN_ID`; an explicitly
-blank `runId` stays blank and is ask-level there). A `canon_degraded` note counts as an ask-level finding here (a v2
+answer. `run_phase_gate` gets the task's `splitId` and the run id the canon
+`phase_history[<phase>] has run_id` check must find (`orchestrator_pkg/gate_run_id.py`, A5
+review): the config's `runId` when that phase has an entry for it, else the id of the newest
+entry recorded since THIS task was claimed (`startedAt`; for a split task one whose `split`
+is absent or names it), else `runId` (the check then fails and names it). Phase skills mint
+their own `SHIPWRIGHT_RUN_ID` when none is set, and `phase-runner.md` exports the run's
+`runId` before a skill's finalization block (project/design/plan keep a pre-set id since A5);
+an entry written before the claim never counts. An absent `runId` stays None (the canon
+bridge falls back to `SHIPWRIGHT_RUN_ID`); an explicitly blank one stays blank and is
+ask-level there. `integration-tests/test_phase_gate_real_skill_canon.py` runs the skills'
+real finalization blocks against the gate. A `canon_degraded` note counts as an ask-level finding here (a v2
 override over it records `fail`, not `degraded`), and a degraded or crashed (`[gate-error]`)
 check is `retryable: false`, as is a Phase-Quality critical-gate finding (`kind:
 critical_gate`, read from the latest Stop-hook audit file, which a re-dispatch need not
@@ -3857,7 +3865,14 @@ install); where the verifiers are missing the gate fails closed, never open.
   next apply on: its artifacts are checked like any other, and the documented way past a
   phase it cannot satisfy is `--override-reason`. Only this gate changed: the separate
   `SHIPWRIGHT_ENFORCE_CRITICAL_GATES` switch (the W5/W6/W7 critical-gate promotion) stays
-  opt-in.
+  opt-in. **Rollback is a code change:** there is no runtime off switch, so turning the gate
+  off again means setting `ENFORCE_PHASE_GATE_DEFAULT = False` in a commit (and a release).
+  **Known event loss in driven runs:** a phase skill records its own `phase_completed`
+  before apply; `record_event` dedups `phase_completed` by `(phase, splitId)` within a
+  session (first wins), so the loop's own end event for that pair (the one carrying
+  `phaseTaskId`) is dropped, and the tracked end is the skill's (pinned by
+  `test_phase_gate_real_skill_canon.py`). Canon C1's event lookup is not scoped per run or
+  split either.
   **Deliberate escape hatch, no recorded reason (A5 decision):** `recover-phase-task
   --force-status skipped` (and `single-session-recover --force-status skipped`) moves an
   `in_progress` task to terminal `skipped` with no gate and no override record. A reason is
@@ -3883,8 +3898,9 @@ install); where the verifiers are missing the gate fails closed, never open.
   / recover, and when `single-session-next` realigns a pointer that drifted to another
   task. With no loop state describing this task of this run (none, another run's, a
   pointer at a different task, or a malformed one) `attempt` and `gate_rejections` are
-  `null` and **no cap applies** — a driven run that sends every retry through
-  `single-session-next` is capped. Then `ask_human` (guided, or an unknown autonomy value — still non-mutating) or
+  `null` and the terminal is taken **at once** (A5 review: an uncounted rejection must not
+  be retryable forever) — a driven run that sends every retry through
+  `single-session-next` is counted and gets its retries. Then `ask_human` (guided, or an unknown autonomy value — still non-mutating) or
   `failed` (autonomous / unattended): apply calls `mark_phase_failed` with the issues and
   returns the ordinary strict-stop shape (`ok:true`, `run_status:"failed"`) plus a `gate`
   block; recoverable with `single-session-recover`.

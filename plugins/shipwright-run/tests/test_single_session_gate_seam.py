@@ -253,7 +253,7 @@ def test_without_loop_state_the_retry_position_is_unknown(tmp_project):
     d = {"phaseTaskId": seed["phaseTaskId"], "sessionUuid": seed["sessionUuid"],
          "version": seed.get("version", 1)}
     applied = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
-    assert (applied["attempt"], applied["terminal"]) == (None, None)
+    assert (applied["attempt"], applied["terminal"]) == (None, "ask_human")  # fail closed
     assert applied["gate_rejections"] is None
 
 

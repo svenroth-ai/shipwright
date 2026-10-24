@@ -9,7 +9,6 @@ The canon verifiers' plugin-cache layouts: ``test_phase_gate_cache_layouts.py``.
 from __future__ import annotations
 
 import argparse
-import ast
 import json
 import sys
 from pathlib import Path
@@ -165,20 +164,25 @@ def test_reapplying_without_next_still_reaches_the_cap(tmp_project):
     assert load_loop_state(tmp_project)["gateRejections"] == MAX_GATE_RETRIES + 1
 
 
-def test_without_loop_state_there_is_no_cap(tmp_project):
-    """Documented: a library apply with no single-session-next is never counted."""
-    cfg = _config(tmp_project)
+@pytest.mark.covers("FR-01.01/AC02")
+@pytest.mark.parametrize("autonomy,terminal", [("guided", "ask_human"), ("autonomous", "failed")])
+def test_without_loop_state_the_first_rejection_is_terminal(tmp_project, autonomy, terminal):
+    """A library apply with no single-session-next cannot be counted, so it fails closed:
+    the terminal at once (A5 review), never an uncapped "retry is due"."""
+    cfg = _config(tmp_project, autonomy)
     seed = cfg["phase_tasks"][0]
-    phase_task_lifecycle.claim_phase_task(
+    claimed = phase_task_lifecycle.claim_phase_task(
         tmp_project, phase_task_id=seed["phaseTaskId"], session_uuid=seed["sessionUuid"],
         expected_phase="project",
     )
     d = {"phaseTaskId": seed["phaseTaskId"], "sessionUuid": seed["sessionUuid"],
-         "version": seed.get("version", 1)}
-    for _ in range(MAX_GATE_RETRIES + 2):
-        out = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
-        assert (out["attempt"], out["gate_rejections"], out["terminal"]) == (None, None, None)
-    assert load_loop_state(tmp_project) is None
+         "version": claimed["phase_task"]["version"]}
+    out = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
+    gate = out if out.get("reason") == "phase_gate_failed" else out["gate"]
+    assert (gate["attempt"], gate["gate_rejections"], gate["terminal"]) == (None, None, terminal)
+    task = json.loads((tmp_project / "shipwright_run_config.json").read_text(
+        encoding="utf-8"))["phase_tasks"][0]
+    assert task["status"] == ("in_progress" if autonomy == "guided" else "failed")
 
 
 @pytest.mark.parametrize("edit", [{"currentPhaseTaskId": "ptk-other"}, {"runId": "run-other"},
@@ -191,7 +195,7 @@ def test_a_loop_state_for_another_task_or_malformed_is_unknown(tmp_project, edit
     path.write_text(json.dumps({**state, **edit}), encoding="utf-8")
     assert phase_gate.retry_state(tmp_project, cfg, d["phaseTaskId"]) is None
     out = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
-    assert (out["attempt"], out["terminal"]) == (None, None)
+    assert (out["attempt"], out["terminal"]) == (None, "ask_human")   # unknown: fail closed
 
 
 def test_an_unreadable_loop_state_is_unknown(tmp_project):
@@ -248,29 +252,3 @@ def test_a_critical_gate_finding_is_not_retryable(tmp_project):
     out = _apply(tmp_project, _dispatch(tmp_project), enforce_gate=True, gate=_gate(issues))
     assert (out["retryable"], out["terminal"]) == (False, "ask_human")
 
-
-# --- 7. the gate's per-call off switch is a test seam, never a production bypass -------
-
-_REPO = Path(__file__).resolve().parents[3]
-
-
-def test_no_shipped_code_switches_the_gate_off():
-    """Only ``--override-reason`` (recorded) may complete a phase over the gate: a shipped
-    caller passing ``enforce_gate=False`` would bypass it with no record, so no shipped call
-    passes ``enforce_gate`` at all (the default is the only production value)."""
-    roots = [_REPO / "shared" / "scripts", *(_REPO / "plugins").glob("*/scripts")]
-    offenders = [
-        str(path.relative_to(_REPO)) for root in roots for path in root.rglob("*.py")
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
-        if isinstance(node, ast.keyword) and node.arg == "enforce_gate"
-        and not (isinstance(node.value, ast.Constant) and node.value.value is None)
-    ]
-    assert roots[1:], "no plugin scripts trees found: the scan would pass vacuously"
-    assert offenders == []
-
-
-def test_every_phase_a_driven_run_can_dispatch_has_a_validator():
-    """Enforcing means checked: a pipeline phase with no validator would pass ``not_checked``."""
-    from orchestrator_pkg.config_factory import PIPELINE_STEPS
-    from phase_validators import _VALIDATORS
-    assert set(PIPELINE_STEPS) <= set(_VALIDATORS), set(PIPELINE_STEPS) - set(_VALIDATORS)

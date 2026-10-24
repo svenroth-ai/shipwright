@@ -1,1 +1,1 @@
-Driven single-session runs can now check each phase's gate before marking it done (off by default for now): a failed gate is retried a bounded number of times, then the run asks a human or stops, and a human can override with a recorded reason via `single-session-apply --override-reason`.
+Driven single-session runs check each phase's gate before marking it done: a failed gate is retried a bounded number of times, then the run asks a human or stops, and a human can override with a recorded reason via `single-session-apply --override-reason`.

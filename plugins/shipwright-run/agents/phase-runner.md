@@ -57,6 +57,11 @@ same resolver rather than each deriving it.
 
 - **`mode: "pipeline"`** (exit 0) — the normal dispatched case. Read everything in
   `skill_artifacts_to_read`, then start the skill's normal Step 1, in pipeline mode.
+  Start every Bash call that runs the skill's finalization block with
+  `export SHIPWRIGHT_RUN_ID="<runId from this payload>"` (each call is its own shell): the
+  skill then keeps that id rather than minting its own, so its `phase_history` entry names
+  this run. (The phase gate also accepts an id the skill minted during this task; it never
+  accepts an entry written before the task was claimed.)
 - **`mode: "error"`** (exit 2) — you were handed a `phaseTaskId` that does not resolve to a
   valid, actionable task for your phase (stale, terminal, wrong phase, unreadable config).
   **STOP and return `ok: false`** with the payload's `reason`/`message`. Do NOT fall back

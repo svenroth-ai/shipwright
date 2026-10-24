@@ -6,7 +6,17 @@ Run: `iterate-2026-10-25-a5-test-migration-and-flip` (campaign `brief-driven-run
 
 1. **The flip.** `ENFORCE_PHASE_GATE_DEFAULT = True`. Every `single-session-apply` of an ok:true result runs the phase validators plus canon checks. Tests can still pass `enforce_gate` per call, and no shipped caller does: an AST guard test pins this, so `--override-reason` (recorded) stays the only production bypass.
 2. **Precondition: the verifiers resolve in every install layout.** Proven by `test_phase_gate_cache_layouts.py`, which covers the Claude cache, its `plugins/` mirror, the Codex bundle and the checkout, with a negative control. The real installed cache was also probed by hand. A layout without `shared/scripts/tools/verifiers` fails closed with a non-retryable `canon_degraded` ask. The message now says this is an installation problem and names the fix.
-3. **One shared minimal-valid-project builder** in `shared/testkit/minimal_valid_project.py`. It is a bare module with no `lib`/`scripts`/`tools` package, so it is ADR-044-safe from both test roots. Canon C1 is satisfied via the `phase_history` terminal outcome, not a `phase_completed` event: `record_event` dedups that event by (phase, splitId), so a fixture event would swallow the loop's own end event. A validator or canon change the builder no longer satisfies must update the builder in the same diff.
+3. **One shared minimal-valid-project builder** in `shared/testkit/minimal_valid_project.py`. It is a bare module with no `lib`/`scripts`/`tools` package, so it is ADR-044-safe from both test roots. A validator or canon change the builder no longer satisfies must update the builder in the same diff. The builder records `phase_history` under a run id it mints itself, the way a skill does, never under the run's `runId`. Canon C1 is satisfied via the `phase_history` terminal outcome rather than a `phase_completed` event; see decision 9 for why.
+8. **The canon `phase_history` run id is resolved, not assumed** (A5 review, doubt high). The check matches one run id exactly. The phase skills mint their own `SHIPWRIGHT_RUN_ID`, and project/design/plan used to overwrite even a pre-set one. With the old gate (verifying by `config.runId` only), every real driven phase would have been rejected at its first apply, and an unattended run could never finish.
+   - The fix has three parts:
+     - `orchestrator_pkg/gate_run_id.canon_run_id` picks the id to verify: the run's `runId` if that phase has an entry for it; else the newest entry recorded since THIS task was claimed (`startedAt`), split-matched for split tasks; else `runId`, so the check fails and names it. An entry from before the claim never counts.
+     - project/design/plan now keep a pre-set id (`: "${SHIPWRIGHT_RUN_ID:=…}"`).
+     - `phase-runner.md` exports the run's `runId` before a skill's finalization block.
+   - `integration-tests/test_phase_gate_real_skill_canon.py` runs the skills' real finalization blocks (extracted from the reference docs) against the gate, both with a minted id and with the exported one. It also shows a phase with no audit entry is still rejected.
+   - Option rejected: making skills alone responsible. Each Bash call is its own shell and the export is prose an LLM follows; a deterministic gate rule does not depend on that.
+9. **Known event loss, documented as such.** A phase skill records `phase_completed` before apply. `record_event` dedups by (phase, splitId) within a session, first wins, so the loop's own end event (with `phaseTaskId`) is dropped in real driven runs. That is pinned by the real-skill test. The builder therefore skips the skill event, so the tests that pin the loop's pair measure the loop. C1's event lookup is not scoped per run or split.
+10. **An unknown retry state is terminal.** No loop state, or one that is foreign or malformed, cannot be counted. An enforced rejection then takes the autonomy's terminal at once (`ask_human` / `failed`) instead of reporting an uncapped retry forever.
+11. **Rollback is a code change:** set `ENFORCE_PHASE_GATE_DEFAULT = False` in a commit. There is no runtime switch.
 4. **`--force-status skipped` on an in_progress task needs no recorded reason.** It is an operator escape hatch:
    - `skipped` is not `done`;
    - the design validator refuses a skipped task as an exemption;
@@ -19,6 +29,16 @@ Run: `iterate-2026-10-25-a5-test-migration-and-flip` (campaign `brief-driven-run
 **Touch-set deviation from BRIEF D10, recorded:**
 - `test_single_session_loop_branches` was not edited: its only apply hits `not_found` before the gate.
 - Also edited, because each flipped (raw `complete-phase-task` ok:true, or an assertion on the default): `test_lifecycle_cli`, `test_single_session_gate_seam`, `test_single_session_gate_hardening`, `test_cross_surface_backcompat`, `test_phase_invocation_mode_integration`.
+- Production edits beyond the flip:
+  - `phase_validators_canon.py`: the `canon_degraded` message names the installation fix.
+  - deploy `SKILL.md`: stale Stop-hook completion text.
+- Added in the review round:
+  - `orchestrator_pkg/gate_run_id.py`.
+  - The unknown-state terminal in `phase_gate.py`.
+  - The `SHIPWRIGHT_RUN_ID` keep-if-set lines in the project/design/plan finalization references.
+  - `phase-runner.md` (export the run's `runId`).
+  - Run `SKILL.md`: the needs_validation template is corrected.
+  - The A4 changelog drop no longer says "off by default".
 
 ## Architecture Review
 
@@ -52,7 +72,7 @@ Plan review: glm and openai both approve. Internal `opus-plan-reviewer`: approve
 | Fix hint on `canon_degraded` | accepted-and-fixed |
 | Force-skip without a reason | rejected-with-reason: decision 4; a recorded reason or event for skips is a separate change, noted as an open item |
 | Gate passes leave no durable record | rejected-with-reason: decision 5; persisting a gate summary is a separate change |
-| Stale run SKILL.md:291 prose | open note, pre-existing (a needs_validation run with skipped tasks has no driven completion path), not changed blind |
+| Stale run SKILL.md:291 prose | accepted-and-fixed (review round): the template now says skipping does not finish the run; that no driven command re-checks a needs_validation run is stated as a known gap |
 | Every pipeline phase has a validator | accepted-and-fixed: pin test added |
 | Stale runner can still apply after re-dispatch (sessionUuid not rotated) | open note, pre-existing CAS property |
 | Layout test copies shared/ more than once | accepted as-is |

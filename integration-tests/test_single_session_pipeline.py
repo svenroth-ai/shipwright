@@ -85,8 +85,10 @@ def _apply(project: Path, dispatch: dict, *, ok: bool = True) -> dict:
     returning, so we do too — the SS4 on-disk persistence guard verifies it."""
     phase = dispatch["phase"]
     # ok: leave on disk what the phase really writes — the enforced phase gate checks it,
-    # and the SS4 guard checks every claimed artifact exists.
-    artifacts = mvp.write_phase(project, phase, dispatch.get("splitId")) if ok else []
+    # and the SS4 guard checks every claimed artifact exists. A failed result keeps its
+    # original (unwritten) stub claim: a strict-stop is neither gated nor guarded.
+    artifacts = (mvp.write_phase(project, phase, dispatch.get("splitId")) if ok
+                 else [f"artifacts/{phase}.md"])
     payload = {
         "ok": ok,
         "phase": phase,

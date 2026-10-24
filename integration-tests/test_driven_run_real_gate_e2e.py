@@ -29,11 +29,12 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ORCHESTRATOR = str(REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py")
 sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
+sys.path.insert(0, str(REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib"))
 import minimal_valid_project as mvp  # noqa: E402
+from single_session.loop_state import MAX_GATE_RETRIES  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.covers("FR-01.01/AC02")]
 
-MAX_GATE_RETRIES = 2  # single_session.loop_state's; every rejection reports it (asserted)
 _MANIFEST = Path(".shipwright/designs/design-manifest.md")
 _BROKEN_ROW = "| 2 | screens/02-missing.html | FR-01.01 |\n"
 
@@ -146,7 +147,7 @@ def test_guided_run_stops_at_the_broken_artifact_and_passes_when_fixed(tmp_path)
 
 def test_autonomous_run_fails_the_phase_at_the_cap_and_recovers_when_fixed(tmp_path):
     project = _start(tmp_path, "autonomous")
-    design, good = _break_design(project)
+    design, _good = _break_design(project)
 
     answers = _retry_until_terminal(project, design)
     out = answers[-1]
@@ -158,10 +159,11 @@ def test_autonomous_run_fails_the_phase_at_the_cap_and_recovers_when_fixed(tmp_p
     code, terminal = _cli(project, "single-session-next")
     assert terminal["action"] == "failed", terminal
 
-    (project / _MANIFEST).write_text(good, encoding="utf-8")   # the fix
     code, recovered = _cli(project, "single-session-recover", "--phase-task-id",
                            design["phaseTaskId"])
     assert code == 0 and recovered["ok"] is True, recovered
-    code, passed = _apply(project, _next(project, "design"), write=False)
+    # The re-opened task is a new claim: the phase runs again (fixed this time) and
+    # records its audit entry afresh — an entry from before the claim never counts.
+    code, passed = _apply(project, _next(project, "design"))
     assert code == 0 and passed["gate"]["result"] == "pass", passed
     _drive_to_complete(project)

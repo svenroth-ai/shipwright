@@ -14,8 +14,9 @@ stderr warning and writes the handoff without the marker (safe
 degrade — the Stop hook then regenerates normally at turn end).
 
 ```bash
-# If the orchestrator didn't already set it, derive one here:
-export SHIPWRIGHT_RUN_ID="design-$(date +%Y%m%d-%H%M%S)"
+# If the orchestrator didn't already set it, derive one here (a driven run's id is kept):
+: "${SHIPWRIGHT_RUN_ID:=design-$(date +%Y%m%d-%H%M%S)}"
+export SHIPWRIGHT_RUN_ID
 
 # C1 — Record phase completion event (idempotent — skips if recorded).
 uv run "{shared_root}/scripts/tools/record_event.py" \

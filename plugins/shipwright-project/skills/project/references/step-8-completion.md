@@ -105,6 +105,10 @@ C3 (inline session_handoff) + C5 (CHANGELOG [Unreleased] entry) +
 `phase_history` append are new. Execute the steps in the order shown:
 
 ```bash
+# One run id for the C3 marker and phase_history (a driven run's id is kept):
+: "${SHIPWRIGHT_RUN_ID:=project-$(date +%Y%m%d-%H%M%S)}"
+export SHIPWRIGHT_RUN_ID
+
 # C1 — Record phase completion event (idempotent — skips if already recorded)
 uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase project \
@@ -148,17 +152,10 @@ uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" 
 ```
 Where `{shared_root}` = `{plugin_root}/../../shared`.
 
-**What happens if SHIPWRIGHT_RUN_ID is unset:** the C3 handoff helper
-logs a warning to stderr and writes the handoff without the canon
-frontmatter; the Stop hook then regenerates it normally at turn end.
-The `append_phase_history.py` call will still run (it just uses the
-empty string as run_id, which the verifier's phase_history check
-treats as "skipped"). You can set the env var explicitly at the top
-of Step 8 if you want the full canon flow:
-
-```bash
-export SHIPWRIGHT_RUN_ID="project-$(date +%Y%m%d-%H%M%S)"
-```
+**The run id:** the first line keeps a `SHIPWRIGHT_RUN_ID` the caller already set (a
+driven run exports the run's `runId`) and mints `project-<timestamp>` otherwise, so the C3
+marker and the `phase_history` entry always carry a real id. A driven run's phase gate
+accepts the id this phase recorded during its task (`docs/hooks-and-pipeline.md`).
 
 ## Print Summary
 

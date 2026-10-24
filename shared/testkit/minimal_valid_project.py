@@ -30,12 +30,18 @@ What each phase writes (the minimum its validator and canon checks accept):
     changelog  ``CHANGELOG.md`` with a released version, committed and tagged in git
     deploy     nothing of its own (the canon below is all its checks need)
 
-And for every phase the canon a skill finishes with: a ``phase_history`` entry for the
-run, an ADR naming the phase, a dashboard line. Canon C1's evidence is that entry's
-terminal ``outcome: completed`` (a fallback C1 accepts), NOT a ``phase_completed`` event:
-``record_event`` dedups ``phase_completed`` by ``(phase, splitId)``, so a phase-side event
-would swallow the loop's own end event, and the tests that pin the loop's tracked
-``phase_started``/``phase_completed`` pair would be measuring this fixture instead.
+And for every phase the canon a skill finishes with: a ``phase_history`` entry under a
+run id the phase minted itself (as the real skills do; the gate resolves it, see
+``orchestrator_pkg/gate_run_id.py``), an ADR naming the phase, a dashboard line. Canon C1's
+evidence is that entry's terminal ``outcome: completed`` (a fallback C1 accepts), NOT a
+``phase_completed`` event. That is a fixture choice over a real production property:
+``record_event`` dedups ``phase_completed`` by ``(phase, splitId)`` within a session, so
+when a real skill records its own end event first, the loop's end event for the same pair
+(the one carrying ``phaseTaskId``) is dropped — a known event loss in driven runs, pinned by
+``test_phase_gate_real_skill_canon.py``. The fixture skips the skill event so the tests that
+pin the loop's tracked ``phase_started``/``phase_completed`` pair measure the loop. C1's event
+lookup is not scoped per run or split either: any earlier ``phase_completed`` for the phase
+satisfies it.
 """
 from __future__ import annotations
 
@@ -71,17 +77,23 @@ _APPENDIX = Path(__file__).resolve().parents[1] / "templates" / "codex-agents-md
 
 def write_phase(
     project_root: Path, phase: str, split_id: Optional[str] = None, *,
-    splits: Sequence[str] = DEFAULT_SPLITS,
+    splits: Sequence[str] = DEFAULT_SPLITS, canon: bool = True,
 ) -> list[str]:
     """Write what ``phase`` (for ``split_id``) leaves on disk; return its artifact paths.
 
     ``splits`` is used by the project phase only (the splits it decomposes into); later
-    phases read them back from the configs on disk, as the real skills do.
+    phases read them back from the configs on disk, as the real skills do. ``canon=False``
+    skips what a skill's FINALIZATION block writes (dashboard line, ``phase_history``), so a
+    test can run that block's real commands instead (``test_phase_gate_real_skill_canon.py``);
+    the ADR, written earlier in a real skill, stays. ``deploy`` has no artifacts of its own;
+    any other unknown phase is a ``ValueError``.
     """
+    if phase not in _PHASES and phase != "deploy":
+        raise ValueError(f"no minimal artifacts for phase {phase!r}")
     root = Path(project_root)
     writer = _PHASES.get(phase)
     artifacts = writer(root, split_id, list(splits)) if writer else []
-    _finish_phase(root, phase, split_id)
+    _finish_phase(root, phase, split_id, canon=canon)
     return artifacts or ["shipwright_run_config.json"]
 
 
@@ -207,7 +219,7 @@ _PHASES = {"project": _project, "design": _design, "plan": _plan, "build": _buil
 
 # --- the canon every phase finishes with ---------------------------------------------------
 
-def _finish_phase(root: Path, phase: str, split_id: Optional[str]) -> None:
+def _finish_phase(root: Path, phase: str, split_id: Optional[str], *, canon: bool) -> None:
     where = f" for {split_id}" if split_id else ""
     section = f"**Section:** {SECTION}\n\n" if phase == "build" else ""
     log = root / ".shipwright" / "agent_docs" / "decision_log.md"
@@ -215,16 +227,23 @@ def _finish_phase(root: Path, phase: str, split_id: Optional[str]) -> None:
     number = text.count("\n### ADR-") + 1
     _write(log, text + f"\n### ADR-{number:03d}: {phase} decisions{where}\n\n{section}"
            "**Status:** Accepted\n")
+    if not canon:   # the rest is what a skill's finalization block writes
+        return
     dashboard = root / ".shipwright" / "agent_docs" / "build_dashboard.md"
     text = dashboard.read_text(encoding="utf-8") if dashboard.exists() else "# Dashboard\n\n"
     _write(dashboard, text + f"- {phase}{where}: done\n")
-    entry: dict[str, Any] = {"at": _now(), "outcome": "completed"}
+    # The run id a SKILL mints for itself (``design-20261025-101500``), never the run's
+    # ``runId``: the gate must accept the id the phase recorded during its task.
+    now = datetime.now(timezone.utc)
+    run_id = f"{phase}-{now.strftime('%Y%m%d-%H%M%S%f')}" + (f"-{split_id}" if split_id else "")
+    entry: dict[str, Any] = {"run_id": run_id, "at": now.isoformat(), "outcome": "completed"}
+    if split_id:
+        entry["split"] = split_id
     if phase == "build":
         entry["sections"] = [{"id": SECTION}]
     config_path = root / "shipwright_run_config.json"
     config = _read_json(config_path)
-    config.setdefault("phase_history", {}).setdefault(phase, []).append(
-        {"run_id": config.get("runId"), **entry})
+    config.setdefault("phase_history", {}).setdefault(phase, []).append(entry)
     _write_json(config_path, config)
 
 

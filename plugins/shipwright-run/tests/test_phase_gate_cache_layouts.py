@@ -47,25 +47,33 @@ from pathlib import Path
 lib, testkit, project = sys.argv[1:4]
 sys.path.insert(0, lib)
 sys.path.insert(0, testkit)
-import importlib.util
+import importlib, importlib.util
+from datetime import datetime, timezone
 import minimal_valid_project as mvp
 from orchestrator import create_config
 from orchestrator_pkg import phase_gate
 root = Path(project)
 cfg = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", root,
                     mode="single_session")
+task = {"phase": "project", "splitId": None,
+        "startedAt": datetime.now(timezone.utc).isoformat()}   # claimed, then the phase ran
 mvp.write_phase(root, "project")
-task = {"phase": "project", "splitId": None}
 verdict = phase_gate.evaluate_gate(root, task, json.loads(
     (root / "shipwright_run_config.json").read_text(encoding="utf-8")))
 spec = importlib.util.find_spec("tools.verifiers")
+modules = {}
+if spec:  # every module a driven phase's canon run imports, not only project's
+    for name in ("common", "project_checks", "design_checks", "plan_checks", "build_checks",
+                 "test_checks", "changelog_checks", "deploy_checks"):
+        modules[name] = importlib.import_module("tools.verifiers." + name).__file__
 print(json.dumps({"verdict": verdict, "enforced": phase_gate.ENFORCE_PHASE_GATE_DEFAULT,
-                  "verifiers": spec.origin if spec else None}))
+                  "verifiers": spec.origin if spec else None, "modules": modules}))
 """
 
 
 def _copy_plugin(dest: Path) -> Path:
-    shutil.copytree(_PLUGIN / "scripts", dest / "scripts", ignore=_SKIP)
+    # dirs_exist_ok: the cache fixture is module-scoped, so a re-run of a case reuses it
+    shutil.copytree(_PLUGIN / "scripts", dest / "scripts", ignore=_SKIP, dirs_exist_ok=True)
     return dest / "scripts" / "lib"
 
 
@@ -83,7 +91,7 @@ def _layout(cache: Path, name: str) -> tuple[Path, Path]:
         return _PLUGIN / "scripts" / "lib", _REPO / "shared"
     if name == "codex":  # build_codex_plugin.py: <bundle>/origin/<plugin>/ + <bundle>/shared/
         bundle = cache.parent / "codex-cache" / "shipwright" / "shipwright" / "9.9.9"
-        shutil.copytree(cache / "shared", bundle / "shared")
+        shutil.copytree(cache / "shared", bundle / "shared", dirs_exist_ok=True)
         return _copy_plugin(bundle / "origin" / "shipwright-run"), bundle / "shared"
     plugin = cache / "shipwright-run" / "9.9.9" if name == "installed" else (
         cache / "plugins" / "shipwright-run")
@@ -111,8 +119,11 @@ def test_the_enforced_gate_runs_its_canon_checks_in_every_layout(cache, tmp_path
     assert verdict["ask"] == [], verdict["ask"]          # no canon_degraded promoted to ask
     assert not any(i.get("kind") == "canon_degraded" for i in verdict["inform"])
     assert any(i["message"].startswith("[canon]") for i in verdict["inform"])  # canon ran
-    origin = Path(out["verifiers"]).resolve()
-    assert origin.is_relative_to((shared / "scripts" / "tools" / "verifiers").resolve())
+    verifiers = (shared / "scripts" / "tools" / "verifiers").resolve()
+    assert Path(out["verifiers"]).resolve().is_relative_to(verifiers)
+    assert len(out["modules"]) == 8
+    for name, origin in out["modules"].items():   # all seven phases' checks + common
+        assert Path(origin).resolve().is_relative_to(verifiers), (name, origin)
 
 
 def test_a_layout_without_the_verifiers_stops_the_gate_loudly(cache, tmp_path):

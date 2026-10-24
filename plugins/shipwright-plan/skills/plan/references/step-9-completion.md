@@ -85,8 +85,9 @@ and `phase_history` entry share one id. Missing env var → safe degrade
 (stderr warning, no canon marker, Stop hook regenerates normally).
 
 ```bash
-# If the orchestrator didn't already set it, derive one here:
-export SHIPWRIGHT_RUN_ID="plan-$(date +%Y%m%d-%H%M%S)-{split_name}"
+# If the orchestrator didn't already set it, derive one here (a driven run's id is kept):
+: "${SHIPWRIGHT_RUN_ID:=plan-$(date +%Y%m%d-%H%M%S)-{split_name}}"
+export SHIPWRIGHT_RUN_ID
 
 # Update plan config to complete
 uv run "{plugin_root}/scripts/checks/write-plan-config.py" \
