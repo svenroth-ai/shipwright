@@ -246,7 +246,7 @@ perform; F6-verify checks all three ran.
   everywhere else, and the collision hid F2's absence. Detect via `detect_frontend_changes.py
   --since "$(git -C "{project_root}" merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
   (`profile.dev_server` → `shipwright_build_config.json#dev_url` → `package.json` autodetect →
-  escalate), run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. JS errors:
+  escalate), run `dev_server.py start` (exit 2/3 = profile problem: stop, show the message) → `playwright_setup.py` → `browser_verify.py`. JS errors:
   inline retry (no browser-fixer spawn), max 3 (screenshot + `console_errors` → fix → re-run); still
   failing → `result.json` `status:"failed"` + DO NOT commit.
 - **F1:** Drift check (`artifact_sync.py`).

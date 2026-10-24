@@ -9,7 +9,7 @@ After spec generation, shipwright-project generates CLAUDE.md and .shipwright/ag
 ## Profile Detection
 
 1. Scan interview transcript and requirements for technology mentions
-2. Match against available profiles in `{plugin_root}/../../shared/profiles/`
+2. Match against available profiles (`uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}" --json`)
 3. Load the matching profile JSON
 
 **Detection heuristics:**

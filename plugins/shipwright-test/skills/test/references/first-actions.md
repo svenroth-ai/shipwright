@@ -41,9 +41,9 @@ Read `shipwright_project_config.json` from project root:
 }
 ```
 
-Load profile from `{plugin_root}/../../shared/profiles/{profile}.json`.
+The profile is looked up by NAME (project, then user, then bundled) by the runners via `--profile {profile}`; to read it: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
 
-If no config: detect from package.json / pyproject.toml; the detected name must be a bundled profile name (see `shared/profiles`) or `generic` when unsure, never an invented name.
+If no config: detect from package.json / pyproject.toml; the detected name must be a known profile name (`uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}"`) or `generic` when unsure, never an invented name.
 
 ## B2. Detect Invocation Mode
 

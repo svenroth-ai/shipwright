@@ -40,6 +40,8 @@ uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
 uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 ```
 
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
+
 If profile has no `dev_server` config: check `shipwright_build_config.json` for `dev_url` and start on that port. Then fall through to autodetect before escalating.
 
 3. **Run browser verify:**

@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-s4-skill-prose",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:44:49.489512+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "path-only` can return an empty value for built-in defaults. The plan explicitly gates preview on the exit code, but leaves other read-only sites ambiguous: failed resolution could be treated as defaults, or successful empty output could be used as a filename.",
+          "suggestion": "At every resolver call site, check the exit status before consuming stdout. Handle successful empty output as built-in defaults, and stop on profile errors without retrying or falling back.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The file inventory omits iterate, despite the S2 hand-off explicitly requiring changes in iterate’s `references/design-and-testing.md`. The shortened hand-off sentence also omits the required exit codes, `kind`, and “do not fix/retry” instruction.",
+          "suggestion": "Include iterate explicitly and track every listed hand-off location. Preserve the complete rule: exit 2/3 or a profile-problem `kind` means stop, show the message, and do not fix or retry.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The guard’s coverage is underspecified. The scope requires Markdown and `hooks.json`, while the plan does not explicitly establish JSON scanning or how the deferred `docs/hooks-and-pipeline.md` findings remain compatible with zero findings outside the allowlist. A passing test could therefore miss required surfaces.",
+          "suggestion": "Define the scanned files and narrowly scoped allowlist entries, including the S5 deferral. Plant prohibited paths in both Markdown and `hooks.json`, verify detection, and ensure stale allowlist entries fail.  The resolver-based approach is sound and appropriately reuses existing functionality. Clarify error handling and close the coverage gaps before implementation; no additional security concern is evident from this plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T15:44:49.669231+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: approach / Severity: medium** — The guard test enforces \"zero findings outside allowlist\" on hand-built paths, but the mini-plan doesn't state how the guard stays green over time: if someone writes new prose with a hard-coded `shared/profiles/{profile}.json` path, is the guard wired into CI so it actually catches it? A guard test that isn't in the default test run decays. Confirm the test is registered in the suite the project's test command runs.\n\n- **Category: edge-case / Severity: medium** — \"Preview becomes a gate on the exit code\" is a behavioral change, not just prose. If `resolve_profile.py` can exit 2/3 for transient reasons (e.g., missing file mid-edit, ambiguous name), the preview now fails where it previously rendered with the bundled path. The S2 rule says \"stop and show, do not retry\" — make sure the preview surfaces the resolver's message rather than a generic non-zero exit, and that existing preview flows that never used custom profiles are unchanged (exit 0 / empty `--path-only`).\n\n- **Category: edge-case / Severity: low** — The snippet-extraction test (`test_stack_profile_prose_commands.py`) extracts resolver commands from prose and runs them against a tmp fixture. Prose snippets often contain placeholders (`{profile}`, `{project}`) with conventions that drift; the extraction/fill logic is itself prose-coupled and will break on formatting changes. Define the extraction narrowly (exact command format) and fail loudly on non-matching snippets rather than silently skipping them — otherwise the \"every snippet runs\" guarantee quietly erodes.\n\n- **Category: risk / Severity: low** — Line caps: preview SKILL.md grows 9 lines \"not baselined.\" If net-zero caps are a hard acceptance constraint, either get the baseline adjusted for that file in this change or trim elsewhere in the same file. Leaving it unbaselined invites a cap failure at review time.\n\n- **Category: dependency / Severity: low** — The hand-off list includ […truncated]\n\n[openai] 1. **Category: edge-case | Severity: medium**  \n   **Finding:** `--path-only` can return an empty value for built-in defaults. The plan explicitly gates preview on the exit code, but leaves other read-only sites ambiguous: failed resolution could be treated as defaults, or successful empty output could be used as a filename.  \n   **Suggestion:** At every resolver call site, check the exit status before consuming stdout. Handle successful empty output as built-in defaults, and stop on profile errors without retrying or falling back.\n\n2. **Category: dependency | Severity: medium**  \n   **Finding:** The file inventory omits iterate, despite the S2 hand-off explicitly requiring changes in iterate’s `references/design-and-testing.md`. The shortened hand-off sentence also omits the required exit codes, `kind`, and “do not fix/retry” instruction.  \n   **Suggestion:** Include iterate explicitly and track every listed hand-off location. Preserve the complete rule: exit 2/3 or a profile-problem `kind` means stop, show the message, and do not fix or retry.\n\n3. **Category: approach | Severity: medium**  \n   **Finding:** The guard’s coverage is underspecified. The scope requires Markdown and `hooks.json`, while the plan does not explicitly establish JSON scanning or how the deferred `docs/hooks-and-pipeline.md` findings remain compatible with zero findings outside the allowlist. A passing test could therefore miss required surfaces.  \n   **Suggestion:** Define the scanned files and narrowly scoped allowlist entries, including the S5 deferral. Plant prohibited paths in both Markdown and `hooks.json`, verify detection, and ensure stale allowlist entries fail.\n\nThe resolver-based approach is sound and appropriately reuses existing functionality. Clarify error handling and close the coverage gaps before implementation; no additional security concern is evident from this plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": 36,
+          "finding": "triage_inbox.md is not in the allowlist, so a committed render containing the card launch payload would turn the forward test red.",
+          "suggestion": "Accepted; S5 decides whether to amend BRIEF S4 item 3 for generated renders.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": 48,
+          "finding": "git ls-files without -z C-quotes non-ASCII paths and would false-red.",
+          "suggestion": "Use -z. Routed to S5.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T17:48:01.738184+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: Reading the index keeps a local green predicting a CI green — Unstaged edits, untracked files and intent-to-add blobs are invisible to the index read, and test_stack_profile_prose_commands.py still reads the working tree.",
+          "suggestion": "Accepted with rebuttal (CI is the merge gate and reads the commit); S5 decides index vs working tree and documents it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: Any index state is scanned or fails meaningfully — During an unresolved merge, ls-files lists a path per conflict stage and cat-file reports missing.",
+          "suggestion": "Accepted: loud and correct; routed to S5.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: ls-files names can be passed straight to cat-file — Without -z, non-ASCII or quoted paths are C-quoted and would false-red; none exist today.",
+          "suggestion": "Accepted: use -z in S5.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T17:48:31.657314+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_stack_profile_prose_commands.py:53-62` (`_fill`)",
+          "line": null,
+          "finding": "The prose-stripping regexes don't handle the actual forms found in the PROSE files, so `test_snippet_runs_against_fixture` will fail (or the extracted command is malformed). Two concrete cases in the diff's own prose: - `first-actions.md` ends the command with ``--path-only\"``. — a stray closing quote plus period. The quote-removal regex `r'\"([^\"])\"'` only strips paired quotes, so the token survives as `--path-only\".`, which argparse rejects. - `section-builder.md` line ~162 writes the trailing rule as `--path-only; empty = built-in defaults; exit 2/3: stop, show message).` — there is no `(` before `empty`, so neither `\\)\\s\\(` nor `\\s\\((?:empty|exit)` matches. The command keeps `--path-only;` and the prose words as argv, and the `returncode == 0` assertion fails.",
+          "suggestion": "Strip trailing prose before tokenizing — e.g. cut at the first `\"` or `;` that terminates the `--path-only` token (or truncate at the last known flag), then drop any residual non-flag/`--name`-value tokens, and assert the final argv ends at a known flag.  2. Category: regression | Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-test/skills/test/references/step-3.8-performance-budget.md:23-27` and the three `step-1` / `SKILL.md` test-runner invocations",
+          "line": null,
+          "finding": "The prose now calls `performance_check.py --profile {profile} --project-root {project_root}` and `test_runner.py` without `--profile-path`, but the corresponding script changes (`--project-root` flag support in `performance_check.py`; name-based resolution in `test_runner.py`) are not in this diff. If those scripts weren't updated in a prior sub-iterate, every documented test-runner command in these files now fails at runtime.",
+          "suggestion": "Confirm `test_runner.py` resolves profiles by name and `performance_check.py` accepts `--project-root`; if not, those script changes must land before this prose does.  3. Category: test | Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_stack_profile_prose_commands.py:105-108` (`test_dev_server_sites_carry_the_stop_on_profile_error_sentence`)",
+          "line": null,
+          "finding": "The assertion `stops >= min(starts, 3) - (1 if \"design-and-testing\" in rel else 0)` is opaque and under-constrains: it requires only 2 stops for a file with 3+ `dev_server.py start` sites (and only 1 for design-and-testing, which has 3 sites). A file where the rule was added at only 2 of 3 sites passes. Also, `min(starts, 3)` means a file with 10 start sites still only needs 2 stop sentences.",
+          "suggestion": "Assert a stop sentence follows each `dev_server.py start` block (e.g. check the rule appears within N lines after each match), or at minimum require `stops >= min(starts, 3)` without the design-and-testing discount unless the discount is justified per-site.  4. Category: edge-case | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_stack_profile_prose_commands.py:59-66` (`_fill`)",
+          "line": null,
+          "finding": "After quote removal, `.split()` breaks any fixture path containing spaces. `tmp_path` usually has none, but the resolver is also invoked with `--project-root \"{project_root}\"` where real project roots may contain spaces — the test utility encodes the wrong splitting behavior.",
+          "suggestion": "Use `shlex.split` on the quote-stripped string, or better, split before removing quotes.  5. Category: spec | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_stack_profile_prose_guard.py` (`_BUNDLED` regex)",
+          "line": null,
+          "finding": "The guard only scans tracked markdown/hooks.json (`git ls-files`). New files in the working tree (uncommitted prose, which is exactly what a reviewer would plant) are never scanned, and `.md` in untracked directories are invisible to the guard. The AC \"zero guard findings\" is therefore only enforced at commit time, not in a dirty tree.",
+          "suggestion": "Acceptable if the guard is meant to gate commits, but consider scanning working-tree files too (`git ls-files --others --exclude-standard` merged in).  The spec's hand-off list (all dev_server call sites: iterate ×3, browser-verify, section-builder, step-3-playwright-e2e, test-runner, adopt step-b5 ×3) is fully implemented, and the red-on-planted/green-after guard test exists. The blocking issue is finding #1 — the flagship snippet-execution test is demonstrably broken against two of the seven PROSE files it targets.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/tests/test_stack_profile_prose_commands.py",
+          "line": 56,
+          "finding": "_fill()` removes quotes and then splits on whitespace, breaking valid commands when the checkout or fixture path contains spaces. For example, `\"C:\\Users\\Jane Doe\\...\\resolve_profile.py\"` becomes multiple arguments, so these tests fail before exercising the resolver.",
+          "suggestion": "Tokenize while preserving quoted arguments, then substitute placeholders within each argument.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": 28,
+          "finding": "The guard misses Windows paths serialized in `hooks.json`. JSON represents a backslash as `\\\\`, but this regex accepts only one separator between `shared` and `profiles`; a hand-built bundled path can therefore pass the required guard.",
+          "suggestion": "Parse hooks JSON and scan its decoded string values, or explicitly handle escaped separators. Add a planted JSON case containing a Windows path.  Overall assessment: ship-with-fixes. The prose changes address the requested migration and error instructions, but the validation needs these fixes to handle paths reliably.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T15:45:49.970625+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: bug | Severity: high**\n- File: `shared/tests/test_stack_profile_prose_commands.py:53-62` (`_fill`)\n- Finding: The prose-stripping regexes don't handle the actual forms found in the PROSE files, so `test_snippet_runs_against_fixture` will fail (or the extracted command is malformed). Two concrete cases in the diff's own prose:\n  - `first-actions.md` ends the command with ``--path-only\"``. — a stray closing quote plus period. The quote-removal regex `r'\"([^\"]*)\"'` only strips *paired* quotes, so the token survives as `--path-only\".`, which argparse rejects.\n  - `section-builder.md` line ~162 writes the trailing rule as `--path-only; empty = built-in defaults; exit 2/3: stop, show message).` — there is no `(` before `empty`, so neither `\\)\\s*\\(` nor `\\s*\\((?:empty|exit)` matches. The command keeps `--path-only;` and the prose words as argv, and the `returncode == 0` assertion fails.\n- Suggestion: Strip trailing prose before tokenizing — e.g. cut at the first `\"` or `;` that terminates the `--path-only` token (or truncate at the last known flag), then drop any residual non-flag/`--name`-value tokens, and assert the final argv ends at a known flag.\n\n**2. Category: regression | Severity: medium**\n- File: `plugins/shipwright-test/skills/test/references/step-3.8-performance-budget.md:23-27` and the three `step-1*` / `SKILL.md` test-runner invocations\n- Finding: The prose now calls `performance_check.py --profile {profile} --project-root {project_root}` and `test_runner.py` without `--profile-path`, but the corresponding script changes (`--project-root` flag support in `performance_check.py`; name-based resolution in `test_runner.py`) are not in this diff. If those scripts weren't updated in a prior sub-iterate, every documented test-runner command in these files now fails at runtime.\n- Suggestion: Confirm `test_runner.py` resolves profiles by name and `performance_check.py` accepts `--project-root`; if not, those script changes must  […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/tests/test_stack_profile_prose_commands.py:56\n- Finding: `_fill()` removes quotes and then splits on whitespace, breaking valid commands when the checkout or fixture path contains spaces. For example, `\"C:\\Users\\Jane Doe\\...\\resolve_profile.py\"` becomes multiple arguments, so these tests fail before exercising the resolver.\n- Suggestion: Tokenize while preserving quoted arguments, then substitute placeholders within each argument.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_stack_profile_prose_guard.py:28\n- Finding: The guard misses Windows paths serialized in `hooks.json`. JSON represents a backslash as `\\\\`, but this regex accepts only one separator between `shared` and `profiles`; a hand-built bundled path can therefore pass the required guard.\n- Suggestion: Parse hooks JSON and scan its decoded string values, or explicitly handle escaped separators. Add a planted JSON case containing a Windows path.\n\nOverall assessment: ship-with-fixes. The prose changes address the requested migration and error instructions, but the validation needs these fixes to handle paths reliably.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T17:48:01.615513+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:44:49.822837+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:44:49.992018+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

@@ -35,6 +35,8 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --profile <matched>
 ```
 
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
+
 The detector's `multi_service` signal is informational here; the
 profile's intent wins.
 
@@ -70,6 +72,8 @@ whatever profile matched (`generic` if nothing else):
 uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --profile <matched-or-generic>
 ```
+
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
 
 After the dev server is up, run the crawl + stop sequence common to
 all branches.
@@ -119,6 +123,8 @@ subprocess env BEFORE `dev_server.py start`:
 PORT=3848 VITE_PORT=5174 uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --profile <matched>
 ```
+
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
 
 If the dev-server fails to become healthy within its profile's
 `ready_timeout_seconds`, OR the crawl produces zero routes, **skip**

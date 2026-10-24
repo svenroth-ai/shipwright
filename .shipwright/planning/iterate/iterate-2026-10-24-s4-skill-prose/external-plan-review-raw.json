@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category: edge-case | Severity: medium**  \n   **Finding:** `--path-only` can return an empty value for built-in defaults. The plan explicitly gates preview on the exit code, but leaves other read-only sites ambiguous: failed resolution could be treated as defaults, or successful empty output could be used as a filename.  \n   **Suggestion:** At every resolver call site, check the exit status before consuming stdout. Handle successful empty output as built-in defaults, and stop on profile errors without retrying or falling back.\n\n2. **Category: dependency | Severity: medium**  \n   **Finding:** The file inventory omits iterate, despite the S2 hand-off explicitly requiring changes in iterate\u2019s `references/design-and-testing.md`. The shortened hand-off sentence also omits the required exit codes, `kind`, and \u201cdo not fix/retry\u201d instruction.  \n   **Suggestion:** Include iterate explicitly and track every listed hand-off location. Preserve the complete rule: exit 2/3 or a profile-problem `kind` means stop, show the message, and do not fix or retry.\n\n3. **Category: approach | Severity: medium**  \n   **Finding:** The guard\u2019s coverage is underspecified. The scope requires Markdown and `hooks.json`, while the plan does not explicitly establish JSON scanning or how the deferred `docs/hooks-and-pipeline.md` findings remain compatible with zero findings outside the allowlist. A passing test could therefore miss required surfaces.  \n   **Suggestion:** Define the scanned files and narrowly scoped allowlist entries, including the S5 deferral. Plant prohibited paths in both Markdown and `hooks.json`, verify detection, and ensure stale allowlist entries fail.\n\nThe resolver-based approach is sound and appropriately reuses existing functionality. Clarify error handling and close the coverage gaps before implementation; no additional security concern is evident from this plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: approach / Severity: medium** \u2014 The guard test enforces \"zero findings outside allowlist\" on hand-built paths, but the mini-plan doesn't state how the guard stays green over time: if someone writes new prose with a hard-coded `shared/profiles/{profile}.json` path, is the guard wired into CI so it actually catches it? A guard test that isn't in the default test run decays. Confirm the test is registered in the suite the project's test command runs.\n\n- **Category: edge-case / Severity: medium** \u2014 \"Preview becomes a gate on the exit code\" is a behavioral change, not just prose. If `resolve_profile.py` can exit 2/3 for transient reasons (e.g., missing file mid-edit, ambiguous name), the preview now fails where it previously rendered with the bundled path. The S2 rule says \"stop and show, do not retry\" \u2014 make sure the preview surfaces the resolver's message rather than a generic non-zero exit, and that existing preview flows that never used custom profiles are unchanged (exit 0 / empty `--path-only`).\n\n- **Category: edge-case / Severity: low** \u2014 The snippet-extraction test (`test_stack_profile_prose_commands.py`) extracts resolver commands from prose and runs them against a tmp fixture. Prose snippets often contain placeholders (`{profile}`, `{project}`) with conventions that drift; the extraction/fill logic is itself prose-coupled and will break on formatting changes. Define the extraction narrowly (exact command format) and fail loudly on non-matching snippets rather than silently skipping them \u2014 otherwise the \"every snippet runs\" guarantee quietly erodes.\n\n- **Category: risk / Severity: low** \u2014 Line caps: preview SKILL.md grows 9 lines \"not baselined.\" If net-zero caps are a hard acceptance constraint, either get the baseline adjusted for that file in this change or trim elsewhere in the same file. Leaving it unbaselined invites a cap failure at review time.\n\n- **Category: dependency / Severity: low** \u2014 The hand-off list includes six call-site documents across test/build/adopt/iterate sections. The mini-plan mentions adding the sentence but not verifying each listed site; with ~10 anchor points, one will likely be missed. Suggest the plan enumerate per-file edits as checkboxes so the S2 hand-off is verifiably complete.\n\n- **Category: security / Severity: low** \u2014 Passing profile NAME + project root to loaders means the loader now resolves a name against a directory. Ensure the resolver rejects names that traverse (`../`-style names or absolute paths passed as \"names\"), especially in the test runner where the string may come from prose/docs. One sanitization check or an assertion that the resolved profile file sits under the profiles directory suffices.\n\n- **Category: approach / Severity: low** \u2014 Rejected alternative assessment is sound: name-based remapping wouldn't cover custom profiles, and read-only sites would silently show stale info. No over-production concerns \u2014 the two tests map directly to the acceptance criteria.\n\n**Overall assessment:** Sound approach with clear rationale and a correct rejection of the mapping-based alternative; the main things to tighten are the exit-code gate's failure UX, guaranteeing the snippet-extraction test can't silently skip, and completing the six-site hand-off verifiably.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s4-skill-prose",
+    "at": "2026-10-24T15:42:27.048362+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

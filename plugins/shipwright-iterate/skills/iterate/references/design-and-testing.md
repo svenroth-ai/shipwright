@@ -148,6 +148,7 @@ UI changes at any complexity level.
    ```bash
    uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
    ```
+   If `dev_server.py start` exits 2/3 (or prints `kind`) it is a profile problem: stop and show the message, do not retry.
 2. Run health check:
    ```bash
    uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
@@ -302,6 +303,8 @@ npx playwright test {touched_or_authored_specs}
 npx playwright test
 ```
 
+If `dev_server.py start` exits 2/3 (or prints `kind`) it is a profile problem: stop and show the message, do not retry.
+
 **CLI / Skill (skill or CLI iterates without UI):**
 
 ```bash
@@ -320,6 +323,8 @@ uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {pr
 curl -sf -o response.json "http://localhost:{port}/{route}"
 # Assert response.json shape against AC (jq, Python, or schema validator)
 ```
+
+If `dev_server.py start` exits 2/3 (or prints `kind`) it is a profile problem: stop and show the message, do not retry.
 
 **None (surfaceless iterates):**
 

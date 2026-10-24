@@ -64,12 +64,21 @@ Parse the JSON output. If `"running": true`, skip to Step 5.
 
 Start the dev server using the project's own stack profile. Read `profile` from
 `${SHIPWRIGHT_PROJECT_ROOT}/shipwright_run_config.json` (do not assume a stack). The name
-must match `^[a-z0-9][a-z0-9-]*$` and exist as `shared/profiles/{profile}.json`; otherwise stop:
+must match `^[a-z0-9][a-z0-9-]*$`. Gate on the resolver (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry):
+
+```bash
+uv run --no-project "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_profile.py" \
+  resolve --project-root "${SHIPWRIGHT_PROJECT_ROOT}" --name "{profile}" --path-only
+```
+
+Then start it:
 
 ```bash
 uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" \
   start --profile "{profile}" --cwd ${SHIPWRIGHT_PROJECT_ROOT}
 ```
+
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
 
 Parse the JSON output:
 - `"no_dev_server": true` → the profile declares no web dev server (a library,
@@ -107,7 +116,7 @@ The dev server also stops automatically when the Claude Code session ends (state
 
 ## Profile Extensibility
 
-Preview uses the `dev_server` configuration from the stack profile JSON (`shared/profiles/{profile}.json`). When adding a new stack profile (e.g., SQLite + Flask, or Postgres + Django), define the `dev_server` section:
+Preview uses the `dev_server` configuration from the stack profile JSON (project `.shipwright/profiles/`, user `~/.shipwright/profiles/`, or bundled). When adding a new stack profile (e.g., SQLite + Flask, or Postgres + Django), define the `dev_server` section:
 
 ```json
 {

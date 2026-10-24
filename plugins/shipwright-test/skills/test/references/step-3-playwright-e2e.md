@@ -16,6 +16,8 @@ uv run "{plugin_root}/../../shared/scripts/playwright_setup.py" --cwd {project_r
 uv run "{plugin_root}/../../shared/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 ```
 
+A profile problem (exit 2/3, `kind` in the output) is not fixable here: stop and show the message; do not retry.
+
 3. **Run E2E tests:**
 ```bash
 uv run "{plugin_root}/scripts/lib/playwright_runner.py" --cwd {project_root}
