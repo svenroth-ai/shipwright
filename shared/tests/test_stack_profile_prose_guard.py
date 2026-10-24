@@ -11,6 +11,7 @@ Tagged to FR-01.06; see test_profile_resolver.py for the FR note.
 
 from __future__ import annotations
 
+import functools
 import re
 import subprocess
 from pathlib import Path
@@ -38,9 +39,6 @@ ALLOWLIST: dict[str, str] = {
     ".shipwright/planning/": "historical specs, briefs and ADR records",
     ".shipwright/agent_docs/conventions.md": "convention records describing the resolver itself",
     ".shipwright/agent_docs/decision_log.md": "ADR history",
-    # Re-rendered from triage.jsonl: the reverse test fails when trg-647df2d8 closes,
-    # and whoever closes it must delete this entry in the same diff.
-    ".shipwright/agent_docs/triage_inbox.md": "triage card text describing this campaign",
     "CHANGELOG": "history",
 }
 
@@ -62,11 +60,37 @@ def scan_text(text: str) -> list[tuple[int, str]]:
             if _BUNDLED.search(line)]
 
 
+@functools.lru_cache(maxsize=1)
+def _index_blobs() -> dict[str, bytes]:
+    """Every tracked guard file as the next commit carries it (the index).
+
+    Generated renders such as triage_inbox.md are re-written locally between
+    commits; reading the index keeps this guard identical on a developer tree
+    and on a clean CI checkout. One ``cat-file --batch`` process, not one per file.
+    """
+    names = _tracked()
+    res = subprocess.run(
+        ["git", "-C", str(REPO), "cat-file", "--batch"],
+        input="".join(f":{n}\n" for n in names).encode("utf-8"),
+        capture_output=True, check=True,
+    )
+    out, blobs, pos = res.stdout, {}, 0
+    for name in names:
+        eol = out.index(b"\n", pos)
+        header = out[pos:eol].split()
+        if len(header) != 3 or header[1] != b"blob":  # "<spec> missing" or a non-blob: a failure, never a skip
+            raise AssertionError(f"guard cannot read tracked file {name}: {out[pos:eol].decode('utf-8', 'replace')}")
+        size = int(header[2])
+        blobs[name] = out[eol + 1:eol + 1 + size]
+        pos = eol + 1 + size + 1
+    return blobs
+
+
 def _read(rel: str) -> str:
     try:
-        return (REPO / rel).read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:  # an unreadable tracked file is a failure, never a skip
-        raise AssertionError(f"guard cannot read tracked file {rel}: {exc}") from exc
+        return _index_blobs()[rel].decode("utf-8")
+    except (KeyError, UnicodeDecodeError) as exc:
+        raise AssertionError(f"guard cannot read tracked file {rel}: {exc!r}") from exc
 
 
 def findings(files: list[str]) -> list[str]:
