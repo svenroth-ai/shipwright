@@ -96,7 +96,7 @@ def test_verify_hash_requires_a_keyword_only_external_hash(tmp_path):
     with pytest.raises(TypeError):
         bp.verify_hash(root)  # type: ignore[call-arg]
     with pytest.raises(TypeError):
-        bp.verify_hash(root, "0" * 64)  # type: ignore[misc]
+        bp.verify_hash(*(root, "0" * 64))  # positional hash: must be keyword-only
 
 
 @pytest.mark.covers("FR-01.01")
