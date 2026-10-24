@@ -174,75 +174,53 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T13:38:23.174484+00:00",
+      "completed_at": "2026-10-24T15:06:52.741349+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "3c1b0d0303638ec479be42c76d5354febc5f7190"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "high",
-          "category": "hidden coupling",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: everything a phase would read is covered by the hash — Excluded files (._*, __MACOSX, .git, .gitkeep, junk) are unhashed and unreported. ADDRESSED: validate_layout reports excluded_content.",
-          "suggestion": "report excluded entries",
-          "source": "doubt-reviewer"
-        },
-        {
           "severity": "medium",
-          "category": "boundary",
-          "file": null,
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/brief_package.py",
           "line": null,
-          "finding": "Claim under doubt: canonical JSON hash equals what consumers read — Duplicate JSON keys let raw autonomy differ from the hashed value. ADDRESSED: loads_strict refuses them.",
-          "suggestion": "strict loader",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "cross-platform",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: hash identical for LF and CRLF — Text heuristic diverged from git. ADDRESSED: NUL in first 8000 bytes.",
-          "suggestion": "match git",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "boundary",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: validate_layout never raises — RecursionError and lone surrogates escaped or were accepted then crashed. ADDRESSED: guarded hashing, unhashable_package issue.",
-          "suggestion": "hash inside guarded block",
+          "finding": "Docs describe the snapshot step as verify-then-copy",
+          "suggestion": "Copy first, then verify the copy against an externally held hash. ADDRESSED: docstrings rewritten in b7b21fc8 (docs-only).",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "trust anchor",
-          "file": null,
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_package_walk.py",
           "line": null,
-          "finding": "Claim under doubt: brief_dir validated; hash anchored — verify_hash(expected=) added; brief_dir tie and approved_* bounds left to B2.",
-          "suggestion": "expected parameter",
+          "finding": "evidence/ is never read by a phase",
+          "suggestion": "State that this holds only because the snapshot omits evidence/ (B2/U3 own it). ADDRESSED in docs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_package_walk.py",
+          "line": null,
+          "finding": "Every visible name is hashed or reported",
+          "suggestion": "Document that empty directories are neither hashed nor reported. ADDRESSED in docs.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T13:44:00.363526+00:00",
+      "completed_at": "2026-10-24T15:06:52.885901+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "d6fed98872cfff4296f6fd3bfcc9aa3e766b77a9"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -330,14 +308,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T13:33:17.329091+00:00",
+      "completed_at": "2026-10-24T15:06:52.622999+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "3c1b0d0303638ec479be42c76d5354febc5f7190"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
