@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category:** risk | **Severity:** high\n**Finding:** `generate_adoption_artifacts` must write *nothing* on resolution failure, but step 4 says \"resolve before any write\" while also reusing the resolved name for CI/CodeQL scaffolds. If any scaffold step can itself fail mid-way (template miss is now a `message`, not an error \u2014 but other I/O can fail), partial artifacts may remain. The mini-plan doesn't state whether existing files are overwritten in place or written atomically.\n**Suggestion:** State explicitly: compute the full effective profile up front, and either write to temp then rename, or document that the resolution step is the only failure point before writes begin (and that scaffold misses degrade to messages, not aborts).\n\n**Category:** edge-case | **Severity:** medium\n**Finding:** `SNAPSHOT_SCHEMA_VERSION` bump 1.0 \u2192 1.1 with a *new* frozen fixture implies old 1.0 fixtures still exist. Nothing says whether readers of snapshots (analyzers, tests, any persistence) accept both 1.0 and 1.1, or whether 1.0 fixtures are migrated/deleted. Consumers reading `profile.source` on a 1.0 snapshot would KeyError.\n**Suggestion:** Specify reader policy: readers must accept minor versions \u2264 current, and old fixtures either updated or kept with consumers defaulting `source`/`warnings` to safe values.\n\n**Category:** edge-case | **Severity:** medium\n**Finding:** `match_profile` D1 rule: \"first dir owns a name even if its file is invalid.\" If the first dir has an invalid `python.yaml` and a later dir has a *valid* `python.yaml`, the later valid one is skipped \u2014 the whole profile falls through to `generic` with only a warning. That's the stated D1 intent, but it means a typo in a user profile silently degrades users to generic in CI contexts.\n**Suggestion:** Ensure the warning is surfaced loudly (non-empty `warnings` is checked in tests; consider whether `write_run_config` should fail or at least echo warnings in its output), not just recorded in the snapshot.\n\n**Category:** dependency | **Severity:** medium\n**Finding:** \"Audit every other consumer of `run_config.profile`\" is an acceptance criterion but is scheduled last with no mechanism named. If the audit finds a consumer that assumes a name-keyed template or hardcoded generic, that's new unplanned work at the end of the change.\n**Suggestion:** Do the consumer audit first (it's cheap: grep for `run_config.profile`), so the plan can enumerate which consumers need updating *before* the writers land.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** `template_path_for_profile` treats None/bundled/builtin sources as name-keyed. A custom profile whose name happens to collide with a bundled name (e.g., user defines `python`) with source `user` correctly skips the default template \u2014 good \u2014 but the \"no CI template for profile X\" message should include the source so users understand *why* no default applied.\n**Suggestion:** Include source in the miss message.\n\n**Category:** approach | **Severity:** low\n**Finding:** `discovery_dirs` \"missing bundled dir raises\" plus analyze_codebase turning that into exit 1 is a behavior change for existing users whose install may not ship bundled profiles. Previously they'd silently get `generic`; now they hard-fail.\n**Suggestion:** Confirm this is the intended BRIEF behavior and that packaging actually guarantees the bundled dir exists (add a packaging/install test), otherwise every adopt invocation breaks for affected installs.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** Exit code 4 for unresolvable profile names in `write_run_config`/`write-project-config` \u2014 confirm 4 doesn't already mean something else in those CLIs, and that \"nothing written\" holds even when the config file already exists (must not truncate before validation).\n**Suggestion:** Validate before opening the output file for write.\n\n## Overall assessment\n\nThe approach is sound and well-decomposed; the resolver/first-dir-wins semantics and source-keyed template defaults are coherent. Main gaps are the ordering of the consumer audit, the 1.0/1.1 snapshot compatibility policy, and hardening the \"nothing written\" guarantee against mid-run scaffold failures.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency \u00b7 Severity: medium**  \n   **Finding:** The consumer audit covers `run_config.profile`, but D9 also depends on every CI/CodeQL caller passing provenance. Because `source=None` retains name-keyed defaults, an unchanged caller could still give a custom profile a bundled template when names collide.  \n   **Suggestion:** Audit all callers of both template helpers and their scaffolders. Pass resolved provenance wherever custom profiles are possible, and test a custom profile with the same name as a bundled profile.\n\n2. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** The snapshot schema changes, but compatibility behavior is unspecified. Existing 1.0 snapshots lack provenance, and stored provenance can become stale when profiles move or project-level profiles shadow user profiles.  \n   **Suggestion:** Explicitly support 1.0 snapshots and resolve their selected name through the current resolver. Use current resolution for template selection; test both legacy snapshots and changed profile precedence.\n\n3. **Category: risk \u00b7 Severity: low**  \n   **Finding:** Returning a scaffold `message` does not ensure template misses are visible to users. Adoption could appear fully successful while omitting CI or CodeQL files.  \n   **Suggestion:** Ensure adoption surfaces these messages and distinguishes intentional skips from failures. Test that a custom profile without templates produces a clear diagnostic while generating the remaining supported artifacts.\n\nThe approach is sound, particularly resolving the effective profile before writing. Close the provenance propagation and snapshot compatibility gaps before implementation is considered complete; repository access was blocked, so these findings are based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s3-adopt-scaffolding",
+    "at": "2026-10-24T15:45:19.964877+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

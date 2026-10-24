@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"BRIEF S3 items 1-7 implemented: ordered-dir matcher with first-owner and warnings, resolve-before-write effective profile, provenance-keyed CI/CodeQL, run-config writers, minor snapshot bump, consumer audit."},
+{"name":"Error Handling","verdict":"pass","note":"Unknown/invalid/drifted profiles abort generate with the resolver exit code and nothing written; a missing bundled dir is an error; discovery skips bad candidates with warnings, including non-object stack."},
+{"name":"Security Basics","verdict":"pass","note":"Names validated by the resolver; containment via list_profiles; shadows and warnings surfaced in the adopt result; no commands are run by adopt."},
+{"name":"Test Quality","verdict":"pass","note":"Three new test files plus fixture update; assertions on source, reason codes, exit codes and the written tree; cache-layout subprocess probes for adopt and project."},
+{"name":"Performance Basics","verdict":"pass","note":"One list_profiles pass per analysis and one resolve per generate."},
+{"name":"Naming & Structure","verdict":"pass","note":"Glue in adopt_profile.py and project profile_check.py; generate_adoption_artifacts.py is 696 lines against 697 before (cap 716)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Snapshot producer/consumer round-trip probed with real analyze then generate CLIs; the probe found a noisy missing-user-dir warning, fixed and re-probed."}
+]}

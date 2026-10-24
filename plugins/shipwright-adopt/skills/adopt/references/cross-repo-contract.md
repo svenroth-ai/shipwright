@@ -18,6 +18,13 @@ ignores what it does not know, so an addition must not force a WebUI release.
 `schema_version` is **additive**: a snapshot written by an older adopt (without the key)
 stays readable, and no reader in this repo may come to require it.
 
+**1.1 (additive): the profile block.** `profile.source` is one of `project`, `user`, `bundled`,
+`explicit` or `builtin` (where the matched stack profile file came from), or `user-hint` when
+`--profile-hint` chose it; `profile.warnings[]` is free-text diagnostics from discovery (candidates skipped as invalid, shadow
+warnings, unreadable directories, an unresolvable `--profile-hint`);
+`profile.candidates[].source` carries the same provenance. Consumers must tolerate unknown
+`source` values.
+
 **This contract binds this side only.** It states what this repository publishes and
 how a change to it is announced (the version semantics above) — it makes no promise
 about how the receiving side behaves once it meets a version it does not recognise.

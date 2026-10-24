@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** No new standing mechanism is being created \u2014 Option A routes adopt through the resolver/loader that already exists, which is the right move.\n\n2. **The smallest thing that would do:** Option A exactly: one small adopt module of glue, the effective profile resolved once before any write, name-keyed template selection only when the resolved source is bundled. No new directories, no new lookup code, no copied files.\n\n3. **What it costs to keep:** Adopt now depends on the resolver's precedence semantics (project > user > bundled, first-file-wins). Future changes to either side must keep that contract in mind \u2014 but that coupling already exists for the other phases, so this adds no new obligation, it removes an inconsistency.\n\n4. **What it forecloses:** none identified. It actually un-forecloses: leaving adopt bundled-only (B) would strand custom profiles at the front door, and C would fork lookup logic that every future profile change has to reason about twice.\n\n5. **Findings:**\n\n- Category: existence\n- Severity: low\n- Finding: The \"resolver + ordered directory scan\" is standing machinery, but it already exists for other phases; adopt was the last holdout. Extending it is the smallest correct move, not a new mechanism.\n- Suggestion: None \u2014 proceed as proposed; resist any drift toward C (copy-into-bundled or adopt-specific lookup), which would be a real new standing mechanism.\n\nThe one thing to keep the reviewer honest on later: the \"name-keyed templates only when source is bundled\" rule is a behavioral fork adopt must carry forward; if it's buried inline rather than in that one small module, it becomes an obligation. Keeping it in the proposed single module is the proportionate shape.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. No new standing mechanism is needed; option A appropriately extends adopt through the resolver that already exists.\n2. Resolve the effective profile once before writing, use the resolver\u2019s precedence for matching, and apply name-keyed templates only to bundled profiles.\n3. The ongoing obligation is keeping adopt consistent with the shared resolver and preserving profile source information wherever template selection needs it.\n4. What it forecloses: custom profiles cannot inherit bundled CI/CodeQL templates merely by sharing a name; none else identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s3-adopt-scaffolding",
+    "at": "2026-10-24T15:45:47.676725+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

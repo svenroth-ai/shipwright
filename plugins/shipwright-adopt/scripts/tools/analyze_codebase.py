@@ -28,7 +28,7 @@ from typing import Any
 # the consumer (a key removed, renamed or retyped); MINOR = additive. Nothing asks you
 # to remember this: tests/test_snapshot_contract.py diffs the live snapshot against the
 # contract fixture as of origin/main and fails until the obliged bump is performed.
-SNAPSHOT_SCHEMA_VERSION = "1.0"
+SNAPSHOT_SCHEMA_VERSION = "1.1"  # 1.1: additive profile.source / profile.warnings / candidates[].source
 
 
 def _load_lib(lib_dir: Path) -> dict[str, Any]:
@@ -86,21 +86,19 @@ def analyze(
     fns = _load_lib(lib_dir)
     excludes_set = set(excludes)
 
-    # Shared/profiles path lookup: walk up from this file
-    here = Path(__file__).resolve()
-    profiles_dir: Path | None = None
-    for ancestor in [here, *here.parents]:
-        candidate = ancestor.parent / "shared" / "profiles"
-        if candidate.exists():
-            profiles_dir = candidate
-            break
-
+    # Discovery over project > user > bundled (D1). A missing bundled dir raises
+    # (FileNotFoundError) instead of silently degrading every project to `generic`.
+    from adopt_profile import discovery_dirs  # type: ignore
     stack = fns["detect_stack"](project_root, excludes_set)
-    profile = fns["match_profile"](stack, profiles_dir or Path()) if profiles_dir else {
-        "matched": "generic", "confidence": 0.0, "candidates": []
-    }
+    profile = fns["match_profile"](stack, discovery_dirs(project_root))
     if profile_hint:
-        profile = {"matched": profile_hint, "confidence": 1.0, "candidates": profile.get("candidates", []), "source": "user-hint"}
+        from adopt_profile import hint_warning  # type: ignore
+        bad = hint_warning(project_root, profile_hint)
+        profile = {
+            "matched": profile_hint, "confidence": 1.0, "candidates": profile.get("candidates", []),
+            "source": "user-hint",  # the hint is resolved again at generation, which records the real source
+            "warnings": profile.get("warnings", []) + ([bad] if bad else []),
+        }
 
     return {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
@@ -122,6 +120,7 @@ def analyze(
 def main() -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
     from cli_paths import unquoted_path
+    from adopt_profile import BundledProfilesMissing
     parser = argparse.ArgumentParser(description="Analyze a codebase for /shipwright-adopt")
     parser.add_argument("--project-root", required=True, type=unquoted_path)
     parser.add_argument("--exclude-path", action="append", default=[])
@@ -133,7 +132,14 @@ def main() -> int:
         print(f"ERROR: not a directory: {project_root}", file=sys.stderr)
         return 1
 
-    snapshot = analyze(project_root, args.exclude_path, args.profile_hint)
+    try:
+        snapshot = analyze(project_root, args.exclude_path, args.profile_hint)
+    except (ImportError, BundledProfilesMissing) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    for warning in snapshot["profile"].get("warnings", []):
+        print(f"WARNING: stack profile: {warning.removeprefix('WARNING: ')}", file=sys.stderr)
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

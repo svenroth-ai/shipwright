@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. Effective-profile validation precedes artifact writes, CI/CodeQL selection receives resolved provenance, and the new tests assert observable success and failure behavior.\n\nOverall assessment: ship-as-is based on static review. Local execution was blocked by tool policy; acceptance item 7\u2019s full BRIEF wording and the required PR-body consumer audit table were not supplied, so I could not independently verify those acceptance details.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: spec | Severity: low\n  File: diff (PR-body deliverable, not in repo)\n  Finding: Acceptance criterion \"Consumer audit table in PR body\" and BRIEF S3 item 7 cannot be verified from the diff \u2014 the ADR claims \"consumer audit done first (PR body)\" but no consumer-audit artifact (table, file, or test enumerating `run_config.profile` consumers) is present in the repository.\n  Suggestion: Include the audit table in the PR description explicitly, or land it as a tracked doc/test so the criterion is reviewable.\n\n- Category: edge-case | Severity: medium\n  File: plugins/shipwright-adopt/scripts/lib/profile_matcher.py (`_discover`, warning filter)\n  Finding: The absent-user-dir suppression matches on the resolver's exact message suffix (`w.endswith(\"user profiles directory does not exist\")`). This is a string contract spread across two modules with no shared constant or test pinning the resolver's wording; a rewording in `profile_resolver` silently reintroduces a noisy warning for every machine without a user profiles dir, breaking `test_an_absent_user_profiles_directory_is_not_a_warning`'s guarantee for real users (the test monkeypatches env, not the message).\n  Suggestion: Have `list_profiles` return a structured `warning_kind`/code, or export the message suffix as a constant from `profile_resolver` and import it here.\n\n- Category: edge-case | Severity: low\n  File: plugins/shipwright-adopt/scripts/lib/adopt_profile.py (`discovery_dirs`)\n  Finding: `next(d for s, d in dirs if s == \"bundled\")` raises a bare `StopIteration` (not `BundledProfilesMissing`) if a future resolver change drops or renames the bundled source \u2014 the CLI would crash with a traceback instead of exit 1.\n  Suggestion: Use `next(..., None)` and raise `BundledProfilesMissing` (or a clear error) when the bundled entry is absent from `search_dirs`.\n\n- Category: test | Severity: low\n  File: shipwright_test_results.json / .shipwright/compliance/test-evidence.md\n  Finding: The run records `tests_passed: true` with 13941/13941 while also listing 8 excluded shared/tests failures as \"degraded\" (cross-plugin sys.path pollution in `test_setup_writes_canonical.py`, 3 Windows symlink-privilege tests). The \"sys.path pollution\" exclusion is exactly the failure mode this change's `load_resolver`/`profile_check` sys.path append/remove pattern could interact with; excluding rather than fixing it leaves the headline count overstating the suite's health, and the root cause (\"cross-plugin sys.path pollution\") is unbounded in scope.\n  Suggestion: Fix or file a tracked follow-up for the sys.path pollution exclusion; verify it isn't caused/aggravated by the new `sys.path.append(_SHARED_SCRIPTS)` pattern in `adopt_profile.py`/`profile_check.py`.\n\n- Category: edge-case | Severity: low\n  File: plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py (`resolve_effective` drift check in adopt_profile.py)\n  Finding: When the snapshot recorded `source: project/user` and the profile file was deleted, `resolve_named` raises not-found (exit 2) before the provenance-drift check runs, so the user gets a \"not found, searched these paths\" message instead of the clearer \"matched from X at analysis time, re-run analyze\" guidance; both abort safely, but the remediation hint for the most likely real-world drift case is the weaker one.\n  Suggestion: Catch not-found in the no-override path when `seen` is recorded and re-raise with the provenance-drift message.\n\nTest quality is good: the new tests compare the full written tree before/after, assert resolver exit codes (2/3) and reason codes, and pin the plugin-cache layout via isolated `-I` subprocesses \u2014 a broken implementation would not pass them. The D9 provenance keying is well covered on both scaffolders, including the legacy `source=None` path. No security issues found: names are validated by the resolver, no commands are executed from profile data, and adopt runs no profile commands.\n\nOverall: ship-as-is with the low/medium refinements above; the core S3 scope (matcher through the resolver, resolve-before-write, provenance-keyed templates, run-config writers, snapshot 1.1 bump) is implemented and well-tested, and the only unverifiable acceptance item is the PR-body audit table.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s3-adopt-scaffolding",
+    "at": "2026-10-24T16:13:49.115938+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
