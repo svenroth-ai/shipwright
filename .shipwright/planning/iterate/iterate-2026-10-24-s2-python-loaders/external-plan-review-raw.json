@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category: approach \u2014 Severity: high**  \n   **Finding:** The new `profile_consumer.py` conflicts with D2\u2019s explicit \u201cno new loader helper\u201d requirement. The claim that sentinel/no-profile cutover rules \u201cexist once\u201d also obscures their deliberately different meanings across loaders.  \n   **Suggestion:** Use the resolver directly through the prescribed import convention, retaining each loader\u2019s sentinel and absent-profile policy locally. If shared glue is necessary, obtain a binding design amendment first.\n\n2. **Category: dependency \u2014 Severity: high**  \n   **Finding:** The plan includes changes to `profile_resolver.py`, but the binding hot-file rule assigns those changes exclusively to S1 and requires dependent work to stop when a resolver gap is found. The dangling-source and JSON parsing fixes therefore have an unresolved ownership prerequisite.  \n   **Suggestion:** Explicitly release/replan the resolver fixes into an S1-owned prerequisite, with regression tests, before completing the loader migration.\n\n3. **Category: edge-case \u2014 Severity: medium**  \n   **Finding:** The approach does not explicitly cover several required compatibility paths: corrupt run-config errors, optional `profile_dir` signatures, explicit `--profile-dir`/`--profile-path` classification, and `validate_env --init` returning a failing exit status. A universal \u201cresolve the NAME\u201d path cannot replace explicit-file loading.  \n   **Suggestion:** Add these paths to the implementation and test matrix. Pin the structured error result, config filename and searched-path remediation, and verify explicit custom files named like bundled profiles receive custom provenance.\n\n4. **Category: security \u2014 Severity: medium**  \n   **Finding:** \u201cProvenance goes to stderr\u201d does not explicitly guarantee D8\u2019s distinct, prominent shadow warning at every loader resolution. The plan also omits the D8f prose invocation changes and the required trace confirming commands run only after a user-invoked phase.  \n   **Suggestion:** Enumerate the command-running entry points, update test/performance prose to pass profile name and project root, and add a prose-shaped regression test proving source and shadow warnings reach the executing loader.\n\nThe resolver migration is directionally sound, and the per-loader table is the right regression boundary. Revise the shared-helper design and resolver ownership dependency, then explicitly cover the compatibility and command-provenance paths before implementation proceeds.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**1. Category: risk \u2014 Severity: medium \u2014 Removing the `PROFILE_DEV_SERVERS` bundled-file fallback vs. \"bundled behaviour unchanged\"**\nThe acceptance criterion says bundled behaviour is unchanged, but the plan explicitly removes the legacy fallback for a missing bundled file (\"a broken install now errors\"). That's a defensible position, but it's a behaviour change the BRIEF doesn't clearly authorize, and it can break any existing test or skill flow that relies on the hardcoded dev-server map when the bundled file is absent (partial clones, container images). Suggestion: pin this explicitly \u2014 add a test asserting a *missing bundled file* (not just a corrupt one) errors with the install-repair text, and confirm no existing test exercises the fallback path. If any does, that test's intent needs a decision, not a silent deletion.\n\n**2. Category: approach \u2014 Severity: medium \u2014 Bloat-cap arithmetic is asserted, not planned**\nThe plan quotes precise future line counts (validate_env 602->591, test_runner 324->323, etc.) as though the reductions are already known, but the work isn't done. The per-loader sentinel table (1a) alone requires ~15 new pinned tests plus import tests per root; if any new logic lands in a grandfathered file mid-iteration, the file is over cap with no room. Suggestion: budget each touched file with an explicit *extract target* (which function moves to `profile_consumer`/resolver) rather than a claimed net delta, and treat the claimed numbers as ceilings, not facts. Consider adding `test_runner.py` to the baseline list as S2.5 if the provenance switch (D9) forces growth.\n\n**3. Category: edge-case \u2014 Severity: medium \u2014 Sentinel comparison case rules are unstated in the glue module**\nD3 says reserved names are compared case-insensitively. The per-loader cutover table keys on sentinels `generic`/`detecting`; the plan doesn't say whether `profile_consumer.resolve_named` lowercases before the sentinel check. If it doesn't, `Generic` in a run config will be \"unknown name -> error\" from one loader and a sentinel from another depending on code path. Suggestion: specify the normalization (and the exact-case directory-entry rule from D3 only applies to name lookup, not the run-config string) and pin one test per loader with a mixed-case sentinel.\n\n**4. Category: edge-case \u2014 Severity: low \u2014 `performance_check` dual flags: precedence undefined**\n`--profile-path` and `--profile` (new) can both be supplied. The plan doesn't state which wins or whether it's a usage error (exit 4). Suggestion: define precedence (explicit path wins, provenance `source: explicit`) and test it; this is exactly the kind of ambiguity D8f exists to close.\n\n**5. Category: dependency \u2014 Severity: low \u2014 sys.path hygiene for `profile_consumer` consumers**\nHand-off item 4 says never leave `shared/scripts` on `sys.path`, but the plan doesn't say where the append/pop discipline lives. If each of the ~7 consumers re-implements it, that's duplication; if `profile_consumer` does it, importing it is itself the append. Suggestion: put the try/finally pop in `profile_consumer`'s documented import snippet and cover it in one boundary probe per root \u2014 cheap and closes the shadow-`tools` hazard for good.\n\n**6. Category: risk \u2014 Severity: low \u2014 Error-result propagation in `init_env_file` without partial-write handling (S3)**\nS2 makes `init_env_file` return `{\"action\": \"error\"}` and adopt propagates it, but partial-write cleanup is deferred to S3. A failure mid-write now surfaces as a clean error result *over a half-written `.env.local`*. Not a regression (previously it was silent), but worth a one-line note in the error payload that the file may be partial, so S3 has a hook. Suggestion: include `\"partial\": true/false` in the error result shape now \u2014 cheaper than reshaping the pinned contract later.\n\n**7. Category: edge-case \u2014 Severity: low \u2014 D8(b) shadow warning for explicit-path loads**\nThe plan routes shadow warnings through `resolve_named` in the glue module, which covers name resolution. But D8(b) requires the warning at *every* loader resolution, including `--profile-path` loads that classify as shadowing a bundled name (D2's `load_profile_file` classification). Confirm the warning lives where both paths cross, not only in `resolve_named`.\n\n## Overall assessment\n\nThe approach is sound and well-scoped: centralizing the cutover table in one glue module rather than five per-loader patches is the right call, the S1 hand-offs are all incorporated, and the test strategy matches the BRIEF's acceptance items. The findings are refinements \u2014 chiefly pinning the two underspecified behaviours (missing-bundled-file fallback, sentinel casing) before code lands.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s2-python-loaders",
+    "at": "2026-10-24T11:36:29.711512+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

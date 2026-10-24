@@ -12,7 +12,7 @@ is 0 unless `gate=block` AND any non-skipped check failed.
 CLI:
     uv run performance_check.py \\
         --cwd <project> \\
-        --profile-path <path-to-profile.json> \\
+        (--profile <name> | --profile-path <profile.json>) \\
         --dev-url <url> \\
         --gate <warn|block|inherit>
 
@@ -270,17 +270,17 @@ def _emit_failures_to_triage(
     logged to stderr and swallowed — emission never blocks the gate.
     """
     try:
-        shared_scripts = (
-            Path(__file__).resolve().parents[4] / "shared" / "scripts"
-        )
-        if str(shared_scripts) not in sys.path:
-            sys.path.insert(0, str(shared_scripts))
-        from triage import append_triage_item_idempotent  # noqa: PLC0415
+        shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+        added = str(shared_scripts) not in sys.path
+        if added:
+            sys.path.append(str(shared_scripts))
+        try:
+            from triage import append_triage_item_idempotent  # noqa: PLC0415
+        finally:
+            if added:
+                sys.path.remove(str(shared_scripts))
     except Exception as exc:  # noqa: BLE001
-        sys.stderr.write(
-            f"[performance] triage import failed: "
-            f"{type(exc).__name__}: {exc}\n"
-        )
+        sys.stderr.write(f"[performance] triage import failed: {type(exc).__name__}: {exc}\n")
         return 0
 
     appended = 0
@@ -666,33 +666,34 @@ def _lh_from_lhr(lhr: dict[str, Any]) -> dict[str, Any]:
 # ── Main orchestration ───────────────────────────────────────────────────────
 
 def main() -> int:
+    try:  # as lib.performance_check, or run as a script from scripts/lib (lazy: file-loaded importers)
+        from .performance_profile import NO_PROFILE_REASON, load_profile_perf, report_failure
+    except ImportError:
+        from performance_profile import NO_PROFILE_REASON, load_profile_perf, report_failure
     parser = argparse.ArgumentParser(description="Performance budget check")
     parser.add_argument("--cwd", required=True, help="Project root")
-    parser.add_argument("--profile-path", required=True, help="Path to profile JSON")
+    parser.add_argument("--profile", help="Stack profile NAME (project > user > bundled); default: run config's")
+    parser.add_argument("--project-root", help="Project root for the lookup (default: --cwd)")
+    parser.add_argument("--profile-path", help="Explicit profile JSON file (wins over --profile)")
     parser.add_argument("--dev-url", default="", help="Dev server URL for Lighthouse")
-    parser.add_argument("--gate", default="inherit",
-                        choices=("warn", "block", "inherit"))
+    parser.add_argument("--gate", default="inherit", choices=("warn", "block", "inherit"))
     args = parser.parse_args()
 
     started_at = time.monotonic()
     project_root = Path(args.cwd).resolve()
 
-    # Load profile.testing.performance
-    profile_perf: dict[str, Any] | None = None
+    # Load profile.testing.performance; a bad/unknown profile is an error (never a budget-free run)
     try:
-        profile = json.loads(Path(args.profile_path).read_text(encoding="utf-8"))
-        profile_perf = profile.get("testing", {}).get("performance")
-    except (OSError, json.JSONDecodeError) as exc:
-        sys.stderr.write(f"WARNING: profile load failed: {exc}\n")
-
+        profile_perf, profile_source, no_profile = load_profile_perf(
+            args.profile, args.profile_path, args.project_root or project_root)
+    except ValueError as exc:
+        return report_failure(exc)
     # Load shipwright_test_config.json.performance (optional)
     test_config_perf: dict[str, Any] | None = None
     test_cfg_path = project_root / "shipwright_test_config.json"
     if test_cfg_path.exists():
         try:
-            test_config_perf = json.loads(
-                test_cfg_path.read_text(encoding="utf-8")
-            ).get("performance")
+            test_config_perf = json.loads(test_cfg_path.read_text(encoding="utf-8")).get("performance")
         except (OSError, json.JSONDecodeError) as exc:
             sys.stderr.write(f"WARNING: shipwright_test_config.json load failed: {exc}\n")
 
@@ -703,13 +704,12 @@ def main() -> int:
     if not cfg.get("enabled"):
         result = {
             "success": True, "skipped": True,
-            "skip_reason": cfg.get("skip_reason", SKIP_REASON_PROFILE_OPTS_OUT),
+            "skip_reason": NO_PROFILE_REASON if no_profile else cfg.get("skip_reason", SKIP_REASON_PROFILE_OPTS_OUT),
+            "profile_source": profile_source,
             "gate": cfg.get("gate", "warn"),
             "lighthouse": _lh_skip(SKIP_REASON_PROFILE_OPTS_OUT, ""),
-            "bundle": {"ran": False, "skipped": True,
-                       "skip_reason": SKIP_REASON_PROFILE_OPTS_OUT,
-                       "total_kb_gz": 0.0, "files_measured": 0, "files": [],
-                       "passed": True},
+            "bundle": {"ran": False, "skipped": True, "skip_reason": SKIP_REASON_PROFILE_OPTS_OUT,
+                       "total_kb_gz": 0.0, "files_measured": 0, "files": [], "passed": True},
             "duration_seconds": round(time.monotonic() - started_at, 2),
         }
         print(json.dumps(result, indent=2))
@@ -727,13 +727,9 @@ def main() -> int:
         score_budget = cfg["lighthouse"]["min_score"]
         lcp_budget = cfg["lighthouse"]["lcp_max_ms"]
         lh["score_budget"] = score_budget
-        lh["score_passed"] = (
-            lh.get("score") is not None and lh["score"] >= score_budget
-        )
+        lh["score_passed"] = lh.get("score") is not None and lh["score"] >= score_budget
         lh["lcp_budget_ms"] = lcp_budget
-        lh["lcp_passed"] = (
-            lh.get("lcp_ms") is not None and lh["lcp_ms"] <= lcp_budget
-        )
+        lh["lcp_passed"] = lh.get("lcp_ms") is not None and lh["lcp_ms"] <= lcp_budget
 
     # Bundle
     build_dir_rel = cfg["bundle"].get("build_output_dir", "")
@@ -784,6 +780,7 @@ def main() -> int:
         "skipped": False,
         "skip_reason": "",
         "gate": cfg["gate"],
+        "profile_source": profile_source,
         **results,
         "duration_seconds": round(time.monotonic() - started_at, 2),
     }

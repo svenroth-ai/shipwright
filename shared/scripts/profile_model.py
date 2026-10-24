@@ -113,7 +113,8 @@ def user_dir() -> str | None:
     env = os.environ.get(USER_DIR_ENV)
     if env:
         # A relative value would resolve against the cwd (repo-controlled, differs per worktree).
-        return env if os.path.isabs(env) else None
+        rooted_only = os.name == "nt" and not os.path.splitdrive(env)[0]  # "\x": cwd's drive
+        return env if os.path.isabs(env) and not rooted_only else None
     home = os.path.expanduser("~")
     if not home or home.startswith("~"):
         return None  # home cannot be determined: no user source

@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-s2-python-loaders",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T12:12:17.759365+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The new `profile_consumer.py` conflicts with D2’s explicit “no new loader helper” requirement. The claim that sentinel/no-profile cutover rules “exist once” also obscures their deliberately different meanings across loaders.",
+          "suggestion": "Use the resolver directly through the prescribed import convention, retaining each loader’s sentinel and absent-profile policy locally. If shared glue is necessary, obtain a binding design amendment first.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan includes changes to `profile_resolver.py`, but the binding hot-file rule assigns those changes exclusively to S1 and requires dependent work to stop when a resolver gap is found. The dangling-source and JSON parsing fixes therefore have an unresolved ownership prerequisite.",
+          "suggestion": "Explicitly release/replan the resolver fixes into an S1-owned prerequisite, with regression tests, before completing the loader migration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The approach does not explicitly cover several required compatibility paths: corrupt run-config errors, optional `profile_dir` signatures, explicit `--profile-dir`/`--profile-path` classification, and `validate_env --init` returning a failing exit status. A universal “resolve the NAME” path cannot replace explicit-file loading.",
+          "suggestion": "Add these paths to the implementation and test matrix. Pin the structured error result, config filename and searched-path remediation, and verify explicit custom files named like bundled profiles receive custom provenance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "“Provenance goes to stderr” does not explicitly guarantee D8’s distinct, prominent shadow warning at every loader resolution. The plan also omits the D8f prose invocation changes and the required trace confirming commands run only after a user-invoked phase.",
+          "suggestion": "Enumerate the command-running entry points, update test/performance prose to pass profile name and project root, and add a prose-shaped regression test proving source and shadow warnings reach the executing loader.  The resolver migration is directionally sound, and the per-loader table is the right regression boundary. Revise the shared-helper design and resolver ownership dependency, then explicitly cover the compatibility and command-provenance paths before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T11:38:12.848109+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: risk — Severity: medium — Removing the `PROFILE_DEV_SERVERS` bundled-file fallback vs. \"bundled behaviour unchanged\"**\nThe acceptance criterion says bundled behaviour is unchanged, but the plan explicitly removes the legacy fallback for a missing bundled file (\"a broken install now errors\"). That's a defensible position, but it's a behaviour change the BRIEF doesn't clearly authorize, and it can break any existing test or skill flow that relies on the hardcoded dev-server map when the bundled file is absent (partial clones, container images). Suggestion: pin this explicitly — add a test asserting a *missing bundled file* (not just a corrupt one) errors with the install-repair text, and confirm no existing test exercises the fallback path. If any does, that test's intent needs a decision, not a silent deletion.\n\n**2. Category: approach — Severity: medium — Bloat-cap arithmetic is asserted, not planned**\nThe plan quotes precise future line counts (validate_env 602->591, test_runner 324->323, etc.) as though the reductions are already known, but the work isn't done. The per-loader sentinel table (1a) alone requires ~15 new pinned tests plus import tests per root; if any new logic lands in a grandfathered file mid-iteration, the file is over cap with no room. Suggestion: budget each touched file with an explicit *extract target* (which function moves to `profile_consumer`/resolver) rather than a claimed net delta, and treat the claimed numbers as ceilings, not facts. Consider adding `test_runner.py` to the baseline list as S2.5 if the provenance switch (D9) forces growth.\n\n**3. Category: edge-case — Severity: medium — Sentinel comparison case rules are unstated in the glue module**\nD3 says reserved names are compared case-insensitively. The per-loader cutover table keys on sentinels `generic`/`detecting`; the plan doesn't say whether `profile_consumer.resolve_named` lowercases before the sentinel check. If it doesn't, `Generic` i […truncated]\n\n[openai] 1. **Category: approach — Severity: high**  \n   **Finding:** The new `profile_consumer.py` conflicts with D2’s explicit “no new loader helper” requirement. The claim that sentinel/no-profile cutover rules “exist once” also obscures their deliberately different meanings across loaders.  \n   **Suggestion:** Use the resolver directly through the prescribed import convention, retaining each loader’s sentinel and absent-profile policy locally. If shared glue is necessary, obtain a binding design amendment first.\n\n2. **Category: dependency — Severity: high**  \n   **Finding:** The plan includes changes to `profile_resolver.py`, but the binding hot-file rule assigns those changes exclusively to S1 and requires dependent work to stop when a resolver gap is found. The dangling-source and JSON parsing fixes therefore have an unresolved ownership prerequisite.  \n   **Suggestion:** Explicitly release/replan the resolver fixes into an S1-owned prerequisite, with regression tests, before completing the loader migration.\n\n3. **Category: edge-case — Severity: medium**  \n   **Finding:** The approach does not explicitly cover several required compatibility paths: corrupt run-config errors, optional `profile_dir` signatures, explicit `--profile-dir`/`--profile-path` classification, and `validate_env --init` returning a failing exit status. A universal “resolve the NAME” path cannot replace explicit-file loading.  \n   **Suggestion:** Add these paths to the implementation and test matrix. Pin the structured error result, config filename and searched-path remediation, and verify explicit custom files named like bundled profiles receive custom provenance.\n\n4. **Category: security — Severity: medium**  \n   **Finding:** “Provenance goes to stderr” does not explicitly guarantee D8’s distinct, prominent shadow warning at every loader resolution. The plan also omits the D8f prose invocation changes and the required trace confirming commands run only after a user-invoked phase.  \n   […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T12:23:45.168914+00:00",
+      "disposition": "Stage 2 gated behind the Stage-1 spec review, which did not pass (D2 hot-file question escalated); delegated to the campaign orchestrator 3f-bis re-run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T12:23:45.283903+00:00",
+      "disposition": "Stage 3 runs only behind a Stage 2 pass, and Stage 2 did not run in this sub-iterate; delegated to the campaign orchestrator re-run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/scripts/dev_server/profile_config.py:180-196 + multiservice.py:74-91",
+          "line": null,
+          "finding": "The dev_server per-loader table (S2 1a) requires unknown/corrupt profile to be a hard error with a non-zero exit, but only `cmd_start` translates the resolver's `ValueError` into an error dict. The CLI/exit-code path (and any other `cmd_status`/`cmd_restart`-style caller of `_get_services`, not shown in the diff) is not updated: previously a broken profile silently meant \"no profile\" and the `dev_url` fallback kept working; now those paths can raise an uncaught `ValueError` (traceback) or return exit 0 with an error JSON.",
+          "suggestion": "Grep dev_server for every `_get_services`/`_load_profile_data` caller and route each through the same `kind`-aware handling as `cmd_start`; ensure the CLI maps `kind` to exit 2/3.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression |",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py (removal of `default_profile_path`/`_load_profile`), shared/scripts/validate_env.py (removal of `load_profile`)",
+          "line": null,
+          "finding": "Public module-level helpers were deleted outright. The S3 audit list (`inference.py`, `orchestrator_pkg/`, `lib/cmd_resolver.py`, `playwright_setup.py`, `adopt_`) has not run yet, so any out-of-diff importer of `test_runner.default_profile_path` or `validate_env.load_profile` now fails with `ImportError` at import time — including the plugin cache tree until `update-marketplace.sh` runs.",
+          "suggestion": "Either keep thin deprecated shims for one release, or verify (and note in the PR) that no consumer inside or outside the diff imports them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "shared/scripts/profile_consumer.py:44-52 (`_hint`)",
+          "line": null,
+          "finding": "For `not_found` with `origin=\"--profile\"` (test_runner/performance_check CLI), the remediation text says \"fix `profile` in shipwright_run_config.json …\", which is wrong when the name came from the CLI flag. The test only asserts `\"--profile\" in out[\"error\"]`, which the mis-leading hint happens to satisfy, so the test does not catch it.",
+          "suggestion": "Branch the hint on the origin: CLI origins get \"check the `--profile` value or pass a valid name\"; config origins keep the run-config text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/dev_server/profile_config.py:112-119 (`_load_profile_data`)",
+          "line": null,
+          "finding": "The new signature defaults `project_root=None`, so any caller that invokes it with just the name (the previous signature) silently loses the project/user lookup and resolves bundled-only — the exact class of silent misbehavior S2 is supposed to eliminate. The old monkeypatch seam (`_load_profile_data`) is also gone, which the diff only fixes inside its own tests.",
+          "suggestion": "Make `project_root` required, or assert it is not None for named lookups.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/dev_server/_profile_input.py:18-21 (`_coerce_int`)",
+          "line": null,
+          "finding": "if isinstance(value, bool): return value` lets `port: true` pass coercion untouched; `True` then behaves as integer 1 in downstream range/validation paths, producing port 1 instead of an error.",
+          "suggestion": "Reject bools explicitly (`raise ValueError` for non-int port/timeout types).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-test/scripts/lib/performance_check.py:704-712",
+          "line": null,
+          "finding": "When the run config names no profile (`no_profile=True`), the \"not enabled\" skip unconditionally overrides `cfg.get(\"skip_reason\")` with `NO_PROFILE_REASON` even when `shipwright_test_config.json` carried a specific opt-out reason — an observable output change for existing consumers keying on `skip_reason`.",
+          "suggestion": "Only substitute `NO_PROFILE_REASON` when `cfg` has no explicit `skip_reason` (or track the two cases separately).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression |",
+          "file": "shared/scripts/dev_server/profile_config.py (dead `PROFILE_DEV_SERVERS`)",
+          "line": null,
+          "finding": "The legacy in-script map is now unreachable but still defined/imported, contradicting \"remove every silent fallback\" and inviting accidental reuse.",
+          "suggestion": "Delete `PROFILE_DEV_SERVERS` and its importers in this unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-test/tests/test_test_runner_profiles.py (multiple `_main` tests)",
+          "line": null,
+          "finding": "run_tests` is stubbed to always return `{\"success\": True}`, so the layer-skip and D9 assertions never exercise the real command string reaching a shell; a regression where `get_test_command` returns the wrong command but `run_tests` is stubbed would only be caught where `ran == [...]` is asserted — that is done here, good, but the \"sentinel → npm test\" and \"legacy supabase → npx vitest run\" assertions rely on the exact stub ordering and would not detect a command-injection-style mutation that appends to the command.",
+          "suggestion": "Also assert the full command string equality (not just list membership) in the sentinel/legacy tests.  Overall: the core S2 semantics (fail-loud resolution, provenance, D9 provenance-keyed defaults, sentinel table) are implemented and well tested; the findings are mostly un-shown callers of changed surfaces (dev_server exit paths, removed helpers) plus a misleading remediation hint — fix those, then ship.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": 297,
+          "finding": "The E2E branch still calls `run_playwright()` before reaching `get_test_command()`. A custom profile that declares an E2E command can therefore enter this branch and run Playwright instead of its declared command. The new tests exercise custom unit commands and missing layers, but never a declared custom E2E command.",
+          "suggestion": "Resolve the profile’s E2E command before choosing the Playwright runner, and honor custom commands. Add a regression test that triggers this branch with a custom E2E command and asserts which runner executes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/profile_resolver.py",
+          "line": 52,
+          "finding": "This S2 diff changes the resolver to address newly discovered gaps, contrary to D2’s explicit hot-file rule: only S1 may edit this file, and a resolver gap must stop and replan the dependent unit. The new source-gap tests explicitly confirm that these are resolver fixes being made in S2.",
+          "suggestion": "Move these resolver fixes and their tests into a separately reviewed resolver prerequisite, then resume S2 against that merged implementation.  Overall assessment: ship-with-fixes. Custom E2E command execution needs a regression fix, and the resolver changes need to follow the binding dependency contract.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T12:16:32.435998+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: spec | Severity: medium\n  File: shared/scripts/dev_server/profile_config.py:180-196 + multiservice.py:74-91\n  Finding: The dev_server per-loader table (S2 1a) requires unknown/corrupt profile to be a hard error with a non-zero exit, but only `cmd_start` translates the resolver's `ValueError` into an error dict. The CLI/exit-code path (and any other `cmd_status`/`cmd_restart`-style caller of `_get_services`, not shown in the diff) is not updated: previously a broken profile silently meant \"no profile\" and the `dev_url` fallback kept working; now those paths can raise an uncaught `ValueError` (traceback) or return exit 0 with an error JSON.\n  Suggestion: Grep dev_server for every `_get_services`/`_load_profile_data` caller and route each through the same `kind`-aware handling as `cmd_start`; ensure the CLI maps `kind` to exit 2/3.\n\n- Category: regression | Severity: medium\n  File: plugins/shipwright-test/scripts/lib/test_runner.py (removal of `default_profile_path`/`_load_profile`), shared/scripts/validate_env.py (removal of `load_profile`)\n  Finding: Public module-level helpers were deleted outright. The S3 audit list (`inference.py`, `orchestrator_pkg/*`, `lib/cmd_resolver.py`, `playwright_setup.py`, `adopt_*`) has not run yet, so any out-of-diff importer of `test_runner.default_profile_path` or `validate_env.load_profile` now fails with `ImportError` at import time — including the plugin cache tree until `update-marketplace.sh` runs.\n  Suggestion: Either keep thin deprecated shims for one release, or verify (and note in the PR) that no consumer inside or outside the diff imports them.\n\n- Category: bug | Severity: medium\n  File: shared/scripts/profile_consumer.py:44-52 (`_hint`) \n  Finding: For `not_found` with `origin=\"--profile\"` (test_runner/performance_check CLI), the remediation text says \"fix `profile` in shipwright_run_config.json …\", which is wrong when the name came from the CLI flag. The test only asserts `\"--profile\" in out[\"error […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: plugins/shipwright-test/scripts/lib/test_runner.py:297\n- Finding: The E2E branch still calls `run_playwright()` before reaching `get_test_command()`. A custom profile that declares an E2E command can therefore enter this branch and run Playwright instead of its declared command. The new tests exercise custom unit commands and missing layers, but never a declared custom E2E command.\n- Suggestion: Resolve the profile’s E2E command before choosing the Playwright runner, and honor custom commands. Add a regression test that triggers this branch with a custom E2E command and asserts which runner executes.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/profile_resolver.py:52\n- Finding: This S2 diff changes the resolver to address newly discovered gaps, contrary to D2’s explicit hot-file rule: only S1 may edit this file, and a resolver gap must stop and replan the dependent unit. The new source-gap tests explicitly confirm that these are resolver fixes being made in S2.\n- Suggestion: Move these resolver fixes and their tests into a separately reviewed resolver prerequisite, then resume S2 against that merged implementation.\n\nOverall assessment: ship-with-fixes. Custom E2E command execution needs a regression fix, and the resolver changes need to follow the binding dependency contract.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:00:23.085620+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T12:12:17.891484+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T12:23:45.421040+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

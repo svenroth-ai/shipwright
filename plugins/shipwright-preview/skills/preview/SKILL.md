@@ -47,7 +47,7 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/validate_env.py" \
   --phase build
 ```
 
-- **If validation fails (missing env vars):** Do NOT just tell the user to "check logs". Instead, actively help them create or fix `.env.local`. Read the error output, identify which variables are missing, and guide them through setting the values.
+- **If validation fails (missing env vars; but `error` / `kind` / exit 2-3 is a profile problem: stop and show the message, do not ask for env vars or edit `.env.local`):** Do NOT just tell the user to "check logs". Instead, actively help them create or fix `.env.local`. Read the error output, identify which variables are missing, and guide them through setting the values.
 
 #### Step 3: Dev Server Status
 

@@ -49,10 +49,14 @@ def _norm_dirs(project_root, dirs) -> list:
     return [d if isinstance(d, tuple) else ("explicit", os.fspath(d)) for d in dirs]
 
 
+def _reject_constant(token: str):
+    raise ValueError(f"{token} is not valid JSON")  # NaN / Infinity: json.load accepts them
+
+
 def _read_json(path: str):
     try:
         with open(path, encoding="utf-8-sig") as fh:
-            return json.load(fh)
+            return json.load(fh, parse_constant=_reject_constant)
     except OSError as exc:
         raise ProfileInvalid(f"Profile file {path} is unreadable: {exc}") from exc
     except ValueError as exc:  # JSONDecodeError / UnicodeDecodeError
@@ -68,6 +72,18 @@ def _inside(path: str, directory: str) -> bool:
         return False
 
 
+def _contained(path: str, directory: str) -> str:
+    """Resolve ``path`` ONCE and require it inside ``directory`` (D3); returns the real path."""
+    try:
+        real = str(Path(path).resolve())
+        ok = path_within(real, str(Path(directory).resolve()))
+    except (OSError, RuntimeError) as exc:  # RuntimeError: symlink loop on 3.11
+        raise ProfileInvalid(f"Profile file {path} cannot be resolved: {exc}") from exc
+    if not ok:
+        raise ProfileInvalid(f"Profile file {path} resolves outside {directory}")
+    return real
+
+
 def _load(path: str, source: str, expected_name: str | None, real: str | None = None) -> ResolvedProfile:
     real = real or os.path.realpath(path)
     data = _read_json(real)
@@ -80,13 +96,33 @@ def _load(path: str, source: str, expected_name: str | None, real: str | None = 
     return ResolvedProfile(data["name"], source, path, data, sv)
 
 
+def dangling(directory: str) -> bool:
+    """True when ``directory`` or one of its ancestors is a symlink whose target is gone:
+    the entry exists (``lexists``) but nothing is behind it. That is a broken source,
+    not an absent one."""
+    path = os.path.abspath(directory)
+    while True:
+        if os.path.exists(path):
+            return False
+        if os.path.lexists(path):
+            return True
+        parent = os.path.dirname(path)
+        if parent == path:
+            return False
+        path = parent
+
+
 def _listdir(directory: str, strict: bool) -> list:
-    """Entries of ``directory``; absent -> []. An existing-but-unreadable directory
-    raises unless ``strict`` is False (user source), so a lower source can never
-    silently win (D1)."""
+    """Entries of ``directory``; absent -> []. An existing-but-unreadable (or dangling)
+    directory raises unless ``strict`` is False (user source), so a lower source can
+    never silently win (D1)."""
     try:
         return os.listdir(directory)
     except FileNotFoundError:
+        if strict and dangling(directory):
+            raise ProfileInvalid(
+                f"Profile directory {directory} is a dangling symlink (its target is missing)"
+            ) from None
         return []
     except OSError as exc:
         if strict:
@@ -146,14 +182,7 @@ def resolve_profile(name: str, project_root=None, *, search_dirs=None) -> Resolv
         path = _entry(directory, name, strict=source != "user")
         if path is None:
             continue
-        try:
-            real = Path(path).resolve()  # resolved ONCE; this exact path is what gets read
-            contained = path_within(str(real), str(Path(directory).resolve()))
-        except (OSError, RuntimeError) as exc:  # RuntimeError: symlink loop on 3.11
-            raise ProfileInvalid(f"Profile file {path} cannot be resolved: {exc}") from exc
-        if not contained:
-            raise ProfileInvalid(f"Profile file {path} resolves outside {directory}")
-        winner = _load(path, source, name, str(real))
+        winner = _load(path, source, name, _contained(path, directory))  # read via the one resolved path
     if winner is None:
         listing = "\n".join(f"  - {d}" for _, d in searched)
         raise ProfileNotFound(
@@ -207,12 +236,16 @@ def list_profiles(project_root=None, *, search_dirs=None) -> dict:
     owners: dict = {}
     warnings: list = []
     seen: set = set()
+    if search_dirs is None and os.environ.get(USER_DIR_ENV) and not user_dir():
+        warnings.append(f"{USER_DIR_ENV} is set but ignored: it must be an absolute path")
     for source, directory in dirs:
         if os.path.realpath(directory) in seen:  # same directory twice: never its own shadow
             continue
         seen.add(os.path.realpath(directory))
         if not os.path.exists(directory):
-            if source == "user":  # D4: a missing user dir is absent for resolve, a warning in list
+            if dangling(directory):
+                warnings.append(f"{directory}: dangling symlink (its target is missing); profiles in it are not listed")
+            elif source == "user":  # D4: a missing user dir is absent for resolve, a warning in list
                 warnings.append(f"{directory}: user profiles directory does not exist")
             continue
         try:
@@ -253,9 +286,8 @@ def _row(source: str, directory: str, files: list) -> dict:
         if files[0] != stem.lower() + ".json":
             raise ProfileInvalid(f"Profile file {path}: file names must be lowercase")
         check_name(stem)
-        if not _inside(path, directory):
-            raise ProfileInvalid(f"Profile file {path} resolves outside {directory}")
-        res = _load(path, source, stem)
+        real = _contained(path, directory)
+        res = _load(path, source, stem, real)
         row["schema_version"] = res.schema_version
         desc = res.data.get("description")
         row["description"] = desc if isinstance(desc, str) else None

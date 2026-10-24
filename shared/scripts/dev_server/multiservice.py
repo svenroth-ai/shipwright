@@ -38,7 +38,7 @@ from ._proxies import (
     _start_one,
     _wait_for_service,
 )
-from .profile_config import STATE_VERSION, NoDevServerError, _get_services
+from .profile_config import STATE_VERSION, NoDevServerError, _get_services_resolved
 from .spawn import _StartFailed
 from .validation import _pick_primary, _topo_sort, _validate_services
 
@@ -74,17 +74,23 @@ def _emit_warnings(warnings: list[str]) -> None:
 def cmd_start(cwd: Path, profile: str | None) -> dict:
     """Resolve services from profile + start them. Backwards-compat entry point."""
     try:
-        services, warnings = _get_services(profile, cwd)
+        services, warnings, source = _get_services_resolved(profile, cwd)
     except NoDevServerError as e:
         return {"running": False, "no_dev_server": True, "error": str(e)}
     except ValueError as e:
+        kind = getattr(e, "kind", None)  # a resolver error: its text is already complete
+        if kind:
+            return {"running": False, "error": str(e), "kind": kind}
         return {"running": False, "error": f"invalid services: {e}"}
     _emit_warnings(warnings)
     try:
         _validate_services(services)
     except ValueError as e:
         return {"running": False, "error": f"invalid services: {e}"}
-    return cmd_start_with_services(cwd, services, profile=profile)
+    result = cmd_start_with_services(cwd, services, profile=profile)
+    if source:
+        result["profile_source"] = source
+    return result
 
 
 def cmd_start_with_services(

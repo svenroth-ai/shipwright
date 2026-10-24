@@ -35,6 +35,17 @@ sys.path.insert(0, str(Path(__file__).parent / "lib"))
 
 from review_env_vars import FRAMEWORK_VARS, GATEWAY_BASE_URL_VAR  # noqa: E402
 
+_SCRIPTS = str(Path(__file__).resolve().parent)
+_ADDED = _SCRIPTS not in sys.path
+if _ADDED:
+    sys.path.append(_SCRIPTS)
+import profile_consumer as pc  # noqa: E402
+
+if _ADDED:  # shared/scripts holds a `tools` package that would shadow a plugin's own
+    sys.path.remove(_SCRIPTS)
+
+PROFILE_KEYS_READ = ("required_env_vars",)  # D6: consumed profile keys (checked against the schema)
+
 
 def _strip_inline_comment(raw: str) -> str:
     """Return the value portion of an env-file RHS, stripping inline comments.
@@ -104,12 +115,27 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
     return env_vars
 
 
-def load_profile(profile_name: str, profile_dir: Path) -> dict | None:
-    """Load a stack profile JSON by name."""
-    profile_path = profile_dir / f"{profile_name}.json"
-    if not profile_path.exists():
-        return None
-    return json.loads(profile_path.read_text(encoding="utf-8"))
+def _resolve(project_root: Path, profile_name: str, profile_dir):
+    """Resolve the run config's profile: the resolver by default, ``profile_dir`` when given.
+
+    Raises ValueError (with ``.kind``) for unknown / invalid / drifted - never a silent skip.
+    """
+    if profile_dir is None:
+        return pc.resolve_named(profile_name, project_root, origin=pc.RUN_CONFIG)
+    return pc.resolve_in_dir(profile_name, profile_dir, project_root, origin=pc.RUN_CONFIG)
+
+
+def _error(exc: ValueError, **base) -> dict:
+    """Error result: the resolver's text (names the file / searched paths), kind and exit code."""
+    return {**base, **pc.error_fields(exc), "exit_code": pc.exit_code(exc)}
+
+
+def _skipped(phase: str, profile, reason: str, source=None) -> dict:
+    return {
+        "success": True, "phase": phase, "profile": profile, "missing": [],
+        "optional_missing": [], "found": [], "env_file_exists": False,
+        "env_file_path": None, "skipped": True, "skip_reason": reason, "profile_source": source,
+    }
 
 
 # Framework-level env vars used by Shipwright itself, regardless of stack
@@ -227,7 +253,7 @@ def _ensure_gitignore(project_root: Path) -> bool:
 def init_env_file(
     project_root: Path,
     phase: str,
-    profile_dir: Path,
+    profile_dir: Path | None = None,
     *,
     include_framework: bool = False,
 ) -> dict:
@@ -260,20 +286,30 @@ def init_env_file(
         or matches ``_is_placeholder`` (computed even on ``unchanged``)
       - ``profile``: matched profile name
       - ``reason`` / ``error``: populated only on skipped paths
+      - ``action: "error"``: the run config names a profile that is unknown, invalid or
+        too new (``reason: profile_<kind>``, ``error``: the resolver's text, ``kind``,
+        ``exit_code``); nothing is written.
+
+    ``profile_dir`` is optional: ``None`` resolves project > user > bundled; an explicit
+    directory is searched alone (``--profile-dir``). A reserved sentinel (``generic``,
+    ``detecting``) names no profile file and is skipped.
     """
     # Load profile
     run_config_path = project_root / "shipwright_run_config.json"
     if not run_config_path.exists():
         return {"action": "skipped", "reason": "No shipwright_run_config.json found"}
 
-    run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
-    profile_name = run_config.get("profile")
-    if not profile_name:
-        return {"action": "skipped", "reason": "No profile set in run config"}
-
-    profile = load_profile(profile_name, profile_dir)
-    if not profile:
-        return {"action": "skipped", "reason": f"Profile '{profile_name}' not found"}
+    try:
+        profile_name = pc.config_profile(project_root)
+        if not profile_name:
+            return {"action": "skipped", "reason": "No profile set in run config"}
+        res = _resolve(project_root, profile_name, profile_dir)
+    except ValueError as exc:
+        return _error(exc, action="error", reason=f"profile_{getattr(exc, 'kind', 'error')}")
+    if res.source == "builtin":
+        return {"action": "skipped", "profile": profile_name, "profile_source": res.source,
+                "reason": f"Profile '{profile_name}' is a built-in default with no profile file"}
+    profile = res.data
 
     sections = _collect_phase_vars(profile, phase)
     if include_framework:
@@ -315,7 +351,7 @@ def init_env_file(
                 "action": "unchanged",
                 "path": str(env_file_path),
                 "env_file_path": str(env_file_path),
-                "profile": profile_name,
+                "profile": profile_name, "profile_source": res.source,
                 "vars": [v["name"] for v in all_vars],
                 "framework_keys": framework_names if include_framework else [],
                 "missing_keys": _compute_missing_keys(env_file_path, all_vars),
@@ -335,7 +371,7 @@ def init_env_file(
             "action": "updated",
             "path": str(env_file_path),
             "env_file_path": str(env_file_path),
-            "profile": profile_name,
+            "profile": profile_name, "profile_source": res.source,
             "added": [v["name"] for v in missing_vars],
             "vars": [v["name"] for v in all_vars],
             "framework_keys": framework_names if include_framework else [],
@@ -366,7 +402,7 @@ def init_env_file(
         "action": "created",
         "path": str(env_file_path),
         "env_file_path": str(env_file_path),
-        "profile": profile_name,
+        "profile": profile_name, "profile_source": res.source,
         "vars": [v["name"] for v in all_vars],
         "framework_keys": framework_names if include_framework else [],
         "missing_keys": _compute_missing_keys(env_file_path, all_vars),
@@ -428,75 +464,33 @@ def _is_placeholder(value: str) -> bool:
 def validate(
     project_root: Path,
     phase: str,
-    profile_dir: Path,
+    profile_dir: Path | None = None,
 ) -> dict:
     """Run env var validation for the given phase.
 
     Returns a result dict suitable for JSON output.
     """
     # Read run config to get profile name
-    run_config_path = project_root / "shipwright_run_config.json"
-    if not run_config_path.exists():
-        return {
-            "success": True,
-            "phase": phase,
-            "profile": None,
-            "missing": [],
-            "optional_missing": [],
-            "found": [],
-            "env_file_exists": False,
-            "env_file_path": None,
-            "skipped": True,
-            "skip_reason": "No shipwright_run_config.json found — skipping env validation",
-        }
+    if not (project_root / "shipwright_run_config.json").exists():
+        return _skipped(phase, None, "No shipwright_run_config.json found — skipping env validation")
+    profile_name = None
+    try:
+        profile_name = pc.config_profile(project_root)
+        if not profile_name:
+            return _skipped(phase, None, "No profile set in run config — skipping env validation")
+        res = _resolve(project_root, profile_name, profile_dir)
+    except ValueError as exc:  # unknown / invalid / too new: a failure, never a silent pass
+        return _error(exc, **{**_skipped(phase, profile_name, ""), "success": False,
+                              "skipped": False, "skip_reason": None})
+    if res.source == "builtin":
+        return _skipped(phase, profile_name, f"Profile '{profile_name}' is a built-in default "
+                        "with no profile file — skipping env validation", res.source)
 
-    run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
-    profile_name = run_config.get("profile")
-    if not profile_name:
-        return {
-            "success": True,
-            "phase": phase,
-            "profile": None,
-            "missing": [],
-            "optional_missing": [],
-            "found": [],
-            "env_file_exists": False,
-            "env_file_path": None,
-            "skipped": True,
-            "skip_reason": "No profile set in run config — skipping env validation",
-        }
-
-    profile = load_profile(profile_name, profile_dir)
-    if not profile:
-        return {
-            "success": True,
-            "phase": phase,
-            "profile": profile_name,
-            "missing": [],
-            "optional_missing": [],
-            "found": [],
-            "env_file_exists": False,
-            "env_file_path": None,
-            "skipped": True,
-            "skip_reason": f"Profile '{profile_name}' not found in {profile_dir}",
-        }
-
-    sections = _collect_phase_vars(profile, phase)
+    sections = _collect_phase_vars(res.data, phase)
     phase_vars = [v for _, vars_list in sections for v in vars_list]
 
     if not phase_vars:
-        return {
-            "success": True,
-            "phase": phase,
-            "profile": profile_name,
-            "missing": [],
-            "optional_missing": [],
-            "found": [],
-            "env_file_exists": False,
-            "env_file_path": None,
-            "skipped": True,
-            "skip_reason": f"No required_env_vars defined for phase '{phase}' in profile",
-        }
+        return _skipped(phase, profile_name, f"No required_env_vars defined for phase '{phase}' in profile", res.source)
 
     # Collect available vars from .env.local and os.environ
     env_file_path = project_root / ".env.local"
@@ -558,6 +552,7 @@ def validate(
         "env_file_path": str(env_file_path),
         "skipped": False,
         "skip_reason": None,
+        "profile_source": res.source,
     }
 
 
@@ -567,7 +562,7 @@ def main() -> int:
     parser.add_argument("--phase", required=True, choices=["build", "deploy", "plugin", "all"], help="Pipeline phase")
     parser.add_argument(
         "--profile-dir",
-        help="Directory containing profile JSON files (default: shared/profiles/ relative to this script)",
+        help="Search ONLY this directory for the profile (default: project > user > bundled)",
     )
     parser.add_argument(
         "--init",
@@ -581,20 +576,14 @@ def main() -> int:
         print(json.dumps({"success": False, "error": f"Project root not found: {project_root}"}, indent=2))
         return 1
 
-    if args.profile_dir:
-        profile_dir = Path(args.profile_dir).resolve()
-    else:
-        # Default: shared/profiles/ relative to this script's location
-        profile_dir = Path(__file__).parent.parent / "profiles"
+    profile_dir = Path(args.profile_dir).resolve() if args.profile_dir else None
 
-    if args.init:
-        result = init_env_file(project_root, args.phase, profile_dir)
-        print(json.dumps(result, indent=2))
-        return 0
-
-    result = validate(project_root, args.phase, profile_dir)
+    result = (init_env_file if args.init else validate)(project_root, args.phase, profile_dir)
     print(json.dumps(result, indent=2))
-
+    if result.get("kind"):  # profile unknown / invalid / too new: 2 or 3, never 0
+        return result["exit_code"]
+    if args.init:
+        return 0
     return 0 if result.get("success", False) or result.get("skipped", False) else 1
 
 

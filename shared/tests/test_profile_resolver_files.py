@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from shared.tests.profile_test_fixtures import pr, proj_dir as _proj_dir, write_profile as _write
+from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: F401  (module-local fixtures: "project", "user_dir")
 
 pytestmark = pytest.mark.covers("FR-01.06")
 

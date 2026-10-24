@@ -23,6 +23,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from ._paths import _PROFILES_DIR
+from ._profile_input import _coerce_int, _resolve_profile
 
 # Re-imported in __init__.py for the package-level surface.
 from .validation import _validate_services
@@ -102,31 +103,10 @@ def _profiles_dir() -> Path:
     return Path(_PROFILES_DIR)
 
 
-_PROFILE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-
-
-def _load_profile_data(profile_name: str | None) -> dict | None:
-    """Load <profiles_dir>/<name>.json. Falls back to PROFILE_DEV_SERVERS map.
-
-    The `_profiles_dir` call goes through the package surface so tests
-    that monkeypatch `dev_server._profiles_dir` (to point at a tmp_path
-    fixture) take effect.
-    """
-    if not profile_name:
-        return None
-    if not _PROFILE_NAME_RE.match(profile_name):
-        raise ValueError(f"invalid profile name {profile_name!r}")
-    profiles_dir = _pkg()._profiles_dir()
-    candidate = profiles_dir / f"{profile_name}.json"
-    if candidate.exists():
-        try:
-            return json.loads(candidate.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return None
-    # Fallback: legacy in-script map for very old callers
-    if profile_name in PROFILE_DEV_SERVERS:
-        return {"dev_server": PROFILE_DEV_SERVERS[profile_name]}
-    return None
+def _load_profile_data(profile_name: str | None, project_root: Path | None = None) -> dict | None:
+    """The profile's data, or None for no profile / a reserved sentinel (generic, detecting)."""
+    res = _resolve_profile(profile_name, project_root)
+    return None if res is None or res.source == "builtin" else res.data
 
 
 def _normalize_legacy_dev_server(block: dict) -> dict:
@@ -136,11 +116,11 @@ def _normalize_legacy_dev_server(block: dict) -> dict:
         "command": block.get("command", _DEFAULT_SERVICE["command"]),
         "host": block.get("host", "localhost"),
         "scheme": block.get("scheme", "http"),
-        "port": int(block.get("port", _DEFAULT_SERVICE["port"])),
+        "port": _coerce_int(block.get("port", _DEFAULT_SERVICE["port"]), "dev_server.port", 1, 65535),
         "ready_path": block.get("ready_path", _DEFAULT_SERVICE["ready_path"]),
-        "ready_timeout_seconds": int(
-            block.get("ready_timeout_seconds", _DEFAULT_SERVICE["ready_timeout_seconds"])
-        ),
+        "ready_timeout_seconds": _coerce_int(
+            block.get("ready_timeout_seconds", _DEFAULT_SERVICE["ready_timeout_seconds"]),
+            "dev_server.ready_timeout_seconds", 0, 86400),
         "primary": True,
     }
 
@@ -162,6 +142,8 @@ def _normalize_service_entry(entry: dict, default_primary: bool = False) -> dict
             expanded_port = int(substituted)
         except (TypeError, ValueError):
             expanded_port = substituted  # _validate_services will reject
+    elif isinstance(raw_port, (float, bool)):
+        expanded_port = _coerce_int(raw_port, "port", 1, 65535)
 
     return {
         "name": entry.get("name"),
@@ -170,7 +152,8 @@ def _normalize_service_entry(entry: dict, default_primary: bool = False) -> dict
         "scheme": entry.get("scheme", "http"),
         "port": expanded_port,
         "ready_path": _expand_env(entry.get("ready_path")),
-        "ready_timeout_seconds": entry.get("ready_timeout_seconds", 60),
+        "ready_timeout_seconds": _coerce_int(
+            entry.get("ready_timeout_seconds", 60), "ready_timeout_seconds", 0, 86400),
         "depends_on": entry.get("depends_on") or [],
         "primary": bool(entry.get("primary", default_primary)),
     }
@@ -197,15 +180,24 @@ def _service_url(service: dict) -> str:
     return f"{scheme}://{host_part}:{port}"
 
 
+def _get_services_resolved(
+    profile_name: str | None, cwd: Path
+) -> tuple[list[dict], list[str], str | None]:
+    """`_get_services` plus the profile source (project|user|bundled|builtin|None)."""
+    res = _resolve_profile(profile_name, cwd)
+    profile_data = None if res is None or res.source == "builtin" else res.data
+    services, warnings = _services_from_profile_data(
+        profile_data, cwd, [], profile_name=profile_name
+    )
+    return services, warnings, res.source if res else None
+
+
 def _get_services(
     profile_name: str | None, cwd: Path
 ) -> tuple[list[dict], list[str]]:
     """Resolve a normalized service list + warning messages."""
-    warnings: list[str] = []
-    profile_data = _load_profile_data(profile_name)
-    return _services_from_profile_data(
-        profile_data, cwd, warnings, profile_name=profile_name
-    )
+    services, warnings, _source = _get_services_resolved(profile_name, cwd)
+    return services, warnings
 
 
 def _services_from_profile_data(

@@ -30,7 +30,8 @@ uv run "{plugin_root}/scripts/lib/performance_check.py" \
 
 `--gate inherit` (default) honors the profile / `shipwright_test_config.json`
 value (`warn` or `block`). Pass `--gate warn` or `--gate block` to override
-for a one-off run.
+for a one-off run. A profile error (exit 2/3, `success: false` with a `kind`) is a profile
+problem: stop and show the message; do not retry or edit project code.
 
 **2. Parse the JSON output** — single object on stdout matching:
 ```json
