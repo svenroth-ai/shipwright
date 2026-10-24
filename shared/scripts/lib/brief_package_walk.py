@@ -3,6 +3,8 @@
 Implementation half of :mod:`lib.brief_package` (the one public import surface); split
 out to keep each file small. One :func:`scan_package` walk yields the plain files, the
 links/junctions (never entered) and the read errors; everything else works from that.
+Junk DIRECTORIES (``__MACOSX/``, ``.git/``) are walked so their contents can be refused;
+empty directories are neither hashed nor reported.
 """
 
 from __future__ import annotations
@@ -13,7 +15,8 @@ from collections.abc import Iterator
 from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
-#: Excluded from the hash and never read by a phase. Only the exact-case top-level
+#: Excluded from the hash. NOT a guarantee that no phase reads it: that holds only because
+#: the snapshot copy omits ``evidence/``, which whoever builds the snapshot (B2/U3) owns. Only the exact-case top-level
 #: ``evidence/`` DIRECTORY is skipped silently (and not walked); any other spelling,
 #: or a FILE called ``evidence``, is reported as excluded content.
 EXCLUDED_TOP_DIRS = frozenset({"evidence"})
@@ -92,7 +95,7 @@ def scan_package(brief_dir: Path) -> Scan:
             else:
                 plain.append(name)
         if here == root and "evidence" in plain:
-            plain.remove("evidence")  # never read by a phase: not walked, not hashed
+            plain.remove("evidence")  # not walked, not hashed (the snapshot builder must omit it)
         dirnames[:] = plain
         for name in filenames:
             if _is_link(here / name, root):

@@ -87,7 +87,11 @@ def prepare_scratch_project(root: Path, package: Path) -> Path:
     """Create ``root`` as a scratch project and copy ``package`` to ``root/brief``.
 
     Raises ``ValueError`` when ``package`` has any layout defect (links, excluded files and
-    unreadable directories included): a defective package is rejected, never silently fixed."""
+    unreadable directories included): a defective package is rejected, never silently fixed.
+
+    This checks the SOURCE's layout only and does not verify the copy; verifying the source
+    proves nothing about the copy. The guarantee comes from verifying the COPY against a
+    hash held outside the package (``run_harness`` does, via ``verify_recorded_hash``)."""
     issues = brief_package.validate_layout(package)
     if issues:
         raise ValueError("refusing a defective package: " + "; ".join(

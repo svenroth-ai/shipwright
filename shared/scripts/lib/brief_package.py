@@ -11,8 +11,9 @@ This is the ONE public surface; later units import it and never re-implement it:
 * :func:`verify_package` -- **what consumers call**: layout rules AND the hash compare
   from one scan, against a hash the caller holds outside the package.
 * :func:`validate_layout` -- structural defects, as a list (empty = accepted).
-* :func:`iter_package_files` -- the files that belong to the package (links,
-  junctions, ``evidence/`` and OS junk are never yielded, and never descended into).
+* :func:`iter_package_files` -- the files that belong to the package. Links, junctions
+  and the top-level ``evidence/`` are never yielded and never descended into; junk
+  DIRECTORIES (``__MACOSX/``, ``.git/``) ARE walked so their contents can be refused.
 * :func:`package_sha256` / :func:`manifest` -- a hash over a manifest (NFC POSIX
   relative path -> SHA-256 per file, sorted). Text files are hashed after CRLF->LF
   so an LF and a CRLF checkout hash the same. ``brief.json`` is hashed as canonical
@@ -27,9 +28,19 @@ What the hash does and does not promise (obligations are B2/U3's, not code here)
   person approved it: ``approved_by`` / ``approved_at`` sit outside the hash by design
   (D1), and any agent can recompute it. Consumers anchor the approval and the expected
   hash OUTSIDE the package (run_config, an event).
-* No snapshot: the package is read file by file, so a file can change between the check
-  and a phase's later read (TOCTOU). Consumers hand phases a snapshot COPY after
-  verifying it (``prepare_scratch_project`` in the harness is the pattern).
+* No snapshot (TOCTOU): the package is read file by file, so a file can change between
+  the check and a phase's later read. The pattern is COPY FIRST, then
+  ``verify_package(<the copy>, expected=<hash held OUTSIDE the package>)``, and hand
+  phases ONLY that verified copy. Verifying the source proves nothing about the copy.
+  ``prepare_scratch_project`` (the harness) copies and checks the source's layout only;
+  the guarantee comes from verifying the COPY (``run_harness`` does, via
+  ``verify_recorded_hash`` on it). Phases must read the verified snapshot, never the
+  package in place.
+* ``evidence/`` being "never read by a phase" is NOT a guarantee of this library: it
+  holds only because the snapshot copy omits ``evidence/``. Whoever builds the snapshot
+  (B2/U3) owns that.
+* Empty directories are neither hashed nor reported; a directory name counts only when
+  a file sits under it.
 * Line endings of NUL-free files are not protected: CRLF and LF hash the same.
 * Case-folding over-approximates path collisions (fails closed), and ``.gitattributes``
   drift (``eol``/``text`` rules) is not detected. A portable-charset rule for file names
