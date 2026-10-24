@@ -208,7 +208,8 @@ def recover_single_session(
     # — leave the pointer, the master resolves the next frontier via single-session-next).
     loop_state = load_loop_state(project_root)
     if loop_state is not None and force_status == "awaiting_launch":
-        loop_state = {**loop_state, "currentPhaseTaskId": phase_task_id, "attempt": 0}
+        loop_state = {**loop_state, "currentPhaseTaskId": phase_task_id, "attempt": 0,
+                      "gateRejections": 0}
         # Lift the loop to running ONLY when recover actually cleared the run failure:
         # recover_phase_task lifts config.status off "failed" only when THIS task carried
         # the failure — recovering an unrelated task leaves the run failed, so the loop

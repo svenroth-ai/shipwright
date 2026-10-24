@@ -3829,19 +3829,30 @@ answer. `run_phase_gate` gets the task's `splitId` and `config.get("runId")` unc
 (None when absent, so the canon bridge falls back to `SHIPWRIGHT_RUN_ID`; an explicitly
 blank `runId` stays blank and is ask-level there). A `canon_degraded` note counts as an ask-level finding here (a v2
 override over it records `fail`, not `degraded`), and a degraded or crashed (`[gate-error]`)
-check is `retryable: false`.
+check is `retryable: false`, as is a Phase-Quality critical-gate finding (`kind:
+critical_gate`, read from the latest Stop-hook audit file, which a re-dispatch need not
+refresh). The promotion reverses `phase_validators_canon._degraded`'s "inform, not ask" on
+this path only. **A5 precondition:** prove `shared/scripts/tools/verifiers` ships in every
+plugin-cache layout before flipping enforcement on (the `<cache>/shipwright/<plugin>/<version>`
++ `<cache>/shipwright/shared` layout is proven by `test_single_session_gate_hardening.py`).
 
 - **Enforcement is OFF by default** (`ENFORCE_PHASE_GATE_DEFAULT`, a function parameter —
-  no config key or environment variable). Off and no override: the gate is not called and
-  apply is unchanged. A5 flips the default.
+  no config key or environment variable). Off and no override: the gate is not called (the
+  failed-task refusal and the attempt realignment below apply regardless). A5 flips the
+  default. While it is ON, a raw `orchestrator.py complete-phase-task` with an `ok:true`
+  result on a `single_session` run is refused `use_single_session_apply` (exit 2) — it would
+  skip the gate and the override record; an `ok:false` strict-stop still goes through.
 - **Rejection:** `{ok:false, reason:"phase_gate_failed", issues, inform, checked, attempt,
-  max_gate_retries, retries_exhausted, retryable, terminal}`, exit 1, nothing written.
-  `terminal` is `null` while a retry is due (`run_loop_state.json.attempt` ≤
-  `MAX_GATE_RETRIES` = 2; `attempt` counts every dispatch of the task and resets on
-  advance / recover; `single-session-next` resets it when the pointer drifted to another
-  task). With no loop state for this run (a library apply that never went through
-  `single-session-next`) `attempt` is `null` and no cap applies; `single-session-next`
-  always writes one, so a driven run is always capped. Then `ask_human` (guided, or an unknown autonomy value — still non-mutating) or
+  gate_rejections, max_gate_retries, retries_exhausted, retryable, terminal}`, exit 1;
+  run_config and the task are unchanged and the rejection is counted in loop state
+  (`gateRejections`). `terminal` is `null` while a retry is due: neither the dispatch count
+  (`attempt`) nor this rejection's number exceeds `MAX_GATE_RETRIES` = 2, so re-applying
+  without a new `single-session-next` still reaches the cap. Both counters reset on advance
+  / recover, and when `single-session-next` realigns a pointer that drifted to another
+  task. With no loop state describing this task of this run (none, another run's, a
+  pointer at a different task, or a malformed one) `attempt` and `gate_rejections` are
+  `null` and **no cap applies** — a driven run that sends every retry through
+  `single-session-next` is capped. Then `ask_human` (guided, or an unknown autonomy value — still non-mutating) or
   `failed` (autonomous / unattended): apply calls `mark_phase_failed` with the issues and
   returns the ordinary strict-stop shape (`ok:true`, `run_status:"failed"`) plus a `gate`
   block; recoverable with `single-session-recover`.
@@ -3850,8 +3861,12 @@ check is `retryable: false`.
   `autonomy`, `entrypoint: "single-session-apply"` — in the **same locked write** as the
   completion (`complete_phase_task(on_complete=...)`; a raising hook writes nothing and
   returns `on_complete_failed`). Refused: a blank reason (`override_reason_required`), an
-  `ok:false` result (`override_requires_ok_result`), an `unattended` run
-  (`override_requires_human`) — checked only when the task is still open: a stale apply
+  `ok:false` result (`override_requires_ok_result`), and any autonomy off the allowlist
+  `guided` / `autonomous` (case and spaces ignored; `unattended`, a typo or an absent value
+  → `override_requires_human`, re-checked on the locked config inside the hook; the raw
+  value is recorded). The refusal stops a cooperative caller only: `phase-runner.md`
+  forbids a phase-runner calling apply, `complete-phase-task` or the override at all. All
+  of this is checked only when the task is still open: a stale apply
   keeps its CAS answer, and a double apply its idempotent one with
   `override_skipped: "task_not_open"` (nothing recorded). The gate itself is read before
   the lock, as on v1.

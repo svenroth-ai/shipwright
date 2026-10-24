@@ -1713,7 +1713,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Destructive database operations (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`).
 - Production deployments (always confirm + backup).
 - Skipping test layers (must provide a valid reason).
-- Overriding phase validation gates (`update-step --force`, which requires `--force-reason "<why>"`, or, in a pipeline run driven by `/shipwright-run`, `single-session-apply --override-reason "<why>"`; the check still runs and its findings plus your reason are recorded in `validation_overrides[]`, so an overridden phase stays distinguishable from one that passed). The agent overrides only on your explicit answer, never because its retries ran out; a run with nobody to ask (`unattended`) cannot override at all.
+- Overriding phase validation gates (`update-step --force`, which requires `--force-reason "<why>"`, or, in a pipeline run driven by `/shipwright-run`, `single-session-apply --override-reason "<why>"`; the check still runs and its findings plus your reason are recorded in `validation_overrides[]`, so an overridden phase stays distinguishable from one that passed). The agent overrides only on your explicit answer, never because its retries ran out; only a `guided` or `autonomous` run can override — a run with nobody to ask (`unattended`, or no autonomy set) cannot, and a phase's own runner never overrides its own work.
 - Continuing after 3 failed fix attempts.
 - Phrase questions to the user in plain, functional language a non-senior developer understands -- no unexplained jargon.
 

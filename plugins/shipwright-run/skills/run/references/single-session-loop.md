@@ -80,15 +80,17 @@ Repeat until a terminal signal:
    the phase's own validators and canon checks (`orchestrator_pkg/phase_gate.py`).
    Enforcement is **off by default** for now (it is switched on once every test runs on
    real artifacts); with it off apply behaves exactly as above. When it runs and finds
-   ask-level issues, apply answers `ok:false`, `reason: "phase_gate_failed"` and changes
-   **nothing** — the task stays `in_progress`. Handle that answer by its `terminal`:
+   ask-level issues, apply answers `ok:false`, `reason: "phase_gate_failed"`: the task
+   stays `in_progress` and only the rejection is counted (loop state `gateRejections`).
+   While enforcement is on, never complete a phase with the raw `complete-phase-task` — it
+   is refused (`use_single_session_apply`). Handle the answer by its `terminal`:
    - `terminal: null` → a retry is due. Call `single-session-next` (it re-dispatches the
      same task and counts the dispatch), then brief the phase-runner again **with
      `issues[]`** — the rejection's `issues` copied verbatim as data — so it fixes those
      findings and re-applies.
    - `terminal: "ask_human"` (guided, after `MAX_GATE_RETRIES` = 2 retries, or at once
-     when `retryable: false` — a broken or incomplete check install that re-running cannot
-     fix). Stop and ask, in plain words, with the issues listed: **go ahead anyway** →
+     when `retryable: false` — a broken or incomplete check install, or a Phase-Quality
+     critical-gate finding, that re-running cannot fix). Stop and ask, in plain words, with the issues listed: **go ahead anyway** →
      re-apply the same result with `--override-reason "<their reason>"`; **give it more
      tries** → `single-session-recover` (fresh retry count), then `single-session-next`;
      **stop the run** → `orchestrator.py mark-phase-failed` with the issues as `--error`.
@@ -97,17 +99,21 @@ Repeat until a terminal signal:
      block naming the issues. Surface it as any failed run (Step 6); it is recoverable
      with `single-session-recover`.
 
-   The cap counts **every** dispatch of the task (`run_loop_state.json.attempt`,
-   including a crash-resume re-dispatch) and resets when the loop moves on or the task is
-   recovered. A gate that passes adds `gate: {result, checked, issues, inform}` to the
+   **Send every retry through `single-session-next`.** The cap counts the task's dispatches
+   (`run_loop_state.json.attempt`, including a crash-resume re-dispatch) and its gate
+   rejections (`gateRejections`), whichever is higher, and both reset when the loop moves on
+   or the task is recovered. Without a loop state for this task (a library apply that never
+   went through `single-session-next`) the position is unknown and nothing is capped. A gate
+   that passes adds `gate: {result, checked, issues, inform}` to the
    success payload; inform notes there are not persisted.
 
    **Override (ASK FIRST).** `--override-reason "<why>"` on `single-session-apply` completes
    a phase over its gate: the gate still runs, and its findings, the reason, the task and
    the run's autonomy are written to `validation_overrides[]` in the same locked write as
-   the completion. A blank reason, an `ok:false` result and a run with no human
-   (`unattended`) are refused. Use it **only on a person's explicit answer** — never
-   because retries ran out.
+   the completion. A blank reason, an `ok:false` result and any autonomy other than
+   `guided` / `autonomous` (so `unattended`, a typo, or none at all) are refused. That
+   refusal only stops a cooperative caller: use it **only on a person's explicit answer** —
+   never because retries ran out — and never brief a phase-runner to call it.
 
    On resume, the master rebuilds pipeline context with a third subcommand:
    ```bash

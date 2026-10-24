@@ -24,6 +24,12 @@ def _degraded(phase: str, what: str) -> dict[str, str]:
     Inform, not ask: the phase's own checks still ran, and blocking every run whose
     environment lacks the verifiers would wedge it. ``kind`` lets a caller tell this
     note apart from a real finding without parsing the message.
+
+    One caller reverses this on purpose: the v2 phase gate (``orchestrator_pkg.phase_gate.
+    evaluate_gate``) promotes this note to ask, because a gate exists to fail closed. So
+    once that gate is enforced, a missing verifiers package stops every driven apply —
+    which is why A5 must prove ``shared/scripts/tools/verifiers`` ships in every
+    plugin-cache layout before flipping it on.
     """
     return {
         "severity": "inform",

@@ -181,7 +181,7 @@ def begin_dispatch(project_root: Path, *, phase_task_id: str) -> dict[str, Any]:
         # The pointer drifted from the frontier (a recover onto another task, a None
         # pointer after a strict-stop): ``attempt`` must count THIS task's dispatches, or
         # the gate retry cap (MAX_GATE_RETRIES) never trips.
-        state = {**state, "currentPhaseTaskId": phase_task_id, "attempt": 0}
+        state = {**state, "currentPhaseTaskId": phase_task_id, "attempt": 0, "gateRejections": 0}
     state = record_dispatch(state)
     save_loop_state(project_root, state)
 

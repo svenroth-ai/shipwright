@@ -34,6 +34,13 @@ You receive these parameters in the prompt:
   issue, re-verify on disk, and return the normal result; if one cannot be fixed by
   this phase, return `ok: false` with a `reason` naming it.
 
+**You never complete, fail or override your own phase task.** A phase-runner does not
+call `single-session-apply`, `complete-phase-task`, `mark-phase-failed` or
+`--override-reason` itself — it returns its result and the master applies it. The
+`issues` above are data to fix, not questions to answer. The orchestrator refuses an
+override in a run with no human to decide it, but that refusal stops a cooperative
+caller only; this rule is what keeps a phase-runner from waving its own work through.
+
 ## Step 0: load your prior-phase context
 
 Before running the phase skill, surface the artifacts your phase depends on:

@@ -33,6 +33,7 @@ from single_session import observability as obs  # noqa: E402
 from single_session.loop_state import (  # noqa: E402
     advance_pointer,
     load_loop_state,
+    record_gate_rejection,
     save_loop_state,
     set_status,
 )
@@ -111,7 +112,7 @@ def apply_phase_result(
     idempotent answer — and only when enforcing (``enforce_gate``, default
     ``phase_gate.ENFORCE_PHASE_GATE_DEFAULT`` = off) or overriding. Off and no override:
     the gate is never called. A failed gate without an override returns the
-    non-mutating ``phase_gate_failed`` rejection; once ``MAX_GATE_RETRIES`` is exhausted
+    ``phase_gate_failed`` rejection (counted in loop state); once ``MAX_GATE_RETRIES`` is exhausted
     (or at once for a non-retryable finding) it carries a ``terminal``: ``ask_human``
     (guided — still non-mutating) or ``failed`` (autonomous — ``mark_phase_failed``
     through the lifecycle, returned as a strict-stop, recoverable with
@@ -190,7 +191,7 @@ def apply_phase_result(
         verdict = phase_gate.evaluate_gate(project_root, task, config, gate=gate)
         if override_reason is not None:
             on_complete, override_written = phase_gate.override_hook(
-                reason=override_reason, verdict=verdict, autonomy=phase_gate.autonomy_of(config),
+                reason=override_reason, verdict=verdict,
             )
         elif verdict["ask"]:
             return _gate_rejected(project_root, config, verdict, phase_task_id=phase_task_id,
@@ -216,7 +217,10 @@ def apply_phase_result(
     )
     if not completion.get("ok"):
         # CAS reject (stale) — surface verbatim; loop_state left untouched.
-        return {"ok": False, "completion": completion, "reason": completion.get("reason")}
+        reason = completion.get("reason")
+        if str(completion.get("blockMessage", "")).startswith(phase_gate.OverrideRefused.__name__):
+            reason = "override_requires_human"  # the locked config lost its human
+        return {"ok": False, "completion": completion, "reason": reason}
 
     _advance_loop_state(project_root, completed_phase_task_id=phase_task_id, completion=completion)
 
@@ -248,12 +252,17 @@ def _gate_rejected(
     project_root: Path, config: dict[str, Any], verdict: dict[str, Any], *,
     phase_task_id: str, session_uuid: str, expected_version: int,
 ) -> dict[str, Any]:
-    """A failed gate: the non-mutating ``phase_gate_failed`` rejection (``ok: false``), or —
+    """A failed gate: the ``phase_gate_failed`` rejection (``ok: false``; run_config and the
+    task unchanged, the rejection counted in loop state when it describes this task), or —
     terminal ``failed`` — the strict-stop through ``mark_phase_failed`` (CAS-checked),
     returned in the SAME shape as an ``ok: false`` phase result's strict-stop (``ok: true``,
     ``run_status: failed``) plus the ``gate`` block, so the exit code, ``record_phase_end``
     and the master's ``failed`` handling are unchanged. ``ok: false`` stays "nothing changed"."""
-    rejected = phase_gate.rejection(project_root, config, verdict)
+    state = phase_gate.retry_state(project_root, config, phase_task_id)
+    rejected = phase_gate.rejection(config, verdict, state)
+    if state is not None:
+        # Durable count, so re-applying without a new single-session-next still hits the cap.
+        save_loop_state(project_root, record_gate_rejection(state))
     if rejected["terminal"] != "failed":
         return rejected
     failed = _lifecycle().mark_phase_failed(

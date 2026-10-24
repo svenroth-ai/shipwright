@@ -80,14 +80,16 @@ def _dispatch(root):
 
 
 def test_enforcement_off_by_default_never_calls_the_gate(tmp_project):
+    """Off: the gate is not called (the failed-task refusal and attempt realignment apply
+    regardless; they have their own tests)."""
     assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is False
     _config(tmp_project)
     applied = _apply(tmp_project, _dispatch(tmp_project), gate=_never)
     assert applied["ok"] is True
-    assert set(applied) == {"ok", "completion", "run_status", "next"}  # unchanged shape
+    assert set(applied) == {"ok", "completion", "run_status", "next"}  # no gate block
 
 
-def test_a_failed_gate_is_a_non_mutating_rejection(tmp_project):
+def test_a_failed_gate_changes_nothing_but_the_rejection_count(tmp_project):
     _config(tmp_project)
     d = _dispatch(tmp_project)
     rc = tmp_project / "shipwright_run_config.json"
@@ -99,8 +101,9 @@ def test_a_failed_gate_is_a_non_mutating_rejection(tmp_project):
     assert applied["issues"] == [ASK]
     assert (applied["attempt"], applied["terminal"], applied["retryable"]) == (1, None, True)
     assert applied["max_gate_retries"] == MAX_GATE_RETRIES
-    assert rc.read_bytes() == before                      # nothing written
-    assert load_loop_state(tmp_project) == loop_before
+    assert rc.read_bytes() == before                      # run_config untouched
+    after = {**load_loop_state(tmp_project), "updatedAt": None}
+    assert after == {**loop_before, "updatedAt": None, "gateRejections": 1}
     assert _task(tmp_project, d)["status"] == "in_progress"
 
 
@@ -185,7 +188,7 @@ def test_autonomous_retries_stop_at_the_cap_and_fail_the_phase(tmp_project):
 
 
 @pytest.mark.parametrize("autonomy,terminal", [("unattended", "failed"), ("bogus", "ask_human")])
-def test_unknown_autonomy_takes_the_non_destructive_terminal(tmp_project, autonomy, terminal):
+def test_each_autonomy_takes_its_terminal_after_the_cap(tmp_project, autonomy, terminal):
     d = _exhaust(tmp_project, autonomy, _gate(ask=[ASK]))
     final = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
     got = final.get("terminal") or final.get("gate", {}).get("terminal")
@@ -249,11 +252,7 @@ def test_without_loop_state_the_retry_position_is_unknown(tmp_project):
          "version": seed.get("version", 1)}
     applied = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
     assert (applied["attempt"], applied["terminal"]) == (None, None)
-    state_path = tmp_project / ".shipwright" / "run_loop_state.json"
-    state_path.parent.mkdir(exist_ok=True)
-    for text in ("{bad", json.dumps({"runId": cfg["runId"], "attempt": "x"})):
-        state_path.write_text(text, encoding="utf-8")
-        assert phase_gate.retry_position(tmp_project, cfg) is None
+    assert applied["gate_rejections"] is None
 
 
 def test_a_failed_terminal_that_loses_the_cas_race_reports_it(tmp_project, monkeypatch):

@@ -25,6 +25,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(
     0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"),
 )
@@ -161,6 +163,7 @@ def test_lifecycle_command_set_unchanged():
     assert _router.LIFECYCLE_COMMANDS == EXPECTED_LIFECYCLE_COMMANDS
 
 
+@pytest.mark.covers("FR-01.01/AC02")
 def test_lifecycle_fail_closed_reasons_unchanged():
     """The exit-code-2 fail-closed reason set must match the historical
     set so SessionStart / UserPromptSubmit hooks keep their behaviour.
@@ -169,6 +172,8 @@ def test_lifecycle_fail_closed_reasons_unchanged():
         "wrong_skill", "duplicate_claim", "phase_already_terminal",
         "prereqs_unmet", "stale_version", "stale_session",
         "invalid_status", "invalid_status_for_completion",
+        # A4: a raw ok:true complete-phase-task while the v2 phase gate is enforced.
+        "use_single_session_apply",
     })
     assert _router.FAIL_CLOSED_REASONS == expected
 

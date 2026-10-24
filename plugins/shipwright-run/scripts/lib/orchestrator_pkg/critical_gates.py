@@ -80,6 +80,9 @@ def _collect_critical_gate_issues(finding: dict[str, Any]) -> list[dict[str, Any
                 continue
             issues.append({
                 "severity": "ask",
+                # ``kind`` lets the v2 gate tell this apart: it is read from the latest
+                # Stop-hook audit file, so a re-dispatch need not refresh it (not retryable).
+                "kind": "critical_gate",
                 "name": f"{check_id} ({category})",
                 "reason": item.get("evidence") or "critical check failed",
                 "remediation": item.get("remediation")
