@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: risk / Severity: medium**\n  **Finding:** Monkeypatch validation appears incomplete. The plan says only `_PhaseTasksLock.__init__` and `design_gate_extras.subprocess` patches exist, but if any test patches a re-exported name on the parent module (e.g. `phase_task_lifecycle._ok` or `phase_validators._run_canon_checks`), the patch will NOT propagate to code inside `phase_task_core` / `phase_validators_canon` that calls those names via its own module globals. Re-export only fixes *import* sites, not *patch* sites.\n  **Suggestion:** Grep tests for `patch(` / `setattr(` against all four source modules, not just the two known ones, and for each hit confirm the patched attribute is still read through the patched module's namespace at call time. If a mismatch exists, the simplest fix is to have the moved code import the shared symbol lazily from the parent (or keep the patched symbol's definition in place).\n\n- **Category: risk / Severity: medium**\n  **Finding:** \"phase_validators re-imports all\" plus \"own lib dir appended to sys.path\" \u2014 `sys.path.append` at import time of a module that is *also loaded by path in a test* creates two distinct module instances (`phase_validators` and `lib.phase_validators`, or via importlib spec). Re-exports across those two instances can diverge, and the appended path persists and pollutes other tests.\n  **Suggestion:** Confirm the by-path test load actually resolves the sibling imports; consider `sys.path.insert` with cleanup or a conftest fixture, and verify the moved submodules themselves aren't double-instantiated (module-level constants/state in `phase_task_core` must be singletons for lock/CAS semantics).\n\n- **Category: approach / Severity: low**\n  **Finding:** Item 1 says \"public name and signature unchanged\" but then describes `render_catalog_markdown(catalog=None)` delegating to `render_catalog_doc(cat, *, policies_order, ...)`. If the original signature took the catalog positionally/required, adding `catalog=None` is a signature change (even if only loosening). Trivial, but the acceptance criterion says behaviour unchanged \u2014 be precise.\n  **Suggestion:** Keep the wrapper signature byte-identical to the original; pass the constants explicitly as planned (the no-cycle rule is fine).\n\n- **Category: edge-case / Severity: low**\n  **Finding:** Baseline update \"remove the 3 entries now under 300\" \u2014 is the bloat-baseline check a hard gate in CI? If entries are keyed by path, the *new* files (phase_validators_late, phase_task_core, etc.) may be auto-discovered and fail the baseline on first run if they exceed thresholds. `phase_task_core` holding lock + CAS + helpers could plausibly approach limits.\n  **Suggestion:** Check how the baseline enumerates files; pre-add the new modules' expected sizes (or confirm exempt paths) *before* the final baseline update, and verify the baseline edit is the last commit step as specified.\n\n- **Category: risk / Severity: low**\n  **Finding:** `phase_task_lifecycle` splitting into four modules with core\u2190lookup/planning/recovery\u2190lifecycle DAG: if `planning` and `recovery` ever need each other's names, the DAG forces a cycle or forces moving symbols into core. This is a move-only change so it's fine today, but the seam chosen may not match where A4 (override hook/gate seam) actually needs to cut.\n  **Suggestion:** Sanity-check the A4 seam location against the proposed DAG before committing the split; if A4 hooks live in lifecycle itself, no problem \u2014 just confirm.\n\n- **Category: dependency / Severity: low**\n  **Finding:** Docs update is two pointer sentences, but if `docs/hooks-and-pipeline.md` (or any doc/test) references `design_gate_extras.GateResult` by dotted path, stale references remain.\n  **Suggestion:** Grep for the old dotted paths (`gate_policy.render`, `design_gate_extras.GateResult`, etc.) across docs and tests as part of verification.\n\nNo security concerns \u2014 this is a pure code move with no new inputs, auth surface, or data flow.\n\n## Overall assessment\n\nSound, well-scoped extraction plan with the right instinct (pure moves, re-exports, baseline updated last and downward only). The main real risk is monkeypatch/re-export leakage and double module instantiation via the by-path test load \u2014 both checkable with a grep and one test run before merging.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** dependency\n  **Severity:** low\n  **Finding:** The lifecycle extraction defines an import DAG, but the validator extraction does not. If the extracted validators import shared helpers from `phase_validators`, they could create a circular import while its re-exports and `_VALIDATORS` are still initializing.\n  **Suggestion:** Check the moved functions\u2019 dependencies explicitly and keep imports one-way. Move any genuinely shared helper into a leaf module only if necessary.\n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** Appending the library directory to `sys.path` supports loading by path, but bare sibling imports can resolve differently from package imports. The proposed verification lists suites without explicitly covering both loading modes.\n  **Suggestion:** Confirm the existing tests exercise both normal imports and loading by path in a fresh process, including the lifecycle exports. Keep path insertion conditional to avoid duplicate entries.\n\n- **Category:** approach\n  **Severity:** low\n  **Finding:** \u201cEvery touched file smaller\u201d conflicts literally with adding two sentences to `docs/hooks-and-pipeline.md`.\n  **Suggestion:** Clarify that this criterion applies to the four extraction targets, or omit the documentation addition if the criterion is literal.\n\nThe extraction boundaries and compatibility wrapper are sound, and the proposed verification is proportionate. These are refinements; I could not inspect repository files because local command execution was blocked, so this assessment is based on the supplied approach.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a2-extraction-for-headroom",
+    "at": "2026-10-24T13:28:55.698574+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

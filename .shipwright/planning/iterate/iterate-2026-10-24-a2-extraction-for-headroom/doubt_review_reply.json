@@ -1,0 +1,6 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"low","lens":"hidden-coupling","claim_under_doubt":"re-exports keep every seam","disproof_attempt":"Patching the facade no longer reaches moved functions; no test relies on it; documented in the facade.","what_would_resolve_it":"facade comment (done)"},
+{"severity":"low","lens":"boundary-contract","claim_under_doubt":"siblings load in every context","disproof_attempt":"Siblings rely on the facade for sys.path; every runtime caller goes through the facades; documented in module headers.","what_would_resolve_it":"documented convention (done)"},
+{"severity":"low","lens":"reversibility","claim_under_doubt":"deployment same as one file","disproof_attempt":"Partial cache sync could miss a sibling; update-marketplace copies whole trees.","what_would_resolve_it":"rebuttal: whole-tree sync only"},
+{"severity":"low","lens":"boundary-contract","claim_under_doubt":"tests edited only for imports","disproof_attempt":"One source-text test changed what it reads because defs moved.","what_would_resolve_it":"recorded deviation"}],
+"summary":"4 low doubts, none blocking."}

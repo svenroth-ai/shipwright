@@ -242,11 +242,18 @@ def test_load_bearing_module_survived(rel):
     )
 
 
+@pytest.mark.covers("FR-01.01/AC01")
 def test_phase_task_lifecycle_still_exposes_every_mutator_the_loop_needs():
     """The deleted Stop hook and the surviving loop call the SAME mutators. Deleting the
     hook must not have pruned any of them as 'now unused'."""
-    src = (REPO_ROOT / "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py").read_text(
-        encoding="utf-8",
+    lib = REPO_ROOT / "plugins/shipwright-run/scripts/lib"
+    src = (lib / "phase_task_lifecycle.py").read_text(encoding="utf-8")
+    # The mutators live in phase_task_lifecycle plus the sibling modules it re-exports
+    # (A2 extraction); the mutators are defined across them.
+    src += "".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(lib.glob("phase_task_*.py"))
+        if path.name != "phase_task_lifecycle.py"
     )
     for fn in (
         "def claim_phase_task",

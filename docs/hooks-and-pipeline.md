@@ -2646,7 +2646,7 @@ promoted, even if their id hypothetically coincides with a gate id.
 >
 > **What replaced them:** the lifecycle mutators they called
 > (`claim_phase_task` / `complete_phase_task` / `mark_phase_failed` / `freeze_splits`
-> / `plan_next_phase`, in `plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py`)
+> / `plan_next_phase`, importable from `plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py`, which re-exports the `phase_task_{core,lookup,planning,recovery}.py` modules)
 > are **unchanged and still load-bearing** — the master's loop calls exactly those,
 > which is why deleting the hooks cost the pipeline nothing. See § Phase Lifecycle
 > (in-conversation loop). The `phase_started` event these hooks used to emit is now
@@ -3726,6 +3726,8 @@ F11 `check_spec_impact_recorded` WARNs (does not fail) on a justified `none` wit
 ## Phase Validators
 
 **File:** `plugins/shipwright-run/scripts/lib/phase_validators.py`
+
+The test / changelog / deploy / compliance validators live in `phase_validators_late.py` and the canon bridge in `phase_validators_canon.py`; `phase_validators.py` re-exports them (`_VALIDATORS` is unchanged).
 
 Called by `orchestrator.py:update_step()` before marking a phase complete. Returns issues with severity `ask` or `inform`.
 

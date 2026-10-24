@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All four targets under 300 lines, behaviour unchanged, baseline lowered only."},
+{"name":"Error Handling","verdict":"pass","note":"Function bodies moved verbatim; no handling changed."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs, subprocess or paths; sys.path append is the module's own directory."},
+{"name":"Test Quality","verdict":"pass","note":"No tests edited; existing 580 run tests, shared subset, design and integration suites green."},
+{"name":"Performance Basics","verdict":"pass","note":"Only extra module imports at load."},
+{"name":"Naming & Structure","verdict":"pass","note":"Repo-unique module names; acyclic import DAG (core to lookup/planning/recovery to lifecycle)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Public import surface preserved via re-exports; verified by existing importers and by-path loader test."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No test files changed."}]}

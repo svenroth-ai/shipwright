@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-a2-extraction-for-headroom",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:31:42.925504+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Monkeypatch validation appears incomplete. The plan says only `_PhaseTasksLock.__init__` and `design_gate_extras.subprocess` patches exist, but if any test patches a re-exported name on the parent module (e.g. `phase_task_lifecycle._ok` or `phase_validators._run_canon_checks`), the patch will NOT propagate to code inside `phase_task_core` / `phase_validators_canon` that calls those names via its own module globals. Re-export only fixes import sites, not patch sites.",
+          "suggestion": "Grep tests for `patch(` / `setattr(` against all four source modules, not just the two known ones, and for each hit confirm the patched attribute is still read through the patched module's namespace at call time. If a mismatch exists, the simplest fix is to have the moved code import the shared symbol lazily from the parent (or keep the patched symbol's definition in place).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "\"phase_validators re-imports all\" plus \"own lib dir appended to sys.path\" — `sys.path.append` at import time of a module that is also loaded by path in a test creates two distinct module instances (`phase_validators` and `lib.phase_validators`, or via importlib spec). Re-exports across those two instances can diverge, and the appended path persists and pollutes other tests.",
+          "suggestion": "Confirm the by-path test load actually resolves the sibling imports; consider `sys.path.insert` with cleanup or a conftest fixture, and verify the moved submodules themselves aren't double-instantiated (module-level constants/state in `phase_task_core` must be singletons for lock/CAS semantics).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Item 1 says \"public name and signature unchanged\" but then describes `render_catalog_markdown(catalog=None)` delegating to `render_catalog_doc(cat, , policies_order, ...)`. If the original signature took the catalog positionally/required, adding `catalog=None` is a signature change (even if only loosening). Trivial, but the acceptance criterion says behaviour unchanged — be precise.",
+          "suggestion": "Keep the wrapper signature byte-identical to the original; pass the constants explicitly as planned (the no-cycle rule is fine).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "Baseline update \"remove the 3 entries now under 300\" — is the bloat-baseline check a hard gate in CI? If entries are keyed by path, the new files (phase_validators_late, phase_task_core, etc.) may be auto-discovered and fail the baseline on first run if they exceed thresholds. `phase_task_core` holding lock + CAS + helpers could plausibly approach limits.",
+          "suggestion": "Check how the baseline enumerates files; pre-add the new modules' expected sizes (or confirm exempt paths) before the final baseline update, and verify the baseline edit is the last commit step as specified.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "phase_task_lifecycle` splitting into four modules with core←lookup/planning/recovery←lifecycle DAG: if `planning` and `recovery` ever need each other's names, the DAG forces a cycle or forces moving symbols into core. This is a move-only change so it's fine today, but the seam chosen may not match where A4 (override hook/gate seam) actually needs to cut.",
+          "suggestion": "Sanity-check the A4 seam location against the proposed DAG before committing the split; if A4 hooks live in lifecycle itself, no problem — just confirm.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "Docs update is two pointer sentences, but if `docs/hooks-and-pipeline.md` (or any doc/test) references `design_gate_extras.GateResult` by dotted path, stale references remain.",
+          "suggestion": "Grep for the old dotted paths (`gate_policy.render`, `design_gate_extras.GateResult`, etc.) across docs and tests as part of verification.  No security concerns — this is a pure code move with no new inputs, auth surface, or data flow.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The lifecycle extraction defines an import DAG, but the validator extraction does not. If the extracted validators import shared helpers from `phase_validators`, they could create a circular import while its re-exports and `_VALIDATORS` are still initializing.",
+          "suggestion": "Check the moved functions’ dependencies explicitly and keep imports one-way. Move any genuinely shared helper into a leaf module only if necessary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Appending the library directory to `sys.path` supports loading by path, but bare sibling imports can resolve differently from package imports. The proposed verification lists suites without explicitly covering both loading modes.",
+          "suggestion": "Confirm the existing tests exercise both normal imports and loading by path in a fresh process, including the lifecycle exports. Keep path insertion conditional to avoid duplicate entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“Every touched file smaller” conflicts literally with adding two sentences to `docs/hooks-and-pipeline.md`.",
+          "suggestion": "Clarify that this criterion applies to the four extraction targets, or omit the documentation addition if the criterion is literal.  The extraction boundaries and compatibility wrapper are sound, and the proposed verification is proportionate. These are refinements; I could not inspect repository files because local command execution was blocked, so this assessment is based on the supplied approach.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T13:31:12.320949+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: risk / Severity: medium**\n  **Finding:** Monkeypatch validation appears incomplete. The plan says only `_PhaseTasksLock.__init__` and `design_gate_extras.subprocess` patches exist, but if any test patches a re-exported name on the parent module (e.g. `phase_task_lifecycle._ok` or `phase_validators._run_canon_checks`), the patch will NOT propagate to code inside `phase_task_core` / `phase_validators_canon` that calls those names via its own module globals. Re-export only fixes *import* sites, not *patch* sites.\n  **Suggestion:** Grep tests for `patch(` / `setattr(` against all four source modules, not just the two known ones, and for each hit confirm the patched attribute is still read through the patched module's namespace at call time. If a mismatch exists, the simplest fix is to have the moved code import the shared symbol lazily from the parent (or keep the patched symbol's definition in place).\n\n- **Category: risk / Severity: medium**\n  **Finding:** \"phase_validators re-imports all\" plus \"own lib dir appended to sys.path\" — `sys.path.append` at import time of a module that is *also loaded by path in a test* creates two distinct module instances (`phase_validators` and `lib.phase_validators`, or via importlib spec). Re-exports across those two instances can diverge, and the appended path persists and pollutes other tests.\n  **Suggestion:** Confirm the by-path test load actually resolves the sibling imports; consider `sys.path.insert` with cleanup or a conftest fixture, and verify the moved submodules themselves aren't double-instantiated (module-level constants/state in `phase_task_core` must be singletons for lock/CAS semantics).\n\n- **Category: approach / Severity: low**\n  **Finding:** Item 1 says \"public name and signature unchanged\" but then describes `render_catalog_markdown(catalog=None)` delegating to `render_catalog_doc(cat, *, policies_order, ...)`. If the original signature took the catalog positionally/required, a […truncated]\n\n[openai] - **Category:** dependency\n  **Severity:** low\n  **Finding:** The lifecycle extraction defines an import DAG, but the validator extraction does not. If the extracted validators import shared helpers from `phase_validators`, they could create a circular import while its re-exports and `_VALIDATORS` are still initializing.\n  **Suggestion:** Check the moved functions’ dependencies explicitly and keep imports one-way. Move any genuinely shared helper into a leaf module only if necessary.\n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** Appending the library directory to `sys.path` supports loading by path, but bare sibling imports can resolve differently from package imports. The proposed verification lists suites without explicitly covering both loading modes.\n  **Suggestion:** Confirm the existing tests exercise both normal imports and loading by path in a fresh process, including the lifecycle exports. Keep path insertion conditional to avoid duplicate entries.\n\n- **Category:** approach\n  **Severity:** low\n  **Finding:** “Every touched file smaller” conflicts literally with adding two sentences to `docs/hooks-and-pipeline.md`.\n  **Suggestion:** Clarify that this criterion applies to the four extraction targets, or omit the documentation addition if the criterion is literal.\n\nThe extraction boundaries and compatibility wrapper are sound, and the proposed verification is proportionate. These are refinements; I could not inspect repository files because local command execution was blocked, so this assessment is based on the supplied approach.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": 33,
+          "finding": "Facade comment on monkeypatching is only half true: names are bound per module, so one patch point became up to four.",
+          "suggestion": "Reword the comment; patch class attributes to reach all modules.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_multi_session_removal_residue.py",
+          "line": 246,
+          "finding": "Test now scans all phase_task_*.py text; passes if a mutator is dropped from the facade re-exports. Also adds an unexplained covers marker.",
+          "suggestion": "Also assert callable(getattr(phase_task_lifecycle, name)); justify or drop the marker.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lookup.py",
+          "line": 2,
+          "finding": "Sibling modules import by bare name and rely on the facade having run first (ADR-045 prefers own sys.path insert); phase_validators_late without phase_validators would silently skip canon checks.",
+          "suggestion": "Optional: give phase_validators_canon its own guarded shared/scripts insert.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T14:19:42.872691+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": null,
+          "finding": "The facade comment tells a future patcher where to monkeypatch",
+          "suggestion": "Reword: patch the module that uses the helper, or patch class attributes; patch the facade to intercept facade callers.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators.py",
+          "line": null,
+          "finding": "phase_validators sibling resolution is equivalent in every loading context",
+          "suggestion": "Use insert(0) for consistency, or rebut: names are unique repo-wide.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "integration-tests/test_multi_session_removal_residue.py",
+          "line": null,
+          "finding": "AC: existing tests edited only for imports",
+          "suggestion": "Record the added covers marker alongside the source-text deviation.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T14:19:43.044201+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lookup.py:10 (same pattern in phase_task_planning.py:11, phase_task_recovery.py:8, phase_validators_late.py:14, phase_validators_canon.py:1)",
+          "line": null,
+          "finding": "The extracted sibling modules import each other by bare name (`from phase_task_core import ...`) but never insert their own directory into `sys.path` — unlike `phase_task_core.py` and `phase_validators.py`, which do their own path setup. They only work because `phase_task_lifecycle.py`/`phase_validators.py` happened to mutate `sys.path` first. Any tool or test that loads e.g. `phase_task_recovery.py` directly by file path (the loading-by-path pattern this codebase explicitly uses elsewhere — see the comment \"this file is also loaded by path\" in phase_validators.py) gets an ImportError.",
+          "suggestion": "Either replicate the two-line `sys.path.insert` preamble in each extracted module, or verify by grep that nothing loads these by path and note the constraint in each module docstring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/lib/design_gate_extras.py:25-45",
+          "line": null,
+          "finding": "The relative-import fallback now wraps five imports instead of one. If any single one of the new sibling modules is missing on a checkout (e.g., partial deploy or stale test fixture dir with old `html_tag_scanner` but no `design_gate_result.py`), the whole `except ImportError` branch falls through to the top-level imports, which will then fail with a second ImportError whose traceback points at the fallback rather than the missing file — slightly worse diagnosability, not a behaviour change.",
+          "suggestion": "Acceptable as-is; optionally split the try/except per-module if misfires occur.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "diff generally",
+          "line": null,
+          "finding": "The spec's AC (\"existing tests green, edited only for imports\") is not verifiable from this diff — no test edits or tests-are-green evidence are included, and the new modules add no direct import-of-each-extracted-module coverage, so a broken extraction of, say, `phase_task_planning` would only be caught if an existing test transitively imports it through `phase_task_lifecycle`.",
+          "suggestion": "Confirm the existing suite imports every re-exported name from `phase_task_lifecycle` (a smoke import test would pin that).  No security issues, no logic changes in moved code, no hardcoded secrets, no off-by-ones introduced.  Overall: a clean, faithful extraction with preserved public surfaces; the only substantive concern is the path-setup asymmetry in the extracted siblings, which is worth fixing but unlikely to bite in the current wiring. Ship-with-fixes (the sys.path preamble), otherwise sound.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T13:32:41.090830+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Audit of this extraction diff:\n\n**Spec compliance.** The spec asks for: render_catalog_markdown + ASCII helpers out of gate_policy.py into a renderer module with re-export (done — `gate_catalog_render.py`, `render_catalog_markdown` remains the public entry and passes the policy constants to avoid a cycle); extraction from phase_validators.py (done — `_run_canon_checks` → `phase_validators_canon.py`, the four late validators → `phase_validators_late.py`, `_VALIDATORS` untouched); phase_task_lifecycle.py (done — core/lookup/planning/recovery, with `phase_task_lifecycle` re-exporting everything, so existing imports of e.g. `claim_phase_task`, `complete_phase_task`, `PLUGIN_PHASE_MAP`, `_check_owner_version` keep working); design_gate_extras.py (done — #5/#6 → `design_gate_html.py`, #9 → `design_gate_feedback.py`, GateResult → `design_gate_result.py`, re-exported via the existing relative/top-level dual import). Baseline entries removed for the three shrinking files — downward only, as required. The moved code is byte-identical everywhere I compared (including the quirks like `recover_phase_task`'s `\"failed\" in (old_status or \"\")` check), so behaviour is unchanged.\n\nFindings:\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-run/scripts/lib/phase_task_lookup.py:10 (same pattern in phase_task_planning.py:11, phase_task_recovery.py:8, phase_validators_late.py:14, phase_validators_canon.py:1)\n  Finding: The extracted sibling modules import each other by bare name (`from phase_task_core import ...`) but never insert their own directory into `sys.path` — unlike `phase_task_core.py` and `phase_validators.py`, which do their own path setup. They only work because `phase_task_lifecycle.py`/`phase_validators.py` happened to mutate `sys.path` first. Any tool or test that loads e.g. `phase_task_recovery.py` directly by file path (the loading-by-path pattern this codebase explicitly uses elsewhere — see the comment \"this file is also loaded by path\"  […truncated]\n\n[openai] No concrete defects found in the supplied diff. The extracted function bodies preserve their existing logic, and the public entry points remain available through wrappers or re-exports. No security issues are apparent.\n\nShip-as-is based on static review. Workspace access was blocked, so I could not read BRIEF section 2/A2, run existing tests, or independently verify file-size limits and baseline update ordering.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T14:19:42.760717+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:36:16.434118+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:31:12.218143+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "run_id": "iterate-2026-10-24-a2-extraction-for-headroom",
+  "date": "2026-10-24T14:08:41.537824Z",
+  "event_at": "2026-10-24T13:33:02.454460+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/a2-extraction-for-headroom",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-a2-extraction-for-headroom",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "gate catalog render output unchanged via the new renderer module",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_gate_catalog_doc_sync.py + test_gate_policy.py PASSED"
+      },
+      {
+        "behavior": "phase validators (test/changelog/deploy/compliance + canon bridge) unchanged behind re-exports",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests (580 passed) incl. test_phase_validators_project.py by-path load"
+      },
+      {
+        "behavior": "phase-task lifecycle transitions, lock and CAS unchanged behind re-exports",
+        "disposition": "tested",
+        "evidence": "test_phase_task_lifecycle.py, test_phase_tasks_lock.py, test_lifecycle_cli.py PASSED"
+      },
+      {
+        "behavior": "design gates unchanged behind re-exports (dual import modes)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_design_gate_extras*.py and plugins/shipwright-design tests PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-24T13:31:22.054Z",
+    "attempts": 0,
+    "justification": "Pure code-motion extraction with re-exports; no startable surface, behaviour unchanged, covered by the existing unit suites",
+    "reason_code": "no-behavior-change"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
