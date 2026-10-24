@@ -211,8 +211,8 @@ def get_test_command(profile: str, layer: str, profile_path: Path | None = None,
     if cmd:
         return cmd
     if res.source not in ("bundled", "builtin"):  # D9: the default tables are never a custom profile's
-        raise pc.ProfileInvalid(f"Profile {res.name!r} ({res.path}) defines no {layer} command; "
-                                "add `testing.unit` (or the layer's entry) to it.")
+        raise pc.ProfileInvalid(f"Profile {res.name!r} ({res.path}) defines no {layer} command; add "
+                                f"`testing.{_PROFILE_LAYER_KEYS.get(layer, layer)}.command` to it.")
     commands = PROFILE_TEST_COMMANDS[res.name] if uses_legacy_commands(res) else DEFAULT_COMMANDS
     return commands.get(layer, DEFAULT_COMMANDS.get(layer, f"echo 'No test command for {layer}'"))
 

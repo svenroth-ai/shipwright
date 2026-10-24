@@ -294,7 +294,7 @@ export SHIPWRIGHT_SCANNER_BACKEND=oss
 export SHIPWRIGHT_SCANNER_BACKEND=aikido
 ```
 
-Or set it in the project profile (copy the full bundled profile to `.shipwright/profiles/<name>.json` first: a project profile replaces the bundled one, it does not merge):
+Or set it in the project profile (find the bundled file with `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --name <n> --path-only`, then copy the full bundled profile to `.shipwright/profiles/<name>.json` first: a project profile replaces the bundled one, it does not merge):
 ```json
 "security": {
     "provider": "oss",

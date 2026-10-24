@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All four BRIEF S5 items are built and pinned: interview step 7 with custom pick, docs/stack-profiles.md plus guide/hooks-and-pipeline/CLAUDE.md, the python guard, and the worktree integration test with separate discovery and selection assertions; the S2/S3/S4 hand-offs are applied or recorded as not done in the ADR."},
+{"name":"Error Handling","verdict":"pass","note":"write-project-config keeps exit 4 for bad names, degrades only the early in_progress call when the shared tree is missing and keeps exit 1 for a complete scaffold; test_runner names the real key in its exit 3 message."},
+{"name":"Security Basics","verdict":"pass","note":"Names still go through the resolver D3 rules; docs state the trust model and the two accepted residuals; no new shell surface beyond existing CLIs."},
+{"name":"Test Quality","verdict":"pass","note":"Guards have planted red and green cases (path forms, sys.exit(0), class methods) plus reverse allowlist checks; the integration test drives real subprocesses from a git worktree with distinct assertions for discovery and selection."},
+{"name":"Performance Basics","verdict":"pass","note":"The python guard reads about 1000 files in one cat-file process and parses each once (a few seconds)."},
+{"name":"Naming & Structure","verdict":"pass","note":"Edits are section-local in shared docs; step-e prose 397 lines (cap 400); test_runner.py stays at 321 lines (net-zero); new tests live in new files."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer (resolver CLI/loader output, project writer config) and consumers (four command loaders, skill prose) probed by the integration test and the prose snippet runner; --profile-root keeps the config write location unchanged, pinned by a test."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"Existing tests were extended or renamed only (the 3.8 prose-shape test rename, PROSE list additions); no test was weakened or deleted."}
+]}

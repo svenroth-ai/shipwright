@@ -120,7 +120,9 @@ the test is who *wrote* it, not who reads it; `guide.md` and
 `hooks-and-pipeline.md` sit there as equals. **`.shipwright/`** holds the
 artifacts Shipwright itself produces — specs under `.shipwright/planning/`,
 evidence under `.shipwright/compliance/`, architecture/decision memory under
-`.shipwright/agent_docs/` — and is never hand-composed. A file that is neither belongs nowhere: a **record of
+`.shipwright/agent_docs/` — and is never hand-composed, with one exception:
+`.shipwright/profiles/` holds the project's own stack profiles, which a human
+writes and commits (`docs/stack-profiles.md`). A file that is neither belongs nowhere: a **record of
 finished work** is deleted (git history keeps it); a **generated** file is
 never filed among the hand-written ones — it lives **next to the source it is
 generated from**, so source and render are read together (`gate_catalog.json`

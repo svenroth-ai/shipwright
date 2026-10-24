@@ -29,6 +29,8 @@ PROSE = [
     "plugins/shipwright-build/agents/section-builder.md",
     "plugins/shipwright-build/skills/build/references/migrations-apply.md",
     "plugins/shipwright-test/agents/test-runner.md",
+    "plugins/shipwright-test/skills/test/SKILL.md",
+    "plugins/shipwright-project/skills/project/SKILL.md",
 ]
 
 def _snippets() -> list[tuple[str, str]]:
@@ -112,7 +114,7 @@ def test_dev_server_sites_carry_the_stop_on_profile_error_sentence():
     for rel in sites:
         lines = (REPO / rel).read_text(encoding="utf-8").splitlines()
         starts = [i for i, ln in enumerate(lines) if "dev_server.py" in ln and " start" in " ".join(lines[i:i + 2])]
-        profile_starts = [i for i in starts if any("--profile" in ln for ln in lines[i:i + 3])]
+        profile_starts = [i for i in starts if any("--profile" in ln for ln in lines[i:i + 5])]
         assert profile_starts, rel
         for i in profile_starts:  # the rule follows EACH --profile start block
             assert any("stop and show the message" in ln for ln in lines[i:i + 8]), (rel, i + 1)
@@ -126,7 +128,8 @@ def _path_only_gaps(lines: list[str]) -> list[int]:
             near = " ".join(lines[max(0, i - 4):i + 5]).lower()
             ok_empty = "built-in defaults" in near and "empty" in near and "exit 0" in near
             ok_stop = "non-zero" in near and "stop and show the message" in near  # exit 4/1 also have empty stdout
-            ok_name = "a-z0-9" in near  # the name pattern is the real guard against shell metacharacters
+            # the name pattern is the real guard against shell metacharacters, and a stop token must follow it
+            ok_name = re.search(r"a-z0-9.*?\b(?:otherwise|else),? stop", near) is not None
             if not (ok_empty and ok_stop and ok_name):
                 gaps.append(i + 1)
     return gaps
@@ -147,3 +150,5 @@ def test_path_only_branch_check_is_red_on_a_planted_omission_and_green_when_fixe
     assert _path_only_gaps(fixed) == []
     no_name = [bare[0][:-1] + " (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry)."]
     assert _path_only_gaps(no_name) == [1]  # a site may not drop the name-pattern clause
+    no_stop = [bare[0][:-1] + " (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`)."]
+    assert _path_only_gaps(no_stop) == [1]  # the pattern alone does not say what to do on a mismatch

@@ -1,0 +1,93 @@
+{
+  "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
+  "date": "2026-10-24T21:20:33.533001Z",
+  "event_at": "2026-10-24T19:58:31.833476+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-stack-profile-resolver--S5",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-s5-interview-docs-e2e",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "interview/writer: --profile-root finds a project profile for a requirements file outside the project and does not move the config",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_profile_name_check.py::test_file_mode_layout_finds_the_project_profile_through_profile_root PASSED"
+      },
+      {
+        "behavior": "early in_progress generic/detecting call skips the profile check; missing shared tree degrades only there, complete exits 1",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_profile_name_check.py::test_early_sentinel_call_skips_the_profile_check PASSED"
+      },
+      {
+        "behavior": "test_runner exit-3 hint names the real testing.<key>.command per layer for a verbatim copied bundled profile",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_copied_bundled_profile.py::test_copied_bundled_profile_names_the_real_key_per_layer PASSED"
+      },
+      {
+        "behavior": "python guard: no hand-built profile path outside the resolver (project/user file paths too), reverse allowlist",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_py_guard.py::test_no_module_builds_a_stack_profile_path_outside_the_resolver PASSED"
+      },
+      {
+        "behavior": "python guard: no caller swallows a resolver error (test_ prefix modules scanned, wrappers, .kind only when branched on, Profile* family; loud handlers green)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_py_guard.py::test_swallow_rule_is_red_on_planted_handlers PASSED"
+      },
+      {
+        "behavior": "custom project profile reports source=project in test_runner, dev_server, validate_env and adopt matching from a git worktree",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_stack_profile_resolution_e2e.py::test_custom_project_profile_reports_source_project_in_every_loader PASSED"
+      },
+      {
+        "behavior": "schema_version too new stops every command loader and an explicit adopt selection with one message; adopt discovery warns and continues (separate assertions)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_stack_profile_resolution_e2e.py::test_schema_version_too_new_stops_every_loader_with_the_same_message PASSED"
+      },
+      {
+        "behavior": "user-level profile used when the project has none; bundled-name shadow warns and gets no bundled-only defaults (D9)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_stack_profile_resolution_e2e.py::test_shadowing_a_bundled_name_warns_and_skips_bundled_only_defaults PASSED"
+      },
+      {
+        "behavior": "prose snippet guard: stop token after the name pattern, PROSE list includes test and project SKILL.md",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_prose_commands.py::test_path_only_branch_check_is_red_on_a_planted_omission_and_green_when_fixed PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest integration-tests/test_stack_profile_resolution_e2e.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 6,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-stack-profile-resolver--S5\\.shipwright\\runs\\iterate-2026-10-24-s5-interview-docs-e2e\\surface_verification.log",
+    "timestamp": "2026-10-24T21:20:32.983Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_rls",
+    "touches_shared_infra"
+  ]
+}

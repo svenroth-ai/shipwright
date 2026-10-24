@@ -4,7 +4,9 @@ file builds a bundled stack-profile path by hand.
 Skill prose is runtime code: a hand-built ``shared/profiles/{profile}.json``
 bypasses the resolver (project > user > bundled lookup, validation, the
 shadow warning). Prose goes through ``resolve_profile.py`` or passes the
-profile NAME to a loader. The ``*.py`` half of the guard belongs to S5.
+profile NAME to a loader. The ``*.py`` half is ``test_stack_profile_py_guard.py``.
+
+Reads the git INDEX (see ``index_files`` for the policy: stage your edits before a local run).
 
 Tagged to FR-01.06; see test_profile_resolver.py for the FR note.
 """
@@ -13,10 +15,11 @@ from __future__ import annotations
 
 import functools
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
+
+from shared.tests.index_files import read_index, tracked
 
 pytestmark = pytest.mark.covers("FR-01.06")
 
@@ -44,11 +47,7 @@ ALLOWLIST: dict[str, str] = {
 
 
 def _tracked() -> list[str]:
-    out = subprocess.run(
-        ["git", "-C", str(REPO), "ls-files", "*.md", "*hooks.json"],
-        capture_output=True, text=True, check=True, encoding="utf-8",
-    ).stdout
-    return [p for p in out.splitlines() if p]
+    return tracked("*.md", "*hooks.json")
 
 
 def _allowed(rel: str) -> bool:
@@ -62,28 +61,8 @@ def scan_text(text: str) -> list[tuple[int, str]]:
 
 @functools.lru_cache(maxsize=1)
 def _index_blobs() -> dict[str, bytes]:
-    """Every tracked guard file as the next commit carries it (the index).
-
-    Generated renders such as triage_inbox.md are re-written locally between
-    commits; reading the index keeps this guard identical on a developer tree
-    and on a clean CI checkout. One ``cat-file --batch`` process, not one per file.
-    """
-    names = _tracked()
-    res = subprocess.run(
-        ["git", "-C", str(REPO), "cat-file", "--batch"],
-        input="".join(f":{n}\n" for n in names).encode("utf-8"),
-        capture_output=True, check=True,
-    )
-    out, blobs, pos = res.stdout, {}, 0
-    for name in names:
-        eol = out.index(b"\n", pos)
-        header = out[pos:eol].split()
-        if len(header) != 3 or header[1] != b"blob":  # "<spec> missing" or a non-blob: a failure, never a skip
-            raise AssertionError(f"guard cannot read tracked file {name}: {out[pos:eol].decode('utf-8', 'replace')}")
-        size = int(header[2])
-        blobs[name] = out[eol + 1:eol + 1 + size]
-        pos = eol + 1 + size + 1
-    return blobs
+    """Every tracked guard file as the next commit carries it (policy: ``index_files``)."""
+    return read_index(_tracked())
 
 
 def _read(rel: str) -> str:

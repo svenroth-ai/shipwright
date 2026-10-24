@@ -20,10 +20,12 @@ from pathlib import Path
 _SHARED_SCRIPTS = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
 
 
-def profile_error(name: str, project_root: Path) -> str | None:
-    """``None`` when ``name`` resolves (or is a sentinel), else a one-paragraph reason.
+def check_profile(name: str, project_root: Path) -> None:
+    """Resolve ``name``; returns ``None`` when it resolves (or is a sentinel).
 
-    Raises ``ImportError`` when the shared resolver tree is missing (an install error).
+    Raises ``ValueError`` (the resolver's error family) for a name that cannot be used, so the CALLER
+    decides what that means (both writers print ``describe(...)`` and exit 4), and ``ImportError``
+    when the shared resolver tree is missing (an install error).
     """
     if not os.path.isfile(os.path.join(_SHARED_SCRIPTS, "profile_resolver.py")):
         raise ImportError(  # an install problem (callers exit 1), not a bad name (exit 4)
@@ -36,8 +38,9 @@ def profile_error(name: str, project_root: Path) -> str | None:
     finally:
         if added and _SHARED_SCRIPTS in sys.path:
             sys.path.remove(_SHARED_SCRIPTS)
-    try:
-        profile_resolver.resolve_profile(name, project_root)
-    except ValueError as exc:  # branch on .kind only; the classes are not nameable here
-        return f"profile {name!r} cannot be used ({getattr(exc, 'kind', 'error')}): {exc}"
-    return None
+    profile_resolver.resolve_profile(name, project_root)
+
+
+def describe(name: str, exc: ValueError) -> str:
+    """The one-paragraph reason printed for a profile name that cannot be used."""
+    return f"profile {name!r} cannot be used ({getattr(exc, 'kind', 'error')}): {exc}"

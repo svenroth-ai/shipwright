@@ -3282,7 +3282,7 @@ journey-coverage gap routes to instead of blocking a test run.
 | Step | Output file | Scaffolder | Template source | Profile-aware? |
 |---|---|---|---|---|
 | E.13 | `.github/workflows/security.yml` | `plugins/shipwright-adopt/scripts/lib/security_workflow_scaffolder.py` | `shared/templates/github-actions/security.yml.template` | No (single template) |
-| E.14 | `.github/workflows/ci.yml` | `plugins/shipwright-adopt/scripts/lib/ci_workflow_scaffolder.py` | profile-mapped via `shared/scripts/lib/ci_workflow.py::TEMPLATE_BY_PROFILE` | **Yes** — picks `ci-supabase-nextjs.yml.template` / `ci-vite-hono.yml.template` / `ci-python-plugin-monorepo.yml.template` based on `snapshot.profile.matched` |
+| E.14 | `.github/workflows/ci.yml` | `plugins/shipwright-adopt/scripts/lib/ci_workflow_scaffolder.py` | profile-mapped via `shared/scripts/lib/ci_workflow.py::TEMPLATE_BY_PROFILE` | **Yes** — picks `ci-supabase-nextjs.yml.template` / `ci-vite-hono.yml.template` / `ci-python-plugin-monorepo.yml.template` based on the EFFECTIVE profile (`--profile`, else `snapshot.profile.matched`), keyed by provenance: only a bundled profile gets a bundled template; a custom or copied one gets none and `results.ci_workflow.message` says so (the same holds for E.14b CodeQL; `AUTOMERGE_SETUP.md` then lists fewer required checks) |
 | E.14b | `.github/workflows/codeql.yml` | `plugins/shipwright-adopt/scripts/lib/codeql_workflow_scaffolder.py` | `shared/templates/github-actions/codeql.yml.template` (single template, **rendered**) | **Yes** — `${SHIPWRIGHT_CODEQL_LANGUAGES}` substituted from `shared/scripts/lib/codeql_workflow.py::CODEQL_LANGUAGES_BY_PROFILE` (`python` / `javascript-typescript`) |
 | E.15 / E.15a | *(retired 2026-10-10)* — no `claude-review*.yml` is scaffolded; the independent review runs inside each iterate | — | — | — |
 | E.15b | `AUTOMERGE_SETUP.md` (repo root) | `plugins/shipwright-adopt/scripts/lib/automerge_setup_scaffolder.py` | `shared/templates/AUTOMERGE_SETUP.md.template` (**rendered** from deployed workflows) | **Yes** — `{PROFILE}` + Required-Check table derived by parsing `.github/workflows/*.yml` via `shared/scripts/lib/automerge_readiness.py` |
@@ -5181,7 +5181,7 @@ Origin: iterate-2026-08-04-iterate-timing-attribution.
 
 | Script | Self-Healing | Details |
 |---|---|---|
-| `dev_server.py` | Reads `shipwright_build_config.json` for `dev_url` only when no profile is named or the profile is a reserved sentinel (`generic`, `detecting`) | An unknown, corrupt or too-new profile is an error (non-zero exit, `kind` in the JSON), never this fallback |
+| `dev_server.py` | Reads `shipwright_build_config.json` for `dev_url` only when no profile is named, the profile is a reserved sentinel (`generic`, `detecting`), or the resolved profile declares neither `services` nor `dev_server` | An unknown, corrupt or too-new profile is an error (non-zero exit, `kind` in the JSON), never this fallback |
 | `playwright_setup.py` | Substitutes port from build config into template | Prevents hardcoded port 3000 |
 
 **Stack-profile reads (campaign `stack-profile-resolver`, S2).** These Python loaders no
@@ -5190,7 +5190,7 @@ through `shared/scripts/profile_resolver.py` (project `.shipwright/profiles/` > 
 `~/.shipwright/profiles/` > bundled, first file wins, no fall-through) via the loader glue
 `shared/scripts/profile_consumer.py`. Every resolution writes a `source=` line (and the
 shadow warning when a project/user profile reuses a bundled name) to stderr, and the JSON
-result carries `profile_source`. Skill prose still builds paths itself until S4; S5 reconciles this section.
+result carries `profile_source`. Skill prose resolves through `resolve_profile.py` (or hands the NAME to a loader), never a hand-built path. Two guards keep it that way: `shared/tests/test_stack_profile_prose_guard.py` (markdown and `hooks.json`) and `shared/tests/test_stack_profile_py_guard.py` (no `*.py` builds a profile path outside the resolver; no resolver call swallows its error). User-facing explanation: `docs/stack-profiles.md`.
 
 | Loader | Reads | Profile named but unknown / corrupt / too new | Sentinel (`generic`, `detecting`) / no profile |
 |---|---|---|---|
@@ -5199,6 +5199,8 @@ result carries `profile_source`. Skill prose still builds paths itself until S4;
 | `shipwright-test` `test_runner.py` | `testing.*`; run-config `profile` | JSON `{success:false, kind}`, exit 2 or 3 | sentinel: built-in default commands; run config names nothing: legacy `supabase-nextjs` |
 | `shipwright-test` `performance_check.py` (`--profile` / `--profile-path`) | `testing.performance` | JSON error, exit 2 or 3 | skip "no budgets (no profile)", exit 0 |
 | `shipwright-design` `setup-design-session.py` | `design_system`; project-config `profile` | JSON error, exit 2 or 3 | sentinel: built-in defaults; absent: `supabase-nextjs` |
+
+Project interview (`/shipwright-project` step 7): candidates come from `resolve_profile.py list --json` (project, user and bundled; invalid ones are rows with `valid: false` plus `error`/`kind`, shown to the user but never offered; `warnings` carries directory problems only); the user may pick a custom profile by name, and an explicit pick that is invalid or unlisted stops with the resolver's message instead of falling back to `generic`; no match keeps `generic`; `write-project-config.py` is called with `--profile-root` (profile lookup only; the config location is unchanged) so a project profile is found even for a requirements file outside the project, and validates the name (exit 4 when the name does not resolve to a usable profile: unknown, malformed, invalid or too new; exit 1 when the shared tree is missing on a complete scaffold; the early `in_progress` call with `generic`/`detecting` skips the check).
 
 Command-running loaders (`test_runner` runs `shell=True`, `dev_server` spawns `services[].command`)
 execute only inside a phase the user invoked (`/shipwright-test`, `/shipwright-preview`,

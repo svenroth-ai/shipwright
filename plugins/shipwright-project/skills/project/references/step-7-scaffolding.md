@@ -8,10 +8,18 @@ See [project-scaffolding.md](project-scaffolding.md) for details.
 
 ## Profile detection
 
-1. Read the interview transcript and requirements
-2. Match against known profiles (e.g., "Supabase" + "Next.js" → `supabase-nextjs`)
-3. If a profile matched, load it (no match: skip to step 4): `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile_name}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop)
-4. If no match: use a generic profile structure
+`{project_root}` (list, resolve and the config writer alike) is the project folder that holds or will hold `.shipwright/`: the working directory for a description, or the project being scaffolded when a requirements file is given (never that file's folder, which is `{planning_dir}`).
+
+1. Read the interview transcript and requirements.
+2. List the candidates: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}" --json`. Each row has `name`, `source` (`project`, `user` or `bundled`), `valid` and a description; an invalid candidate is a row with `valid: false` plus `error` and `kind`. `warnings` carries directory problems only, not invalid candidates.
+3. Offer the `valid: true` rows, and show the user every invalid row (name and `error`) so a broken own profile is not silently missing.
+4. Pick the profile (plain-language wording, see CLAUDE.md "Asking the user questions"):
+   - One candidate clearly fits the interview (for example "Supabase" + "Next.js" gives `supabase-nextjs`): propose it.
+   - The user may instead name their own stack description. Ask: "Do you want to use your own stack description (a file in your project's `.shipwright/profiles/` or in `~/.shipwright/profiles/`), or one of the built-in ones?"
+   - Nothing fits, or the user declines: keep `generic` (no stack file, built-in defaults) and skip to step 6.
+   - **An explicit pick never falls back to `generic`.** If the named profile is listed as invalid, or is not in the list, still run step 5 and STOP with its message.
+5. Load the chosen profile: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile_name}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
+6. No match: use a generic profile structure.
 
 ## Generate these files in the project root
 
@@ -55,9 +63,12 @@ entry produces the error; the plugin one is fine.
 ```bash
 uv run "{plugin_root}/scripts/checks/write-project-config.py" \
   --planning-dir "{planning_dir}" \
+  --profile-root "{project_root}" \
   --profile "{profile_name}" \
   --scope "{scope}"
 ```
+
+`--profile-root` is `{project_root}` (lookup only; where the config is written does not change). Always pass it. The writer exits 4 when the name does not resolve to a usable profile (unknown, malformed, invalid or too new) and 1 when the shared tree is missing on a complete scaffold.
 
 On the `--status complete` (full-scaffold) path this also merges the
 canonical `.shipwright/` artifact-ignore block (SSoT:

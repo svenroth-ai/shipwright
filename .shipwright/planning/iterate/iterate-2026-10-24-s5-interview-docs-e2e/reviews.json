@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:34:02.125522+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Several accepted S4 hand-offs are absent from the mini-plan: the `_tracked()` → `git ls-files -z` fix, the S4 ADR round-2 wording/count fix, the test_stack_profile_prose_commands.py window/PROSE/rename items, and the index-vs-working-tree policy decision (dedupe `ls-files` names, \"unmerged index entry\" message, documented policy in the docstring). The new \"shared index reader used by both guards\" item touches the same code, so omitting the adjacent accepted fixes risks a second pass over the same file.",
+          "suggestion": "Add an explicit \"S4 accepted nits\" change item; fold the ls-files -z and policy decision into the shared-index-reader work since they're the same code path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The S4 round-6 hand-offs require S5 to decide two things and record that decision: (a) whether to amend BRIEF S4 item 3 for generated renders (the trg-647df2d8 forward-guard trip risk), and (b) whether to fix the pre-existing config-location defect (`--planning-dir` only → config under `<project>/.shipwright/`). The plan is silent on both.",
+          "suggestion": "Add a line item: \"record decision on BRIEF S4 item 3 amendment and config-location fix, each with a one-paragraph rationale.\" Even \"defer, unchanged\" is fine — but it must be written down or the hand-off chain breaks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The `--project-root \"{project_path}\"` change at the SKILL call sites is listed under the interview step, but the hand-off also fixes file mode (`@requirements.md`), where the defect was that the lookup root fell back to the requirements file's parent and a project-level custom profile exited 4. If `--project-root` is only wired where `{project_path}` is known but the file-mode call site is missed (or a legacy SKILL renders without it), the exit-4 failure returns. The plan's own risk note also acknowledges that passing `--project-root` may move where `shipwright_project_config.json` is written — this interacts with the \"pre-existing, deliberately unchanged\" config-location defect and could break readers or hook activation in adopted repos.",
+          "suggestion": "Add a test for the file-mode layout (the hand-off explicitly requires it) and verify the config write path is unchanged for existing call sites (e.g., assert config lands where it did before S5 in an integration scenario). If `--project-root` changes the write location, implement the \"walk up to nearest `.shipwright/` ancestor for lookup only\" alternative instead.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The test_runner hint fix is specified without its required pin test: \"pin it with a test that copies a bundled node profile verbatim into `.shipwright/profiles/`.\" The plan's change item 2 doesn't mention this test; without it, the per-layer `_PROFILE_LAYER_KEYS` naming can regress silently.",
+          "suggestion": "Add the verbatim-copy profile test to the test strategy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "\"User may name a custom one, no match keeps generic\" — the hand-offs distinguish discovery vs selection, and the resolver distinguishes not_found (exit 2, read stderr) from invalid profile (exit 3). \"No match keeps generic\" needs to handle: name matches a bundled profile (shadowing), name resolves but schema_version is too new, and resolver exit 3. The plan's e2e covers bundled-name shadow and schema_version, but the interview flow itself only describes the happy/no-match paths.",
+          "suggestion": "Specify interview behavior for resolver exit 3 (stop and report, per the S3 exit-code adoption) vs not_found (fall back to generic with a warning) — and assert both in tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The AST-based py guard (\"no hand-built profile path outside resolver; no swallowed resolver ValueError\") will be brittle against indirect path construction (`Path(base) / \"profiles\" / name`, f-strings, `os.path.join`), and \"no swallowed ValueError\" needs careful scoping or it false-positives on legitimate bare `except ValueError` in unrelated code.",
+          "suggestion": "Scope the guard to the known call sites / directory-literal patterns (`\"profiles\"`, `.shipwright`), and allow an explicit allowlist with a drift-pinned test, mirroring the prose guard's design. Keep it small — a regex over string literals is likely more robust than full AST walking here.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Hand-off verification items (\"verify `adopt/references/codebase-analysis.md:11`\", \"verify S4 fixed the S4 ADR wording\") are implied by \"prose nits\" but verification tasks get dropped more easily than change tasks.",
+          "suggestion": "List them as explicit checklist items.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The optional `--layer all` pre-validation from the S2 hand-off (pre-validate all layers' commands so a late exit 3 doesn't discard earlier results) is neither adopted nor explicitly declined.",
+          "suggestion": "Either include it (it's small and user-visible) or note \"declined, per-round trade-off\" in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Passing `--project-root` also relocates `shipwright_project_config.json`. The S3 hand-off explicitly deferred that behavior because of adopted-repository overwrite and hook-activation risks. The mini-plan acknowledges relocation but does not address those consequences.",
+          "suggestion": "Separate the profile lookup root from the config destination, preserving the existing destination for S5. If relocation is intentional, review it separately and test existing configs, adopted repositories, and hook activation before including it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Step 7 does not distinguish “no matching profile” from an explicitly named profile that is missing or invalid. Falling back to `generic` after an explicit selection would hide a configuration error. The required separate discovery and selection assertions are also absent from the test strategy.",
+          "suggestion": "Allow `generic` when automatic discovery finds no match; resolve and validate an explicit choice and surface failures. Assert independently that discovery warns and continues for an invalid candidate, while explicit selection fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The copied-bundled-profile contract is missing from the concrete documentation and test commitments. Copying a bundled node profile changes both command requirements and CI/CodeQL template eligibility; the proposed provenance scenarios alone will not catch those regressions.",
+          "suggestion": "Explicitly document commands for every declared layer, loss of bundled workflow templates, and fewer required checks in `AUTOMERGE_SETUP.md`. Add the requested verbatim-copy test that checks exit 3 and the correct layer-specific command hint.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "“Shared index reader used by both guards” leaves the accepted S4 policy questions unresolved. Moving filesystem access into a helper does not specify how the guards handle unstaged edits, intent-to-add entries, non-ASCII filenames, or conflicts.",
+          "suggestion": "State the index-versus-working-tree policy in the test docstrings. Implement NUL-delimited, deduplicated tracked paths and explicit unmerged-entry diagnostics. Preserve the reverse-exemption check; generated-render exemptions require the separately identified contract decision.  The core approach is sound, but the config relocation needs resolution before implementation. Make the discovery/selection behavior and copied-profile regression coverage explicit so S5 proves the campaign’s contracts.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T19:34:02.274450+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: dependency | Severity: medium**\n**Finding:** Several accepted S4 hand-offs are absent from the mini-plan: the `_tracked()` → `git ls-files -z` fix, the S4 ADR round-2 wording/count fix, the test_stack_profile_prose_commands.py window/PROSE/rename items, and the index-vs-working-tree policy decision (dedupe `ls-files` names, \"unmerged index entry\" message, documented policy in the docstring). The new \"shared index reader used by both guards\" item touches the same code, so omitting the adjacent accepted fixes risks a second pass over the same file.\n**Suggestion:** Add an explicit \"S4 accepted nits\" change item; fold the ls-files -z and policy decision into the shared-index-reader work since they're the same code path.\n\n**Category: dependency | Severity: medium**\n**Finding:** The S4 round-6 hand-offs require S5 to *decide* two things and record that decision: (a) whether to amend BRIEF S4 item 3 for generated renders (the trg-647df2d8 forward-guard trip risk), and (b) whether to fix the pre-existing config-location defect (`--planning-dir` only → config under `<project>/.shipwright/`). The plan is silent on both.\n**Suggestion:** Add a line item: \"record decision on BRIEF S4 item 3 amendment and config-location fix, each with a one-paragraph rationale.\" Even \"defer, unchanged\" is fine — but it must be written down or the hand-off chain breaks.\n\n**Category: risk | Severity: high**\n**Finding:** The `--project-root \"{project_path}\"` change at the SKILL call sites is listed under the interview step, but the hand-off also fixes file mode (`@requirements.md`), where the defect was that the lookup root fell back to the requirements file's parent and a project-level custom profile exited 4. If `--project-root` is only wired where `{project_path}` is known but the file-mode call site is missed (or a legacy SKILL renders without it), the exit-4 failure returns. The plan's own risk note also acknowledges that passing `--project-root` may *move […truncated]\n\n[openai] 1. **Category: risk | Severity: high**  \n   **Finding:** Passing `--project-root` also relocates `shipwright_project_config.json`. The S3 hand-off explicitly deferred that behavior because of adopted-repository overwrite and hook-activation risks. The mini-plan acknowledges relocation but does not address those consequences.  \n   **Suggestion:** Separate the profile lookup root from the config destination, preserving the existing destination for S5. If relocation is intentional, review it separately and test existing configs, adopted repositories, and hook activation before including it.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** Step 7 does not distinguish “no matching profile” from an explicitly named profile that is missing or invalid. Falling back to `generic` after an explicit selection would hide a configuration error. The required separate discovery and selection assertions are also absent from the test strategy.  \n   **Suggestion:** Allow `generic` when automatic discovery finds no match; resolve and validate an explicit choice and surface failures. Assert independently that discovery warns and continues for an invalid candidate, while explicit selection fails.\n\n3. **Category: dependency | Severity: medium**  \n   **Finding:** The copied-bundled-profile contract is missing from the concrete documentation and test commitments. Copying a bundled node profile changes both command requirements and CI/CodeQL template eligibility; the proposed provenance scenarios alone will not catch those regressions.  \n   **Suggestion:** Explicitly document commands for every declared layer, loss of bundled workflow templates, and fewer required checks in `AUTOMERGE_SETUP.md`. Add the requested verbatim-copy test that checks exit 3 and the correct layer-specific command hint.\n\n4. **Category: approach | Severity: medium**  \n   **Finding:** “Shared index reader used by both guards” leaves the accepted S4 policy questions unresolved. Moving filesy […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "module_wrappers does not seed the fixpoint with PINNED_WRAPPERS.",
+          "suggestion": "Follow-up.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_handlers.py",
+          "line": null,
+          "finding": "return -1 parses as UnaryOp and is treated as a swallow (false red).",
+          "suggestion": "Follow-up: accept USub over an int Constant.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "_suppresses and _catches_value_error use different name predicates.",
+          "suggestion": "Follow-up: one predicate.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_stack_profile_py_guard.py",
+          "line": null,
+          "finding": "An always-true assertion about RESOLVER_MODULES.",
+          "suggestion": "Follow-up: replace with a check that has teeth.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_stack_profile_resolution_e2e.py",
+          "line": null,
+          "finding": "_env() drops only three GIT_* variables.",
+          "suggestion": "Follow-up: drop every GIT_* key.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "Strict utf-8 decode crashes the guard on a BOM or non-UTF-8 tracked .py.",
+          "suggestion": "Follow-up: utf-8-sig and name the file.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "Stale noqa and blank lines.",
+          "suggestion": "Follow-up.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T21:31:03.800565+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": null,
+          "finding": "Claim under doubt: A missing shared tree degrades only for the early in_progress call — The early sentinel skip bypasses the whole check including the ImportError branch, so the degrade applies only to in_progress plus a real profile name, a call no skill makes.",
+          "suggestion": "Accepted: follow-up to drop the dead degrade or fix the wording.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T21:31:03.936209+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "(whole diff)",
+          "line": null,
+          "finding": "The S3 hand-off \"`adopt/references/codebase-analysis.md:11` still names the bundled profile path (S4 may already have fixed it; verify)\" is not visible as either a fix or a recorded verification anywhere in the diff. Neither the prose guard's ALLOWLIST nor the ADR mentions it.",
+          "suggestion": "Verify the file in the repo and either add the fix to this diff or record the verification result (path already removed by S4) in the ADR/confidence section, so the hand-off item is closed rather than silently dropped.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "integration-tests/test_stack_profile_resolution_e2e.py:190 (`test_user_level_profile_is_used_when_the_project_has_none`)",
+          "line": null,
+          "finding": "Two weaknesses. (1) `Path(os.environ[\"SHIPWRIGHT_USER_PROFILES_DIR\"])` raises `KeyError` if the env var isn't set — the variable is a test-isolation override documented for the shared tests; nothing in this diff shows an `integration-tests` conftest that sets it. (2) The adopt assertion `profile[\"source\"] in {\"user\", \"bundled\", \"builtin\"}` accepts three of the four possible values, so it cannot detect a user-profile resolution failure in the matcher at all.",
+          "suggestion": "Set/`monkeypatch`/`tmp_path` the env var inside the test (or add a conftest), and tighten the adopt assertion to assert the actual observed source or explicitly document why each value is acceptable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression |",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py:82-87",
+          "line": null,
+          "finding": "The `ImportError` path now degrades to a warning for all calls, including `--status complete`. Previously a missing shared tree was a hard install error (exit 1) at any status; the S3 hand-off tied the degrade to the early `in_progress` sentinel call. A complete-scaffold run with a broken install now silently writes a config whose profile was never validated.",
+          "suggestion": "Either scope the degrade to `--status in_progress` (hard-fail on `complete`), or get the relaxed behavior explicitly recorded in the ADR as covering both paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-test/tests/test_test_runner_copied_bundled_profile.py",
+          "line": 41,
+          "finding": "The final assertion `assert \"testing.unit`\" not in out[\"error\"] or layer == \"unit\"` is vacuous: for the `unit` parametrization the `or` makes it always true, and for `e2e` the substring \"`testing.unit`\" can never appear in a message that names `testing.e2e.command`. It adds no discrimination over the preceding `f\"`{key}`\" in out[\"error\"]` check.",
+          "suggestion": "Drop it, or assert positively that the message names the real key and not another layer's key via a regex with a boundary (e.g. `` re.search(r\"`testing\\.(?!e2e)unit\", ...) `` for the e2e case).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/tests/test_stack_profile_py_guard.py:113-118 (`_scope_nodes`) + `swallow_findings",
+          "line": null,
+          "finding": "_scope_nodes` excludes nested `FunctionDef`s but not `ClassDef`, so a method's `try`/`except` is walked twice — once under the method's own scope and once attributed to `<module>` (where it can never match `SWALLOW_ALLOWLIST`, which is keyed on `(file, function)`). A legitimately-loud handler inside a class method can therefore false-red with a confusing `<module>` scope name; conversely the allowlist key for such code is unreachable.",
+          "suggestion": "Also stop descending at `ast.ClassDef` in `_scope_nodes` (methods are separate scopes), or attribute findings to the innermost enclosing function/class.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "integration-tests/test_stack_profile_resolution_e2e.py:81 (`_dev_server_services`)",
+          "line": null,
+          "finding": "The test imports the private `_get_services_resolved` and depends on its exact 3-tuple signature (`services, warnings, source`) and on `sys.argv[1]` path-hacking into `shared/scripts`. Any internal refactor of `dev_server.profile_config` breaks the e2e scenario for a reason unrelated to the behavior under test, and the subprocess exercises a private API rather than `dev_server.py` itself (the spec says the scenarios drive \"the real command-line entry points\").",
+          "suggestion": "Preferably drive `dev_server.py` (e.g. `--check`/status command) as a subprocess; if the private function must be used, pin the signature with a tight comment.  Overall: the diff is a faithful, thorough implementation of S5 (test_runner per-layer hint with the verbatim-copy pin test, docs/stack-profiles.md, the py guard with reverse allowlist tests, discovery-vs-selection split, `--profile-root` with the file-mode pin test, index policy documented). The findings are refinements — the unverified `codebase-analysis.md:11` hand-off and the loose/undetermined user-level test assertions are the two that should be settled before merge. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_stack_profile_py_guard.py",
+          "line": 80,
+          "finding": "The path guard misses literal custom-profile paths such as `Path(root) / \".shipwright/profiles/my-stack.json\"`. `_is_profiles_path()` recognizes paths ending in `profiles` or containing `shared/profiles`, but rejects this path containing `/profiles/` followed by a filename. A loader could therefore bypass the resolver without failing the required guard.",
+          "suggestion": "Recognize `/profiles/` path components followed by filenames as well as directory paths. Add planted tests for both project and user profile paths containing filenames.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_stack_profile_py_guard.py",
+          "line": 109,
+          "finding": "The swallowed-error guard accepts `except ValueError: sys.exit(0)` as handling the error loudly. It accepts any call named `exit`, `_exit`, or `SystemExit` without examining its argument, so an invalid selected profile can terminate successfully while this guard passes. This contradicts the specified non-zero exit requirement.",
+          "suggestion": "Reject explicit zero or omitted exit statuses and add planted tests for `sys.exit(0)`, `sys.exit()`, and `raise SystemExit(0)`. Check raised `SystemExit` arguments before accepting every `ast.Raise`.  Overall assessment: ship-with-fixes. The consumer changes appear sound, but the required regression guard currently allows concrete examples of the behavior it is intended to prevent.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T19:34:02.422123+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category:** spec | **Severity:** medium\n  **File:** (whole diff)\n  **Finding:** The S3 hand-off \"`adopt/references/codebase-analysis.md:11` still names the bundled profile path (S4 may already have fixed it; **verify**)\" is not visible as either a fix or a recorded verification anywhere in the diff. Neither the prose guard's ALLOWLIST nor the ADR mentions it.\n  **Suggestion:** Verify the file in the repo and either add the fix to this diff or record the verification result (path already removed by S4) in the ADR/confidence section, so the hand-off item is closed rather than silently dropped.\n\n- **Category:** test | **Severity:** medium\n  **File:** integration-tests/test_stack_profile_resolution_e2e.py:190 (`test_user_level_profile_is_used_when_the_project_has_none`)\n  **Finding:** Two weaknesses. (1) `Path(os.environ[\"SHIPWRIGHT_USER_PROFILES_DIR\"])` raises `KeyError` if the env var isn't set — the variable is a test-isolation override documented for the shared tests; nothing in this diff shows an `integration-tests` conftest that sets it. (2) The adopt assertion `profile[\"source\"] in {\"user\", \"bundled\", \"builtin\"}` accepts three of the four possible values, so it cannot detect a user-profile resolution failure in the matcher at all.\n  **Suggestion:** Set/`monkeypatch`/`tmp_path` the env var inside the test (or add a conftest), and tighten the adopt assertion to assert the actual observed source or explicitly document why each value is acceptable.\n\n- **Category:** regression | **Severity:** low\n  **File:** plugins/shipwright-project/scripts/checks/write-project-config.py:82-87\n  **Finding:** The `ImportError` path now degrades to a warning for **all** calls, including `--status complete`. Previously a missing shared tree was a hard install error (exit 1) at any status; the S3 hand-off tied the degrade to the early `in_progress` sentinel call. A complete-scaffold run with a broken install now silently writes a config whose profile was ne […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: shared/tests/test_stack_profile_py_guard.py:80\n- Finding: The path guard misses literal custom-profile paths such as `Path(root) / \".shipwright/profiles/my-stack.json\"`. `_is_profiles_path()` recognizes paths ending in `profiles` or containing `shared/profiles`, but rejects this path containing `/profiles/` followed by a filename. A loader could therefore bypass the resolver without failing the required guard.\n- Suggestion: Recognize `/profiles/` path components followed by filenames as well as directory paths. Add planted tests for both project and user profile paths containing filenames.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_stack_profile_py_guard.py:109\n- Finding: The swallowed-error guard accepts `except ValueError: sys.exit(0)` as handling the error loudly. It accepts any call named `exit`, `_exit`, or `SystemExit` without examining its argument, so an invalid selected profile can terminate successfully while this guard passes. This contradicts the specified non-zero exit requirement.\n- Suggestion: Reject explicit zero or omitted exit statuses and add planted tests for `sys.exit(0)`, `sys.exit()`, and `raise SystemExit(0)`. Check raised `SystemExit` arguments before accepting every `ast.Raise`.\n\nOverall assessment: ship-with-fixes. The consumer changes appear sound, but the required regression guard currently allows concrete examples of the behavior it is intended to prevent.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T21:31:03.669730+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:34:02.964150+00:00",
+      "disposition": "The orchestrator instructed the runner not to spawn review subagents; the orchestrator has no internal-arm spawn site, so this row is not delegated like spec, code and doubt",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:34:03.102030+00:00",
+      "disposition": "The orchestrator instructed the runner not to spawn review subagents; the orchestrator has no internal-arm spawn site, so this row is not delegated like spec, code and doubt",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

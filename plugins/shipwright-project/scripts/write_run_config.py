@@ -131,15 +131,15 @@ def main() -> int:
         )
         return 2
 
-    from lib.profile_check import profile_error
+    from lib.profile_check import check_profile, describe
 
     try:
-        reason = profile_error(profile, project_root)
+        check_profile(profile, project_root)
     except ImportError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    if reason:
-        print(f"ERROR: {reason}", file=sys.stderr)
+    except ValueError as exc:
+        print(f"ERROR: {describe(profile, exc)}", file=sys.stderr)
         return 4
 
     try:
