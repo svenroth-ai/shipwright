@@ -245,6 +245,8 @@ def rejection(
         "retries_exhausted": exhausted,
         "retryable": retryable,
         "terminal": TERMINAL_BY_AUTONOMY.get(autonomy_of(config), "ask_human") if final else None,
+        # False = no "go ahead anyway" to offer: check_override would refuse it.
+        "override_allowed": _human_can_override(config),
     }
 
 

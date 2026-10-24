@@ -90,8 +90,10 @@ Repeat until a terminal signal:
      findings and re-applies.
    - `terminal: "ask_human"` (guided, after `MAX_GATE_RETRIES` = 2 retries, or at once
      when `retryable: false` — a broken or incomplete check install, or a Phase-Quality
-     critical-gate finding, that re-running cannot fix). Stop and ask, in plain words, with the issues listed: **go ahead anyway** →
-     re-apply the same result with `--override-reason "<their reason>"`; **give it more
+     critical-gate finding, that re-running cannot fix). Stop and ask, in plain words,
+     with the issues listed: **go ahead anyway** (offer it only when the rejection says
+     `override_allowed: true`) → re-apply the same result with
+     `--override-reason "<their reason>"`; **give it more
      tries** → `single-session-recover` (fresh retry count), then `single-session-next`;
      **stop the run** → `orchestrator.py mark-phase-failed` with the issues as `--error`.
    - autonomous runs take the failed terminal themselves: apply returns the normal

@@ -3833,8 +3833,9 @@ check is `retryable: false`, as is a Phase-Quality critical-gate finding (`kind:
 critical_gate`, read from the latest Stop-hook audit file, which a re-dispatch need not
 refresh). The promotion reverses `phase_validators_canon._degraded`'s "inform, not ask" on
 this path only. **A5 precondition:** prove `shared/scripts/tools/verifiers` ships in every
-plugin-cache layout before flipping enforcement on (the `<cache>/shipwright/<plugin>/<version>`
-+ `<cache>/shipwright/shared` layout is proven by `test_single_session_gate_hardening.py`).
+plugin-cache layout before flipping enforcement on (the layout with
+`<cache>/shipwright/<plugin>/<version>` next to `<cache>/shipwright/shared` is proven by
+`test_single_session_gate_hardening.py`).
 
 - **Enforcement is OFF by default** (`ENFORCE_PHASE_GATE_DEFAULT`, a function parameter —
   no config key or environment variable). Off and no override: the gate is not called (the
@@ -3842,8 +3843,16 @@ plugin-cache layout before flipping enforcement on (the `<cache>/shipwright/<plu
   default. While it is ON, a raw `orchestrator.py complete-phase-task` with an `ok:true`
   result on a `single_session` run is refused `use_single_session_apply` (exit 2) — it would
   skip the gate and the override record; an `ok:false` strict-stop still goes through.
+  **Known, deliberate escape hatch:** `recover-phase-task --force-status skipped` (and
+  `single-session-recover --force-status skipped`) moves an `in_progress` task to terminal
+  `skipped` with no gate and no override record. It stays on purpose: `skipped` is
+  distinguishable from `done`, and no successor is planned, so the pipeline does not
+  advance on it. Whether skipping under enforcement needs a recorded reason is an A5
+  decision.
 - **Rejection:** `{ok:false, reason:"phase_gate_failed", issues, inform, checked, attempt,
-  gate_rejections, max_gate_retries, retries_exhausted, retryable, terminal}`, exit 1;
+  gate_rejections, max_gate_retries, retries_exhausted, retryable, terminal,
+  override_allowed}`, exit 1 (`override_allowed` is false when the run's autonomy is not
+  `guided` / `autonomous`, so "go ahead anyway" is not offered);
   run_config and the task are unchanged and the rejection is counted in loop state
   (`gateRejections`). `terminal` is `null` while a retry is due: neither the dispatch count
   (`attempt`) nor this rejection's number exceeds `MAX_GATE_RETRIES` = 2, so re-applying

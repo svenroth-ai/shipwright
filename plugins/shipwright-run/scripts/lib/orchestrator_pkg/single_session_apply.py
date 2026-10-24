@@ -257,7 +257,8 @@ def _gate_rejected(
     terminal ``failed`` — the strict-stop through ``mark_phase_failed`` (CAS-checked),
     returned in the SAME shape as an ``ok: false`` phase result's strict-stop (``ok: true``,
     ``run_status: failed``) plus the ``gate`` block, so the exit code, ``record_phase_end``
-    and the master's ``failed`` handling are unchanged. ``ok: false`` stays "nothing changed"."""
+    and the master's ``failed`` handling are unchanged. ``ok: false`` means run_config and
+    the task are unchanged; only the loop-state rejection count moved."""
     state = phase_gate.retry_state(project_root, config, phase_task_id)
     rejected = phase_gate.rejection(config, verdict, state)
     if state is not None:

@@ -13,7 +13,8 @@ Exit-code map (shared with ``router.dispatch_lifecycle``):
     0 -> dispatch / terminal signal / successful apply
     2 -> fail-closed CAS reject on apply (stale_version / stale_session)
     1 -> guard (mode_unsupported / no_config), claim failure, invalid result, IO error,
-         phase_gate_failed / override refusals (nothing changed)
+         phase_gate_failed / override refusals (run_config and the task unchanged; a
+         gate rejection is counted in loop state)
 """
 from __future__ import annotations
 

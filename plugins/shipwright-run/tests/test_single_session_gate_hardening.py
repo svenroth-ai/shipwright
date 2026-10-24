@@ -41,16 +41,13 @@ _LIB = Path(__file__).resolve().parent.parent / "scripts" / "lib"
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[3] / "shared" / "scripts"
 
 
-def _config(root: Path, autonomy="guided") -> dict:
+def _config(root: Path, autonomy: str = "guided") -> dict:
     cfg = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", root,
                         mode="single_session")
     if autonomy != "guided":
         path = root / "shipwright_run_config.json"
         data = json.loads(path.read_text(encoding="utf-8"))
-        if autonomy is None:
-            data.pop("autonomy", None)
-        else:
-            data["autonomy"] = autonomy
+        data["autonomy"] = autonomy
         path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return cfg
 
@@ -214,8 +211,18 @@ def test_the_rejection_count_resets_with_the_pointer(tmp_project):
     d = _dispatch(tmp_project)
     _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
     from orchestrator_pkg.single_session_recovery import recover_single_session
-    assert recover_single_session(tmp_project, phase_task_id=d["phaseTaskId"])["ok"] is True
+    recovered = recover_single_session(tmp_project, phase_task_id=d["phaseTaskId"])
+    assert recovered["ok"] is True
     assert load_loop_state(tmp_project)["gateRejections"] == 0
+
+
+@pytest.mark.covers("FR-01.01/AC03")
+@pytest.mark.parametrize("config,allowed", [
+    ({"autonomy": "guided"}, True), ({"autonomy": " Autonomous"}, True), ({}, False),
+    ({"autonomy": "unattended"}, False), ({"autonomy": "bogus"}, False)])
+def test_a_rejection_says_whether_go_ahead_anyway_can_be_offered(config, allowed):
+    rejected = phase_gate.rejection(config, {"ask": [ASK], "inform": [], "checked": True}, None)
+    assert rejected["override_allowed"] is allowed
 
 
 def test_the_cap_counts_dispatches_or_rejections():
@@ -257,11 +264,14 @@ def test_the_gate_finds_the_canon_verifiers_in_the_plugin_cache_layout(tmp_path)
     skip = shutil.ignore_patterns("tests", "__pycache__", "*.pyc")
     shutil.copytree(_LIB, lib, ignore=skip)
     shutil.copytree(_SHARED_SCRIPTS, cache / "shared" / "scripts", ignore=skip)
+    phases = ("project", "design", "plan", "build", "test", "changelog", "deploy")
     probe = (
-        "import sys, importlib.util\n"
+        "import sys, importlib, importlib.util\n"
         f"sys.path.insert(0, {str(lib)!r})\n"
         "import phase_validators  # puts <cache>/shared/scripts on sys.path\n"
-        "from tools.verifiers.project_checks import run_project_checks  # noqa: F401\n"
+        "importlib.import_module('tools.verifiers.common')\n"
+        f"for phase in {phases!r}:\n"
+        "    importlib.import_module(f'tools.verifiers.{phase}_checks')\n"
         "print(importlib.util.find_spec('tools.verifiers').origin)\n"
     )
     proc = subprocess.run([sys.executable, "-I", "-c", probe], cwd=tmp_path,
