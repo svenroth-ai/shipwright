@@ -132,6 +132,18 @@ def search_dirs(project_root: str | os.PathLike | None) -> list:
     return dirs
 
 
+def path_within(child: str, parent: str, flavour=None) -> bool:
+    """True when ``child`` is ``parent`` or below it, by pure string semantics of a path
+    flavour (``ntpath`` / ``posixpath``; default: this OS). Windows rules: drive letters,
+    UNC shares and case-insensitivity. Callers pass already-resolved paths."""
+    mod = flavour or os.path
+    c, p = mod.normcase(mod.normpath(child)), mod.normcase(mod.normpath(parent))
+    try:
+        return mod.commonpath([c, p]) == p
+    except ValueError:  # different drives, or an absolute path mixed with a relative one
+        return False
+
+
 def check_name(name: object) -> str:
     """D3 name rules for NAME lookups; raises ProfileInvalid."""
     if not isinstance(name, str) or not name:

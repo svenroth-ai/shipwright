@@ -6,7 +6,9 @@ Tagged to FR-01.06; see test_profile_resolver.py for the FR note.
 from __future__ import annotations
 
 import json
+import ntpath
 import os
+import posixpath
 import subprocess
 import sys
 from pathlib import Path
@@ -259,3 +261,39 @@ def test_relative_user_dir_env_is_ignored(monkeypatch, tmp_path):
     monkeypatch.setenv(pr.USER_DIR_ENV, "relative/profiles")
     assert pr.user_dir() is None
     assert [s for s, _ in pr.search_dirs(tmp_path)] == ["project", "bundled"]
+
+
+@pytest.mark.parametrize("flavour,child,parent,expected", [
+    (ntpath, r"C:\proj\.shipwright\profiles\a.json", r"C:\proj\.shipwright\profiles", True),
+    (ntpath, r"c:\PROJ\.Shipwright\Profiles\a.json", r"C:\proj\.shipwright\profiles", True),  # case-insensitive
+    (ntpath, r"C:/proj/.shipwright/profiles/a.json", r"C:\proj\.shipwright\profiles", True),  # slash flavour
+    (ntpath, r"D:\proj\.shipwright\profiles\a.json", r"C:\proj\.shipwright\profiles", False),  # other drive
+    (ntpath, r"C:\proj\.shipwright\profiles-evil\a.json", r"C:\proj\.shipwright\profiles", False),  # prefix trap
+    (ntpath, r"C:\proj\.shipwright\profiles\..\..\secret.json", r"C:\proj\.shipwright\profiles", False),
+    (ntpath, r"\\srv\share\p\a.json", r"\\srv\share\p", True),  # UNC inside
+    (ntpath, r"\\SRV\SHARE\p\a.json", r"\\srv\share\p", True),  # UNC, case-insensitive
+    (ntpath, r"\\other\share\p\a.json", r"\\srv\share\p", False),  # other server
+    (ntpath, r"C:\proj\a.json", r"\\srv\share\p", False),  # drive vs UNC
+    (ntpath, r"\proj\a.json", r"C:\proj", False),  # rooted-without-drive vs drive
+    (posixpath, "/a/b/c.json", "/a/b", True),
+    (posixpath, "/A/b/c.json", "/a/b", False),  # POSIX stays case-sensitive
+    (posixpath, "/a/bc/c.json", "/a/b", False),
+])
+def test_path_within_windows_and_posix_semantics_run_everywhere(flavour, child, parent, expected):
+    from profile_model import path_within
+    assert path_within(child, parent, flavour) is expected
+
+
+@pytest.mark.skipif(os.name != "nt", reason="NTFS junctions exist only on Windows")
+def test_junction_leaving_the_directory_is_rejected(project, tmp_path):
+    import _winapi
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    d = _proj_dir(project)
+    d.mkdir(parents=True)
+    _winapi.CreateJunction(str(outside), str(d / "evil.json"))  # needs no admin rights
+    with pytest.raises(ValueError, match="outside") as ei:
+        pr.resolve_profile("evil", project)
+    assert ei.value.kind == "invalid"
+    row = next(r for r in pr.list_profiles(project)["profiles"] if r["name"] == "evil")
+    assert row["valid"] is False

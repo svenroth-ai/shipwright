@@ -37,7 +37,7 @@ from profile_model import (  # noqa: E402,F401
     CONTRACT_VERSION, NAME_RE, NON_PROFILE_FILES, SCHEMA_VERSION_SUPPORTED,
     SENTINELS, USER_DIR_ENV, ProfileError, ProfileInvalid, ProfileNotFound,
     ProfileSchemaDrift, ProfileSchemaUnsupported, ResolvedProfile, is_non_profile,
-    bundled_dir, bundled_names, check_name, provenance_lines, schema_path,
+    bundled_dir, bundled_names, check_name, path_within, provenance_lines, schema_path,
     search_dirs, user_dir, validate_profile_data,
 )
 if _ADDED:  # leave sys.path as found (shared/scripts holds a `tools` package)
@@ -63,7 +63,7 @@ def _read_json(path: str):
 
 def _inside(path: str, directory: str) -> bool:
     try:
-        return Path(path).resolve().is_relative_to(Path(directory).resolve())
+        return path_within(str(Path(path).resolve()), str(Path(directory).resolve()))
     except (OSError, ValueError, RuntimeError):  # RuntimeError: symlink loop on 3.11
         return False
 
@@ -148,7 +148,7 @@ def resolve_profile(name: str, project_root=None, *, search_dirs=None) -> Resolv
             continue
         try:
             real = Path(path).resolve()  # resolved ONCE; this exact path is what gets read
-            contained = real.is_relative_to(Path(directory).resolve())
+            contained = path_within(str(real), str(Path(directory).resolve()))
         except (OSError, RuntimeError) as exc:  # RuntimeError: symlink loop on 3.11
             raise ProfileInvalid(f"Profile file {path} cannot be resolved: {exc}") from exc
         if not contained:
