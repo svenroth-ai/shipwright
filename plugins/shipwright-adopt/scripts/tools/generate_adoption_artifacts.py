@@ -71,9 +71,10 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _pick(enrichment: dict[str, Any], key: str, fallback: str) -> str:
@@ -260,7 +261,14 @@ def generate(
         enrichment_meta = {"source": "fallback"}
 
     project_name = project_root.name
-    profile = profile_override or snapshot.get("profile", {}).get("matched", "generic")
+    # EFFECTIVE profile (override, else snapshot match): resolved BEFORE any write, reused below.
+    from adopt_profile import resolve_effective  # type: ignore
+    try:
+        resolved = resolve_effective(project_root, profile_override, snapshot)
+    except (ValueError, ImportError) as e:
+        print(f"ERROR: stack profile cannot be used (nothing was written): {e}", file=sys.stderr)
+        raise SystemExit(getattr(e, "exit_code", 1)) from e
+    profile = resolved.name
     scope = scope_override or "full_app"
     commit_sha = _current_commit(project_root)
     commands = snapshot.get("commands", {})
@@ -418,7 +426,9 @@ def generate(
         else None
     )
 
-    results: dict[str, Any] = {"written": []}
+    results: dict[str, Any] = {"written": [], "profile": {
+        "name": profile, "source": resolved.source,
+        "shadows": resolved.shadows, "warnings": resolved.warnings}}
     retroactive_adrs = _resolve_retroactive_adrs(project_root, enrichment.get("adrs", []))  # fail closed before write_claude_md (trg-6b59524b)
     # Artifacts
     for _writer in (write_claude_md, write_agents_md):
@@ -472,11 +482,9 @@ def generate(
     # Step E.5 — .env.local scaffold. Runs AFTER write_all so
     # shipwright_run_config.json exists (validate_env reads `profile`
     # from it). Idempotent: never overwrites an existing .env.local;
-    # the first run creates the file, subsequent runs append missing
-    # keys only. Framework keys (OPENROUTER/OPENAI) are merged
-    # in regardless of profile so external review keys land in every
-    # adopted repo. The result rides on results["env_local"] which
-    # the SKILL.md Step H banner renders.
+    # the first run creates the file, later runs append missing keys only.
+    # Framework keys (OPENROUTER/OPENAI) are merged in regardless of profile.
+    # The result rides on results["env_local"] (rendered by the Step H banner).
     results["env_local"] = _scaffold_env_local(project_root)
     if results["env_local"].get("path") and Path(results["env_local"]["path"]).exists():
         # Track .env.local as a written artifact so the gitignore_report
@@ -550,26 +558,18 @@ def generate(
     if gitattributes_result["wrote"]:
         results["written"].append(gitattributes_result["path"])
 
-    # Step E.14 — CI workflow scaffold (profile-aware): lands a cross-platform-matrix
-    # ci.yml per detected stack profile (snapshot.profile.matched: vite-hono /
-    # supabase-nextjs / python-plugin-monorepo). Closes the shipwright-webui v0.8.5
-    # gap (hand-written CI lacking a Windows runner); distinct reason codes surface
-    # profile-detection failures rather than masking them as "no template".
+    # Step E.14 — CI workflow scaffold: cross-platform-matrix ci.yml for the EFFECTIVE profile,
+    # keyed by provenance (D9): only a bundled profile gets a template (else a no-template message).
     from ci_workflow_scaffolder import scaffold_ci_workflow  # type: ignore
-    profile_name = (snapshot.get("profile") or {}).get("matched")
-    ci_result = scaffold_ci_workflow(project_root, profile_name=profile_name)
+    ci_result = scaffold_ci_workflow(project_root, profile_name=profile, source=resolved.source)
     results["ci_workflow"] = ci_result
     if ci_result["wrote"]:
         results["written"].append(ci_result["path"])
 
-    # Step E.14b — CodeQL workflow scaffold (profile-aware): lands a dormant
-    # codeql.yml whose `language:` matrix is rendered from the detected profile
-    # (python-plugin-monorepo -> python; vite-hono / supabase-nextjs ->
-    # javascript-typescript). Gives an adopted repo the `Analyze (<lang>)`
-    # Required-Check job names B4.5-style automerge needs. Distinct reason codes
-    # (no_codeql_for_profile / profile_unresolved) surface detection failures.
+    # Step E.14b — CodeQL scaffold: dormant codeql.yml, `language:` matrix from the effective
+    # bundled profile; gives the `Analyze (<lang>)` Required-Check names B4.5 automerge needs.
     from codeql_workflow_scaffolder import scaffold_codeql_workflow  # type: ignore
-    codeql_result = scaffold_codeql_workflow(project_root, profile_name=profile_name)
+    codeql_result = scaffold_codeql_workflow(project_root, profile_name=profile, source=resolved.source)
     results["codeql_workflow"] = codeql_result
     if codeql_result["wrote"]:
         results["written"].append(codeql_result["path"])
@@ -580,7 +580,7 @@ def generate(
     # never reach branch protection (the silent-never-matches trap). Lands
     # AUTOMERGE_SETUP.md at the repo root; never overwrites.
     from automerge_setup_scaffolder import scaffold_automerge_setup  # type: ignore
-    automerge_result = scaffold_automerge_setup(project_root, profile_name=profile_name)
+    automerge_result = scaffold_automerge_setup(project_root, profile_name=profile)
     results["automerge_setup"] = automerge_result
     if automerge_result["wrote"]:
         results["written"].append(automerge_result["path"])

@@ -21,7 +21,7 @@ one with the other depending on import order.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
     from shared_loader import load_shared_module
@@ -46,10 +46,11 @@ class ScaffoldResult(TypedDict):
     reason: str
     # languages rendered into the matrix (empty when nothing was written).
     languages: list[str]
+    message: NotRequired[str]  # set on a no-template miss
 
 
 def scaffold_codeql_workflow(
-    project_root: Path, *, profile_name: str | None
+    project_root: Path, *, profile_name: str | None, source: str | None = None
 ) -> ScaffoldResult:
     """Render + write the dormant CodeQL workflow into ``project_root``.
 
@@ -57,6 +58,8 @@ def scaffold_codeql_workflow(
         project_root: Target adopted repository's root directory.
         profile_name: Profile name from snapshot.profile.matched. Caller
             (generate_adoption_artifacts.py) owns snapshot parsing.
+        source: Resolver provenance of the profile (D9); only a bundled
+            profile gets the name-keyed languages. ``None`` = name-only.
 
     Returns:
         ScaffoldResult with one of these reason codes:
@@ -78,13 +81,15 @@ def scaffold_codeql_workflow(
             "languages": [],
         }
 
-    languages = _CODEQL.languages_for_profile(profile_name)
+    languages = _CODEQL.languages_for_profile(profile_name, source)
     if not languages:
         return {
             "wrote": False,
             "path": str(target),
             "reason": "no_codeql_for_profile",
             "languages": [],
+            "message": f"no CodeQL languages for profile {profile_name.strip()!r}"
+                       f" (source: {source or 'unknown'})",
         }
 
     # Never overwrite a pre-existing workflow (hand-rolled CodeQL config, a

@@ -131,6 +131,17 @@ def main() -> int:
         )
         return 2
 
+    from lib.profile_check import profile_error
+
+    try:
+        reason = profile_error(profile, project_root)
+    except ImportError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if reason:
+        print(f"ERROR: {reason}", file=sys.stderr)
+        return 4
+
     try:
         config_path = write_run_config(project_root, profile)
     except FileExistsError as e:

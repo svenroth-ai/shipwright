@@ -141,7 +141,12 @@ def test_main_not_a_directory(tmp_path, capsys, monkeypatch):
     assert "not a directory" in err
 
 
+@pytest.mark.covers("FR-01.06")
 def test_main_explicit_profile_override(tmp_path, capsys, monkeypatch):
+    # S3: the override must resolve (project > user > bundled); a project profile does.
+    prof = tmp_path / ".shipwright" / "profiles"
+    prof.mkdir(parents=True)
+    (prof / "custom-stack.json").write_text(json.dumps({"name": "custom-stack"}))
     monkeypatch.setattr(
         sys,
         "argv",

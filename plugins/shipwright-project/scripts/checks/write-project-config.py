@@ -50,13 +50,31 @@ def main() -> int:
     parser.add_argument("--planning-dir", required=True, help="Path to planning directory")
     parser.add_argument("--profile", required=True, help="Profile name (e.g., supabase-nextjs)")
     parser.add_argument("--scope", required=True, choices=["full_app", "extension"], help="Project scope")
-    parser.add_argument("--project-root", help="Project root (defaults to parent of planning-dir)")
+    parser.add_argument("--project-root", help="Project root: where the config is written (defaults to parent of planning-dir, unchanged). The profile lookup root defaults to the project above <project>/.shipwright/planning")
     parser.add_argument("--status", default="complete", choices=["in_progress", "complete"],
                         help="Config status (default: complete)")
     args = parser.parse_args()
 
     planning_dir = Path(args.planning_dir).resolve()
     project_root = Path(args.project_root).resolve() if args.project_root else planning_dir.parent
+    # Profile LOOKUP root only (where <root>/.shipwright/profiles is searched). Everything the
+    # writer does below (config location, gitignore, artifact checks) keeps `project_root`.
+    if args.project_root:
+        lookup_root = project_root
+    else:
+        raw_planning = Path(args.planning_dir).absolute()  # not resolved: a linked .shipwright keeps its name
+        lookup_root = raw_planning.parent.parent if raw_planning.parent.name == ".shipwright" else project_root
+
+    from lib.profile_check import profile_error  # project's own lib (path set above)
+
+    try:
+        reason = profile_error(args.profile, lookup_root)
+    except ImportError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if reason:
+        print(f"ERROR: {reason}", file=sys.stderr)
+        return 4
 
     if args.status == "in_progress":
         # Early config: minimal tracking before scaffolding completes

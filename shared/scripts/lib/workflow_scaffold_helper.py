@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class ScaffoldResult(TypedDict):
@@ -35,6 +35,7 @@ class ScaffoldResult(TypedDict):
     # See callers for the full reason vocabulary; this module emits
     # "scaffolded" | "already_exists" | "template_missing".
     reason: str
+    message: NotRequired[str]  # human-readable detail on a miss (e.g. no template for a project profile)
 
 
 def copy_template_if_absent(

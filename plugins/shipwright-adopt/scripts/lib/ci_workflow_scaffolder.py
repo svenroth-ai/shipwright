@@ -51,7 +51,7 @@ ScaffoldResult = _HELPER.ScaffoldResult  # re-export for typing
 
 
 def scaffold_ci_workflow(
-    project_root: Path, *, profile_name: str | None
+    project_root: Path, *, profile_name: str | None, source: str | None = None
 ) -> ScaffoldResult:
     """Write the profile-specific dormant CI workflow into ``project_root``.
 
@@ -60,6 +60,8 @@ def scaffold_ci_workflow(
         profile_name: Profile name from snapshot.profile.matched. Caller
             (typically generate_adoption_artifacts.py) owns snapshot
             parsing and passes the result explicitly.
+        source: Resolver provenance of the profile (D9). Only a bundled
+            profile gets a bundled template; ``None`` = name-only lookup.
 
     Returns:
         ScaffoldResult with one of these reason codes:
@@ -83,12 +85,14 @@ def scaffold_ci_workflow(
             "reason": "profile_unresolved",
         }
 
-    template_rel = TEMPLATE_BY_PROFILE.get(profile_name.strip())
+    template_rel = _CI_WORKFLOW.template_path_for_profile(profile_name.strip(), source)
     if template_rel is None:
         return {
             "wrote": False,
             "path": str(target),
             "reason": "no_template_for_profile",
+            "message": f"no CI template for profile {profile_name.strip()!r}"
+                       f" (source: {source or 'unknown'})",
         }
 
     template = _REPO_ROOT / template_rel
