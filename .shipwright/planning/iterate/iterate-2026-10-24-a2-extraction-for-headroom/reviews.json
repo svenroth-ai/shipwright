@@ -115,115 +115,84 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 3,
       "findings": [
         {
           "severity": "low",
-          "category": "architecture",
-          "file": null,
-          "line": null,
-          "finding": "sibling phase_task modules rely on the facade for sys.path (latent)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
           "category": "readability",
-          "file": null,
-          "line": null,
-          "finding": "stale moved comments in phase_task_core",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": null,
-          "line": null,
-          "finding": "unneeded F401 noqa in phase_validators",
-          "suggestion": null,
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": 33,
+          "finding": "Facade comment on monkeypatching is only half true: names are bound per module, so one patch point became up to four.",
+          "suggestion": "Reword the comment; patch class attributes to reach all modules.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": null,
-          "line": null,
-          "finding": "facade text check passes on any mention",
-          "suggestion": null,
+          "file": "integration-tests/test_multi_session_removal_residue.py",
+          "line": 246,
+          "finding": "Test now scans all phase_task_*.py text; passes if a mutator is dropped from the facade re-exports. Also adds an unexplained covers marker.",
+          "suggestion": "Also assert callable(getattr(phase_task_lifecycle, name)); justify or drop the marker.",
           "source": "code-reviewer"
         },
         {
-          "severity": null,
+          "severity": "low",
           "category": "architecture",
-          "file": null,
-          "line": null,
-          "finding": "path-canon allowlist unaffected",
-          "suggestion": null,
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lookup.py",
+          "line": 2,
+          "finding": "Sibling modules import by bare name and rely on the facade having run first (ADR-045 prefers own sys.path insert); phase_validators_late without phase_validators would silently skip canon checks.",
+          "suggestion": "Optional: give phase_validators_canon its own guarded shared/scripts insert.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T13:42:17.014024+00:00",
+      "completed_at": "2026-10-24T14:19:42.872691+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "1b9d846cc0d17ebc3ae3510d0be91959c162e7c1"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 3,
       "findings": [
         {
           "severity": "low",
           "category": "hidden-coupling",
-          "file": null,
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
           "line": null,
-          "finding": "Claim under doubt: re-exports keep every seam — Patching the facade no longer reaches moved functions; no test relies on it; documented in the facade.",
-          "suggestion": "facade comment (done)",
+          "finding": "The facade comment tells a future patcher where to monkeypatch",
+          "suggestion": "Reword: patch the module that uses the helper, or patch class attributes; patch the facade to intercept facade callers.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
           "category": "boundary-contract",
-          "file": null,
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators.py",
           "line": null,
-          "finding": "Claim under doubt: siblings load in every context — Siblings rely on the facade for sys.path; every runtime caller goes through the facades; documented in module headers.",
-          "suggestion": "documented convention (done)",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "reversibility",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: deployment same as one file — Partial cache sync could miss a sibling; update-marketplace copies whole trees.",
-          "suggestion": "rebuttal: whole-tree sync only",
+          "finding": "phase_validators sibling resolution is equivalent in every loading context",
+          "suggestion": "Use insert(0) for consistency, or rebut: names are unique repo-wide.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
           "category": "boundary-contract",
-          "file": null,
+          "file": "integration-tests/test_multi_session_removal_residue.py",
           "line": null,
-          "finding": "Claim under doubt: tests edited only for imports — One source-text test changed what it reads because defs moved.",
-          "suggestion": "recorded deviation",
+          "finding": "AC: existing tests edited only for imports",
+          "suggestion": "Record the added covers marker alongside the source-text deviation.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T13:47:06.056981+00:00",
+      "completed_at": "2026-10-24T14:19:43.044201+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "dee287b8523b8482cbc890ffce10354862d58a04"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -275,14 +244,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T13:39:54.428688+00:00",
+      "completed_at": "2026-10-24T14:19:42.760717+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "563652e1af007420017f05acdbb1778ffc68762d"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
