@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import sys
 from pathlib import Path
@@ -95,8 +96,9 @@ def test_verify_hash_requires_a_keyword_only_external_hash(tmp_path):
     root = _package(tmp_path / "a")
     with pytest.raises(TypeError):
         bp.verify_hash(root)  # type: ignore[call-arg]
-    with pytest.raises(TypeError):
-        bp.verify_hash(*(root, "0" * 64))  # positional hash: must be keyword-only
+    # a positional hash must be impossible: `expected` is keyword-only
+    param = inspect.signature(bp.verify_hash).parameters["expected"]
+    assert param.kind is inspect.Parameter.KEYWORD_ONLY and param.default is inspect.Parameter.empty
 
 
 @pytest.mark.covers("FR-01.01")
