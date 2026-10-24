@@ -124,58 +124,56 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "medium",
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/codeql_workflow.py",
+          "line": 37,
+          "finding": "Third hand-rolled spec_from_file_location loader for a 3-element tuple; latent hazard (no register-before-exec) and breaks the in-repo convention of literal constants drift-pinned by a test.",
+          "suggestion": "Use a literal BUNDLED_SOURCES with a drift-pin assertion in test_workflow_provenance_keying.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
           "category": "correctness",
-          "file": null,
-          "line": null,
-          "finding": "corrupt snapshot becomes generic; ties by name; template default open (all fixed or documented in commit)",
-          "suggestion": null,
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": 65,
+          "finding": "Lookup-root name check is exact/case-sensitive on the unnormalised path; '..' segments or a case-variant .Shipwright fall back to the old root and a project profile exits 4 (fail-closed).",
+          "suggestion": "Optional: normpath(abspath()) and case-insensitive compare.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": null,
-          "line": null,
-          "finding": "hint dict one-liner (fixed)",
-          "suggestion": null,
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": 53,
+          "finding": "--project-root help string is long and mixes two concepts.",
+          "suggestion": "Shorten.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T16:28:56.755163+00:00",
+      "completed_at": "2026-10-24T17:11:57.278987+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "ee1574cc89008d44c5b66595cd584bf682804c0e"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 4,
       "findings": [
         {
           "severity": "medium",
           "category": "boundary & contract",
-          "file": "plugins/shipwright-adopt/scripts/lib/adopt_profile.py",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
           "line": null,
-          "finding": "Claim under doubt: generate never silently falls to generic on an unusable snapshot — snapshot without a profile block or with profile null resolved to generic",
-          "suggestion": "require profile.matched unless --profile is given (fixed, tested)",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "hidden coupling & blast radius",
-          "file": "plugins/shipwright-adopt/scripts/lib/adopt_profile.py",
-          "line": null,
-          "finding": "Claim under doubt: an incomplete install cannot make every project generic — bundled dir present but schema missing makes every row invalid",
-          "suggestion": "check the schema file in discovery_dirs (fixed)",
+          "finding": "Claim under doubt: Narrowed lookup root cannot make a previously successful Step-7 call fail — In file mode planning_dir is the requirements file's parent, so a project-sourced custom profile there exits 4 at Step 7; no test covers it.",
+          "suggestion": "Routed to S5: pass --project-root at both SKILL call sites; optionally walk up to the nearest ancestor with .shipwright/ for the lookup. Not a regression of an existing flow (project profiles are new).",
           "source": "doubt-reviewer"
         },
         {
@@ -183,20 +181,36 @@
           "category": "boundary & contract",
           "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
           "line": null,
-          "finding": "Claim under doubt: write-project-config rejects only unresolvable names — project root derives from planning_dir.parent when --project-root is omitted by the skill call sites",
-          "suggestion": "pass --project-root at the SKILL call sites (S4 prose, handed off)",
+          "finding": "Claim under doubt: The early --profile detecting --status in_progress call behaves as on origin/main — It gained exit-1 (shared tree missing) and exit-4 (strict listing of an unreadable/dangling profiles dir) failure modes.",
+          "suggestion": "Routed to S5: skip profile_error for the reserved sentinels when --status in_progress.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/scripts/write_run_config.py",
+          "line": null,
+          "finding": "Claim under doubt: write_run_config.py exit codes unchanged apart from the new 4 — The profile check runs before the FileExistsError check, so a bad profile with an existing config exits 4 instead of 3.",
+          "suggestion": "Accepted: callers gate on config absence.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/codeql_workflow.py",
+          "line": null,
+          "finding": "Claim under doubt: Loading BUNDLED_SOURCES by file path is safe under ADR-045 and plugin-cache skew — Module copy not registered in sys.modules (fine today); a pre-S3 shared tree with a new adopt plugin would raise TypeError after partial writes.",
+          "suggestion": "Accepted under the stale-cache rule; literal constant + drift pin is an S5 cleanup option.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T16:38:44.823689+00:00",
+      "completed_at": "2026-10-24T17:13:46.967506+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "85b877141464bc165fbe995c8a826840c1c89e6a"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -266,14 +280,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T16:22:56.511877+00:00",
+      "completed_at": "2026-10-24T17:11:23.206041+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "42e1d6106472e9b3a25e9fe5df1fa22511850490"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
