@@ -132,29 +132,139 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": 290,
+          "finding": "retry_position matches loop state by runId only, not currentPhaseTaskId == task.phaseTaskId; a moved pointer reads another task's attempt.",
+          "suggestion": "Return unknown (no cap) when the pointer names another task.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": 358,
+          "finding": "failure_error prints 'after None dispatch(es)' when attempt is unknown.",
+          "suggestion": "Say 'dispatch count unknown'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/skills/run/references/single-session-loop.md",
+          "line": 85,
+          "finding": "The cap only advances on single-session-next; re-applying without next never trips it.",
+          "suggestion": "Document that every retry goes through next, or count rejections.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/tests/test_single_session_gate_seam.py",
+          "line": 1305,
+          "finding": "test_unknown_autonomy_takes_the_non_destructive_terminal also parametrises unattended->failed; name misstates it.",
+          "suggestion": "Rename or split.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T20:28:32.084934+00:00",
-      "disposition": "campaign orchestrator instruction for unit A4: the runner does not spawn the spec/code/doubt cascade; the orchestrator runs it at 3f-bis before merge (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T21:44:56.437573+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py",
+          "line": null,
+          "finding": "Once enforcement is on a driven run cannot complete a phase past a failed gate without an override record",
+          "suggestion": "Raw complete-phase-task on a single_session config completes with no gate; refuse it while enforced.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "The override is a human decision and an unattended run cannot override",
+          "suggestion": "Allowlist {guided,autonomous}, read autonomy from the locked config, forbid the phase-runner from calling apply/complete/override.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": null,
+          "finding": "A5 can flip enforcement without bricking runs",
+          "suggestion": "canon_degraded promoted to ask reverses the documented inform-not-ask decision; keep, document, and make proving tools.verifiers ships in every cache layout an A5 precondition.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "A driven run is always capped at MAX_GATE_RETRIES",
+          "suggestion": "The cap counts only next calls in a deletable loop_state; count rejections durably.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+          "line": null,
+          "finding": "A failed gate cannot be laundered",
+          "suggestion": "No change for A4.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "Override record and completion describe the same state",
+          "suggestion": "Read autonomy from the locked config in the hook.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": null,
+          "finding": "Enforcement OFF leaves apply unchanged",
+          "suggestion": "Reword; failed-task refusal and attempt realignment apply regardless.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/validation_record.py",
+          "line": null,
+          "finding": "Critical-gate findings are retryable",
+          "suggestion": "Mark non-retryable.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T20:28:32.220905+00:00",
-      "disposition": "campaign orchestrator instruction for unit A4: the runner does not spawn the spec/code/doubt cascade; the orchestrator runs it at 3f-bis before merge (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T21:44:56.576399+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -229,16 +339,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T20:28:31.962859+00:00",
-      "disposition": "campaign orchestrator instruction for unit A4: the runner does not spawn the spec/code/doubt cascade; the orchestrator runs it at 3f-bis before merge (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T21:44:56.297244+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
