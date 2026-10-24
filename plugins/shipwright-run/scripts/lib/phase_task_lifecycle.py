@@ -30,6 +30,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # The shared primitives and the extracted transition modules are re-exported:
 # callers (and tests) import every name from here, unchanged.
+# To monkeypatch a helper, patch the DEFINING module (phase_task_core / _planning /
+# _recovery), not this facade: moved functions resolve their helpers in their own module.
 from phase_task_core import (  # noqa: E402,F401
     CONFIG_NAME,
     PLUGIN_PHASE_MAP,
