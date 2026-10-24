@@ -33,7 +33,7 @@ Execute these steps **in order**.
 
 ```bash
 uv run "{plugin_root}/scripts/lib/test_runner.py" \
-  --profile "{profile}" --layer unit
+  --profile "{profile}" --cwd "{project_root}" --layer unit
 ```
 
 Parse output for pass/fail counts.

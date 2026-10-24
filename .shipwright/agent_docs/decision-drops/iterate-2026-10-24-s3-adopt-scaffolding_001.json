@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-s3-adopt-scaffolding",
+  "date": "2026-10-24",
+  "section": "Iterate - feature: adopt uses the stack-profile resolver (S3)",
+  "title": "Adopt and the project writers resolve profiles through the resolver",
+  "context": "Adopt matched only bundled profiles, silently fell back to generic, picked CI and CodeQL templates by name and could crash after a partial write on an unknown profile.",
+  "decision": "The matcher discovers through the resolver, the effective profile is resolved and validated before any write, CI and CodeQL templates follow provenance (D9), the project writers reject unresolvable names, and the snapshot gains additive profile source and warnings (1.1).",
+  "consequences": "A custom profile is matched and marked source project; an unknown or invalid selected profile aborts with nothing written; a same-name shadow never gets a bundled template. The WebUI snapshot contract moves to 1.1 (S6 note).",
+  "rationale": "All lookup stays in the resolver; adopt only adds a small glue module, so discovery and selection cannot drift.",
+  "rejected": "Adopt-specific directory scanning; copying custom profiles into the bundled tree; leaving adopt bundled-only.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-24-s3-adopt-scaffolding-adopt-uses-the-profile-resolver.md"
+}

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review\n\nThe diff implements the A1 scope faithfully: layout validator + manifest hash with the LF/CRLF normalization, consent-field protection, report schema pinning, and a dry-mode harness that makes no model/subprocess calls. The tests are unusually substantive (independent hash recomputation, tamper cases, schema-drift mutations, refusal of live mode).\n\nFindings:\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/lib/brief_package.py (~line in `_check_brief`, the `brief_dir` check)\n  Finding: The `.shipwright` guard only inspects the *first* path component (`parts[:1]`), so `brief_dir: \"sub/.shipwright/brief\"` or any nested `.shipwright/` path passes validation, while `\".shipwright/brief\"` is rejected. The stated rule is \"not under `.shipwright/`\".\n  Suggestion: Check `any(p.lower() == \".shipwright\" for p in PurePosixPath(bdir).parts)` instead of only `parts[:1]`.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/brief_package.py \u2014 `manifest()`, `rglob(\"*\")`\n  Finding: On Python < 3.13, `Path.rglob` follows symlinked *directories*, so files under a symlinked directory are yielded; they are saved by the `_is_link` resolve-escape check, but a symlinked directory whose target is *inside* the package (e.g. `inputs -> brief/.`) would have its files enumerated twice under different relative paths, silently affecting the hash and potentially tripping the casefold collision. Low practical likelihood, but worth a `path.is_symlink()` skip on directories.\n  Suggestion: Add `if path.is_symlink(): continue` before the file check in the `rglob` loops (both in `manifest` and `validate_layout`).\n\n- Category: test\n  Severity: low\n  File: integration-tests/test_brief_harness.py \u2014 `test_scratch_project_never_follows_symlinks`\n  Finding: The test never creates an actual symlink; it monkeypatches `Path.is_symlink` to lie about a regular file. It exercises the code path but would also pass if `_is_link`'s resolve-escape half were broken, and it can't catch filesystem-specific behavior (Windows junctions rely on the resolve check, which is not tested at all here). The library test has the same shape.\n  Suggestion: Where the platform allows (`os.symlink` / `pytest.mark.skipif`), add one test with a real symlink or junction pointing outside the package.\n\n- Category: edge-case\n  Severity: low\n  File: integration-tests/_brief_harness.py \u2014 `validate_report`\n  Finding: `spend.usd`, `fixture_approval.approved_by`, and stage `detail` have no type checks, so a report with `usd: {\"cost\": 1}` or `detail: []` passes the \"pinned\" schema. The schema pin is thinner than the docstring implies.\n  Suggestion: Add type assertions for `usd` (number-or-null) and `detail` (string) to `validate_report`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/brief_package.py \u2014 `_bad_rel_path`\n  Finding: Rejecting any path containing `\":\"` blocks Windows drives but also rejects legitimate POSIX filenames containing a colon (`notes:v2.md`). Cosmetic in practice, but it will produce a spurious `dangling_ref` on valid packages.\n  Suggestion: Restrict the `:` check to the drive-letter pattern (`^[A-Za-z]:`) or only reject a `:` in the first component.\n\nNo security defects: no secrets, injection surfaces are path-validation-only, and the trust-anchor limitation of `verify_hash` (hash stored inside the package) is explicitly documented rather than hidden. Spec acceptance criteria (fixture accepted, planted defects rejected, LF/CRLF hash equality, consent-field hash sensitivity, pinned report schema, dry run without model calls) are each covered by a dedicated test.\n\nOverall assessment: ship-as-is; the findings are refinements (nested `.shipwright` being the only one I'd actually fix before merge).\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_package.py:239 \u2014 `manifest(root)`\n- Finding: `validate_layout()` hashes every file before performing its guarded per-file reads, but catches only `ValueError`. An unreadable required file or optional input raises `OSError` from `read_bytes()`, crashing validation and preventing the harness from producing its failure report. This contradicts the validator\u2019s documented report-without-raising behavior.\n- Suggestion: Convert filesystem read failures into structured issues, including the affected path. Add a test that makes a packaged file\u2019s read raise `PermissionError` and verifies a conforming `dry-failed` report.\n\n- Category: spec\n- Severity: medium\n- File: integration-tests/_brief_harness.py:124 \u2014 package block validation\n- Finding: The report schema pins key names but leaves substantial field types unchecked. For example, `package.valid=\"yes\"`, `package.issues=null`, and `spend.usd=\"unknown\"` all pass validation and can be written as supposedly conforming reports. Downstream consumers cannot rely on the promised pinned schema.\n- Suggestion: Validate the types and allowed values of all report fields and nested blocks, including timestamps, package fields, and spend. Add malformed-value tests alongside the existing missing-key tests.\n\nOverall assessment: ship-with-fixes. The core dry-mode and hash requirements are represented, but filesystem failures need reliable reporting and the report schema needs complete validation. The referenced campaign brief could not be inspected because filesystem execution was blocked, so this assessment uses the supplied specification and diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a1-harness-and-package-lib",
+    "at": "2026-10-24T13:28:31.879826+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

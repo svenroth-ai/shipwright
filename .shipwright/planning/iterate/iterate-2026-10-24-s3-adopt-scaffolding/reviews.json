@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-s3-adopt-scaffolding",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:51:58.481936+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "generate_adoption_artifacts` must write nothing on resolution failure, but step 4 says \"resolve before any write\" while also reusing the resolved name for CI/CodeQL scaffolds. If any scaffold step can itself fail mid-way (template miss is now a `message`, not an error — but other I/O can fail), partial artifacts may remain. The mini-plan doesn't state whether existing files are overwritten in place or written atomically.",
+          "suggestion": "State explicitly: compute the full effective profile up front, and either write to temp then rename, or document that the resolution step is the only failure point before writes begin (and that scaffold misses degrade to messages, not aborts).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "SNAPSHOT_SCHEMA_VERSION` bump 1.0 → 1.1 with a new frozen fixture implies old 1.0 fixtures still exist. Nothing says whether readers of snapshots (analyzers, tests, any persistence) accept both 1.0 and 1.1, or whether 1.0 fixtures are migrated/deleted. Consumers reading `profile.source` on a 1.0 snapshot would KeyError.",
+          "suggestion": "Specify reader policy: readers must accept minor versions ≤ current, and old fixtures either updated or kept with consumers defaulting `source`/`warnings` to safe values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "match_profile` D1 rule: \"first dir owns a name even if its file is invalid.\" If the first dir has an invalid `python.yaml` and a later dir has a valid `python.yaml`, the later valid one is skipped — the whole profile falls through to `generic` with only a warning. That's the stated D1 intent, but it means a typo in a user profile silently degrades users to generic in CI contexts.",
+          "suggestion": "Ensure the warning is surfaced loudly (non-empty `warnings` is checked in tests; consider whether `write_run_config` should fail or at least echo warnings in its output), not just recorded in the snapshot.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "\"Audit every other consumer of `run_config.profile`\" is an acceptance criterion but is scheduled last with no mechanism named. If the audit finds a consumer that assumes a name-keyed template or hardcoded generic, that's new unplanned work at the end of the change.",
+          "suggestion": "Do the consumer audit first (it's cheap: grep for `run_config.profile`), so the plan can enumerate which consumers need updating before the writers land.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "template_path_for_profile` treats None/bundled/builtin sources as name-keyed. A custom profile whose name happens to collide with a bundled name (e.g., user defines `python`) with source `user` correctly skips the default template — good — but the \"no CI template for profile X\" message should include the source so users understand why no default applied.",
+          "suggestion": "Include source in the miss message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "discovery_dirs` \"missing bundled dir raises\" plus analyze_codebase turning that into exit 1 is a behavior change for existing users whose install may not ship bundled profiles. Previously they'd silently get `generic`; now they hard-fail.",
+          "suggestion": "Confirm this is the intended BRIEF behavior and that packaging actually guarantees the bundled dir exists (add a packaging/install test), otherwise every adopt invocation breaks for affected installs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Exit code 4 for unresolvable profile names in `write_run_config`/`write-project-config` — confirm 4 doesn't already mean something else in those CLIs, and that \"nothing written\" holds even when the config file already exists (must not truncate before validation).",
+          "suggestion": "Validate before opening the output file for write.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The consumer audit covers `run_config.profile`, but D9 also depends on every CI/CodeQL caller passing provenance. Because `source=None` retains name-keyed defaults, an unchanged caller could still give a custom profile a bundled template when names collide.",
+          "suggestion": "Audit all callers of both template helpers and their scaffolders. Pass resolved provenance wherever custom profiles are possible, and test a custom profile with the same name as a bundled profile.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The snapshot schema changes, but compatibility behavior is unspecified. Existing 1.0 snapshots lack provenance, and stored provenance can become stale when profiles move or project-level profiles shadow user profiles.",
+          "suggestion": "Explicitly support 1.0 snapshots and resolve their selected name through the current resolver. Use current resolution for template selection; test both legacy snapshots and changed profile precedence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Returning a scaffold `message` does not ensure template misses are visible to users. Adoption could appear fully successful while omitting CI or CodeQL files.",
+          "suggestion": "Ensure adoption surfaces these messages and distinguishes intentional skips from failures. Test that a custom profile without templates produces a clear diagnostic while generating the remaining supported artifacts.  The approach is sound, particularly resolving the effective profile before writing. Close the provenance propagation and snapshot compatibility gaps before implementation is considered complete; repository access was blocked, so these findings are based on the supplied plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T15:51:58.632589+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category:** risk | **Severity:** high\n**Finding:** `generate_adoption_artifacts` must write *nothing* on resolution failure, but step 4 says \"resolve before any write\" while also reusing the resolved name for CI/CodeQL scaffolds. If any scaffold step can itself fail mid-way (template miss is now a `message`, not an error — but other I/O can fail), partial artifacts may remain. The mini-plan doesn't state whether existing files are overwritten in place or written atomically.\n**Suggestion:** State explicitly: compute the full effective profile up front, and either write to temp then rename, or document that the resolution step is the only failure point before writes begin (and that scaffold misses degrade to messages, not aborts).\n\n**Category:** edge-case | **Severity:** medium\n**Finding:** `SNAPSHOT_SCHEMA_VERSION` bump 1.0 → 1.1 with a *new* frozen fixture implies old 1.0 fixtures still exist. Nothing says whether readers of snapshots (analyzers, tests, any persistence) accept both 1.0 and 1.1, or whether 1.0 fixtures are migrated/deleted. Consumers reading `profile.source` on a 1.0 snapshot would KeyError.\n**Suggestion:** Specify reader policy: readers must accept minor versions ≤ current, and old fixtures either updated or kept with consumers defaulting `source`/`warnings` to safe values.\n\n**Category:** edge-case | **Severity:** medium\n**Finding:** `match_profile` D1 rule: \"first dir owns a name even if its file is invalid.\" If the first dir has an invalid `python.yaml` and a later dir has a *valid* `python.yaml`, the later valid one is skipped — the whole profile falls through to `generic` with only a warning. That's the stated D1 intent, but it means a typo in a user profile silently degrades users to generic in CI contexts.\n**Suggestion:** Ensure the warning is surfaced loudly (non-empty `warnings` is checked in tests; consider whether `write_run_config` should fail or at least echo warnings in its output), not just recorded in the s […truncated]\n\n[openai] 1. **Category: dependency · Severity: medium**  \n   **Finding:** The consumer audit covers `run_config.profile`, but D9 also depends on every CI/CodeQL caller passing provenance. Because `source=None` retains name-keyed defaults, an unchanged caller could still give a custom profile a bundled template when names collide.  \n   **Suggestion:** Audit all callers of both template helpers and their scaffolders. Pass resolved provenance wherever custom profiles are possible, and test a custom profile with the same name as a bundled profile.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** The snapshot schema changes, but compatibility behavior is unspecified. Existing 1.0 snapshots lack provenance, and stored provenance can become stale when profiles move or project-level profiles shadow user profiles.  \n   **Suggestion:** Explicitly support 1.0 snapshots and resolve their selected name through the current resolver. Use current resolution for template selection; test both legacy snapshots and changed profile precedence.\n\n3. **Category: risk · Severity: low**  \n   **Finding:** Returning a scaffold `message` does not ensure template misses are visible to users. Adoption could appear fully successful while omitting CI or CodeQL files.  \n   **Suggestion:** Ensure adoption surfaces these messages and distinguishes intentional skips from failures. Test that a custom profile without templates produces a clear diagnostic while generating the remaining supported artifacts.\n\nThe approach is sound, particularly resolving the effective profile before writing. Close the provenance propagation and snapshot compatibility gaps before implementation is considered complete; repository access was blocked, so these findings are based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/codeql_workflow.py",
+          "line": 37,
+          "finding": "Third hand-rolled spec_from_file_location loader for a 3-element tuple; latent hazard (no register-before-exec) and breaks the in-repo convention of literal constants drift-pinned by a test.",
+          "suggestion": "Use a literal BUNDLED_SOURCES with a drift-pin assertion in test_workflow_provenance_keying.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": 65,
+          "finding": "Lookup-root name check is exact/case-sensitive on the unnormalised path; '..' segments or a case-variant .Shipwright fall back to the old root and a project profile exits 4 (fail-closed).",
+          "suggestion": "Optional: normpath(abspath()) and case-insensitive compare.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": 53,
+          "finding": "--project-root help string is long and mixes two concepts.",
+          "suggestion": "Shorten.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T17:11:57.278987+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": null,
+          "finding": "Claim under doubt: Narrowed lookup root cannot make a previously successful Step-7 call fail — In file mode planning_dir is the requirements file's parent, so a project-sourced custom profile there exits 4 at Step 7; no test covers it.",
+          "suggestion": "Routed to S5: pass --project-root at both SKILL call sites; optionally walk up to the nearest ancestor with .shipwright/ for the lookup. Not a regression of an existing flow (project profiles are new).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": null,
+          "finding": "Claim under doubt: The early --profile detecting --status in_progress call behaves as on origin/main — It gained exit-1 (shared tree missing) and exit-4 (strict listing of an unreadable/dangling profiles dir) failure modes.",
+          "suggestion": "Routed to S5: skip profile_error for the reserved sentinels when --status in_progress.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/scripts/write_run_config.py",
+          "line": null,
+          "finding": "Claim under doubt: write_run_config.py exit codes unchanged apart from the new 4 — The profile check runs before the FileExistsError check, so a bad profile with an existing config exits 4 instead of 3.",
+          "suggestion": "Accepted: callers gate on config absence.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/codeql_workflow.py",
+          "line": null,
+          "finding": "Claim under doubt: Loading BUNDLED_SOURCES by file path is safe under ADR-045 and plugin-cache skew — Module copy not registered in sys.modules (fine today); a pre-S3 shared tree with a new adopt plugin would raise TypeError after partial writes.",
+          "suggestion": "Accepted under the stale-cache rule; literal constant + drift pin is an S5 cleanup option.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T17:13:46.967506+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "diff (PR-body deliverable, not in repo)",
+          "line": null,
+          "finding": "Acceptance criterion \"Consumer audit table in PR body\" and BRIEF S3 item 7 cannot be verified from the diff — the ADR claims \"consumer audit done first (PR body)\" but no consumer-audit artifact (table, file, or test enumerating `run_config.profile` consumers) is present in the repository.",
+          "suggestion": "Include the audit table in the PR description explicitly, or land it as a tracked doc/test so the criterion is reviewable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-adopt/scripts/lib/profile_matcher.py (`_discover`, warning filter)",
+          "line": null,
+          "finding": "The absent-user-dir suppression matches on the resolver's exact message suffix (`w.endswith(\"user profiles directory does not exist\")`). This is a string contract spread across two modules with no shared constant or test pinning the resolver's wording; a rewording in `profile_resolver` silently reintroduces a noisy warning for every machine without a user profiles dir, breaking `test_an_absent_user_profiles_directory_is_not_a_warning`'s guarantee for real users (the test monkeypatches env, not the message).",
+          "suggestion": "Have `list_profiles` return a structured `warning_kind`/code, or export the message suffix as a constant from `profile_resolver` and import it here.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopt_profile.py (`discovery_dirs`)",
+          "line": null,
+          "finding": "next(d for s, d in dirs if s == \"bundled\")` raises a bare `StopIteration` (not `BundledProfilesMissing`) if a future resolver change drops or renames the bundled source — the CLI would crash with a traceback instead of exit 1.",
+          "suggestion": "Use `next(..., None)` and raise `BundledProfilesMissing` (or a clear error) when the bundled entry is absent from `search_dirs`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shipwright_test_results.json / .shipwright/compliance/test-evidence.md",
+          "line": null,
+          "finding": "The run records `tests_passed: true` with 13941/13941 while also listing 8 excluded shared/tests failures as \"degraded\" (cross-plugin sys.path pollution in `test_setup_writes_canonical.py`, 3 Windows symlink-privilege tests). The \"sys.path pollution\" exclusion is exactly the failure mode this change's `load_resolver`/`profile_check` sys.path append/remove pattern could interact with; excluding rather than fixing it leaves the headline count overstating the suite's health, and the root cause (\"cross-plugin sys.path pollution\") is unbounded in scope.",
+          "suggestion": "Fix or file a tracked follow-up for the sys.path pollution exclusion; verify it isn't caused/aggravated by the new `sys.path.append(_SHARED_SCRIPTS)` pattern in `adopt_profile.py`/`profile_check.py`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py (`resolve_effective` drift check in adopt_profile.py)",
+          "line": null,
+          "finding": "When the snapshot recorded `source: project/user` and the profile file was deleted, `resolve_named` raises not-found (exit 2) before the provenance-drift check runs, so the user gets a \"not found, searched these paths\" message instead of the clearer \"matched from X at analysis time, re-run analyze\" guidance; both abort safely, but the remediation hint for the most likely real-world drift case is the weaker one.",
+          "suggestion": "Catch not-found in the no-override path when `seen` is recorded and re-raise with the provenance-drift message.  Test quality is good: the new tests compare the full written tree before/after, assert resolver exit codes (2/3) and reason codes, and pin the plugin-cache layout via isolated `-I` subprocesses — a broken implementation would not pass them. The D9 provenance keying is well covered on both scaffolders, including the legacy `source=None` path. No security issues found: names are validated by the resolver, no commands are executed from profile data, and adopt runs no profile commands.  Overall: ship-as-is with the low/medium refinements above; the core S3 scope (matcher through the resolver, resolve-before-write, provenance-keyed templates, run-config writers, snapshot 1.1 bump) is implemented and well-tested, and the only unverifiable acceptance item is the PR-body audit table.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T16:15:47.941772+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec | Severity: low\n  File: diff (PR-body deliverable, not in repo)\n  Finding: Acceptance criterion \"Consumer audit table in PR body\" and BRIEF S3 item 7 cannot be verified from the diff — the ADR claims \"consumer audit done first (PR body)\" but no consumer-audit artifact (table, file, or test enumerating `run_config.profile` consumers) is present in the repository.\n  Suggestion: Include the audit table in the PR description explicitly, or land it as a tracked doc/test so the criterion is reviewable.\n\n- Category: edge-case | Severity: medium\n  File: plugins/shipwright-adopt/scripts/lib/profile_matcher.py (`_discover`, warning filter)\n  Finding: The absent-user-dir suppression matches on the resolver's exact message suffix (`w.endswith(\"user profiles directory does not exist\")`). This is a string contract spread across two modules with no shared constant or test pinning the resolver's wording; a rewording in `profile_resolver` silently reintroduces a noisy warning for every machine without a user profiles dir, breaking `test_an_absent_user_profiles_directory_is_not_a_warning`'s guarantee for real users (the test monkeypatches env, not the message).\n  Suggestion: Have `list_profiles` return a structured `warning_kind`/code, or export the message suffix as a constant from `profile_resolver` and import it here.\n\n- Category: edge-case | Severity: low\n  File: plugins/shipwright-adopt/scripts/lib/adopt_profile.py (`discovery_dirs`)\n  Finding: `next(d for s, d in dirs if s == \"bundled\")` raises a bare `StopIteration` (not `BundledProfilesMissing`) if a future resolver change drops or renames the bundled source — the CLI would crash with a traceback instead of exit 1.\n  Suggestion: Use `next(..., None)` and raise `BundledProfilesMissing` (or a clear error) when the bundled entry is absent from `search_dirs`.\n\n- Category: test | Severity: low\n  File: shipwright_test_results.json / .shipwright/compliance/test-evidence.md\n  Finding: The run  […truncated]\n\n[openai] No concrete defects found in the supplied diff. Effective-profile validation precedes artifact writes, CI/CodeQL selection receives resolved provenance, and the new tests assert observable success and failure behavior.\n\nOverall assessment: ship-as-is based on static review. Local execution was blocked by tool policy; acceptance item 7’s full BRIEF wording and the required PR-body consumer audit table were not supplied, so I could not independently verify those acceptance details.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T17:11:23.206041+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:51:58.814375+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:51:58.981446+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

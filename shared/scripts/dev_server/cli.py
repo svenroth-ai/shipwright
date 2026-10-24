@@ -65,7 +65,7 @@ def main_with_args(argv: list[str]) -> int:
                 return 2
             try:
                 services = [_normalize_service_entry(e) for e in raw]
-            except (TypeError, AttributeError) as e:
+            except (TypeError, AttributeError, ValueError) as e:
                 print(
                     json.dumps(
                         {"running": False, "error": f"invalid services entry: {e}"},
@@ -87,7 +87,10 @@ def main_with_args(argv: list[str]) -> int:
         result = cmd_status(cwd)
 
     print(json.dumps(result, indent=2))
-    return 0 if result.get("error") is None else 1
+    if result.get("error") is None:
+        return 0
+    kind = result.get("kind")
+    return (2 if kind == "not_found" else 3) if kind else 1
 
 
 def main() -> int:

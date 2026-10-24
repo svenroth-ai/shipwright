@@ -160,8 +160,8 @@ Nested-project policy → [references/nested-project-policy.md](references/neste
 ### Step E.5 — Env Scaffold (`.env.local`)
 
 After the artifact generator returns, adopt MUST scaffold `<project_root>/.env.local`
-via `shared/scripts/validate_env.py::init_env_file(project_root, "all", profile_dir,
-include_framework=True)` (result in `results["env_local"]`). Idempotent (never
+via `shared/scripts/validate_env.py::init_env_file(project_root, "all",
+include_framework=True)` (result in `results["env_local"]`; `action: "error"` stops the step, nothing written). Idempotent (never
 overwrites); `.gitignore` enforced FIRST (on failure → `action: skipped`, writes
 nothing); comment-prefixed entries only. Keys = profile `required_env_vars[...]`
 + framework `OPENROUTER_API_KEY` / `OPENAI_API_KEY`.

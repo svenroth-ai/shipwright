@@ -40,11 +40,10 @@ def test_profiles_dir_matches_the_pathlib_derivation_it_replaced():
     `__file__` walk it replaced, which IS the equivalence claim. Any one-off
     dirname slip fails it.
 
-    It needs its own test because the failure is quiet — `_load_profile_data`
-    treats a missing profile file as "no profile" and falls back to the legacy
-    in-script map, so a wrong directory here degrades to the fallback instead of
-    raising, and every test that monkeypatches `_profiles_dir` to a `tmp_path`
-    (the multiservice suite) keeps passing.
+    It needs its own test because every test that monkeypatches `_profiles_dir`
+    to a `tmp_path` (the multiservice suite) keeps passing even when the real
+    directory computation is off by one level. A wrong directory now raises
+    "profile not found" instead of degrading quietly, but only this test says why.
 
     Runs under the real `os.name`; constructing a `Path` is only unsafe under the
     platform fakes the windows_npm suite installs.

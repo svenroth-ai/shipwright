@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-a1-harness-and-package-lib",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:25:58.690509+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The spec says symlinks are excluded from hashing. Silently excluding symlinks means a package could ship a symlink swap (pointing to /etc/passwd or an attacker-controlled path outside the package) and still produce the same hash as a symlink-free package. \"Excluded\" is only safe if the validator rejects symlinks as a defect rather than skipping them.",
+          "suggestion": "validate_layout` should treat any symlink inside the package as a planted defect (reject), not silently ignore. If the brief mandates exclusion, at minimum document that symlink presence fails validation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The \"tamper detected\" test and `verify_hash` depend on where the expected hash is stored. If the recorded `package_sha256` lives in `brief.json` and `brief.json`'s content is itself excluded from the hash (which it is — the canonical-JSON-minus-fields trick), an attacker who can rewrite the whole directory can also rewrite `brief.json`'s recorded hash, making verification circular.",
+          "suggestion": "Confirm verification is anchored to a hash the harness derives independently (e.g., computed fresh, compared against a value passed in from the caller/test), not read from the package being verified. State explicitly in `verify_hash` docs where the trust anchor is.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"OS junk excluded\" is unpinned — which files count? `.DS_Store`, `Thumbs.db`, `desktop.ini`, `__pycache__`, `.pytest_cache`? An over-broad exclusion list lets a tamperer hide changes in a filename like `.DS_Store`; an under-broad one makes cross-platform checkouts flake.",
+          "suggestion": "Pin the exact exclusion list (probably just `.DS_Store`, `Thumbs.db`, and `evidence/`) in the plan and test that an excluded filename can't smuggle content changes... or accept the trade-off explicitly and document that excluded files are unverified.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "CRLF→LF normalization presumably applies only to \"text files,\" but the plan doesn't say how text vs binary is decided. Heuristic sniffing (null-byte detection) is nondeterministic across platforms/tooling; extension allowlists miss extensionless files.",
+          "suggestion": "Specify the mechanism — e.g., normalize only known text extensions (json, md, txt, yaml), hash everything else byte-exact — and test a binary file (fixture 1 should include one, e.g., a small PNG) to pin behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Dry mode runs without model calls\" is asserted via \"dry run makes no subprocess,\" but subprocess is a weaker proxy — an HTTP call to a model API needs no subprocess. If the harness ever gains an HTTP client path, the test won't catch it.",
+          "suggestion": "For this iterate, testing \"no subprocess launched\" is acceptable; note the follow-up to add a network-kill assertion (e.g., `socket.socket` guard) when live mode lands.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The manifest maps paths → hashes, so renaming or moving a file changes the hash even with identical content, and an empty directory leaves no manifest trace (deleting an empty dir won't change the hash). Probably fine, but worth confirming it matches the intent in BRIEF D1/D10.",
+          "suggestion": "Add one test pinning rename-sensitivity so the behavior is intentional, not accidental.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Fixture 1 is \"classic vite-hono, deploy none,\" built by code but not fully specified — file list, whether node_modules presence is simulated, package.json content. A later iterate will pin its hash; drift between iterations is the failure mode the mini-plan's alternative analysis already worried about.",
+          "suggestion": "Have the fixture builder log/assert its own package_sha256 on every test run so drift surfaces immediately in CI rather than in a later iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "NFC normalization can map two distinct filenames to the same manifest key. Building a dictionary directly could silently omit a file from the package hash.",
+          "suggestion": "Detect duplicate normalized paths before constructing the manifest and reject the package. Add a collision test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Generating the fixture’s expected hash with `package_sha256()` makes the happy-path verification circular. The planned invariance tests would not catch consistently omitting a required file or serializing the manifest incorrectly.",
+          "suggestion": "Keep the generated fixture, but add one small, independently calculated manifest and expected digest. Test that adding, removing, renaming, and changing included files changes the hash.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "“Dry run makes no subprocess” does not establish “no model calls”; an SDK or HTTP client can call a model within the process.",
+          "suggestion": "Ensure dry mode cannot enter the model execution path, and test with the application’s model-call boundary replaced by a function that fails immediately if invoked. Retain the subprocess assertion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Excluding symlinks from hashing leaves their handling during validation and scratch preparation unspecified. If scratch preparation follows a link or Windows junction, it could copy content outside the package that the hash never covered.",
+          "suggestion": "Explicitly reject links and junctions during layout validation, or ensure scratch preparation excludes them without traversing them. Add a test proving external content cannot enter the scratch project.  The approach is appropriately small, and generating the fixture is reasonable. Address the hash verification blind spots and explicitly enforce the dry-mode and filesystem boundaries before implementation is considered ready.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T13:24:14.552007+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case — Severity: medium**\n**Finding:** The spec says symlinks are *excluded* from hashing. Silently excluding symlinks means a package could ship a symlink swap (pointing to /etc/passwd or an attacker-controlled path outside the package) and still produce the same hash as a symlink-free package. \"Excluded\" is only safe if the validator *rejects* symlinks as a defect rather than skipping them.\n**Suggestion:** `validate_layout` should treat any symlink inside the package as a planted defect (reject), not silently ignore. If the brief mandates exclusion, at minimum document that symlink presence fails validation.\n\n**Category: edge-case — Severity: medium**\n**Finding:** The \"tamper detected\" test and `verify_hash` depend on where the expected hash is stored. If the recorded `package_sha256` lives in `brief.json` and `brief.json`'s content is itself excluded from the hash (which it is — the canonical-JSON-minus-fields trick), an attacker who can rewrite the whole directory can also rewrite `brief.json`'s recorded hash, making verification circular.\n**Suggestion:** Confirm verification is anchored to a hash the harness derives independently (e.g., computed fresh, compared against a value passed in from the caller/test), not read from the package being verified. State explicitly in `verify_hash` docs where the trust anchor is.\n\n**Category: edge-case — Severity: low**\n**Finding:** \"OS junk excluded\" is unpinned — which files count? `.DS_Store`, `Thumbs.db`, `desktop.ini`, `__pycache__`, `.pytest_cache`? An over-broad exclusion list lets a tamperer hide changes in a filename like `.DS_Store`; an under-broad one makes cross-platform checkouts flake.\n**Suggestion:** Pin the exact exclusion list (probably just `.DS_Store`, `Thumbs.db`, and `evidence/`) in the plan and test that an excluded filename can't smuggle content changes... or accept the trade-off explicitly and document that excluded files are unverified.\n\n**Category: edge-case […truncated]\n\n[openai] Review based on the supplied specification and mini-plan; repository access was blocked by execution policy, so I could not verify D1/D10 or the full A1 contract.\n\n1. **Category: edge-case | Severity: medium**  \n   **Finding:** NFC normalization can map two distinct filenames to the same manifest key. Building a dictionary directly could silently omit a file from the package hash.  \n   **Suggestion:** Detect duplicate normalized paths before constructing the manifest and reject the package. Add a collision test.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** Generating the fixture’s expected hash with `package_sha256()` makes the happy-path verification circular. The planned invariance tests would not catch consistently omitting a required file or serializing the manifest incorrectly.  \n   **Suggestion:** Keep the generated fixture, but add one small, independently calculated manifest and expected digest. Test that adding, removing, renaming, and changing included files changes the hash.\n\n3. **Category: security | Severity: medium**  \n   **Finding:** “Dry run makes no subprocess” does not establish “no model calls”; an SDK or HTTP client can call a model within the process.  \n   **Suggestion:** Ensure dry mode cannot enter the model execution path, and test with the application’s model-call boundary replaced by a function that fails immediately if invoked. Retain the subprocess assertion.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Excluding symlinks from hashing leaves their handling during validation and scratch preparation unspecified. If scratch preparation follows a link or Windows junction, it could copy content outside the package that the hash never covered.  \n   **Suggestion:** Explicitly reject links and junctions during layout validation, or ensure scratch preparation excludes them without traversing them. Add a test proving external content cannot enter the scratch project.\n\nThe approach is appropriately […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_package.py",
+          "line": null,
+          "finding": "Windows junctions reported but still walked by rglob (loop / external tree). FIXED: os.walk with pruning of links and junctions; real junction tests.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/brief_package.py",
+          "line": null,
+          "finding": "File references checked against the filesystem, not the hashed manifest (evidence/, junk, ADS, case). FIXED: references must be manifest keys; ':' refused.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/_brief_harness.py",
+          "line": null,
+          "finding": "run_harness crashed on non-string autonomy. FIXED with test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "fallback key list, case-sensitive evidence exclusion, verify_hash with links, formatting, private _is_link use, O(n^2) collision check, mode/outcome agreement, schema_version bool. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T15:06:52.741349+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/brief_package.py",
+          "line": null,
+          "finding": "Docs describe the snapshot step as verify-then-copy",
+          "suggestion": "Copy first, then verify the copy against an externally held hash. ADDRESSED: docstrings rewritten in b7b21fc8 (docs-only).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_package_walk.py",
+          "line": null,
+          "finding": "evidence/ is never read by a phase",
+          "suggestion": "State that this holds only because the snapshot omits evidence/ (B2/U3 own it). ADDRESSED in docs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_package_walk.py",
+          "line": null,
+          "finding": "Every visible name is hashed or reported",
+          "suggestion": "Document that empty directories are neither hashed nor reported. ADDRESSED in docs.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T15:06:52.885901+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/brief_package.py (~line in `_check_brief`, the `brief_dir` check)",
+          "line": null,
+          "finding": "The `.shipwright` guard only inspects the first path component (`parts[:1]`), so `brief_dir: \"sub/.shipwright/brief\"` or any nested `.shipwright/` path passes validation, while `\".shipwright/brief\"` is rejected. The stated rule is \"not under `.shipwright/`\".",
+          "suggestion": "Check `any(p.lower() == \".shipwright\" for p in PurePosixPath(bdir).parts)` instead of only `parts[:1]`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_package.py — `manifest()`, `rglob(\"\")",
+          "line": null,
+          "finding": "On Python < 3.13, `Path.rglob` follows symlinked directories, so files under a symlinked directory are yielded; they are saved by the `_is_link` resolve-escape check, but a symlinked directory whose target is inside the package (e.g. `inputs -> brief/.`) would have its files enumerated twice under different relative paths, silently affecting the hash and potentially tripping the casefold collision. Low practical likelihood, but worth a `path.is_symlink()` skip on directories.",
+          "suggestion": "Add `if path.is_symlink(): continue` before the file check in the `rglob` loops (both in `manifest` and `validate_layout`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_brief_harness.py — `test_scratch_project_never_follows_symlinks",
+          "line": null,
+          "finding": "The test never creates an actual symlink; it monkeypatches `Path.is_symlink` to lie about a regular file. It exercises the code path but would also pass if `_is_link`'s resolve-escape half were broken, and it can't catch filesystem-specific behavior (Windows junctions rely on the resolve check, which is not tested at all here). The library test has the same shape.",
+          "suggestion": "Where the platform allows (`os.symlink` / `pytest.mark.skipif`), add one test with a real symlink or junction pointing outside the package.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/_brief_harness.py — `validate_report",
+          "line": null,
+          "finding": "spend.usd`, `fixture_approval.approved_by`, and stage `detail` have no type checks, so a report with `usd: {\"cost\": 1}` or `detail: []` passes the \"pinned\" schema. The schema pin is thinner than the docstring implies.",
+          "suggestion": "Add type assertions for `usd` (number-or-null) and `detail` (string) to `validate_report`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/brief_package.py — `_bad_rel_path",
+          "line": null,
+          "finding": "Rejecting any path containing `\":\"` blocks Windows drives but also rejects legitimate POSIX filenames containing a colon (`notes:v2.md`). Cosmetic in practice, but it will produce a spurious `dangling_ref` on valid packages.",
+          "suggestion": "Restrict the `:` check to the drive-letter pattern (`^[A-Za-z]:`) or only reject a `:` in the first component.  No security defects: no secrets, injection surfaces are path-validation-only, and the trust-anchor limitation of `verify_hash` (hash stored inside the package) is explicitly documented rather than hidden. Spec acceptance criteria (fixture accepted, planted defects rejected, LF/CRLF hash equality, consent-field hash sensitivity, pinned report schema, dry run without model calls) are each covered by a dedicated test.  Overall assessment: ship-as-is; the findings are refinements (nested `.shipwright` being the only one I'd actually fix before merge).  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_package.py:239 — `manifest(root)",
+          "line": null,
+          "finding": "validate_layout()` hashes every file before performing its guarded per-file reads, but catches only `ValueError`. An unreadable required file or optional input raises `OSError` from `read_bytes()`, crashing validation and preventing the harness from producing its failure report. This contradicts the validator’s documented report-without-raising behavior.",
+          "suggestion": "Convert filesystem read failures into structured issues, including the affected path. Add a test that makes a packaged file’s read raise `PermissionError` and verifies a conforming `dry-failed` report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/_brief_harness.py:124 — package block validation",
+          "line": null,
+          "finding": "The report schema pins key names but leaves substantial field types unchecked. For example, `package.valid=\"yes\"`, `package.issues=null`, and `spend.usd=\"unknown\"` all pass validation and can be written as supposedly conforming reports. Downstream consumers cannot rely on the promised pinned schema.",
+          "suggestion": "Validate the types and allowed values of all report fields and nested blocks, including timestamps, package fields, and spend. Add malformed-value tests alongside the existing missing-key tests.  Overall assessment: ship-with-fixes. The core dry-mode and hash requirements are represented, but filesystem failures need reliable reporting and the report schema needs complete validation. The referenced campaign brief could not be inspected because filesystem execution was blocked, so this assessment uses the supplied specification and diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T13:29:43.099713+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe diff implements the A1 scope faithfully: layout validator + manifest hash with the LF/CRLF normalization, consent-field protection, report schema pinning, and a dry-mode harness that makes no model/subprocess calls. The tests are unusually substantive (independent hash recomputation, tamper cases, schema-drift mutations, refusal of live mode).\n\nFindings:\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/lib/brief_package.py (~line in `_check_brief`, the `brief_dir` check)\n  Finding: The `.shipwright` guard only inspects the *first* path component (`parts[:1]`), so `brief_dir: \"sub/.shipwright/brief\"` or any nested `.shipwright/` path passes validation, while `\".shipwright/brief\"` is rejected. The stated rule is \"not under `.shipwright/`\".\n  Suggestion: Check `any(p.lower() == \".shipwright\" for p in PurePosixPath(bdir).parts)` instead of only `parts[:1]`.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/brief_package.py — `manifest()`, `rglob(\"*\")`\n  Finding: On Python < 3.13, `Path.rglob` follows symlinked *directories*, so files under a symlinked directory are yielded; they are saved by the `_is_link` resolve-escape check, but a symlinked directory whose target is *inside* the package (e.g. `inputs -> brief/.`) would have its files enumerated twice under different relative paths, silently affecting the hash and potentially tripping the casefold collision. Low practical likelihood, but worth a `path.is_symlink()` skip on directories.\n  Suggestion: Add `if path.is_symlink(): continue` before the file check in the `rglob` loops (both in `manifest` and `validate_layout`).\n\n- Category: test\n  Severity: low\n  File: integration-tests/test_brief_harness.py — `test_scratch_project_never_follows_symlinks`\n  Finding: The test never creates an actual symlink; it monkeypatches `Path.is_symlink` to lie about a regular file. It exercises the code path but would also pass if `_is_link`'s resolve-escape half were broken, and it  […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_package.py:239 — `manifest(root)`\n- Finding: `validate_layout()` hashes every file before performing its guarded per-file reads, but catches only `ValueError`. An unreadable required file or optional input raises `OSError` from `read_bytes()`, crashing validation and preventing the harness from producing its failure report. This contradicts the validator’s documented report-without-raising behavior.\n- Suggestion: Convert filesystem read failures into structured issues, including the affected path. Add a test that makes a packaged file’s read raise `PermissionError` and verifies a conforming `dry-failed` report.\n\n- Category: spec\n- Severity: medium\n- File: integration-tests/_brief_harness.py:124 — package block validation\n- Finding: The report schema pins key names but leaves substantial field types unchecked. For example, `package.valid=\"yes\"`, `package.issues=null`, and `spend.usd=\"unknown\"` all pass validation and can be written as supposedly conforming reports. Downstream consumers cannot rely on the promised pinned schema.\n- Suggestion: Validate the types and allowed values of all report fields and nested blocks, including timestamps, package fields, and spend. Add malformed-value tests alongside the existing missing-key tests.\n\nOverall assessment: ship-with-fixes. The core dry-mode and hash requirements are represented, but filesystem failures need reliable reporting and the report schema needs complete validation. The referenced campaign brief could not be inspected because filesystem execution was blocked, so this assessment uses the supplied specification and diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T15:06:52.622999+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:26:06.862270+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T13:24:49.114059+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

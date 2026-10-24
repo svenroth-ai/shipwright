@@ -1,0 +1,110 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-24-s3-adopt-scaffolding",
+    "date": "2026-10-24",
+    "unit": {
+      "status": "passed",
+      "passed": 13941,
+      "total": 13941
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests: 8 failures excluded from the count, unrelated to this diff (3 symlink-privilege tests on Windows; 5 in test_setup_writes_canonical.py from cross-plugin sys.path pollution, fail identically on untouched artifact_writer paths)"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest tests/test_adopt_custom_profiles.py tests/test_snapshot_contract.py tests/test_profile_matcher.py tests/test_ci_workflow_scaffold.py tests/test_codeql_workflow_scaffold.py -q (plugins/shipwright-adopt)",
+      "exit_code": 0,
+      "tests_run": 76,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-24-s3-adopt-scaffolding/surface_verification.log",
+      "timestamp": "2026-10-24T16:10:00.000Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "custom project/user profile matched from a fixture repo and marked source project/user; bundled matching unchanged",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_custom_profiles.py::test_custom_project_profile_is_matched_and_marked_project, ::test_user_level_profile_is_matched, ::test_discovery_skips_invalid_candidates_with_warnings_never_fatal PASSED; plugins/shipwright-adopt/tests/test_profile_matcher.py PASSED"
+        },
+        {
+          "behavior": "first directory owns a name; invalid candidate (bad JSON, too-new schema, upper-case, wrong name, non-object stack) skipped with a warning, never fatal",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_custom_profiles.py::test_first_directory_owns_a_name_and_an_invalid_owner_blocks_the_lower_one, ::test_a_profile_with_a_non_object_stack_is_not_a_crash, ::test_matcher_ignores_non_profile_files_and_case_collisions PASSED"
+        },
+        {
+          "behavior": "unknown or invalid override and a snapshot-selected profile that became invalid abort generate with the resolver exit code and nothing written; provenance change aborts; detecting refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_custom_profiles.py::test_unknown_override_fails_with_nothing_written, ::test_snapshot_selected_profile_that_became_invalid_aborts_before_any_write, ::test_provenance_change_between_analysis_and_generation_aborts, ::test_detecting_is_not_an_adopt_profile PASSED"
+        },
+        {
+          "behavior": "D9: a same-name shadow and any custom profile get no bundled CI/CodeQL template, with an explicit no-template message; override wins over the snapshot match",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_custom_profiles.py::test_same_name_shadow_gets_no_bundled_templates, ::test_scaffolders_key_on_provenance_not_name, ::test_custom_override_wins_over_the_snapshot_match_and_gets_no_template PASSED; shared/tests/test_workflow_provenance_keying.py PASSED"
+        },
+        {
+          "behavior": "missing bundled directory is an error (exit 1), absent user dir is not a warning, unresolvable hint warns, discovery warnings printed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_custom_profiles.py::test_missing_bundled_dir_is_an_error_not_generic, ::test_an_absent_user_profiles_directory_is_not_a_warning, ::test_an_unresolvable_hint_is_a_snapshot_warning, ::test_analyze_cli_prints_discovery_warnings PASSED"
+        },
+        {
+          "behavior": "snapshot 1.1 contract: additive profile.source/warnings/candidates[].source, frozen 1.0 fixture untouched",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_snapshot_contract.py (TestPublishedFixture, TestTheGate) PASSED"
+        },
+        {
+          "behavior": "write_run_config and write-project-config accept resolvable names and sentinels, reject D3-failing or unresolvable names with exit 4 and write nothing",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-project/tests/test_profile_name_check.py PASSED"
+        },
+        {
+          "behavior": "plugin-layout import of the resolver through <plugin>/<ver>/scripts/lib for adopt and project (stale-cache rule)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_custom_profiles.py::test_adopt_profile_imports_the_resolver_through_the_plugin_layout, plugins/shipwright-project/tests/test_profile_name_check.py::test_profile_check_imports_the_resolver_through_the_plugin_layout PASSED"
+        },
+        {
+          "behavior": "real analyze then generate CLI round trip (snapshot.json producer to consumer) with a custom project profile, and a profile corrupted between the two",
+          "disposition": "tested",
+          "evidence": "manual boundary probes 1 and 2 (found and fixed a noisy missing-user-dir warning); same cells pinned in test_adopt_custom_profiles.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -24,14 +24,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 
 _SCRIPTS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _SCRIPTS not in sys.path:
+_ADDED = _SCRIPTS not in sys.path
+if _ADDED:
     sys.path.append(_SCRIPTS)  # APPEND, never insert(0): plugins own a `lib`
 from profile_resolver import (  # noqa: E402
     list_profiles, load_profile_file, provenance_lines, resolve_profile,
 )
+if _ADDED:  # in-process main(argv) must not leave shared/scripts (a `tools` package) on sys.path
+    sys.path.remove(_SCRIPTS)
 
 EXIT_USAGE = 4
 
@@ -59,6 +63,11 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def _plain(text) -> str:
+    """Control characters in a profile-controlled string must not drive the terminal."""
+    return re.sub(r"[\x00-\x1f\x7f]", lambda m: repr(m.group())[1:-1], str(text))
+
+
 def _emit(obj) -> None:
     sys.stdout.write(json.dumps(obj, indent=2, ensure_ascii=False) + "\n")
 
@@ -66,13 +75,13 @@ def _emit(obj) -> None:
 def _list(args) -> int:
     out = list_profiles(args.project_root)
     for w in out["warnings"]:
-        sys.stderr.write(f"warning: {w}\n")
+        sys.stderr.write(f"warning: {_plain(w)}\n")
     if args.json:
         _emit(out)
         return 0
     for row in out["profiles"]:
-        flag = "" if row["valid"] else f"  INVALID: {row['error']}"
-        sys.stdout.write(f"{row['name']}\t{row['source']}\t{row['path']}{flag}\n")
+        flag = "" if row["valid"] else f"  INVALID: {_plain(row['error'])}"
+        sys.stdout.write(f"{_plain(row['name'])}\t{row['source']}\t{_plain(row['path'])}{flag}\n")
     return 0
 
 

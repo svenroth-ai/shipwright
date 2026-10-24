@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -42,7 +43,8 @@ def test_empty_services_with_legacy_dev_server_still_starts(tmp_path):
 @pytest.mark.covers("FR-01.12/AC01")
 def test_cmd_start_reports_no_dev_server_instead_of_crashing(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        dev_server.profile_config, "_load_profile_data", lambda name: {"services": [], "dev_server": None}
+        dev_server.profile_config, "_resolve_profile",
+        lambda name, root: SimpleNamespace(source="bundled", data={"services": [], "dev_server": None}),
     )
     result = dev_server.cmd_start(tmp_path, profile="python-plugin-monorepo")
     assert result["running"] is False
@@ -55,7 +57,8 @@ def test_non_object_dev_server_is_a_clear_error_not_a_crash(tmp_path, monkeypatc
     with pytest.raises(ValueError, match="object or null"):
         dev_server._get_services_for_test(profile_data={"dev_server": "x"}, cwd=tmp_path)
     monkeypatch.setattr(
-        dev_server.profile_config, "_load_profile_data", lambda name: {"dev_server": "x"}
+        dev_server.profile_config, "_resolve_profile",
+        lambda name, root: SimpleNamespace(source="project", data={"dev_server": "x"}),
     )
     result = dev_server.cmd_start(tmp_path, profile="p")
     assert result["running"] is False and "invalid services" in result["error"]
@@ -66,4 +69,4 @@ def test_non_object_dev_server_is_a_clear_error_not_a_crash(tmp_path, monkeypatc
 def test_path_like_profile_names_are_rejected(tmp_path):
     result = dev_server.cmd_start(tmp_path, profile="../../etc/x")
     assert result["running"] is False
-    assert "invalid profile name" in result["error"]
+    assert "Invalid profile name" in result["error"]  # the resolver's D3 text

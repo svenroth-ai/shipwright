@@ -74,7 +74,7 @@ Test layers:
 
 Read `shipwright_project_config.json` from project root and load profile from
 `{plugin_root}/../../shared/profiles/{profile}.json`. If no config, detect from
-`package.json` / `pyproject.toml`. Full detection rules: see
+`package.json` / `pyproject.toml` (the detected name must be a bundled profile name in `shared/profiles`, or `generic` when unsure; never an invented name). Full detection rules: see
 [first-actions](references/first-actions.md).
 
 ### B2. Detect Invocation Mode
@@ -127,6 +127,7 @@ uv run "{plugin_root}/scripts/lib/test_runner.py" --profile "{profile}" \
 
 Autonomous mode auto-applies `--fix` behavior. Max 3 retries, structured
 debugging (root cause -> pattern check -> hypothesis -> fix -> re-run).
+A profile error (exit 2/3, `success: false` with a `kind`) is a profile problem: stop and show the message, do not retry or edit project code.
 Full body: see [step-1-unit-tests](references/step-1-unit-tests.md).
 
 ## Step 1.5: Run Integration Tests

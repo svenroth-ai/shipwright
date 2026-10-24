@@ -1,0 +1,103 @@
+{
+  "run_id": "iterate-2026-10-24-s2-python-loaders",
+  "date": "2026-10-24T12:52:21.162800Z",
+  "event_at": "2026-10-24T10:31:52.806147+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-stack-profile-resolver--S2",
+  "spec": ".shipwright/planning/campaigns/2026-10-24-stack-profile-resolver-BRIEF.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-s2-python-loaders",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "dev_server: custom/project profile used; unknown, corrupt or too-new profile is an error naming the file; sentinel/none keep the dev_url fallback; integral-float ports coerced, NaN/Infinity/1e300 rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_dev_server_profile_resolution.py::test_corrupt_winning_profile_fails_and_bundled_of_that_name_is_not_used, ::test_sentinel_and_no_profile_keep_the_build_config_dev_url_fallback, ::test_unknown_profile_is_an_error_naming_the_searched_paths, ::test_non_finite_fractional_and_out_of_range_ports_are_rejected PASSED"
+      },
+      {
+        "behavior": "validate_env/init_env_file: optional profile_dir, unknown profile returns the pinned error result and a non-zero exit, sentinel and no-profile skip, explicit --profile-dir through load_profile_file",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_validate_env_profiles.py::test_unknown_profile_error_text_is_remediation_oriented, ::test_main_exit_code_is_non_zero_for_error_and_init_no_longer_exits_zero, ::test_sentinels_skip_without_error_or_scaffold, ::test_explicit_profile_dir_goes_through_load_profile_file PASSED"
+      },
+      {
+        "behavior": "adopt _scaffold_env_local passes no bundled dir and propagates the error result; nothing written on error",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_scaffold_env_local_profiles.py (custom, bundled, unknown, corrupt, sentinel cells) PASSED"
+      },
+      {
+        "behavior": "test_runner: project profile commands run; sentinel uses defaults; run config naming nothing keeps supabase-nextjs; unknown/corrupt/too-new exits 2/3 with nothing run",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_profiles.py::test_custom_project_profile_command_is_used_and_source_reported, ::test_sentinel_uses_default_commands_from_the_built_in_source, ::test_run_config_naming_nothing_keeps_the_legacy_supabase_default, ::test_unknown_profile_is_exit_2_with_the_remediation_text, ::test_corrupt_profile_is_exit_3_naming_the_file_nothing_runs PASSED"
+      },
+      {
+        "behavior": "D9: name-keyed command tables apply to bundled provenance only; a custom profile gets its own commands, its own e2e command (not Playwright) and an error when it declares none",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_profiles.py::test_d9_project_profile_named_like_a_bundled_one_gets_its_own_commands, ::test_custom_profile_e2e_command_runs_instead_of_playwright, ::test_custom_profile_without_the_layer_command_is_an_error_not_npx PASSED"
+      },
+      {
+        "behavior": "performance_check: sentinel/no profile is an explicit 'no budgets (no profile)' skip with exit 0; unknown/invalid/non-object profile is exit 2/3",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_performance_check_profiles.py::test_no_profile_or_sentinel_is_an_explicit_skip_with_exit_0, ::test_corrupt_profile_is_exit_3_naming_the_file_and_not_a_budget_free_run, ::test_non_object_profile_file_is_a_clear_error_not_a_traceback PASSED"
+      },
+      {
+        "behavior": "setup-design-session: sentinels mean built-in defaults, no profile keeps supabase-nextjs, unknown/corrupt/too-new is an error",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_setup_design_profiles.py::test_sentinel_means_built_in_defaults_not_an_error, ::test_no_profile_in_config_keeps_the_supabase_default, ::test_unknown_profile_is_an_error_with_remediation, ::test_too_new_schema_version_is_drift PASSED"
+      },
+      {
+        "behavior": "D8a/b/f: source line on stderr and a shadow warning at every loader resolution; prose-shaped invocations (name + project root, and name + bundled profile path) resolve by name so a project shadow wins",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_profiles.py::test_d9_prose_shaped_invocation_passes_name_and_project_root, ::test_prose_shaped_bundled_profile_path_resolves_by_name, ::test_explicit_path_inside_a_project_dir_still_warns_about_shadowing; plugins/shipwright-test/tests/test_performance_check_profiles.py::test_shadowing_a_bundled_name_warns, ::test_prose_shaped_bundled_profile_path_resolves_by_name PASSED"
+      },
+      {
+        "behavior": "Plugin-cache-layout imports: the resolver is found through <cache>/shipwright/<plugin>/<ver>/scripts/... for test_runner, performance_check and setup-design-session, and shared/scripts stays off sys.path",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_profiles.py::test_resolver_imports_through_the_plugin_cache_layout, ::test_importing_test_runner_leaves_shared_scripts_off_sys_path; plugins/shipwright-design/tests/test_setup_design_profiles.py::test_resolver_imports_through_the_plugin_cache_layout PASSED"
+      },
+      {
+        "behavior": "D6: every loader declares PROFILE_KEYS_READ and each key exists in the stack-profile schema",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_dev_server_profile_resolution.py::test_d6_declared_profile_keys_exist_in_the_schema; shared/scripts/tests/test_validate_env_profiles.py::test_d6_declared_profile_keys_exist_in_the_schema; plugins/shipwright-test/tests/test_performance_check_profiles.py::test_d6_declared_profile_keys_exist_in_the_schema; plugins/shipwright-design/tests/test_setup_design_profiles.py::test_d6_declared_profile_keys_exist_in_the_schema PASSED"
+      },
+      {
+        "behavior": "S1 hand-offs: dangling .shipwright/profiles symlink raises, tamper-evident isolation probe, control-character escaping in list, rooted Windows env path, env-var-ignored warning",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_resolver_source_gaps.py (dangling project/user dir, list warnings, junction fallback); shared/tests/test_resolve_profile_cli.py::test_plain_escapes_control_characters_in_list_output; boundary probes in nine roots PASSED"
+      },
+      {
+        "behavior": "CLI-origin remediation hint names the --profile option, config origins name shipwright_run_config.json; --project-root drives the lookup",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_profiles.py::test_cli_origin_not_found_hint_names_the_option_not_the_run_config, ::test_project_root_flag_drives_the_lookup PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 12,
+      "covered_acs": 12
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest plugins/shipwright-test/tests/test_test_runner_profiles.py plugins/shipwright-test/tests/test_performance_check_profiles.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 40,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-stack-profile-resolver--S2\\.shipwright\\runs\\iterate-2026-10-24-s2-python-loaders\\surface_verification.log",
+    "timestamp": "2026-10-24T12:19:14.931Z"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth",
+    "touches_io_boundary"
+  ]
+}

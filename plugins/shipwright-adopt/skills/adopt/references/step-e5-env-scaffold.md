@@ -6,7 +6,7 @@ After the artifact generator returns, adopt MUST scaffold a
 review CLI (`shared/scripts/tools/external_review.py`) have a single
 canonical surface to read from on this project. The artifact generator
 calls `shared/scripts/validate_env.py::init_env_file(project_root,
-"all", profile_dir, include_framework=True)` directly — there is no
+"all", include_framework=True)` directly (the profile is resolved by name) — there is no
 separate subprocess invocation here. The result lands in
 `results["env_local"]` for the Step H handoff banner.
 

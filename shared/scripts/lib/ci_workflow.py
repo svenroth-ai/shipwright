@@ -58,11 +58,22 @@ MATRIX_OS_VALUES: list[str] = ["ubuntu-latest", "windows-latest"]
 MATRIX_FAIL_FAST: bool = False
 
 
-def template_path_for_profile(profile_name: str) -> str | None:
+# Resolver sources (shared/scripts/profile_resolver.py) the name-keyed defaults below
+# may apply to (D9). `None` = caller has no provenance: legacy name-only lookup, kept for
+# name-only callers/tests; the one production caller (adopt's generate) always passes `source`.
+BUNDLED_SOURCES = (None, "bundled", "builtin")
+
+
+def template_path_for_profile(profile_name: str, source: str | None = None) -> str | None:
     """Return the repo-root-relative template path for a profile, or None.
+
+    ``source`` is the resolver provenance (D9): a project/user/explicit profile that
+    merely carries a bundled NAME never receives a bundled template.
 
     The scaffolder uses None to short-circuit with a graceful "no template
     for this profile" result instead of raising. New profile? Register in
     `TEMPLATE_BY_PROFILE` above.
     """
+    if source not in BUNDLED_SOURCES:
+        return None
     return TEMPLATE_BY_PROFILE.get(profile_name)

@@ -2,38 +2,39 @@
 """Profile-aware test runner.
 
 Determines the correct test command based on stack profile and runs it.
-Order: --command, then the profile JSON (--profile-path, else located from
---profile / the run config's `profile`), then hardcoded defaults. A non-unit
-layer a non-legacy profile does not declare is skipped, not run via a default.
+Order: --command, then the profile JSON (--profile-path, else resolved by NAME
+from --profile / the run config: project > user > bundled), then defaults that
+apply only to a bundled profile or `generic`/`detecting`. Unknown, corrupt or too
+new profile = ERROR (exit 2/3), never a fallback. An undeclared non-unit layer is skipped.
 
 Usage:
     uv run test_runner.py --profile <name> --layer <unit|integration|pgtap|e2e|all>
     uv run test_runner.py --profile-path <path/to/profile.json> --layer <layer>
     uv run test_runner.py --command <custom_command>
 
-Output (JSON):
-    {
-        "success": true/false,
-        "layer": "unit",
-        "command": "npx vitest run",
-        "passed": 42,
-        "failed": 0,
-        "total": 42,
-        "duration_seconds": 3.5,
-        "output": "..."
-    }
+Output (JSON): {"success", "layer", "command", "passed", "failed", "total",
+"duration_seconds", "output", "profile_source"}; an unusable profile prints
+{"success": false, "error", "kind"} and exits 2 or 3.
 """
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+_SHARED = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
+_ADDED = _SHARED not in sys.path
+if _ADDED:
+    sys.path.append(_SHARED)
+import profile_consumer as pc  # noqa: E402
 
-# Profile → test commands (fallback when --profile-path not provided)
+if _ADDED:  # shared/scripts holds a `tools` package that would shadow this plugin's own
+    sys.path.remove(_SHARED)
+
+
+PROFILE_KEYS_READ = ("testing",)  # D6: profile keys this loader consumes (checked against the schema)
 PROFILE_TEST_COMMANDS = {
     "supabase-nextjs": {
         "unit": "npx vitest run",
@@ -144,44 +145,25 @@ _PROFILE_LAYER_KEYS = {"unit": "unit", "integration": "integration",
                        "pgtap": "db_tests", "e2e": "e2e"}
 
 
-_PROFILE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-
-
-def default_profile_path(profile: str | None) -> Path | None:
-    """Locate shared/profiles/<profile>.json relative to this file.
-
-    Monorepo (<root>/plugins/shipwright-test/scripts/lib) and the installed
-    plugin cache (<marketplace>/shipwright-test/<ver>/scripts/lib) both keep
-    `shared/` beside the plugin directories, i.e. under parents[4].
-    """
-    if not profile or not _PROFILE_NAME_RE.match(profile):
-        return None
-    candidate = Path(__file__).resolve().parents[4] / "shared" / "profiles" / f"{profile}.json"
-    return candidate if candidate.exists() else None
-
-
 def resolve_profile_name(cli_profile: str | None, cwd: str | None) -> str:
-    """The active profile: --profile, else the project's run config, else legacy default."""
-    if cli_profile:
-        return cli_profile
-    run_config = Path(cwd or ".") / "shipwright_run_config.json"
-    try:
-        name = json.loads(run_config.read_text(encoding="utf-8")).get("profile")
-        if isinstance(name, str) and _PROFILE_NAME_RE.match(name):
-            return name
-    except (json.JSONDecodeError, OSError, AttributeError):
-        pass
-    return "supabase-nextjs"
+    """--profile, else the run config's, else legacy `supabase-nextjs` (config names NOTHING).
+
+    A corrupt run config, or a `profile` that is not a string, raises.
+    """
+    return cli_profile or pc.config_profile(cwd or ".") or "supabase-nextjs"
 
 
-def _load_profile(profile_path: Path | None) -> dict | None:
-    if profile_path and profile_path.exists():
-        try:
-            data = json.loads(profile_path.read_text(encoding="utf-8"))
-            return data if isinstance(data, dict) else None
-        except (json.JSONDecodeError, OSError):
-            return None
-    return None
+def load_resolved(profile: str, profile_path, cwd: str | None, *, origin: str = pc.RUN_CONFIG,
+                  quiet: bool = False):
+    """The ResolvedProfile (provenance on stderr unless quiet); errors are ValueErrors."""
+    if profile_path:
+        return pc.load_explicit(profile_path, cwd or ".", quiet=quiet)
+    return pc.resolve_named(profile, cwd or ".", origin=origin, quiet=quiet)
+
+
+def uses_legacy_commands(res) -> bool:
+    """D9: the name-keyed command table applies to a BUNDLED profile only, by provenance."""
+    return res.source == "bundled" and res.name in PROFILE_TEST_COMMANDS
 
 
 def _profile_layer_command(profile_data: dict, layer: str) -> str:
@@ -199,34 +181,39 @@ def _profile_layer_command(profile_data: dict, layer: str) -> str:
     return ""
 
 
-def profile_declares_no_layer(profile_data: dict | None, profile: str, layer: str) -> bool:
-    """True when a loaded, non-legacy profile has no entry at all for a non-unit layer.
+def _fail(exc: ValueError) -> int:
+    sys.stderr.write(f"error: {exc}\n")
+    print(json.dumps({"success": False, **pc.error_fields(exc)}, indent=2))
+    return pc.exit_code(exc)
 
-    The hardcoded `npx vitest` / `npx playwright` fallbacks only make sense for a
-    node stack; running them for e.g. a Python profile is a wrong command, not a
-    default. Unit always falls back (a project must have some unit command).
-    """
-    if profile_data is None or layer == "unit" or profile in PROFILE_TEST_COMMANDS:
+
+def profile_declares_no_layer(res, layer: str) -> bool:
+    """True when a resolved, non-legacy profile FILE has no entry for a non-unit layer (D9).
+
+    The hardcoded `npx` fallbacks only make sense for a node stack; sentinels keep the defaults."""
+    if res is None or res.source == "builtin" or layer == "unit" or uses_legacy_commands(res):
         return False
-    testing = profile_data.get("testing")
-    key = _PROFILE_LAYER_KEYS.get(layer, layer)
-    return not (isinstance(testing, dict) and key in testing)
+    testing = res.data.get("testing")  # a declared layer without a command is an error later (custom, D9)
+    return not (isinstance(testing, dict) and _PROFILE_LAYER_KEYS.get(layer, layer) in testing)
 
 
-def get_test_command(profile: str, layer: str, profile_path: Path | None = None) -> str:
+def get_test_command(profile: str, layer: str, profile_path: Path | None = None, *,
+                     cwd: str | None = None, resolved=None) -> str:
     """Get the test command for a profile and layer.
 
-    The profile JSON (single source of truth) wins; when `profile_path` is not
-    given it is located from `profile` via shared/profiles. Hardcoded defaults
-    apply only when the profile declares no command for the layer.
+    The profile JSON (single source of truth) wins; it is resolved by NAME
+    (project > user > bundled) unless `profile_path` / `resolved` is given. Hardcoded
+    defaults apply only when the profile declares no command for the layer, and the
+    name-keyed table only to a bundled profile (D9). Unknown / invalid raises.
     """
-    profile_data = _load_profile(profile_path or default_profile_path(profile))
-    if profile_data is not None:
-        cmd = _profile_layer_command(profile_data, layer)
-        if cmd:
-            return cmd
-
-    commands = PROFILE_TEST_COMMANDS.get(profile, DEFAULT_COMMANDS)
+    res = resolved or load_resolved(profile, profile_path, cwd, quiet=True)
+    cmd = _profile_layer_command(res.data, layer)
+    if cmd:
+        return cmd
+    if res.source not in ("bundled", "builtin"):  # D9: the default tables are never a custom profile's
+        raise pc.ProfileInvalid(f"Profile {res.name!r} ({res.path}) defines no {layer} command; "
+                                "add `testing.unit` (or the layer's entry) to it.")
+    commands = PROFILE_TEST_COMMANDS[res.name] if uses_legacy_commands(res) else DEFAULT_COMMANDS
     return commands.get(layer, DEFAULT_COMMANDS.get(layer, f"echo 'No test command for {layer}'"))
 
 
@@ -237,22 +224,27 @@ def main() -> int:
     parser.add_argument("--layer", default="unit", choices=["unit", "integration", "pgtap", "e2e", "all"])
     parser.add_argument("--command", help="Custom test command (overrides profile)")
     parser.add_argument("--cwd", help="Working directory for test execution")
+    parser.add_argument("--project-root", help="Project root for profile lookup (default: --cwd)")
     parser.add_argument("--profile-path", help="Path to profile JSON for dynamic command resolution")
     parser.add_argument("--skip-if-missing", action="store_true",
                         help="Skip gracefully if test dir does not exist (integration/pgtap)")
     args = parser.parse_args()
 
-    profile = resolve_profile_name(args.profile, args.cwd)
-    profile_path = Path(args.profile_path) if args.profile_path else default_profile_path(profile)
-    profile_data = _load_profile(profile_path)
+    res = profile = None
+    if not args.command:  # an explicit --command needs no profile
+        try:
+            root = args.project_root or args.cwd
+            name, path, from_path = pc.name_over_bundled_path(args.profile, args.profile_path)
+            profile = name or ("" if path else resolve_profile_name(None, root))
+            res = load_resolved(profile, path, root, origin=(
+                ("--profile-path" if from_path else "--profile") if name else pc.RUN_CONFIG))
+        except ValueError as exc:  # unknown / corrupt / too new: fail loud, name the file, no fallback
+            return _fail(exc)
+        profile = res.name
 
-    if args.layer == "all":
-        layers = ["unit", "integration", "pgtap", "e2e"]
-    else:
-        layers = [args.layer]
+    layers = ["unit", "integration", "pgtap", "e2e"] if args.layer == "all" else [args.layer]
 
-    results = []
-    all_success = True
+    results, all_success = [], True
 
     # Directory existence checks for skip-if-missing
     skip_dirs = {
@@ -280,7 +272,7 @@ def main() -> int:
                 })
                 continue
 
-        if not args.command and profile_declares_no_layer(profile_data, profile, layer):
+        if not args.command and profile_declares_no_layer(res, layer):
             results.append({
                 "success": True,
                 "layer": layer,
@@ -296,19 +288,24 @@ def main() -> int:
             })
             continue
 
-        if layer == "e2e" and not args.command and args.cwd:
+        if layer == "e2e" and not args.command and args.cwd and res.source in ("bundled", "builtin"):
             # Use Playwright runner for structured E2E results
             from playwright_runner import run_playwright
             result = run_playwright(Path(args.cwd))
             result["layer"] = "e2e"
         else:
-            command = args.command or get_test_command(profile, layer, profile_path)
+            try:
+                command = args.command or get_test_command(profile, layer, resolved=res)
+            except ValueError as exc:
+                return _fail(exc)
             result = run_tests(command, args.cwd)
             result["layer"] = layer
         results.append(result)
         if not result["success"]:
             all_success = False
 
+    for r in results:
+        r["profile_source"] = res.source if res else None
     if len(results) == 1:
         print(json.dumps(results[0], indent=2))
     else:

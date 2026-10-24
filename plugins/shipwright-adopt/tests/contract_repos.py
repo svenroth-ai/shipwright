@@ -105,6 +105,8 @@ def rich_repo(root: Path) -> Path:
     # indent_style / indent_size / end_of_line, so the leaf would pin as null.
     write(root, ".editorconfig",
           "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\n")
+    # An invalid project stack profile -> profile.warnings (discovery skips it, never fatal).
+    write(root, ".shipwright/profiles/broken-stack.json", "{ not json\n")
     write(root, ".prettierrc", "{}\n")
     write(root, ".eslintrc.json", "{}\n")
     write(root, "tsconfig.json", json.dumps({"compilerOptions": {"strict": True}}))

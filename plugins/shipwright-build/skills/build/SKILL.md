@@ -96,7 +96,7 @@ Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-i
 
 ### D2. Initialize & Validate Environment
 
-Run `validate_env.py --init` then `validate_env.py` (no `--init`). Handle `created` / `updated` / `unchanged` / `success == false` / `optional_missing` per [first-actions](references/first-actions.md).
+Run `validate_env.py --init` then `validate_env.py` (no `--init`). Handle `created` / `updated` / `unchanged` / `success == false` / `optional_missing` per [first-actions](references/first-actions.md). `action: "error"` (or a non-zero exit) is a profile problem: stop and show the message, do not retry or edit project code.
 
 ### E. Create Feature Branch
 
