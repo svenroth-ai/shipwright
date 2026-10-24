@@ -58,3 +58,21 @@ vulnerabilities:
       patched. Re-fix when a 2.1.3 backport ships or lighthouse moves minimatch
       off the v2 line. Origin:
       iterate-2026-07-28-security-pyasn1-bump-brace-accept.
+  - id: CVE-2023-54404
+    paths:
+      - "plugins/shipwright-test/scripts/perf/package-lock.json"
+    expired_at: 2027-01-25
+    statement: >-
+      Accepted risk; re-review 2027-01-24. zod 3.25.76 — "uncontrolled resource
+      consumption: an unbounded z.array()/set/map accumulates one issue per
+      failing element, exhausting memory". Transitive and dev-only: it reaches
+      this repo solely through the Lighthouse perf-runner (lighthouse ->
+      chromium-bidi -> zod), where zod validates WebDriver BiDi messages from
+      the local Chrome the runner itself launched — no attacker-controlled
+      oversized array reaches it. No fix exists: the advisory states no released
+      version remediates the default unbounded case, and the partial 4.6.6
+      change (size checks run before element parsing) only helps schemas that
+      declare a bound; npm latest (4.6.7) is still listed affected, and
+      chromium-bidi pins the ^3 line. Re-fix when zod ships an unbounded-case
+      remediation or lighthouse moves off this tree. Origin:
+      iterate-2026-10-24-security-zod-accept.
