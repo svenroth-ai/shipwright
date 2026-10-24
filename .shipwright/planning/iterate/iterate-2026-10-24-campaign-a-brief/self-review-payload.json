@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Correctness", "verdict": "pass", "note": "Brief copied byte-for-byte from the reviewed rev 3 plus one header sentence stating that the gitignored SPEC is not readable by runners."},
+    {"name": "Security", "verdict": "n/a", "note": "Planning document only; no code, credentials or permissions."},
+    {"name": "Error Handling", "verdict": "n/a", "note": "No runtime code."},
+    {"name": "Test Coverage", "verdict": "n/a", "note": "No code changed; full suite run at F0 unaffected."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "Planning document, no runtime code."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Placed under .shipwright/planning/campaigns/ next to the resolver brief (precedent #894); SPEC stays local because Spec/ is gitignored."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Campaign brief-driven-run-a-real-gates reads this path from origin/main worktrees; the file now exists there."},
+    {"name": "Test Hygiene Probe", "verdict": "n/a", "note": "No tests changed in this diff."}
+  ]
+}

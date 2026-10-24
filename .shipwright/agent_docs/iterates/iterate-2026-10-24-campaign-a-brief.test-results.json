@@ -1,0 +1,55 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-24-campaign-a-brief",
+    "date": "2026-10-24",
+    "unit": {
+      "status": "passed",
+      "passed": 22759,
+      "total": 22858
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-24T12:50:00.000Z",
+      "attempts": 0,
+      "justification": "Planning document only: one campaign brief under .shipwright/planning/campaigns/; no runnable code, UI, API or contract changes.",
+      "reason_code": "docs-only-surface"
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-24-campaign-a-brief",
+    "commit": "1791085109454b2977077ab399ad91f59d4cb47d",
+    "dirty": false,
+    "base": null,
+    "release": null
+  }
+}
