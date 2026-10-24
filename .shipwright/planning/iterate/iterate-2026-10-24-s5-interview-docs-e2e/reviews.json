@@ -141,29 +141,103 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "module_wrappers does not seed the fixpoint with PINNED_WRAPPERS.",
+          "suggestion": "Follow-up.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_handlers.py",
+          "line": null,
+          "finding": "return -1 parses as UnaryOp and is treated as a swallow (false red).",
+          "suggestion": "Follow-up: accept USub over an int Constant.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "_suppresses and _catches_value_error use different name predicates.",
+          "suggestion": "Follow-up: one predicate.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_stack_profile_py_guard.py",
+          "line": null,
+          "finding": "An always-true assertion about RESOLVER_MODULES.",
+          "suggestion": "Follow-up: replace with a check that has teeth.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_stack_profile_resolution_e2e.py",
+          "line": null,
+          "finding": "_env() drops only three GIT_* variables.",
+          "suggestion": "Follow-up: drop every GIT_* key.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "Strict utf-8 decode crashes the guard on a BOM or non-UTF-8 tracked .py.",
+          "suggestion": "Follow-up: utf-8-sig and name the file.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/stack_profile_py_rules.py",
+          "line": null,
+          "finding": "Stale noqa and blank lines.",
+          "suggestion": "Follow-up.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T19:34:02.697293+00:00",
-      "disposition": "The sub-iterate-runner does not spawn reviewers in this campaign; the orchestrator runs the spec, code and doubt cascade at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T21:31:03.800565+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/scripts/checks/write-project-config.py",
+          "line": null,
+          "finding": "Claim under doubt: A missing shared tree degrades only for the early in_progress call — The early sentinel skip bypasses the whole check including the ImportError branch, so the degrade applies only to in_progress plus a real profile name, a call no skill makes.",
+          "suggestion": "Accepted: follow-up to drop the dead degrade or fix the wording.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T19:34:02.840315+00:00",
-      "disposition": "The sub-iterate-runner does not spawn reviewers in this campaign; the orchestrator runs the spec, code and doubt cascade at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T21:31:03.936209+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -256,16 +330,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T19:34:02.556472+00:00",
-      "disposition": "The sub-iterate-runner does not spawn reviewers in this campaign; the orchestrator runs the spec, code and doubt cascade at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-24T21:31:03.669730+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
