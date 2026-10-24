@@ -4,8 +4,8 @@
     "date": "2026-10-24",
     "unit": {
       "status": "passed",
-      "passed": 16940,
-      "total": 16940
+      "passed": 14313,
+      "total": 14313
     },
     "integration": {
       "status": "passed",
@@ -25,6 +25,7 @@
       "status": "not_run"
     },
     "degraded": [
+      "round 2 re-ran only the affected roots (shared/tests 13147, plugins/shipwright-project 97, plugins/shipwright-adopt 755, plugins/shipwright-test 314); the other roots are untouched by the review fixes",
       "plugins/shipwright-run root: 51 fixture errors (pytest-mock absent in this local env), root untouched by this change and excluded from the unit count"
     ],
     "test_completeness": {
@@ -51,9 +52,9 @@
           "evidence": "shared/tests/test_stack_profile_py_guard.py::test_no_module_builds_a_stack_profile_path_outside_the_resolver PASSED"
         },
         {
-          "behavior": "python guard: no caller swallows a resolver ValueError (sys.exit(0), return None, class methods are red; loud handlers green)",
+          "behavior": "python guard: no caller swallows a resolver error (test_ prefix modules scanned, wrappers, .kind only when branched on, Profile* family; loud handlers green)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_stack_profile_py_guard.py::test_swallow_rule_is_red_on_planted_handlers_and_green_on_the_loud_ones PASSED"
+          "evidence": "shared/tests/test_stack_profile_py_guard.py::test_swallow_rule_is_red_on_planted_handlers PASSED"
         },
         {
           "behavior": "custom project profile reports source=project in test_runner, dev_server, validate_env and adopt matching from a git worktree",
@@ -96,7 +97,7 @@
       "exit_code": 0,
       "tests_run": 6,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-stack-profile-resolver--S5\\.shipwright\\runs\\iterate-2026-10-24-s5-interview-docs-e2e\\surface_verification.log",
-      "timestamp": "2026-10-24T19:34:22.099Z",
+      "timestamp": "2026-10-24T20:42:10.177Z",
       "attempts": 1
     }
   },
@@ -108,7 +109,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
-    "commit": "cd5a854c16c020e2cc48fa6a07697fd4510e539d",
+    "commit": "4ac61176fe1c0e30f4aea32bc48b4ae982b92be8",
     "dirty": true,
     "base": null,
     "release": null

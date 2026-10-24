@@ -44,3 +44,21 @@ Boundaries: resolver CLI/loader output consumed by four command loaders, and the
 | GLM (low) | vacuous assertion in the copied-profile test | accepted-and-fixed (removed) |
 | GLM (low) | method try/except double-walked under `<module>` | accepted-and-fixed (classes are scope boundaries; planted method case) |
 | GLM (low) | e2e uses the private `_get_services_resolved` | rejected-with-reason: `dev_server.py` only starts, stops or reports services; the signature is pinned in a comment and by `test_dev_server_profile_resolution.py` |
+
+## Review-Cascade-Round-1-Reconciliation
+
+| Finding | Disposition |
+|---|---|
+| Guard exempted production modules by the `test_` filename prefix (`test_runner.py`, `test_gate.py`, ...) | accepted-and-fixed: test files are recognised by location only (a `tests`/`test` directory or `conftest.py`); a test pins that `test_runner.py` is scanned and that a planted `except ValueError: return None` at its resolver call turns the guard red |
+| `RESOLVER_CALLS` missed `resolve_in_dir`, `check_name`, `config_profile`; wrappers unhandled | accepted-and-fixed: names added (`check_name` only as an attribute call); per-module wrapper closure plus pinned cross-module wrappers (reverse-checked); planted wrapper case |
+| `.kind`/`.exit_code` counted as loud when merely mentioned | accepted-and-fixed: counts only when branched on (If/IfExp/Compare/Match) or returned as the code; planted red cases |
+| A returned call counted as loud although it ignores the exception | accepted-and-fixed: loud only when it receives the caught exception or is a non-zero int; `return dict()`, `return default_profile()`, `return _skipped(...)` are swallows |
+| `Profile*` handlers not treated as the `ValueError` family | accepted-and-fixed: handler types ending in ProfileError/NotFound/Invalid/SchemaDrift count; planted cases |
+| `adopt_profile.hint_warning` cosmetic kind-message change | accepted-and-fixed: reverted. It feeds the snapshot `profile.warnings[]` (via `analyze_codebase.py`), the same channel as the S3 matcher, so it is on the swallow allowlist with that reason |
+| Rule 1 skips the first argument of `.get/.pop/.setdefault`; public helpers not flagged | accepted as a documented blind spot (`bundled_dir`, `search_dirs`, `_PROFILES_DIR`, `_profiles_dir`), stated in the guard module docstring |
+| Interview: invalid rows hidden; explicit pick could fall back to `generic` | accepted-and-fixed: invalid rows (name + `error`) are shown; an invalid or unlisted explicit pick runs `resolve` and STOPS |
+| `warnings` described as skipped candidates; exit-4 wording | accepted-and-fixed: `warnings` carries directory problems only, invalid candidates are `valid:false` rows with `error`/`kind`; writer exits 4 when the name does not resolve to a usable profile, 1 when the shared tree is missing on a complete scaffold (step-7 reference and `docs/hooks-and-pipeline.md`) |
+| `{project_root}` vs `{project_path}` for list/resolve/writer | accepted-and-fixed: one placeholder, `{project_root}`, defined once in step-7 (file mode: the project being scaffolded, never the requirements file's folder); `first-actions.md` early-config call aligned; `step-e-artifact-generation.md` not touched |
+| e2e helper leaked the developer's git setup; `.gitignore` canon not applied; main-checkout copy could satisfy the asserts | accepted-and-fixed: `core.excludesFile=` neutralised and `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE` stripped; the managed gitignore is merged before `git add .`; the main checkout's profile directory is removed after the worktree is created (D10); private-API reason kept in a comment |
+
+The swallow allowlist is larger than the BRIEF's single S3 matcher entry. Added, each reverse-checked and with a reason: `profile_matcher._discover` (BRIEF, `warnings[]`), `adopt_profile.hint_warning` (feeds the same `warnings[]`), `profile_resolver._row` (builds the `valid:false` discovery row, the D1 skip), `profile_check.profile_error` (returns the reason string; both callers exit 4). Operator decision to keep the guard (BRIEF rev 3) stands.

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -37,8 +38,12 @@ DRIFT_CORE = ("unsupported schema_version 99", "supports stack-profile schema_ve
 
 
 def _git(root: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@example.com",
-                    "-c", "commit.gpgsign=false", *args], check=True, capture_output=True, text=True)
+    """Run git against ``root`` with the developer's own git setup neutralised: no global excludes file
+    (it could ignore ``.shipwright``), and no ``GIT_DIR`` & co. inherited from a hook or worktree shell."""
+    env = {k: v for k, v in os.environ.items() if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+    subprocess.run(["git", "-C", str(root), "-c", "core.excludesFile=", "-c", "user.name=t",
+                    "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", *args],
+                   check=True, capture_output=True, text=True, env=env)
 
 
 def _profile_data(name: str, **patch) -> dict:
@@ -71,10 +76,16 @@ def _make_project(tmp_path: Path, profile_name: str | None, data: dict | None = 
             target = main / ".shipwright" / "profiles" / f"{data['name']}.json"
             target.parent.mkdir(parents=True)
             target.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    # What /shipwright-project writes: the managed gitignore (D10 keeps .shipwright/profiles/ trackable).
+    canon = ("import sys; from pathlib import Path; sys.path.append(sys.argv[1]);"
+             "from gitignore_canon import merge_canonical_block; merge_canonical_block(Path(sys.argv[2]))")
+    _run("-c", canon, SHARED / "scripts" / "lib", main, cwd=main).check_returncode()
     _git(main, "add", ".")
     _git(main, "commit", "-m", "init")
     worktree = tmp_path / "worktree"
     _git(main, "worktree", "add", "-b", "feature", str(worktree))
+    # D10: only the worktree copy may satisfy the asserts, so drop the main checkout's working copy.
+    shutil.rmtree(main / ".shipwright" / "profiles", ignore_errors=True)
     return worktree
 
 
@@ -95,8 +106,9 @@ def _validate_env(wt: Path) -> subprocess.CompletedProcess:
     return _run(VALIDATE_ENV, "--project-root", wt, "--phase", "build", cwd=wt)
 
 
-# Private API on purpose: dev_server.py only has start/stop/status (it would START the services). The 3-tuple
-# (services, warnings, source) is pinned here and by shared/tests/test_dev_server_profile_resolution.py.
+# Private API on purpose: dev_server.py only has start/stop/status (it would START the services), so there is
+# no public entry point that only reads the services. The 3-tuple (services, warnings, source) is pinned here
+# and by shared/tests/test_dev_server_profile_resolution.py.
 def _dev_server_services(wt: Path, name: str) -> subprocess.CompletedProcess:
     code = ("import json, sys; from pathlib import Path; sys.path.append(sys.argv[1]);"
             "from dev_server.profile_config import _get_services_resolved as g;"

@@ -184,7 +184,7 @@ Key sub-flows (see reference for the verbatim shell commands and
 templates):
 
 1. **Profile detection** — match interview against
-   the profiles from `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}" --json`; the user may pick a custom one by name, no match keeps `generic`
+   the profiles from `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}" --json`; the user may pick a custom one by name (an invalid or unlisted explicit pick stops, never falls back), no match keeps `generic`
    (see the reference).
 2. **Generate** CLAUDE.md, AGENTS.md, `architecture.md`, `decision_log.md`,
    `conventions.md`, and `.claude/rules/*.md`.

@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
-  "date": "2026-10-24T19:58:49.819952Z",
+  "date": "2026-10-24T20:42:10.709159Z",
   "event_at": "2026-10-24T19:58:31.833476+00:00",
   "type": "change",
   "complexity": "medium",
@@ -33,9 +33,9 @@
         "evidence": "shared/tests/test_stack_profile_py_guard.py::test_no_module_builds_a_stack_profile_path_outside_the_resolver PASSED"
       },
       {
-        "behavior": "python guard: no caller swallows a resolver ValueError (sys.exit(0), return None, class methods are red; loud handlers green)",
+        "behavior": "python guard: no caller swallows a resolver error (test_ prefix modules scanned, wrappers, .kind only when branched on, Profile* family; loud handlers green)",
         "disposition": "tested",
-        "evidence": "shared/tests/test_stack_profile_py_guard.py::test_swallow_rule_is_red_on_planted_handlers_and_green_on_the_loud_ones PASSED"
+        "evidence": "shared/tests/test_stack_profile_py_guard.py::test_swallow_rule_is_red_on_planted_handlers PASSED"
       },
       {
         "behavior": "custom project profile reports source=project in test_runner, dev_server, validate_env and adopt matching from a git worktree",
@@ -78,7 +78,7 @@
     "exit_code": 0,
     "tests_run": 6,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-stack-profile-resolver--S5\\.shipwright\\runs\\iterate-2026-10-24-s5-interview-docs-e2e\\surface_verification.log",
-    "timestamp": "2026-10-24T19:34:22.099Z",
+    "timestamp": "2026-10-24T20:42:10.177Z",
     "attempts": 1
   },
   "declared_removals": [],
