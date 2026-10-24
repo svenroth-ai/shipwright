@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-phase-runner-review-status",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:36:22.402618+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:37:39.628091+00:00",
+      "disposition": "small iterate: external/plan/internal-plan reviews below threshold; internal spec+code cascade ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+          "line": 44,
+          "finding": "not_run snippet omitted --run-id/--model-tier/--disposition (fixed)",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/result_contract.py",
+          "line": 159,
+          "finding": "reason_code free-form (documented as intentional)",
+          "suggestion": "documented",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/tests/test_phase_runner_agent.py",
+          "line": 252,
+          "finding": "redundant phase key (fixed)",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T08:37:31.239614+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f91a32660423ea334ad3bd23c0c954f5b55ccb44"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:37:31.374484+00:00",
+      "disposition": "Prompt/doc + small validator change; no migration, concurrency, cross-plugin import or irreversible op.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:37:39.628091+00:00",
+      "disposition": "small iterate: external/plan/internal-plan reviews below threshold; internal spec+code cascade ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:36:44.210050+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f91a32660423ea334ad3bd23c0c954f5b55ccb44"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:37:39.628091+00:00",
+      "disposition": "small iterate: external/plan/internal-plan reviews below threshold; internal spec+code cascade ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T08:37:39.628091+00:00",
+      "disposition": "small iterate: external/plan/internal-plan reviews below threshold; internal spec+code cascade ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

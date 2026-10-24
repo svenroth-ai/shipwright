@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-phase-runner-review-status",
+  "date": "2026-10-24",
+  "section": "Iterate — change: phase-runner reviewer spawn + review_status",
+  "title": "Driven phase-runner can spawn reviewers and reports review_status",
+  "context": "A driven phase-runner had no Agent tool, so build Step 6 review cascades were skipped silently and the master could not see it.",
+  "decision": "Add Agent to phase-runner tools (reviewers only, enforced in the prompt), a not_run delegated-to-orchestrator branch in build code-review.md, and an optional review_status field in the result contract.",
+  "consequences": "The master sees deferred or partial cascades and runs them; older runners without review_status still validate.",
+  "rationale": "Agent(type) allowlists are ignored in subagent definitions, so the reviewers-only limit lives in the prompt; the field is optional for backward compatibility.",
+  "rejected": "Spawning section-builder fan-out from the runner (operator's call); a required review_status field (breaks older runners).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

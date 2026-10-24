@@ -47,10 +47,17 @@ Repeat until a terminal signal:
    output to DISK itself** (it has a Write path — see `plugins/shipwright-run/agents/
    phase-runner.md`), and returns a compact phase-runner RESULT CONTRACT (see
    `plugins/shipwright-run/scripts/lib/single_session/result_contract.py`):
-   `{ok, phase, summary, artifacts[], reason?, splitId?}`. The `summary` is
+   `{ok, phase, summary, artifacts[], reason?, splitId?, review_status?}`. The `summary` is
    capped at `MAX_SUMMARY_CHARS`; real outputs go to DISK (`artifacts`), never
    into the result. Persistence is the runner's own responsibility — it does NOT
    rely on a Stop hook (the failure that lost a section-writer's output).
+
+   **Read `review_status` before applying.** `deferred` / `partial` /
+   `skipped` means the phase's review cascade did not fully run (the runner's
+   spawn failed or it was skipped; `reason_code` says why): the master runs the
+   missing passes itself (it has the `Agent` tool) or surfaces them in the final
+   summary — never treat the phase as fully reviewed. Absent `review_status` =
+   nothing reported (older runner, or no cascade).
 
 3. **Apply the result.** Write the returned JSON to a file, then:
    ```bash

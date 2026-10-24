@@ -12,6 +12,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
 
 from single_session.orchestrator_context import verify_artifacts_exist  # noqa: E402
@@ -89,3 +91,37 @@ def test_phase_runner_unpersisted_artifact_is_caught(tmp_path):
         artifacts=["artifacts/plan.md"],
     )
     assert verify_artifacts_exist(project, result["artifacts"]) == ["artifacts/plan.md"]
+
+
+@pytest.mark.covers("FR-01.01/AC01")
+def test_phase_runner_has_agent_tool_for_reviewers_only():
+    text = AGENT_MD.read_text(encoding="utf-8")
+    tools = {t.strip() for t in _frontmatter(text).get("tools", "").split(",")}
+    assert "Agent" in tools
+    low = text.lower()
+    # Fan-out stays the operator's call; the prompt (not an allowlist) enforces it.
+    assert "must not spawn anything else" in low
+    assert "section-builder" in low
+    assert "delegated-to-orchestrator" in text
+    assert "review_status" in text
+
+
+@pytest.mark.covers("FR-01.01/AC01")
+def test_build_code_review_has_not_run_branch():
+    cr = AGENT_MD.parents[2] / "shipwright-build" / "skills" / "build" / "references" / "code-review.md"
+    text = cr.read_text(encoding="utf-8")
+    assert "--reason-code delegated-to-orchestrator" in text
+    assert "never a silent skip" in text
+
+
+@pytest.mark.covers("FR-01.01/AC01")
+def test_review_status_is_backward_compatible_and_validated():
+    base = dict(ok=True, phase="build", summary="built", artifacts=[])
+    assert is_valid_result(build_phase_runner_result(**base))  # absent = valid
+    deferred = {"state": "deferred", "reason_code": "delegated-to-orchestrator",
+                "passes": {"spec": "not_run"}}
+    assert build_phase_runner_result(**base, review_status=deferred)["review_status"] == deferred
+    assert is_valid_result(build_phase_runner_result(**base, review_status={"state": "completed"}))
+    for bad in ({"state": "deferred"}, {"state": "bogus"}, "x",
+                {"state": "completed", "passes": {"spec": 1}}):
+        assert not is_valid_result({**base, "review_status": bad}), bad

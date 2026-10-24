@@ -23,7 +23,15 @@ Shape::
       "splitId": str | None, # optional — build/plan fan-out unit
       "reason": str,         # required WHEN ok is False (failure reason)
       "metrics": {...},      # optional — small structured extras
+      "review_status": {...},# optional — review-cascade state (see below)
     }
+
+``review_status`` is backward-compatible (absent = phase prescribes no cascade,
+or an older runner): ``{"state": <REVIEW_STATES>, "reason_code": str,
+"passes": {name: str}}``. ``reason_code`` is required for ``partial`` /
+``deferred`` / ``skipped`` so a skipped or deferred cascade is visible to the
+master instead of vanishing. ``reason_code`` is free-form on purpose (the
+run plugin does not import the shared review vocabulary).
 
 This module VALIDATES the shape; it neither runs a phase nor touches
 run_config. ``VALID_PHASES`` is a literal kept in lockstep with the schema
@@ -39,6 +47,9 @@ from typing import Any
 # more than this to report is leaking transcript into the result; the real
 # output belongs on disk (in ``artifacts``), summarised here.
 MAX_SUMMARY_CHARS = 2000
+
+REVIEW_STATES = ("completed", "partial", "deferred", "skipped", "not_applicable")
+_REVIEW_STATES_NEEDING_REASON = ("partial", "deferred", "skipped")
 
 REQUIRED_RESULT_KEYS = ("ok", "phase", "summary", "artifacts")
 
@@ -132,6 +143,30 @@ def validate_phase_runner_result(result: Any) -> list[str]:
     if "metrics" in result and not isinstance(result["metrics"], dict):
         errors.append("'metrics' must be a dict")
 
+    if "review_status" in result:
+        errors.extend(_validate_review_status(result["review_status"]))
+
+    return errors
+
+
+def _validate_review_status(rs: Any) -> list[str]:
+    if not isinstance(rs, dict):
+        return ["'review_status' must be a dict"]
+    errors: list[str] = []
+    state = rs.get("state")
+    if state not in REVIEW_STATES:
+        errors.append(f"'review_status.state' must be one of {REVIEW_STATES}, got {state!r}")
+    reason = rs.get("reason_code")
+    if "reason_code" in rs and (not isinstance(reason, str) or not reason.strip()):
+        errors.append("'review_status.reason_code' must be a non-empty str")
+    elif state in _REVIEW_STATES_NEEDING_REASON and "reason_code" not in rs:
+        errors.append(f"'review_status' with state {state!r} must carry a 'reason_code'")
+    passes = rs.get("passes")
+    if "passes" in rs and not (
+        isinstance(passes, dict)
+        and all(isinstance(k, str) and isinstance(v, str) for k, v in passes.items())
+    ):
+        errors.append("'review_status.passes' must map pass name (str) to status (str)")
     return errors
 
 
@@ -149,6 +184,7 @@ def build_phase_runner_result(
     reason: str | None = None,
     split_id: str | None = None,
     metrics: dict[str, Any] | None = None,
+    review_status: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Construct a validated phase-runner result.
 
@@ -169,6 +205,8 @@ def build_phase_runner_result(
         result["reason"] = reason
     if metrics is not None:
         result["metrics"] = metrics
+    if review_status is not None:
+        result["review_status"] = review_status
 
     errors = validate_phase_runner_result(result)
     if errors:
