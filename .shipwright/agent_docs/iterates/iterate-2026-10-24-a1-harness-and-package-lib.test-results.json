@@ -33,7 +33,7 @@
       "evidence_path": "",
       "timestamp": "2026-10-24T13:44:05.326Z",
       "attempts": 0,
-      "justification": "Library module and test-side harness only: no UI, API, or startable surface; behaviour is exercised by 62 unit and 20 integration tests.",
+      "justification": "Library module and test-side harness only: no UI, API, or startable surface; behaviour is exercised by 120 unit tests (test_brief_package_layout, _hash, _links, _content) and 24 integration tests (test_brief_harness).",
       "reason_code": "no-startable-surface"
     },
     "test_completeness": {
@@ -42,22 +42,22 @@
         {
           "behavior": "library accepts a valid package and fixture 1",
           "disposition": "tested",
-          "evidence": "test_brief_package.py::test_accepts_a_valid_package and test_brief_harness.py::test_fixture_1_is_accepted_by_the_library PASSED"
+          "evidence": "test_brief_package_layout.py::test_accepts_a_valid_package and test_brief_harness.py::test_fixture_1_is_accepted_by_the_library PASSED"
         },
         {
           "behavior": "library rejects planted defects (missing/empty/invalid files, bad fields, links, junction loops, outside refs, excluded content, duplicate keys)",
           "disposition": "tested",
-          "evidence": "test_brief_package.py::test_rejects_planted_defects and the junction/excluded-content/duplicate-key tests PASSED"
+          "evidence": "test_brief_package_layout.py::test_rejects_planted_defects, test_brief_package_links.py::test_a_junction_loop_is_reported_not_walked, test_brief_package_links.py::test_excluded_content_is_reported_not_silently_ignored and test_brief_package_layout.py::test_duplicate_json_keys_are_refused PASSED"
         },
         {
           "behavior": "manifest hash identical for LF and CRLF checkouts",
           "disposition": "tested",
-          "evidence": "test_brief_package.py::test_hash_identical_for_lf_and_crlf PASSED"
+          "evidence": "test_brief_package_hash.py::test_hash_identical_for_lf_and_crlf PASSED"
         },
         {
           "behavior": "consent-field change changes the hash; approval fields do not",
           "disposition": "tested",
-          "evidence": "test_brief_package.py::test_consent_field_change_changes_hash and test_approval_fields_do_not_change_hash PASSED"
+          "evidence": "test_brief_package_hash.py::test_consent_field_change_changes_hash and test_brief_package_hash.py::test_approval_fields_do_not_change_hash PASSED"
         },
         {
           "behavior": "report schema pinned and drift refused",
