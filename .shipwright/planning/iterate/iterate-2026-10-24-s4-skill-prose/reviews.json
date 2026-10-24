@@ -61,10 +61,29 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": 36,
+          "finding": "triage_inbox.md is not in the allowlist, so a committed render containing the card launch payload would turn the forward test red.",
+          "suggestion": "Accepted; S5 decides whether to amend BRIEF S4 item 3 for generated renders.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": 48,
+          "finding": "git ls-files without -z C-quotes non-ASCII paths and would false-red.",
+          "suggestion": "Use -z. Routed to S5.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T17:20:19.439768+00:00",
+      "completed_at": "2026-10-24T17:48:01.738184+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -74,20 +93,38 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 1,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "low",
+          "severity": "medium",
           "category": "hidden coupling",
           "file": "shared/tests/test_stack_profile_prose_guard.py",
           "line": null,
-          "finding": "Claim under doubt: The triage_inbox entry goes stale only when trg-647df2d8 closes — Snoozed cards render without their launch payload and eviction from the top 50 drops the lines too; an unrelated Stop-hook re-render then turns the reverse test red.",
-          "suggestion": "Accepted: hand-off wording widened; a red guard is loud and fixable.",
+          "finding": "Claim under doubt: Reading the index keeps a local green predicting a CI green — Unstaged edits, untracked files and intent-to-add blobs are invisible to the index read, and test_stack_profile_prose_commands.py still reads the working tree.",
+          "suggestion": "Accepted with rebuttal (CI is the merge gate and reads the commit); S5 decides index vs working tree and documents it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: Any index state is scanned or fails meaningfully — During an unresolved merge, ls-files lists a path per conflict stage and cat-file reports missing.",
+          "suggestion": "Accepted: loud and correct; routed to S5.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_stack_profile_prose_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: ls-files names can be passed straight to cat-file — Without -z, non-ASCII or quoted paths are C-quoted and would false-red; none exist today.",
+          "suggestion": "Accepted: use -z in S5.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-24T17:20:59.041961+00:00",
+      "completed_at": "2026-10-24T17:48:31.657314+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
@@ -180,7 +217,7 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T17:20:13.962544+00:00",
+      "completed_at": "2026-10-24T17:48:01.615513+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
