@@ -1,0 +1,44 @@
+{
+  "contract_version": 1,
+  "top_level_keys": [
+    "contract_version",
+    "profiles",
+    "searched",
+    "warnings"
+  ],
+  "row_keys": [
+    "description",
+    "error",
+    "kind",
+    "name",
+    "path",
+    "schema_version",
+    "shadows",
+    "source",
+    "valid"
+  ],
+  "profiles": [
+    {
+      "name": "broken",
+      "source": "project",
+      "valid": false,
+      "kind": "invalid",
+      "schema_version": null
+    },
+    {
+      "name": "mine",
+      "source": "project",
+      "valid": true,
+      "kind": null,
+      "schema_version": 1
+    },
+    {
+      "name": "vite-hono",
+      "source": "bundled",
+      "valid": true,
+      "kind": null,
+      "schema_version": 1
+    }
+  ],
+  "warnings": 0
+}

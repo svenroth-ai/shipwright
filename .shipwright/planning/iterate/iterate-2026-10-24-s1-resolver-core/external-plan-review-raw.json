@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach / dependency \u2014 Severity: medium**\n  The plan claims \"Bundled profiles validate; forward registry tests (D6)\" as an acceptance criterion, but no bundled profiles are listed in the file set. If `shared/profiles/` (or wherever bundled profiles live) doesn't exist yet, S1's tests must ship their own fixture profiles \u2014 state that explicitly, otherwise the schema-checker and resolver tests have nothing to validate against and the criterion is untestable.\n  **Suggestion:** enumerate the bundled profiles (or explicitly declare they land in S2 with test-local fixtures for S1).\n\n- **Category: approach \u2014 Severity: medium**\n  Splitting `profile_resolver.py` into three modules (`profile_resolver`, `profile_model`, `profile_schema_check`) purely to stay under a 300-line limit is premature fragmentation for a single-purpose resolver. Three modules for one lookup-and-validate routine also creates import surface with no reuse justification.\n  **Suggestion:** keep one module; if the limit is a hard repo rule, split by *responsibility* (model vs. lookup) only if it genuinely exceeds the limit, not preemptively.\n\n- **Category: approach \u2014 Severity: medium**\n  A hand-written schema checker supporting only the keywords the schema uses is a maintenance trap: every schema evolution silently requires checker code changes, and \"unsupported keyword raises\" means schema edits break at load time in ways `jsonschema` wouldn't. You already depend on `jsonschema` for the cross-check test \u2014 the tests will prove the hand-written checker matches it, but production uses the weaker one.\n  **Suggestion:** confirm this split (strict stdlib checker in prod, jsonschema in tests) is a deliberate D-item requirement from the brief rather than an invented constraint. If invented, validate with `jsonschema` directly and drop the checker.\n\n- **Category: risk \u2014 Severity: medium**\n  \"First FILE wins with no fall-through\" plus \"shadow warnings returned for loaders to print\": the warnings only help if loaders actually print them. S1 ships no loader changes, so the shadow-warning path is dead code until S2+, and its test coverage will be synthetic.\n  **Suggestion:** verify the consumer-facing contract (warning format/when emitted) is pinned by tests now so S2 doesn't reinterpret it; note the dead-code window explicitly.\n\n- **Category: edge-case \u2014 Severity: low**\n  \"Exact directory-entry spelling check\" + resolve()/is_relative_to containment: on case-insensitive filesystems (macOS default, Windows), a profile named `MyProfile` may exist on disk but fail the spelling check while also matching case-insensitively in lookups. The plan should state the intended behavior: case-sensitive names with a clear \"file exists but wrong case\" error, not a confusing not-found.\n  **Suggestion:** add an explicit test for wrong-case lookup on case-insensitive FS.\n\n- **Category: risk \u2014 Severity: medium**\n  Wiring a shared fixture into 9 test-root conftests is the riskiest mechanical change in S1 \u2014 a bad import path or a fixture name collision in any of those roots can break existing test suites, which the mini-plan doesn't treat as a regression risk.\n  **Suggestion:** run the full existing test suite in CI for this change (not just new tests), and verify no existing root already defines a same-named fixture.\n\n- **Category: security \u2014 Severity: low**\n  Reserved sentinels `generic`/`detecting` builtin and Windows device-name validation are good, but the plan doesn't mention symlink handling: `resolve() + is_relative_to` containment can be defeated by a symlinked profile directory inside a search root (affects provenance reporting, not code execution).\n  **Suggestion:** use `resolve(strict=...)` on the final file and re-check containment against the resolved path; note whether symlinked profiles are allowed.\n\n- **Category: edge-case \u2014 Severity: low**\n  CLI exit codes 0/2/3/4: ensure the code-space is documented and doesn't collide with any existing consumer scripts' conventions; also define behavior for the \"no profile found\" case distinctly from \"profile invalid\" \u2014 with four codes in play, an ambiguous mapping is a likely integration bug later.\n  **Suggestion:** one line in the CLI docstring mapping each failure mode to a code, plus a test per code.\n\n## Overall assessment\n\nThe core design (search order, strict first-wins, containment checks, CLI contract) is sound and well-scoped; the main concerns are the preemptive three-module split, the hand-rolled schema checker, and underestimating the regression surface of touching 9 conftests. All addressable within the change.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository reads were blocked by execution policy, so this review covers the supplied mini-plan; compliance with D1\u2013D10 and acceptance items (1)\u2013(19) remains unverified.\n\n1. **Category: edge-case | Severity: medium**\n   **Finding:** \u201cFirst FILE wins\u201d leaves unreadable entries, dangling symlinks, and directories at the selected path undefined. An `is_file()` gate can treat these as absent and silently select a lower-priority profile, undermining the no-fall-through contract.\n   **Suggestion:** Explicitly distinguish absence from an invalid override. Define which states stop resolution, map them to CLI errors, and test that they cannot trigger fallback.\n\n2. **Category: risk | Severity: medium**\n   **Finding:** Supporting the schema\u2019s keywords does not alone establish equivalence with JSON Schema semantics. Python-specific behavior, such as booleans satisfying integer checks, can cause the custom checker to accept invalid profiles. Positive bundled-profile tests would miss this.\n   **Suggestion:** Differentially test valid and invalid inputs against `jsonschema`, covering type boundaries, required fields, extra properties, and every constraint used. Ensure this validation dependency is declared and the cross-check runs in CI.\n\n3. **Category: dependency | Severity: medium**\n   **Finding:** Splitting the resolver into three modules introduces runtime dependencies across consumer plugin boundaries. A probe that runs from the repository can pass because the checkout makes sibling modules and the schema available, while the distributed plugin lacks them.\n   **Suggestion:** Run boundary probes against the actual packaged or staged consumer layout, from an unrelated working directory without repository `PYTHONPATH`. Verify both CLI startup and schema-backed resolution, and include all runtime files in packaging.\n\n4. **Category: edge-case | Severity: medium**\n   **Finding:** The gitignore exception works only when Git can traverse the parent directory. `!/.shipwright/profiles/` cannot re-include profiles beneath an excluded `.shipwright/`, and another matching rule can still exclude their files.\n   **Suggestion:** Verify the complete ordered ignore block using `git check-ignore` and `git status` in the scratch repository. Assert that a new profile is discoverable while other intended `.shipwright` artifacts remain ignored.\n\nThe shared resolver and deferred loader migration are a sound direction. Before implementation, tighten filesystem failure semantics and make schema parity, packaged imports, and effective ignore behavior explicit in the validation plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s1-resolver-core",
+    "at": "2026-10-24T09:51:02.029701+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

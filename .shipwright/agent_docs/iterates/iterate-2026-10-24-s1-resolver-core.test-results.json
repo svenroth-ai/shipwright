@@ -1,0 +1,117 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-24-s1-resolver-core",
+    "date": "2026-10-24",
+    "unit": {
+      "status": "passed",
+      "passed": 13027,
+      "total": 13027
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 576,
+      "total": 576
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_resolve_profile_cli.py shared/tests/test_profile_resolver.py shared/tests/test_profile_resolver_files.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 90,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-stack-profile-resolver--S1\\.shipwright\\runs\\iterate-2026-10-24-s1-resolver-core\\surface_verification.log",
+      "timestamp": "2026-10-24T10:28:59.846Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Lookup precedence project > user > bundled, first file wins, shadows and the bundled-shadow warning reported",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_profile_resolver.py::test_precedence_project_over_user_over_bundled, ::test_shadows_reported_and_bundled_shadow_warns PASSED"
+        },
+        {
+          "behavior": "A broken, drifted or typed-wrong winning file raises (exit 3) and never falls through to a lower source or the bundled profile",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_profile_resolver.py::test_corrupt_winning_file_raises_and_does_not_use_bundled, ::test_schema_version_drift; shared/tests/test_profile_resolver_files.py::test_unreadable_or_file_typed_project_dir_never_falls_through PASSED"
+        },
+        {
+          "behavior": "Unknown name exits 2 listing searched paths; generic/detecting are builtin without reading a file; a file named like a sentinel is an error",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_profile_resolver.py::test_unknown_name_lists_searched_paths, ::test_sentinels_are_builtin_without_reading_files; shared/tests/test_profile_resolver_files.py::test_sentinel_named_file_is_an_error_in_any_source PASSED"
+        },
+        {
+          "behavior": "Name rules, reserved/device names, symlink/loop/deep-nesting containment, exact-spelling and case-collision errors",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_profile_resolver.py::test_bad_names_rejected, ::test_symlink_leaving_directory_rejected; shared/tests/test_profile_resolver_files.py::test_wrong_case_entry_is_deterministic_error, ::test_case_colliding_pair_is_error, ::test_deeply_nested_json_is_invalid_not_a_crash PASSED"
+        },
+        {
+          "behavior": "list --json contract (contract_version 1, invalid rows valid:false, unreadable or missing user dir warns) and the checked-in shape fixture",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_resolve_profile_cli.py::test_list_json_contract_pinned, ::test_list_json_matches_checked_in_contract_fixture; shared/tests/test_profile_resolver.py::test_list_shape_and_invalid_entries PASSED"
+        },
+        {
+          "behavior": "CLI exit codes 0/2/3/4, stdout carries only the requested output, provenance on stderr, list/validate read-only, in-process plus subprocess smoke",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_resolve_profile_cli.py::test_exit_codes, ::test_resolve_json_stdout_clean_provenance_on_stderr, ::test_usage_errors_exit_4_not_argparse_2, ::test_subprocess_smoke PASSED"
+        },
+        {
+          "behavior": "Hand-written schema checker agrees with jsonschema on the bundled profiles and 21 mutation fixtures; unsupported schema constructs are rejected loudly",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_schema.py::test_bundled_profiles_validate_and_checkers_agree, ::test_hand_checker_agrees_with_jsonschema_on_mutations, ::test_unsupported_construct_rejected_loudly PASSED"
+        },
+        {
+          "behavior": "load_profile_file applies the schema (not name rules) and classifies a custom file named like a bundled profile as explicit, never bundled",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_profile_resolver_files.py::test_load_profile_file_applies_schema_not_name_rules, ::test_custom_file_named_like_bundled_is_never_bundled PASSED"
+        },
+        {
+          "behavior": "Project profiles are committable: the rendered template shows .shipwright/profiles/x.json to git without -f while other .shipwright files and *.tmp stay ignored",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_profile_gitignore_commit.py::test_rendered_template_in_scratch_repo_shows_profile_without_force, ::test_profile_temp_files_stay_ignored PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "Every consumer test root imports the resolver through its own layout with the isolation fixture active and sys.path restored",
+          "disposition": "tested",
+          "evidence": "test_profile_resolver_boundary.py in shared/tests, shared/scripts/tests, shared/scripts/tools/tests, integration-tests and five plugin roots PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 19,
+        "covered_acs": 19
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-24-s1-resolver-core",
+    "commit": "112dbb034f518e5495e59a22cdc6febdbc77cf12",
+    "dirty": false,
+    "base": null,
+    "release": null
+  }
+}

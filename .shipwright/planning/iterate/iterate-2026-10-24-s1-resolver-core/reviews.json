@@ -1,0 +1,434 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-s1-resolver-core",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T09:56:33.163207+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach / dependency",
+          "file": null,
+          "line": null,
+          "finding": "enumerate the bundled profiles (or explicitly declare they land in S2 with test-local fixtures for S1).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "keep one module; if the limit is a hard repo rule, split by responsibility (model vs. lookup) only if it genuinely exceeds the limit, not preemptively.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "confirm this split (strict stdlib checker in prod, jsonschema in tests) is a deliberate D-item requirement from the brief rather than an invented constraint. If invented, validate with `jsonschema` directly and drop the checker.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "verify the consumer-facing contract (warning format/when emitted) is pinned by tests now so S2 doesn't reinterpret it; note the dead-code window explicitly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "add an explicit test for wrong-case lookup on case-insensitive FS.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "run the full existing test suite in CI for this change (not just new tests), and verify no existing root already defines a same-named fixture.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "use `resolve(strict=...)` on the final file and re-check containment against the resolved path; note whether symlinked profiles are allowed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "one line in the CLI docstring mapping each failure mode to a code, plus a test per code.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“First FILE wins” leaves unreadable entries, dangling symlinks, and directories at the selected path undefined. An `is_file()` gate can treat these as absent and silently select a lower-priority profile, undermining the no-fall-through contract.",
+          "suggestion": "Explicitly distinguish absence from an invalid override. Define which states stop resolution, map them to CLI errors, and test that they cannot trigger fallback.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Supporting the schema’s keywords does not alone establish equivalence with JSON Schema semantics. Python-specific behavior, such as booleans satisfying integer checks, can cause the custom checker to accept invalid profiles. Positive bundled-profile tests would miss this.",
+          "suggestion": "Differentially test valid and invalid inputs against `jsonschema`, covering type boundaries, required fields, extra properties, and every constraint used. Ensure this validation dependency is declared and the cross-check runs in CI.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Splitting the resolver into three modules introduces runtime dependencies across consumer plugin boundaries. A probe that runs from the repository can pass because the checkout makes sibling modules and the schema available, while the distributed plugin lacks them.",
+          "suggestion": "Run boundary probes against the actual packaged or staged consumer layout, from an unrelated working directory without repository `PYTHONPATH`. Verify both CLI startup and schema-backed resolution, and include all runtime files in packaging.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The gitignore exception works only when Git can traverse the parent directory. `!/.shipwright/profiles/` cannot re-include profiles beneath an excluded `.shipwright/`, and another matching rule can still exclude their files.",
+          "suggestion": "Verify the complete ordered ignore block using `git check-ignore` and `git status` in the scratch repository. Assert that a new profile is discoverable while other intended `.shipwright` artifacts remain ignored.  The shared resolver and deferred loader migration are a sound direction. Before implementation, tighten filesystem failure semantics and make schema parity, packaged imports, and effective ignore behavior explicit in the validation plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T09:56:22.660436+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach / dependency — Severity: medium**\n  The plan claims \"Bundled profiles validate; forward registry tests (D6)\" as an acceptance criterion, but no bundled profiles are listed in the file set. If `shared/profiles/` (or wherever bundled profiles live) doesn't exist yet, S1's tests must ship their own fixture profiles — state that explicitly, otherwise the schema-checker and resolver tests have nothing to validate against and the criterion is untestable.\n  **Suggestion:** enumerate the bundled profiles (or explicitly declare they land in S2 with test-local fixtures for S1).\n\n- **Category: approach — Severity: medium**\n  Splitting `profile_resolver.py` into three modules (`profile_resolver`, `profile_model`, `profile_schema_check`) purely to stay under a 300-line limit is premature fragmentation for a single-purpose resolver. Three modules for one lookup-and-validate routine also creates import surface with no reuse justification.\n  **Suggestion:** keep one module; if the limit is a hard repo rule, split by *responsibility* (model vs. lookup) only if it genuinely exceeds the limit, not preemptively.\n\n- **Category: approach — Severity: medium**\n  A hand-written schema checker supporting only the keywords the schema uses is a maintenance trap: every schema evolution silently requires checker code changes, and \"unsupported keyword raises\" means schema edits break at load time in ways `jsonschema` wouldn't. You already depend on `jsonschema` for the cross-check test — the tests will prove the hand-written checker matches it, but production uses the weaker one.\n  **Suggestion:** confirm this split (strict stdlib checker in prod, jsonschema in tests) is a deliberate D-item requirement from the brief rather than an invented constraint. If invented, validate with `jsonschema` directly and drop the checker.\n\n- **Category: risk — Severity: medium**\n  \"First FILE wins with no fall-through\" plus \"shadow warnings returned for loaders to  […truncated]\n\n[openai] Repository reads were blocked by execution policy, so this review covers the supplied mini-plan; compliance with D1–D10 and acceptance items (1)–(19) remains unverified.\n\n1. **Category: edge-case | Severity: medium**\n   **Finding:** “First FILE wins” leaves unreadable entries, dangling symlinks, and directories at the selected path undefined. An `is_file()` gate can treat these as absent and silently select a lower-priority profile, undermining the no-fall-through contract.\n   **Suggestion:** Explicitly distinguish absence from an invalid override. Define which states stop resolution, map them to CLI errors, and test that they cannot trigger fallback.\n\n2. **Category: risk | Severity: medium**\n   **Finding:** Supporting the schema’s keywords does not alone establish equivalence with JSON Schema semantics. Python-specific behavior, such as booleans satisfying integer checks, can cause the custom checker to accept invalid profiles. Positive bundled-profile tests would miss this.\n   **Suggestion:** Differentially test valid and invalid inputs against `jsonschema`, covering type boundaries, required fields, extra properties, and every constraint used. Ensure this validation dependency is declared and the cross-check runs in CI.\n\n3. **Category: dependency | Severity: medium**\n   **Finding:** Splitting the resolver into three modules introduces runtime dependencies across consumer plugin boundaries. A probe that runs from the repository can pass because the checkout makes sibling modules and the schema available, while the distributed plugin lacks them.\n   **Suggestion:** Run boundary probes against the actual packaged or staged consumer layout, from an unrelated working directory without repository `PYTHONPATH`. Verify both CLI startup and schema-backed resolution, and include all runtime files in packaging.\n\n4. **Category: edge-case | Severity: medium**\n   **Finding:** The gitignore exception works only when Git can traverse the parent directory. `!/.shipwri […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/scripts/profile_test_isolation.py",
+          "line": null,
+          "finding": "Autouse fixture calls tmp_path_factory.mktemp per test in 9 roots; make_numbered_dir scans basetemp each call (pytest's own tmp_path already does the same, so this at most doubles an existing cost).",
+          "suggestion": "One session-scoped base dir plus tempfile.mkdtemp per test; re-measure F0.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_profile_resolver.py",
+          "line": null,
+          "finding": "test_non_profile_files_not_resolvable asserts only ValueError; the deploy-profile.schema entry is unreachable (name rule rejects first).",
+          "suggestion": "Assert kind per case.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_profile_resolver.py",
+          "line": null,
+          "finding": "test_non_profile_files_never_listed pins the exact bundled name set.",
+          "suggestion": "Use bundled_names() and disjointness.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_resolve_profile_cli.py",
+          "line": null,
+          "finding": "shared/scripts/tools permanently appended to sys.path in test process.",
+          "suggestion": "Load by file path or restore sys.path.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/profile_model.py",
+          "line": null,
+          "finding": "os.path.isabs accepts drive-less rooted path on py3.11/3.12 Windows for SHIPWRIGHT_USER_PROFILES_DIR.",
+          "suggestion": "Require a drive/UNC root on nt.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/profile_resolver.py",
+          "line": null,
+          "finding": "Duplicate bundled-shadow warning block in resolve_profile and load_profile_file.",
+          "suggestion": "Extract helper.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T10:46:29.901461+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary D1",
+          "file": "shared/scripts/profile_resolver.py",
+          "line": null,
+          "finding": "Claim under doubt: Unreadable project profiles dir never silently falls through — A dangling .shipwright/profiles symlink is treated as absent by _listdir (lexists never consulted), so a project profile shadowing a bundled name silently resolves to bundled.",
+          "suggestion": "Raise ProfileInvalid for non-user sources when lexists(dir) but not isdir(dir); warn in list. Disposition: routed to S2 (loader rewiring, no-silent-fallback unit).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/scripts/profile_test_isolation.py; */tests/test_profile_resolver_boundary.py",
+          "line": null,
+          "finding": "Claim under doubt: Boundary probe proves autouse isolation is active — Probes request the fixture by name so deleting autouse=True leaves them green; fixture does not redirect HOME/USERPROFILE; function scope misses collection-time calls.",
+          "suggestion": "Probe asserts os.environ value without requesting the fixture; optionally redirect HOME. Disposition: routed to S2 (first loader that reads the user dir).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "TOCTOU",
+          "file": "shared/scripts/profile_resolver.py:256",
+          "line": null,
+          "finding": "_row re-resolves between containment check and _load; same trust class as writer of the dir.",
+          "suggestion": "Pass resolved path to _load.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "output injection",
+          "file": "shared/scripts/tools/resolve_profile.py:73",
+          "line": null,
+          "finding": "list text mode prints raw stems/paths with control chars.",
+          "suggestion": "repr/escape in text mode.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "fixture namespace",
+          "file": "shared/tests/profile_test_fixtures.py",
+          "line": null,
+          "finding": "Global fixtures named project/user_dir in shared/tests.",
+          "suggestion": "Rename.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "schema-vs-loader",
+          "file": "shared/scripts/profile_resolver.py:52",
+          "line": null,
+          "finding": "NaN/Infinity/1e300 accepted by json.load.",
+          "suggestion": "parse_constant reject; S2 normaliser hand-off.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "gitignore blast radius",
+          "file": ".gitignore",
+          "line": null,
+          "finding": "Negation re-exposes backups/swap files in profiles dir.",
+          "suggestion": "JSON-only negation or documented residual.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "user source dropped",
+          "file": "shared/scripts/profile_model.py:112",
+          "line": null,
+          "finding": "Relative SHIPWRIGHT_USER_PROFILES_DIR silently ignored without list warning.",
+          "suggestion": "List warning.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T10:51:28.146361+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/test_profile_resolver_boundary.py:21 (and the five identical copies under plugins//tests and shared//tests)",
+          "line": null,
+          "finding": "The boundary probes (and `test_profile_resolver.py`, `test_profile_gitignore_commit.py`, etc.) use `@pytest.mark.covers(...)`, but the `covers` marker is only registered in `plugins/shipwright-design/pyproject.toml`. Every other test root (integration-tests, shipwright-adopt/project/run/test, shared roots) has an unregistered marker. Any of those roots running with `--strict-markers` (or `-W error::pytest.PytestUnknownMarkWarning`, or `filterwarnings = error`) will fail collection or error out; even without that, the traceability binding is silently inert in five of seven roots.",
+          "suggestion": "Register `covers` in each root's pytest config (pyproject/pytest.ini), or centrally via a shared `pytest.ini`/conftest `pytest_configure` hook that calls `config.addinivalue_line(\"markers\", ...)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/profile_resolver.py — `resolve_profile`, sentinel clash scan (`for _, directory in searched`)",
+          "line": null,
+          "finding": "The sentinel-clash scan swallows all `OSError`s (`except OSError: continue`) for every source, including the project dir. This contradicts the D1 \"no silent fall-through\" rule the rest of the function enforces via `_entry(strict=...)`: a project profiles dir that exists but is unreadable and contains `generic.json` would silently let `generic` resolve as builtin, while an unreadable project dir is otherwise a hard error. Same for a project dir that is a plain file (covered by `NotADirectoryError` → OSError → skipped here, but hard error elsewhere).",
+          "suggestion": "Apply the same strict/lenient split as `_entry` (raise for non-user sources) in the sentinel scan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/profile_resolver.py — `load_profile_file`, `stem = os.path.basename(path)[:-5] if path.endswith(\".json\") else res.name",
+          "line": null,
+          "finding": "The stem is only derived for lowercase `.json`; a file named `Weird.JSON` (case-insensitive filesystems, or hand-typed path) silently falls back to `res.name`, so the shadow computation looks for `<name>.json` instead of the actual file stem and can miss or mis-attribute shadows. Also `[:-5]` on a path ending exactly `\".json\"` (a file literally named `.json`) yields an empty stem.",
+          "suggestion": "Use `os.path.splitext(os.path.basename(path))[0].lower()` and handle the empty-stem case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/resolve_profile.py — `_run` / `main",
+          "line": null,
+          "finding": "parser.error(...)` inside `_run` raises `SystemExit(4)` which passes through `main`'s `except ValueError` and out of `main()` entirely, so `main` violates its documented \"returns exit code\" contract for mid-run usage errors (e.g. `resolve` without `--name`, `--json` + `--path-only`). It works only because callers use `sys.exit(main(...))` and SystemExit propagates anyway; an embedding caller doing `rc = main(argv)` in-process gets an exception instead of `4`.",
+          "suggestion": "Catch `SystemExit` in `main` and return `exc.code`, or restructure `_run` to return the usage code instead of calling `parser.error`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_profile_resolver_files.py — `test_case_colliding_pair_is_error",
+          "line": null,
+          "finding": "The test monkeypatches the global `os.listdir`, which makes `list_profiles` see an empty bundled dir and empty user dir; it passes regardless of whether cross-source shadow handling is correct, and would also pass if `list_profiles` stopped listing bundled profiles entirely. The assertion only checks the invalid row exists.",
+          "suggestion": "Assert the colliding row is the only/expected one, or restore real listings for non-project dirs in the lambda so bundled rows must still appear.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_profile_resolver.py — `test_non_profile_files_not_resolvable` (parametrized with `\"deploy-profile-schema\"`)",
+          "line": null,
+          "finding": "deploy-profile-schema` (from the `.md` file) is not in `_NON_PROFILE_STEMS` (only `.json` files are), and the name passes `NAME_RE`; the test passes only because no `deploy-profile-schema.json` exists anywhere, i.e. it exercises `ProfileNotFound`, not the non-profile registry. If someone adds a legit `deploy-profile-schema.json` profile later, this test breaks for the wrong reason, and the guard it appears to test doesn't actually exist for that name.",
+          "suggestion": "Either drop that parametrization or document/assert that it's a not-found case, not an `is_non_profile` case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/profile_resolver.py:134–139",
+          "line": null,
+          "finding": "Lower-priority entries can invalidate an already valid winner. For example, a valid project `vite-hono.json` still fails resolution if the user directory contains `Vite-Hono.json` or an escaping `vite-hono.json` symlink. These checks run before the winner/shadow branch, contradicting the documented “first FILE wins” behavior.",
+          "suggestion": "Apply candidate validation to the winning entry. Record lower-priority entries as shadows without allowing their defects to prevent use of the valid winner.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/profile_resolver.py",
+          "line": 218,
+          "finding": "Discovery ignores uppercase file extensions, although resolution explicitly detects them. A project `vite-hono.JSON` causes `resolve_profile(\"vite-hono\")` to reject the filename, while `list_profiles()` omits it and reports the bundled profile as valid. The discovery output therefore hides the entry blocking resolution.",
+          "suggestion": "Discover candidates using a case-insensitive extension check, then report non-lowercase filenames as invalid. Add a test comparing list and resolve behavior for `.JSON` entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/profile_model.py",
+          "line": 134,
+          "finding": "NAME_RE.match()` accepts a trailing newline because Python’s `$` can match immediately before the final newline. Consequently, `\"foo\\n\"` passes name validation despite violating the stated character rules, producing platform-dependent filesystem behavior.",
+          "suggestion": "Use `NAME_RE.fullmatch(name)` and add `\"foo\\n\"` to the invalid-name test cases.  Ship-with-fixes: the implementation covers the main resolver flows, but precedence and discovery need correction before shipping. The referenced acceptance checklist still requires verification.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T10:00:06.281746+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: integration-tests/test_profile_resolver_boundary.py:21 (and the five identical copies under plugins/*/tests and shared/*/tests)\n  Finding: The boundary probes (and `test_profile_resolver.py`, `test_profile_gitignore_commit.py`, etc.) use `@pytest.mark.covers(...)`, but the `covers` marker is only registered in `plugins/shipwright-design/pyproject.toml`. Every other test root (integration-tests, shipwright-adopt/project/run/test, shared roots) has an unregistered marker. Any of those roots running with `--strict-markers` (or `-W error::pytest.PytestUnknownMarkWarning`, or `filterwarnings = error`) will fail collection or error out; even without that, the traceability binding is silently inert in five of seven roots.\n  Suggestion: Register `covers` in each root's pytest config (pyproject/pytest.ini), or centrally via a shared `pytest.ini`/conftest `pytest_configure` hook that calls `config.addinivalue_line(\"markers\", ...)`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/profile_resolver.py — `resolve_profile`, sentinel clash scan (`for _, directory in searched`)\n  Finding: The sentinel-clash scan swallows *all* `OSError`s (`except OSError: continue`) for every source, including the project dir. This contradicts the D1 \"no silent fall-through\" rule the rest of the function enforces via `_entry(strict=...)`: a project profiles dir that exists but is unreadable and contains `generic.json` would silently let `generic` resolve as builtin, while an unreadable project dir is otherwise a hard error. Same for a project dir that is a plain file (covered by `NotADirectoryError` → OSError → skipped here, but hard error elsewhere).\n  Suggestion: Apply the same strict/lenient split as `_entry` (raise for non-user sources) in the sentinel scan.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/profile_resolver.py — `load_profile_file`, `stem = os.path.basename(path)[:-5] if path.endswith […truncated]\n\n[openai] I reviewed the supplied diff. Local command execution was blocked by policy, so I could not read the referenced BRIEF or run tests; full acceptance-criteria compliance remains unverified.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/profile_resolver.py:134–139\n- Finding: Lower-priority entries can invalidate an already valid winner. For example, a valid project `vite-hono.json` still fails resolution if the user directory contains `Vite-Hono.json` or an escaping `vite-hono.json` symlink. These checks run before the winner/shadow branch, contradicting the documented “first FILE wins” behavior.\n- Suggestion: Apply candidate validation to the winning entry. Record lower-priority entries as shadows without allowing their defects to prevent use of the valid winner.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/profile_resolver.py:218\n- Finding: Discovery ignores uppercase file extensions, although resolution explicitly detects them. A project `vite-hono.JSON` causes `resolve_profile(\"vite-hono\")` to reject the filename, while `list_profiles()` omits it and reports the bundled profile as valid. The discovery output therefore hides the entry blocking resolution.\n- Suggestion: Discover candidates using a case-insensitive extension check, then report non-lowercase filenames as invalid. Add a test comparing list and resolve behavior for `.JSON` entries.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/profile_model.py:134\n- Finding: `NAME_RE.match()` accepts a trailing newline because Python’s `$` can match immediately before the final newline. Consequently, `\"foo\\n\"` passes name validation despite violating the stated character rules, producing platform-dependent filesystem behavior.\n- Suggestion: Use `NAME_RE.fullmatch(name)` and add `\"foo\\n\"` to the invalid-name test cases.\n\nShip-with-fixes: the implementation covers the main resolver flows, but precedence and discovery need correction before shipping. The referenced acc […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T10:42:52.854488+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T09:56:22.777983+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T09:56:22.897262+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

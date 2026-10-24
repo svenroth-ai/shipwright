@@ -1,0 +1,9 @@
+{"section":"S1-resolver-core","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/profile_resolver.py","finding":"Python 3.11 raises RuntimeError on a symlink loop in Path.resolve(), escaping the ValueError error contract and crashing list_profiles.","suggestion":"Catch RuntimeError; map to ProfileInvalid; add test."},
+{"severity":"low","category":"correctness","file":"shared/scripts/profile_resolver.py","finding":"list_profiles does not skip duplicate directories like resolve_profile does.","suggestion":"Apply the seen-set."},
+{"severity":"low","category":"correctness","file":"shared/scripts/profile_resolver.py","finding":"load_profile_file with bare-path dirs mis-ranks shadows.","suggestion":"Use directory index."},
+{"severity":"low","category":"readability","file":"shared/tests/test_profile_resolver.py","finding":"test_windows_path_logic_runs_everywhere asserts test data.","suggestion":"Delete."},
+{"severity":"low","category":"architecture","file":"shared/tests/fixtures/profile_list_contract_v1.json","finding":"Fixture pins the set of bundled names.","suggestion":"Filter bundled rows."},
+{"severity":"low","category":"correctness","file":"boundary probes","finding":"Canary asserts tempdir, wrong under --basetemp.","suggestion":"Compare with the fixture value."},
+{"severity":"low","category":"readability","file":"shared/scripts/profile_model.py","finding":"Four blank lines.","suggestion":"Collapse."},
+{"severity":"low","category":"architecture","file":"shared/tests/test_resolve_profile_cli.py","finding":"tools dir stays on sys.path for the shared/tests process.","suggestion":"Load by file path or remove after import."}]}

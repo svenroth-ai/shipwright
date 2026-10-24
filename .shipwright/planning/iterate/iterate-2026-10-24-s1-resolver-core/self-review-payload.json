@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Brief D1-D10 and S1 acceptance items 1-19 each map to a test in shared/tests (resolver, files, CLI, schema, gitignore) plus 9 boundary probes."},
+{"name":"Error Handling","verdict":"pass","note":"Winning file never falls through; unreadable project dir, directory/dangling-link entries, missing or corrupt schema all raise ProfileError with kind and exit_code."},
+{"name":"Security Basics","verdict":"pass","note":"Strict name regex, reserved/device names, resolve-once containment, exact-spelling check, shadow warnings returned for loaders; resolver never spawns or expands env."},
+{"name":"Test Quality","verdict":"pass","note":"CLI tested in-process plus one subprocess smoke; hand checker cross-checked against jsonschema on bundled profiles and 21 mutations."},
+{"name":"Performance Basics","verdict":"pass","note":"Schema parsed once via lru_cache; directory listings only, no globbing of the tree."},
+{"name":"Naming & Structure","verdict":"pass","note":"Three modules each under 300 lines; hot-file rule documented to cover all three."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer shared/profiles and consumer resolver round-tripped on the bundled files; gitignore negation proven in a scratch git repo with the rendered template; list --json contract pinned."}
+]}

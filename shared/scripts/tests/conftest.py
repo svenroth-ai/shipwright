@@ -42,3 +42,18 @@ _ISOLATED_ENV_VARS = (
 def _isolate_ambient_env(monkeypatch):
     for name in _ISOLATED_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+
+
+# Stack-profile test isolation (campaign stack-profile-resolver, D4): keeps the
+# developer's real ~/.shipwright/profiles out of every test in this root.
+import sys as _sys  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_isolation_dir = str(_Path(__file__).resolve().parents[1])
+_added = _isolation_dir not in _sys.path
+if _added:
+    _sys.path.append(_isolation_dir)
+from profile_test_isolation import isolate_user_profiles_dir  # noqa: E402,F401
+
+if _added:  # leave sys.path as found: shared/scripts holds a `tools` package that would shadow a plugin's
+    _sys.path.remove(_isolation_dir)

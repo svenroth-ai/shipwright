@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Round 2 PASS: D4 missing user dir warns in list; D2 search_dirs override pinned by tests; acceptance items 1-19 each have code and a test. Round 1 REJECTed for those two points (fixed)."}
