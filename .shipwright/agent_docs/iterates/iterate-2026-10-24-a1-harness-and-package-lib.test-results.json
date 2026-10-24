@@ -4,13 +4,13 @@
     "date": "2026-10-24",
     "unit": {
       "status": "passed",
-      "passed": 617,
-      "total": 620
+      "passed": 643,
+      "total": 646
     },
     "integration": {
       "status": "passed",
-      "passed": 597,
-      "total": 597
+      "passed": 600,
+      "total": 600
     },
     "pgtap": {
       "status": "not_run"
