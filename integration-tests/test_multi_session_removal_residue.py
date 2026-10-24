@@ -245,8 +245,13 @@ def test_load_bearing_module_survived(rel):
 def test_phase_task_lifecycle_still_exposes_every_mutator_the_loop_needs():
     """The deleted Stop hook and the surviving loop call the SAME mutators. Deleting the
     hook must not have pruned any of them as 'now unused'."""
-    src = (REPO_ROOT / "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py").read_text(
-        encoding="utf-8",
+    lib = REPO_ROOT / "plugins/shipwright-run/scripts/lib"
+    facade = (lib / "phase_task_lifecycle.py").read_text(encoding="utf-8")
+    # The mutators live in phase_task_lifecycle plus the sibling modules it re-exports
+    # (A2 extraction); the facade must still name every one of them.
+    src = facade + "".join(
+        (lib / f"phase_task_{part}.py").read_text(encoding="utf-8")
+        for part in ("core", "lookup", "planning", "recovery")
     )
     for fn in (
         "def claim_phase_task",
@@ -259,3 +264,4 @@ def test_phase_task_lifecycle_still_exposes_every_mutator_the_loop_needs():
         "def get_phase_task",
     ):
         assert fn in src, f"phase_task_lifecycle lost {fn!r} — the loop still calls it"
+        assert fn.removeprefix("def ") in facade, f"phase_task_lifecycle no longer exposes {fn!r}"

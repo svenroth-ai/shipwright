@@ -1,4 +1,10 @@
-"""Canon verifier bridge for the phase validators (extracted from ``phase_validators``)."""
+"""Canon verifier bridge for the phase validators (extracted from ``phase_validators``).
+
+Import this only through ``phase_validators``: it puts ``shared/scripts`` on ``sys.path``,
+without which every canon check here is silently skipped (the ``ImportError`` branch).
+To patch the bridge in a test, patch ``phase_validators_canon._run_canon_checks`` and the
+name re-bound in ``phase_validators`` / ``phase_validators_late``.
+"""
 
 from __future__ import annotations
 
