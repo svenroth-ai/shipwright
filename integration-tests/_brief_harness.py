@@ -120,18 +120,29 @@ def validate_report(report: object) -> list[str]:
     if report["mode"] == "dry" and report["stop_point"] is not None:
         problems.append("a dry run never records a stop point")
     approval = report["fixture_approval"]
-    if not isinstance(approval, dict) or set(approval) != set(APPROVAL_KEYS)             or not isinstance(approval["accepted_via_env"], bool):
+    if not isinstance(approval, dict) or set(approval) != set(APPROVAL_KEYS)             or not isinstance(approval["accepted_via_env"], bool)             or not (approval["approved_by"] is None or isinstance(approval["approved_by"], str)):
         problems.append("bad fixture_approval block")
+    for key in ("fixture", "autonomy", "started_at", "finished_at"):
+        if not isinstance(report[key], str) or not report[key]:
+            problems.append(f"{key} must be a non-empty string")
     pkg = report["package"]
     if not isinstance(pkg, dict) or set(pkg) != set(PACKAGE_KEYS):
         problems.append("bad package block")
+    elif (not isinstance(pkg["sha256"], str) or not isinstance(pkg["valid"], bool)
+          or not isinstance(pkg["issues"], list)):
+        problems.append("package fields have the wrong types")
     spend = report["spend"]
     if not isinstance(spend, dict) or set(spend) != set(SPEND_KEYS):
         problems.append("bad spend block")
-    elif not isinstance(spend["model_calls"], int) or isinstance(spend["model_calls"], bool):
-        problems.append("spend.model_calls must be an integer")
+    else:
+        if not isinstance(spend["model_calls"], int) or isinstance(spend["model_calls"], bool):
+            problems.append("spend.model_calls must be an integer")
+        usd = spend["usd"]
+        if usd is not None and (isinstance(usd, bool) or not isinstance(usd, (int, float))):
+            problems.append("spend.usd must be a number or null")
     if not isinstance(report["stages"], list) or any(
         not isinstance(s, dict) or set(s) != set(STAGE_KEYS) or s["status"] not in STAGE_STATUSES
+        or not isinstance(s["name"], str) or not isinstance(s["detail"], str)
         for s in report["stages"]
     ):
         problems.append("bad stages")

@@ -239,7 +239,7 @@ def test_screen_map_cannot_point_outside_mockups(tmp_path, mockup):
     assert "dangling_mockup" in _codes(root)
 
 
-@pytest.mark.parametrize("bad", ["./.shipwright/x", ".Shipwright/x", "", 5, None])
+@pytest.mark.parametrize("bad", ["./.shipwright/x", ".Shipwright/x", "a/.shipwright/b", "", 5, None])
 def test_brief_dir_edge_cases(tmp_path, bad):
     root = _package(tmp_path / "a", brief_dir=bad)
     assert "bad_brief_dir" in _codes(root)
@@ -277,3 +277,10 @@ def test_case_only_difference_is_a_collision(tmp_path):
         return  # case-insensitive filesystem: the two names are one file
     with pytest.raises(bp.PathCollision):
         bp.manifest(root)
+
+
+def test_colon_in_a_posix_filename_is_not_a_drive(tmp_path):
+    root = _package(tmp_path / "a")
+    _write(root, "mockups/notes:v2.html", "<html></html>")
+    _write(root, "screen-map.json", json.dumps({"screens": [{"mockup": "notes:v2.html"}]}))
+    assert bp.validate_layout(root) == []

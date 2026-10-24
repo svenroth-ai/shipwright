@@ -71,10 +71,11 @@ def _is_link(path: Path, root: Path) -> bool:
     if path.is_symlink():
         return True
     try:
-        path.resolve().relative_to(root.resolve())
-    except ValueError:
+        # Reached through a link/junction (inside or outside the package) when the
+        # resolved path is not the plain root-relative path.
+        return path.resolve() != root.resolve() / path.relative_to(root)
+    except (OSError, ValueError):
         return True
-    return False
 
 
 def _is_junk(rel: PurePosixPath) -> bool:
@@ -165,7 +166,8 @@ def _bad_rel_path(value: object) -> bool:
     if not isinstance(value, str) or not value.strip():
         return True
     norm = value.replace("\\", "/")
-    return norm.startswith("/") or ":" in norm or ".." in PurePosixPath(norm).parts
+    drive = len(norm) > 1 and norm[1] == ":" and norm[0].isalpha()
+    return norm.startswith("/") or drive or ".." in PurePosixPath(norm).parts
 
 
 def _check_brief(brief: dict, root: Path, issues: list[dict[str, str]]) -> None:
@@ -191,8 +193,8 @@ def _check_brief(brief: dict, root: Path, issues: list[dict[str, str]]) -> None:
             issues.append(_issue("dangling_ref", "brief.json", f"{key} must name a file inside the package"))
     if "brief_dir" in brief:
         bdir = brief["brief_dir"]
-        first = PurePosixPath(bdir.replace("\\", "/")).parts[:1] if isinstance(bdir, str) else ()
-        if _bad_rel_path(bdir) or any(p.lower() == ".shipwright" for p in first):
+        parts = PurePosixPath(bdir.replace("\\", "/")).parts if isinstance(bdir, str) else ()
+        if _bad_rel_path(bdir) or any(p.lower() == ".shipwright" for p in parts):
             issues.append(_issue("bad_brief_dir", "brief.json",
                                  "brief_dir must be project-relative, committable and not under .shipwright/"))
     sha = brief.get("package_sha256")
@@ -212,7 +214,7 @@ def _read_text(f: Path, name: str, issues: list[dict[str, str]]) -> str | None:
 def _safe_manifest_keys(root: Path) -> list[str]:
     try:
         return list(manifest(root))
-    except ValueError:
+    except (OSError, ValueError):
         return [p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()]
 
 
@@ -236,6 +238,8 @@ def validate_layout(brief_dir: Path) -> list[dict[str, str]]:
         manifest(root)
     except PathCollision as exc:
         issues.append(_issue("path_collision", ".", str(exc)))
+    except OSError as exc:
+        issues.append(_issue("unreadable_file", ".", f"a packaged file cannot be read: {exc}"))
     except ValueError:
         pass  # an unreadable brief.json is reported by the per-file checks below
     brief: dict | None = None

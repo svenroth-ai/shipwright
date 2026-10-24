@@ -100,6 +100,11 @@ def test_report_validation_rejects_drift(tmp_path):
         lambda r: r.update(stop_point="step 3"),  # a dry run never records one
         lambda r: r.update(stop_point=3),
         lambda r: r["fixture_approval"].update(accepted_via_env="yes"),
+        lambda r: r["package"].update(valid="yes"),
+        lambda r: r["package"].update(issues=None),
+        lambda r: r["spend"].update(usd="unknown"),
+        lambda r: r["stages"][0].update(detail=[]),
+        lambda r: r.update(started_at=5),
         lambda r: r["spend"].update(model_calls="0"),
         lambda r: r["stages"].append({"name": "x"}),
     ):
@@ -154,3 +159,18 @@ def test_scratch_project_refuses_a_dirty_target(tmp_path):
     project = h.prepare_scratch_project(tmp_path / "proj", pkg)
     with pytest.raises(FileExistsError):
         h.prepare_scratch_project(project, pkg)
+
+
+def test_an_unreadable_packaged_file_gives_a_failure_report_not_a_crash(tmp_path, monkeypatch):
+    project = h.prepare_scratch_project(tmp_path / "proj", h.build_fixture_1(tmp_path / "pkg"))
+    real = Path.read_bytes
+
+    def deny(self):
+        if self.name == "01-notes.html":
+            raise PermissionError("denied")
+        return real(self)
+
+    monkeypatch.setattr(Path, "read_bytes", deny)
+    report = h.run_harness(project, report_path=tmp_path / "r.json")
+    assert report["outcome"] == "dry-failed"
+    assert any(i["code"] == "unreadable_file" for i in report["package"]["issues"])
