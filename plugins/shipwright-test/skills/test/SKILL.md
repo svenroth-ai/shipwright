@@ -171,7 +171,7 @@ profile has no UI); otherwise scan `.shipwright/planning/` for
 ## Step 3: Run Playwright E2E (if applicable)
 
 Prereqs: UI profile + smoke test passed. Run `playwright_setup.py`,
-`dev_server.py start` (exit 2/3 = profile problem: stop, show the message), then `playwright_runner.py --cwd {project_root}`.
+`dev_server.py start` (exit 2/3 = profile problem: stop, show the message, do not retry), then `playwright_runner.py --cwd {project_root}`.
 Auto-fix groups failures by root cause (auth / selector / data / network /
 other), fixes per group with commits, parks unresolvable groups after 3
 attempts and ASKs the user.

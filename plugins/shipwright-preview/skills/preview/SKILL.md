@@ -64,7 +64,7 @@ Parse the JSON output. If `"running": true`, skip to Step 5.
 
 Start the dev server using the project's own stack profile. Read `profile` from
 `${SHIPWRIGHT_PROJECT_ROOT}/shipwright_run_config.json` (do not assume a stack). The name
-must match `^[a-z0-9][a-z0-9-]*$`. Gate on the resolver (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry):
+must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop. Gate on the resolver (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry):
 
 ```bash
 uv run --no-project "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_profile.py" \
@@ -84,7 +84,7 @@ Parse the JSON output:
 - `"no_dev_server": true` → the profile declares no web dev server (a library,
   CLI or plugin project). Tell the user there is nothing to preview and stop.
 - `"ready": true` → proceed to Step 5
-- `"ready": false` or error → investigate. Read the server logs, check for port conflicts, missing dependencies, or build errors. Fix the issue and retry. Do not just report the error — help resolve it.
+- `"ready": false` or error → investigate, unless the error is a profile problem (exit 2/3: stop, show the message, do not retry). Read the server logs, check for port conflicts, missing dependencies, or build errors. Fix the issue and retry. Do not just report the error — help resolve it.
 
 #### Step 5: Show Preview URL
 

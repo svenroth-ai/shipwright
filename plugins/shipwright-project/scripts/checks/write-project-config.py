@@ -51,6 +51,9 @@ def main() -> int:
     parser.add_argument("--profile", required=True, help="Profile name (e.g., supabase-nextjs)")
     parser.add_argument("--scope", required=True, choices=["full_app", "extension"], help="Project scope")
     parser.add_argument("--project-root", help="Project root: where the config is written (defaults to parent of planning-dir, unchanged). The profile lookup root defaults to the project above <project>/.shipwright/planning")
+    parser.add_argument("--profile-root", help="Project whose .shipwright/profiles/ is searched for --profile (lookup only: "
+                        "the config location is NOT affected). Pass it from a skill: with a requirements file "
+                        "(@requirements.md) --planning-dir is that file's folder and says nothing about the project")
     parser.add_argument("--status", default="complete", choices=["in_progress", "complete"],
                         help="Config status (default: complete)")
     args = parser.parse_args()
@@ -59,7 +62,9 @@ def main() -> int:
     project_root = Path(args.project_root).resolve() if args.project_root else planning_dir.parent
     # Profile LOOKUP root only (where <root>/.shipwright/profiles is searched). Everything the
     # writer does below (config location, gitignore, artifact checks) keeps `project_root`.
-    if args.project_root:
+    if args.profile_root:
+        lookup_root = Path(args.profile_root).resolve()
+    elif args.project_root:
         lookup_root = project_root
     else:
         raw_planning = Path(args.planning_dir).absolute()  # not resolved: a linked .shipwright keeps its name
@@ -67,14 +72,22 @@ def main() -> int:
 
     from lib.profile_check import profile_error  # project's own lib (path set above)
 
-    try:
-        reason = profile_error(args.profile, lookup_root)
-    except ImportError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 1
-    if reason:
-        print(f"ERROR: {reason}", file=sys.stderr)
-        return 4
+    # The early phase-tracking call (in_progress + reserved sentinel) names no profile file, so it
+    # must not gain a new failure mode; a missing shared tree degrades like the gitignore merge there
+    # (the early call only), while --status complete keeps the hard install error (exit 1).
+    early_sentinel = args.status == "in_progress" and args.profile in ("generic", "detecting")
+    if not early_sentinel:
+        try:
+            reason = profile_error(args.profile, lookup_root)
+        except ImportError as exc:
+            if args.status != "in_progress":  # a complete scaffold never writes an unvalidated profile name
+                print(f"ERROR: {exc}", file=sys.stderr)
+                return 1
+            print(f"[write-project-config] profile check skipped: {exc}", file=sys.stderr)
+            reason = None
+        if reason:
+            print(f"ERROR: {reason}", file=sys.stderr)
+            return 4
 
     if args.status == "in_progress":
         # Early config: minimal tracking before scaffolding completes

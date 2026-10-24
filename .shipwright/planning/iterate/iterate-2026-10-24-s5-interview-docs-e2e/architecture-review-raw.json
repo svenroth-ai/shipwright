@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes, but barely \u2014 this is one more test module in an existing CI suite, not new standing infrastructure, and that is the right size for the problem (a silent wrong-stack failure mode that review demonstrably keeps missing, given the volume of hand-offs above).\n\n2. **The smallest thing that would do.** Option A as proposed: one ~200-line AST test module scanning tracked non-test Python under `plugins/` and `shared/scripts/`, keyed on resolver call names, with the two staleness-checked allowlists. Option B (regex) would do nearly the same job for less code, but the constraint that rules cannot depend on exception identity means both A and B are heuristic pattern-matchers \u2014 AST just tolerates reformatting. The delta is small and does not change the standing cost, so A is acceptable; do not let it grow beyond one module.\n\n3. **What it costs to keep.** Every new resolver entry point or renamed call must be added to the guard's patterns or CI goes red; whoever renames the resolver owns that. Two allowlists must be pruned when their exemptions go stale \u2014 the S4 hand-offs already show this exact maintenance mode in action, so the project is evidently staffed for it.\n\n4. **What it forecloses.** None identified beyond mild friction: a future refactor that legitimately catches broadly around a resolver call (e.g. to present a nicer error) will need an allowlist entry or a guard-shape change.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The guard keys on call names and a try/except shape because exception identity is unavailable; this is a heuristic, and heuristics drift. The permanent obligation is that resolver maintainers keep the pattern list current, which is a named human task that can silently rot if the resolver is touched by someone unaware of the guard.\n- Suggestion: Keep the obligation explicit and cheap: a comment at the resolver's public entry points (\"add new call names to test_stack_profile_prose_guard's python patterns\") so the coupling is discoverable at the site where the change is made, not only at the red CI run.\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option B (regex over Python text) would catch the same \"except around a resolver call\" pattern at roughly half the code, since the rule cannot use exception identity anyway.\n- Suggestion: If the AST module creeps past ~200 lines or gains a third allowlist, drop to the text pattern instead; below that, A is fine and the difference is not worth a rejection.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **No\u2014the proposed repository-wide AST guard is disproportionate to the hypothetical regression described; choose C, code review.**\n\n2. **Smallest thing:** Keep the shared resolver as the supported entry point and review changes to its callers. Use existing consumer tests to establish that invalid profiles stop execution; add a focused regression test when an actual escape is found.\n\n3. **Cost to keep:** Resolver maintainers must maintain call-name recognition, exception-pattern rules and two staleness-checked allowlists. Every new import or wrapper style can require reasoning about the guard as well as the resolver.\n\n4. **What it forecloses:** It makes otherwise valid changes to resolver imports, wrappers and exception handling depend on updating a repository-wide syntactic policy.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: The brief establishes a possible future mistake, but no recurring failure that warrants a permanent scanner across every production Python module. Its maintenance scope exceeds the evidence of need.\nSuggestion: Choose C and retain review at resolver call sites. Reconsider automation if repeated regressions establish a specific pattern worth enforcing.\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: The proposed exception-pattern guard maintains a proxy for the required behavior: invalid profiles must stop execution. Extending the markdown regex guard to Python would retain that mismatch with less structural understanding.\nSuggestion: Verify failure propagation through existing consumer tests where needed, without introducing either repository-wide guard.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
+    "at": "2026-10-24T18:20:28.407700+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "reject"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": true,
+    "comparable": true,
+    "requires_resolution": true,
+    "reason": "reviewers contradict each other: glm=approve, openai=reject"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: test\n- Severity: medium\n- File: shared/tests/test_stack_profile_py_guard.py:80\n- Finding: The path guard misses literal custom-profile paths such as `Path(root) / \".shipwright/profiles/my-stack.json\"`. `_is_profiles_path()` recognizes paths ending in `profiles` or containing `shared/profiles`, but rejects this path containing `/profiles/` followed by a filename. A loader could therefore bypass the resolver without failing the required guard.\n- Suggestion: Recognize `/profiles/` path components followed by filenames as well as directory paths. Add planted tests for both project and user profile paths containing filenames.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_stack_profile_py_guard.py:109\n- Finding: The swallowed-error guard accepts `except ValueError: sys.exit(0)` as handling the error loudly. It accepts any call named `exit`, `_exit`, or `SystemExit` without examining its argument, so an invalid selected profile can terminate successfully while this guard passes. This contradicts the specified non-zero exit requirement.\n- Suggestion: Reject explicit zero or omitted exit statuses and add planted tests for `sys.exit(0)`, `sys.exit()`, and `raise SystemExit(0)`. Check raised `SystemExit` arguments before accepting every `ast.Raise`.\n\nOverall assessment: ship-with-fixes. The consumer changes appear sound, but the required regression guard currently allows concrete examples of the behavior it is intended to prevent.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- **Category:** spec | **Severity:** medium\n  **File:** (whole diff)\n  **Finding:** The S3 hand-off \"`adopt/references/codebase-analysis.md:11` still names the bundled profile path (S4 may already have fixed it; **verify**)\" is not visible as either a fix or a recorded verification anywhere in the diff. Neither the prose guard's ALLOWLIST nor the ADR mentions it.\n  **Suggestion:** Verify the file in the repo and either add the fix to this diff or record the verification result (path already removed by S4) in the ADR/confidence section, so the hand-off item is closed rather than silently dropped.\n\n- **Category:** test | **Severity:** medium\n  **File:** integration-tests/test_stack_profile_resolution_e2e.py:190 (`test_user_level_profile_is_used_when_the_project_has_none`)\n  **Finding:** Two weaknesses. (1) `Path(os.environ[\"SHIPWRIGHT_USER_PROFILES_DIR\"])` raises `KeyError` if the env var isn't set \u2014 the variable is a test-isolation override documented for the shared tests; nothing in this diff shows an `integration-tests` conftest that sets it. (2) The adopt assertion `profile[\"source\"] in {\"user\", \"bundled\", \"builtin\"}` accepts three of the four possible values, so it cannot detect a user-profile resolution failure in the matcher at all.\n  **Suggestion:** Set/`monkeypatch`/`tmp_path` the env var inside the test (or add a conftest), and tighten the adopt assertion to assert the actual observed source or explicitly document why each value is acceptable.\n\n- **Category:** regression | **Severity:** low\n  **File:** plugins/shipwright-project/scripts/checks/write-project-config.py:82-87\n  **Finding:** The `ImportError` path now degrades to a warning for **all** calls, including `--status complete`. Previously a missing shared tree was a hard install error (exit 1) at any status; the S3 hand-off tied the degrade to the early `in_progress` sentinel call. A complete-scaffold run with a broken install now silently writes a config whose profile was never validated.\n  **Suggestion:** Either scope the degrade to `--status in_progress` (hard-fail on `complete`), or get the relaxed behavior explicitly recorded in the ADR as covering both paths.\n\n- **Category:** test | **Severity:** low\n  **File:** plugins/shipwright-test/tests/test_test_runner_copied_bundled_profile.py:41\n  **Finding:** The final assertion `assert \"testing.unit`\" not in out[\"error\"] or layer == \"unit\"` is vacuous: for the `unit` parametrization the `or` makes it always true, and for `e2e` the substring \"`testing.unit`\" can never appear in a message that names `testing.e2e.command`. It adds no discrimination over the preceding `f\"`{key}`\" in out[\"error\"]` check.\n  **Suggestion:** Drop it, or assert positively that the message names the *real* key and not another layer's key via a regex with a boundary (e.g. `` re.search(r\"`testing\\.(?!e2e)unit\", ...) `` for the e2e case).\n\n- **Category:** bug | **Severity:** low\n  **File:** shared/tests/test_stack_profile_py_guard.py:113-118 (`_scope_nodes`) + `swallow_findings`\n  **Finding:** `_scope_nodes` excludes nested `FunctionDef`s but not `ClassDef`, so a method's `try`/`except` is walked twice \u2014 once under the method's own scope and once attributed to `<module>` (where it can never match `SWALLOW_ALLOWLIST`, which is keyed on `(file, function)`). A legitimately-loud handler inside a class method can therefore false-red with a confusing `<module>` scope name; conversely the allowlist key for such code is unreachable.\n  **Suggestion:** Also stop descending at `ast.ClassDef` in `_scope_nodes` (methods are separate scopes), or attribute findings to the innermost enclosing function/class.\n\n- **Category:** edge-case | **Severity:** low\n  **File:** integration-tests/test_stack_profile_resolution_e2e.py:81 (`_dev_server_services`)\n  **Finding:** The test imports the private `_get_services_resolved` and depends on its exact 3-tuple signature (`services, warnings, source`) and on `sys.argv[1]` path-hacking into `shared/scripts`. Any internal refactor of `dev_server.profile_config` breaks the e2e scenario for a reason unrelated to the behavior under test, and the subprocess exercises a private API rather than `dev_server.py` itself (the spec says the scenarios drive \"the real command-line entry points\").\n  **Suggestion:** Preferably drive `dev_server.py` (e.g. `--check`/status command) as a subprocess; if the private function must be used, pin the signature with a tight comment.\n\nOverall: the diff is a faithful, thorough implementation of S5 (test_runner per-layer hint with the verbatim-copy pin test, docs/stack-profiles.md, the py guard with reverse allowlist tests, discovery-vs-selection split, `--profile-root` with the file-mode pin test, index policy documented). The findings are refinements \u2014 the unverified `codebase-analysis.md:11` hand-off and the loose/undetermined user-level test assertions are the two that should be settled before merge. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
+    "at": "2026-10-24T19:31:39.257528+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

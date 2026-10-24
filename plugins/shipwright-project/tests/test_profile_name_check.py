@@ -166,3 +166,73 @@ def test_missing_shared_tree_is_an_install_error_not_a_bad_name(tmp_path, monkey
     monkeypatch.setattr(sys, "argv", ["write_run_config.py", "--project-root", str(tmp_path), "--profile", "vite-hono"])
     assert run_config_main() == 1
     assert "shared/` tree is incomplete" in capsys.readouterr().err
+
+
+def _load_project_config_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("write_project_config_s5", _PROJECT_CONFIG)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_file_mode_layout_finds_the_project_profile_through_profile_root(tmp_path):
+    """`/shipwright-project @requirements.md`: planning_dir is the requirements file's parent, which sits
+    OUTSIDE the project. Only --profile-root (both SKILL call sites pass it) locates `.shipwright/profiles/`;
+    it is lookup-only, so the config stays exactly where it was written before (beside planning's parent)."""
+    project = tmp_path / "project"
+    _profile(project, "my-stack")
+    notes = tmp_path / "notes"
+    notes.mkdir()
+    argv = [sys.executable, str(_PROJECT_CONFIG), "--planning-dir", str(notes), "--profile", "my-stack",
+            "--scope", "full_app", "--status", "in_progress"]
+    without = subprocess.run(argv, capture_output=True, text=True, check=False)
+    assert without.returncode == 4 and "my-stack" in without.stderr
+    with_root = subprocess.run([*argv, "--profile-root", str(project)], capture_output=True, text=True, check=False)
+    assert with_root.returncode == 0, with_root.stderr
+    assert json.loads((tmp_path / "shipwright_project_config.json").read_text())["profile"] == "my-stack"
+    assert not (project / "shipwright_project_config.json").exists()  # the write location did not move
+
+
+@pytest.mark.parametrize("sentinel", ["generic", "detecting"])
+def test_early_sentinel_call_skips_the_profile_check(tmp_path, monkeypatch, sentinel):
+    """in_progress + a reserved sentinel never reaches the resolver (no new failure mode for the early call)."""
+    import lib.profile_check as profile_check
+
+    def boom(*_a, **_k):
+        raise AssertionError("profile_error must not run for the early sentinel call")
+
+    monkeypatch.setattr(profile_check, "profile_error", boom)
+    module = _load_project_config_module()
+    plan_dir = tmp_path / "notes"
+    plan_dir.mkdir()
+    monkeypatch.setattr(sys, "argv", ["x", "--planning-dir", str(plan_dir), "--scope", "full_app",
+                                      "--project-root", str(tmp_path), "--status", "in_progress",
+                                      "--profile", sentinel])
+    assert module.main() == 0
+    assert json.loads((tmp_path / "shipwright_project_config.json").read_text())["profile"] == sentinel
+
+
+def test_missing_shared_tree_degrades_for_the_early_project_config_only(tmp_path, monkeypatch, capsys):
+    """Early (in_progress) call, like the gitignore merge: an incomplete shared tree warns on stderr and the
+    config is still written; a complete scaffold keeps the hard install error (exit 1, nothing written)."""
+    import lib.profile_check as profile_check
+
+    monkeypatch.setattr(profile_check, "_SHARED_SCRIPTS", str(tmp_path / "nowhere"))
+    module = _load_project_config_module()
+    plan_dir = tmp_path / "notes"
+    plan_dir.mkdir()
+    monkeypatch.setattr(sys, "argv", ["x", "--planning-dir", str(plan_dir), "--scope", "full_app",
+                                      "--project-root", str(tmp_path), "--status", "in_progress",
+                                      "--profile", "vite-hono"])
+    assert module.main() == 0
+    assert "profile check skipped" in capsys.readouterr().err
+    assert (tmp_path / "shipwright_project_config.json").is_file()
+    (tmp_path / "shipwright_project_config.json").unlink()
+    monkeypatch.setattr(sys, "argv", ["x", "--planning-dir", str(plan_dir), "--scope", "full_app",
+                                      "--project-root", str(tmp_path), "--status", "complete",
+                                      "--profile", "vite-hono"])
+    assert module.main() == 1
+    assert "incomplete" in capsys.readouterr().err
+    assert not (tmp_path / "shipwright_project_config.json").exists()

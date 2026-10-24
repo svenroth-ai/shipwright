@@ -1,0 +1,1 @@
+Custom stack profiles end to end: project interview offers them, docs/stack-profiles.md, a python guard against hand-built profile paths and swallowed resolver errors, and an integration test from a git worktree (campaign stack-profile-resolver S5)

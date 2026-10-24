@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-24-s5-interview-docs-e2e",
+  "date": "2026-10-24",
+  "section": "Iterate - change: custom stack profiles end to end",
+  "title": "Custom stack profiles reach the interview, docs and an end-to-end proof",
+  "context": "Campaign S1-S4 made loaders resolve custom stack profiles, but the project interview, user docs and an end-to-end proof were missing, and nothing stopped hand-built paths or swallowed resolver errors in python.",
+  "decision": "Interview lists and accepts custom profiles; a lookup-only --profile-root reaches write-project-config; docs/stack-profiles.md; an AST guard for *.py; an integration test from a git worktree.",
+  "consequences": "A python module that builds a profile path or swallows a resolver ValueError fails CI unless allowlisted; the config-location defect stays unchanged on purpose.",
+  "rationale": "The guard prevents hard-wired bundled paths silently ignoring custom profiles; the operator kept it over an OpenAI architecture reject (BRIEF rev 3 acceptance criterion).",
+  "rejected": "Relocating the project config via --project-root (adopted-repo and hook risk); no python guard (option C); extending the regex markdown guard to python.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-24-s5-interview-docs-e2e-custom-profiles-end-to-end.md"
+}

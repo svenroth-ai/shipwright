@@ -11,6 +11,9 @@ uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/generate_adoption_artifacts.py" \
   [--split-name <name>]
 ```
 
+Exit codes: `0` ok; `2` snapshot missing OR profile not found (read stderr, never branch on the code
+alone); `3` profile invalid or from a newer schema; `1` anything else. Nothing is written on 2/3.
+
 Writes — **in order**:
 
 1. `CLAUDE.md`
@@ -220,7 +223,7 @@ Writes — **in order**:
 
 14. **CI workflow scaffold (profile-aware).** Adopt picks the CI
     template that matches the stack profile detected earlier in the
-    pipeline (`snapshot.profile.matched`) and writes it to
+    pipeline (the EFFECTIVE profile: `--profile`, else `snapshot.profile.matched`) and writes it to
     `<root>/.github/workflows/ci.yml`. Three profiles ship templates
     today:
     - `supabase-nextjs` → `ci-supabase-nextjs.yml.template` (single
@@ -229,6 +232,10 @@ Writes — **in order**:
       `client-checks` + `server-checks`, both matrixed)
     - `python-plugin-monorepo` → `ci-python-plugin-monorepo.yml.template`
       (uv-driven, ruff + pyright + plugin-tests + integration-tests)
+
+    A custom profile, or a copy of a bundled one, gets NO bundled template (D9: provenance, not
+    name). Relay `results.ci_workflow.message` (and `results.codeql_workflow.message`) to the user;
+    `AUTOMERGE_SETUP.md` then lists fewer required checks.
 
     Every template ships with the **cross-platform OS matrix**
     (`ubuntu-latest` + `windows-latest`, `fail-fast: false`) so

@@ -182,7 +182,7 @@ def test_d6_declared_profile_keys_exist_in_the_schema():
         assert mod.PROFILE_KEYS_READ and set(mod.PROFILE_KEYS_READ) <= set(schema["properties"])
 
 
-def test_step_3_8_prose_shape_only_a_bundled_profile_path(tmp_path, monkeypatch, capsys):
+def test_legacy_bundled_profile_path_still_maps_to_its_name(tmp_path, monkeypatch, capsys):
     """legacy (pre-S4) shape: a bundled `--profile-path <shared>/profiles/<profile>.json` still maps to its name."""
     root = _project(tmp_path)
     gen = str(_SHARED / "profiles" / "generic.json")

@@ -8,10 +8,14 @@ See [project-scaffolding.md](project-scaffolding.md) for details.
 
 ## Profile detection
 
-1. Read the interview transcript and requirements
-2. Match against known profiles (e.g., "Supabase" + "Next.js" → `supabase-nextjs`)
-3. If a profile matched, load it (no match: skip to step 4): `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile_name}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop)
-4. If no match: use a generic profile structure
+1. Read the interview transcript and requirements.
+2. List the candidates: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" list --project-root "{project_root}" --json`. Each entry has `name`, `source` (`project`, `user` or `bundled`), `valid` and a short description; `warnings` lists candidates that were skipped. Offer only `valid: true` entries.
+3. Pick the profile (plain-language wording, see CLAUDE.md "Asking the user questions"):
+   - One built-in or custom candidate clearly fits the interview (for example "Supabase" + "Next.js" gives `supabase-nextjs`): propose it.
+   - The user may instead name a custom stack description of their own. Ask: "Do you want to use your own stack description (a file in your project's `.shipwright/profiles/` or in `~/.shipwright/profiles/`), or one of the built-in ones?" and let the user answer with the name of any listed candidate. Do not invent a name that is not in the list.
+   - Nothing fits, or the user declines: keep `generic` (no stack file, built-in defaults) and skip to step 5.
+4. Load the chosen profile: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile_name}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
+5. No match: use a generic profile structure.
 
 ## Generate these files in the project root
 
@@ -55,9 +59,12 @@ entry produces the error; the plugin one is fine.
 ```bash
 uv run "{plugin_root}/scripts/checks/write-project-config.py" \
   --planning-dir "{planning_dir}" \
+  --profile-root "{project_path}" \
   --profile "{profile_name}" \
   --scope "{scope}"
 ```
+
+`--profile-root` names the project whose `.shipwright/profiles/` is searched for the profile (lookup only; where the config is written does not change). Always pass it: with a requirements file (`@requirements.md`), `{planning_dir}` is that file's folder and says nothing about the project.
 
 On the `--status complete` (full-scaffold) path this also merges the
 canonical `.shipwright/` artifact-ignore block (SSoT:

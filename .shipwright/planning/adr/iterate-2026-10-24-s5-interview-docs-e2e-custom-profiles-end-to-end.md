@@ -1,0 +1,46 @@
+# Custom stack profiles reach the interview, the docs and an end-to-end proof
+
+Campaign stack-profile-resolver, unit S5 (last unit).
+
+## Decision
+
+- Project interview step 7 lists candidates from `resolve_profile.py list --json` (valid ones only), lets the user name a custom profile in plain language, and keeps `generic` when nothing fits.
+- `write-project-config.py` gains a lookup-only `--profile-root` (both SKILL call sites pass it) so a requirements file outside the project still finds `.shipwright/profiles/`. `--project-root` keeps its meaning (config location). The early `in_progress` call with `generic`/`detecting` skips the profile check; a missing shared tree degrades to a stderr warning.
+- The config-location defect (config under `<project>/.shipwright/` when only `--planning-dir` is passed) is left unchanged on purpose: relocating it risks adopted-repo overwrite and hook activation and needs its own reviewed change.
+- New `docs/stack-profiles.md` (locations, lookup order, committing, copy-and-rename, an explicit `command` on every declared layer, `schema_version`, shadow warning, trust). guide ch.5/4.2/App.B, hooks-and-pipeline and the CLAUDE.md "never hand-composed" sentence (now excepting `.shipwright/profiles/`) are reconciled.
+- `*.py` guard (`shared/tests/test_stack_profile_py_guard.py`): an AST check that no module builds a profile path outside the resolver and that no `except ValueError` around a resolver call swallows the error (re-raise, exit, return a failure, or branch on `.kind`). Both guards read the git index through `shared/tests/index_files.py` (one policy, documented there).
+- `test_runner` names the real `testing.<key>.command` per layer; S2/S3/S4 prose and test nits are applied.
+- An integration test builds a tmp project, runs from a git worktree and drives test_runner, dev_server, validate_env and adopt: source=project everywhere, schema_version too new fails every loader with one message while adopt discovery only warns, user-level profiles, bundled-name shadow (D9).
+
+## Architecture Review
+
+External, `--mode architecture`, over a brief about the `*.py` guard only: GLM approve (two low notes: the guard is heuristic so keep the call-name list discoverable; fall back to a text pattern if it passes about 200 lines or a third allowlist); OpenAI reject (medium: a permanent repo-wide scanner is disproportionate to a hypothetical regression; verify propagation through existing consumer tests; recommended option C, no guard). The runner halted the unit as its contract requires. Operator decision (2026-10-24): keep the BRIEF as written, the guard stays, because it prevents re-introducing hard-wired bundled-profile paths and swallowed resolver errors that would silently ignore custom profiles; the cost is one more test to maintain. OpenAI's dissent is overruled by the operator-approved BRIEF rev 3, where the guard is an acceptance criterion.
+
+## External-Plan-Review-Findings
+
+| Reviewer | Finding | Disposition |
+|---|---|---|
+| GLM+OpenAI (high) | `--project-root` at the call sites relocates `shipwright_project_config.json` | accepted-and-fixed (new lookup-only `--profile-root`; config location unchanged, pinned by a test) |
+| GLM (medium) | S4 accepted nits and the index-vs-working-tree policy missing from the plan | accepted-and-fixed (ls-files -z, dedupe, unmerged message, policy in `index_files.py`, commands-test widening and rename) |
+| GLM (medium) | record decisions on the BRIEF S4 item 3 amendment and the config location | accepted: config location left unchanged (above); BRIEF S4 item 3 NOT amended (contract change, a human call) |
+| GLM (medium) | verbatim-copy pin test for the per-layer hint | accepted-and-fixed (`test_test_runner_copied_bundled_profile.py`) |
+| GLM/OpenAI (medium) | discovery vs selection; "no match keeps generic" vs an explicit failing name | accepted-and-fixed (separate integration assertions; an explicit pick resolves and stops on failure) |
+| OpenAI (medium) | copied-profile contract missing from docs and tests | accepted-and-fixed (docs/stack-profiles.md; exit-3 hint test) |
+| OpenAI (medium) | index policy must be stated; reverse-exemption check kept | accepted-and-fixed |
+
+## Confidence Calibration
+
+Boundaries: resolver CLI/loader output consumed by four command loaders, and the profile name written by the project writer. Probes: (1) the four loaders run as subprocesses from a git worktree against a committed project profile: source project; (2) same with schema_version 99: exit 3 with one message in each; (3) adopt discovery with the same file: warning, candidate excluded, run continues; (4) planted-path and planted-swallow cases for the `*.py` guard, red then green. Probes with findings: 2 (`--project-root` relocating the config; a legacy-path canon lint hit on a test variable name), both fixed and re-probed. Not probed: a live Claude session answering the interview question (acceptable: the prose calls plain CLIs).
+
+## External-Code-Review-Findings
+
+| Reviewer | Finding | Disposition |
+|---|---|---|
+| GPT (medium) | path rule missed `Path(root) / ".shipwright/profiles/x.json"` (file below the directory) | accepted-and-fixed (any `/profiles/` component in a whitespace-free string; project and user planted cases) |
+| GPT (medium) | `except ValueError: sys.exit(0)` counted as loud | accepted-and-fixed (zero or omitted exit status, `raise SystemExit(0)` are swallows; planted cases) |
+| GLM (medium) | S3 hand-off `codebase-analysis.md:11` neither fixed nor verified | verified: S4 already replaced the bundled path with the lookup-order wording; nothing left to change |
+| GLM (medium) | integration test: env var assumption, loose adopt source assertion | accepted-and-fixed (the integration conftest isolates `SHIPWRIGHT_USER_PROFILES_DIR` per test; adopt asserted as `user-stack` / `user`) |
+| GLM (low) | import-error degrade also applied to `--status complete` | accepted-and-fixed (degrade only for the early `in_progress` call; complete exits 1 as before, pinned) |
+| GLM (low) | vacuous assertion in the copied-profile test | accepted-and-fixed (removed) |
+| GLM (low) | method try/except double-walked under `<module>` | accepted-and-fixed (classes are scope boundaries; planted method case) |
+| GLM (low) | e2e uses the private `_get_services_resolved` | rejected-with-reason: `dev_server.py` only starts, stops or reports services; the signature is pinned in a comment and by `test_dev_server_profile_resolution.py` |

@@ -189,8 +189,8 @@ Parse the JSON output.
 **Early config:** After setup succeeds, write a minimal project config for phase tracking (enables session handoff and phase detection if user stops early):
 ```bash
 uv run "{plugin_root}/scripts/checks/write-project-config.py" \
-  --planning-dir "{planning_dir}" --profile "detecting" --scope "{scope}" \
-  --status in_progress
+  --planning-dir "{planning_dir}" --profile-root "{project_path}" \
+  --profile "detecting" --scope "{scope}" --status in_progress
 ```
 This will be overwritten with the full config at Step 7.
 

@@ -78,7 +78,7 @@ These are consulted for design decisions but NOT used as HTML templates.
 2. Add 3 variable blocks (one per character) to `references/snippets-variables.md`
 3. Add the flavor to the table above
 4. Add a choice option in SKILL.md Step 3
-5. Optionally add profile support in the bundled stack profile of that name (the target for built-in flavors; a project or user profile of the same name replaces it, it does not merge) → `design_system.name`
+5. Optionally add profile support in the stack profile you target (for a built-in flavor, the bundled profile of that name; a project or user profile of the same name replaces it, it does not merge) → `design_system.name`
 
 ## Flavor Interface
 

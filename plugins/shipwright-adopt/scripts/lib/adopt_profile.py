@@ -51,7 +51,7 @@ def hint_warning(project_root: Path, hint: str) -> str | None:
     try:
         pc.resolve_named(hint, project_root, origin="--profile-hint", quiet=True)
     except ValueError as exc:
-        return f"--profile-hint {hint!r} does not resolve: {exc}"
+        return f"--profile-hint {hint!r} does not resolve ({getattr(exc, 'kind', 'error')}): {exc}"
     return None
 
 
