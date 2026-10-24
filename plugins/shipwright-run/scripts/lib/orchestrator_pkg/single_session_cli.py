@@ -6,12 +6,14 @@ Maps the subcommands the master drives to the pure loop functions in
   * ``single-session-next``  — resolve + claim + record the frontier phase task,
     or return a terminal signal (``complete`` / ``failed`` / ``needs_validation``).
   * ``single-session-apply`` — validate the phase-runner RESULT CONTRACT (read
-    from ``--result-json``) and route it through the lifecycle.
+    from ``--result-json``) and route it through the lifecycle; ``--override-reason``
+    completes over a failed phase gate (``phase_gate``).
 
 Exit-code map (shared with ``router.dispatch_lifecycle``):
     0 -> dispatch / terminal signal / successful apply
     2 -> fail-closed CAS reject on apply (stale_version / stale_session)
-    1 -> guard (mode_unsupported / no_config), claim failure, invalid result, IO error
+    1 -> guard (mode_unsupported / no_config), claim failure, invalid result, IO error,
+         phase_gate_failed / override refusals (nothing changed)
 """
 from __future__ import annotations
 
@@ -120,6 +122,7 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
         session_uuid=args.session_uuid,
         expected_version=args.version,
         result=payload,
+        override_reason=getattr(args, "override_reason", None),
     )
     # Durable phase-END at the apply boundary (B1/M-Pre-1) — pairs with the
     # phase_started emitted by single-session-next so the tracked

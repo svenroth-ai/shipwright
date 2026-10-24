@@ -1136,7 +1136,9 @@ After build completes: shows split summary table. After test completes: shows te
 > `.shipwright/run_loop_state.json`; **apply** validates the phase-runner RESULT
 > CONTRACT, **verifies on disk that every artifact an `ok:true` result claims
 > exists** (`orchestrator_context.verify_artifacts_exist` — a claimed-but-unwritten
-> artifact is rejected `artifacts_missing`, no completion), freezes splits when a
+> artifact is rejected `artifacts_missing`, no completion), runs the phase gate when
+> enforcing or overriding (`orchestrator_pkg/phase_gate.py`, off by default — see
+> § Override mechanism → *Driven-run gate and override*), freezes splits when a
 > design phase completes (so build fans out per split), routes the result through
 > `complete_phase_task` (an `ok:false` result strict-stops via `mark_phase_failed`,
 > planning NO successor), and advances the loop pointer. The phase-runner has a
@@ -1397,6 +1399,10 @@ MASTER writes shipwright_run_config.json (mode: single_session), then LOOPS:
    |       - validate the RESULT CONTRACT
    |       - verify_artifacts_exist  (a claimed-but-unwritten artifact ->
    |                                  artifacts_missing, NO completion)
+   |       - phase gate (phase_gate.py; enforcement OFF by default, or
+   |         --override-reason): run_phase_gate for the task's split + runId;
+   |         ask issues -> phase_gate_failed, NO mutation (master re-dispatches
+   |         with issues[]; MAX_GATE_RETRIES then ask_human | mark_phase_failed)
    |       - freeze_splits when a design phase completes
    |       - complete_phase_task (ok:false -> mark_phase_failed, NO successor)
    |         -> plan_next_phase appends the successor task
@@ -3771,11 +3777,14 @@ waived, gate_result, overridden_issues, inform_count}`, written by
 and no `--force` writes **no** entry, so the presence of a record is itself the
 signal.
 
-`gate_result` has three values: `fail` (ask-level findings were overridden —
+`gate_result` has four values: `fail` (ask-level findings were overridden —
 `waived: true`), `pass` (a validator ran and found nothing — force was used but
-nothing was actually waived), and `not_checked` (**no validator exists for this
+nothing was actually waived), `not_checked` (**no validator exists for this
 step**, e.g. `security`, which has no `_VALIDATORS` entry; recording that as `pass`
-would mint a claim that a gate had been satisfied where none exists).
+would mint a claim that a gate had been satisfied where none exists), and `degraded`
+(no ask-level finding, but a `kind: canon_degraded` note says the canon checks did not
+fully run — the verifiers were not importable or no run id was known — so `pass`
+would claim more than was checked).
 
 A **standalone** (bare-phase) invocation is excluded from the record: the gate is
 skipped and no entry is written, because the gate never ran and so nothing was
@@ -3810,6 +3819,45 @@ re-runs the gate) does not duplicate inform notes into the tracked dashboard.
 > `pipeline` (see § Invocation mode) would call `update-step` and could write
 > `status: "needs_validation"` — the same key `resolve_next_dispatch` reads before the
 > phase_tasks frontier — permanently halting a structurally healthy run.
+
+**Driven-run gate and override (`single-session-apply`, campaign
+brief-driven-run-a-real-gates A4).** The same validators run inside apply through
+`orchestrator_pkg/phase_gate.py`, between the artifact guard and `freeze_splits`, only for
+an `ok:true` result on a current (`version` + `sessionUuid`) `in_progress` task — so a
+stale apply keeps `stale_version` / `stale_session` and a double apply its idempotent
+answer. `run_phase_gate` gets the task's `splitId` and `config.get("runId")` unchanged
+(None when absent, so the canon bridge falls back to `SHIPWRIGHT_RUN_ID`; an explicitly
+blank `runId` stays blank and is ask-level there). A `canon_degraded` note counts as an ask-level finding here (a v2
+override over it records `fail`, not `degraded`), and a degraded or crashed (`[gate-error]`)
+check is `retryable: false`.
+
+- **Enforcement is OFF by default** (`ENFORCE_PHASE_GATE_DEFAULT`, a function parameter —
+  no config key or environment variable). Off and no override: the gate is not called and
+  apply is unchanged. A5 flips the default.
+- **Rejection:** `{ok:false, reason:"phase_gate_failed", issues, inform, checked, attempt,
+  max_gate_retries, retries_exhausted, retryable, terminal}`, exit 1, nothing written.
+  `terminal` is `null` while a retry is due (`run_loop_state.json.attempt` ≤
+  `MAX_GATE_RETRIES` = 2; `attempt` counts every dispatch of the task and resets on
+  advance / recover; `single-session-next` resets it when the pointer drifted to another
+  task). With no loop state for this run (a library apply that never went through
+  `single-session-next`) `attempt` is `null` and no cap applies; `single-session-next`
+  always writes one, so a driven run is always capped. Then `ask_human` (guided, or an unknown autonomy value — still non-mutating) or
+  `failed` (autonomous / unattended): apply calls `mark_phase_failed` with the issues and
+  returns the ordinary strict-stop shape (`ok:true`, `run_status:"failed"`) plus a `gate`
+  block; recoverable with `single-session-recover`.
+- **Override:** `--override-reason "<why>"` runs the gate (even with enforcement off) and
+  writes the `validation_overrides[]` record — plus `phase_task_id`, `split_id`,
+  `autonomy`, `entrypoint: "single-session-apply"` — in the **same locked write** as the
+  completion (`complete_phase_task(on_complete=...)`; a raising hook writes nothing and
+  returns `on_complete_failed`). Refused: a blank reason (`override_reason_required`), an
+  `ok:false` result (`override_requires_ok_result`), an `unattended` run
+  (`override_requires_human`) — checked only when the task is still open: a stale apply
+  keeps its CAS answer, and a double apply its idempotent one with
+  `override_skipped: "task_not_open"` (nothing recorded). The gate itself is read before
+  the lock, as on v1.
+- **Failed stays failed:** `complete_phase_task` refuses an `ok:true` completion of a
+  `failed` / `skipped` task (`invalid_status_for_completion`, exit 2) — only recover
+  re-opens one. Previously a re-apply could turn a failed task done.
 
 ---
 

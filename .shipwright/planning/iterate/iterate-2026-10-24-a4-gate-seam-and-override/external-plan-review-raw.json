@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 The retry cap counts **dispatches**, not gate rejections. A crash-resume re-dispatch of an in-progress task increments `loop_state.attempt`, so a task that crashed twice and then fails the gate once can hit `MAX_GATE_RETRIES` and terminal-fail (autonomous: `mark_phase_failed`) without ever having had `MAX` real gate retries. The plan acknowledges this in Risks but doesn't handle it.\n  **Suggestion:** Either track gate-rejection count separately from dispatch attempts, or have the gate/apply path distinguish \"attempt since last gate failure\" when computing `retries_exhausted`. At minimum, add a test for crash-resume exhaustion so the behaviour is deliberate.\n\n- **Category: dependency** \u2014 **Severity: medium** \u2014 `mark_phase_failed` is invoked on the autonomous terminal path, but the touch set only lists `phase_task_lifecycle.complete_phase_task`'s new `on_complete` hook. If `mark_phase_failed` doesn't already exist (or doesn't accept an issue summary), that's a missing dependency and code change.\n  **Suggestion:** Confirm `mark_phase_failed` exists with the needed signature; if it needs extension (issue summary, CAS semantics, pointer advance), add it to the touch set explicitly.\n\n- **Category: approach** \u2014 **Severity: medium** \u2014 The master's rejection handling (re-dispatch with `issues[]` brief, cap enforcement, terminal per autonomy) is realized only as prose/doc changes (`single-session-loop.md`, `SKILL.md` Step 5, `phase-runner.md`). If the master is genuinely an LLM following skill prose, fine \u2014 but then acceptance A4's \"retries stop at MAX_GATE_RETRIES with the specified terminal\" is tested only through the apply-path payload fields (`retries_exhausted`, `terminal`), not through any dispatcher behavior. Make sure the acceptance test actually exercises the apply-side payload and not an imagined master.\n  **Suggestion:** State explicitly in the plan that the master contract is enforced by the apply payload fields; test those fields directly.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 Guided + exhausted returns `terminal: \"ask_human\"` but leaves the task in_progress and (presumably) the loop pointer unchanged. In an unattended run configured `guided` this is a silent stall: nothing in this change halts the process waiting for the human.\n  **Suggestion:** Specify what the driver does on `ask_human` (halt the loop / exit non-zero) in `single-session-loop.md`, even if it's the existing ask convention.\n\n- **Category: risk** \u2014 **Severity: low** \u2014 \"Enforcement off and no override: payload byte-identical\" is a strong claim. The new `override_reason`/`enforce_gate` parameters and the `on_complete` hook in `complete_phase_task` change the completion write path for all runs; a subtle difference (key ordering, extra null fields, hook invocation overhead/exception) breaks the byte-identical requirement.\n  **Suggestion:** Add an explicit byte-diff regression test of the completion write with enforcement off, and ensure `on_complete=None` short-circuits before any serialization change.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 `terminal_for`: \"guided (or absent) -> ask_human; any other autonomy -> failed\". An unrecognized/typo'd autonomy value silently maps to `failed`, which is destructive (`mark_phase_failed`). Fail-closed on the destructive side is defensible, but should be stated.\n  **Suggestion:** Document that unknown autonomy levels are treated as autonomous/failed, and assert it in a test.\n\n- **Category: security** \u2014 **Severity: low** \u2014 `--override-reason` is free operator text written into run records. Ensure it's JSON-encoded through the normal record writer (not string-formatted into files) and length-capped reasonably; no injection risk beyond that given standard JSON dumping.\n  **Suggestion:** Verify `record_validation_override` uses the existing JSON writer; add a cap or note none is needed.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 `retry_position` returns 0 when runId/currentPhaseTaskId don't match. In the apply path this means the gate rejection payload's `attempt` may disagree with the real `loop_state.attempt` (which keeps counting). Two sources of truth for the same number.\n  **Suggestion:** Read the attempt from one place only (loop_state under the existing lock, or pass it in), or document that `retry_position` is only for display and the cap decision uses loop_state.\n\n**Overall assessment:** The approach is sound and faithfully follows the binding D4 design, including the hand-offs (run_id None-not-empty, degraded promotion, CAS/idempotency preservation). The main gaps are the dispatch-vs-rejection attempt accounting (which can spuriously terminal-fail a crash-resumed task) and unconfirmed `mark_phase_failed` availability; both are addressable within the current design without rework.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach \u00b7 Severity: high**  \n   **Finding:** Step 4 makes an exhausted autonomous `phase_gate_failed` response mutate task state and advance the loop pointer. This conflicts with the binding contract that a gate rejection is non-mutating and leaves the task in progress. It also makes the same rejection reason represent two different lifecycle outcomes.  \n   **Suggestion:** Keep apply rejection non-mutating. Let the master invoke `mark_phase_failed` as a separate terminal action after exhaustion, or explicitly resolve the contract discrepancy before implementation. Test rejection immutability separately from terminal failure.\n\n2. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** `retry_position` treats missing or mismatched loop state as attempt zero. Repeated applies in that state can keep returning `retries_exhausted: false`, defeating the hard cap. Malformed attempt values are also unspecified.  \n   **Suggestion:** Distinguish an unknown attempt from a valid zero. Under enforcement, require valid matching retry state before automatic redispatch; return a recoverable state error otherwise. Test missing, mismatched, and malformed state alongside the initial-dispatch-plus-two-retries boundary.\n\n3. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** `terminal_for` maps every unrecognized autonomy value to automatic failure, explicitly including future modes. A typo or newly introduced mode could therefore authorize a terminal mutation without a defined policy.  \n   **Suggestion:** Map supported autonomy values explicitly. Treat unknown values as a configuration error or require human intervention; add a test for an unsupported value.\n\nThe injectable gate and single completion path are sound, and the proposed tests cover the main acceptance cases. Resolve the rejection contract and make retry-state and autonomy handling explicit before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a4-gate-seam-and-override",
+    "at": "2026-10-24T20:17:46.112869+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

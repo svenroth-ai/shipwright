@@ -560,3 +560,4 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-539** (2026-10-08): Component — One F11 extension point and one closed reason-code vocabulary. → decision_log (ADR-539)
 - **ADR-540** (2026-10-08): Component — Finalization stops on an added or edited test that names no requirement. → decision_log (ADR-540)
 - **ADR-550** (2026-10-08): Component — Requirement gates: fixes answer, none-reasons are coded, no-FR labels are checked against the diff. → decision_log (ADR-550)
+- **iterate-2026-10-24-a4-gate-seam-and-override** (2026-10-24): Component + data-flow — new `orchestrator_pkg/phase_gate.py`: the phase gate inside `single-session-apply` (enforcement off by default, A5 flips), non-mutating `phase_gate_failed`, `MAX_GATE_RETRIES` on `run_loop_state.attempt`; `--override-reason` writes `run_config.validation_overrides[]` with the completion via `complete_phase_task(on_complete=)`. → decision_log (Run-ID).

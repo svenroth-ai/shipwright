@@ -1,0 +1,129 @@
+{
+  "run_id": "iterate-2026-10-24-a4-gate-seam-and-override",
+  "date": "2026-10-24T20:47:51.430272Z",
+  "event_at": "2026-10-24T19:23:17.321220+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "default",
+  "branch": "iterate/a4-gate-seam-and-override",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-24-a4-gate-seam-and-override/sub_iterate_spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-24-a4-gate-seam-and-override",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "enforcement off (default): gate never called, apply payload unchanged",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_enforcement_off_by_default_never_calls_the_gate PASSED"
+      },
+      {
+        "behavior": "failed gate = non-mutating phase_gate_failed (run_config bytes and loop state unchanged, task in_progress)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_a_failed_gate_is_a_non_mutating_rejection PASSED"
+      },
+      {
+        "behavior": "passing gate completes; gate block reports pass / not_checked",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_a_passing_gate_completes_and_reports_what_ran + test_a_gate_with_no_validator_reports_not_checked PASSED"
+      },
+      {
+        "behavior": "stale apply keeps stale_version; double apply of a done task stays idempotent (gate not called)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_a_stale_apply_keeps_its_cas_answer + test_a_double_apply_of_a_done_task_stays_idempotent PASSED"
+      },
+      {
+        "behavior": "failed task cannot be re-applied to done (invalid_status_for_completion, CLI exit 2)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_a_failed_task_cannot_be_reapplied_to_done + plugins/shipwright-run/tests/test_single_session_gate_override.py::test_the_cli_refuses_completing_a_failed_task_with_exit_2 PASSED"
+      },
+      {
+        "behavior": "retries stop at MAX_GATE_RETRIES: guided -> ask_human (non-mutating); autonomous -> mark_phase_failed strict-stop, recoverable",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_guided_retries_stop_at_the_cap_and_ask_the_human + test_autonomous_retries_stop_at_the_cap_and_fail_the_phase + test_the_cap_boundary PASSED"
+      },
+      {
+        "behavior": "unknown autonomy -> ask_human, unattended -> failed",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_unknown_autonomy_takes_the_non_destructive_terminal PASSED"
+      },
+      {
+        "behavior": "canon_degraded promoted to ask and non-retryable; crashing gate (injected or default) -> [gate-error], non-retryable",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_a_degraded_canon_run_is_ask_and_not_retryable + test_a_raising_gate_becomes_a_gate_error_issue + test_a_crash_inside_the_default_gate_is_not_retryable PASSED"
+      },
+      {
+        "behavior": "gate gets the task split and config.get('runId') unchanged (absent=None, blank stays blank)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_the_gate_gets_the_task_split_and_the_config_run_id + test_the_run_id_is_forwarded_unchanged_never_coerced PASSED"
+      },
+      {
+        "behavior": "retry position unknown without/with malformed loop state; drifted pointer resets the count; CAS-lost terminal reported",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_without_loop_state_the_retry_position_is_unknown + test_a_drifted_loop_pointer_restarts_the_count_for_the_claimed_task + test_a_failed_terminal_that_loses_the_cas_race_reports_it PASSED"
+      },
+      {
+        "behavior": "on_complete hook raising writes nothing (on_complete_failed)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_a_raising_completion_hook_writes_nothing PASSED"
+      },
+      {
+        "behavior": "--override-reason: blank refused, ok:false refused, unattended refused",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_override.py::test_an_override_needs_a_reason + test_an_override_of_a_failed_phase_result_is_refused + test_an_override_with_no_human_to_decide_is_refused PASSED"
+      },
+      {
+        "behavior": "override writes record (what/why, task, autonomy, entrypoint) in the same write as the completion; runs gate with enforcement off",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_override.py::test_an_override_records_what_and_why_with_the_completion + test_an_override_runs_the_gate_even_with_enforcement_off PASSED"
+      },
+      {
+        "behavior": "double/stale apply with override: no second record, override_skipped, CAS answer wins",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_override.py::test_a_double_apply_with_an_override_writes_no_second_record + test_a_stale_apply_with_an_override_keeps_its_cas_answer PASSED"
+      },
+      {
+        "behavior": "CLI --override-reason parsed and passed through; blank exits 1",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_override.py::test_the_cli_passes_override_reason_through + test_the_cli_refuses_a_blank_override_with_exit_1 PASSED"
+      },
+      {
+        "behavior": "v1 record: degraded canon -> gate_result degraded, v1 shape unchanged; v1 gate call forwards split_id/run_id=None",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_override.py::test_v1_records_a_degraded_canon_run_as_degraded_not_pass + plugins/shipwright-run/tests/test_validation_override_record.py::test_force_still_runs_the_phase_gate PASSED"
+      },
+      {
+        "behavior": "real project validator in the apply path: planted transcript runs the zero-traces check; planted bad grill trace rejected, fixed trace passes",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_override.py::test_the_zero_traces_check_runs_in_the_apply_path + test_a_planted_bad_artifact_is_rejected_and_passes_when_fixed PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 17,
+      "tested": 17,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-run --extra dev pytest tests/test_single_session_gate_seam.py tests/test_single_session_gate_override.py tests/test_single_session_cli.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 56,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-a-real-gates--A4\\.shipwright\\runs\\iterate-2026-10-24-a4-gate-seam-and-override\\surface_verification.log",
+    "timestamp": "2026-10-24T20:44:55.305Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component"
+  ]
+}

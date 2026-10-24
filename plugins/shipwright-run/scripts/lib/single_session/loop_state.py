@@ -44,6 +44,18 @@ LOOP_STATE_REL_PATH = Path(".shipwright") / "run_loop_state.json"
 # recovery).
 LOOP_STATUSES = ("running", "paused_human_gate", "stopped", "complete", "failed")
 
+# Cap on re-dispatching ONE phase task after the phase gate rejected it. Checked against
+# ``attempt``, which counts every dispatch of the current task (the first one, each
+# re-dispatch after any apply rejection, and crash-resume re-claims) and is reset to 0
+# when the loop advances or the task is recovered. So the cap means "at most
+# 1 + MAX_GATE_RETRIES dispatches of this task before a gate rejection is terminal".
+MAX_GATE_RETRIES = 2
+
+
+def gate_retries_exhausted(attempt: int) -> bool:
+    """True once a gate rejection at dispatch ``attempt`` must take the terminal."""
+    return int(attempt) > MAX_GATE_RETRIES
+
 
 def loop_state_path(project_root: Path) -> Path:
     """Canonical loop-state path for a project."""

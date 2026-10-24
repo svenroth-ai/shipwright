@@ -43,7 +43,8 @@ Repeat until a terminal signal:
    `dispatch.slashCommand` (the `phase` / `splitId`). Brief it with the phase
    context — **including `dispatch.phaseTaskId`, so it can load its prior-phase
    artifacts itself** via `get_phase_context.py --phase-task-id` (its Step 0; no hook can
-   inject context into a subagent). It runs that ONE phase skill, **writes every real
+   inject context into a subagent), and on a re-dispatch after a gate rejection the
+   rejection's `issues[]` (step 3). It runs that ONE phase skill, **writes every real
    output to DISK itself** (it has a Write path — see `plugins/shipwright-run/agents/
    phase-runner.md`), and returns a compact phase-runner RESULT CONTRACT (see
    `plugins/shipwright-run/scripts/lib/single_session/result_contract.py`):
@@ -74,6 +75,39 @@ Repeat until a terminal signal:
    routes the result through `complete_phase_task` (an `ok:false` result
    strict-stops via `mark_phase_failed`, planning NO successor), and advances the
    loop pointer. The `next` field carries the resolved next action — loop on it.
+
+   **The phase gate.** Between the artifact check and the completion, apply can run
+   the phase's own validators and canon checks (`orchestrator_pkg/phase_gate.py`).
+   Enforcement is **off by default** for now (it is switched on once every test runs on
+   real artifacts); with it off apply behaves exactly as above. When it runs and finds
+   ask-level issues, apply answers `ok:false`, `reason: "phase_gate_failed"` and changes
+   **nothing** — the task stays `in_progress`. Handle that answer by its `terminal`:
+   - `terminal: null` → a retry is due. Call `single-session-next` (it re-dispatches the
+     same task and counts the dispatch), then brief the phase-runner again **with
+     `issues[]`** — the rejection's `issues` copied verbatim as data — so it fixes those
+     findings and re-applies.
+   - `terminal: "ask_human"` (guided, after `MAX_GATE_RETRIES` = 2 retries, or at once
+     when `retryable: false` — a broken or incomplete check install that re-running cannot
+     fix). Stop and ask, in plain words, with the issues listed: **go ahead anyway** →
+     re-apply the same result with `--override-reason "<their reason>"`; **give it more
+     tries** → `single-session-recover` (fresh retry count), then `single-session-next`;
+     **stop the run** → `orchestrator.py mark-phase-failed` with the issues as `--error`.
+   - autonomous runs take the failed terminal themselves: apply returns the normal
+     strict-stop (`ok:true`, `run_status: "failed"`, `next.action: "failed"`) with a `gate`
+     block naming the issues. Surface it as any failed run (Step 6); it is recoverable
+     with `single-session-recover`.
+
+   The cap counts **every** dispatch of the task (`run_loop_state.json.attempt`,
+   including a crash-resume re-dispatch) and resets when the loop moves on or the task is
+   recovered. A gate that passes adds `gate: {result, checked, issues, inform}` to the
+   success payload; inform notes there are not persisted.
+
+   **Override (ASK FIRST).** `--override-reason "<why>"` on `single-session-apply` completes
+   a phase over its gate: the gate still runs, and its findings, the reason, the task and
+   the run's autonomy are written to `validation_overrides[]` in the same locked write as
+   the completion. A blank reason, an `ok:false` result and a run with no human
+   (`unattended`) are refused. Use it **only on a person's explicit answer** — never
+   because retries ran out.
 
    On resume, the master rebuilds pipeline context with a third subcommand:
    ```bash
@@ -107,8 +141,10 @@ Repeat until a terminal signal:
   advances the same either way.)
 - **Splits** fan out SERIALLY in v1: plan/01 → build/01 → plan/02 → build/02 →
   test. There is no parallel split path.
-- **Strict-stop:** any `ok:false` phase result halts the run with no successor.
-  Recover with `recover-phase-task` (Step 6), then re-enter the loop.
+- **Strict-stop:** any `ok:false` phase result (and an autonomous gate terminal) halts
+  the run with no successor. Recover with `single-session-recover` (Step 6), then
+  re-enter the loop; re-applying an `ok:true` result to a failed task is refused
+  (`invalid_status_for_completion`, exit 2).
 
 ## Resumability (SS5)
 
