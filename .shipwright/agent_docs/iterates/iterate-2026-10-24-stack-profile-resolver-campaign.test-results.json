@@ -1,0 +1,55 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-24-stack-profile-resolver-campaign",
+    "date": "2026-10-24",
+    "unit": {
+      "status": "passed",
+      "passed": 22602,
+      "total": 22699
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-24T07:01:43.504Z",
+      "attempts": 0,
+      "justification": "Planning document only: one campaign brief under .shipwright/planning/campaigns/ plus review artifacts; no runnable code, UI, API or contract changes.",
+      "reason_code": "docs-only-surface"
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-24-stack-profile-resolver-campaign",
+    "commit": "35dd16d88b759816bba0d3794d8fa038b0a98ab4",
+    "dirty": false,
+    "base": null,
+    "release": null
+  }
+}
