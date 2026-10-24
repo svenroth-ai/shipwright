@@ -33,10 +33,17 @@ from phase_validators_late import (  # noqa: E402
     _validate_deploy,
     _validate_test,
 )
+from phase_validators_split import _validate_design, _validate_plan  # noqa: E402
 
 
-def validate_phase(step: str, project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def validate_phase(
+    step: str, project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Validate a phase before marking it complete.
+
+    ``split_id`` is the phase task's own split (plan reads its sections from it);
+    ``run_id`` is handed to the canon bridge, which falls back to ``SHIPWRIGHT_RUN_ID``
+    only when it is None and reports a degraded note when no run id is known.
 
     Returns:
         (valid, issues) where valid=True means no ask-level issues.
@@ -45,10 +52,12 @@ def validate_phase(step: str, project_root: Path) -> tuple[bool, list[dict[str, 
     validator = _VALIDATORS.get(step)
     if validator is None:
         return True, []
-    return validator(project_root)
+    return validator(project_root, split_id=split_id, run_id=run_id)
 
 
-def _validate_project(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def _validate_project(
+    project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Project phase: config exists, splits defined, spec files present,
     plus the iterate 12.1 Minimum Phase Completion Canon (C1/C2/C3/C4/C5
     + phase_history + ADR integrity) via the modular verifier.
@@ -89,86 +98,14 @@ def _validate_project(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     # shared _run_canon_checks bridge. ERROR-severity failures surface
     # as ask-level issues (block pipeline), WARNING results surface as
     # inform-level notes.
-    _run_canon_checks("project", project_root, issues)
+    _run_canon_checks("project", project_root, issues, run_id=run_id)
     has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 
 
-def _validate_design(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Design phase: mockup HTML files exist (ASK — design may be
-    intentionally skipped). Iterate 12.2 augments with the modular
-    ``design_checks`` verifier (manifest screen existence, FR coverage,
-    canon C1/C2/C3/C5, ``phase_history``, ADR integrity). C4 is skipped
-    by policy — design is a transformation, not a decision-taking phase.
-    """
-    issues: list[dict[str, str]] = []
-    config = read_config("project", project_root)
-    splits = config.get("splits", [])
-
-    missing_mockups = []
-    for sp in splits:
-        name = sp.get("name", "")
-        mockup_dir = project_root / ".shipwright" / "planning" / name / "mockups"
-        if not mockup_dir.exists() or not list(mockup_dir.glob("*.html")):
-            missing_mockups.append(name)
-
-    if missing_mockups:
-        issues.append({
-            "severity": "ask",
-            "message": (
-                f"No mockups found for splits: {', '.join(missing_mockups)}. "
-                "Was design skipped intentionally?"
-            ),
-        })
-        return False, issues
-
-    _run_canon_checks("design", project_root, issues)
-    has_ask = any(i["severity"] == "ask" for i in issues)
-    return not has_ask, issues
-
-
-def _validate_plan(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Plan phase: sections defined and section files exist. Iterate 12.2
-    augments with the modular ``plan_checks`` verifier (config status,
-    section manifest drift, FR orphans, section id validity, canon
-    C1/C2/C3/C4, ``phase_history``, ADR integrity). C5 is skipped by
-    policy — plan is an internal decomposition, not user-facing.
-    """
-    issues: list[dict[str, str]] = []
-    build_config = read_config("build", project_root)
-
-    sections = build_config.get("sections", [])
-    if not sections:
-        issues.append({
-            "severity": "ask",
-            "message": "No sections found in build config. Did /shipwright-plan complete?",
-        })
-        return False, issues
-
-    current_split = build_config.get("current_split", "")
-    missing_files = []
-    for sec in sections:
-        name = sec.get("name", "")
-        section_path = project_root / ".shipwright" / "planning" / current_split / "sections" / f"{name}.md"
-        if not section_path.exists():
-            missing_files.append(name)
-
-    if missing_files:
-        issues.append({
-            "severity": "ask",
-            "message": (
-                f"Missing section files for: {', '.join(missing_files)}. "
-                "Continue without them?"
-            ),
-        })
-        return False, issues
-
-    _run_canon_checks("plan", project_root, issues)
-    has_ask = any(i["severity"] == "ask" for i in issues)
-    return not has_ask, issues
-
-
-def _validate_build(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
+def _validate_build(
+    project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
+) -> tuple[bool, list[dict[str, str]]]:
     """Build phase: all current-split sections complete with tests.
 
     Uses ``collect_all_build_sections`` to check only the current
@@ -211,7 +148,7 @@ def _validate_build(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         return False, issues
 
-    _run_canon_checks("build", project_root, issues)
+    _run_canon_checks("build", project_root, issues, run_id=run_id)
     has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 

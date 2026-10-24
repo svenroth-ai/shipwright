@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-24-a3-validator-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:12:37.919849+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Plan ownership remains ambiguous when `split_id` is supplied but `build_config.current_split` is absent. The proposed mismatch check does not cover this state, so existing sections could satisfy validation without evidence that they belong to the task’s split.",
+          "suggestion": "Define this case explicitly. Validate split-specific sections where available; otherwise return `ask` when section ownership cannot be established. Add a test with populated sections, an explicit task split, and no `current_split`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Converting every caught `ImportError` into an informational degradation can hide a broken canon installation—for example, an available canon module whose internal dependency fails to import. That differs from the supported legacy environment where canon is unavailable.",
+          "suggestion": "Limit the degradation handler to the optional canon import and distinguish an absent canon module from failures inside it. Preserve the normal failure behavior for internal import errors, with separate tests for both cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "A structured `kind: canon_degraded` note does not by itself establish the required visible degraded result. The listed tests do not explicitly verify that the existing result formatter or v1 history path preserves and displays it.",
+          "suggestion": "Add a focused test through the current result consumer for both unavailable canon and missing run ID, confirming that the degradation reaches the user-visible output.  The approach is focused and largely sound, including reuse of the split authority and backward-compatible keyword arguments. Resolve the ownership gap and narrow the import-error handling before proceeding to A4.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T19:07:30.011014+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] <no review returned: openai package not installed>\n\n[openai] Review based on the supplied mini-plan; local file access was blocked, so I could not verify BRIEF acceptance A3 or the existing implementation.\n\n1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Plan ownership remains ambiguous when `split_id` is supplied but `build_config.current_split` is absent. The proposed mismatch check does not cover this state, so existing sections could satisfy validation without evidence that they belong to the task’s split.  \n   **Suggestion:** Define this case explicitly. Validate split-specific sections where available; otherwise return `ask` when section ownership cannot be established. Add a test with populated sections, an explicit task split, and no `current_split`.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Converting every caught `ImportError` into an informational degradation can hide a broken canon installation—for example, an available canon module whose internal dependency fails to import. That differs from the supported legacy environment where canon is unavailable.  \n   **Suggestion:** Limit the degradation handler to the optional canon import and distinguish an absent canon module from failures inside it. Preserve the normal failure behavior for internal import errors, with separate tests for both cases.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** A structured `kind: canon_degraded` note does not by itself establish the required visible degraded result. The listed tests do not explicitly verify that the existing result formatter or v1 history path preserves and displays it.  \n   **Suggestion:** Add a focused test through the current result consumer for both unavailable canon and missing run ID, confirming that the degradation reaches the user-visible output.\n\nThe approach is focused and largely sound, including reuse of the split authority and backward-compatible keyword arguments. Resolve the ownership gap and narrow the import-error handl […truncated]",
+      "verdicts": {
+        "glm": "unavailable",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_planning.py",
+          "line": 69,
+          "finding": "Split resolver read with utf-8 not utf-8-sig; a BOM config yields no splits and the design gate asks.",
+          "suggestion": "utf-8-sig and catch UnicodeDecodeError.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": 16,
+          "finding": "Importing phase_task_planning pulls phase_task_core and its sys.path.insert(0) side effect.",
+          "suggestion": "Accept and document, or move the resolver into a leaf module.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": 143,
+          "finding": "Plan validator does not check split_id membership (design does).",
+          "suggestion": "Same membership check as design.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": 118,
+          "finding": "v1 completions without SHIPWRIGHT_RUN_ID record a canon-degraded inform note each (dashboard churn) until A4.",
+          "suggestion": "No change if A4 is next.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_late.py",
+          "line": 16,
+          "finding": "_skip_reason is stricter (non-blank str) than before; undocumented.",
+          "suggestion": "Document in the docs test row.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 3742,
+          "finding": "Plan row omits the archived-split fallback.",
+          "suggestion": "Append the archive fallback.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/tests/test_phase_validators_split.py",
+          "line": 845,
+          "finding": "Late and canon tests live in the split test file at ~300 LOC.",
+          "suggestion": "Move them to their own modules' test files.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T19:50:08.635796+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "A design skip is read only from orchestrator-owned state",
+          "suggestion": "phase_tasks skipped is self-writable via recover-phase-task --force-status skipped and launders a skip into a clean pass; drop that branch, test the recover-then-complete sequence.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "The no-UI early return only removes the screens check",
+          "suggestion": "It skipped the whole design canon; still run canon checks, skip only the screens check.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": null,
+          "finding": "A degraded canon run can never be mistaken for a pass",
+          "suggestion": "Reword the doc claim; A4 must treat degraded as ask in unattended mode.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": null,
+          "finding": "Explicit empty run_id ask-level is safe until A4",
+          "suggestion": "A4 must pass config.get('runId') (None when absent), never coerce to ''.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py",
+          "line": null,
+          "finding": "Enforcement stays off until A4",
+          "suggestion": "New ask cases are live on v1 update-step today; record that.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "split_id cannot steer the plan check outside the planning tree",
+          "suggestion": "Plan membership check on split_id.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-24T19:50:08.774264+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": 80,
+          "finding": "Supplying `split_id` bypasses the required failure when no splits resolve. With no split configuration, no global screens, and an HTML file under `planning/01-a/mockups/`, `validate_phase(\"design\", ..., split_id=\"01-a\")` passes the local check because `wanted` becomes nonempty and membership validation is conditional on `splits` being nonempty. This contradicts the stated “no screens and no splits is a failure” behavior.",
+          "suggestion": "Reject an empty resolved split list before constructing `wanted`, and require an explicit `split_id` to belong to that list. Add a regression test supplying an explicit split and existing mockups without any configured splits.  Ship-with-fixes: the diff largely implements the described changes, but the design gate has a concrete split-validation bypass. The full BRIEF was unavailable, so compliance beyond the supplied specification could not be verified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-24T19:12:26.093975+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] <no review returned: openai package not installed>\n\n[openai] - Category: edge-case\n- Severity: medium\n- File: plugins/shipwright-run/scripts/lib/phase_validators_split.py:80\n- Finding: Supplying `split_id` bypasses the required failure when no splits resolve. With no split configuration, no global screens, and an HTML file under `planning/01-a/mockups/`, `validate_phase(\"design\", ..., split_id=\"01-a\")` passes the local check because `wanted` becomes nonempty and membership validation is conditional on `splits` being nonempty. This contradicts the stated “no screens and no splits is a failure” behavior.\n- Suggestion: Reject an empty resolved split list before constructing `wanted`, and require an explicit `split_id` to belong to that list. Add a regression test supplying an explicit split and existing mockups without any configured splits.\n\nShip-with-fixes: the diff largely implements the described changes, but the design gate has a concrete split-validation bypass. The full BRIEF was unavailable, so compliance beyond the supplied specification could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "unavailable",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:50:08.496107+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:09:09.970460+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T19:07:29.837117+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+fix(run): phase validators check design screens where the design phase writes them, use the same split list as the split loop, judge the plan task's own split, accept `skip_reason` for every test layer, and report canon checks that could not run (missing verifiers or run id) instead of passing silently

@@ -1,0 +1,45 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "status": "error",
+      "reason": "openai package not installed"
+    },
+    "openai": {
+      "feedback": "- Category: edge-case\n- Severity: medium\n- File: plugins/shipwright-run/scripts/lib/phase_validators_split.py:80\n- Finding: Supplying `split_id` bypasses the required failure when no splits resolve. With no split configuration, no global screens, and an HTML file under `planning/01-a/mockups/`, `validate_phase(\"design\", ..., split_id=\"01-a\")` passes the local check because `wanted` becomes nonempty and membership validation is conditional on `splits` being nonempty. This contradicts the stated \u201cno screens and no splits is a failure\u201d behavior.\n- Suggestion: Reject an empty resolved split list before constructing `wanted`, and require an explicit `split_id` to belong to that list. Add a regression test supplying an explicit split and existing mockups without any configured splits.\n\nShip-with-fixes: the diff largely implements the described changes, but the design gate has a concrete split-validation bypass. The full BRIEF was unavailable, so compliance beyond the supplied specification could not be verified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "partially_degraded": true,
+  "partially_degraded_legs": [
+    "glm"
+  ],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-24-a3-validator-fixes",
+    "at": "2026-10-24T19:11:41.843573+00:00"
+  },
+  "verdicts": {
+    "glm": "unavailable",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "error",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 glm did not (glm=unavailable, openai=revise)"
+  }
+}

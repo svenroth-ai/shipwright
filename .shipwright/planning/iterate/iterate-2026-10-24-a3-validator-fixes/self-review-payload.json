@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"A3 acceptance: global screens + per-split fallback via freeze_splits authority, non-UI/skipped-task passes, plan uses task split, both skip keys, canon ImportError and run id surfaced; phase_validators.py shrank 228->165."},
+{"name":"Error Handling","verdict":"pass","note":"Config reads tolerate absent/corrupt/non-object JSON; split resolver now guards non-dict configs; canon import failures classified, never swallowed."},
+{"name":"Security Basics","verdict":"pass","note":"Design skip is read only from orchestrator-owned run_config, never a file the gated phase writes (review finding fixed)."},
+{"name":"Test Quality","verdict":"pass","note":"30 new tests in the run plugin root incl. consumer path via run_phase_gate; 630 run-plugin tests green; changed modules at 100% line coverage."},
+{"name":"Performance Basics","verdict":"pass","note":"Only a few small file reads and one directory glob per validation."},
+{"name":"Naming & Structure","verdict":"pass","note":"Split-aware validators in their own sibling module; all files under 300 lines; kind=canon_degraded as a machine-readable marker."},
+{"name":"Affected Boundaries","verdict":"pass","note":"validate_phase gains defaulted keywords only; existing callers (run_phase_gate, tests) unchanged and round-trip-tested through run_phase_gate."}]}

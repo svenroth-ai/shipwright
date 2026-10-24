@@ -3727,17 +3727,19 @@ F11 `check_spec_impact_recorded` WARNs (does not fail) on a justified `none` wit
 
 **File:** `plugins/shipwright-run/scripts/lib/phase_validators.py`
 
-The test / changelog / deploy / compliance validators live in `phase_validators_late.py` and the canon bridge in `phase_validators_canon.py`; `phase_validators.py` re-exports them (`_VALIDATORS` is unchanged).
+The test / changelog / deploy / compliance validators live in `phase_validators_late.py`, the split-aware design / plan validators in `phase_validators_split.py`, and the canon bridge in `phase_validators_canon.py`; `phase_validators.py` re-exports them into `_VALIDATORS`.
+
+`validate_phase(step, project_root, *, split_id=None, run_id=None)`: `split_id` is the phase task's own split, `run_id` goes to the canon bridge (which falls back to `SHIPWRIGHT_RUN_ID` only when it is None). Split membership comes from `phase_task_planning._resolve_splits_with_fallback` — the same authority `freeze_splits` uses (design config first, then project config). A canon check that did not run is visible as a note (`kind: canon_degraded`), but an inform-level one leaves the result `valid=True`; A4 must treat a degraded result as ask in unattended mode. An absent verifier package (`tools.verifiers` cannot be located), or no run id at all (so `phase_history` was not checked), adds an inform note prefixed `[canon-degraded]` with `kind: canon_degraded`; a locatable verifier package that fails to import, or an explicitly empty `run_id`, is ask-level with the same `kind`. Only `scope=library` counts as a no-UI run for design today; the brief's `ux_shape` / `ui_host` must extend that one rule (mirrored from `design_checks._NO_UI_SCOPES` and pinned equal by a test), not add a second. Until the gate callers pass `run_id` (campaign A4), a v1 `update-step` without `SHIPWRIGHT_RUN_ID` records the inform note on every completion.
 
 Called by `orchestrator.py:update_step()` before marking a phase complete. Returns issues with severity `ask` or `inform`.
 
 | Phase | Severity | Validation Check |
 |-------|----------|-----------------|
 | project | ASK | Config exists, splits defined, spec.md per split |
-| design | ASK | Mockup HTML files exist (may be intentionally skipped) |
-| plan | ASK | Sections defined in build config, section .md files exist |
+| design | ASK | Screens exist in `.shipwright/designs/screens/*.html`; otherwise legacy `.shipwright/planning/<split>/mockups/*.html` for every split (or the task's split). No screens and no splits asks. A run with no UI (`scope=library` in `shipwright_run_config.json`) skips only this screen check, with an inform note — the canon checks still run. A `skipped` design task in `phase_tasks[]` is no exemption (reachable via `recover-phase-task --force-status skipped`) |
+| plan | ASK | Sections defined in build config, section .md files exist under the task's split, which must be one of the resolved splits when there are any (falls back to `current_split`; asks when the build config's `current_split` names another split, unless that split's sections are archived under `split_<prefix>_sections`, which are then used) |
 | build | ASK | All current-split sections complete, all have tests_total > 0 |
-| test | ASK | `shipwright_test_results.json` exists; all layers have results or valid skip reason; unit/smoke must pass (outcomes checked); E2E failures logged as inform-level warnings |
+| test | ASK | `shipwright_test_results.json` exists; all layers have results or a skip reason (`reason` or `skip_reason`, a non-blank string); unit/smoke must pass (outcomes checked); E2E failures logged as inform-level warnings |
 | changelog | ASK | `CHANGELOG.md` exists |
 | deploy | PASS | Always passes |
 
@@ -5281,7 +5283,7 @@ caller-supplied run id turned out to be unusable in both directions:
   iterate run pointer → run-config → `run_started` event → loop vars →
   **session UUID** (the pointer names an *iterate* run, never one of the
   pipeline phases C3 audits), while
-  `phase_validators._run_canon_checks` reads `SHIPWRIGHT_RUN_ID` from a
+  `phase_validators_canon._run_canon_checks` (when its caller passes no run id) reads `SHIPWRIGHT_RUN_ID` from a
   hook-launched subprocess that never inherits the skill's shell export.
   Neither is the id the writer stamped.
 
@@ -5638,7 +5640,7 @@ shared/scripts/lib/
 Matrix is **code-level coverage**, not runtime status on any given project.
 Every cell is derived from a grep audit of `plugins/shipwright-<phase>/skills/<phase>/SKILL.md`
 (tool call present in finalization step), `shared/scripts/tools/verifiers/<phase>_checks.py`
-(check function present), and `plugins/shipwright-run/scripts/lib/phase_validators.py::_validate_<phase>`
+(check function present), and `plugins/shipwright-run/scripts/lib/phase_validators.py`'s `_VALIDATORS[<phase>]` (defined there or in `phase_validators_split.py` / `phase_validators_late.py`)
 (wired through `_run_canon_checks`).
 
 Legend: ✅ present · ⏭ skip by policy · n/a not applicable
