@@ -140,7 +140,7 @@ def _propagates(handler: ast.ExceptHandler) -> bool:
     """The handler lets the error through: bare ``raise``, ``raise exc`` or ``raise ... from exc``."""
     for n in _scope_nodes(handler, lambdas=True):
         if isinstance(n, ast.Raise):
-            named = lambda x: isinstance(x, ast.Name) and x.id == handler.name  # noqa: E731
+            named = lambda x: isinstance(x, ast.Name) and x.id == handler.name
             if n.exc is None or named(n.exc) or named(n.cause):
                 return True
     return False
