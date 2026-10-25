@@ -202,7 +202,7 @@
         "version": {
           "type": "integer",
           "minimum": 1,
-          "description": "Bumped by recover-phase-task. Used in CAS by complete-phase-task and mark-phase-failed."
+          "description": "Bumped by recover-phase-task and by every re-dispatch of an in_progress task (single-session-next: gate retry, crash resume), so only the newest dispatch's version can apply. Used in CAS by complete-phase-task and mark-phase-failed."
         },
         "status": { "$ref": "#/$defs/PhaseTaskStatus" },
         "title": { "type": "string" },
@@ -227,7 +227,7 @@
         "executionCount": {
           "type": "integer",
           "minimum": 0,
-          "description": "Monotonic. Incremented by recover-phase-task."
+          "description": "Monotonic. Incremented by a fresh claim (claim-phase-task); a recover or a re-dispatch leaves it unchanged."
         },
         "createdAt": { "type": "string", "format": "date-time" },
         "awaitingLaunchAt": { "type": ["string", "null"] },
@@ -240,6 +240,29 @@
         "errors": {
           "type": "array",
           "items": { "type": "string" }
+        },
+        "skipReason": {
+          "type": "string",
+          "description": "Why the task was forced to skipped (recover-phase-task / single-session-recover --force-status skipped --reason, required there; one line, max 500 chars). Operator text: render it as data. Removed by any later recover."
+        },
+        "gate": {
+          "type": "object",
+          "description": "What the phase gate said when single-session-apply completed this task (pass, or under --override-reason), written in the same locked write as the completion. Inform notes are counted, not stored. Removed by any later recover.",
+          "properties": {
+            "result": { "enum": ["pass", "not_checked", "fail"] },
+            "checked": { "type": "boolean" },
+            "phase": { "type": "string" },
+            "splitId": { "type": ["string", "null"] },
+            "runId": { "type": ["string", "null"], "description": "The run id the canon phase_history check was run against (gate_run_id.canon_run_id)." },
+            "at": { "type": "string" },
+            "issueCount": { "type": "integer", "minimum": 0 },
+            "informCount": { "type": "integer", "minimum": 0 },
+            "overridden": { "type": "boolean" }
+          }
+        },
+        "redispatchedAt": {
+          "type": ["string", "null"],
+          "description": "When single-session-next last re-dispatched this in_progress task (and rotated its version). Removed by any later recover."
         },
         "establishedAtAdoption": {
           "type": "boolean",

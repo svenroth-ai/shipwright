@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-gate-honesty-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:11:57.469276+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Scope rotation to the gate-rejection re-dispatch path specifically (pass a `cause` into `begin_dispatch` / `redispatch_phase_task`), or verify the task actually transitioned through `phase_gate_failed` before bumping. If rotation on crash-resume is intentional, state explicitly how a resumed runner gets the new descriptor (it does — the response carries it) and confirm the duplicate-poll case can't happen in the loop's call sites.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "One test line: 600-char reason → stored 500 chars.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Either accept and note it, or check the `record_event` exit code and warn loudly (don't roll back the skip).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Pass the whole verdict into `gate_record` and read `run_id` there.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Run the shared/tests suites listed in step 5 before assuming green; grep for exact-dict comparisons on `phase_tasks`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Recovery clears `skipReason` but does not clear an existing `gate` record. A previously completed phase reopened to `awaiting_launch` could retain its old pass or override record through a new dispatch and gate rejection, making the record misleading.",
+          "suggestion": "Clear `gate` when recovery invalidates the previous completion, in the same locked write. Test complete → recover → dispatch → reject, verifying that the old gate record is absent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The skip status is committed before `phase_skipped` is appended. If event recording fails, the task remains skipped without the required audit event; retrying the command may produce duplicates. The plan does not define this partial-success behavior, despite AC-3 requiring one event.",
+          "suggestion": "Define explicit event-write failure and retry behavior. Use an existing durable event mechanism if available, or persist a stable recovery operation identifier that allows the event append to be retried without duplication. Add a test that injects an event-write failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Token rotation introduces a concurrency boundary that the proposed sequential fencing tests do not exercise. An older apply could race with redispatch, particularly if completion checks the version before acquiring the write lock.",
+          "suggestion": "Verify that version validation and completion mutation occur under the same lock used by redispatch. Add a targeted race test: when redispatch commits first, the older apply must return `stale_version` without task, override, or completion-event changes.  The approach is sound and appropriately reuses the existing version counter. Address stale gate records, skip-event partial failures, and the atomic fencing guarantee before implementation is considered complete. This assessment is based on the supplied plan; filesystem policy prevented code inspection.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T05:53:51.546130+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: risk · Severity: medium** — AC-6 / work item 3 rotates `version` on *every* idempotent re-entry (\"gate retry **or crash resume**\"). But idempotent re-entry is also the path a *live* phase-runner takes if it re-calls `single-session-next` for any benign reason (retry after a transient error, duplicate poll). Rotating there invalidates the very runner that's still working: its next `single-session-apply` is refused `stale_version` even though nothing was actually re-dispatched. That converts a previously safe duplicate call into a forced phase restart.\n  **Suggestion:** Scope rotation to the gate-rejection re-dispatch path specifically (pass a `cause` into `begin_dispatch` / `redispatch_phase_task`), or verify the task actually transitioned through `phase_gate_failed` before bumping. If rotation on crash-resume is intentional, state explicitly how a resumed runner gets the new descriptor (it does — the response carries it) and confirm the duplicate-poll case can't happen in the loop's call sites.\n\n- **Category: edge-case · Severity: low** — `skipReason` \"stripped, capped at 500 chars\" silently truncates. A recovery reason is operator-authored; silent truncation is fine, but decide: truncate or reject `skip_reason_too_long`. Spec says cap; the mini-plan doesn't say which. Truncate is fine — just assert it in the test.\n  **Suggestion:** One test line: 600-char reason → stored 500 chars.\n\n- **Category: edge-case · Severity: low** — The `phase_skipped` event is emitted by the router *after* the config write. If the event subprocess fails, the skip is durable but the audit trail is lost — the exact \"leaves no trace\" problem this change exists to fix. The `phase_completed` dedup event loss is declared out of scope, but this is a new ordering issue.\n  **Suggestion:** Either accept and note it, or check the `record_event` exit code and warn loudly (don't roll back the skip).\n\n- **Category: edge-case · Severity: low** — `redispatch_phas […truncated]\n\n[openai] 1. **Category: edge-case · Severity: medium**  \n   **Finding:** Recovery clears `skipReason` but does not clear an existing `gate` record. A previously completed phase reopened to `awaiting_launch` could retain its old pass or override record through a new dispatch and gate rejection, making the record misleading.  \n   **Suggestion:** Clear `gate` when recovery invalidates the previous completion, in the same locked write. Test complete → recover → dispatch → reject, verifying that the old gate record is absent.\n\n2. **Category: risk · Severity: medium**  \n   **Finding:** The skip status is committed before `phase_skipped` is appended. If event recording fails, the task remains skipped without the required audit event; retrying the command may produce duplicates. The plan does not define this partial-success behavior, despite AC-3 requiring one event.  \n   **Suggestion:** Define explicit event-write failure and retry behavior. Use an existing durable event mechanism if available, or persist a stable recovery operation identifier that allows the event append to be retried without duplication. Add a test that injects an event-write failure.\n\n3. **Category: edge-case · Severity: medium**  \n   **Finding:** Token rotation introduces a concurrency boundary that the proposed sequential fencing tests do not exercise. An older apply could race with redispatch, particularly if completion checks the version before acquiring the write lock.  \n   **Suggestion:** Verify that version validation and completion mutation occur under the same lock used by redispatch. Add a targeted race test: when redispatch commits first, the older apply must return `stale_version` without task, override, or completion-event changes.\n\nThe approach is sound and appropriately reuses the existing version counter. Address stale gate records, skip-event partial failures, and the atomic fencing guarantee before implementation is considered complete. This assessment is based on the supplied plan […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:11:57.841188+00:00",
+      "disposition": "standalone iterate dispatched by an orchestrator that runs the spec/code/doubt cascade itself (operator instruction); iteration-reviews.md Campaign sub-iterate rows",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:11:57.964145+00:00",
+      "disposition": "standalone iterate dispatched by an orchestrator that runs the spec/code/doubt cascade itself (operator instruction); iteration-reviews.md Campaign sub-iterate rows",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:200 (`if phase == \"design\" and result.get(\"ok\") and gate_due:`)",
+          "line": null,
+          "finding": "The split freeze is now additionally conditioned on `gate_due`, but `gate_due` is not a staleness check (the comment says \"a stale apply freezes nothing\" — the stale fence is the CAS in the completion hook, not this condition). An ok design result applied with the gate not due (`enforce_gate=False`, which the diff's own tests exercise for the project phase) now completes without freezing splits, where the old code froze unconditionally. If there is any production or library path that completes a design ungated, `splits_frozen`/`splitMode` are silently never written and plan/build do not fan out per split.",
+          "suggestion": "Drop the `gate_due` conjunct — the hook already refuses to write for a stale version under the lock — or assert in tests that an ungated design completion is impossible in production paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:201-204",
+          "line": null,
+          "finding": "The freeze-failure path changed shape: previously `freeze_splits`'s structured failure (`ok:false` + `blockMessage`, e.g. a lock-timeout converted by `_guard_lock_timeout` into a dict) surfaced with its `blockMessage`/`freeze_result`; now only exceptions raised by `_resolve_splits_with_fallback` are caught and the error is just `str(exc)`. A non-raising failure return from the resolve chain (empty tuple, unexpected shape) would silently proceed as \"no splits\" rather than fail.",
+          "suggestion": "Verify `_resolve_splits_with_fallback` can only fail by raising, and keep a structured `blockMessage` in the `freeze_splits_failed` payload for callers that displayed it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py:175-179 (`claim = {rotated, \"idempotent\": True}`)",
+          "line": null,
+          "finding": "On an idempotent re-claim the original `claim` result is wholesale replaced by `redispatch_phase_task`'s return (`_ok(task, rotated_from=…, new_version=…)`). Any top-level fields `claim_phase_task` returned that later code in `begin_dispatch` (or its callers) reads off `claim` besides `ok`/`idempotent` are silently dropped. The visible tests build the descriptor from a fresh config read so they would not catch a dropped field.",
+          "suggestion": "Merge instead of replace: `claim = {claim, rotated, \"idempotent\": True}`, or explicitly enumerate what the descriptor construction reads.  Everything else checks out against the ACs: the skip-reason refusal happens before any read/write (AC-1, byte-identical pinned), normalisation/capping/500-char cap and stale-key cleanup on every recover (AC-2), one `phase_skipped` event per CLI with the full detail plus reason on the `recovery` loop event (AC-3), the gate record written in the completion's locked write with the canon `run_id` and `overridden` distinction, rejection writing nothing (AC-4/5), version rotation with `executionCount`/`idempotent` preserved (AC-6), and both ok:true and ok:false stale applies refused with byte-identical config, including the mid-gate redispatch race and the no-re-freeze case, via the real CLI at exit 2 (AC-7). The tests are substantive — exact-dict assertions, byte-identical config comparisons, race injection inside the gate, exit-code checks through the parser — and would fail against a broken implementation.  Overall: ship-with-fixes; the gate record and fencing work is sound, the freeze-condition change deserves a second look before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T06:11:57.592916+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Audit findings:\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:200 (`if phase == \"design\" and result.get(\"ok\") and gate_due:`)\n  Finding: The split freeze is now additionally conditioned on `gate_due`, but `gate_due` is not a staleness check (the comment says \"a stale apply freezes nothing\" — the stale fence is the CAS in the completion hook, not this condition). An ok design result applied with the gate not due (`enforce_gate=False`, which the diff's own tests exercise for the project phase) now completes **without** freezing splits, where the old code froze unconditionally. If there is any production or library path that completes a design ungated, `splits_frozen`/`splitMode` are silently never written and plan/build do not fan out per split.\n  Suggestion: Drop the `gate_due` conjunct — the hook already refuses to write for a stale version under the lock — or assert in tests that an ungated design completion is impossible in production paths.\n\n- Category: regression\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:201-204\n  Finding: The freeze-failure path changed shape: previously `freeze_splits`'s structured failure (`ok:false` + `blockMessage`, e.g. a lock-timeout converted by `_guard_lock_timeout` into a dict) surfaced with its `blockMessage`/`freeze_result`; now only exceptions raised by `_resolve_splits_with_fallback` are caught and the error is just `str(exc)`. A non-raising failure return from the resolve chain (empty tuple, unexpected shape) would silently proceed as \"no splits\" rather than fail.\n  Suggestion: Verify `_resolve_splits_with_fallback` can only fail by raising, and keep a structured `blockMessage` in the `freeze_splits_failed` payload for callers that displayed it.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py:175-179 (`claim = {**ro […truncated]\n\n[openai] No concrete defects found in the supplied diff. The changes cover the acceptance criteria, including durable skip reasons and gate records, version rotation, and completion under the CAS lock. The tests check refusal paths, unchanged state, both skip CLIs, and re-dispatch during gate execution.\n\nOverall assessment: ship-as-is. This assessment is based on the supplied diff; execution policy prevented repository inspection and test runs.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:11:57.717829+00:00",
+      "disposition": "standalone iterate dispatched by an orchestrator that runs the spec/code/doubt cascade itself (operator instruction); iteration-reviews.md Campaign sub-iterate rows",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T05:53:51.765722+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T05:53:51.952485+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

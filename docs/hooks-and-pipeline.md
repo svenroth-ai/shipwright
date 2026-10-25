@@ -1430,8 +1430,15 @@ If the master conversation dies mid-phase, the phase task is left `in_progress` 
 `claimedBySessionUuid` set. This is **not** a wedge: the phase-runner was a subagent of
 the dead master, so it died with it — there is no orphaned worker to race. Re-invoking
 `/shipwright-run` resumes, and `single-session-next` **re-dispatches the task
-idempotently** (re-claims by its own `sessionUuid`, `executionCount` not re-bumped);
-the artifact persistence-guard still verifies its outputs on apply. In-loop recovery is
+idempotently** (re-claims by its own `sessionUuid`, `executionCount` not re-bumped) and
+**rotates its `version`** (`phase_task_recovery.redispatch_phase_task`, stamping
+`redispatchedAt`; `startedAt` is kept). The same happens on every gate retry. So only the
+descriptor the LATEST `single-session-next` returned can apply: a result carrying an
+earlier dispatch's version is refused `stale_version` (exit 2) and changes nothing. The
+`next` descriptors that apply and `single-session-resume` return are read-only previews,
+not dispatches: apply only with what `single-session-next` handed out, and do not call
+`single-session-next` again while a phase-runner is still out (that supersedes it). The
+artifact persistence-guard still verifies outputs on apply. In-loop recovery is
 `single-session-recover` (same lifecycle mutator + a `recovery` event + loop-pointer
 realign).
 
@@ -1440,12 +1447,20 @@ realign).
 ```bash
 uv run plugins/shipwright-run/scripts/lib/orchestrator.py recover-phase-task \
   --phase-task-id ptk-9f8e \
-  [--force-status awaiting_launch|failed|skipped]
+  [--force-status awaiting_launch|failed|skipped] [--reason "<why>"]
 ```
 
-Bumps `version`, clears `claimedBySessionUuid`, increments `executionCount`.
-The crashed session's later `complete-phase-task` is rejected with exit 2
-(stale_version), so it cannot corrupt state after recovery.
+Bumps `version`, clears `claimedBySessionUuid` (`executionCount` is left alone; a fresh
+claim bumps it) and drops the task's earlier `skipReason`, `gate` record and
+`redispatchedAt`. `--force-status skipped` **requires `--reason`** (refused
+`skip_reason_required`, exit 1, nothing written): the reason is stored on the task as
+`skipReason` (one line, control characters removed, max 500 characters; it is committed
+with the run config and the tracked log, so never paste a secret) and a `phase_skipped`
+event (`detail`: `phaseTaskId`, `splitId`, `runId`, `reason`, `recoveredFrom`) is
+appended to `shipwright_events.jsonl`. `single-session-recover` takes the same `--reason`
+and also puts it on its `recovery` loop event. The crashed session's later
+`complete-phase-task` is rejected with exit 2 (stale_version), so it cannot corrupt state
+after recovery.
 
 ---
 
@@ -3877,20 +3892,40 @@ install); where the verifiers are missing the gate fails closed, never open.
   `phaseTaskId`) is dropped, and the tracked end is the skill's (pinned by
   `test_phase_gate_real_skill_canon.py`). Canon C1's event lookup is not scoped per run or
   split either.
-  **Deliberate escape hatch, no recorded reason (A5 decision):** `recover-phase-task
-  --force-status skipped` (and `single-session-recover --force-status skipped`) moves an
-  `in_progress` task to terminal `skipped` with no gate and no override record. A reason is
-  not required because a skip cannot be mistaken for a pass, which is what the override's
-  reason exists to prevent (FR-01.01): `skipped` stays distinct from `done` in
-  `phase_tasks[]`, the design validator refuses to treat a skipped task as an exemption, and
-  no successor is planned, so the pipeline does not advance past a skipped phase (the next
-  `single-session-next` answers `blocked`). It is an operator command; `phase-runner.md`
-  forbids a phase-runner recovering anything.
-- **Inform notes are returned, not persisted (A5 decision):** on a passing apply the
-  `gate` block carries the gate's `inform` notes (warnings that never block); nothing
-  writes them to `run_config`. The master relays them; the full canon re-runs at the
-  phase's own checks and at compliance, so persisting a second copy would add a run_config
-  write outside the lifecycle for no new information.
+  **Skip escape hatch, with a recorded reason (gate-honesty follow-ups, superseding A5
+  decision 4):** `recover-phase-task --force-status skipped --reason "<why>"` (and
+  `single-session-recover`) moves an `in_progress` task to terminal `skipped` with no gate
+  and no override record. The reason is **always** required, not only after a gate
+  rejection: a stuck phase that never reached its gate needs a trace just as much. It is
+  stored as `skipReason` and sent as a `phase_skipped` event (see Crash Recovery above).
+  `skipped` stays distinct from `done` in `phase_tasks[]`, the design validator refuses to
+  treat a skipped task as an exemption, and no successor is planned, so the pipeline does
+  not advance past a skipped phase (the next `single-session-next` answers `blocked`). It
+  is an operator command; `phase-runner.md` forbids a phase-runner recovering anything.
+- **A gated completion leaves a record on the task (gate-honesty follow-ups, superseding
+  A5's "a pass leaves nothing"):** every apply that ran the gate and completed (a pass,
+  a pass that could not check, `not_checked`, or an `--override-reason`) writes
+  `phase_tasks[].gate = {result, checked, phase, splitId, runId, at, issueCount,
+  informCount, overridden}` in the **same locked write** as the completion
+  (`phase_gate.gate_record` through `complete_phase_task(on_complete=...)`; the override
+  record runs first, so its refusal still reads `override_requires_human` and writes
+  neither). `runId` is the id the canon `phase_history` check was run against
+  (`gate_run_id.canon_run_id`), so a phase skill's minted id is named. The task is the one
+  home: `validation_overrides[]` stays "a person waived something" (an override writes
+  both), a rejection writes neither, an ungated test apply writes none, and any recover
+  drops the record. **Inform notes are still returned, not persisted (A5 decision 5
+  kept):** the `gate` block of the apply payload carries them, the record only counts
+  them (`informCount`); the full canon re-runs at the phase's own checks and at
+  compliance, so storing a second copy adds nothing.
+- **Re-dispatch fences the earlier attempt:** `single-session-next` on a task that is
+  already `in_progress` (gate retry, crash resume) rotates its `version`, so a phase-runner
+  result from an earlier dispatch is refused `stale_version` (exit 2) even when it arrives
+  while the newer attempt's gate is running (the completion re-checks under the lock), and
+  changes nothing. A stale or double apply of a design result no longer re-freezes splits
+  either: apply reads the split authority before the lock and writes `splits_frozen` +
+  `splitMode` inside the completion's own locked write (`completion_hook`, after the owner
+  + version check), so a stale design apply — also one whose re-dispatch landed while its
+  gate ran — freezes nothing.
 - **Rejection:** `{ok:false, reason:"phase_gate_failed", issues, inform, checked, attempt,
   gate_rejections, max_gate_retries, retries_exhausted, retryable, terminal,
   override_allowed}`, exit 1 (`override_allowed` is false when the run's autonomy is not
@@ -4135,7 +4170,7 @@ orchestrator (mandate, not a guarantee): writes the reply to its payload
 
 | Config File | Written By | Read By |
 |-------------|-----------|---------|
-| `shipwright_run_config.json` | orchestrator.py | All phases (resume), dashboard, validators |
+| `shipwright_run_config.json` | orchestrator.py (`phase_tasks[]` only through `phase_task_lifecycle`: incl. `skipReason`, the gated-completion `gate` record, the re-dispatch `version` rotation) | All phases (resume), dashboard, validators |
 | `shipwright_project_config.json` | /shipwright-project | Orchestrator (splits), compliance (requirements), validators |
 | `shipwright_build_config.json` | /shipwright-build, update_section_state.py | Orchestrator (progress), dashboard, compliance, validators |
 | `shipwright_test_results.json` | test-runner subagent (full record); `record_coverage_total.py` (`coverage` block only); `stamp_test_results.py` (`source_state` block only — invoked as the last step of test Step 5 and iterate F5) | Compliance (test evidence), validators |

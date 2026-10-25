@@ -95,9 +95,10 @@ def _break_design(project: Path) -> tuple[dict, str]:
     return design, good
 
 
-def _retry_until_terminal(project: Path, design: dict) -> list[dict]:
+def _retry_until_terminal(project: Path, design: dict) -> tuple[list[dict], dict]:
     """Apply the broken design at every dispatch, re-dispatching through
-    ``single-session-next`` after each rejection, until the gate names a terminal."""
+    ``single-session-next`` after each rejection, until the gate names a terminal.
+    Returns the answers and the LATEST dispatch (each re-dispatch rotates the version)."""
     answers: list[dict] = []
     dispatch = design
     for _ in range(MAX_GATE_RETRIES + 2):          # bounded: the cap must end this
@@ -106,7 +107,7 @@ def _retry_until_terminal(project: Path, design: dict) -> list[dict]:
         gate = out if out.get("reason") == "phase_gate_failed" else out.get("gate", {})
         assert any("02-missing.html" in i["message"] for i in gate["issues"]), out
         if gate["terminal"] is not None:
-            return answers
+            return answers, dispatch
         assert code == 1 and gate["retryable"] is True and out["ok"] is False
         assert _task(project, design["phaseTaskId"])["status"] == "in_progress"
         cfg = json.loads((project / "shipwright_run_config.json").read_text(encoding="utf-8"))
@@ -129,7 +130,7 @@ def test_guided_run_stops_at_the_broken_artifact_and_passes_when_fixed(tmp_path)
     project = _start(tmp_path, "guided")
     design, good = _break_design(project)
 
-    answers = _retry_until_terminal(project, design)
+    answers, latest = _retry_until_terminal(project, design)
     last = answers[-1]
     assert len(answers) == MAX_GATE_RETRIES + 1          # first try + MAX_GATE_RETRIES retries
     assert (last["ok"], last["reason"], last["max_gate_retries"]) == (
@@ -139,7 +140,10 @@ def test_guided_run_stops_at_the_broken_artifact_and_passes_when_fixed(tmp_path)
     assert _task(project, design["phaseTaskId"])["status"] == "in_progress"
 
     (project / _MANIFEST).write_text(good, encoding="utf-8")   # the fix
-    code, passed = _apply(project, design, write=False)
+    code, stale = _apply(project, design, write=False)          # the FIRST dispatch's token
+    assert code == 2 and stale["reason"] == "stale_version", stale
+    assert latest["version"] == design["version"] + MAX_GATE_RETRIES
+    code, passed = _apply(project, latest, write=False)
     assert code == 0 and passed["gate"]["result"] == "pass", passed
     assert _task(project, design["phaseTaskId"])["status"] == "done"
     _drive_to_complete(project)
@@ -149,7 +153,7 @@ def test_autonomous_run_fails_the_phase_at_the_cap_and_recovers_when_fixed(tmp_p
     project = _start(tmp_path, "autonomous")
     design, _good = _break_design(project)
 
-    answers = _retry_until_terminal(project, design)
+    answers, _latest = _retry_until_terminal(project, design)
     out = answers[-1]
     assert len(answers) == MAX_GATE_RETRIES + 1
     assert out["ok"] is True and out["run_status"] == "failed", out   # the strict-stop
