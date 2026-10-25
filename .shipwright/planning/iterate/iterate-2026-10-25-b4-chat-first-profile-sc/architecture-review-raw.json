@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 this is essentially the minimum viable shape: one more data file consumed entirely by machinery that already exists, with no new code path, gate or storage, which is what a bundled profile is supposed to be.\n\n2. **The smallest thing that would do.** Option A. The loaders already consume every key the profile uses; the blockers are cleared by declaring data, not by branching code. Option B adds a permanent `ux_shape` concept that every future loader change must reason about, to avoid writing one JSON file. Option C pushes the cost onto every chat-first user for no saving to the pipeline.\n\n3. **What it costs to keep.** One more profile in the adopt-matching pool (guarded by the constraint that existing fixtures match unchanged), one more entry in whatever lists profiles in step-7 guidance, and the standing obligation that its declared keys keep clearing `_DEFAULT_SERVICE` and the smoke default as those defaults evolve. Also the test_runner.py split: two files where one was, permanently, purely to get under a size gate \u2014 a small but real structural tax.\n\n4. **What it forecloses.** None identified \u2014 a data file removes nothing. If anything, it pins the assumption that a single-executable `dev_server` block covers chat-first apps; if a future chat-first shape needs multiple services, the profile needs replacing, not the loaders.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The F17 blocker table resolves mostly into \"declare the key and it works,\" which is good, but the smoke-default and Browser-Verify fixes depend on documentation and fallback orderings rather than code. If the profile ever drifts (a key typo, a missing health path), the failure mode is silent reversion to the :3000 npm default, which nobody will notice until a chat-first project's smoke test mysteriously probes the wrong port.\n- Suggestion: The pinned test (`test_chat_first_json_profile.py`) should assert the profile declares every key that would otherwise trigger `_DEFAULT_SERVICE` and the smoke default \u2014 pin the data contract, not just the file's line count.\n\n- Category: proportionality\n- Severity: low\n- Finding: Splitting test_runner.py to fit a size cap, as a prerequisite for otherwise net-zero changes, converts a line-count gate into a permanent two-file structure whose only motivation is the gate.\n- Suggestion: If the split is mechanical (extract one cohesive function group), accept it; if it splits coupled logic, prefer trimming 21 lines of actual content in the same change and note that in the bloat baseline.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014option A is proportionate: one bundled profile lets existing machinery support the stated workflow without introducing chat-first branches.\n\n2. **Smallest thing that would do:** Add the JSON profile with an explicit preview-compatible `dev_server`, pytest and Playwright commands, and no deployment target or CI template. Add the scaffolding guidance and make the existing smoke step use the profile\u2019s server settings. Avoid option B\u2019s loader special cases.\n\n3. **What it costs to keep:** Maintainers must keep the bundled profile compatible with the resolver, schema, preview launcher and test commands as those existing contracts evolve. The required test-runner split is maintenance of existing machinery, not a new operational obligation.\n\n4. **What it forecloses:** None identified. Keeping the configuration explicit avoids coupling future chat-first projects to special loader behavior.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+    "at": "2026-10-25T14:53:59.852513+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

@@ -21,6 +21,15 @@ See [project-scaffolding.md](project-scaffolding.md) for details.
 5. Load the chosen profile: `uv run --no-project "{shared_root}/scripts/tools/resolve_profile.py" resolve --project-root "{project_root}" --name "{profile_name}" --path-only` (exit 0 with empty output = built-in defaults; any other non-zero exit = stop and show the message, do not retry; name must match `^[a-z0-9][a-z0-9-]*$`, otherwise stop).
 6. No match: use a generic profile structure.
 
+### Chat-first projects (`ux_shape: chat-first`)
+
+When the profile declares `ux_shape: chat-first` (bundled: `chat-first-json`), scaffold the app shell its `folder_structure` names, not a node project:
+
+- `pyproject.toml` with `fastapi`, `uvicorn` and `pytest` (latest versions, not the profile's strings), `app/main.py` serving the pane from `app/static/` and the chat API, and `GET /api/health` answering 200: the profile's `dev_server` block starts `uv run uvicorn app.main:app --port 3900` and waits on that path.
+- `data/` for the local JSON files (the only storage) and `tests/` for pytest.
+- `package.json` + `playwright.config.ts` + `e2e/` for Playwright specs (`*.spec.ts`, so per-journey coverage works) against `http://localhost:3900`: write `playwright.config.ts` yourself with that `baseURL`, `webServer.command` = `uv run uvicorn app.main:app --port 3900`, `webServer.url` = `http://localhost:3900/api/health` (the template's `npm run dev` would fail: the project has no `dev` script) and the `['json', { outputFile: 'e2e-results.json' }]` reporter the runner reads (the shared template's default is port 3000 and `playwright_setup.py` leaves an existing config alone), and set `dev_url` to `http://localhost:3900` in `shipwright_build_config.json`.
+- No deploy files and no CI workflow: the profile has `deploy: null` and no CI template (`deploy_target: none`).
+
 ## Generate these files in the project root
 
 1. **CLAUDE.md** — from template, filled with project-specific values

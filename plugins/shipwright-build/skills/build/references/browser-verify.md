@@ -21,6 +21,7 @@ If `has_frontend_changes == false`, skip. Otherwise Browser Verify is mandatory.
 
 ## Prerequisite Self-Healing (before running — do NOT skip)
 
+- A profile that declares `dev_server` (for example `chat-first-json`, served pane on port 3900) needs nothing here: step 2 starts exactly that block and it never falls back to the `npm run dev` default.
 - If profile has no `dev_server` config but `shipwright_build_config.json` has `dev_url`: use that URL.
 - If neither: autodetect via `package.json` scripts (Vite 5173 / Next 3000 / Astro 4321).
 - If `.shipwright/designs/visual-guidelines.md` missing but mockups exist in `.shipwright/designs/screens/`: auto-generate from CSS `:root` variables (same derivation as test phase Step B3).
@@ -49,6 +50,8 @@ If profile has no `dev_server` config: check `shipwright_build_config.json` for 
 ```bash
 uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
 ```
+
+`browser_verify.py` defaults to `http://localhost:3000`. When the profile's `dev_server` block (or `dev_url`) names another port, pass it: `--url "{scheme}://{host}:{port}"` (for `chat-first-json`: `--url http://localhost:3900`).
 
 4. **Evaluate result:**
    - **Success** (no console errors, page loads): Continue to Step 5

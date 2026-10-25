@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Profile validates through the resolver, declares stack.frontend + single-executable dev_server, pytest + Playwright, deploy null; test_runner.py 321 -> 235 lines; F17 blockers located and cleared."},
+{"name":"Error Handling","verdict":"pass","note":"No new runtime logic beyond a moved function pair; profile errors still surface through the resolver."},
+{"name":"Security Basics","verdict":"pass","note":"dev_server command has no shell metacharacters (tested); run_tests shell=True/nosemgrep comment moved verbatim."},
+{"name":"Test Quality","verdict":"pass","note":"Real resolver/dev_server/matcher/test_runner subprocess assertions; exact-dict check for the declared service; tagged FR-01.06 / FR-01.12."},
+{"name":"Performance Basics","verdict":"pass","note":"Nothing on a hot path changed."},
+{"name":"Naming & Structure","verdict":"pass","note":"command_runner.py is a cohesive extraction; test_runner re-exports so monkeypatch targets are unchanged."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Profile JSON producer vs resolver, dev_server, test_runner, adopt matcher consumers all exercised by tests; adopt fixtures match identically with and without the profile."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff reports no findings."}
+]}

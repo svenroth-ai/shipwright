@@ -167,7 +167,7 @@ def test_non_profile_files_not_resolvable(project, name):
 
 def test_non_profile_files_never_listed(project):
     names = {p["name"] for p in pr.list_profiles(project)["profiles"]}
-    assert names == {"supabase-nextjs", "vite-hono", "python-plugin-monorepo"}
+    assert names == {"supabase-nextjs", "vite-hono", "python-plugin-monorepo", "chat-first-json"}
 
 
 def test_non_profile_registry_matches_bundled_dir():

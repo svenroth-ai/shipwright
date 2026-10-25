@@ -1,0 +1,65 @@
+{
+  "name": "chat-first-json",
+  "description": "Chat-first app with local JSON data: a chat on one side, a served pane on the other. Python (FastAPI) serves the pane and the chat API; data lives in JSON files; pytest for unit tests, Playwright for the served pane. No deployment.",
+  "version": "0.1.0",
+  "ux_shape": "chat-first",
+  "ui_host": "served-pane",
+
+  "stack": {
+    "_comment": "Versions are security-relevant MINIMUMS, not exact pins - resolve and install the latest version satisfying each range when scaffolding.",
+    "runtime": {
+      "python": "3.11+"
+    },
+    "frontend": {
+      "vanilla-js": "ES2022"
+    },
+    "backend": {},
+    "_comment_backend": "Empty on purpose and load-bearing for adopt matching: adopt scores a profile by the dependency names it declares here, so listing fastapi/uvicorn would pull every FastAPI repo away from the profile that fits it. See notes."
+  },
+
+  "dev_server": {
+    "command": "uv run uvicorn app.main:app --port 3900",
+    "host": "localhost",
+    "scheme": "http",
+    "port": 3900,
+    "ready_path": "/api/health",
+    "ready_timeout_seconds": 60
+  },
+
+  "testing": {
+    "unit": {
+      "framework": "pytest",
+      "command": "uv run pytest"
+    },
+    "e2e": {
+      "framework": "@playwright/test",
+      "version": "^1.59.1",
+      "command": "npx playwright test"
+    }
+  },
+
+  "linting": {
+    "tool": "ruff",
+    "command": "uv run ruff check"
+  },
+
+  "deploy": null,
+  "package_manager": "uv",
+  "rules": ["tests", "config"],
+
+  "folder_structure": {
+    "app/": "FastAPI application (app/main.py serves the pane and the chat API)",
+    "app/static/": "The served pane (HTML, CSS, vanilla JS) next to the chat",
+    "data/": "Local JSON data files (the only storage; no external service)",
+    "tests/": "pytest unit tests",
+    "e2e/": "Playwright specs run against the served pane (*.spec.ts)"
+  },
+
+  "required_env_vars": {
+    "build": [],
+    "deploy": [],
+    "plugin": []
+  },
+
+  "notes": "Backend: FastAPI served by uvicorn (add both to pyproject.toml at their latest versions). They are not listed under stack.backend on purpose: adopt scores a profile by the dependency names it declares, and a FastAPI entry would pull every FastAPI repo away from the profile that fits it. A bundled profile's e2e layer always runs through playwright_runner.py (npx playwright test with the json reporter), so testing.e2e.command documents that rather than selecting it. A chat-first app has no separate deploy step (deploy_target none): there is no deploy block and no CI template mapping for this profile, deliberately. The dev_server block is a single executable command without shell metacharacters because the WebUI preview starts only that block and ignores 'services'. /api/health must answer 200 once the app is up: dev_server.py readiness (which Browser Verify starts) and the smoke test (--health-path) wait on it."
+}

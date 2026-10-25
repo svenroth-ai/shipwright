@@ -36,6 +36,9 @@ WORKFLOW_PATH = ".github/workflows/ci.yml"
 # Adding a new profile: register here AND author the template file. The
 # drift test asserts every value resolves to a file on disk; a stale entry
 # fails the build before adopt can break on a missing template.
+#
+# `chat-first-json` is deliberately absent: it has no CI template yet, so
+# `template_path_for_profile` returns None for it (pinned by test_chat_first_json_profile).
 TEMPLATE_BY_PROFILE: dict[str, str] = {
     "supabase-nextjs": "shared/templates/github-actions/ci-supabase-nextjs.yml.template",
     "vite-hono": "shared/templates/github-actions/ci-vite-hono.yml.template",

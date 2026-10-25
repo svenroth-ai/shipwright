@@ -1,0 +1,89 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 14443,
+      "total": 14443
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 7,
+      "total": 7
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "chat-first-json passes the resolver and schema and resolves as bundled",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_chat_first_json_profile.py::test_profile_resolves_as_bundled_and_passes_the_schema PASSED"
+        },
+        {
+          "behavior": "dev server gets exactly the declared single-executable block, never the npm default",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_chat_first_json_profile.py::test_dev_server_is_the_declared_block_not_the_default_service PASSED"
+        },
+        {
+          "behavior": "profile declares stack.frontend, pytest, Playwright, deploy null; CI/CodeQL mapping stays none",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_chat_first_json_profile.py (3 tests) PASSED"
+        },
+        {
+          "behavior": "adopt matching unchanged for existing fixtures",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_profile_matcher_chat_first.py PASSED (4 fixtures)"
+        },
+        {
+          "behavior": "test runner resolves pytest/Playwright commands and skips undeclared layers for the profile",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_test_runner_chat_first.py PASSED"
+        },
+        {
+          "behavior": "test_runner.py extraction is behaviour-identical (run_tests/parse_test_output re-exported, monkeypatch target intact)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_test_runner.py PASSED (17 tests, unchanged)"
+        },
+        {
+          "behavior": "smoke/Browser Verify/scaffolding prompt guidance for the profile's port",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "prompt text read by an agent; the live proof is campaign unit B7's real end-to-end run"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+    "commit": "79ceee6410c7dc8fb1ff255db14dc4a9ef6c9aee",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
