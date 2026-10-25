@@ -164,3 +164,16 @@ def test_fr_ids_by_slug_skips_the_iterate_folder_and_dedupes(tmp_path):
     ids = fr_ids_by_slug(tmp_path)
     assert ids["capture-note"] == ["FR-01.01"] and ids["list-notes"] == ["FR-01.02"]
     assert fr_ids_by_slug(tmp_path / "empty") == {}
+
+
+@pytest.mark.covers("FR-01.04")
+def test_a_null_brief_dir_is_still_a_brief_run_and_a_non_object_config_is_not(tmp_path):
+    root = _project(tmp_path)
+    path = root / "shipwright_run_config.json"
+    cfg = json.loads(path.read_text(encoding="utf-8"))
+    cfg["brief_dir"] = None
+    path.write_text(json.dumps(cfg), encoding="utf-8")
+    [result] = check_brief_design_applied(root)
+    assert result.is_failure
+    path.write_text("[]", encoding="utf-8")
+    assert check_brief_design_applied(root) == []

@@ -60,8 +60,8 @@ def parse_screen_linked_frs(html_path: Path) -> list[str]:
     return ids
 
 
-_REQ_COMMENT_RE = re.compile(rb"[ \t]*<!--\s*Requirements:.*?-->[ \t]*(?:\r?\n)?", re.IGNORECASE | re.DOTALL)
-_HTML_OPEN_RE = re.compile(rb"<html\b[^>]*>", re.IGNORECASE)
+_REQ_COMMENT_RE = re.compile(rb"[ \t]*<!--\s*Requirements:[^<]*?-->[ \t]*(?:\r?\n)?", re.IGNORECASE)  # a comment holds no "<": a literal inside a script cannot cut markup
+_HTML_OPEN_RE = re.compile(rb"<html(?=[\s>])[^>]*>", re.IGNORECASE)  # not <html-preview>
 _DOCTYPE_RE = re.compile(rb"<!doctype[^>]*>", re.IGNORECASE)
 
 

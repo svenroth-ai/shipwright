@@ -22,6 +22,7 @@ from tools.grill_trace_fr_coverage import extract_fr_names, slugify
 # Same pattern as the design registry's ``parse_screen_linked_frs`` (the manifest's reader): the FIRST comment counts.
 _REQ_COMMENT_RE = re.compile(r"<!--\s*Requirements:\s*(?P<ids>[^>]*?)\s*-->", re.IGNORECASE)
 _FR_ID_RE = re.compile(r"^FR-\d{1,3}\.\d{1,3}$")
+MARKER_NAME = "brief-package-applied.json"  # under .shipwright/designs/, written last by the tool
 _SNIFF_BYTES = 8000  # pinned to brief_package_manifest._SNIFF_BYTES by a test
 
 

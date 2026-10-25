@@ -835,6 +835,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Assembles screens from a snippet library (layouts, components, CSS variables) for consistency and speed
 - Generates multi-screen user flows and a review viewer (`.shipwright/designs/index.html`) with built-in feedback collection
 - Enters a review loop: you review in the browser, export feedback, and Shipwright applies changes iteratively until you finalize
+- **With an approved Brief package** (the run records a `brief_dir`), Design does not interview you or re-ask for mockups: it takes the package's mockups and `screen-map.json`, places them under `.shipwright/designs/` (uploads byte-identical, screens linked to the functional requirements Project already created) and then continues with flows and the normal gates. If anything does not fit the package, it stops and tells you what; it never invents screens or requirement ids
 
 **Feedback that changes what a flow *does* is written back into the requirement.** Design is where flows are rightly rethought, so each round is classified: did the feedback change **behaviour** (a step added, an option removed, a path reordered), or only **appearance** (colour, spacing, type, layout that leaves the same steps in the same order)?
 

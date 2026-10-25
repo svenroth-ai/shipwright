@@ -23,18 +23,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .brief_mode_checks import _brief, _guarded, verified_package
+from .brief_mode_checks import _guarded, verified_package
 from .common import CheckResult, read_run_config
 
 NAME = "brief_design_applied"
-MARKER = ".shipwright/designs/brief-package-applied.json"
 
 
 def _applied(project_root: Path) -> list[CheckResult]:
     cfg = read_run_config(project_root)
-    if not (cfg.get("brief_dir") or cfg.get("brief_package")):  # neither key: not a brief run
+    if not (isinstance(cfg, dict) and ("brief_dir" in cfg or "brief_package" in cfg)):  # key PRESENCE, like verify_run_config
         return []
-    from tools.brief_design_plan import applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens
+    from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens
 
     try:  # the package must still verify BEFORE anything is read from it (a tampered map or mockup is red)
         verified = verified_package(project_root)
@@ -42,18 +41,16 @@ def _applied(project_root: Path) -> list[CheckResult]:
         if not hasattr(exc, "as_dict"):
             raise
         return [CheckResult(NAME, False, f"the recorded Brief package does not verify: {exc.code}: {exc.message}")]
-    found = _brief(project_root)
-    if found is None or not verified.get("package"):
-        return [CheckResult(NAME, False, "the recorded Brief package does not verify: missing_record: run_config holds no brief_dir")]
-    rel, _raw = found
+    rel = str(verified["brief_dir"]).replace("\\", "/").strip("/")  # a verified package always has its brief_dir
     recorded = verified.get("package_sha256")
-    marker = project_root / MARKER
+    marker_rel = f".shipwright/designs/{MARKER_NAME}"
+    marker = project_root / marker_rel
     try:
         applied = json.loads(marker.read_text(encoding="utf-8")).get("package_sha256") if marker.is_file() else None
     except (OSError, ValueError, AttributeError):
         applied = None
     if not applied or applied != recorded:
-        return [CheckResult(NAME, False, f"{MARKER} is missing or does not hold the package hash recorded in run_config: "
+        return [CheckResult(NAME, False, f"{marker_rel} is missing or does not hold the package hash recorded in run_config: "
                             "Design did not apply the Brief package (run apply-brief-package.py)")]
     bdir, designs = project_root / rel, project_root / ".shipwright" / "designs"
     screen_map = json.loads((bdir / "screen-map.json").read_text(encoding="utf-8-sig"))

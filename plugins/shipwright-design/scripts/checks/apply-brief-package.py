@@ -44,10 +44,10 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.append(str(_SHARED_SCRIPTS))
 
-from tools.brief_design_plan import applied_file_issues, fr_ids_by_slug, plan_screens, same_content  # noqa: E402
+from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, plan_screens, same_content  # noqa: E402
 
 DESIGNS = ".shipwright/designs"
-MARKER = "brief-package-applied.json"  # written last; its hash makes a re-entry a no-op
+MARKER = MARKER_NAME  # written last; its hash makes a re-entry a no-op
 
 
 def _load(path: Path, name: str):
@@ -89,8 +89,6 @@ def apply(project_root: Path) -> dict:
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
     guidelines = bdir / str(brief.get("design_system") or "")
-    if not guidelines.is_file():
-        issues.append(_issue("missing_design_system", "-", "brief.json design_system names no file in the package"))
     targets: list[tuple[Path, bytes, bool]] = []  # (path, data, must match when it already exists)
     for item in plan:
         src = item["src"].read_bytes()

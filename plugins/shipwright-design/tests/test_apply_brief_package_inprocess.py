@@ -250,3 +250,23 @@ def test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_mo
     for screen in (designs / "screens").glob("*.html"):
         screen.unlink()
     assert main_json(tool, capsys, project)[0] == 0
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_an_unexpected_error_is_not_swallowed(project, tool, monkeypatch):
+    def boom(_root):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(tool, "apply", boom)
+    with pytest.raises(RuntimeError):
+        tool.main(["--project-root", str(project)])
+
+
+@pytest.mark.covers("FR-01.04")
+def test_injection_cannot_cut_markup_at_a_literal_requirements_in_a_script(tool):
+    registry = tool._load(tool._HERE.parent / "lib" / "screen_registry.py", "_t_registry_inject")
+    page = b'<html><body><script>var s = "<!-- Requirements:";</script><p>keep</p><!-- end --></body></html>'
+    out = registry.inject_requirements(page, ["FR-01.01"])
+    assert b"<p>keep</p>" in out and b"<!-- end -->" in out and out.count(b"<!-- Requirements: FR-01.01 -->") == 1
+    custom = registry.inject_requirements(b"<html-preview></html-preview><html lang=en><body></body></html>", ["FR-01.01"])
+    assert custom.index(b"<!-- Requirements") > custom.index(b"<html lang=en>")

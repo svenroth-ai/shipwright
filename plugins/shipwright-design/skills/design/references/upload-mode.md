@@ -52,5 +52,7 @@ check `brief_design_applied` (runs with the design phase checks, brief runs only
 holds the recorded package hash, every upload matches the package and every mapped screen links at least the FR
 ids minted for its screen-map entry (first `Requirements` comment; extra ids are fine). It does not prove the
 screens came from the tool. **Lifetime:** the approved package stays the contract for the life of the project, so a
-later FR or screen rename turns the check red by design. Recovery: approve a new package, delete the marker plus the
-affected `screens/` and `uploads/` files, and apply again.
+later FR or screen rename turns the check red by design. It re-runs at a later design phase gate (`phase_gate` ->
+`_validate_design`) or by hand with `verify_phase --phase design|all`; build, iterate, adopt and compliance do not run it.
+Recovery: re-approve the package AND restart the run, so a fresh run_config records the new hash; never edit
+`brief_package` in run_config by hand (the hash check would refuse the re-approved package, exit 3, in the tool and the gate).
