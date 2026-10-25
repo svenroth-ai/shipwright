@@ -31,7 +31,7 @@ no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means S
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
   `design-manifest.md` (on every non-no-op apply) (every screen listed with its Linked FRs).
 
-An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and a screen that already exists with no upload beside it on the first apply stops the tool (`pre_existing_screen`, exit 1, nothing written: move it away). After exit 0, continue with the normal Design
+An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and a screen that exists while none of the package's uploads does (a first apply, or a reset after every upload was lost) stops the tool (`pre_existing_screen`, exit 1, nothing written: move the screens away, then apply again). After exit 0, continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
@@ -46,7 +46,7 @@ hash check (exit 3), and a marker from a different hash is refused too (exit 1):
 over edited screens. A re-entry also checks that every `uploads/<mockup>` is still byte-identical to the package
 and every `screens/NN-*.html` still exists (`applied_files_missing`, exit 1); to re-apply onto missing files
 delete `brief-package-applied.json`: the re-apply writes ONLY what is missing and keeps edited screens and
-guidelines (an upload that differs is still `exists_differs`). `design-manifest.md` is regenerated on every
+guidelines (an upload that differs is still `exists_differs`; a missing upload is restored byte-identical). To recover an upload edited by hand, copy it again from the package's `mockups/` and re-run (`already_applied`); a deleted `design-manifest.md` is rebuilt by the marker-deleted re-apply, not by a plain re-entry. `design-manifest.md` is regenerated on every
 non-no-op apply (not on `already_applied`). The upload comparison uses the package hash's own rule (CRLF equals LF for text). The design verifier
 check `brief_design_applied` (runs with the design phase checks, brief runs only) is red unless the package still verifies, the marker
 holds the recorded package hash, every upload matches the package and every mapped screen links at least the FR

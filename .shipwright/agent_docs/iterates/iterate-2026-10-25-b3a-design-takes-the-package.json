@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
-  "date": "2026-10-25T19:37:55.751909Z",
+  "date": "2026-10-25T20:02:30.958065Z",
   "event_at": "2026-10-25T17:54:39.972702+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -55,7 +55,7 @@
       {
         "behavior": "a re-apply after deleting the marker writes only missing targets and keeps edited screens and guidelines; an edited upload stays exists_differs; a deleted upload is noticed on re-entry",
         "disposition": "tested",
-        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry, ::test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen, ::test_in_process_an_edited_upload_is_recovered_by_restoring_it_from_the_package, ::test_in_process_a_deleted_manifest_is_regenerated_by_a_reset, ::test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_moved_away; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
       },
       {
         "behavior": "re-entry with the recorded package hash is a no-op that keeps review-loop edits; a changed hash or a bad marker is refused; a crash mid-write leaves no truncated file; a re-entry notices a deleted screen or an edited upload; SKILL routes a Brief package before New Design Session",
@@ -78,9 +78,9 @@
     "surface": "cli",
     "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py -q",
     "exit_code": 0,
-    "tests_run": 28,
+    "tests_run": 32,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
-    "timestamp": "2026-10-25T19:37:55.484Z"
+    "timestamp": "2026-10-25T20:02:30.668Z"
   },
   "declared_removals": [],
   "exemptions": {

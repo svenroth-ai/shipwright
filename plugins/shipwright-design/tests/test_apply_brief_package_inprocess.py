@@ -195,3 +195,58 @@ def test_in_process_a_first_apply_refuses_a_foreign_screen_and_writes_nothing(pr
     assert screen.read_text(encoding="utf-8") == "hand written"
     assert not (project / ".shipwright" / "designs" / "uploads").exists()
     assert not (project / ".shipwright" / "designs" / "brief-package-applied.json").exists()
+
+
+def _applied(project, tool, capsys):
+    main_json(tool, capsys, project)
+    return project / ".shipwright" / "designs"
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen(project, tool, capsys):
+    designs = _applied(project, tool, capsys)
+    (designs / "screens" / "02-editor.html").write_text("edited", encoding="utf-8")
+    (designs / "uploads" / "02-editor.html").unlink()
+    assert main_json(tool, capsys, project)[0] == 1  # re-entry: applied_files_missing
+    (designs / "brief-package-applied.json").unlink()
+    code, out = main_json(tool, capsys, project)
+    assert code == 0 and out["ok"]
+    assert (designs / "uploads" / "02-editor.html").read_bytes() == (project / "brief" / "mockups" / "02-editor.html").read_bytes()
+    assert (designs / "screens" / "02-editor.html").read_text(encoding="utf-8") == "edited"
+    assert (designs / "brief-package-applied.json").is_file()
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_an_edited_upload_is_recovered_by_restoring_it_from_the_package(project, tool, capsys):
+    designs = _applied(project, tool, capsys)
+    upload = designs / "uploads" / "01-notes.html"
+    upload.write_text("edited", encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and out["issues"][0]["code"] == "applied_files_missing"
+    upload.write_bytes((project / "brief" / "mockups" / "01-notes.html").read_bytes())  # the documented recovery
+    code, out = main_json(tool, capsys, project)
+    assert code == 0 and out["already_applied"] is True
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_a_deleted_manifest_is_regenerated_by_a_reset(project, tool, capsys):
+    designs = _applied(project, tool, capsys)
+    (designs / "design-manifest.md").unlink()
+    assert main_json(tool, capsys, project)[1]["already_applied"] is True  # re-entry does not rebuild it
+    assert not (designs / "design-manifest.md").exists()
+    (designs / "brief-package-applied.json").unlink()
+    code, _out = main_json(tool, capsys, project)
+    assert code == 0 and (designs / "design-manifest.md").is_file()
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_moved_away(project, tool, capsys):
+    designs = _applied(project, tool, capsys)
+    for upload in (designs / "uploads").glob("*.html"):
+        upload.unlink()
+    (designs / "brief-package-applied.json").unlink()
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and {i["code"] for i in out["issues"]} == {"pre_existing_screen"}
+    for screen in (designs / "screens").glob("*.html"):
+        screen.unlink()
+    assert main_json(tool, capsys, project)[0] == 0

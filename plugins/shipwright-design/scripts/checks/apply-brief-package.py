@@ -22,7 +22,9 @@ question (which screen does each upload represent, and which requirements does i
 * Reset: delete the marker. The re-apply writes ONLY the missing targets; an existing screen or
   ``visual-guidelines.md`` is left alone (edits survive), an existing upload that differs is
   ``exists_differs`` (restore it). ``design-manifest.md`` is regenerated on every non-no-op apply (not on ``already_applied``).
-  A FIRST apply that finds a screen with no upload beside it stops with ``pre_existing_screen`` (nothing written).
+  A screen while NONE of the package's uploads exists (a first apply, or a reset after every upload was lost)
+  stops with ``pre_existing_screen`` (nothing written): move that screen away. With at least one upload present
+  a missing upload is restored byte-identical from the package.
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -94,10 +96,11 @@ def apply(project_root: Path) -> dict:
         src = item["src"].read_bytes()
         targets += [(designs / "uploads" / item["mockup"], src, True),
                     (designs / "screens" / item["screen_file"], registry.inject_requirements(src, item["frs"]), False)]
-    for item in plan:  # a screen with no upload beside it was not placed by an earlier apply of this package
-        if (designs / "screens" / item["screen_file"]).is_file() and not (designs / "uploads" / item["mockup"]).is_file():
+    placed = any((designs / "uploads" / item["mockup"]).is_file() for item in plan)  # an earlier apply left uploads: a reset
+    for item in plan:  # no upload of this package anywhere + a screen = a foreign screen, never kept silently
+        if not placed and (designs / "screens" / item["screen_file"]).is_file():
             issues.append(_issue("pre_existing_screen", item["screen_file"], f"screens/{item['screen_file']} already exists "
-                                 "without its upload: move it away or delete it, the first apply never keeps a foreign screen"))
+                                 "and none of this package's uploads does: move the screen away, the first apply never keeps a foreign screen"))
     if guidelines.is_file():
         targets.append((designs / "visual-guidelines.md", guidelines.read_bytes(), False))
     for path, data, strict in targets:  # all checks first: a refusal writes nothing
