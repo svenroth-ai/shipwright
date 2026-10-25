@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 111,
-      "total": 111
+      "passed": 112,
+      "total": 112
     },
     "integration": {
       "status": "passed",
@@ -29,9 +29,9 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py -q",
       "exit_code": 0,
-      "tests_run": 24,
+      "tests_run": 25,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
-      "timestamp": "2026-10-25T18:25:36.600Z"
+      "timestamp": "2026-10-25T18:34:45.342Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -72,9 +72,9 @@
           "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_injection_replaces_an_old_comment_and_handles_a_bare_fragment, ::test_old_comments_are_all_replaced_even_with_a_gt_inside PASSED"
         },
         {
-          "behavior": "re-entry with the recorded package hash is a no-op that keeps review-loop edits; a changed hash or a bad marker is refused; a crash mid-write leaves no truncated file; SKILL routes a Brief package before New Design Session",
+          "behavior": "re-entry with the recorded package hash is a no-op that keeps review-loop edits; a changed hash or a bad marker is refused; a crash mid-write leaves no truncated file; a re-entry notices a deleted screen or an edited upload; SKILL routes a Brief package before New Design Session",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_apply_then_reentry_keeps_review_loop_edits, ::test_in_process_a_changed_package_after_apply_is_refused, ::test_in_process_a_different_applied_hash_is_not_silently_reapplied, ::test_in_process_a_marker_that_is_not_a_json_object_is_an_issue, ::test_in_process_a_marker_with_invalid_json_is_an_issue, ::test_in_process_a_crash_mid_write_leaves_no_truncated_file_and_the_rerun_completes; plugins/shipwright-design/tests/test_apply_brief_package.py::test_skill_routes_a_recorded_brief_package_before_a_new_design_session PASSED"
+          "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_apply_then_reentry_keeps_review_loop_edits, ::test_in_process_a_changed_package_after_apply_is_refused, ::test_in_process_a_different_applied_hash_is_not_silently_reapplied, ::test_in_process_a_marker_that_is_not_a_json_object_is_an_issue, ::test_in_process_a_marker_with_invalid_json_is_an_issue, ::test_in_process_a_crash_mid_write_leaves_no_truncated_file_and_the_rerun_completes, ::test_in_process_already_applied_notices_a_deleted_screen_and_an_edited_upload; plugins/shipwright-design/tests/test_apply_brief_package.py::test_skill_routes_a_recorded_brief_package_before_a_new_design_session PASSED"
         }
       ],
       "counts": {

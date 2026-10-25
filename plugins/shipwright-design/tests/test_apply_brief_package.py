@@ -163,6 +163,7 @@ def test_skill_routes_a_recorded_brief_package_before_a_new_design_session():
     assert brief < new_session < upload  # evaluated first, not nested under --upload
     section = text[brief:new_session]
     assert "apply-brief-package.py" in section and "neither `--upload` nor files" in section
+    assert "Any non-zero exit (1 or 3) = STOP" in section
 
 
 @pytest.mark.covers("FR-01.04")

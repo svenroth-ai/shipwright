@@ -42,8 +42,8 @@ Output:
 ### B. Detect Mode
 
 **Brief package** (`shipwright_run_config.json` records `brief_dir` or `brief_package`) -- checked FIRST, before New Design Session; it needs neither `--upload` nor files in `uploads/`:
-- Run `uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"` (re-verifies the package; exit 3 = STOP)
-- `screen-map.json` answers the upload-screen-mapping question; continue in [Upload Mode](references/upload-mode.md) (flows for 2+ screens, gates). Do NOT generate the mapped screens from scratch
+- Run `uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"` (re-verifies the package). **Any non-zero exit (1 or 3) = STOP**: report the issues; never generate or hand-copy the mapped screens and never type an FR id yourself. Only exit 0 (ok or `already_applied`) continues
+- `screen-map.json` answers the upload-screen-mapping question; after exit 0 continue in [Upload Mode](references/upload-mode.md) (flows for 2+ screens, gates). Do NOT generate the mapped screens from scratch
 
 **New Design Session** (no `.shipwright/designs/` directory, and no Brief package above):
 - Read specs, generate from scratch

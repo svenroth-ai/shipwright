@@ -145,3 +145,18 @@ def test_in_process_a_crash_mid_write_leaves_no_truncated_file_and_the_rerun_com
     monkeypatch.setattr(os, "replace", real)
     code, out = main_json(tool, capsys, project)
     assert code == 0 and out["ok"] and (designs / "brief-package-applied.json").is_file()
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_already_applied_notices_a_deleted_screen_and_an_edited_upload(project, tool, capsys):
+    main_json(tool, capsys, project)
+    designs = project / ".shipwright" / "designs"
+    (designs / "screens" / "02-editor.html").unlink()
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and out["issues"][0]["code"] == "applied_files_missing"
+    (designs / "brief-package-applied.json").unlink()  # the documented reset path
+    code, out = main_json(tool, capsys, project)
+    assert code == 0 and (designs / "screens" / "02-editor.html").is_file()
+    (designs / "uploads" / "01-notes.html").write_text("edited", encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and "byte-identical" in out["issues"][0]["message"]

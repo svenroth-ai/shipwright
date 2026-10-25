@@ -21,9 +21,9 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --proje
 ```
 
 It re-verifies the package against the hash `run_config` holds (exit 3 = changed, unapproved or
-no package: STOP, never repair it by hand), checks every screen-map entry, and only then writes:
+no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means STOP**: report the issues to the operator; do not generate or hand-copy the mapped screens (step 6 "generate only screens not covered by uploads" does NOT apply to them) and do not type FR ids. Only exit 0 (`ok` or `already_applied`) continues, checks every screen-map entry, and only then writes:
 
-- `uploads/<mockup>.html`: the mockup **byte-identical** (the uploads gate keeps it that way);
+- `uploads/<mockup>.html`: the mockup **byte-identical** (a later re-entry compares it with the package again);
 - `screens/NN-<screen id>.html`: a copy of the mockup with `<!-- Requirements: FR-xx.yy -->`
   injected. A screen-map `requirements` entry is a capability slug (the lower-kebab form of the
   FR `Name`); the FR ids are the ones Project minted in `spec.md`. A slug with no FR row stops the
@@ -31,7 +31,7 @@ no package: STOP, never repair it by hand), checks every screen-map entry, and o
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
   `design-manifest.md` (every screen listed with its Linked FRs).
 
-On the first apply an existing file that differs is never overwritten (exit 1). Then continue with the normal Design
+On the first apply an existing file that differs is never overwritten (exit 1). After exit 0, continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
@@ -43,4 +43,7 @@ same hash (a resumed Design, or the review loop coming back) it answers `already
 and writes nothing: later edits to `screens/NN-*.html` or `visual-guidelines.md` stay as they are.
 `exists_differs` can therefore only appear on the FIRST apply. A changed package is refused by the
 hash check (exit 3), and a marker from a different hash is refused too (exit 1): never re-apply
-over edited screens.
+over edited screens. A re-entry also checks that every `uploads/<mockup>` is still byte-identical to the package
+and every `screens/NN-*.html` still exists (`applied_files_missing`, exit 1); to re-apply onto missing files
+delete `brief-package-applied.json` (`exists_differs` still protects edited ones). `design-manifest.md` is
+regenerated on every first apply, also on a re-run after a crash.
