@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-codeql-uninit-phase-gate-state",
+  "date": "2026-10-25",
+  "section": "Iterate — bug: CodeQL uninitialized local in phase_gate.retry_state",
+  "title": "Bind state before the retry loop in retry_state",
+  "context": "CodeQL alert 1433 (py/uninitialized-local-variable) flagged `state` in phase_gate.retry_state: it was only assigned inside the two-attempt read loop, which always breaks or returns.",
+  "decision": "Initialise `state: Any = None` before the loop. A hypothetical fall-through now yields None through the existing isinstance check, i.e. the documented 'unknown' answer.",
+  "consequences": "Behavior unchanged; the alert closes at the next CodeQL run on main. No suppression comment or baseline entry was added.",
+  "rationale": "Fixing the code keeps the scanner signal honest; a false positive in practice is still a defect for a reader who must prove the loop cannot fall through.",
+  "rejected": "Inline suppression or dismissing the alert as false positive: both hide the pattern instead of removing it.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
