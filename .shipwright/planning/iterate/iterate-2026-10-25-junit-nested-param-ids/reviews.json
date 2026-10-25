@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-junit-nested-param-ids",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:23:24.397311+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:46.536176+00:00",
+      "disposition": "small bug fix below the medium threshold for plan-stage reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": 34,
+          "finding": "The end anchor also matches before a trailing newline, so a name ending in a bracket plus a newline folds but keeps the newline. Cannot happen with real pytest output.",
+          "suggestion": "Optionally anchor to the true end of the string. No behaviour change for real output.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_resume.py",
+          "line": 31,
+          "finding": "The parameter fold exists twice: the regex in the readers and a first-bracket split in the resume module. They agree except for ids without a closing bracket, where the difference is harmless.",
+          "suggestion": "Later change: share one helper. Do not widen this iterate.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:46.259372+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b9d6a69fbd483b1247e7994e7aecf0ef20b03baa"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:47.105839+00:00",
+      "disposition": "one-line regex fix, no risk flag, small diff; the pass is conditional per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:47.326907+00:00",
+      "disposition": "one-line regex fix, no risk flag, small diff; the pass is conditional per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:27.914210+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b9d6a69fbd483b1247e7994e7aecf0ef20b03baa"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:46.732600+00:00",
+      "disposition": "small bug fix below the medium threshold for plan-stage reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T09:24:46.922891+00:00",
+      "disposition": "small bug fix below the medium threshold for plan-stage reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

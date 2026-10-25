@@ -29,7 +29,9 @@ from ._evidence_vocab import entry, merge_into, stronger
 # Cap the parsed JUnit size — a hostile/huge report (billion-laughs entity blow-up)
 # fails closed to an empty parse rather than exhausting memory (no defusedxml dep).
 _MAX_XML_BYTES = 8 * 1024 * 1024
-_PARAM_SUFFIX = re.compile(r"\[[^\]]*\]$")  # pytest parametrization: test_foo[p0] → test_foo
+# pytest parametrization: test_foo[p0] → test_foo. From the FIRST "[": a function name holds none, but a
+# parameter value may (`test_foo[branches: [main]-x]`), and a match that stops at the first `]` would leave that id unfolded.
+_PARAM_SUFFIX = re.compile(r"\[.*\]$", re.DOTALL)
 
 
 def norm_path(raw: str, root: Path | None, base: str = "") -> str:
