@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
-  "date": "2026-10-25T19:52:24.804140Z",
+  "date": "2026-10-25T20:16:14.274639Z",
   "event_at": "2026-10-25T18:22:58.879381+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -76,11 +76,16 @@
         "behavior": "an unused bare profile: hint adds a sanitised non-blocking warning (exit 0, line kept, inference stays) and briefs with no profile line gain no new key",
         "disposition": "tested",
         "evidence": "shared/tests/test_brief_profile.py PASSED"
+      },
+      {
+        "behavior": "one precedence rule over the profile sources: JSON field, text Stack profile key, last trailer, then only the bare hint; a hint never masks a strict source (table-driven)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
       }
     ],
     "counts": {
-      "testable": 13,
-      "tested": 13,
+      "testable": 14,
+      "tested": 14,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -93,9 +98,9 @@
     "surface": "cli",
     "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
     "exit_code": 0,
-    "tests_run": 27,
+    "tests_run": 41,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
-    "timestamp": "2026-10-25T19:52:24.448Z",
+    "timestamp": "2026-10-25T20:16:13.943Z",
     "attempts": 1
   },
   "declared_removals": [],

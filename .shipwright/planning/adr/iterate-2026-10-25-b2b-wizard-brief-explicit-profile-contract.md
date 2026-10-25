@@ -23,6 +23,9 @@ Run: iterate-2026-10-25-b2b-wizard-brief-explicit-profile (campaign brief-driven
 - **Blast radius:** `brief_profile.py` and the resolver are touched only for a brief that can name a profile; if they cannot be loaded or fail unexpectedly, that is `resolver_unavailable` (exit 3), never a silent inference. A brief that names none works without them.
 - The bidi/zero-width class is written as escapes, so no invisible character sits in the source.
 
+## Precedence of the profile sources (fix round 4, the single rule)
+Strict sources always beat the bare hint, in this order: (1) JSON field `profile` / alias `stack_profile`; (2) text `Stack profile:` / `stack_profile:` key; (3) the last `(Intake ...)` trailer item (must end the text; two trailers or items are refused); (4) only if none of 1-3 exists, the bare unbulleted `profile:` hint. A strict source that cannot be used exits 3; a blank strict field means no choice (trailer and hint not consulted); a hint is considered only when no strict source exists, so it cannot mask one (a wizard one-liner whose idea starts with "Profile:" keeps its trailer name) and a present strict source means the hint is not even warned about. Pinned by a table-driven test over the combinations.
+
 ## Architecture Review
 Both reviewers: approve (glm, openai). glm (low): prefer a structured field over prose parsing if the WebUI changes anyway; openai: the trailer syntax becomes a compatibility commitment (recorded above).
 

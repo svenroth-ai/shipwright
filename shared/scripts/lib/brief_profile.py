@@ -5,18 +5,20 @@
 (the WebUI Intent Wizard, a user, a project profile). This module finds that name, asks the
 stack-profile resolver whether it can be used, and hands ``brief_intake.map_brief`` the answer.
 
-Where the name comes from (first hit wins; an explicit value always beats inference):
+PRECEDENCE (one rule: strict sources always beat the bare hint; an explicit value always beats inference):
 
-1. a STRICT field: ``profile`` (JSON / fenced JSON) or ``stack_profile`` (also the ``Stack profile:`` line of
-   a ``key: value`` brief); ``profile`` wins; the first present field decides. A strict name that cannot be
-   used is an error (exit 3);
-2. a HINT: a bare, unbulleted ``profile: x`` line of a ``key: value`` brief (``profile_hint``). Free text
-   uses that word too ("Profile: none", "- profile: avatar"), so a hint counts only when it has the
-   profile-name shape AND the resolver finds it; anything else stays prose, is not used, and adds a
-   non-blocking ``warnings`` entry (exit 0) that points to ``Stack profile: <name>``;
+1. a JSON field ``profile`` (alias ``stack_profile``; ``profile`` wins, the first present field decides);
+2. the ``Stack profile:`` / ``stack_profile:`` line of a ``key: value`` brief (it lands in the same field);
 3. the ``Stack profile: <name>`` item of the ``(Intake ...)`` trailer the WebUI writes today
    (``composeNewBrief`` in the WebUI ``IntentWizard/contract.ts``): the LAST ``(Intake`` in the text, which
-   must end it. Two trailers or two ``Stack profile:`` items are ambiguous and refused.
+   must end it. Two trailers or two ``Stack profile:`` items are ambiguous and refused;
+4. ONLY when none of 1-3 exists: a HINT, a bare, unbulleted ``profile: x`` line of a ``key: value`` brief
+   (``profile_hint``). Free text uses that word too ("Profile: none", "Profile: dentist SaaS ..."), so a hint
+   counts only with the profile-name shape AND a resolver hit; anything else stays prose, is not used, and
+   adds a non-blocking ``warnings`` entry (exit 0) that points to ``Stack profile: <name>``.
+
+A strict source that cannot be used is an error (exit 3). A blank strict field means "no choice made":
+neither the trailer nor the hint is consulted. A hint is never even looked at when a strict source exists.
 
 The resolver alone decides what a name means (project > user > bundled, ``profile_resolver.py``):
 no profile file is opened here, and nothing a profile file says is trusted or echoed unsanitized.
@@ -72,18 +74,23 @@ def requested(raw: Any) -> tuple[str, Any]:
     if not isinstance(raw, dict):
         return "", None
     blank = False
-    for key in (*FIELDS, "profile_hint"):
+    for key in FIELDS:  # (1) JSON field, (2) text `Stack profile:` key: both land in these dict keys
         value = raw.get(key)
         if value is None:
             continue  # absent: look at the next field
         if isinstance(value, str) and not value.strip():
             blank = True  # present but blank = no choice made here; the next field may still name one
             continue
-        return ("hint" if key == "profile_hint" else "strict"), value.strip() if isinstance(value, str) else value
+        return "strict", value.strip() if isinstance(value, str) else value
     desc = raw.get("description")
-    if blank or not isinstance(desc, str):
-        return "", None  # a blank field means the prose trailer is NOT consulted either
-    return _trailer_item(desc)
+    if not blank and isinstance(desc, str):
+        kind, value = _trailer_item(desc)  # (3) the last (Intake ...) trailer item
+        if kind:
+            return kind, value
+    hint = raw.get("profile_hint")
+    if blank or not isinstance(hint, str) or not hint.strip():
+        return "", None  # a blank strict field means no choice: neither trailer nor hint is consulted
+    return "hint", hint.strip()  # (4) only when no strict source exists, so a hint can never mask one
 
 
 def _resolver() -> Any:
@@ -112,8 +119,9 @@ def _error(name: Any, code: str, detail: Any) -> dict:
 
 def _ignored(value: Any) -> dict:
     """A bare ``profile:`` hint that was NOT used: no override (inference stays), but never silent."""
-    msg = (f"the line 'profile: {_plain(value)}' was not used as a stack profile, so the profile is inferred from "
-           "the answers; to name a stack write 'Stack profile: <name>'")
+    msg = (f"the line 'profile: {_plain(value)}' is not a usable stack profile, so it was ignored and the brief names "
+           "none: the profile comes from the other answers (persistence) or stays undecided; to name a stack "
+           "write 'Stack profile: <name>'")
     return {"extra": {"warnings": [msg]}}
 
 

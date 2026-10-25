@@ -143,7 +143,14 @@ when genuinely needed.
 ## A stack profile named in the brief
 
 A brief may NAME the stack profile (the WebUI wizard, a user, a project profile). Contract (additive; the file
-route has no brief version, the field is simply optional):
+route has no brief version, the field is simply optional).
+
+**Precedence (the one rule): strict sources always beat the bare hint.** In this order: (1) JSON field `profile`
+(alias `stack_profile`), (2) a `Stack profile:` / `stack_profile:` line of a text brief, (3) the last `(Intake ...)`
+trailer item, (4) ONLY if none of 1-3 is present, a bare unbulleted `profile:` line (the hint). A strict source
+that cannot be used exits 3; a hint is never even looked at when a strict source exists, so it can neither mask
+one nor produce a warning. A blank strict field means "no choice": neither the trailer nor the hint is consulted.
+So a wizard line that starts with "Profile: dentist SaaS (Intake - ...; Stack profile: vite-hono.)" uses vite-hono.
 
 - **Field:** `profile` (alias `stack_profile`) in a JSON object / fenced JSON, a `Stack profile:` line of a
   `key: value` brief (strict: a name that cannot be used exits 3, even misspelled), or the `Stack profile: <name>`
@@ -153,7 +160,7 @@ route has no brief version, the field is simply optional):
   profile; two trailers or two `Stack profile:` items are ambiguous and refused (`profile_unusable`).
 - **A bare `profile:` line** of a `key: value` brief is only a hint: it counts when it is unbulleted, has the
   profile-name shape and the resolver knows it. Otherwise ("Profile: none", free text, a misspelled name) the line
-  stays in the description, is NOT used (the profile is inferred) and the result gains a non-blocking `warnings`
+  stays in the description, is NOT used (the profile comes from the other answers, or stays undecided) and the result gains a non-blocking `warnings`
   entry that names the ignored value (exit 0): show it to the user. A bulleted line ("- profile: avatar") is not a
   hint at all. Use `Stack profile: <name>` for a choice that must be used or refused.
 - **An explicit name always beats inference** (`persistence`); the result gains `profile_requested`,

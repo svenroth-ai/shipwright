@@ -249,3 +249,42 @@ def test_no_invisible_characters_in_the_profile_sources():
         bad = [hex(ord(c)) for c in text if 0x200B <= ord(c) <= 0x200F or 0x202A <= ord(c) <= 0x202E
                or 0x2066 <= ord(c) <= 0x2069 or ord(c) == 0xFEFF]
         assert not bad, (path.name, bad)
+
+
+_TRAILER = "(Intake \u2014 Users: Just me; Saves data: No; Runs: Local; Stack profile: {}.)"
+# (case id, brief, expected profile, expects a warning, expects profile_error)
+_PRECEDENCE = [
+    ("one-liner idea starting with Profile: plus a real trailer", "Profile: dentist SaaS " + _TRAILER.format("vite-hono"),
+     "vite-hono", False, False),
+    ("one-liner idea starting with Profile: and no trailer", "persistence: yes\nProfile: dentist SaaS", "supabase-nextjs", True, False),
+    ("text Stack profile key beats a valid hint", "persistence: yes\nprofile: supabase-nextjs\nStack profile: vite-hono",
+     "vite-hono", False, False),
+    ("text Stack profile key beats a typo hint without a warning", "persistence: yes\nStack profile: vite-hono\nprofile: vite-hon",
+     "vite-hono", False, False),
+    ("a trailer beats a valid hint", "profile: supabase-nextjs\nMy app " + _TRAILER.format("vite-hono"), "vite-hono", False, False),
+    ("a trailer beats a typo hint without a warning", "persistence: yes\nprofile: vite-hon\nMy app " + _TRAILER.format("vite-hono"),
+     "vite-hono", False, False),
+    ("a valid hint alone is used", "persistence: yes\nprofile: vite-hono", "vite-hono", False, False),
+    ("a typo hint alone warns and infers", "persistence: yes\nprofile: vite-hon", "supabase-nextjs", True, False),
+    ("a JSON field beats the trailer", {**BASE, "profile": "vite-hono", "description": "x " + _TRAILER.format("generic")},
+     "vite-hono", False, False),
+    ("a JSON field beats a hint", {**BASE, "profile": "vite-hono", "profile_hint": "supabase-nextjs"}, "vite-hono", False, False),
+    ("a bad strict field is an error even beside a good trailer", {**BASE, "profile": "nope", "description": "x " + _TRAILER.format("vite-hono")},
+     None, False, True),
+    ("a bad trailer is an error even beside a good hint", "profile: vite-hono\nMy app " + _TRAILER.format("nope"), None, False, True),
+    ("two trailers are ambiguous even beside a hint", "profile: vite-hono\n" + _TRAILER.format("a") + " " + _TRAILER.format("b"),
+     None, False, True),
+    ("a blank strict field consults neither trailer nor hint", {**BASE, "profile": "", "profile_hint": "vite-hono",
+     "description": "x " + _TRAILER.format("vite-hono")}, "supabase-nextjs", False, False),
+]
+
+
+@pytest.mark.parametrize("case,brief,profile,warns,errors", _PRECEDENCE, ids=[c[0] for c in _PRECEDENCE])
+def test_profile_source_precedence_table(tmp_path, case, brief, profile, warns, errors):
+    out = brief_intake.intake(brief, str(tmp_path))
+    assert out["profile"] == profile, case
+    assert ("profile_error" in out) is errors, case
+    if not errors:  # an error carries its own message in `warnings`; here only the hint warning is in question
+        assert bool(out.get("warnings")) is warns, (case, out.get("warnings"))
+    else:
+        assert out["code"] == "profile_unusable" and "was not used" not in " ".join(out["warnings"]), case
