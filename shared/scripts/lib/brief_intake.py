@@ -144,14 +144,13 @@ def _no_brief_result() -> dict:
 
 
 _KEY_ALIASES = {"location": "run_location"}
-_KV_RE = re.compile(r"^\s*[-*]?\s*([A-Za-z_][\w -]*?)\s*[:=]\s*(.+?)\s*$")
-_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)  # greedy body + trailing-fence anchor: a nested {...} parses in full
+_KV_RE = re.compile(r"^[ \t]*(?:[-*][ \t]*)?([A-Za-z_][\w-]*(?: +[\w-]+)*)[ \t]*[:=][ \t]*(.+)$")  # each space has ONE owner: linear
+_FENCE_RE = re.compile(r"^[ 	]*```(?:json)?\s*(\{.*\})\s*```", re.DOTALL | re.M)  # the opening fence starts a LINE: a fence inside an idea is prose
 _PRIVATE = ("_text", "_dup", "profile_hint")  # side channel to brief_profile.py: only the text parser may set it
-_NAMES_PROFILE = re.compile(r"stack.?profile|^\s*[-*]?\s*profile\s*[:=]|[\"']profile[\"']\s*:", re.I | re.M)
+_NAMES_PROFILE = re.compile(r"(?:^|;)[ \t]*(?:stack[ _-]?)?profile[ \t]*[:=]|[\"'](?:stack_)?profile(?:_hint)?[\"']\s*:", re.I | re.M)
 
 
-class _TextBrief(dict):
-    """A brief parsed from ``key: value`` text (the only source allowed to carry ``_PRIVATE`` keys)."""
+class _TextBrief(dict): """The text parser's output: the only brief that may carry ``_PRIVATE`` keys."""
 
 
 def _parse_text_brief(text: str) -> dict:
@@ -162,8 +161,9 @@ def _parse_text_brief(text: str) -> dict:
             return json.loads(fence.group(1))
         except (ValueError, json.JSONDecodeError):
             pass
-
-    fields, meta, prose = {}, {"_text": text.strip()}, []  # meta: side channel for brief_profile.py, never a brief answer
+    fields, meta, prose = {}, {"_dup": False}, []  # meta: side channel for brief_profile.py, never a brief answer
+    if len(text.strip().splitlines()) == 1:
+        meta["_text"] = text.strip()  # the WebUI one-liner: its trailer is read even when a key swallowed the line
     for line in text.splitlines():
         m = _KV_RE.match(line)
         key = ""
@@ -172,8 +172,10 @@ def _parse_text_brief(text: str) -> dict:
             key = _KEY_ALIASES.get(key, key)
             if key == "profile" and line.lstrip()[:1] not in "-*":  # only a hint, and the line stays prose
                 meta["profile_hint"] = m.group(2).strip()
-        if key in BRIEF_QUESTIONS or key == "stack_profile":
-            meta["_dup"] = meta.get("_dup") or (key == "stack_profile" and key in fields)  # two lines: refused
+        if key == "stack_profile":  # like the hint: the line stays in the description (adopt sees the same text as before)
+            meta["_dup"] = "stack_profile" in meta  # a second line: refused
+            meta[key] = m.group(2).strip()
+        if key in BRIEF_QUESTIONS:
             fields[key] = m.group(2).strip()
         elif line.strip():
             prose.append(line.strip())  # keep non-kv prose as the description
@@ -193,7 +195,6 @@ def load_brief(source: Optional[Union[str, dict]]) -> Optional[dict]:
     if not text:
         return None
 
-    # Inline JSON payload.
     if text.startswith("{"):
         try:
             return json.loads(text)
@@ -223,7 +224,6 @@ def load_brief(source: Optional[Union[str, dict]]) -> Optional[dict]:
             pass
         return None
 
-    # An inline payload (markdown/fenced-json/key:value) or a plain sentence.
     return _parse_text_brief(path_str)
 
 

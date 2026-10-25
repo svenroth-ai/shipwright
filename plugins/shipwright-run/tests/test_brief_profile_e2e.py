@@ -66,3 +66,20 @@ def test_unknown_profile_stops_at_intake_and_picks_no_fallback(tmp_path):
     out = json.loads(took.stdout)
     assert took.returncode == 3 and out["profile"] is None and out["profile_error"]["code"] == "not_found"
     assert out["code"] == "profile_unusable" and out["refused"] is True  # the shape exit-3 consumers read
+
+
+def test_exact_webui_one_line_brief_with_a_project_profile_reaches_the_run_config(tmp_path):
+    pdir = tmp_path / ".shipwright" / "profiles"
+    pdir.mkdir(parents=True)
+    (pdir / "acme-stack.json").write_text(json.dumps({"name": "acme-stack", "description": "acme"}), encoding="utf-8")
+    line = ("Location: Zurich gyms. A class booking app (Intake \u2014 Users: Customers / public; Saves data: Yes; "
+            "Runs: On the web; Stack profile: acme-stack; Supabase env vars will be needed at the Deploy step (not before).)")
+    (tmp_path / "wizard-brief.md").write_text(line, encoding="utf-8")
+    took = _run([INTAKE, "--brief", "wizard-brief.md", "--project-root", tmp_path], tmp_path)
+    assert took.returncode == 0, took.stdout + took.stderr
+    assert json.loads(took.stdout)["profile"] == "acme-stack"
+    wrote = _run([ORCH, "write-config", "--scope", "full_app", "--autonomy", "guided", "--project-root", tmp_path,
+                  "--profile", "acme-stack"], tmp_path)
+    assert wrote.returncode == 0, wrote.stdout + wrote.stderr
+    cfg = json.loads((tmp_path / "shipwright_run_config.json").read_text(encoding="utf-8"))
+    assert cfg["profile"] == "acme-stack"

@@ -46,7 +46,7 @@ _SHARED_SCRIPTS = str(Path(__file__).resolve().parents[1])
 _ITEM_RE = re.compile(r"Stack profile:", re.IGNORECASE)
 _INTAKE_RE = re.compile(r"\(Intake", re.IGNORECASE)
 _EARLIER_TRAILER_RE = re.compile(r"\(Intake[^()]*Stack profile:", re.IGNORECASE)
-_ITEM_VALUE_RE = re.compile(r"Stack profile:\s*([^;)]+)", re.IGNORECASE)
+_ITEM_VALUE_RE = re.compile(r"Stack profile:[ \t]*([^;)\r\n]+)", re.IGNORECASE)
 _NAME_SHAPE = re.compile(r"[a-z0-9][a-z0-9-]*")
 # C0 and C1 controls, zero-width / bidi marks, bidi overrides and isolates, BOM: written as escapes on purpose
 _CTRL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]")
@@ -79,16 +79,18 @@ def _trailer_item(desc: str) -> tuple[str, Any]:
 
 
 def requested(raw: Any) -> tuple[str, Any]:
-    """``(kind, value)``: kind is ``""`` (none), ``strict``, ``hint``, ``ambiguous`` or ``misplaced``. ``value`` may be a non-string."""
+    """``(kind, value)``: kind is ``""`` (none), ``strict``, ``hint`` or ``ambiguous``. ``value`` may be a non-string."""
     if not isinstance(raw, dict):
         return "", None
     if raw.get("_dup"):  # two `Stack profile:` lines in a key: value brief
         return "ambiguous", AMBIGUOUS
     trailer, blank = ("", None), False
-    for text in (raw.get("description"), raw.get("_text")):  # (3) the last trailer; `_text` = the whole brief when a key swallowed it
+    for text in (raw.get("description"), raw.get("_text")):  # (3) the last trailer; `_text` = a one-line brief
         trailer = _trailer_item(text) if isinstance(text, str) else ("", None)
-        if trailer[0]:
+        if trailer[0] in _SOURCES:
             break
+    if "_text" in raw and trailer[0] in _SOURCES:
+        return trailer  # the WebUI one-liner: a key at the start of the line is the idea, the trailer is the choice
     for key in FIELDS:  # (1) JSON field, (2) text `Stack profile:` key: both land in these dict keys
         value = raw.get(key)
         if value is None:
@@ -97,15 +99,18 @@ def requested(raw: Any) -> tuple[str, Any]:
             blank = True  # present but blank = no choice made here; the next field may still name one
             continue
         value = value.strip() if isinstance(value, str) else value
-        if "_text" in raw and trailer[0] == "strict" and trailer[1] != value:
+        if "_dup" in raw and trailer[0] == "strict" and trailer[1] != value:
             return "ambiguous", AMBIGUOUS  # a text key and a trailer disagree: never pick one silently
         return "strict", value
-    if not blank and trailer[0] in ("strict", "ambiguous"):
+    if not blank and trailer[0] in _SOURCES:
         return trailer
     hint = raw.get("profile_hint")
     if blank or not isinstance(hint, str) or not hint.strip():
-        return ("misplaced", None) if trailer[0] == "misplaced" and not blank else ("", None)
+        return "", None  # a blank strict field means no choice: neither trailer nor hint is consulted
     return "hint", hint.strip()  # (4) only when no strict source exists, so a hint can never mask one
+
+
+_SOURCES = ("strict", "ambiguous")
 
 
 _ALLOWED_KEYS = {"profile", "stack_profile", "profile_hint", "_text", "_dup"}
@@ -157,9 +162,6 @@ def _select(raw: Any, project_root: Any) -> Optional[dict]:
     kind, name = requested(raw)
     if not kind:
         return None
-    if kind == "misplaced":
-        return {"extra": {"warnings": ["a 'Stack profile:' item sits in an '(Intake ...' part that does not end the brief, so "
-                                       "it is not the wizard trailer and was ignored; to name a stack write 'Stack profile: <name>'"]}}
     if kind == "ambiguous":
         return _error(name, "invalid", "the brief names more than one stack profile (several Stack profile lines or "
                                     "items, or two Intake trailers); give exactly one")
@@ -187,12 +189,23 @@ def _select(raw: Any, project_root: Any) -> Optional[dict]:
     }
 
 
+def _misplaced(raw: Any) -> bool:
+    """A ``Stack profile:`` item in an ``(Intake`` part that does not end the text: tolerated (never used), but said."""
+    texts = (raw.get("description"), raw.get("_text")) if isinstance(raw, dict) else ()
+    return any(isinstance(t, str) and _trailer_item(t)[0] == "misplaced" for t in texts)
+
+
 def select(raw: Any, project_root: Any = ".") -> Optional[dict]:
-    """``_select`` plus a non-blocking warning for a stray profile-looking JSON key (``stackProfile``)."""
+    """``_select`` plus non-blocking warnings: a misplaced trailer, a stray profile-looking JSON key (``stackProfile``)."""
     res = _select(raw, project_root)
+    notes = []
+    if _misplaced(raw):
+        notes.append("a 'Stack profile:' item sits in an '(Intake ...' part that does not end the brief, so it is not the "
+                     "wizard trailer and was ignored; to name a stack write 'Stack profile: <name>'")
     stray = _stray_keys(raw)
     if stray:
-        note = f"the key(s) {', '.join(map(repr, stray))} are not a profile field and were ignored; use `profile`"
+        notes.append(f"the key(s) {', '.join(map(repr, stray))} are not a profile field and were ignored; use `profile`")
+    if notes:
         res = res or {"extra": {}}
-        res["extra"].setdefault("warnings", []).append(note)
+        res["extra"].setdefault("warnings", []).extend(notes)
     return res

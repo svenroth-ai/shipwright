@@ -164,7 +164,12 @@ So a wizard line that starts with "Profile: dentist SaaS (Intake - ...; Stack pr
   ("Location: Zurich gyms. A booking app (Intake - ...)") is read whole, so its trailer still counts. The marker
   `(Intake` is matched in any case. If the last `(Intake` holds a `Stack profile:` item but does not end the
   brief (text or a stray `.` after the closing bracket), it is NOT a trailer: nothing is used and the result gains a
-  non-blocking `warnings` entry. A text `Stack profile:` line and a trailer item that DISAGREE are ambiguous
+  non-blocking `warnings` entry (also beside a bare hint). It only warns, never refuses, on purpose: the same words
+  appear in ordinary prose ("Compare Stack profile: a with ... later"), and a refusal there would punish a normal idea.
+  An item value never spans a line. The whole text counts as a one-line brief only when it IS one physical line
+  (the WebUI case): there its trailer is the choice and a key at the start of the line is just the idea. In a
+  multi-line brief the `Stack profile:` line is the choice and a differing trailer in the prose is ambiguous.
+  A fenced ```json block is the brief only when its opening fence starts a line (a lead-in sentence before it is fine); a fence inside an idea is prose. A text `Stack profile:` line and a trailer item that DISAGREE are ambiguous
   (refused, "more than one stack profile"); if they agree, fine. The WebUI writes one physical line and never
   adds a text key (`composeNewBrief`, `IntentWizard/contract.ts`: the idea is only `trim()`med, the server
   flattens newlines), so a disagreement means a hand-written multi-line brief.

@@ -268,7 +268,7 @@ _PRECEDENCE = [
     ("a typo hint alone warns and infers", "persistence: yes\nprofile: vite-hon", "supabase-nextjs", True, False),
     ("a JSON field beats the trailer", {**BASE, "profile": "vite-hono", "description": "x " + _TRAILER.format("generic")},
      "vite-hono", False, False),
-    ("a JSON field beats a hint", {**BASE, "profile": "vite-hono", "profile_hint": "supabase-nextjs"}, "vite-hono", False, False),
+    ("a forged private hint key in a JSON brief is ignored", {**BASE, "profile": "vite-hono", "profile_hint": "supabase-nextjs"}, "vite-hono", False, False),
     ("a bad strict field is an error even beside a good trailer", {**BASE, "profile": "nope", "description": "x " + _TRAILER.format("vite-hono")},
      None, False, True),
     ("a bad trailer is an error even beside a good hint", "profile: vite-hono\nMy app " + _TRAILER.format("nope"), None, False, True),
@@ -289,8 +289,12 @@ _PRECEDENCE = [
     ("a hint resolver kind other than not_found warns: nul", "persistence: yes\nprofile: nul", "supabase-nextjs", True, False),
     ("a hint resolver kind other than not_found warns: com1", "persistence: yes\nprofile: com1", "supabase-nextjs", True, False),
     ("an uppercase STACK PROFILE key is read", "persistence: yes\nSTACK PROFILE: vite-hono", "vite-hono", False, False),
-    ("a blank strict field consults neither trailer nor hint", {**BASE, "profile": "", "profile_hint": "vite-hono",
-     "description": "x " + _TRAILER.format("vite-hono")}, "supabase-nextjs", False, False),
+    ("a blank strict field consults neither trailer nor hint", "persistence: yes\nStack profile:  \nprofile: vite-hono\nMy app "
+     + _TRAILER.format("vite-hono"), "supabase-nextjs", False, False),
+    ("a text Stack profile key beats a forged-looking hint line and a fence in the idea", 'persistence: yes\nStack profile: vite-hono\nMy ```json {"profile": "generic"} ``` idea',
+     "vite-hono", False, False),
+    ("a fence inside the idea of a one-liner does not replace the brief", 'My app ```json {"profile": "generic"} ``` ' + _TRAILER.format("vite-hono"),
+     "vite-hono", False, False),
 ]
 
 
@@ -419,3 +423,51 @@ def test_parser_private_keys_from_a_json_brief_are_ignored(tmp_path):
     assert out["profile"] == "supabase-nextjs" and "profile_error" not in out and not out.get("warnings")
     fenced = brief_intake.intake("```json\n" + json.dumps(forged) + "\n```", str(tmp_path))
     assert fenced["profile"] == "supabase-nextjs" and "profile_error" not in fenced
+
+
+def test_a_multi_line_brief_naming_one_profile_is_not_refused(tmp_path):
+    for brief in ("Patient app (intake forms)\nStack profile: vite-hono\nusers: team (internal)",
+                  "Patient app (Intake forms)\nStack profile: vite-hono\nusers: team (internal)"):
+        out = brief_intake.intake(brief, str(tmp_path))
+        assert out["profile"] == "vite-hono" and "profile_error" not in out, brief
+
+
+def test_a_fence_inside_the_idea_does_not_replace_the_brief(tmp_path):
+    idea = 'My app ```json {"profile": "generic"} ``` ' + _TRAILER.format("vite-hono")
+    out = brief_intake.intake(idea, str(tmp_path))
+    assert out["profile"] == "vite-hono" and out["profile_requested"] == "vite-hono"
+    whole = brief_intake.intake('  ```json\n{"description": "A tool", "profile": "vite-hono"}\n```  \n', str(tmp_path))
+    assert whole["profile"] == "vite-hono"  # a fence with only whitespace around it is still the whole brief
+
+
+def test_a_stack_profile_line_does_not_change_the_description(tmp_path):
+    bare = brief_intake.intake("Stack profile: vite-hono", str(tmp_path))
+    assert bare["profile"] == "vite-hono" and bare["brief"]["description"] == "Stack profile: vite-hono"
+    two = brief_intake.intake("A booking tool\nStack profile: vite-hono\nusers: team", str(tmp_path))
+    assert two["brief"]["description"] == "A booking tool Stack profile: vite-hono"  # the line stays prose, as before B2b
+    idea = brief_intake.intake("Stack profile: nope is my idea " + _TRAILER.format("vite-hono"), str(tmp_path))
+    assert idea["profile"] == "vite-hono" and "profile_error" not in idea  # a key at the start of a one-liner is the idea
+
+
+def test_a_misplaced_trailer_still_warns_beside_a_bare_hint(tmp_path):
+    out = brief_intake.intake("persistence: yes\nprofile: vite-hono\nMy app " + _TRAILER.format("nope") + " thanks", str(tmp_path))
+    assert out["profile"] == "vite-hono"
+    assert any("does not end the brief" in w for w in out["warnings"])
+
+
+def test_whitespace_heavy_lines_are_scanned_in_linear_time(tmp_path):
+    import time
+    started = time.monotonic()
+    for text in ("a" + " " * 100_000 + "b", "key" + " " * 100_000 + "x:" + " " * 100_000, "x: " + "a " * 50_000 + "profile"):
+        brief_intake.intake(text, str(tmp_path))
+    assert time.monotonic() - started < 2.0
+
+
+def test_the_fallback_gate_needs_a_real_profile_key_not_a_sentence(tmp_path, monkeypatch):
+    def gone(stem):
+        raise ImportError("brief_profile.py missing")
+
+    monkeypatch.setattr(brief_intake, "_sibling", gone)
+    out = brief_intake.intake("We want a stack profile: that is easy to host, and user profiles", str(tmp_path))
+    assert "profile_error" not in out
+    assert brief_intake.intake("A tool; Stack profile: vite-hono", str(tmp_path))["code"] == "profile_unusable"
