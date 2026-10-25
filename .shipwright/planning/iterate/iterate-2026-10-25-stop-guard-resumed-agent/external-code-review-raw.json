@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "I reviewed the diff against the three spec points.\n\n**Spec 1 \u2014 resumed-agent tracking (iterate_stop_guard_background.py):** The `_launch_kind` branch is correct: it fires only when `resumedAgentId`/`revivedAgentId` is present, `success` is not `False`, and `isAsync` is not `False`. It is placed before the shell branch but after the `isAsync is True` branch, so ordering is sound. The keying by the SendMessage tool_use_id matches the spec's claim that the task-notification carries that id, and the existing `track`/`done` machinery keys by the tool-use id in both cases, so the notice clears the entry without any new code \u2014 which the tests verify (`test_the_resumed_agents_notice_carries_the_sendmessage_tool_use_id_and_clears_it`). The 2 h agent bound is inherited (`test_a_resumed_agent_stops_counting_after_the_agent_bound`). The negative cases (queued-to-running agent, `resumedAgentId: None`, failed resume, synchronous resume) are all covered with distinct shapes.\n\n**Spec 2 \u2014 block message (iterate_stop_guard.py):** The rewrite drops \"contract violation\", says \"still open\", states waiting is allowed, and uses `_blocker_tool()` for a resolved absolute path with a fail-open bare-name fallback. `_blocker_tool` resolves `shared/scripts/tools/record_hard_blocker.py` correctly from `shared/scripts/lib/`, and the docstring's example (scripts/tools/) matches the actual layout. The `Path.resolve(strict=True)` + exception catch (including `RuntimeError` for symlink loops) is a reasonable fail-open.\n\n**Spec 3 \u2014 docs row:** Updated, including the resumed-agent sentence. Done.\n\n**Tests:** The new tests are behavioral, not smoke tests \u2014 they assert `pending` state, `waiting()` transitions, and end-to-end hook silence/blocking through a real transcript, plus a broken-`__file__` fail-open path. The message tests check for copy-paste-runnability (absolute, exists on disk) and the required content, which would fail if the message regressed.\n\nOne minor note (not a defect): `test_the_record_hard_blocker_command_is_a_real_path_not_a_template` asserts `Path(...).is_file()`, coupling the test to the repo checkout layout \u2014 it would fail spuriously if the lib file were tested in isolation elsewhere, but within this repo that's fine and it's exactly what the spec asks the message to guarantee.\n\nI found no correctness, security, or regression issues.\n\nOverall: the change faithfully implements the spec, is well-tested, and is safe to ship.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "No concrete defects found in the diff. The resumed-agent logic tracks launches by the existing tool-use ID, applies the agent timeout, and excludes empty IDs, explicit failures, and synchronous results. The tests cover completion notices, timeout behavior, and hook integration.\n\nThe block message and documentation meet the specification, including the resolved script path and fallback. Ship-as-is. I could not run the tests because command execution was blocked by the environment.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-stop-guard-resumed-agent",
+    "at": "2026-10-25T06:53:40.963035+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
