@@ -27,6 +27,8 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
 - **Verified before use:** layout and hash must verify, and `brief.json` needs `approved_by` and
   `approved_at`. `approved_by: "fixture:<id>"` is accepted only with
   `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` (the acceptance is recorded in `run_config`).
+- **NEVER set `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` yourself.** Only the operator may set it. An agent that meets
+  `fixture_approval_refused` stops and reports the refusal; it does not set the variable, edit `approved_by`, or look for another way around.
 - **A bad package fails loudly** (exit 3, JSON `{"refused": true, "code": ..., "issues": [...]}`;
   codes: `bad_brief_dir`, `invalid_package`, `hash_mismatch`, `missing_approval`,
   `fixture_approval_refused`, `approval_changed`, `missing_record`, `config_mismatch`, `brief_dir_conflict`). It never degrades to the interview.
@@ -136,6 +138,25 @@ when genuinely needed.
    entry of `env_questions` when non-empty.
 4. **Step 4** — pass `--profile {profile}` and `--deploy-target {deploy_target}`
    to `orchestrator.py write-config` exactly as the legacy flow would.
+
+## A stack profile named in the brief
+
+A brief may NAME the stack profile (the WebUI wizard, a user, a project profile). Contract (additive; the file
+route has no brief version, the field is simply optional):
+
+- **Field:** `profile` (alias `stack_profile`) in a JSON object / fenced JSON / `key: value` brief, or the
+  `Stack profile: <name>` item of the one-line `(Intake ...)` trailer the WebUI writes today
+  (`composeNewBrief` in the WebUI `IntentWizard/contract.ts`). The field wins over the trailer.
+- **An explicit name always beats inference** (`persistence`); the result gains `profile_requested`,
+  `profile_source` (`project|user|bundled|builtin`) and `warnings`; `env_questions` follow the CHOSEN profile.
+- **The resolver decides** (`shared/scripts/profile_resolver.py`: project > user > bundled): project and user
+  profiles work like bundled ones, no profile file is read by path here, file contents are untrusted.
+- **An unusable name is never replaced** by null-without-notice or by another profile: `profile` is null, the
+  result carries `profile_requested`, `profile_error {code, message}`, `warnings` and the package route's refusal
+  shape (`refused: true`, `code: "profile_unusable"`, `message`, `issues`), and the CLI **exits 3**.
+  Show the warning to the user and ask which profile to use (`resolve_profile.py list` names the choices).
+- Pass `--project-root` so a project profile under `.shipwright/profiles/` resolves.
+- No profile in the brief: behaviour is unchanged (inference from `persistence`, no new keys in the result).
 
 ## Partial brief
 

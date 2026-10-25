@@ -9,6 +9,7 @@ profile + deploy/env and reports which interview questions are still missing.
 Mapping (concept §2.1/§2.2): persistence=yes -> supabase-nextjs; no/unsure ->
 vite-hono (zero-signup local default); run_location web -> deploy target set,
 local -> "none"; supabase env questions asked ONLY when supabase AND web.
+A profile the brief NAMES wins over this inference and is resolver-checked (``brief_profile.py``).
 
 No brief -> legacy interview unchanged (AC3); an unreadable brief FILE degrades the
 same way. A DIRECTORY is a Brief package (``brief_dir_intake.py``): approval + hash are
@@ -42,26 +43,20 @@ _MAX_BRIEF_BYTES = 256 * 1024
 
 # Synonym tables: lower-cased answer text -> canonical value (human-facing labels allowed).
 _USERS_SYNONYMS = {
-    "just_me": "just_me", "just me": "just_me", "only me": "just_me",
-    "me": "just_me", "myself": "just_me", "solo": "just_me",
-    "team": "team", "my team": "team", "internal": "team",
-    "colleagues": "team", "coworkers": "team",
-    "public": "public", "customers": "public", "clients": "public",
-    "customers / public": "public", "customers/public": "public",
-    "everyone": "public",
+    "just_me": "just_me", "just me": "just_me", "only me": "just_me", "me": "just_me", "myself": "just_me",
+    "solo": "just_me", "team": "team", "my team": "team", "internal": "team", "colleagues": "team",
+    "coworkers": "team", "public": "public", "customers": "public", "clients": "public",
+    "customers / public": "public", "customers/public": "public", "everyone": "public",
 }
 _PERSISTENCE_SYNONYMS = {
-    "yes": "yes", "y": "yes", "true": "yes",
-    "no": "no", "n": "no", "false": "no",
-    "unsure": "unsure", "not sure": "unsure", "not sure yet": "unsure",
-    "maybe": "unsure", "dunno": "unsure", "don't know": "unsure",
-    "dont know": "unsure",
+    "yes": "yes", "y": "yes", "true": "yes", "no": "no", "n": "no", "false": "no",
+    "unsure": "unsure", "not sure": "unsure", "not sure yet": "unsure", "maybe": "unsure",
+    "dunno": "unsure", "don't know": "unsure", "dont know": "unsure",
 }
 _RUN_LOCATION_SYNONYMS = {
-    "local": "local", "machine": "local", "my machine": "local",
-    "just my machine": "local", "my computer": "local", "localhost": "local",
-    "web": "web", "cloud": "web", "online": "web", "internet": "web",
-    "hosted": "web", "deployed": "web", "on the web": "web",
+    "local": "local", "machine": "local", "my machine": "local", "just my machine": "local",
+    "my computer": "local", "localhost": "local", "web": "web", "cloud": "web", "online": "web",
+    "internet": "web", "hosted": "web", "deployed": "web", "on the web": "web",
 }
 
 _SYNONYMS = {
@@ -97,23 +92,22 @@ def normalize_brief(raw: dict) -> dict:
     }
 
 
-def map_brief(brief: dict) -> dict:  # normalized brief -> profile/deploy/env + remaining questions
+def map_brief(brief: dict, explicit: Optional[dict] = None) -> dict:  # normalized brief -> profile/deploy/env + questions
     persistence = brief.get("persistence")
     run_location = brief.get("run_location")
     users = brief.get("users")
 
     # Profile: persistence drives the DB decision; vite-hono is the zero-signup default.
     if persistence == "yes":
-        profile = "supabase-nextjs"
-        profile_reason = "persistence=yes -> real database (supabase-nextjs)"
+        profile, profile_reason = "supabase-nextjs", "persistence=yes -> real database (supabase-nextjs)"
     elif persistence in ("no", "unsure"):
         profile = "vite-hono"
-        profile_reason = (
-            "persistence=%s -> local zero-signup default (vite-hono)" % persistence
-        )
+        profile_reason = "persistence=%s -> local zero-signup default (vite-hono)" % persistence
     else:
         profile = None
         profile_reason = "persistence unknown -> profile still to decide"
+    if explicit:  # a profile the brief names beats inference (brief_profile.py)
+        profile, profile_reason = explicit["profile"], explicit["reason"]
 
     # Deploy target from run-location.
     if run_location == "web":
@@ -133,7 +127,7 @@ def map_brief(brief: dict) -> dict:  # normalized brief -> profile/deploy/env + 
     answered = [q for q in BRIEF_QUESTIONS if brief.get(q) is not None]
     remaining = [q for q in BRIEF_QUESTIONS if brief.get(q) is None] + list(_ALWAYS_ASK)
 
-    return {
+    result = {
         "has_brief": True,
         "brief": brief,
         "profile": profile,
@@ -144,6 +138,8 @@ def map_brief(brief: dict) -> dict:  # normalized brief -> profile/deploy/env + 
         "remaining_questions": remaining,
         "env_questions": env_questions,
     }
+    result.update(explicit["extra"] if explicit else {})
+    return result
 
 
 def _no_brief_result() -> dict:
@@ -160,6 +156,7 @@ def _no_brief_result() -> dict:
     }
 
 
+_KEY_ALIASES = {"location": "run_location"}
 _KV_RE = re.compile(r"^\s*[-*]?\s*([A-Za-z_][\w -]*?)\s*[:=]\s*(.+?)\s*$")
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)  # greedy body + trailing-fence anchor: a nested {...} parses in full
 
@@ -180,9 +177,8 @@ def _parse_text_brief(text: str) -> dict:
         key = ""
         if m:
             key = m.group(1).strip().lower().replace(" ", "_").replace("-", "_")
-            if key == "location":
-                key = "run_location"
-        if key in BRIEF_QUESTIONS:
+            key = _KEY_ALIASES.get(key, key)
+        if key in BRIEF_QUESTIONS or key in ("profile", "stack_profile"):  # precedence: brief_profile.py
             fields[key] = m.group(2).strip()
         elif line.strip():
             prose.append(line.strip())  # keep non-kv prose as the description
@@ -236,9 +232,23 @@ def load_brief(source: Optional[Union[str, dict]]) -> Optional[dict]:
     return _parse_text_brief(path_str)
 
 
+def _sibling(stem: str):
+    """A sibling module loaded by file path under a private name (ADR-045: never ``import lib``)."""
+    name = "_shipwright_" + stem
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(stem + ".py"))
+        sys.modules[name] = mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+        except BaseException:
+            sys.modules.pop(name, None)
+            raise
+    return sys.modules[name]
+
+
 def _package_intake(source, root):
     """Opt-in (``package=True``): a one-line source naming an existing directory, or a space-free one
-    ending in a slash, is a Brief package. Sibling module, loaded by file path (ADR-045)."""
+    ending in a slash, is a Brief package (``brief_dir_intake.py``)."""
     text = source.strip() if isinstance(source, str) else ""
     if not text or text[0] in "{@" or len(text) > 240 or any(c in text for c in "\n\r"):
         return None
@@ -248,16 +258,7 @@ def _package_intake(source, root):
         is_dir = False
     if not (is_dir or (text[-1] in "/\\" and " " not in text)):
         return None
-    name = "_shipwright_brief_dir_intake"
-    if name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name("brief_dir_intake.py"))
-        sys.modules[name] = mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except BaseException:
-            sys.modules.pop(name, None)
-            raise
-    return sys.modules[name].intake_dir(text, root)
+    return _sibling("brief_dir_intake").intake_dir(text, root)
 
 
 def intake(source: Optional[Union[str, dict]], project_root: str = ".", package: bool = False) -> dict:
@@ -268,16 +269,12 @@ def intake(source: Optional[Union[str, dict]], project_root: str = ".", package:
     raw = load_brief(source)
     if raw is None:
         return _no_brief_result()
-    return map_brief(normalize_brief(raw))
+    return map_brief(normalize_brief(raw), _sibling("brief_profile").select(raw, project_root))  # None: none named
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Brief-intake for shipwright-run")
-    parser.add_argument(
-        "--brief",
-        default=None,
-        help="Brief file path (optionally @-prefixed) or inline JSON/text payload",
-    )
+    parser.add_argument("--brief", default=None, help="Brief file path (optionally @-prefixed) or inline JSON/text payload")
     parser.add_argument("--project-root", default=".", help="Project root (a package dir resolves here)")
     args = parser.parse_args()
 
@@ -289,7 +286,7 @@ def main() -> int:
         print(json.dumps(exc.as_dict(), indent=2))
         return 3
     print(json.dumps(result, indent=2))
-    return 0
+    return 3 if result.get("profile_error") else 0  # a named profile that cannot be used is loud
 
 
 if __name__ == "__main__":

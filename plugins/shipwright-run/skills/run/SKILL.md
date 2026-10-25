@@ -149,7 +149,9 @@ uv run "{plugin_root}/scripts/lib/orchestrator.py" write-config \
 
 **Brief package:** straight after `write-config`, record it (verifies hash + approval,
 stores `brief_dir` for resume): `uv run "{plugin_root}/../../shared/scripts/lib/brief_dir_intake.py" record --project-root "$(pwd)" --brief-dir "{brief_dir}"`
-— exit 3 means refused (details in [brief-intake.md](references/brief-intake.md)); stop and show it.
+— exit 3 means refused (details in [brief-intake.md](references/brief-intake.md)); stop and show it. **NEVER set `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL` yourself:** only the operator may; a `fixture_approval_refused` is reported, not worked around.
+
+**Named profile:** a brief that names a stack profile (`profile` field or the wizard's `Stack profile:` item) is resolver-checked by the intake and wins over inference; pass the returned `profile` to `write-config --profile`. `brief_intake.py` exit 3 with `profile_error` = the name cannot be used: show the `warnings` to the user and ask which profile to use; never substitute one yourself.
 
 This writes `shipwright_run_config.json` at `schemaVersion: 2` with
 `mode: single_session` (the sole mode — `--mode` exists but has exactly one

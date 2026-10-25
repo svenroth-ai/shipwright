@@ -1,0 +1,149 @@
+"""An explicit stack profile in a wizard brief wins over inference and is resolver-checked
+(campaign brief-driven-run, B2b)."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.append(str(Path(__file__).resolve().parents[1] / "scripts" / "lib"))
+
+import brief_dir_intake as bdi  # noqa: E402
+import brief_intake  # noqa: E402
+
+LIB = Path(brief_intake.__file__).resolve()
+BASE = {"description": "A booking tool", "users": "public", "persistence": "yes", "run_location": "web"}
+WEBUI_LINE = ("A booking tool (Intake — Users: Customers / public; Saves data: Yes; Runs: On the web; "
+              "Stack profile: {name}; Supabase env vars will be needed at the Deploy step (not before).)")
+
+pytestmark = pytest.mark.covers("FR-01.01")
+
+
+@pytest.fixture(autouse=True)
+def _user_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("SHIPWRIGHT_USER_PROFILES_DIR", str(tmp_path / "user-profiles"))
+    return tmp_path / "user-profiles"
+
+
+def _write(directory: Path, name: str, **extra) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{name}.json").write_text(
+        json.dumps({"name": name, "description": f"custom {name}", **extra}), encoding="utf-8")
+
+
+def test_explicit_profile_wins_over_inference_and_is_passed_on(tmp_path):
+    out = brief_intake.intake({**BASE, "profile": "vite-hono"}, str(tmp_path))  # persistence=yes would infer supabase
+    assert out["profile"] == "vite-hono"
+    assert out["profile_source"] == "bundled" and out["profile_requested"] == "vite-hono"
+    assert "explicit" in out["profile_reason"]
+    assert out["env_questions"] == []  # follows the CHOSEN profile, not the inferred one
+    assert "profile_error" not in out
+
+
+def test_explicit_supabase_profile_asks_the_env_questions(tmp_path):
+    out = brief_intake.intake({**BASE, "persistence": "no", "profile": "supabase-nextjs"}, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and out["env_questions"]
+
+
+def test_unknown_name_is_reported_not_replaced(tmp_path):
+    out = brief_intake.intake({**BASE, "profile": "no-such-stack"}, str(tmp_path))
+    assert out["profile"] is None  # NOT supabase-nextjs (the inference) and not silent
+    assert out["profile_requested"] == "no-such-stack"
+    assert out["profile_error"]["code"] == "not_found"
+    assert out["warnings"] and "no-such-stack" in out["warnings"][0]
+
+
+@pytest.mark.parametrize("bad", ["../etc/passwd", "Vite-Hono", 7, ["vite-hono"]])
+def test_invalid_names_are_reported(tmp_path, bad):
+    out = brief_intake.intake({**BASE, "profile": bad}, str(tmp_path))
+    assert out["profile"] is None and out["profile_error"]["code"] in ("invalid", "not_found")
+
+
+def test_no_profile_in_the_brief_behaves_as_before(tmp_path):
+    out = brief_intake.intake(dict(BASE), str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_error" not in out and "warnings" not in out
+    blank = brief_intake.intake({**BASE, "profile": "  "}, str(tmp_path))
+    assert blank == out
+
+
+def test_project_and_user_profiles_resolve_like_bundled(tmp_path, _user_dir):
+    _write(_user_dir, "my-user-stack")
+    _write(tmp_path / ".shipwright" / "profiles", "my-project-stack")
+    user = brief_intake.intake({**BASE, "profile": "my-user-stack"}, str(tmp_path))
+    proj = brief_intake.intake({**BASE, "profile": "my-project-stack"}, str(tmp_path))
+    assert (user["profile"], user["profile_source"]) == ("my-user-stack", "user")
+    assert (proj["profile"], proj["profile_source"]) == ("my-project-stack", "project")
+    assert brief_intake.intake({**BASE, "profile": "my-project-stack"}, str(tmp_path / "elsewhere"))["profile_error"]
+
+
+def test_profile_file_contents_are_untrusted(tmp_path):
+    pdir = tmp_path / ".shipwright" / "profiles"
+    pdir.mkdir(parents=True)
+    (pdir / "evil.json").write_text('{"name": "evil", "x": "\x1b[31mRED', encoding="utf-8")  # truncated JSON, ESC byte
+    out = brief_intake.intake({**BASE, "profile": "evil"}, str(tmp_path))
+    assert out["profile"] is None and out["profile_error"]["code"] == "invalid"
+    assert out["refused"] is True and out["code"] == "profile_unusable"  # same shape as a package refusal (exit 3)
+    assert not any(ord(c) < 32 for c in out["profile_error"]["message"])  # control characters never reach the output
+
+
+def test_webui_one_line_trailer_and_text_keys(tmp_path):
+    out = brief_intake.intake(WEBUI_LINE.format(name="vite-hono"), str(tmp_path))
+    assert out["profile"] == "vite-hono" and out["profile_source"] == "bundled"
+    assert brief_intake.intake("description: x\nStack profile: vite-hono", str(tmp_path))["profile"] == "vite-hono"
+    fenced = '```json\n{"description": "x", "stack_profile": "vite-hono"}\n```'
+    assert brief_intake.intake(fenced, str(tmp_path))["profile"] == "vite-hono"
+    gone = brief_intake.intake(WEBUI_LINE.format(name="gone-stack"), str(tmp_path))
+    assert gone["profile"] is None and gone["profile_requested"] == "gone-stack"
+    plain = brief_intake.intake("I want a Stack profile: foo kind of app (Intake is nice)", str(tmp_path))  # prose, no key line, no trailer
+    assert "profile_requested" not in plain
+
+
+def test_cli_exits_3_on_an_unusable_profile_and_0_otherwise(tmp_path):
+    brief = tmp_path / "brief.json"
+
+    def run():
+        return subprocess.run([sys.executable, str(LIB), "--brief", str(brief), "--project-root", str(tmp_path)],
+                              capture_output=True, text=True)
+
+    brief.write_text(json.dumps({**BASE, "profile": "vite-hono"}), encoding="utf-8")
+    ok = run()
+    assert ok.returncode == 0 and json.loads(ok.stdout)["profile"] == "vite-hono"
+    brief.write_text(json.dumps({**BASE, "profile": "nope"}), encoding="utf-8")
+    bad = run()
+    assert bad.returncode == 3 and json.loads(bad.stdout)["profile_error"]["code"] == "not_found"
+
+
+def test_fixture_refusal_says_only_the_operator_sets_the_switch():
+    with pytest.raises(bdi.BriefRefused) as exc:
+        bdi.check_approval({"approved_by": "fixture:x", "approved_at": "2026-10-25"}, env={})
+    msg = exc.value.message
+    assert "only the OPERATOR may set" in msg and "NEVER set it" in msg and "report this refusal" in msg
+
+
+def test_field_precedence_and_blank_values(tmp_path):
+    both = brief_intake.intake({**BASE, "profile": "vite-hono", "stack_profile": "supabase-nextjs"}, str(tmp_path))
+    assert both["profile"] == "vite-hono"  # `profile` wins over its alias
+    blank_with_trailer = {**BASE, "profile": "", "description": WEBUI_LINE.format(name="vite-hono")}
+    out = brief_intake.intake(blank_with_trailer, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_requested" not in out  # blank: trailer not consulted
+    idea = "Stack profile: nope is my idea " + WEBUI_LINE.format(name="vite-hono")
+    assert brief_intake.intake({**BASE, "description": idea}, str(tmp_path))["profile"] == "vite-hono"  # anchored on the trailer
+    dotted = brief_intake.intake(WEBUI_LINE.format(name="a.b"), str(tmp_path))
+    assert dotted["profile"] is None and dotted["profile_error"]["code"] in ("invalid", "not_found")
+
+
+def test_text_keys_keep_profile_ahead_of_its_alias_in_either_order(tmp_path):
+    for text in ("description: x\nprofile: vite-hono\nstack_profile: supabase-nextjs",
+                 "description: x\nstack_profile: supabase-nextjs\nprofile: vite-hono"):
+        assert brief_intake.intake(text, str(tmp_path))["profile"] == "vite-hono"
+    blank_then_alias = brief_intake.intake({**BASE, "profile": "", "stack_profile": "vite-hono"}, str(tmp_path))
+    assert blank_then_alias["profile"] == "vite-hono"  # a blank field does not hide a populated alias
+
+
+def test_trailer_item_is_validated_whole_not_by_its_first_word(tmp_path):
+    out = brief_intake.intake(WEBUI_LINE.format(name="vite-hono invalid"), str(tmp_path))
+    assert out["profile"] is None and out["profile_requested"] == "vite-hono invalid"

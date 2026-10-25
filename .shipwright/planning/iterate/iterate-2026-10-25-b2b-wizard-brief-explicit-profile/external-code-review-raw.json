@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: plugins/shipwright-run/skills/run/references/brief-intake.md:144\n- Finding: The required ADR record is missing from the diff. The reference describes the WebUI trailer and an unversioned file route, but does not satisfy the acceptance criterion to record the contract location, field, and expected version in an ADR. The result also does not explicitly state whether the WebUI needs changes.\n- Suggestion: Add the ADR entry with the verified WebUI and intake contract details, and explicitly state the required WebUI changes or that none are needed.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_intake.py:180\n- Finding: Text parsing collapses `stack_profile` into `profile` before applying field precedence. For `profile: vite-hono` followed by `stack_profile: supabase-nextjs`, the alias overwrites the explicit `profile`, contradicting the documented rule that `profile` wins. JSON briefs correctly retain that precedence.\n- Suggestion: Preserve both fields during text parsing and let `requested_name()` apply precedence. Add a test with conflicting text fields in both orders.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_profile.py:33\n- Finding: The trailer regex validates only the first whitespace-delimited token of the chosen name. A trailer containing `Stack profile: vite-hono invalid;` silently selects `vite-hono` instead of reporting the invalid full value. This bypasses the requirement to validate the explicit name unchanged and never substitute another profile.\n- Suggestion: Capture the complete item up to its semicolon or closing parenthesis, trim surrounding whitespace, and pass the complete value to the resolver. Test that a name containing internal whitespace produces an error.\n\nShip-with-fixes: the implementation covers the main path, but contract recording and explicit-name handling need correction. Checkout inspection was blocked by execution policy, so this assessment is based on the supplied diff; tests were not run.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/brief_profile.py / diff as a whole\n  Finding: AC1 requires the brief-contract investigation (\"where the contract is defined, field name, expected version\") to be *recorded in the ADR*, and any WebUI-side change to be named in the result. The diff documents the contract only in `brief-intake.md` prose and code docstrings; no ADR update appears anywhere in the diff.\n  Suggestion: Add the ADR entry recording the WebUI contract location (`IntentWizard/contract.ts`, `composeNewBrief`, `Stack profile:` trailer) and explicitly state that no WebUI change is required (or name it if one is).\n\n- Category: bug / regression\n  Severity: medium\n  File: shared/scripts/lib/brief_intake.py:289 (`return 3 if result.get(\"profile_error\") else 0`)\n  Finding: Exit code 3 was previously reserved for `BriefRefused` (JSON with `\"refused\": true`). It now also fires for `profile_error`, whose JSON has no `refused` key. Callers that branch on exit 3 and parse `code`/`refused` \u2014 including adopt, which shares `brief_intake.py`, and any wrapper following the old documented \"exit 3 = refused, stop\" contract \u2014 will hit an unhandled shape. The old code path printed `exc.as_dict()` and returned 3; a consumer doing `out[\"refused\"]` now KeyErrors.\n  Suggestion: Either emit a distinct exit code for `profile_error`, or document and verify in adopt's tests that exit-3 consumers read the JSON defensively (`out.get(\"refused\")`) \u2014 and add a regression test in adopt's root that a brief naming a profile doesn't break its exit-3 handling.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_brief_profile.py:96-101 (`test_profile_file_contents_are_untrusted`)\n  Finding: The test accepts `profile_error.code in (\"invalid\", \"error\")`, but `select` uses `getattr(exc, \"kind\", \"error\")` and the docstring says the resolver's family includes `schema_*` codes. If the resolver reports `schema_invalid` (or any `schema_*`) for the malformed `evil.json`, this test fails even though the behavior is correct \u2014 or worse, if someone \"fixes\" the implementation to coerce to `\"invalid\"`, the test passes while masking the real code. The assertion doesn't pin the actual contract.\n  Suggestion: Assert the concrete code the resolver produces for malformed JSON (check `profile_resolver.py`'s exception kinds) or accept the full documented set (`invalid`, `not_found`, `schema_*`, `error`).\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-run/tests/test_brief_profile_e2e.py:12-14 (`_run` with `env=os.environ.copy()`)\n  Finding: The e2e subprocesses inherit the developer's full environment, so stray `SHIPWRIGHT_USER_PROFILES_DIR`, `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL`, or other `SHIPWRIGHT_*` vars make these tests order/machine dependent (e.g. a developer's user-profiles dir could make \"no-such-stack\" resolve, flipping `test_unknown_profile_stops_at_intake`).\n  Suggestion: Build a scrubbed env (filter `SHIPWRIGHT_*`) for the subprocess runs.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/brief_profile.py:39-45 (`requested_name`)\n  Finding: `{profile: \"\", stack_profile: \"x\"}` silently drops the alias value (blank `profile` short-circuits to \"no choice\"), while the docstring/tests say \"`profile` wins; the first present field decides\". A blank primary field suppressing a populated alias is undocumented behavior that a WebUI writing both fields could hit. It's tested (as intended) for the trailer case but not for the alias case, so the contract is only half-specified.\n  Suggestion: Either test and document that a blank `profile` suppresses `stack_profile` too, or skip blank values and fall through to the alias.\n\n- Category: spec\n  Severity: low\n  File: shared/scripts/lib/brief_intake.py:180-183\n  Finding: For `key: value` text briefs, only `profile` is accepted as a new key; `stack_profile`/`Stack profile:` in a plain key line is not aliased in `_KEY_ALIASES` (`_KEY_ALIASES = {\"location\": ..., \"stack_profile\": \"profile\"}` \u2014 actually the alias exists, so `stack_profile` text keys are fine). However `normalize_brief`'s output brief is not shown to preserve the `profile` key, so `result[\"brief\"]` may lose the named profile \u2014 downstream consumers reading the echo of the brief can't see what was requested. Verify `normalize_brief` keeps it (only `profile_requested` is guaranteed).\n  Suggestion: Confirm or add a test that the echoed `brief` in the result still carries the `profile` field, or that no consumer relies on it.\n\nOverall: the core feature (explicit profile wins, resolver-validated, loud failure on unknown names, no silent fallback) is correctly implemented and well tested, including the carry-over rewording; the main gaps are the missing ADR record and the exit-code-3 semantic overload that adopt's exit-3 consumers may not tolerate. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+    "at": "2026-10-25T17:50:29.105654+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

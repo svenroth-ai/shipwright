@@ -1,0 +1,86 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 14885,
+      "total": 14885
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an explicit profile in the brief wins over the persistence inference and is passed on unchanged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
+        },
+        {
+          "behavior": "an unknown or invalid name is reported (profile null, profile_error, warnings, exit 3) and never replaced",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py, plugins/shipwright-run/tests/test_brief_profile_e2e.py PASSED"
+        },
+        {
+          "behavior": "a brief without a profile behaves as before; adopt stays green",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED; plugins/shipwright-adopt/tests 759 passed"
+        },
+        {
+          "behavior": "project and user profiles resolve through the resolver; profile file contents are untrusted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
+        },
+        {
+          "behavior": "the WebUI one-line Stack profile trailer and text keys are read with deterministic precedence",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
+        },
+        {
+          "behavior": "brief file to intake CLI to write-config to run config to next step carries the named profile",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_brief_profile_e2e.py PASSED"
+        },
+        {
+          "behavior": "the fixture-approval refusal says only the operator may set the switch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py::test_fixture_refusal_says_only_the_operator_sets_the_switch PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 16,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
+      "timestamp": "2026-10-25T18:03:16.058Z",
+      "attempts": 1
+    }
+  }
+}
