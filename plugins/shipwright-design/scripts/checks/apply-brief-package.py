@@ -109,11 +109,12 @@ def apply(project_root: Path) -> dict:
     if not info.get("package"):
         raise bdi.BriefRefused("no_package", "run_config records no brief_dir: this run has no Brief package")
     bdir, _ = bdi.recorded_dir(bdi.load_config(root)["brief_dir"], root)
-    screen_map = json.loads((bdir / "screen-map.json").read_text(encoding="utf-8-sig"))
-    plan, issues = _plan(bdir, screen_map, fr_ids_by_slug(root))
     designs = root / DESIGNS
     marker = designs / MARKER
-    recorded = json.loads(marker.read_text(encoding="utf-8")) if marker.is_file() else {}
+    try:
+        recorded = json.loads(marker.read_text(encoding="utf-8")) if marker.is_file() else {}
+    except ValueError:
+        recorded = None
     if not isinstance(recorded, dict):
         return {"ok": False, "issues": [{"code": "bad_marker", "screen": MARKER, "message": f"{MARKER} must hold a JSON object"}]}
     applied = recorded.get("package_sha256")
@@ -122,6 +123,8 @@ def apply(project_root: Path) -> dict:
     if applied is not None:
         return {"ok": False, "issues": [{"code": "package_changed_since_apply", "screen": "-",
                 "message": "the designs were applied from a different package hash: re-approve and restart Design, never re-apply over edited screens"}]}
+    screen_map = json.loads((bdir / "screen-map.json").read_text(encoding="utf-8-sig"))
+    plan, issues = _plan(bdir, screen_map, fr_ids_by_slug(root))
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
     guidelines = bdir / str(brief.get("design_system") or "")
@@ -139,12 +142,13 @@ def apply(project_root: Path) -> dict:
             issues.append({"code": "exists_differs", "screen": path.name, "message": f"{path.name} exists and differs from the package: never overwritten"})
     if issues:
         return {"ok": False, "issues": issues}
+    atomic = bdi._lib("atomic_write").durable_atomic_write  # temp file + os.replace: a crash leaves no truncated file
     for path, data in targets:
         if not path.is_file():
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(data)
+            atomic(path, data)
     registry.write_manifest(designs, profile_name=str(brief.get("profile") or ""))
-    marker.write_text(json.dumps({"package_sha256": info["package_sha256"]}), encoding="utf-8")
+    atomic(marker, json.dumps({"package_sha256": info["package_sha256"]}))
     return {"ok": True, "package_sha256": info["package_sha256"],
             "screens": [{"file": f"screens/{i['screen_file']}", "upload": f"uploads/{i['mockup']}", "frs": i["frs"]} for i in plan]}
 
