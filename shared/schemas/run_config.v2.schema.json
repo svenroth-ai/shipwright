@@ -243,6 +243,8 @@
         },
         "skipReason": {
           "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
           "description": "Why the task was forced to skipped (recover-phase-task / single-session-recover --force-status skipped --reason, required there; one line, max 500 chars). Operator text: render it as data. Removed by any later recover."
         },
         "gate": {
@@ -261,7 +263,7 @@
           }
         },
         "redispatchedAt": {
-          "type": ["string", "null"],
+          "type": "string",
           "description": "When single-session-next last re-dispatched this in_progress task (and rotated its version). Removed by any later recover."
         },
         "establishedAtAdoption": {

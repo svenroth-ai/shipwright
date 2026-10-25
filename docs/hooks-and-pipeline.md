@@ -1453,8 +1453,9 @@ uv run plugins/shipwright-run/scripts/lib/orchestrator.py recover-phase-task \
 Bumps `version`, clears `claimedBySessionUuid` (`executionCount` is left alone; a fresh
 claim bumps it) and drops the task's earlier `skipReason`, `gate` record and
 `redispatchedAt`. `--force-status skipped` **requires `--reason`** (refused
-`skip_reason_required`, exit 1, nothing written): the reason is stored on the task as
-`skipReason` (one line, control characters removed, max 500 characters; it is committed
+`skip_reason_required`, exit 1, nothing written — also when it has no letter or digit);
+`--reason` with any other status is refused `reason_only_for_skip` (exit 1). The reason is
+stored on the task as `skipReason` (one line, control characters removed, max 500 characters; it is committed
 with the run config and the tracked log, so never paste a secret) and a `phase_skipped`
 event (`detail`: `phaseTaskId`, `splitId`, `runId`, `reason`, `recoveredFrom`) is
 appended to `shipwright_events.jsonl`. `single-session-recover` takes the same `--reason`
@@ -4317,6 +4318,8 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Plan SKILL.md (Step 9) | `phase_completed` (phase=plan) | Sections validated | Section count via `--detail` |
 | Orchestrator (between phases) | `phase_started` | Phase begins | `splitId` (top-level) per split |
 | Orchestrator (between phases) | `phase_completed` | Phase validated + complete | `splitId` (top-level); **deduplicated by record_event.py on `(phase, splitId)`, scoped to the writing session** (`SHIPWRIGHT_SESSION_ID`) since iterate-2026-09-16-codex-light-phase-dedup-session — a multi-split phase records one end per split; the per-phase span derives as min(`phase_started`)..max(`phase_completed`). Single-split phases carry `splitId=null` and dedup by phase alone, as before. A genuinely later completion of the SAME `(phase, splitId)` under a DIFFERENT session id (e.g. a second real run of an already-completed phase) now appends its own event instead of being silently swallowed, as long as the WRITER carries a session id — a matching prior event's own session, if any, is compared exactly; a matching prior event with NO session of its own (a legacy pre-session-stamping event, `convert_configs_to_events.py`'s migration output, or a write from an environment where `SHIPWRIGHT_SESSION_ID` was unset or lost) does not block a session-carrying writer either, since it can't be proven to be the same completion — one such event would otherwise permanently re-arm the swallowing bug for that pair. A writer with NO session id (e.g. `SHIPWRIGHT_SESSION_ID` unset, as on CI) keeps the exact historical, session-blind dedup — any matching prior event blocks it, regardless of that event's own session. A same-session resume still dedups exactly as before. (iterate-2026-07-11-phase-completed-per-split; iterate-2026-09-16-codex-light-phase-dedup-session) |
+| Orchestrator (`single-session-apply`) | `phase_failed` | The applied phase task ends `failed` (strict-stop) | `splitId` (top-level); `detail` JSON with `phaseTaskId`, `splitId`, `runId` |
+| Orchestrator (`recover-phase-task` / `single-session-recover --force-status skipped`) | `phase_skipped` | An operator forces a phase to `skipped` (needs `--reason`) | `splitId` (top-level); `detail` JSON with `phaseTaskId`, `splitId`, `runId`, `reason` (the stored `skipReason`), `recoveredFrom`; not deduplicated |
 | Orchestrator (split loop) | `split_completed` | All sections of a split done | — |
 | Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed | — |
 | Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed | — |

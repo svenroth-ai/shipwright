@@ -96,6 +96,24 @@ def test_the_record_names_the_id_the_skill_minted_when_the_canon_check_used_it(t
     assert _task(tmp_project, d)["gate"]["runId"] == "project-20261025-101500"
 
 
+def test_a_raising_run_id_pick_becomes_an_ask_issue_not_a_crash(tmp_project, monkeypatch):
+    from orchestrator_pkg import phase_gate
+
+    def broken(*_a, **_k):
+        raise ValueError("phase_history unreadable")
+
+    monkeypatch.setattr(phase_gate, "canon_run_id", broken)
+    cfg = _config(tmp_project)
+    d = _dispatch(tmp_project)
+    verdict = phase_gate.evaluate_gate(tmp_project, _task(tmp_project, d), cfg, gate=_gate())
+    assert verdict["run_id"] == cfg["runId"]
+    assert [i["severity"] for i in verdict["ask"]] == ["ask"]
+    assert "ValueError: phase_history unreadable" in verdict["ask"][0]["message"]
+    applied = _apply(tmp_project, d, gate=_gate())
+    assert applied["ok"] is False and applied["reason"] == "phase_gate_failed"
+    assert "gate" not in _task(tmp_project, d)
+
+
 def test_a_gate_that_could_not_check_is_recorded_not_checked(tmp_project):
     _config(tmp_project)
     d = _dispatch(tmp_project)

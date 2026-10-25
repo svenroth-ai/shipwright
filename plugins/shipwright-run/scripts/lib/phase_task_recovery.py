@@ -22,13 +22,18 @@ from phase_task_core import (
 # The stored skip reason is operator text that later readers (handoff, WebUI, agents) show:
 # one line, no control characters, bounded.
 MAX_SKIP_REASON_CHARS = 500
+# Letters that render as blank (Hangul fillers): ``isalnum()`` is True for them.
+_BLANK_LETTERS = frozenset("ᅟᅠㅤﾠ")
 
 
 def normalise_skip_reason(reason: Optional[str]) -> str:
     """The reason to store: control characters and line breaks become spaces, runs of
-    whitespace collapse, the result is stripped and capped. ``""`` = no reason."""
+    whitespace collapse, the result is stripped and capped. ``""`` = no reason, and so is
+    text without one visible letter or digit (bare punctuation, blank-rendering fillers
+    such as U+3164 / U+2800)."""
     text = "".join(ch if ch.isprintable() else " " for ch in str(reason or ""))
-    return " ".join(text.split())[:MAX_SKIP_REASON_CHARS]
+    text = " ".join(text.split())[:MAX_SKIP_REASON_CHARS]
+    return text if any(ch.isalnum() and ch not in _BLANK_LETTERS for ch in text) else ""
 
 
 @_guard_lock_timeout
@@ -47,7 +52,8 @@ def recover_phase_task(
 
     ``skipped`` REQUIRES a reason (blank or whitespace-only is refused
     ``skip_reason_required`` before anything is read or written): a skipped phase must
-    say why afterwards. The normalised reason is stored as ``skipReason``. Every recover
+    say why afterwards; a reason with any other status is refused ``reason_only_for_skip``
+    (nothing would record it). The normalised reason is stored as ``skipReason``. Every recover
     drops the task's earlier ``skipReason``, ``gate`` record and ``redispatchedAt`` first —
     they described a previous attempt the recover has just undone.
 
@@ -59,12 +65,18 @@ def recover_phase_task(
             "invalid_force_status",
             message=f"force_status must be one of awaiting_launch|failed|skipped, got {force_status!r}",
         )
+    if reason is not None and force_status != "skipped":
+        return _fail(
+            "reason_only_for_skip",
+            message=(f"--reason is recorded only with --force-status skipped; drop it for "
+                     f"{force_status!r} (nothing was changed)."),
+        )
     skip_reason = normalise_skip_reason(reason)
     if force_status == "skipped" and not skip_reason:
         return _fail(
             "skip_reason_required",
-            message=('--force-status skipped needs --reason "<why>": a skipped phase must '
-                     "record why it was skipped (FR-01.01)."),
+            message=('--force-status skipped needs --reason "<why>" with at least one letter '
+                     "or digit: a skipped phase must record why it was skipped (FR-01.01)."),
         )
 
     with _PhaseTasksLock(project_root):

@@ -52,7 +52,8 @@ def _cli(monkeypatch, capsys, *argv: str) -> tuple[int, dict]:
     return rc, json.loads(capsys.readouterr().out)
 
 
-@pytest.mark.parametrize("reason", [None, "", "   ", "\n\t"])
+@pytest.mark.parametrize("reason", [None, "", "   ", "\n\t", "ㅤ", "⠀ ⠀", "...?!",
+                                    "​ㅤ-"])
 def test_a_skip_without_a_reason_is_refused_and_writes_nothing(tmp_project, reason):
     ptk = _project(tmp_project)
     before = (tmp_project / CONFIG).read_bytes()
@@ -96,6 +97,32 @@ def test_reopening_a_skipped_task_drops_its_skip_reason_and_any_gate_record(tmp_
     task = _task(tmp_project, ptk)
     assert task["status"] == "awaiting_launch"
     assert not {"skipReason", "gate", "redispatchedAt"} & set(task)
+
+
+@pytest.mark.parametrize("text", ["ok", "ㅤ no UI", "été 3"])
+def test_a_reason_with_a_visible_letter_or_digit_is_kept(text):
+    assert normalise_skip_reason(text) == text
+
+
+@pytest.mark.parametrize("status", ["awaiting_launch", "failed"])
+def test_a_reason_with_a_non_skip_status_is_refused_and_writes_nothing(tmp_project, status):
+    ptk = _project(tmp_project)
+    before = (tmp_project / CONFIG).read_bytes()
+    res = lc.recover_phase_task(tmp_project, phase_task_id=ptk, force_status=status,
+                                reason="why")
+    assert res["ok"] is False and res["reason"] == "reason_only_for_skip"
+    assert (tmp_project / CONFIG).read_bytes() == before
+
+
+def test_recover_cli_refuses_a_reason_for_a_non_skip_status(tmp_project, monkeypatch, capsys):
+    ptk = _project(tmp_project)
+    before = (tmp_project / CONFIG).read_bytes()
+    for cmd in ("recover-phase-task", "single-session-recover"):
+        rc, out = _cli(monkeypatch, capsys, cmd, "--project-root", str(tmp_project),
+                       "--phase-task-id", ptk, "--force-status", "failed", "--reason", "x")
+        assert rc == 1 and out["reason"] == "reason_only_for_skip", (cmd, out)
+    assert (tmp_project / CONFIG).read_bytes() == before
+    assert [e for e in load_events(tmp_project) if e.get("type") == "recovery"] == []
 
 
 def test_a_non_skip_recover_needs_no_reason(tmp_project):

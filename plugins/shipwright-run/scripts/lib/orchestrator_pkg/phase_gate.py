@@ -107,7 +107,8 @@ def evaluate_gate(
     ``kind: canon_degraded`` note is promoted to ask: on this path a canon run that did
     not fully happen must not read as a pass (so a v2 override over it records ``fail``;
     only v1 records ``degraded``). An injected gate that raises becomes one ask-level
-    ``[gate-error]`` issue, as ``run_phase_gate`` does for its own.
+    ``[gate-error]`` issue, as ``run_phase_gate`` does for its own; so does a
+    ``canon_run_id`` that raises (the record then names the config's ``runId``).
 
     The promotion deliberately REVERSES ``phase_validators_canon._degraded``'s "inform,
     not ask" on this path only: the gate exists to fail closed. That is why A5 proved
@@ -115,8 +116,9 @@ def evaluate_gate(
     (``tests/test_phase_gate_cache_layouts.py``) before flipping enforcement on.
     """
     phase = task["phase"]
-    run_id = canon_run_id(project_root, task, config)
+    run_id = config.get("runId")  # if picking the canon id itself raises
     try:
+        run_id = canon_run_id(project_root, task, config)
         ask, inform, checked = (gate or run_phase_gate)(
             project_root, phase, split_id=task.get("splitId"), run_id=run_id,
         )

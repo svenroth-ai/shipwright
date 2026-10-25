@@ -37,6 +37,8 @@ Repeat until a terminal signal:
      dispatch's result is refused `stale_version` (exit 2) and changes nothing. The
      `next` previews that apply and `single-session-resume` return claim nothing, and
      calling `single-session-next` again while a phase-runner is out supersedes it.
+     That includes a crash resume: a runner result written but not yet applied before
+     the crash carries the old version and is refused, so that phase is re-run.
    - `complete` → the pipeline finished. Stop; print the completion summary.
    - `failed` → a phase strict-stopped (`failed_tasks`). Stop; surface it.
    - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop.
@@ -79,7 +81,9 @@ Repeat until a terminal signal:
    freezes splits when a design phase completes (so build fans out per split),
    routes the result through `complete_phase_task` (an `ok:false` result
    strict-stops via `mark_phase_failed`, planning NO successor), and advances the
-   loop pointer. The `next` field carries the resolved next action — loop on it.
+   loop pointer. The `next` field is a read-only preview of the next action: to
+   continue, call `single-session-next` (step 1) and dispatch only from ITS descriptor —
+   never from this preview, whose `version` is the pre-rotation one.
 
    **The phase gate.** Between the artifact check and the completion, apply runs the
    phase's own validators and canon checks (`orchestrator_pkg/phase_gate.py`) — the gate
@@ -214,7 +218,11 @@ still rotates the task's `version`, so even a runner that did survive could not 
 `recover-phase-task` stays the manual escape for a truly wedged task; in the loop use
 `single-session-recover` (same lifecycle mutator + a `recovery` event + loop-pointer
 realign). Either one with `--force-status skipped` needs `--reason "<why>"`: it is stored
-as the task's `skipReason` and sent as a `phase_skipped` event to the tracked log.
+as the task's `skipReason` and sent as a `phase_skipped` event to the tracked log; with
+any other status `--reason` is refused (`reason_only_for_skip`). Recovering a `done`
+task to `skipped` replaces its `gate` pass record: that record then survives only in git
+history, and the `phase_skipped` event's `recoveredFrom: "done"` says a completion was
+overturned.
 
 ## Observability
 

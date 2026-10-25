@@ -232,7 +232,7 @@ def recover_single_session(
         phaseTaskId=phase_task_id, forceStatus=force_status,
         recoveredFrom=recovered.get("recovered_from"),
         newVersion=recovered.get("new_version"),
-        reason=recovered["phase_task"].get("skipReason") or (reason or "").strip() or None,
+        reason=recovered["phase_task"].get("skipReason"),  # normalised; None unless skipped
     )
     return {
         "ok": True,

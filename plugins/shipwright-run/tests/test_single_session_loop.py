@@ -219,7 +219,7 @@ def test_apply_design_surfaces_a_freeze_splits_failure_instead_of_completing(
     def _unreadable(project_root):
         raise OSError("design config unreadable")
 
-    monkeypatch.setattr(phase_task_lifecycle, "_resolve_splits_with_fallback", _unreadable)
+    monkeypatch.setattr(phase_task_lifecycle, "resolve_splits_with_fallback", _unreadable)
     _ss_config(tmp_project)
     _drive(tmp_project, "project")
 

@@ -64,6 +64,10 @@ from phase_task_planning import (  # noqa: E402,F401
 )
 from phase_task_recovery import recover_phase_task, redispatch_phase_task  # noqa: E402,F401
 
+# Public names for the two helpers single-session apply calls from outside this package.
+resolve_splits_with_fallback = _resolve_splits_with_fallback
+now_iso = _now_iso
+
 
 # ---------------------------------------------------------------------------
 # CAS transitions

@@ -203,8 +203,8 @@ def apply_phase_result(
     frozen_splits = None
     if phase == "design" and result.get("ok") and gate_due:  # a stale apply freezes nothing
         try:  # read the split authority now; it is written with the completion, under its lock
-            frozen_splits = lc._resolve_splits_with_fallback(project_root)[0]
-        except Exception as exc:  # noqa: BLE001 — never crash the loop on freeze
+            frozen_splits = lc.resolve_splits_with_fallback(project_root)[0]
+        except Exception as exc:  # noqa: BLE001 — defensive: the read never raises by contract
             return {"ok": False, "reason": "freeze_splits_failed", "error": str(exc)}
 
     completion = lc.complete_phase_task(
@@ -214,7 +214,7 @@ def apply_phase_result(
         expected_version=expected_version,
         result=result,
         on_complete=completion_hook(override=on_complete, frozen_splits=frozen_splits,
-                                    verdict=verdict, now=lc._now_iso,
+                                    verdict=verdict, now=lc.now_iso,
                                     freeze=lc.apply_frozen_splits),
     )
     if not completion.get("ok"):
@@ -240,7 +240,6 @@ def apply_phase_result(
         # The task was no longer open (a double apply): nothing was overridden or recorded.
         applied["override_skipped"] = "task_not_open"
     return applied
-
 
 
 def _resolve_next(project_root: Path) -> dict[str, Any]:

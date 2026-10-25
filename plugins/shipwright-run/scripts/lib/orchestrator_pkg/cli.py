@@ -148,8 +148,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force-status", default="awaiting_launch",
                    choices=["awaiting_launch", "failed", "skipped"])
     p.add_argument("--reason", default=None,
-                   help="Why (REQUIRED with --force-status skipped: stored as the task's "
-                        "skipReason and in the phase_skipped event).")
+                   help="Why (only with --force-status skipped, where it is REQUIRED: "
+                        "stored as the task's skipReason and in the phase_skipped event).")
 
     p = subparsers.add_parser("freeze-splits")
     p.add_argument("--project-root", default=".")
@@ -209,8 +209,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force-status", default="awaiting_launch",
                    choices=["awaiting_launch", "failed", "skipped"])
     p.add_argument("--reason", default=None,
-                   help="Why (REQUIRED with --force-status skipped: stored as the task's "
-                        "skipReason and in the phase_skipped event).")
+                   help="Why (only with --force-status skipped, where it is REQUIRED: "
+                        "stored as the task's skipReason and in the phase_skipped event).")
 
     return parser
 
