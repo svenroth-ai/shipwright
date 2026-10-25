@@ -113,7 +113,10 @@ def apply(project_root: Path) -> dict:
     plan, issues = _plan(bdir, screen_map, fr_ids_by_slug(root))
     designs = root / DESIGNS
     marker = designs / MARKER
-    applied = json.loads(marker.read_text(encoding="utf-8")).get("package_sha256") if marker.is_file() else None
+    recorded = json.loads(marker.read_text(encoding="utf-8")) if marker.is_file() else {}
+    if not isinstance(recorded, dict):
+        return {"ok": False, "issues": [{"code": "bad_marker", "screen": MARKER, "message": f"{MARKER} must hold a JSON object"}]}
+    applied = recorded.get("package_sha256")
     if applied == info["package_sha256"]:  # re-entry: later edits (review loop) stay untouched
         return {"ok": True, "already_applied": True, "package_sha256": applied}
     if applied is not None:

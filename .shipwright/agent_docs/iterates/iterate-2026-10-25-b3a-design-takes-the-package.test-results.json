@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 111,
-      "total": 111
+      "passed": 112,
+      "total": 112
     },
     "integration": {
       "status": "passed",
@@ -29,9 +29,9 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py -q",
       "exit_code": 0,
-      "tests_run": 24,
+      "tests_run": 25,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
-      "timestamp": "2026-10-25T18:12:39.464Z"
+      "timestamp": "2026-10-25T18:17:19.328Z"
     },
     "test_completeness": {
       "status": "complete",

@@ -362,3 +362,11 @@ def test_in_process_an_unreadable_screen_map_is_a_json_issue(project, tool, caps
     monkeypatch.setattr(Path, "read_text", fail)
     code, out = main_json(tool, capsys, project)
     assert code == 1 and out["issues"][0]["code"] == "unreadable_package"
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_a_marker_that_is_not_a_json_object_is_an_issue(project, tool, capsys):
+    main_json(tool, capsys, project)
+    (project / ".shipwright" / "designs" / "brief-package-applied.json").write_text("[]", encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and out["issues"][0]["code"] == "bad_marker"

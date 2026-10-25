@@ -31,7 +31,7 @@ no package: STOP, never repair it by hand), checks every screen-map entry, and o
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
   `design-manifest.md` (every screen listed with its Linked FRs).
 
-An existing file that differs is never overwritten (exit 1). Then continue with the normal Design
+On the first apply an existing file that differs is never overwritten (exit 1). Then continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
