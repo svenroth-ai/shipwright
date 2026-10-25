@@ -1,0 +1,56 @@
+{
+  "run_id": "iterate-2026-10-25-junit-nested-param-ids",
+  "date": "2026-10-25T09:33:44.598250Z",
+  "event_at": "2026-10-25T07:12:56.730567+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/junit-nested-param-ids",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-25-junit-nested-param-ids.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-junit-nested-param-ids",
+  "prior_source": "history",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A JUnit case whose parameter id holds nested brackets folds to the function id in read_junit and read_junit_cases",
+        "disposition": "tested",
+        "evidence": "test_nested_brackets_in_a_param_id_fold_to_the_function_id PASSED (red on the old regex)"
+      },
+      {
+        "behavior": "One failing case among the cases of a function id still makes the function id fail",
+        "disposition": "tested",
+        "evidence": "same test, test_y with one passing and one failing nested-bracket case reads fail"
+      },
+      {
+        "behavior": "Ids without nested brackets fold exactly as before",
+        "disposition": "tested",
+        "evidence": "existing parametrized-fold tests in test_execution_evidence*.py and test_evidence_resume_tag.py PASSED (36 in the surface run)"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-compliance --extra dev pytest plugins/shipwright-compliance/tests/test_execution_evidence_paths.py plugins/shipwright-compliance/tests/test_execution_evidence.py plugins/shipwright-compliance/tests/test_evidence_resume_tag.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 36,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\junit-nested-param-ids\\.shipwright\\runs\\iterate-2026-10-25-junit-nested-param-ids\\surface_verification.log",
+    "timestamp": "2026-10-25T09:33:06.249Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

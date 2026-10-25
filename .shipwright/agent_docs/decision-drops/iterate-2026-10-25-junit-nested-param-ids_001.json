@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-junit-nested-param-ids",
+  "date": "2026-10-25",
+  "section": "Iterate - bug: parametrized tests with bracketed values read as never run",
+  "title": "Fold a JUnit parametrization suffix from the first bracket",
+  "context": "The traceability join folds a pytest JUnit case such as test_x[a] to the function id test_x. The fold regex stopped at the first closing bracket, so a case whose parameter VALUE holds brackets (test_x[branches: [main]-main-True]) stayed unfolded. The bound function id then had no evidence and its link read not_run although every case passed. FR-01.17 (AC06 is bound only to such a test) therefore showed no executed test and the layer-promotion sweep escalated it.",
+  "decision": "The suffix regex now runs from the first opening bracket to the final closing bracket (DOTALL). A function name holds no bracket, so the first one always starts the parameter id. The merge of cases stays fail-closed, so a failing case still wins over passing siblings.",
+  "consequences": "Parametrized tests with bracketed values get their evidence joined, FR-01.17 can leave the escalated state at the next evidence run. Ids without nested brackets fold exactly as before. The resume module keeps its own first-bracket split; the two now agree on every real id.",
+  "rationale": "Reproduced with the CI evidence of the stack-profile campaign (one link not_run for a passing parametrized test), root cause found in the regex, red test first, independent code review approved with two lows.",
+  "rejected": "(1) Promoting or demoting FR-01.17 by hand to get past the escalation: it would have hidden a defect that affects every parametrized test with bracketed values. (2) Sharing one fold helper with the resume module: a refactor outside this bug.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-junit-nested-param-ids-junit-nested-param-ids.md"
+}

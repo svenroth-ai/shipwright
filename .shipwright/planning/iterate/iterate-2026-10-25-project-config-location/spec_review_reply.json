@@ -1,0 +1,2 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [],
+ "summary": "PASS: the fix meets every requirement of the bug statement; one shared derivation (lookup_root = --profile-root or project_root), explicit --project-root authoritative, non-.shipwright planning dir unchanged, planning_dir stored as .shipwright/planning, no-flag tests and a round-trip test added, skill prose and hooks-and-pipeline.md follow. No scope creep."}

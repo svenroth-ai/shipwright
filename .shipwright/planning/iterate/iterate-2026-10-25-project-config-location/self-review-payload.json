@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Bug reproduced first (file landed in .shipwright/, planning_dir stored as 'planning'), root cause stated (project root derived as planning_dir.parent), failing tests first, one shared derivation, explicit --project-root authoritative, non-.shipwright planning dir unchanged."},
+ {"name": "Error Handling", "verdict": "pass", "note": "relative_to cannot raise on the no-flag path (both sides from the same unresolved path); the explicit-root path is unchanged."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No new input surface; paths only."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Three new unit tests plus a round trip through the real readers; the round-trip test is red without the fix (checked by stashing the script change)."},
+ {"name": "Performance Basics", "verdict": "n/a", "note": "Not applicable."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "config_planning variable instead of a repeated conditional; ruff clean."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Writer to readers: shipwright_project_config.json now lands where lib.config.read_config and the phase verifier look."},
+ {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No skips added."}]}
