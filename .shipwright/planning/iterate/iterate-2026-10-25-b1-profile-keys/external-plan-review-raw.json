@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: risk \u2014 Severity: low**\n  Adding optional properties to a JSON Schema that already permits additional properties is non-breaking for validation, but some consumers validate with stricter tooling or generate code from the schema. If any bundled profile happens to already contain `ux_shape`/`ui_host` with non-string values (e.g., booleans or objects), previously-valid profiles would now fail validation \u2014 those keys were previously unconstrained, now typed.\n  **Suggestion:** Before landing, grep the bundled profiles for these keys; also run the existing schema test suite against all bundled profiles as the mini-plan's test already proposes \u2014 that covers it. Confirm no downstream codegen (OpenAPI/TS types) exists that would treat new fields as required in generated interfaces.\n\n- **Category: edge-case \u2014 Severity: low**\n  The mini-plan says the first unit to *read* a key adds it to that loader's `PROFILE_KEYS_READ`, and the D6 test pins that set to the schema. This creates a cross-iterate coupling risk: if B1 ships before the reading unit, `PROFILE_KEYS_READ` sets stay smaller than the schema, which is fine \u2014 but verify the D6 test asserts containment, not equality. If it asserts equality, adding keys to the schema *now* would break the D6 test in another team's unit.\n  **Suggestion:** Check `test_d6_declared_profile_keys_exist_in_the_schema` semantics before landing. If it's bidirectional (schema keys == union of PROFILE_KEYS_READ), either add the keys to the relevant loader's set in this change, or coordinate with the D6 owner.\n\n- **Category: approach \u2014 Severity: low**\n  Descriptions are mentioned but no format constraints are given for `ui_host`. If this key is destined to hold a hostname or URL, future consumers may assume URL semantics; free text is fine for now per D7 (no resolver, no enum), but a doc note that the value format is defined by the future reading unit would prevent divergence.\n  **Suggestion:** In the docs table row, note the format is intentionally unconstrained until the consuming unit is specified.\n\n- **Category: security \u2014 Severity: low**\n  None. Keys are plain optional strings with no execution, resolution, or injection surface. No action needed beyond the non-string rejection test already planned.\n\n## Overall Assessment\n\nSound, minimal, and correctly scoped \u2014 the plan adds schema-only declarations without premature resolver or loader changes. The only real check before landing is the D6 test's comparison semantics (containment vs. equality), which is cheap to verify and the main way this could break an existing test in another unit.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan adds schema tests but does not explicitly run the existing D6 registry test required by acceptance B1. Bundled-profile validation does not establish that the loader key registry remains consistent with the schema.  \n   **Suggestion:** Include `test_d6_declared_profile_keys_exist_in_the_schema` in verification. No registry changes are needed because this change introduces no readers.\n\n2. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The statement that existing-profile behavior is identical is slightly too broad. Because additional properties were previously unrestricted, a profile containing either key with a non-string value could previously validate and will now fail.  \n   **Suggestion:** Describe this as intentional validation tightening. The proposed bundled-profile validation covers shipped profiles; check any maintained external profile fixtures if applicable.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Adding optional keys to a table titled \u201cMinimum fields\u201d could imply they are mandatory.  \n   **Suggestion:** Explicitly label both keys optional or place them in an optional-fields section.\n\nThe approach is sound and appropriately scoped, with no resolver changes or new abstractions needed. These are verification and documentation refinements; repository inspection was blocked by the environment, so this assessment relies on the supplied specification and plan.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b1-profile-keys",
+    "at": "2026-10-25T14:01:22.747164+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

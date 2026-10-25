@@ -1,0 +1,74 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-b1-profile-keys",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 607,
+      "total": 611
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_stack_profile_schema.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 40,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-25-b1-profile-keys/surface_verification.log",
+      "timestamp": "2026-10-25T14:03:28.030Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "ux_shape and ui_host are optional plain strings (no enum), not required",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_schema.py::test_ux_shape_and_ui_host_are_optional_plain_strings PASSED"
+        },
+        {
+          "behavior": "non-string values rejected, string values accepted, all bundled profiles still validate",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_schema.py::test_ux_shape_and_ui_host_are_optional_plain_strings PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-b1-profile-keys",
+    "commit": "78c1652bc36e75bfe4a10b0f293c71b3d1944e7a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

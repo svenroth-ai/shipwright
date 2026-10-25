@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS: both keys declared as plain optional strings, no resolver/PROFILE_KEYS_READ edits, acceptance B1 met."}

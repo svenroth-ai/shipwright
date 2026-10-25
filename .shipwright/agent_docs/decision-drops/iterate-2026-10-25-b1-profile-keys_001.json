@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b1-profile-keys",
+  "date": "2026-10-25",
+  "section": "Iterate — change: declare ux_shape and ui_host in the stack profile schema",
+  "title": "ux_shape and ui_host are optional plain strings in the profile schema",
+  "context": "Brief-driven runs need per-profile ux_shape and ui_host; the D6 registry tests pin read keys to schema properties, so they must be declared before a loader reads them.",
+  "decision": "Declare both as optional plain string properties in stack_profile.schema.json: no enum, no resolver code, no PROFILE_KEYS_READ change.",
+  "consequences": "Profiles without the keys validate unchanged; non-string values are rejected; the first unit that reads a key adds it to its loader's PROFILE_KEYS_READ.",
+  "rationale": "Value sets are unknown until a consumer exists; validation of ux_shape lives in brief preflight (BRIEF D7). Plain strings can be tightened later.",
+  "rejected": "Enum in the schema (over-commits before a consumer exists); do nothing (leaves keys undocumented).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

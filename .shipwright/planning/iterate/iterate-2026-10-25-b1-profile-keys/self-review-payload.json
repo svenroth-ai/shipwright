@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Two optional plain-string keys in the schema, no enum, no resolver code; acceptance B1 covered."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Non-string values are rejected by both validators; no new failure path."},
+ {"name": "Security Basics", "verdict": "pass", "note": "Schema declaration only; no execution or input surface."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Parity mutations cover accepted strings and rejected non-strings in both validators."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "Two schema properties; no runtime cost."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "Follows the existing property style; docs row added."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Schema to hand checker and jsonschema: probed with the parity mutations; D6 registry tests in all four roots pass."},
+ {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No skips added."}]}

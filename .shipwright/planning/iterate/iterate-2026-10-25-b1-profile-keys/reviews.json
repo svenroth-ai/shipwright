@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b1-profile-keys",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:12:30.446943+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Before landing, grep the bundled profiles for these keys; also run the existing schema test suite against all bundled profiles as the mini-plan's test already proposes — that covers it. Confirm no downstream codegen (OpenAPI/TS types) exists that would treat new fields as required in generated interfaces.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Check `test_d6_declared_profile_keys_exist_in_the_schema` semantics before landing. If it's bidirectional (schema keys == union of PROFILE_KEYS_READ), either add the keys to the relevant loader's set in this change, or coordinate with the D6 owner.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "In the docs table row, note the format is intentionally unconstrained until the consuming unit is specified.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds schema tests but does not explicitly run the existing D6 registry test required by acceptance B1. Bundled-profile validation does not establish that the loader key registry remains consistent with the schema.",
+          "suggestion": "Include `test_d6_declared_profile_keys_exist_in_the_schema` in verification. No registry changes are needed because this change introduces no readers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The statement that existing-profile behavior is identical is slightly too broad. Because additional properties were previously unrestricted, a profile containing either key with a non-string value could previously validate and will now fail.",
+          "suggestion": "Describe this as intentional validation tightening. The proposed bundled-profile validation covers shipped profiles; check any maintained external profile fixtures if applicable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Adding optional keys to a table titled “Minimum fields” could imply they are mandatory.",
+          "suggestion": "Explicitly label both keys optional or place them in an optional-fields section.  The approach is sound and appropriately scoped, with no resolver changes or new abstractions needed. These are verification and documentation refinements; repository inspection was blocked by the environment, so this assessment relies on the supplied specification and plan.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-25T14:01:54.256394+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: risk — Severity: low**\n  Adding optional properties to a JSON Schema that already permits additional properties is non-breaking for validation, but some consumers validate with stricter tooling or generate code from the schema. If any bundled profile happens to already contain `ux_shape`/`ui_host` with non-string values (e.g., booleans or objects), previously-valid profiles would now fail validation — those keys were previously unconstrained, now typed.\n  **Suggestion:** Before landing, grep the bundled profiles for these keys; also run the existing schema test suite against all bundled profiles as the mini-plan's test already proposes — that covers it. Confirm no downstream codegen (OpenAPI/TS types) exists that would treat new fields as required in generated interfaces.\n\n- **Category: edge-case — Severity: low**\n  The mini-plan says the first unit to *read* a key adds it to that loader's `PROFILE_KEYS_READ`, and the D6 test pins that set to the schema. This creates a cross-iterate coupling risk: if B1 ships before the reading unit, `PROFILE_KEYS_READ` sets stay smaller than the schema, which is fine — but verify the D6 test asserts containment, not equality. If it asserts equality, adding keys to the schema *now* would break the D6 test in another team's unit.\n  **Suggestion:** Check `test_d6_declared_profile_keys_exist_in_the_schema` semantics before landing. If it's bidirectional (schema keys == union of PROFILE_KEYS_READ), either add the keys to the relevant loader's set in this change, or coordinate with the D6 owner.\n\n- **Category: approach — Severity: low**\n  Descriptions are mentioned but no format constraints are given for `ui_host`. If this key is destined to hold a hostname or URL, future consumers may assume URL semantics; free text is fine for now per D7 (no resolver, no enum), but a doc note that the value format is defined by the future reading unit would prevent divergence.\n  **Suggestion:** In the docs table  […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan adds schema tests but does not explicitly run the existing D6 registry test required by acceptance B1. Bundled-profile validation does not establish that the loader key registry remains consistent with the schema.  \n   **Suggestion:** Include `test_d6_declared_profile_keys_exist_in_the_schema` in verification. No registry changes are needed because this change introduces no readers.\n\n2. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The statement that existing-profile behavior is identical is slightly too broad. Because additional properties were previously unrestricted, a profile containing either key with a non-string value could previously validate and will now fail.  \n   **Suggestion:** Describe this as intentional validation tightening. The proposed bundled-profile validation covers shipped profiles; check any maintained external profile fixtures if applicable.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Adding optional keys to a table titled “Minimum fields” could imply they are mandatory.  \n   **Suggestion:** Explicitly label both keys optional or place them in an optional-fields section.\n\nThe approach is sound and appropriately scoped, with no resolver changes or new abstractions needed. These are verification and documentation refinements; repository inspection was blocked by the environment, so this assessment relies on the supplied specification and plan.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/stack-profiles.md",
+          "line": 76,
+          "finding": "Row sits under 'ones that change behaviour' with Read-by 'brief-driven runs' yet says no loader reads them yet.",
+          "suggestion": "Reword Read-by to '(none yet; reserved)'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/schemas/stack_profile.schema.json",
+          "line": 61,
+          "finding": "ux_shape and ui_host descriptions are worded differently; 'no loader reads it yet' goes stale.",
+          "suggestion": "Use the same timeless wording.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_stack_profile_schema.py",
+          "line": 156,
+          "finding": "Second half of the new test duplicates mutation re-checks; small duplication, adds a real direction check.",
+          "suggestion": "Optional: fold into the existing pass/fail fixture test.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T14:18:45.409093+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:18:45.551443+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff; the code change is 23 lines (schema + docs + test); Stage 2 passed at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-10-25-b1-profile-keys.json` (surface_verification.runner) / `shipwright_test_results.json` (surface_verification.runner)",
+          "line": null,
+          "finding": "The acceptance criterion says \"registry test passes,\" but the only surface verification executed was `uv run pytest shared/tests/test_stack_profile_schema.py` — the actual D6 registry tests (`test_d6_declared_profile_keys_exist_in_the_schema`, which live in `plugins/shipwright-design/tests/test_setup_design_profiles.py`, `plugins/shipwright-test/tests/test_performance_check_profiles.py`, `shared/scripts/tests/test_validate_env_profiles.py`, and `shared/tests/test_dev_server_profile_resolution.py`) were never run for this change. Adding schema keys only breaks those tests if they assert equality rather than containment, and that was never verified.",
+          "suggestion": "Run the D6 registry tests in the four loader test files (or the full relevant plugin test dirs) before merge, and record them in the surface-verification evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_stack_profile_schema.py:151-152` (`test_ux_shape_and_ui_host_are_optional_plain_strings`)",
+          "line": null,
+          "finding": "The negative case only exercises `ux_shape: 3`; `ui_host` is never tested with a non-string value (e.g. an object or boolean, which were previously-valid unconstrained additional properties). If the schema entry for `ui_host` were mistyped as `[\"string\",\"null\"]` or an object, this test would still pass for that key on the rejection branch.",
+          "suggestion": "Parametrize the rejection check over both keys, e.g. `for key in (\"ux_shape\",\"ui_host\"): assert not _json_schema_ok({_BUNDLED[\"vite-hono\"], key: 3})`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/schemas/stack_profile.schema.json:58-64` (new `ux_shape`/`ui_host` entries)",
+          "line": null,
+          "finding": "Unlike neighboring keys (`rules`, `design_system`, etc. use `[\"array\",\"null\"]` / `[\"object\",\"null\"]`), the new keys are plain `\"string\"` with no `null` allowed. An explicit `\"ux_shape\": null` in a profile will now be rejected, whereas before this change any value was accepted (additionalProperties was unconstrained). This is a (deliberate, per spec) validation tightening for pre-existing external profiles, but it is not covered by a test — only `3` (int) is tested, not `None`.",
+          "suggestion": "Accept this as intended behavior but add `\"ux_shape\": None` to the rejection assertions so the tightening is pinned and visible; if null should mean \"unset,\" use `[\"string\",\"null\"]` instead.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T14:05:55.196859+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  - Severity: medium\n  - File: `.shipwright/agent_docs/iterates/iterate-2026-10-25-b1-profile-keys.json` (surface_verification.runner) / `shipwright_test_results.json` (surface_verification.runner)\n  - Finding: The acceptance criterion says \"registry test passes,\" but the only surface verification executed was `uv run pytest shared/tests/test_stack_profile_schema.py` — the actual D6 registry tests (`test_d6_declared_profile_keys_exist_in_the_schema`, which live in `plugins/shipwright-design/tests/test_setup_design_profiles.py`, `plugins/shipwright-test/tests/test_performance_check_profiles.py`, `shared/scripts/tests/test_validate_env_profiles.py`, and `shared/tests/test_dev_server_profile_resolution.py`) were never run for this change. Adding schema keys only breaks those tests if they assert equality rather than containment, and that was never verified.\n  - Suggestion: Run the D6 registry tests in the four loader test files (or the full relevant plugin test dirs) before merge, and record them in the surface-verification evidence.\n\n- Category: test\n  - Severity: low\n  - File: `shared/tests/test_stack_profile_schema.py:151-152` (`test_ux_shape_and_ui_host_are_optional_plain_strings`)\n  - Finding: The negative case only exercises `ux_shape: 3`; `ui_host` is never tested with a non-string value (e.g. an object or boolean, which were previously-valid unconstrained additional properties). If the schema entry for `ui_host` were mistyped as `[\"string\",\"null\"]` or an object, this test would still pass for that key on the rejection branch.\n  - Suggestion: Parametrize the rejection check over both keys, e.g. `for key in (\"ux_shape\",\"ui_host\"): assert not _json_schema_ok({**_BUNDLED[\"vite-hono\"], key: 3})`.\n\n- Category: edge-case\n  - Severity: low\n  - File: `shared/schemas/stack_profile.schema.json:58-64` (new `ux_shape`/`ui_host` entries)\n  - Finding: Unlike neighboring keys (`rules`, `design_system`, etc. use `[\"array\",\"null\"]` / `[ […truncated]\n\n[openai] <no review returned: codex exec exited 1: Error: turn/start: turn/start failed: Input exceeds the maximum length of 1048576 characters. (code -32602), data: {\"input_error_code\":\"input_too_large\",\"max_chars\":1048576,\"actual_chars\":1381045}>",
+      "verdicts": {
+        "openai": "unavailable",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:17:50.852705+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:01:54.367984+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:01:54.509903+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
