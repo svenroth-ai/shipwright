@@ -1,0 +1,30 @@
+{
+  "run_id": "iterate-2026-10-25-codeql-uninit-phase-gate-state",
+  "date": "2026-10-25T07:12:18.244703Z",
+  "event_at": "2026-10-25T05:39:49.034660+00:00",
+  "type": "bug",
+  "complexity": "trivial",
+  "prior_source": "history",
+  "branch": "iterate/codeql-uninit-phase-gate-state",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-codeql-uninit-phase-gate-state",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-run pytest tests/test_single_session_gate_hardening.py tests/test_single_session_gate_override.py tests/test_phase_gate_no_bypass.py -q",
+    "exit_code": 0,
+    "tests_run": 59,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-25-codeql-uninit-phase-gate-state/surface_verification.log",
+    "timestamp": "2026-10-25T07:11:45.151Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
