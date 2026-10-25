@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 130,
-      "total": 130
+      "passed": 131,
+      "total": 131
     },
     "integration": {
       "status": "passed",
@@ -29,9 +29,9 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py plugins/shipwright-design/tests/test_apply_brief_package_recovery.py -q",
       "exit_code": 0,
-      "tests_run": 43,
+      "tests_run": 44,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
-      "timestamp": "2026-10-25T23:07:27.645Z"
+      "timestamp": "2026-10-25T23:40:20.536Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -79,7 +79,7 @@
         {
           "behavior": "a re-apply after deleting the marker writes only missing targets and keeps edited screens and guidelines; an edited upload stays exists_differs; a deleted upload is noticed on re-entry",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry, ::test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen, ::test_in_process_an_edited_upload_is_recovered_by_restoring_it_from_the_package, ::test_in_process_a_deleted_manifest_is_regenerated_by_a_reset, ::test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_moved_away, ::test_in_process_an_unexpected_error_is_not_swallowed, plugins/shipwright-design/tests/test_apply_brief_package_recovery.py::test_a_foreign_screen_without_its_upload_is_refused_even_when_other_uploads_exist, ::test_an_injection_the_reader_cannot_see_fails_that_screen, ::test_a_failed_module_load_is_not_left_in_sys_modules, ::test_injection_skips_an_html_tag_inside_a_conditional_comment, ::test_a_kept_screen_that_lost_its_ids_is_refused_with_a_remedy, ::test_a_first_apply_lists_material_the_package_did_not_place, ::test_an_empty_comment_and_a_leading_bom_do_not_break_injection, ::test_a_pre_existing_differing_guidelines_file_is_kept_and_reported, ::test_an_unterminated_comment_hides_a_later_html_tag, ::test_injection_cannot_cut_markup_at_a_literal_requirements_in_a_script; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
+          "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry, ::test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen, ::test_in_process_an_edited_upload_is_recovered_by_restoring_it_from_the_package, ::test_in_process_a_deleted_manifest_is_regenerated_by_a_reset, ::test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_moved_away, ::test_in_process_an_unexpected_error_is_not_swallowed, plugins/shipwright-design/tests/test_apply_brief_package_recovery.py::test_a_foreign_screen_without_its_upload_is_refused_even_when_other_uploads_exist, ::test_an_injection_the_reader_cannot_see_fails_that_screen, ::test_a_failed_module_load_is_not_left_in_sys_modules, ::test_injection_skips_an_html_tag_inside_a_conditional_comment, ::test_a_kept_screen_that_lost_its_ids_is_refused_with_a_remedy, ::test_a_first_apply_lists_material_the_package_did_not_place, ::test_a_minted_fr_that_no_screen_maps_is_listed_as_unmapped, ::test_an_empty_comment_and_a_leading_bom_do_not_break_injection, ::test_a_pre_existing_differing_guidelines_file_is_kept_and_reported, ::test_an_unterminated_comment_hides_a_later_html_tag, ::test_injection_cannot_cut_markup_at_a_literal_requirements_in_a_script; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
         },
         {
           "behavior": "re-entry with the recorded package hash is a no-op that keeps review-loop edits; a changed hash or a bad marker is refused; a crash mid-write leaves no truncated file; a re-entry notices a deleted screen or an edited upload; SKILL routes a Brief package before New Design Session",

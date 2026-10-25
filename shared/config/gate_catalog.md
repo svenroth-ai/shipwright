@@ -42,7 +42,7 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 | `design.chrome-nav-confirm` | auto-default | always | no | Step 3.7: confirm the derived chrome/navigation structure. **Default:** Accept the screen-list-derived navigation (mechanical; cheaply corrected later via Chrome Change Propagation). |
 | `design.review-loop-finalize` | orchestrator-approve | always | no | Step 8.5: all-screens sign-off + phase exit. SENSITIVE: the design phase's human approval gate - subagent runs the automated FR-Coverage self-check, then stops for a human. |
 | `design.iterate-what-to-change` | orchestrator-approve | never | no | Single-screen iteration mode only (@file HTML arg). Not reached in a fresh from-scratch pipeline run. |
-| `design.upload-screen-mapping` | orchestrator-approve | never | no | Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. |
+| `design.upload-screen-mapping` | orchestrator-approve | never | no | Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop. |
 
 ## `plan`
 

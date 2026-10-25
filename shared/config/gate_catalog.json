@@ -183,7 +183,7 @@
       "default_answer": null,
       "constitution": false,
       "fires": "never",
-      "summary": "Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run."
+      "summary": "Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop."
     },
     {
       "id": "plan.validate-input",

@@ -29,7 +29,7 @@ question (which screen does each upload represent, and which requirements does i
   redoing an applied Design phase for a changed package is an operator-led decision (follow-up), see the message.
 * A kept file that differs from the package (a pre-existing ``visual-guidelines.md``) is listed in
   ``kept_existing_differs`` (a warning, not a refusal); any file in ``screens/``, ``uploads/`` or ``flows/`` (and
-  ``chrome-definition.md``) that the package did not place is listed in ``foreign_existing``. The agent reports both.
+  ``chrome-definition.md``) that the package did not place is listed in ``foreign_existing``. The agent reports both, and ``unmapped_frs`` (minted FR ids no screen covers; informational).
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -102,7 +102,8 @@ def apply(project_root: Path) -> dict:
                 "package is an operator-led decision outside this unit (follow-up). If the operator wants it: remove "
                 f"{DESIGNS}/ (git history keeps the old files; nothing is copied back automatically), re-approve the package, "
                 "restart the run, and run this tool again.")]}
-    plan, issues = plan_screens(bdir, screen_map, fr_ids_by_slug(root))
+    by_slug = fr_ids_by_slug(root)
+    plan, issues = plan_screens(bdir, screen_map, by_slug)
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
     guidelines = bdir / str(brief.get("design_system") or "")
@@ -130,7 +131,7 @@ def apply(project_root: Path) -> dict:
             issues.append(_issue("exists_differs", path.name, f"{path.name} exists and differs from the package: restore it, it is never overwritten"))
     if issues:
         return {"ok": False, "issues": issues}
-    atomic = bdi._lib("atomic_write").durable_atomic_write  # targets and marker: temp file + os.replace. design-manifest.md is written by the registry and is NOT atomic; the marker comes last, so a crash re-runs everything
+    atomic = bdi._lib("atomic_write").durable_atomic_write  # targets and marker: temp file + os.replace. design-manifest.md is written by the registry and is NOT atomic; the marker comes last: a crash leaves no marker and the next run completes the missing targets
     placed_rel = {f"screens/{i['screen_file']}" for i in plan} | {f"uploads/{i['mockup']}" for i in plan}
     foreign = sorted(p.relative_to(designs).as_posix() for sub in ("screens", "uploads", "flows") if (designs / sub).is_dir()
                      for p in (designs / sub).rglob("*") if p.is_file() and p.relative_to(designs).as_posix() not in placed_rel)
@@ -148,6 +149,7 @@ def apply(project_root: Path) -> dict:
     atomic(marker, json.dumps({"package_sha256": info["package_sha256"]}))
     return {"ok": True, "package_sha256": info["package_sha256"], "kept_existing": kept,
             "foreign_existing": foreign,  # not placed by this package (flows of an earlier Design run on a reset are expected)
+            "unmapped_frs": sorted({i for ids in by_slug.values() for i in ids} - {fr for it in plan for fr in it["frs"]}),  # informational: the agent reports
             "kept_existing_differs": differs,  # a warning, not a refusal: a kept file that is not the package's own
             "screens": [{"file": f"screens/{i['screen_file']}", "upload": f"uploads/{i['mockup']}", "frs": i["frs"]} for i in plan]}
 

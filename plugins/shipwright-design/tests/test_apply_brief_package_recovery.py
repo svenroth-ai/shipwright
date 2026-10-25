@@ -4,6 +4,7 @@ import sys
 
 import pytest
 
+from .brief_package_helpers import PAGE_A, make_project
 from .test_apply_brief_package_inprocess import main_json, tool  # noqa: F401 -- the in-process fixture
 
 
@@ -100,3 +101,10 @@ def test_a_first_apply_lists_material_the_package_did_not_place(project, tool, c
     (designs / "chrome-definition.md").write_text("# chrome\n", encoding="utf-8")
     code, out = main_json(tool, capsys, project)
     assert code == 0 and out["foreign_existing"] == ["screens/03-dashboard.html", "chrome-definition.md"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_a_minted_fr_that_no_screen_maps_is_listed_as_unmapped(tmp_path, tool, capsys):  # noqa: F811
+    root = make_project(tmp_path, [{"id": "notes", "mockup": "01.html", "requirements": ["capture-note"]}], {"01.html": PAGE_A})
+    code, out = main_json(tool, capsys, root)
+    assert code == 0 and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"]  # informational: the agent stops and reports
