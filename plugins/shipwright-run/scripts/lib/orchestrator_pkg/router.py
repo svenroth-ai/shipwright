@@ -198,6 +198,10 @@ def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
             from .events import record_phase_skipped
             record_phase_skipped(project_root, task=result["phase_task"],
                                  recovered_from=result.get("recovered_from"))
+            # Stamps the loop pointer when the run is complete (this skip finished it, or
+            # repairs a loop write lost after an earlier one); a no-op otherwise.
+            from .single_session_recovery import mark_loop_complete
+            mark_loop_complete(project_root)
     elif cmd == "freeze-splits":
         result = freeze_splits(project_root)
     elif cmd == "plan-next-phase":

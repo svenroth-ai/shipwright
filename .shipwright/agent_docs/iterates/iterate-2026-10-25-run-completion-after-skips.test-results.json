@@ -1,0 +1,147 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-run-completion-after-skips",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 22790,
+      "total": 22790
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 614,
+      "total": 614
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_run_completes_after_skips_cli.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-25-run-completion-after-skips/surface_verification.json",
+      "timestamp": "2026-10-25T08:19:51.008Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a skip that leaves every task terminal on a lifecycle needs_validation run completes it in the same locked write and returns run_status complete; the skipped task stays skipped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_skipping_the_last_open_task_completes_the_run_in_the_same_write PASSED"
+        },
+        {
+          "behavior": "a skip that leaves another task open keeps needs_validation and the remaining blocker listed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_a_skip_that_leaves_another_task_open_keeps_needs_validation PASSED"
+        },
+        {
+          "behavior": "a needs_validation pause carrying validation_issues (v1 producer) is not lifted by a skip",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_validation_issues_from_the_v1_producer_are_not_lifted PASSED"
+        },
+        {
+          "behavior": "no completion while the pipeline-terminal task (deploy) is not done",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_no_completion_while_the_pipeline_terminal_task_is_not_done PASSED"
+        },
+        {
+          "behavior": "a run with deploy_target none completes on a done changelog",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_a_run_without_deploy_completes_on_changelog PASSED"
+        },
+        {
+          "behavior": "a failed recover of the last open task does not complete the run",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_recovering_the_last_open_task_as_failed_does_not_complete_the_run PASSED"
+        },
+        {
+          "behavior": "an already-failed task counts as terminal for a later completing skip, as in complete_phase_task",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_an_earlier_failed_task_counts_as_terminal_like_the_deploy_completion PASSED"
+        },
+        {
+          "behavior": "a repeated skip on a completed run is idempotent",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_skipping_again_is_idempotent PASSED"
+        },
+        {
+          "behavior": "a skip on an in_progress run never completes it",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_a_skip_on_a_running_run_does_not_complete_it PASSED"
+        },
+        {
+          "behavior": "both recover CLIs print run_status complete, stamp the loop pointer complete and single-session-next answers complete; the in-loop recovery event carries runStatus",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_both_recover_clis_report_completion_and_stamp_the_loop PASSED"
+        },
+        {
+          "behavior": "a later skip repairs a loop write lost after completion (both CLIs)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_a_later_skip_repairs_a_loop_write_lost_after_completion PASSED"
+        },
+        {
+          "behavior": "the loop stamp needs a complete run with the same runId and is idempotent",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_loop_stamp_needs_a_complete_run_of_the_same_run_id PASSED"
+        },
+        {
+          "behavior": "the loop stamp refuses a config that is not a single_session run",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_loop_stamp_refuses_a_config_that_is_not_a_single_session_run PASSED"
+        },
+        {
+          "behavior": "no loop state is left alone",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_no_loop_state_is_left_alone PASSED"
+        },
+        {
+          "behavior": "an in-loop recover on a still-blocked run leaves the loop stopped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_recover_completes_run.py::test_in_loop_recover_on_a_still_blocked_run_leaves_the_loop_stopped PASSED"
+        },
+        {
+          "behavior": "through the real orchestrator CLI a gated run blocked in needs_validation completes after recover-phase-task --force-status skipped and single-session-next answers complete",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_run_completes_after_skips_cli.py::test_skipping_the_last_open_task_completes_the_blocked_run PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 16,
+        "tested": 16,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-run-completion-after-skips",
+    "commit": "fa1103679454197e2bc10a282e744a2a1ab1e451",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
