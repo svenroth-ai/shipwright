@@ -168,6 +168,9 @@ def test_skill_routes_a_recorded_brief_package_before_a_new_design_session():
     assert "apply-brief-package.py" in section and "neither `--upload` nor files" in section
     assert "Any non-zero exit (1 or 3) = STOP" in section
     assert "`@file` argument -> Iterate on Existing" in section and "otherwise -> [Upload Mode]" in section
+    assert "In Brief mode do NOT run Step 2.5 brand extraction, Step 3 design interview, Step 3.5 preview or Step 6.5" in section
+    assert "visual-guidelines.md` IS the package" in section and "STOP and report it to the operator" in section
+    assert "a Brief package is in use" in text  # the Step 6.5 skip condition names the case
 
 
 @pytest.mark.covers("FR-01.04")

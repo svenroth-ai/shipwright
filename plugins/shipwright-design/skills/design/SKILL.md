@@ -43,7 +43,7 @@ Output:
 
 **Brief package** (`shipwright_run_config.json` records `brief_dir` or `brief_package`) -- checked FIRST, before every other mode (including `@file` Iterate on Existing) and before New Design Session; it needs neither `--upload` nor files in `uploads/`:
 - Run `uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"` (re-verifies the package). **Any non-zero exit (1 or 3) = STOP**: report the issues; never generate or hand-copy the mapped screens and never type an FR id yourself. Only exit 0 (ok or `already_applied`) continues. On a first apply or a reset, read `foreign_existing` and `kept_existing_differs` in the output: when either list is non-empty, REPORT it to the operator (files the package did not place, or a kept guidelines file that differs) before going on, never silently continue
-- `screen-map.json` answers the upload-screen-mapping question; after exit 0 (the tool is idempotent, so it always runs first) continue with the mode the arguments ask for: an `@file` argument -> Iterate on Existing, otherwise -> [Upload Mode](references/upload-mode.md) (flows for 2+ screens, gates). Do NOT generate the mapped screens from scratch
+- `screen-map.json` answers the upload-screen-mapping question; after exit 0 (the tool is idempotent, so it always runs first) continue with the mode the arguments ask for: an `@file` argument -> Iterate on Existing, otherwise -> [Upload Mode](references/upload-mode.md) (flows for 2+ screens, gates). Do NOT generate the mapped screens from scratch. In Brief mode do NOT run Step 2.5 brand extraction, Step 3 design interview, Step 3.5 preview or Step 6.5 Generate Visual Guidelines: `.shipwright/designs/visual-guidelines.md` IS the package's approved design_system file (written by the tool), never regenerated and edited only through the review loop. An FR that Project minted but `screen-map.json` does not map: STOP and report it to the operator (do not generate a screen, do not waive it as Non-UI yourself)
 
 **New Design Session** (no `.shipwright/designs/` directory, and no Brief package above):
 - Read specs, generate from scratch
@@ -211,7 +211,7 @@ See [step-6a-review-viewer.md](references/step-6a-review-viewer.md) for the temp
 
 **Goal:** Create a reusable design token document for shipwright-build.
 
-**Skip if:** User uploaded existing visual guidelines in Step 3.
+**Skip if:** User uploaded existing visual guidelines in Step 3, or a Brief package is in use (the package's `visual-guidelines.md` was placed by the tool).
 
 See [visual-guidelines-template.md](references/visual-guidelines-template.md) for the complete template and value sourcing rules.
 

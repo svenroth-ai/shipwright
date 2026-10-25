@@ -130,7 +130,7 @@ def apply(project_root: Path) -> dict:
             issues.append(_issue("exists_differs", path.name, f"{path.name} exists and differs from the package: restore it, it is never overwritten"))
     if issues:
         return {"ok": False, "issues": issues}
-    atomic = bdi._lib("atomic_write").durable_atomic_write  # temp file + os.replace: a crash leaves no truncated file (the manifest is rewritten whole on the re-run: the marker is last)
+    atomic = bdi._lib("atomic_write").durable_atomic_write  # targets and marker: temp file + os.replace. design-manifest.md is written by the registry and is NOT atomic; the marker comes last, so a crash re-runs everything
     placed_rel = {f"screens/{i['screen_file']}" for i in plan} | {f"uploads/{i['mockup']}" for i in plan}
     foreign = sorted(p.relative_to(designs).as_posix() for sub in ("screens", "uploads", "flows") if (designs / sub).is_dir()
                      for p in (designs / sub).rglob("*") if p.is_file() and p.relative_to(designs).as_posix() not in placed_rel)

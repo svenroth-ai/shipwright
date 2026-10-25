@@ -20,6 +20,8 @@ When `shipwright_run_config.json` carries `brief_dir` or `brief_package` (the ru
 uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"
 ```
 
+In Brief mode do NOT run Step 2.5 brand extraction, Step 3 design interview, Step 3.5 preview or Step 6.5 Generate Visual Guidelines: `.shipwright/designs/visual-guidelines.md` IS the package's approved design_system file (written by the tool), never regenerated and edited only through the review loop. An FR that Project minted but `screen-map.json` does not map: STOP and report it to the operator (do not generate a screen, do not waive it as Non-UI yourself). Mockups must be self-contained single HTML files: relative asset references are not supported in Brief mode.
+
 It re-verifies the package against the hash `run_config` holds (exit 3 = changed, unapproved or
 no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means STOP**: report the issues to the operator; do not generate or hand-copy the mapped screens (step 6 "generate only screens not covered by uploads" does NOT apply to them) and do not type FR ids. Only exit 0 (`ok` or `already_applied`) continues, checks every screen-map entry, and only then writes:
 
