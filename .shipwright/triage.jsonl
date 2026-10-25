@@ -2496,3 +2496,4 @@
 {"event":"status","id":"trg-fc841816","ts":"2026-10-25T07:23:39.649772Z","newStatus":"dismissed","by":"githubImporter","reason":"prMerged","promotedTaskId":null}
 {"event":"status","id":"trg-9298d360","ts":"2026-10-25T07:23:40.119854Z","newStatus":"dismissed","by":"githubImporter","reason":"prMerged","promotedTaskId":null}
 {"event":"status","id":"trg-647df2d8","ts":"2026-10-25T09:15:17.641852Z","newStatus":"dismissed","by":"cli","reason":"Implemented by campaign stack-profile-resolver: PRs #897 (resolver core), #899 (Python loaders), #903 (adopt + scaffolding), #902 (skill prose), #905 (interview, docs, e2e), #908 (guard hardening, brief amendments), #910 (project config now written to the project root). S6 WebUI card trg-8cc6ea3c stays separate.","promotedTaskId":null}
+{"event":"status","id":"trg-5d9bf549","ts":"2026-10-25T10:55:31.806870Z","newStatus":"dismissed","by":"githubImporter","reason":"prMerged","promotedTaskId":null}

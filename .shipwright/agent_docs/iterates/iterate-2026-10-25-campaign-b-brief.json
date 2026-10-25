@@ -1,0 +1,31 @@
+{
+  "run_id": "iterate-2026-10-25-campaign-b-brief",
+  "date": "2026-10-25T12:42:34.547234Z",
+  "event_at": "2026-10-25T09:33:44.834485+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/campaign-b-brief",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/campaigns/2026-10-24-brief-driven-unattended-run-BRIEF.md",
+  "adr": "iterate-2026-10-25-campaign-b-brief",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-25T12:30:00.000Z",
+    "attempts": 0,
+    "justification": "Planning document only: one campaign brief under .shipwright/planning/campaigns/; no runnable code, UI, API or contract changes.",
+    "reason_code": "docs-only-surface"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
