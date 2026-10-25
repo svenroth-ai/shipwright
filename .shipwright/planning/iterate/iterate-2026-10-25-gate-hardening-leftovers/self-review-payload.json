@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "AC-1..AC-9 each map to a test or a doc line; AC-5/AC-9 doc-only by decision."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Unreadable loop state never blocks the resolver; malformed marker reads as none; verifier skew is an ask note, an internal TypeError still propagates to the gate-error path."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No new input surface; override provenance limit stated exactly; raw claim not gated is disclosed."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Red-first for behaviour changes (cap, archived split, version default, type check); real archive_split used, one subprocess CLI test, in-process tests for coverage."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "One extra small JSON read per single-session-next; inspect.signature once per build gate."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "build_checks.py shrank 461->454; all touched modules under 300 LOC; leaf build_split module mirrored and pinned."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "archive_split -> validators/verifiers round-tripped with the real producer; loop_state gateTerminal written by apply and read by resolver in one test; ask_human JSON read through the real CLI subprocess."}
+]}

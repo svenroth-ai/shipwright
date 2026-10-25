@@ -19,7 +19,7 @@ import sys
 _SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent.parent.parent / "shared" / "scripts"
 sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from lib.config import read_config, collect_all_build_sections  # noqa: E402
+from lib.config import read_config  # noqa: E402
 
 # Sibling modules are imported by bare name; this file is also loaded by path.
 _LIB_DIR = str(Path(__file__).resolve().parent)
@@ -33,7 +33,11 @@ from phase_validators_late import (  # noqa: E402
     _validate_deploy,
     _validate_test,
 )
-from phase_validators_split import _validate_design, _validate_plan  # noqa: E402
+from phase_validators_split import (  # noqa: E402
+    _validate_design,
+    _validate_plan,
+    sections_for_split,
+)
 
 
 def validate_phase(
@@ -106,25 +110,48 @@ def _validate_project(
 def _validate_build(
     project_root: Path, *, split_id: str | None = None, run_id: str | None = None,
 ) -> tuple[bool, list[dict[str, str]]]:
-    """Build phase: all current-split sections complete with tests.
+    """Build phase: all sections of the task's split complete with tests.
 
-    Uses ``collect_all_build_sections`` to check only the current
-    split, not all splits. This avoids false negatives during the
-    split-loop. Iterate 12.3 augments with the modular ``build_checks``
-    verifier (per-section C1/C4, phase-level C2/C3/C5, phase_history
-    with sections sub-array, B3 test-file existence, B6 commit
-    reachability, ADR integrity).
+    Only that split is checked, not all splits. Its sections are the build config's
+    current ones, or — for a non-final split the build skill already archived
+    (``archive_split`` moves them to ``split_<prefix>_sections`` before the result is
+    applied) — that archived bucket (``sections_for_split``). No ``split_id``: the current
+    split, as before. Iterate 12.3 augments with the modular ``build_checks`` verifier
+    (per-section C1/C4, phase-level C2/C3/C5, phase_history with sections sub-array, B3
+    test-file existence, B6 commit reachability, ADR integrity), given the same split.
+
+    An archived split's ask-level findings carry ``kind: archived_split`` (not retryable,
+    ``phase_gate.is_retryable``): a re-dispatched build works on ``current_split``, so a
+    retry cannot fix the split that was already filed away — a person decides.
     """
-    issues: list[dict[str, str]] = []
-    build_info = collect_all_build_sections(project_root)
-    sections = build_info["current"]
+    build_config = read_config("build", project_root)
+    current = build_config.get("current_split") or ""
+    archived = bool(split_id and current and split_id != current)
+    issues = _build_issues(project_root, sections_for_split(build_config, split_id),
+                           split_id=split_id, archived=archived, run_id=run_id)
+    if archived:
+        for issue in issues:
+            if issue["severity"] == "ask":  # the flag survives a finding with its own kind
+                issue.setdefault("kind", "archived_split")
+                issue["archived_split"] = True
+    return not any(i["severity"] == "ask" for i in issues), issues
 
+
+def _build_issues(
+    project_root: Path, sections: list, *, split_id: str | None, archived: bool,
+    run_id: str | None,
+) -> list[dict[str, str]]:
+    """The build gate's findings for ``sections`` (the gated split's own). The canon checks
+    get the split only when it is ``archived``: for the current split they read the same
+    sections without it, so an older installed verifier is not refused for nothing."""
+    issues: list[dict[str, str]] = []
     if not sections:
+        where = f"split '{split_id}'" if archived else "current split"
         issues.append({
             "severity": "ask",
-            "message": "No sections found for current split. Was /shipwright-build run?",
+            "message": f"No sections found for {where}. Was /shipwright-build run?",
         })
-        return False, issues
+        return issues
 
     incomplete = [s.get("name", "?") for s in sections if s.get("status") != "complete"]
     if incomplete:
@@ -135,7 +162,7 @@ def _validate_build(
                 "Continue with incomplete sections?"
             ),
         })
-        return False, issues
+        return issues
 
     no_tests = [s.get("name", "?") for s in sections if s.get("tests_total", 0) == 0]
     if no_tests:
@@ -146,11 +173,11 @@ def _validate_build(
                 "Continue without test coverage?"
             ),
         })
-        return False, issues
+        return issues
 
-    _run_canon_checks("build", project_root, issues, run_id=run_id)
-    has_ask = any(i["severity"] == "ask" for i in issues)
-    return not has_ask, issues
+    _run_canon_checks("build", project_root, issues, run_id=run_id,
+                      split_id=split_id if archived else None)
+    return issues
 
 
 _VALIDATORS: dict[str, Any] = {

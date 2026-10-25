@@ -3955,6 +3955,40 @@ install); where the verifiers are missing the gate fails closed, never open.
   `failed` (autonomous / unattended): apply calls `mark_phase_failed` with the issues and
   returns the ordinary strict-stop shape (`ok:true`, `run_status:"failed"`) plus a `gate`
   block; recoverable with `single-session-recover`.
+- **The cap holds in code, not by the master's cooperation (gate-hardening-leftovers):** an
+  `ask_human` terminal records `gateTerminal = {phaseTaskId, version, issues}` in loop state
+  (also for a terminal no loop state counted: onto this run's loop state, else a fresh one).
+  While it matches the frontier task at its current `version`, `single-session-next` (and the
+  read-only resolver behind the resume card) answers `{action:"ask_human", reason:
+  "phase_gate_terminal", task, version, issues, override_allowed, recover_useful}`, exit 0,
+  and claims,
+  rotates and counts nothing. A person then picks one of: `single-session-apply
+  --override-reason` with that `version` (completes the task; only when `override_allowed`),
+  `single-session-recover` (bumps the version, so the marker goes stale: fresh tries — not
+  offered when `recover_useful` is false, i.e. an archived split, whose re-dispatched build
+  would work on the next split), or `mark-phase-failed`. The marker needs no reset of its own: any version bump or a move of
+  the frontier makes it stale, and an unreadable loop state never blocks the resolver.
+  Scope: only the single-session loop writes and honours it (a v1 `update-step` does
+  neither), and only the loop's own dispatch command is gated — a raw
+  `claim-phase-task` is not refused, the same trust boundary as before, narrowed.
+- **An archived split is judged on its own sections:** for a non-final split the build skill
+  runs `archive_split` before apply (`sections` becomes `[]`, the split's sections move to
+  `split_<prefix>_sections`). The build validator and the canon build checks read the task's
+  split through `sections_for_split` (`phase_validators_split`, mirrored by
+  `shared/scripts/tools/verifiers/build_split.py` and pinned equal by a test): when the build
+  config's `current_split` is another split, they judge that split's archived bucket — only
+  when `archive_split` recorded that exact name in `completed_splits`, so a shared or
+  leftover prefix bucket is not taken for it. An ask
+  on an archived split carries `kind: archived_split` (a finding with its own kind keeps it
+  and gains `archived_split: true`) and is `retryable: false` — a
+  re-dispatch builds the NEXT split and cannot change it. The canon checks get `split_id`
+  only for an archived split; a canon `run_build_checks` too old to take it is then an
+  ask-level `canon_degraded` note, not a crash. Not covered: a v1
+  `update-step --step build` passes no split, and the plan canon checks get none.
+- **Order of a design apply:** gate first, then the split authority is read (outside the lock),
+  then `freeze_splits` runs inside the completion's locked write; a rejected apply leaves the
+  config byte-identical. The gate's split check and the freeze read the authority separately,
+  so an edit to the design / project config between the two is not caught.
 - **Override:** `--override-reason "<why>"` runs the gate (enforced or not) and
   writes the `validation_overrides[]` record — plus `phase_task_id`, `split_id`,
   `autonomy`, `entrypoint: "single-session-apply"` — in the **same locked write** as the
@@ -3963,12 +3997,22 @@ install); where the verifiers are missing the gate fails closed, never open.
   `ok:false` result (`override_requires_ok_result`), and any autonomy off the allowlist
   `guided` / `autonomous` (case and spaces ignored; `unattended`, a typo or an absent value
   → `override_requires_human`, re-checked on the locked config inside the hook; the raw
-  value is recorded). The refusal stops a cooperative caller only: `phase-runner.md`
-  forbids a phase-runner calling apply, `complete-phase-task` or the override at all. All
+  value is recorded). The refusal is recognised by type (`phase_gate.OverrideRefused`, caught
+  in `completion_hook`), not by class name. The refusal stops a cooperative caller only:
+  `phase-runner.md` forbids a phase-runner calling apply, `complete-phase-task` or the
+  override at all. **Exact limit:** nothing proves a person made a v2 override. Whoever can
+  run `single-session-apply` can pass `--override-reason`; the record names the reason,
+  autonomy and entrypoint, not who typed it. All
   of this is checked only when the task is still open: a stale apply
   keeps its CAS answer, and a double apply its idempotent one with
   `override_skipped: "task_not_open"` (nothing recorded). The gate itself is read before
   the lock, as on v1.
+- **A raw `claim-phase-task` re-claim does not rotate `version`, on purpose:** only
+  `single-session-next` dispatches, and it rotates through `redispatch_phase_task`; rotating
+  inside the claim too would bump twice there and break the documented idempotent re-claim by
+  the same session. No production caller re-claims raw (only the CLI and tests), and a raw
+  `ok:true` completion is refused anyway. A version-less task reads as version 1 everywhere
+  (`phase_task_core.DEFAULT_TASK_VERSION`).
 - **Failed stays failed:** `complete_phase_task` refuses an `ok:true` completion of a
   `failed` / `skipped` task (`invalid_status_for_completion`, exit 2) — only recover
   re-opens one. Previously a re-apply could turn a failed task done.

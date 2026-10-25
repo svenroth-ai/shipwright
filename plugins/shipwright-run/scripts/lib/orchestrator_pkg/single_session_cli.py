@@ -37,7 +37,7 @@ _FAIL_CLOSED_REASONS = frozenset(
 )
 
 # Terminal / dispatch signals that are a successful `next` outcome (exit 0).
-_OK_NEXT_ACTIONS = ("dispatch", "complete", "failed", "needs_validation")
+_OK_NEXT_ACTIONS = ("dispatch", "complete", "failed", "needs_validation", "ask_human")
 
 
 def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int:

@@ -11,9 +11,11 @@ running) is refused there and writes none of it. In order:
    lifecycle plans the successor, so plan/build fan out per split;
 3. the durable ``phase_tasks[].gate`` record of a gated completion.
 
-No ``try``: an exception must reach ``complete_phase_task`` unchanged (it maps the
-override's refusal by its type name). The hook does no I/O and calls no lifecycle function
-(the lock is not re-entrant for read-modify-write).
+Every exception still reaches ``complete_phase_task`` unchanged (it aborts the write and
+answers ``on_complete_failed``). The one ``except`` only notes an ``OverrideRefused`` in
+``refusals`` before re-raising, so apply can tell that refusal apart by its TYPE — the
+lifecycle's answer carries only the exception's text. The hook does no I/O and calls no
+lifecycle function (the lock is not re-entrant for read-modify-write).
 """
 from __future__ import annotations
 
@@ -28,20 +30,27 @@ def completion_hook(
     *, override: Optional[Hook], frozen_splits: Optional[list[str]],
     verdict: Optional[dict[str, Any]], now: Callable[[], str],
     freeze: Callable[[dict[str, Any], list[str]], Any],
+    refusals: Optional[list[phase_gate.OverrideRefused]] = None,
 ) -> Optional[Hook]:
     """Compose the hook, or None when there is nothing to write beside the completion.
 
     ``frozen_splits`` (None = not a design completion) is resolved by the caller BEFORE
     the lock (it reads the design/project config files); ``freeze`` applies it in place
     (``phase_task_planning.apply_frozen_splits``). ``verdict`` (None = the gate did not
-    run) produces the gate record; ``override`` marks it ``overridden``.
+    run) produces the gate record; ``override`` marks it ``overridden``. ``refusals``, when
+    given, receives the ``OverrideRefused`` the override raised (it is re-raised).
     """
     if override is None and frozen_splits is None and verdict is None:
         return None
 
     def _hook(config: dict[str, Any], task: dict[str, Any]) -> None:
         if override is not None:
-            override(config, task)
+            try:
+                override(config, task)
+            except phase_gate.OverrideRefused as exc:
+                if refusals is not None:
+                    refusals.append(exc)
+                raise
         if frozen_splits is not None:
             freeze(config, frozen_splits)
         if verdict is not None:

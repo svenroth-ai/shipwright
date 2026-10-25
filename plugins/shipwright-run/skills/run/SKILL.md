@@ -202,7 +202,8 @@ Then run the **[Single-Session Orchestrator Loop](references/single-session-loop
 alternate `single-session-next` (resolve + claim the frontier phase) and
 `single-session-apply` (validate + complete the phase-runner's result), with a
 `shipwright-run:phase-runner` subagent in between, until a terminal signal
-(`complete` / `failed` / `needs_validation`).
+(`complete` / `failed` / `needs_validation`), or `ask_human` when a
+phase's gate rejection waits for a person.
 
 **When apply says `phase_gate_failed`** (the phase's own checks found problems — the
 gate is enforced by default), nothing was completed: follow the reference's

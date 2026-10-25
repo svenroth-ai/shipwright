@@ -124,8 +124,9 @@ def resume_run(project_root: Path, *, confirm: bool = False) -> dict[str, Any]:
     action = resolved.get("action")
 
     if action != "dispatch":
-        # The run already finished / is blocked — nothing to re-dispatch. Surface the
-        # real terminal signal (complete | failed | needs_validation | blocked) and emit
+        # The run already finished / is blocked / waits for a person — nothing to
+        # re-dispatch. Surface the real signal (complete | failed | needs_validation |
+        # blocked | ask_human: the frontier is past its gate cap) and emit
         # NOTHING (a finished run is not "resumed"; --confirm must not log a spurious event).
         return {
             "action": action,

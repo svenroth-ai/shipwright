@@ -39,6 +39,12 @@ Repeat until a terminal signal:
      calling `single-session-next` again while a phase-runner is out supersedes it.
      That includes a crash resume: a runner result written but not yet applied before
      the crash carries the old version and is refused, so that phase is re-run.
+   - `ask_human` → the frontier task's last gate rejection took the `ask_human` terminal
+     (`reason: "phase_gate_terminal"`, with `task`, `version`, `issues`,
+     `override_allowed`, `recover_useful`). Nothing was claimed. Ask the person, exactly as
+     for a `terminal: "ask_human"` rejection in step 3; an override uses this `version`.
+     When `recover_useful` is false (an archived split) do not offer "more tries": its
+     re-dispatched build would work on the next split.
    - `complete` → the pipeline finished. Stop; print the completion summary.
    - `failed` → a phase strict-stopped (`failed_tasks`). Stop; surface it.
    - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop; skipping
@@ -115,7 +121,9 @@ Repeat until a terminal signal:
    (`run_loop_state.json.attempt`, including a crash-resume re-dispatch) and its gate
    rejections (`gateRejections`), whichever is higher, and both reset when the loop moves on
    or the task is recovered. Without a loop state for this task (a library apply that never
-   went through `single-session-next`) the position is unknown and nothing is capped. A gate
+   went through `single-session-next`) the position is unknown and the terminal is taken at
+   once. Past the cap `single-session-next` itself answers `ask_human` until a person
+   decides, so re-dispatching is not possible by accident. A gate
    that passes adds `gate: {result, checked, issues, inform}` to the
    success payload, and the completed task keeps a durable `gate` record (`result`,
    `checked`, `phase`, `splitId`, the `runId` the canon check used, `at`, `issueCount`,

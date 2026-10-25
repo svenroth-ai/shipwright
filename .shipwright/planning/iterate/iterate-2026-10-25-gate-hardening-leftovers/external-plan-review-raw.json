@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** AC-4's `gateTerminal` marker is keyed to `(runId, task, version)`, but a crash between the gate rejection (which persists the marker) and the master reading `next` is handled \u2014 while a *stale* marker from a previous run against a re-dispatched task with a recycled version is only guarded by the key triple. If a task id is reused across runs (or the version resets after `single-session-recover` lifts it), the marker could refuse a dispatch that should go through.\n  **Suggestion:** Add a test asserting the marker is ignored once `gateRejections` for that (task, version) is below the cap, not just when the key differs \u2014 i.e., the marker is only consulted when the counter state corroborates it.\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** `sections_for_split` is implemented twice (plugin validator and a new `shared/scripts/tools/verifiers/build_split.py` leaf), with a parity/mirror test as the only guard against drift. The architecture reviewer already flagged the duplicate key derivation between `archive_split` and the readers; the plan adds a third derivation site boundary.\n  **Suggestion:** Acceptable as scoped (import cycle prevents sharing), but the mirror test should feed the *real* `archive_split.py` output (the plan's integration test does) \u2014 make sure the unit parity test in `shared/tests` uses a case matrix that includes an empty-archived split and `split_id == current_split`, not just the happy path.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** Item 5 changes the default task version from 0 to 1 in the owner check. Existing in-flight projects may have persisted task records where `version` was defaulted/written inconsistently between writers; a task record with an *explicit* `version: 0` (if any writer ever emitted it) would now behave differently across the two readers if not all five reads are switched atomically.\n  **Suggestion:** The work breakdown does the constant + helper + all five reads as step 1 \u2014 keep that step as a single commit; grep for any literal `version: 0` or `get(\"version\", 0)` writes before switching.\n\n- **Category: risk \u2014 Severity: low**\n  **Finding:** AC-2 makes the exception-based refusal path (`except phase_gate.OverrideRefused` in the composed completion hook) the only signal. If the locked-config hook raises `OverrideRefused` from a *thread/inner* context where the plugin's `phase_gate` module object differs (re-imported plugin), `except` on the class may not catch a same-named exception from a second module instance.\n  **Suggestion:** Low practical risk in a single-process CLI; but the test for \"subclass with another name \u2192 `override_requires_human`\" should be raised via a genuine subclass of the real class, not a duck-typed lookalike \u2014 confirm the red tests do exactly that (the plan's wording suggests they do).\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** The version-skew guard for an older installed `run_build_checks` (canon without `split_id`) is mentioned in the internal review but not explicitly in the Files or work breakdown.\n  **Suggestion:** Make it an explicit step under item 4: the canon bridge must inspect `run_build_checks.__code__` arity or catch `TypeError` and emit the `canon_degraded` ask-level note per AC-6 \u2014 otherwise an environment with the older shared module silently degrades.\n\n- **Category: completeness \u2014 Severity: low**\n  **Finding:** Known limitation: the WebUI may not know the `ask_human` next action and plan-canon checks get no `split_id`. Both are disclosed, but the `ask_human` action reaching the run SKILL.md terminal list is in Files \u2014 the WebUI gap means a UI-driven guided run could present a dispatch button that the CLI would refuse.\n  **Suggestion:** Fine to defer, but note it in the run SKILL.md so a human at the UI knows to consult the CLI/resolver answer.\n\n## Overall assessment\n\nThe plan is well-grounded, addresses two internal reviews, and its red-test-first sequencing and scoped alternatives (persisted marker over counters, teaching the gate rather than reordering the build skill) are the right calls. Findings are refinements \u2014 notably the marker-staleness test and making the version-skew guard an explicit work item.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** approach \u00b7 **Severity:** high  \n   **Finding:** The mini-plan still describes the superseded retry-cap approach. It puts the refusal in `next_dispatch`, calls it guided-only, and lists the persisted terminal marker as an alternative. It does not include changes to `loop_state` or the read-only `resolve_next_dispatch`. As written, it would miss AC-4\u2019s crash-resume distinction, early non-retryable terminals, unknown autonomy, and consistent resume reporting.  \n   **Suggestion:** Make the persisted `gateTerminal` approach the primary implementation. Add its writer and reader files, record it whenever the terminal is `ask_human`, and check it in the shared resolver before claiming anything. Explicitly test task/version/run matching, recovery, override completion, unreadable state, and unchanged autonomous behavior.\n\n2. **Category:** dependency \u00b7 **Severity:** medium  \n   **Finding:** The mini-plan forwards `split_id` to canonical `run_build_checks` but omits the compatibility guard required by AC-6. An older installed verifier without that parameter would raise `TypeError` and break the archived-split gate.  \n   **Suggestion:** Include capability detection before passing the keyword and return the specified ask-level `canon_degraded` result when unsupported. Test both an older signature and a compatible verifier that raises an internal `TypeError`, so implementation failures are not mistakenly classified as version skew.\n\n3. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** The proposed archived-split view says every section read uses the view, but does not specify how `phase_history` selects the requested split. Substituting archived `sections` alone could still validate against the current split\u2019s history or incorrectly accept a matching event from another split.  \n   **Suggestion:** Specify that the view preserves the original configuration and selects the requested split\u2019s history according to AC-6. Add a conflicting-history test where the current split contains a completion event but the archived split does not; the archived check must report the missing event.\n\nThe underlying fixes are sound and appropriately scoped. Revise the mini-plan to incorporate the already-decided terminal-marker design and make verifier compatibility and archived-history handling explicit before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-25-gate-hardening-leftovers",
+    "at": "2026-10-25T12:45:49.885982+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

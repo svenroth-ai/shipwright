@@ -18,6 +18,7 @@ from phase_task_core import (
     _ok,
     _read_config,
     _write_config,
+    task_version,
 )
 
 # The stored skip reason is operator text that later readers (handoff, WebUI, agents) show:
@@ -114,7 +115,7 @@ def recover_phase_task(
             return _fail("not_found", message=f"phaseTaskId {phase_task_id} not in phase_tasks[]")
 
         old_status = task.get("status")
-        old_version = int(task.get("version", 1))
+        old_version = task_version(task)
         extra: dict[str, Any] = {}
 
         task["version"] = old_version + 1
@@ -187,7 +188,7 @@ def redispatch_phase_task(
                          f"{task.get('claimedBySessionUuid')!r}, not {session_uuid!r}."),
                 claimed_by=task.get("claimedBySessionUuid"),
             )
-        old_version = int(task.get("version", 1))
+        old_version = task_version(task)
         task["version"] = old_version + 1
         task["redispatchedAt"] = _now_iso()
         _write_config(project_root, config)

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/phase_validators_split.py:38 (`sections_for_split`)\n  Finding: The run-plugin mirror calls `build_config.get(\"sections\")` without an `isinstance(build_config, dict)` guard, while its shared twin (`build_split.sections_for_split`) returns `[]` for a non-dict. A caller passing a non-dict (e.g., a corrupted build config that `read_config` surfaces as a raw string) gets an `AttributeError` from the plugin version while the shared one degrades gracefully \u2014 and the \"pinned equal\" mirror test only ever passes dicts, so the divergence is untested.\n  Suggestion: Add the same `isinstance(build_config, dict)` guard (or route the plugin mirror through the shared module's constant) and add a non-dict case to the parametrized mirror test.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/phase_validators.py:133 (`_build_issues`, \"No sections found\" branch)\n  Finding: When `split_id` is supplied and equals `current_split` but `sections` is empty, the message becomes \"No sections found for split 'X'. Was /shipwright-build run?\" instead of the previous \"current split\" wording. Only the no-`split_id` path is pinned by `test_no_sections_without_a_split_keeps_its_old_message`, so this behavioral message change for an existing caller shape (split_id == current) is untested and could surprise any consumer matching on the old string.\n  Suggestion: Either keep the \"current split\" wording when `split_id == current`, or pin the new wording in a test.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py:~170 (`_awaiting_human` reading loop state)\n  Finding: When the loop-state file is unreadable, `_awaiting_human` returns None and the resolver answers `dispatch`. That matches the spec (\"never blocks the resolver\"), but it means the *claim* then proceeds via `begin_dispatch`, which per the docs refuses an unreadable loop state \u2014 the master gets a hard error there instead of a clean signal. Not a correctness bug, just worth confirming `begin_dispatch`'s failure path is the intended surface for that state.\n  Suggestion: Confirm/cover with a test that `next_dispatch` on an unreadable loop state fails at `begin_dispatch` with a clear reason rather than a raw exception.\n\n## Positive checks\n\n- AC-2: the type-based refusal (`completion_hook` catching `phase_gate.OverrideRefused`, apply keying on `refusals and reason == \"on_complete_failed\"`) is correctly implemented, and both the genuine-subclass and same-named-impostor tests exercise real behavior (the impostor test asserts `on_complete_failed` and no `validation_overrides` written).\n- AC-4: the version-keyed `gateTerminal` marker, `gate_terminal_for`'s run/task/version matching, the uncounted-state `hold_gate_terminal` paths, the `recover_useful` computation, and the crash-resume (counters past cap, no marker) case are all implemented and genuinely tested \u2014 a broken marker would fail the `ask_human`/dispatch assertions.\n- AC-6: `_validate_build`/`sections_for_split`/`build_split`/`build_checks` consistently implement the archived-split view, the `completed_splits` exact-name requirement, `kind: archived_split` non-retryability, and the skew shim (with the `TypeError`-propagates test correctly distinguishing real bugs from skew).\n- AC-3/5/7/8/9 are all visibly satisfied in the diff (byte-identity test parametrized over both terminals, hooks-doc limit text, FR tag flips, `DEFAULT_TASK_VERSION`/`task_version` used at owner check, dispatch, apply CAS, and both recover paths, ADR + hooks doc for the raw-claim decision).\n- The `_OK_NEXT_ACTIONS` addition and `resume_run` update prevent a regression where the new `ask_human` action would exit non-zero at the CLI.\n\nThe tests are behavioral, not vacuous \u2014 nearly every one asserts observable state (config bytes, loop state, task status, exit codes) that a wrong implementation would violate. The integration test drives real subprocesses including the real `archive_split.py`.\n\n## Overall assessment\n\nA careful, well-tested implementation of the spec with review findings visibly folded in; the only issues found are low-severity edge cases (mirror divergence on non-dict config, an unpinned message change). Ship-as-is is defensible, but the two cheap one-line guards would remove the divergence.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-run/scripts/lib/phase_validators.py:135\n- Finding: `issue.setdefault(\"kind\", \"archived_split\")` leaves existing kinds such as `canon_degraded` unchanged. When an archived build encounters an older canon verifier, none of its issues identify it as archived, so `_awaiting_human` returns `recover_useful: true`. This offers recovery even though redispatch would build the next split, violating AC-4 and AC-6.\n- Suggestion: Preserve archived-split context independently of the finding kind, and use that context to calculate `recover_useful`. Add a test combining an archived split with a canon-degraded rejection.\n\nOverall assessment: ship-with-fixes. The implementation largely follows the specification, but archived-split context must survive canon failures so the terminal response gives correct recovery guidance.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-gate-hardening-leftovers",
+    "at": "2026-10-25T13:10:10.250271+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

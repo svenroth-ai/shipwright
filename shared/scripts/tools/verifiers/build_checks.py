@@ -44,6 +44,7 @@ from .common import (
     read_events_jsonl,
     read_run_config,
 )
+from .build_split import build_config_for_split
 from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 
@@ -51,25 +52,21 @@ from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 # build_config readers
 # ---------------------------------------------------------------------------
 
-def _read_build_config(project_root: Path) -> dict:
+def _read_build_config(project_root: Path, split_id: str | None = None) -> dict:
     path = project_root / "shipwright_build_config.json"
     if not path.exists():
         return {}
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
+    try:  # as ``split_id`` saw it: an archived split's own sections (build_split)
+        return build_config_for_split(json.loads(path.read_text(encoding="utf-8")), split_id)
     except (json.JSONDecodeError, OSError):
         return {}
 
 
-def _completed_sections(project_root: Path) -> list[dict]:
-    """Return ``build_config.sections`` entries whose status == 'complete'.
-
-    Uses the *current* sections list, not the archived
-    ``split_NN_sections`` buckets — the canon verifier runs at split
-    completion and the current sections array is authoritative for that
-    split. Archived buckets are a historical audit trail only.
+def _completed_sections(project_root: Path, split_id: str | None = None) -> list[dict]:
+    """The ``status == 'complete'`` sections of the gated split: the current list, or
+    the ``split_NN_sections`` bucket ``archive_split`` moved ``split_id``'s sections to.
     """
-    cfg = _read_build_config(project_root)
+    cfg = _read_build_config(project_root, split_id)
     sections = cfg.get("sections") or []
     return [
         s for s in sections
@@ -81,13 +78,13 @@ def _completed_sections(project_root: Path) -> list[dict]:
 # Phase-own checks
 # ---------------------------------------------------------------------------
 
-def check_all_sections_complete(project_root: Path) -> CheckResult:
+def check_all_sections_complete(project_root: Path, split_id: str | None = None) -> CheckResult:
     """Every section in the current split's ``sections`` array must have
     ``status == 'complete'``. Mirrors the legacy ``_validate_build``
     pre-canon gate so the modular verifier can stand alone.
     """
     name = "all current-split sections complete"
-    cfg = _read_build_config(project_root)
+    cfg = _read_build_config(project_root, split_id)
     sections = cfg.get("sections") or []
     if not sections:
         return CheckResult(
@@ -100,7 +97,7 @@ def check_all_sections_complete(project_root: Path) -> CheckResult:
     return CheckResult(name, True, f"{len(sections)} section(s), all complete")
 
 
-def check_build_test_files_exist(project_root: Path) -> CheckResult:
+def check_build_test_files_exist(project_root: Path, split_id: str | None = None) -> CheckResult:
     """Every ``test_file`` / ``test_files`` entry referenced by a
     completed section must exist on disk.
 
@@ -112,7 +109,7 @@ def check_build_test_files_exist(project_root: Path) -> CheckResult:
     refactor-only sections legitimately have none).
     """
     name = "B3 build section test files exist on disk"
-    sections = _completed_sections(project_root)
+    sections = _completed_sections(project_root, split_id)
     if not sections:
         return CheckResult(name, True, "no complete sections to check")
 
@@ -150,7 +147,7 @@ def check_build_test_files_exist(project_root: Path) -> CheckResult:
     )
 
 
-def check_commit_sha_in_git(project_root: Path) -> CheckResult:
+def check_commit_sha_in_git(project_root: Path, split_id: str | None = None) -> CheckResult:
     """Every recorded ``section.commit`` SHA must be reachable via
     ``git cat-file -e``.
 
@@ -162,7 +159,7 @@ def check_commit_sha_in_git(project_root: Path) -> CheckResult:
     been committed yet or are pre-iterate-11 entries.
     """
     name = "B6 section commits reachable in git"
-    sections = _completed_sections(project_root)
+    sections = _completed_sections(project_root, split_id)
     to_check = [
         (s.get("name", "?"), s["commit"])
         for s in sections
@@ -204,9 +201,7 @@ def check_commit_sha_in_git(project_root: Path) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 def check_per_section_work_completed_events(
-    project_root: Path,
-    *,
-    require_sections: bool = False,
+    project_root: Path, split_id: str | None = None, *, require_sections: bool = False,
 ) -> CheckResult:
     """C1 (hybrid): every completed section must have at least one
     ``work_completed`` event in ``shipwright_events.jsonl`` whose
@@ -217,7 +212,7 @@ def check_per_section_work_completed_events(
     lose the per-section audit trail.
     """
     name = "C1 per-section work_completed events recorded"
-    sections = _completed_sections(project_root)
+    sections = _completed_sections(project_root, split_id)
     if not sections:
         if require_sections:
             return CheckResult(name, False, "no complete sections to check (required)")
@@ -247,7 +242,7 @@ def check_per_section_work_completed_events(
     )
 
 
-def check_per_section_adr_recorded(project_root: Path) -> CheckResult:
+def check_per_section_adr_recorded(project_root: Path, split_id: str | None = None) -> CheckResult:
     """C4 (hybrid): every completed section must have an ADR in
     ``decision_log.md`` whose header or body references the section
     name. The build plugin's Step 9 calls ``write_decision_log.py
@@ -256,7 +251,7 @@ def check_per_section_adr_recorded(project_root: Path) -> CheckResult:
     inside a bullet marked ``Section`` or in the header title.
     """
     name = "C4 per-section ADR recorded in decision_log"
-    sections = _completed_sections(project_root)
+    sections = _completed_sections(project_root, split_id)
     if not sections:
         return CheckResult(name, True, "no complete sections to check")
 
@@ -305,7 +300,7 @@ _UNRELEASED_RE = re.compile(
 )
 
 
-def check_c5_changelog_has_bullet_per_section(project_root: Path) -> CheckResult:
+def check_c5_changelog_has_bullet_per_section(project_root: Path, split_id: str | None = None) -> CheckResult:
     """C5 (hybrid): every completed section of the current split must
     have a bullet in ``CHANGELOG.md [Unreleased]`` that mentions the
     section name.
@@ -318,7 +313,7 @@ def check_c5_changelog_has_bullet_per_section(project_root: Path) -> CheckResult
     plugin dedupes via ``append_changelog_entry.py``.
     """
     name = "C5 CHANGELOG [Unreleased] has bullet per section"
-    sections = _completed_sections(project_root)
+    sections = _completed_sections(project_root, split_id)
     if not sections:
         return CheckResult(name, True, "no complete sections to check")
 
@@ -360,8 +355,7 @@ def check_c5_changelog_has_bullet_per_section(project_root: Path) -> CheckResult
 # ---------------------------------------------------------------------------
 
 def check_phase_history_build_has_sections(
-    project_root: Path,
-    run_id: str,
+    project_root: Path, run_id: str, split_id: str | None = None,
 ) -> CheckResult:
     """Extends ``check_phase_history_has_run`` for build: the NEWEST entry for ``run_id``
     (preferring one for ``build_config.current_split``: one run id can span every build
@@ -381,7 +375,7 @@ def check_phase_history_build_has_sections(
         return CheckResult(name, False, "phase_history[build] missing")
 
     mine = [e for e in bucket if isinstance(e, dict) and e.get("run_id") == run_id]
-    split = _read_build_config(project_root).get("current_split")
+    split = _read_build_config(project_root, split_id).get("current_split")
     entry = ([e for e in mine if split and e.get("split") == split] or mine or [None])[-1]
     if not entry:
         return CheckResult(name, False, f"run_id={run_id} not in phase_history[build]")
@@ -390,7 +384,7 @@ def check_phase_history_build_has_sections(
     if not isinstance(sections, list) or not sections:
         return CheckResult(name, False, f"phase_history[build][{run_id}] has no sections array")
 
-    completed = {s.get("name") for s in _completed_sections(project_root)}
+    completed = {s.get("name") for s in _completed_sections(project_root, split_id)}
     recorded = {s.get("id") for s in sections if isinstance(s, dict)}
     missing = sorted(completed - recorded)
     if missing:
@@ -410,30 +404,29 @@ def check_phase_history_build_has_sections(
 # ---------------------------------------------------------------------------
 
 def run_build_checks(
-    project_root: Path,
-    *,
-    run_id: str = "",
+    project_root: Path, *, run_id: str = "", split_id: str | None = None,
 ) -> list[CheckResult]:
-    """Run the full build-phase verifier suite in stable order."""
+    """Run the full build-phase verifier suite in stable order, over ``split_id``'s sections
+    (the current split's when None; see ``build_split``)."""
     results: list[CheckResult] = []
 
     # Phase-own
-    results.append(check_all_sections_complete(project_root))
-    results.append(check_build_test_files_exist(project_root))
-    results.append(check_commit_sha_in_git(project_root))
+    results.append(check_all_sections_complete(project_root, split_id))
+    results.append(check_build_test_files_exist(project_root, split_id))
+    results.append(check_commit_sha_in_git(project_root, split_id))
 
     # Per-section canon (C1 + C4)
-    results.append(check_per_section_work_completed_events(project_root))
-    results.append(check_per_section_adr_recorded(project_root))
+    results.append(check_per_section_work_completed_events(project_root, split_id))
+    results.append(check_per_section_adr_recorded(project_root, split_id))
 
     # Phase-level canon (C2 + C3 + C5)
     results.append(check_c2_dashboard_reflects_phase(project_root, "build"))
     results.append(check_c3_session_handoff_fresh_after_phase(project_root, "build"))
-    results.append(check_c5_changelog_has_bullet_per_section(project_root))
+    results.append(check_c5_changelog_has_bullet_per_section(project_root, split_id))
 
     # Phase history (standard + build-specific sub-array check)
     results.append(check_phase_history_has_run(project_root, "build", run_id))
-    results.append(check_phase_history_build_has_sections(project_root, run_id))
+    results.append(check_phase_history_build_has_sections(project_root, run_id, split_id))
 
     # ADR integrity (phase-agnostic)
     results.append(check_adr_ids_sequential(project_root))

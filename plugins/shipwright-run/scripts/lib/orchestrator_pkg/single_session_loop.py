@@ -41,6 +41,7 @@ if _LOCAL_LIB not in sys.path:
     sys.path.insert(0, _LOCAL_LIB)
 
 from single_session.loop_state import (  # noqa: E402
+    gate_terminal_for,
     init_loop_state,
     load_loop_state,
     record_dispatch,
@@ -54,6 +55,7 @@ from .config_io import (  # noqa: E402
     load_run_config,
     mode_rejection,
 )
+from . import phase_gate  # noqa: E402
 from .constants import SCHEMA_VERSION  # noqa: E402
 
 # The APPLY half lives in ``single_session_apply`` (split out when the drivability guard
@@ -79,7 +81,7 @@ def _dispatch_descriptor(task: dict[str, Any]) -> dict[str, Any]:
         "phase": task["phase"],
         "splitId": task.get("splitId"),
         "sessionUuid": task["sessionUuid"],
-        "version": int(task.get("version", 1)),
+        "version": _lifecycle().task_version(task),
         "slashCommand": task.get("slashCommand"),
         "title": task.get("title"),
         "status": task.get("status"),
@@ -107,8 +109,8 @@ def resolve_next_dispatch(project_root: Path) -> dict[str, Any]:
     """Read-only (``migrate=False`` — never mutates run_config). Decide the
     loop's next action. Returns one ``action``: ``no_config`` | ``mode_unsupported``
     | ``complete`` | ``failed`` (+ ``failed_tasks``) | ``needs_validation`` (+
-    ``blocked``) | ``dispatch`` (+ ``dispatch`` descriptor) | ``blocked`` (non-
-    terminal but nothing runnable).
+    ``blocked``) | ``ask_human`` (the frontier waits for a person, ``_awaiting_human``) |
+    ``dispatch`` (+ ``dispatch`` descriptor) | ``blocked`` (non-terminal but nothing runnable).
 
     The mode guard is the loop's FIRST gate, so a config that is not an explicit
     ``single_session`` run (a stale ``multi_session`` one, or a mode-less pre-SS1
@@ -150,7 +152,39 @@ def resolve_next_dispatch(project_root: Path) -> dict[str, Any]:
     frontier = _frontier_task(tasks)
     if frontier is None:
         return {"action": "blocked", "reason": "no_dispatchable_task"}
+    waiting = _awaiting_human(project_root, config, frontier)
+    if waiting is not None:
+        return waiting
     return {"action": "dispatch", "dispatch": _dispatch_descriptor(frontier)}
+
+
+def _awaiting_human(
+    project_root: Path, config: dict[str, Any], frontier: dict[str, Any],
+) -> Optional[dict[str, Any]]:
+    """The ``ask_human`` answer while the frontier task's last gate rejection took the
+    ``ask_human`` terminal at its current version (loop state ``gateTerminal``); else None.
+
+    This is what makes the retry cap hold without the master's cooperation: past it, the
+    task is not re-dispatched until a person decides — ``--override-reason`` with the last
+    descriptor (completes the task), ``single-session-recover`` (bumps the version: fresh
+    tries; ``recover_useful`` is false for an archived split, whose re-dispatch would build
+    the next split) or ``mark-phase-failed``. Read-only, so the resume card says the same."""
+    try:
+        state = load_loop_state(project_root)
+    except (OSError, ValueError):
+        return None  # unreadable: begin_dispatch reports it
+    marker = gate_terminal_for(state, run_id=config.get("runId"),
+                               phase_task_id=frontier.get("phaseTaskId"),
+                               version=_lifecycle().task_version(frontier))
+    if marker is None:
+        return None
+    issues = marker.get("issues") or []
+    return {"action": "ask_human", "reason": "phase_gate_terminal",
+            "task": _task_ref(frontier), "version": marker["version"], "issues": issues,
+            "override_allowed": phase_gate._human_can_override(config),
+            # an archived split: a recovered build works on the NEXT split, fixing nothing
+            "recover_useful": not any(isinstance(i, dict) and (
+                i.get("archived_split") or i.get("kind") == "archived_split") for i in issues)}
 
 
 def begin_dispatch(project_root: Path, *, phase_task_id: str) -> dict[str, Any]:
