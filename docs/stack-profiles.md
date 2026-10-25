@@ -73,6 +73,7 @@ is ignored (keys starting with `_` are comments). The ones that change behaviour
 | `services` / `dev_server` | dev server, preview, browser verify | neither declared: Shipwright falls back to `dev_url` in `shipwright_build_config.json`, then to `npm run dev` |
 | `required_env_vars` | `validate_env.py` | |
 | `design_system` | `/shipwright-design` | |
+| `ux_shape`, `ui_host` | brief-driven runs | optional plain strings (for example `"ux_shape": "chat-first"`); no loader reads them yet, the value format is defined by the unit that first reads them, and profiles without them work unchanged |
 | `rules`, `folder_structure`, `migrations` | project scaffolding | |
 | `stack` | adopt matching | what adopt compares a repository against |
 

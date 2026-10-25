@@ -55,6 +55,14 @@
     "rules": {"type": ["array", "null"]},
     "folder_structure": {"type": ["object", "null"]},
     "migrations": {"type": ["object", "null"]},
-    "design_system": {"type": ["object", "null"]}
+    "design_system": {"type": ["object", "null"]},
+    "ux_shape": {
+      "type": "string",
+      "description": "Optional. How the app is shaped for the user (for example 'chat-first'). Plain string, no enum; no loader reads it yet."
+    },
+    "ui_host": {
+      "type": "string",
+      "description": "Optional. Where the app's UI is hosted. Plain string, no enum here."
+    }
   }
 }

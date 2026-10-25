@@ -59,6 +59,9 @@ def _mutations() -> dict:
         "port-placeholder": {"services": [{"port": "${PORT:-3847}"}]},
         "underscore-comments": {"_comment": 1, "stack": {"_comment": "text"}},
         "null-blocks": {"dev_server": None, "migrations": None, "design_system": None},
+        "ux-ui-strings": {"ux_shape": "chat-first", "ui_host": "webui"},
+        "ux-shape-int": {"ux_shape": 3},
+        "ui-host-dict": {"ui_host": {"host": "x"}},
     }
     for label, patch in patches.items():
         d = copy.deepcopy(base)
@@ -143,3 +146,12 @@ def test_registry_d5_keys_exist_in_schema():
 def test_schema_version_is_distinct_from_profile_version():
     assert "version" not in _SCHEMA["properties"]
     assert "THIS schema" in _SCHEMA["properties"]["schema_version"]["description"]
+
+
+def test_ux_shape_and_ui_host_are_optional_plain_strings():
+    props = _SCHEMA["properties"]
+    for key in ("ux_shape", "ui_host"):
+        assert props[key]["type"] == "string" and "enum" not in props[key]
+        assert key not in _SCHEMA["required"]
+    ok = {k for k, v in _mutations().items() if _json_schema_ok(v)}
+    assert "ux-ui-strings" in ok and {"ux-shape-int", "ui-host-dict"}.isdisjoint(ok)

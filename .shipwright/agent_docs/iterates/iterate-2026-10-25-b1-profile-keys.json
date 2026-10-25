@@ -1,0 +1,54 @@
+{
+  "run_id": "iterate-2026-10-25-b1-profile-keys",
+  "date": "2026-10-25T14:04:11.300858Z",
+  "event_at": "2026-10-25T14:03:55.395633+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-b1-profile-keys",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "ux_shape and ui_host are optional plain strings (no enum), not required",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_schema.py::test_ux_shape_and_ui_host_are_optional_plain_strings PASSED"
+      },
+      {
+        "behavior": "non-string values rejected, string values accepted, all bundled profiles still validate",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_stack_profile_schema.py::test_ux_shape_and_ui_host_are_optional_plain_strings PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_stack_profile_schema.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 40,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-25-b1-profile-keys/surface_verification.log",
+    "timestamp": "2026-10-25T14:03:28.030Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_migrations"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "status": "error",
+      "via": "codex",
+      "reason": "codex exec exited 1: Error: turn/start: turn/start failed: Input exceeds the maximum length of 1048576 characters. (code -32602), data: {\"input_error_code\":\"input_too_large\",\"max_chars\":1048576,\"actual_chars\":1381045}"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: test\n  - Severity: medium\n  - File: `.shipwright/agent_docs/iterates/iterate-2026-10-25-b1-profile-keys.json` (surface_verification.runner) / `shipwright_test_results.json` (surface_verification.runner)\n  - Finding: The acceptance criterion says \"registry test passes,\" but the only surface verification executed was `uv run pytest shared/tests/test_stack_profile_schema.py` \u2014 the actual D6 registry tests (`test_d6_declared_profile_keys_exist_in_the_schema`, which live in `plugins/shipwright-design/tests/test_setup_design_profiles.py`, `plugins/shipwright-test/tests/test_performance_check_profiles.py`, `shared/scripts/tests/test_validate_env_profiles.py`, and `shared/tests/test_dev_server_profile_resolution.py`) were never run for this change. Adding schema keys only breaks those tests if they assert equality rather than containment, and that was never verified.\n  - Suggestion: Run the D6 registry tests in the four loader test files (or the full relevant plugin test dirs) before merge, and record them in the surface-verification evidence.\n\n- Category: test\n  - Severity: low\n  - File: `shared/tests/test_stack_profile_schema.py:151-152` (`test_ux_shape_and_ui_host_are_optional_plain_strings`)\n  - Finding: The negative case only exercises `ux_shape: 3`; `ui_host` is never tested with a non-string value (e.g. an object or boolean, which were previously-valid unconstrained additional properties). If the schema entry for `ui_host` were mistyped as `[\"string\",\"null\"]` or an object, this test would still pass for that key on the rejection branch.\n  - Suggestion: Parametrize the rejection check over both keys, e.g. `for key in (\"ux_shape\",\"ui_host\"): assert not _json_schema_ok({**_BUNDLED[\"vite-hono\"], key: 3})`.\n\n- Category: edge-case\n  - Severity: low\n  - File: `shared/schemas/stack_profile.schema.json:58-64` (new `ux_shape`/`ui_host` entries)\n  - Finding: Unlike neighboring keys (`rules`, `design_system`, etc. use `[\"array\",\"null\"]` / `[\"object\",\"null\"]`), the new keys are plain `\"string\"` with no `null` allowed. An explicit `\"ux_shape\": null` in a profile will now be rejected, whereas before this change any value was accepted (additionalProperties was unconstrained). This is a (deliberate, per spec) validation tightening for pre-existing external profiles, but it is not covered by a test \u2014 only `3` (int) is tested, not `None`.\n  - Suggestion: Accept this as intended behavior but add `\"ux_shape\": None` to the rejection assertions so the tightening is pinned and visible; if null should mean \"unset,\" use `[\"string\",\"null\"]` instead.\n\n## Assessment\n\nThe core change is correct and minimal: two optional plain-string properties added to the schema, a docs row, a passing test, and no resolver/PROFILE_KEYS_READ edits, exactly as the spec scopes. The only real gap is that the acceptance criterion's \"registry test passes\" was not actually demonstrated \u2014 the D6 registry tests were not executed in this run's verification evidence \u2014 plus a couple of cheap test-hardening opportunities. Ship-with-fixes (run the D6 registry tests before merge).\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "partially_degraded": true,
+  "partially_degraded_legs": [
+    "openai"
+  ],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b1-profile-keys",
+    "at": "2026-10-25T14:05:01.029605+00:00"
+  },
+  "verdicts": {
+    "openai": "unavailable",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "error",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 openai did not (glm=approve, openai=unavailable)"
+  }
+}
