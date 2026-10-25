@@ -36,3 +36,11 @@ flow: generate the flows between the screens (the flows gate needs one for two o
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
 keep their own policy.
+
+**Re-entry.** The tool records the verified package hash in
+`.shipwright/designs/brief-package-applied.json` once it has written everything. Run again with the
+same hash (a resumed Design, or the review loop coming back) it answers `already_applied`, exit 0,
+and writes nothing: later edits to `screens/NN-*.html` or `visual-guidelines.md` stay as they are.
+`exists_differs` can therefore only appear on the FIRST apply. A changed package is refused by the
+hash check (exit 3), and a marker from a different hash is refused too (exit 1): never re-apply
+over edited screens.

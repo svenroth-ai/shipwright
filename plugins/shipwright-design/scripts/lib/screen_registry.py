@@ -71,6 +71,7 @@ def inject_requirements(data: bytes, frs: list[str]) -> bytes:
     nl = b"\r\n" if b"\r\n" in data else b"\n"
     data = _REQ_COMMENT_RE.sub(b"", data)
     comment = nl + b"<!-- Requirements: " + ", ".join(frs).encode("ascii") + b" -->" + nl
+    # Known limit: an "<html>" written inside an earlier HTML comment would be taken as the tag.
     match = _HTML_OPEN_RE.search(data) or _DOCTYPE_RE.search(data)
     if match is None:
         return comment.lstrip() + data
