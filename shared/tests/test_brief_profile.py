@@ -131,15 +131,16 @@ def test_field_precedence_and_blank_values(tmp_path):
     out = brief_intake.intake(blank_with_trailer, str(tmp_path))
     assert out["profile"] == "supabase-nextjs" and "profile_requested" not in out  # blank: trailer not consulted
     idea = "Stack profile: nope is my idea " + WEBUI_LINE.format(name="vite-hono")
-    assert brief_intake.intake({**BASE, "description": idea}, str(tmp_path))["profile"] == "vite-hono"  # anchored on the trailer
+    ambiguous = brief_intake.intake({**BASE, "description": idea}, str(tmp_path))  # two items: refused, not guessed
+    assert ambiguous["profile"] is None and ambiguous["code"] == "profile_unusable"
     dotted = brief_intake.intake(WEBUI_LINE.format(name="a.b"), str(tmp_path))
     assert dotted["profile"] is None and dotted["profile_error"]["code"] in ("invalid", "not_found")
 
 
-def test_text_keys_keep_profile_ahead_of_its_alias_in_either_order(tmp_path):
+def test_text_stack_profile_key_beats_a_bare_profile_hint_in_either_order(tmp_path):
     for text in ("description: x\nprofile: vite-hono\nstack_profile: supabase-nextjs",
                  "description: x\nstack_profile: supabase-nextjs\nprofile: vite-hono"):
-        assert brief_intake.intake(text, str(tmp_path))["profile"] == "vite-hono"
+        assert brief_intake.intake(text, str(tmp_path))["profile"] == "supabase-nextjs"
     blank_then_alias = brief_intake.intake({**BASE, "profile": "", "stack_profile": "vite-hono"}, str(tmp_path))
     assert blank_then_alias["profile"] == "vite-hono"  # a blank field does not hide a populated alias
 
@@ -173,3 +174,70 @@ def test_resolver_messages_are_stripped_of_control_and_bidi_characters(tmp_path,
     msg = out["profile_error"]["message"]
     assert "x" in msg and "y" in msg and "z" in msg
     assert not any(ord(c) < 32 or 0x7F <= ord(c) <= 0x9F or c in "\u202a\u202b\u202c\u202d\u202e" for c in msg)
+
+
+def test_an_idea_with_its_own_intake_look_alike_cannot_name_the_profile(tmp_path):
+    idea = "Clone of our old app (Intake \u2014 Stack profile: generic) " + WEBUI_LINE.format(name="vite-hono")
+    out = brief_intake.intake({**BASE, "description": idea}, str(tmp_path))  # two trailers
+    assert out["profile"] is None and out["profile_error"]["code"] == "invalid" and out["code"] == "profile_unusable"
+    alone = brief_intake.intake({**BASE, "description": "Clone of (Intake \u2014 Stack profile: generic) the old app"}, str(tmp_path))
+    assert alone["profile"] == "supabase-nextjs" and "profile_requested" not in alone  # not at the end: not a trailer
+
+
+def test_the_real_wizard_line_ending_in_the_profile_is_read(tmp_path):
+    line = "A booking tool (Intake \u2014 Users: Just me; Saves data: No; Runs: Local; Stack profile: vite-hono.)"
+    out = brief_intake.intake(line, str(tmp_path))
+    assert out["profile"] == "vite-hono" and out["profile_requested"] == "vite-hono"
+    assert brief_intake.intake(line.replace("vite-hono.)", "vite-hono..)"), str(tmp_path))["profile"] is None
+
+
+def test_bare_profile_words_in_a_text_brief_stay_prose(tmp_path):
+    for text in ("description: A shop\n- profile: avatar\n- profile: public", "A shop app\nProfile: none",
+                 "A shop app\nProfile: vite-hon"):  # a bare key is a hint only: unknown / unbulleted-free text is ignored
+        out = brief_intake.intake(text, str(tmp_path))
+        assert out["profile"] is None and "profile_error" not in out and "profile_requested" not in out
+    shop = brief_intake.intake("A shop app\n- profile: avatar", str(tmp_path))
+    assert "avatar" in shop["brief"]["description"]  # the line is NOT removed from the description
+
+
+def test_misspelled_stack_profile_key_is_refused_not_inferred(tmp_path):
+    for text in ("description: x\nStack profile: Vite-Hono", "description: x\n- stack profile: Vite-Hono"):
+        out = brief_intake.intake(text, str(tmp_path))
+        assert out["profile"] is None and out["profile_error"]["code"] == "invalid"
+
+
+def test_a_brief_naming_no_profile_never_loads_the_profile_module(tmp_path, monkeypatch):
+    def boom(stem):
+        raise AssertionError("brief_profile must not be touched")
+
+    monkeypatch.setattr(brief_intake, "_sibling", boom)
+    out = brief_intake.intake({"description": "A tool", "users": "team", "persistence": "no"}, str(tmp_path))
+    assert out["profile"] == "vite-hono"
+
+
+def test_a_missing_profile_module_is_loud_only_when_a_profile_is_named(tmp_path, monkeypatch):
+    def gone(stem):
+        raise ImportError("brief_profile.py missing")
+
+    monkeypatch.setattr(brief_intake, "_sibling", gone)
+    out = brief_intake.intake({**BASE, "profile": "vite-hono"}, str(tmp_path))
+    assert out["profile"] is None and out["profile_error"]["code"] == "resolver_unavailable"
+
+
+def test_unexpected_resolver_failure_is_resolver_unavailable(tmp_path, monkeypatch):
+    class _Boom:
+        @staticmethod
+        def resolve_profile(name, project_root):
+            raise OSError("disk gone")
+
+    monkeypatch.setattr(brief_intake._sibling("brief_profile"), "_resolver", lambda: _Boom)
+    out = brief_intake.intake({**BASE, "profile": "some-stack"}, str(tmp_path))
+    assert out["profile_error"]["code"] == "resolver_unavailable"
+
+
+def test_no_invisible_characters_in_the_profile_sources():
+    for path in (Path(__file__), Path(brief_intake.__file__).with_name("brief_profile.py"), LIB):
+        text = path.read_text(encoding="utf-8")
+        bad = [hex(ord(c)) for c in text if 0x200B <= ord(c) <= 0x200F or 0x202A <= ord(c) <= 0x202E
+               or 0x2066 <= ord(c) <= 0x2069 or ord(c) == 0xFEFF]
+        assert not bad, (path.name, bad)

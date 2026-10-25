@@ -14,8 +14,14 @@ Run: iterate-2026-10-25-b2b-wizard-brief-explicit-profile (campaign brief-driven
 
 ## Fix round 1 (orchestrator review)
 - **`detecting` is not choosable** (refused as `invalid`): it is the resolver's placeholder for "detect later", so a brief that names it has not chosen a stack. `generic` stays accepted (a real, built-in choice).
-- A text-brief `profile:` value counts as a name only in the shape `^[a-z0-9][a-z0-9-]*$`; free text such as `Profile: a SaaS for dentists` stays in the description. The resolver still validates the name.
+- A bare `profile:` line of a text brief is only a HINT (superseded round 1 rule, see round 2).
 - Unusable name (`profile_error`): the agent stops and asks, never infers (brief-intake.md Step 2). Control, C1 and bidi characters are stripped from resolver messages.
+
+## Fix round 2 (trade-offs)
+- **Trailer anchoring:** the WebUI puts the user's free idea BEFORE the trailer, so the idea must not be able to name a profile. The trailer is the last `(Intake` and must end the text; two trailers or two `Stack profile:` items are refused as ambiguous (exit 3) instead of guessing.
+- **Text-brief keys:** `Stack profile:` / `stack_profile:` is unambiguous, so its value always goes to the resolver (a misspelled `Vite-Hono` exits 3, never falls back to inference). A bare `profile:` is ordinary English ("Profile: none", "- profile: avatar" in a feature list), so it is only a hint: unbulleted, name-shaped and known to the resolver, else it stays prose. Trade-off accepted: a misspelled bare `profile: vite-hon` in a text brief is ignored silently; the strict key and the JSON field are the ways to make a choice that must not be ignored.
+- **Blast radius:** `brief_profile.py` and the resolver are touched only for a brief that can name a profile; if they cannot be loaded or fail unexpectedly, that is `resolver_unavailable` (exit 3), never a silent inference. A brief that names none works without them.
+- The bidi/zero-width class is written as escapes, so no invisible character sits in the source.
 
 ## Architecture Review
 Both reviewers: approve (glm, openai). glm (low): prefer a structured field over prose parsing if the WebUI changes anyway; openai: the trailer syntax becomes a compatibility commitment (recorded above).

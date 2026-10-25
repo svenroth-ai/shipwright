@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
-  "date": "2026-10-25T18:54:43.071652Z",
+  "date": "2026-10-25T19:28:04.143802Z",
   "event_at": "2026-10-25T18:22:58.879381+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -56,11 +56,26 @@
         "behavior": "a free-text 'Profile: ...' line stays in the description; resolver messages lose control, C1 and bidi characters",
         "disposition": "tested",
         "evidence": "shared/tests/test_brief_profile.py PASSED"
+      },
+      {
+        "behavior": "an idea with its own Intake look-alike cannot name the profile: the trailer is the last one and ends the text; two trailers or two Stack profile items are refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
+      },
+      {
+        "behavior": "bare profile words in a text brief (bulleted, none, unknown) stay prose; a misspelled Stack profile key exits 3",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
+      },
+      {
+        "behavior": "a brief naming no profile never loads the profile module; a missing module or unexpected resolver failure is resolver_unavailable only when a profile is named",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
       }
     ],
     "counts": {
-      "testable": 9,
-      "tested": 9,
+      "testable": 12,
+      "tested": 12,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -73,9 +88,9 @@
     "surface": "cli",
     "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
     "exit_code": 0,
-    "tests_run": 19,
+    "tests_run": 27,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
-    "timestamp": "2026-10-25T18:54:33.075Z",
+    "timestamp": "2026-10-25T19:28:03.802Z",
     "attempts": 1
   },
   "declared_removals": [],

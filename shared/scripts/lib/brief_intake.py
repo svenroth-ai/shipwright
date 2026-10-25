@@ -9,7 +9,6 @@ profile + deploy/env and reports which interview questions are still missing.
 Mapping (concept §2.1/§2.2): persistence=yes -> supabase-nextjs; no/unsure ->
 vite-hono (zero-signup local default); run_location web -> deploy target set,
 local -> "none"; supabase env questions asked ONLY when supabase AND web.
-A profile the brief NAMES wins over this inference and is resolver-checked (``brief_profile.py``).
 
 No brief -> legacy interview unchanged (AC3); an unreadable brief FILE degrades the
 same way. A DIRECTORY is a Brief package (``brief_dir_intake.py``): approval + hash are
@@ -156,7 +155,6 @@ def _no_brief_result() -> dict:
     }
 
 
-_NAME_SHAPE = re.compile(r"[a-z0-9][a-z0-9-]*$")  # a text-brief `profile:` is a name only in this shape (the resolver validates)
 _KEY_ALIASES = {"location": "run_location"}
 _KV_RE = re.compile(r"^\s*[-*]?\s*([A-Za-z_][\w -]*?)\s*[:=]\s*(.+?)\s*$")
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)  # greedy body + trailing-fence anchor: a nested {...} parses in full
@@ -171,15 +169,16 @@ def _parse_text_brief(text: str) -> dict:
         except (ValueError, json.JSONDecodeError):
             pass
 
-    fields = {}
-    prose = []
+    fields, prose = {}, []
     for line in text.splitlines():
         m = _KV_RE.match(line)
         key = ""
         if m:
             key = m.group(1).strip().lower().replace(" ", "_").replace("-", "_")
             key = _KEY_ALIASES.get(key, key)
-        if key in BRIEF_QUESTIONS or (key in ("profile", "stack_profile") and _NAME_SHAPE.match(m.group(2).strip())):
+            if key == "profile" and line.lstrip()[:1] not in "-*":  # only a hint, and the line stays prose (brief_profile.py)
+                fields["profile_hint"] = m.group(2).strip()
+        if key in BRIEF_QUESTIONS or key == "stack_profile":
             fields[key] = m.group(2).strip()
         elif line.strip():
             prose.append(line.strip())  # keep non-kv prose as the description
@@ -270,7 +269,14 @@ def intake(source: Optional[Union[str, dict]], project_root: str = ".", package:
     raw = load_brief(source)
     if raw is None:
         return _no_brief_result()
-    return map_brief(normalize_brief(raw), _sibling("brief_profile").select(raw, project_root))  # None: none named
+    explicit = None
+    if "rofile" in str(raw):  # only a brief that can name a profile touches brief_profile.py and the resolver
+        try:
+            explicit = _sibling("brief_profile").select(raw, project_root)
+        except Exception as exc:  # missing or broken sibling: loud (exit 3), never a silent inference
+            explicit = {"profile": None, "reason": "profile check unavailable", "extra": {"warnings": [str(exc)],
+                        "profile_error": {"code": "resolver_unavailable", "message": str(exc)}}}
+    return map_brief(normalize_brief(raw), explicit)
 
 
 def main() -> int:

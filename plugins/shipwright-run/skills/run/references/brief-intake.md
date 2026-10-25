@@ -31,7 +31,7 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
   `fixture_approval_refused` stops and reports the refusal; it does not set the variable, edit `approved_by`, or look for another way around.
 - **A bad package fails loudly** (exit 3, JSON `{"refused": true, "code": ..., "issues": [...]}`;
   codes: `bad_brief_dir`, `invalid_package`, `hash_mismatch`, `missing_approval`,
-  `fixture_approval_refused`, `approval_changed`, `missing_record`, `config_mismatch`, `brief_dir_conflict`). It never degrades to the interview.
+  `fixture_approval_refused`, `approval_changed`, `missing_record`, `config_mismatch`, `brief_dir_conflict`; the file route adds `profile_unusable`: a named stack profile that cannot be used, see "A stack profile named in the brief" - ask the user which profile, never infer). It never degrades to the interview.
 - **`brief_dir` is persisted** by `brief_dir_intake.py record` (Step 4) together with the approved
   hash, so a resume finds the package and compares against a hash held outside it;
   `single-session-resume`, `-next` and `-apply` re-check it IN CODE (`orchestrator_pkg/brief_resume_guard.py`,
@@ -88,7 +88,7 @@ suffix, the helper does NOT fail the run — it degrades to the legacy interview
 ## Run the intake
 
 ```bash
-uv run "{plugin_root}/../../shared/scripts/lib/brief_intake.py" --brief "{brief_path_or_payload}"
+uv run "{plugin_root}/../../shared/scripts/lib/brief_intake.py" --brief "{brief_path_or_payload}" --project-root "$(pwd)"
 ```
 
 The helper (`shared/scripts/lib/brief_intake.py`, shared by `run` + `adopt`,
@@ -145,9 +145,15 @@ when genuinely needed.
 A brief may NAME the stack profile (the WebUI wizard, a user, a project profile). Contract (additive; the file
 route has no brief version, the field is simply optional):
 
-- **Field:** `profile` (alias `stack_profile`) in a JSON object / fenced JSON / `key: value` brief, or the
-  `Stack profile: <name>` item of the one-line `(Intake ...)` trailer the WebUI writes today
-  (`composeNewBrief` in the WebUI `IntentWizard/contract.ts`). The field wins over the trailer.
+- **Field:** `profile` (alias `stack_profile`) in a JSON object / fenced JSON, a `Stack profile:` line of a
+  `key: value` brief (strict: a name that cannot be used exits 3, even misspelled), or the `Stack profile: <name>`
+  item of the one-line `(Intake ...)` trailer the WebUI writes today (`composeNewBrief` in the WebUI
+  `IntentWizard/contract.ts`). A field wins over the trailer.
+- **The trailer** is the LAST `(Intake` in the text and must end it, so a user idea before it cannot name a
+  profile; two trailers or two `Stack profile:` items are ambiguous and refused (`profile_unusable`).
+- **A bare `profile:` line** of a `key: value` brief is only a hint: it counts when it is unbulleted, has the
+  profile-name shape and the resolver knows it; otherwise ("Profile: none", "- profile: avatar", free text) it
+  stays in the description and is ignored. Use `Stack profile:` for a choice that must not be ignored.
 - **An explicit name always beats inference** (`persistence`); the result gains `profile_requested`,
   `profile_source` (`project|user|bundled|builtin`) and `warnings`; `env_questions` follow the CHOSEN profile.
 - **The resolver decides** (`shared/scripts/profile_resolver.py`: project > user > bundled): project and user
@@ -157,8 +163,6 @@ route has no brief version, the field is simply optional):
   shape (`refused: true`, `code: "profile_unusable"`, `message`, `issues`), and the CLI **exits 3**.
   Show the warning to the user and ask which profile to use (`resolve_profile.py list` names the choices).
 - `detecting` (the "detect later" placeholder) is not choosable and is refused as `invalid`; `generic` is accepted.
-  In a `key: value` text brief a `profile:` value counts as a name only in the shape `^[a-z0-9][a-z0-9-]*$`;
-  any other `Profile: ...` line stays prose in the description.
 - Pass `--project-root` so a project profile under `.shipwright/profiles/` resolves.
 - No profile in the brief: behaviour is unchanged (inference from `persistence`, no new keys in the result).
 

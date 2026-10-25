@@ -65,4 +65,4 @@ def test_unknown_profile_stops_at_intake_and_picks_no_fallback(tmp_path):
     took = _run([INTAKE, "--brief", "wizard-brief.json", "--project-root", tmp_path], tmp_path)
     out = json.loads(took.stdout)
     assert took.returncode == 3 and out["profile"] is None and out["profile_error"]["code"] == "not_found"
-    assert not (tmp_path / "shipwright_run_config.json").exists()  # intake wrote nothing; no fallback profile exists
+    assert out["code"] == "profile_unusable" and out["refused"] is True  # the shape exit-3 consumers read
