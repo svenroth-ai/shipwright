@@ -95,8 +95,7 @@ def check_approval(brief: Mapping[str, Any], env: Optional[Mapping[str, str]] = 
     if fixture and not by.strip()[len(FIXTURE_PREFIX):].strip():
         raise BriefRefused("missing_approval", "approved_by 'fixture:' carries no fixture id")
     if fixture and (os.environ if env is None else env).get(FIXTURE_ENV) != "1":
-        raise BriefRefused("fixture_approval_refused",
-                           f"approved_by {by!r} is a fixture approval; set {FIXTURE_ENV}=1 to accept it")
+        raise BriefRefused("fixture_approval_refused", f"fixture approval {by!r}: only the OPERATOR may set {FIXTURE_ENV}=1; an agent must NEVER set it, stop and report this refusal")
     return {"approved_by": by, "approved_at": at, "fixture_approval_accepted": fixture}
 
 

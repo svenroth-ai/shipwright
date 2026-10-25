@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T17:53:12.881693+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan states the contract finding but does not include the required ADR update. It also does not establish how the prose-only WebUI output relates to the file formats accepted by run and adopt, or explicitly state whether the WebUI needs a change.",
+          "suggestion": "Record the contract locations, supported fields, version expectations, and prose compatibility in the ADR. State explicitly whether the existing WebUI output works unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Invalid profiles produce `profile: null` plus an error and CLI exit code 3, but the plan does not specify how Step 4 handles that exit. If the caller continues with the JSON payload, the original silent fallback remains possible.",
+          "suggestion": "Make a profile validation error stop intake before config writing or detection. Extend the end-to-end test to prove an unknown profile produces a clear diagnostic and cannot create or update a run config with a fallback profile.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Profile extraction lacks explicit rules for conflicting fields, malformed values, and ambiguous prose. In particular, a present but empty or non-string `profile` must not accidentally trigger inference or select a trailer value.",
+          "suggestion": "Define deterministic precedence for `profile`, `stack_profile`, and the wizard trailer. Distinguish absence from invalid input, reject malformed explicit values, and restrict prose extraction to the recognized wizard trailer. Test conflicting fields and malformed explicit values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The listed tests do not explicitly cover adopt’s separate test root or the required operator-only refusal wording. Shared intake changes and sibling loading can affect adopt even when run’s tests pass.",
+          "suggestion": "Add the refusal-message assertion, run adopt’s existing suite, and verify the new sibling loads through adopt’s entry point. Include explicit project/user profile resolution coverage.  The approach is sound: intake is the right place to preserve and validate the choice, and the sibling module respects the size constraint. The error propagation, contract documentation, and required regression coverage need to be made explicit before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T17:50:16.758498+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: edge-case** — **Severity: medium** — The `Stack profile:` value is parsed out of free prose (\"`<idea> (Intake - ...; Stack profile: <name>; ...)`\"). Names containing `;`, `)` or newlines, an idea that itself contains \"Stack profile:\", a truncated trailer, or a double-occurrence of the item are all plausible and unhandled in the plan. **Suggestion:** anchor the parse to the `(Intake ...)` trailer specifically, take the last `Stack profile:` occurrence inside it, strip at `;`/`)`, and add tests for a name containing special characters and a trailer containing the literal string \"Stack profile:\" in the idea.\n\n- **Category: edge-case** — **Severity: medium** — Plan point 2 introduces the alias `stack_profile` → `profile`. If a brief carries both keys with different values, precedence is undefined, and the \"explicit value always beats inference\" rule becomes ambiguous. **Suggestion:** define precedence explicitly (e.g., `profile` wins, or refuse with a warning on conflict) and test it.\n\n- **Category: risk** — **Severity: medium** — \"Env questions follow the chosen profile\" changes the meaning of the persistence answer when the brief names a profile that implies a different persistence setup than the wizard's persistence answer. This is a behaviour change for existing briefs that name a profile — the spec says \"no profile in the brief means unchanged behaviour\", but profile-present briefs may get different env answers than today's inference. **Suggestion:** confirm with the operator (Sven's request) that env re-derivation is intended, and add a test for profile-present + persistence-answer-mismatch.\n\n- **Category: risk** — **Severity: low** — New CLI exit code 3 on `profile_error`: any caller (adopt, run skill scripts, CI) that switches on exit codes or treats non-zero as generic failure should be checked before this lands. If adopt calls the CLI, its tests staying green is the gate — call that out as a verification step, not […truncated]\n\n[openai] 1. **Category: dependency · Severity: medium**  \n   **Finding:** The plan states the contract finding but does not include the required ADR update. It also does not establish how the prose-only WebUI output relates to the file formats accepted by run and adopt, or explicitly state whether the WebUI needs a change.  \n   **Suggestion:** Record the contract locations, supported fields, version expectations, and prose compatibility in the ADR. State explicitly whether the existing WebUI output works unchanged.\n\n2. **Category: risk · Severity: medium**  \n   **Finding:** Invalid profiles produce `profile: null` plus an error and CLI exit code 3, but the plan does not specify how Step 4 handles that exit. If the caller continues with the JSON payload, the original silent fallback remains possible.  \n   **Suggestion:** Make a profile validation error stop intake before config writing or detection. Extend the end-to-end test to prove an unknown profile produces a clear diagnostic and cannot create or update a run config with a fallback profile.\n\n3. **Category: edge-case · Severity: medium**  \n   **Finding:** Profile extraction lacks explicit rules for conflicting fields, malformed values, and ambiguous prose. In particular, a present but empty or non-string `profile` must not accidentally trigger inference or select a trailer value.  \n   **Suggestion:** Define deterministic precedence for `profile`, `stack_profile`, and the wizard trailer. Distinguish absence from invalid input, reject malformed explicit values, and restrict prose extraction to the recognized wizard trailer. Test conflicting fields and malformed explicit values.\n\n4. **Category: dependency · Severity: medium**  \n   **Finding:** The listed tests do not explicitly cover adopt’s separate test root or the required operator-only refusal wording. Shared intake changes and sibling loading can affect adopt even when run’s tests pass.  \n   **Suggestion:** Add the refusal-message assertion, run adopt’s exi […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 149,
+          "finding": "_WIZARD_LINE_RE is quadratic on a hostile last line of a 256 KB text brief (edge)",
+          "suggestion": "check endswith(')') before the regex",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 159,
+          "finding": "fence-skip regex and _trailer_item decide 'wizard line' differently on exotic last lines (edge)",
+          "suggestion": "derive both from one helper",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 174,
+          "finding": "hand-written 'Stack profile: vite-hono.' keeps the trailing period and is refused loudly",
+          "suggestion": "strip one trailing period like the trailer path",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 151,
+          "finding": "fallback gate misses a bulleted Stack profile line, only when the sibling module is broken (edge)",
+          "suggestion": "allow an optional bullet",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 177,
+          "finding": "pre-existing: an idea starting with a brief key loses its description",
+          "suggestion": "treat a wizard trailer last line as prose (follow-up)",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T22:41:22.664518+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3fbc03e1a55bbe1a4a4cc0f748fd916dd52ce06f"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: wizard trailer contract holds between WebUI and intake — an item order with brackets before Stack profile would drop the profile; today's producer is fine",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: a bare profile hint never takes over a normal brief — 'Profile: generic' selects the generic sentinel",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: a brief naming no profile is unchanged — stray-key warning also fires for domain keys like customer_profile",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: a wizard brief always selects the wizard profile — text added after the closing parenthesis makes the trailer misplaced; safe fallback",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-run/tests/test_brief_profile_e2e.py",
+          "line": null,
+          "finding": "Claim under doubt: e2e test reflects a fully parsed brief — pre-existing: key-led idea loses description",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T22:41:22.809189+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3fbc03e1a55bbe1a4a4cc0f748fd916dd52ce06f"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/brief_profile.py / diff as a whole",
+          "line": null,
+          "finding": "AC1 requires the brief-contract investigation (\"where the contract is defined, field name, expected version\") to be recorded in the ADR, and any WebUI-side change to be named in the result. The diff documents the contract only in `brief-intake.md` prose and code docstrings; no ADR update appears anywhere in the diff.",
+          "suggestion": "Add the ADR entry recording the WebUI contract location (`IntentWizard/contract.ts`, `composeNewBrief`, `Stack profile:` trailer) and explicitly state that no WebUI change is required (or name it if one is).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug / regression",
+          "file": "shared/scripts/lib/brief_intake.py:289 (`return 3 if result.get(\"profile_error\") else 0`)",
+          "line": null,
+          "finding": "Exit code 3 was previously reserved for `BriefRefused` (JSON with `\"refused\": true`). It now also fires for `profile_error`, whose JSON has no `refused` key. Callers that branch on exit 3 and parse `code`/`refused` — including adopt, which shares `brief_intake.py`, and any wrapper following the old documented \"exit 3 = refused, stop\" contract — will hit an unhandled shape. The old code path printed `exc.as_dict()` and returned 3; a consumer doing `out[\"refused\"]` now KeyErrors.",
+          "suggestion": "Either emit a distinct exit code for `profile_error`, or document and verify in adopt's tests that exit-3 consumers read the JSON defensively (`out.get(\"refused\")`) — and add a regression test in adopt's root that a brief naming a profile doesn't break its exit-3 handling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_brief_profile.py:96-101 (`test_profile_file_contents_are_untrusted`)",
+          "line": null,
+          "finding": "The test accepts `profile_error.code in (\"invalid\", \"error\")`, but `select` uses `getattr(exc, \"kind\", \"error\")` and the docstring says the resolver's family includes `schema_` codes. If the resolver reports `schema_invalid` (or any `schema_`) for the malformed `evil.json`, this test fails even though the behavior is correct — or worse, if someone \"fixes\" the implementation to coerce to `\"invalid\"`, the test passes while masking the real code. The assertion doesn't pin the actual contract.",
+          "suggestion": "Assert the concrete code the resolver produces for malformed JSON (check `profile_resolver.py`'s exception kinds) or accept the full documented set (`invalid`, `not_found`, `schema_`, `error`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-run/tests/test_brief_profile_e2e.py:12-14 (`_run` with `env=os.environ.copy()`)",
+          "line": null,
+          "finding": "The e2e subprocesses inherit the developer's full environment, so stray `SHIPWRIGHT_USER_PROFILES_DIR`, `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL`, or other `SHIPWRIGHT_` vars make these tests order/machine dependent (e.g. a developer's user-profiles dir could make \"no-such-stack\" resolve, flipping `test_unknown_profile_stops_at_intake`).",
+          "suggestion": "Build a scrubbed env (filter `SHIPWRIGHT_`) for the subprocess runs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/brief_profile.py:39-45 (`requested_name`)",
+          "line": null,
+          "finding": "{profile: \"\", stack_profile: \"x\"}` silently drops the alias value (blank `profile` short-circuits to \"no choice\"), while the docstring/tests say \"`profile` wins; the first present field decides\". A blank primary field suppressing a populated alias is undocumented behavior that a WebUI writing both fields could hit. It's tested (as intended) for the trailer case but not for the alias case, so the contract is only half-specified.",
+          "suggestion": "Either test and document that a blank `profile` suppresses `stack_profile` too, or skip blank values and fall through to the alias.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/lib/brief_intake.py:180-183",
+          "line": null,
+          "finding": "For `key: value` text briefs, only `profile` is accepted as a new key; `stack_profile`/`Stack profile:` in a plain key line is not aliased in `_KEY_ALIASES` (`_KEY_ALIASES = {\"location\": ..., \"stack_profile\": \"profile\"}` — actually the alias exists, so `stack_profile` text keys are fine). However `normalize_brief`'s output brief is not shown to preserve the `profile` key, so `result[\"brief\"]` may lose the named profile — downstream consumers reading the echo of the brief can't see what was requested. Verify `normalize_brief` keeps it (only `profile_requested` is guaranteed).",
+          "suggestion": "Confirm or add a test that the echoed `brief` in the result still carries the `profile` field, or that no consumer relies on it.  Overall: the core feature (explicit profile wins, resolver-validated, loud failure on unknown names, no silent fallback) is correctly implemented and well tested, including the carry-over rewording; the main gaps are the missing ADR record and the exit-code-3 semantic overload that adopt's exit-3 consumers may not tolerate. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-run/skills/run/references/brief-intake.md",
+          "line": 144,
+          "finding": "The required ADR record is missing from the diff. The reference describes the WebUI trailer and an unversioned file route, but does not satisfy the acceptance criterion to record the contract location, field, and expected version in an ADR. The result also does not explicitly state whether the WebUI needs changes.",
+          "suggestion": "Add the ADR entry with the verified WebUI and intake contract details, and explicitly state the required WebUI changes or that none are needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 180,
+          "finding": "Text parsing collapses `stack_profile` into `profile` before applying field precedence. For `profile: vite-hono` followed by `stack_profile: supabase-nextjs`, the alias overwrites the explicit `profile`, contradicting the documented rule that `profile` wins. JSON briefs correctly retain that precedence.",
+          "suggestion": "Preserve both fields during text parsing and let `requested_name()` apply precedence. Add a test with conflicting text fields in both orders.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": 33,
+          "finding": "The trailer regex validates only the first whitespace-delimited token of the chosen name. A trailer containing `Stack profile: vite-hono invalid;` silently selects `vite-hono` instead of reporting the invalid full value. This bypasses the requirement to validate the explicit name unchanged and never substitute another profile.",
+          "suggestion": "Capture the complete item up to its semicolon or closing parenthesis, trim surrounding whitespace, and pass the complete value to the resolver. Test that a name containing internal whitespace produces an error.  Ship-with-fixes: the implementation covers the main path, but contract recording and explicit-name handling need correction. Checkout inspection was blocked by execution policy, so this assessment is based on the supplied diff; tests were not run.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T17:52:17.921892+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: spec\n  Severity: medium\n  File: shared/scripts/lib/brief_profile.py / diff as a whole\n  Finding: AC1 requires the brief-contract investigation (\"where the contract is defined, field name, expected version\") to be *recorded in the ADR*, and any WebUI-side change to be named in the result. The diff documents the contract only in `brief-intake.md` prose and code docstrings; no ADR update appears anywhere in the diff.\n  Suggestion: Add the ADR entry recording the WebUI contract location (`IntentWizard/contract.ts`, `composeNewBrief`, `Stack profile:` trailer) and explicitly state that no WebUI change is required (or name it if one is).\n\n- Category: bug / regression\n  Severity: medium\n  File: shared/scripts/lib/brief_intake.py:289 (`return 3 if result.get(\"profile_error\") else 0`)\n  Finding: Exit code 3 was previously reserved for `BriefRefused` (JSON with `\"refused\": true`). It now also fires for `profile_error`, whose JSON has no `refused` key. Callers that branch on exit 3 and parse `code`/`refused` — including adopt, which shares `brief_intake.py`, and any wrapper following the old documented \"exit 3 = refused, stop\" contract — will hit an unhandled shape. The old code path printed `exc.as_dict()` and returned 3; a consumer doing `out[\"refused\"]` now KeyErrors.\n  Suggestion: Either emit a distinct exit code for `profile_error`, or document and verify in adopt's tests that exit-3 consumers read the JSON defensively (`out.get(\"refused\")`) — and add a regression test in adopt's root that a brief naming a profile doesn't break its exit-3 handling.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_brief_profile.py:96-101 (`test_profile_file_contents_are_untrusted`)\n  Finding: The test accepts `profile_error.code in (\"invalid\", \"error\")`, but `select` uses `getattr(exc, \"kind\", \"error\")` and the docstring says the resolver's family includes `schema_*` codes. If the resolver reports `schema_invalid` (or any `schema_*`) for the malformed […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: plugins/shipwright-run/skills/run/references/brief-intake.md:144\n- Finding: The required ADR record is missing from the diff. The reference describes the WebUI trailer and an unversioned file route, but does not satisfy the acceptance criterion to record the contract location, field, and expected version in an ADR. The result also does not explicitly state whether the WebUI needs changes.\n- Suggestion: Add the ADR entry with the verified WebUI and intake contract details, and explicitly state the required WebUI changes or that none are needed.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_intake.py:180\n- Finding: Text parsing collapses `stack_profile` into `profile` before applying field precedence. For `profile: vite-hono` followed by `stack_profile: supabase-nextjs`, the alias overwrites the explicit `profile`, contradicting the documented rule that `profile` wins. JSON briefs correctly retain that precedence.\n- Suggestion: Preserve both fields during text parsing and let `requested_name()` apply precedence. Add a test with conflicting text fields in both orders.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_profile.py:33\n- Finding: The trailer regex validates only the first whitespace-delimited token of the chosen name. A trailer containing `Stack profile: vite-hono invalid;` silently selects `vite-hono` instead of reporting the invalid full value. This bypasses the requirement to validate the explicit name unchanged and never substitute another profile.\n- Suggestion: Capture the complete item up to its semicolon or closing parenthesis, trim surrounding whitespace, and pass the complete value to the resolver. Test that a name containing internal whitespace produces an error.\n\nShip-with-fixes: the implementation covers the main path, but contract recording and explicit-name handling need correction. Checkout inspection was blocked by execution policy, so this ass […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T22:41:06.560416+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3fbc03e1a55bbe1a4a4cc0f748fd916dd52ce06f"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T17:50:16.904880+00:00",
+      "disposition": "orchestrator instruction: the review cascade and internal arms are run by the campaign orchestrator; this runner did not spawn opus-plan-reviewer",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T17:50:17.036332+00:00",
+      "disposition": "orchestrator instruction: the review cascade and internal arms are run by the campaign orchestrator; this runner did not spawn architecture-internal-reviewer",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

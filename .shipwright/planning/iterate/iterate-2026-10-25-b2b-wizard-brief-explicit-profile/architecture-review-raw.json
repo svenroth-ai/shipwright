@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but barely: the only new standing thing is one optional field in the brief contract plus a validation call to the existing resolver; everything else is plumbing through machinery that already exists (brief_intake, resolve_profile.py, write-config --profile, run config).\n\n2. **The smallest thing that would do.** Add the optional `profile` field to the brief contract (additively), pass it to the existing `resolve_profile.py` validate, and let the existing `write-config --profile` path carry it into the run config. No new module is a \"standing mechanism\" in any meaningful sense \u2014 it's a leaf on an existing tree, kept alive by the same tests brief_intake already has.\n\n3. **What it costs to keep.** One more optional field in the brief schema to keep documented and backward-compatible; one more path through an already-shared module that adopt depends on. That is the entire ongoing obligation, and it is small.\n\n4. **What it forecloses.** None identified \u2014 additive field, resolver unchanged, no-profile runs unchanged. If anything it makes a future WebUI-driven config richer, not harder.\n\n5. **Findings.**\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option A as sketched reads \"the WebUI trailer\" \u2014 parsing a profile name out of a prose line is the fragile half of this change. If the brief contract investigation shows a WebUI-side change is needed anyway (the spec already allows for naming one), asking the WebUI to write the field as structured data (option B's shape) rather than parsing prose is the smaller permanent obligation, and the repo-side work is identical either way.\n- Suggestion: Do the contract investigation first as the spec requires; if a WebUI change is on the table anyway, take the additive structured field over prose parsing, and keep the repo-side code (sibling module + resolver call) as proposed. Option C alone is worse \u2014 it pushes a naming/validation concern into write-config and gives no loud early warning.\n\nThe B2 carry-over (rewording the fixture-approval refusal to be operator-only, net-zero lines) is a rewording of an existing mechanism, correctly not a new one.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes:** extend the existing intake to preserve an explicit profile; option A is proportionate because it repairs an existing producer\u2013consumer mismatch using the existing resolver and run config.\n\n2. **Smallest thing that would do:** a sibling adapter that reads the optional `profile` field and the existing WebUI trailer, validates the name through the resolver, and passes it unchanged to the existing config writer. An unusable explicit name stops intake with a clear diagnostic; absence retains current behavior. Asking the WebUI to emit JSON alone would not fix intake\u2019s failure to honor explicit profiles.\n\n3. **What it costs to keep:** maintain compatibility with the documented brief formats and keep shared intake behavior aligned for run and adopt. This is ordinary repository maintenance, with no new service, credential, scheduled job, or monitoring obligation.\n\n4. **What it forecloses:** changing the WebUI trailer freely; its profile syntax becomes a compatibility commitment. Record the supported syntax narrowly so unrelated prose remains free to change.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+    "at": "2026-10-25T17:49:04.659928+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

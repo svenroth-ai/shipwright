@@ -1,0 +1,1 @@
+feat(run): a stack profile named in the wizard brief (profile field or the Stack profile item) wins over inference, is checked by the profile resolver and reaches the run config; an unusable name is reported loudly, never replaced. The fixture-approval refusal now says only the operator may set the switch
