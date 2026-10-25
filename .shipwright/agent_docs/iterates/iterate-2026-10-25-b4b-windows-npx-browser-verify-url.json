@@ -1,0 +1,54 @@
+{
+  "run_id": "iterate-2026-10-25-b4b-windows-npx-browser-verify-url",
+  "date": "2026-10-25T16:38:01.634517Z",
+  "event_at": "2026-10-25T15:15:38.444754+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B4b",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-b4b-windows-npx-browser-verify-url",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "playwright_runner spawns npx through the resolver (Windows npx.cmd), no shell",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_playwright_runner.py::test_run_playwright_resolves_npx_via_resolver PASSED"
+      },
+      {
+        "behavior": "browser_verify spawns npx through resolve_executable and forwards --url, no shell",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_browser_verify.py::test_resolves_npx_via_resolver PASSED"
+      },
+      {
+        "behavior": "chat-first-json dev_server declares 127.0.0.1 in host and uvicorn command; profile still valid",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_chat_first_json_profile.py PASSED"
+      },
+      {
+        "behavior": "adopt matcher unchanged and CI/CodeQL mapping stays none (retagged FR-01.13)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_profile_matcher_chat_first.py PASSED; test_ci_and_codeql_mapping_stay_an_explicit_none PASSED"
+      },
+      {
+        "behavior": "browser-verify.md --url code block, URL precedence wording, step-7 host guidance",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "prompt text read by an agent; live proof is campaign unit B7's real end-to-end run"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    }
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

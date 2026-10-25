@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"npx resolved through resolve_executable in browser_verify.py and (by file-path load of the shared helper) playwright_runner.py; browser-verify.md step 3 block carries --url; URL precedence aligned; 127.0.0.1 used in profile, scaffolding guidance and tests; notes reworded; two tests retagged FR-01.13."},
+{"name":"Error Handling","verdict":"pass","note":"Resolver load in playwright_runner falls back to shutil.which then the bare name, so resolution can never break a run."},
+{"name":"Security Basics","verdict":"pass","note":"argv arrays kept, no shell=True; the resolver is the cwd-safe shared one."},
+{"name":"Test Quality","verdict":"pass","note":"Monkeypatched resolver returning a Windows-style npx.cmd path; asserts argv[0], no shell, url passed through; no real npx."},
+{"name":"Performance Basics","verdict":"pass","note":"One small module load per Playwright run; nothing on a hot path."},
+{"name":"Naming & Structure","verdict":"pass","note":"playwright_runner.py stays at 297 lines (<300); helper named _resolve_executable, patched in tests."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Profile JSON producer vs dev_server/resolver consumers exercised by test_chat_first_json_profile; adopt matcher fixtures unchanged."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"New tests are plain unit tests with patched subprocess."}
+]}
