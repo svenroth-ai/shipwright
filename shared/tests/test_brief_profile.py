@@ -130,7 +130,7 @@ def test_field_precedence_and_blank_values(tmp_path):
     blank_with_trailer = {**BASE, "profile": "", "description": WEBUI_LINE.format(name="vite-hono")}
     out = brief_intake.intake(blank_with_trailer, str(tmp_path))
     assert out["profile"] == "supabase-nextjs" and "profile_requested" not in out  # blank: trailer not consulted
-    idea = "Stack profile: nope is my idea " + WEBUI_LINE.format(name="vite-hono")
+    idea = "Stack profile: nope is my idea " + WEBUI_LINE.format(name="vite-hono").replace("; Stack profile: vite-hono", "; Stack profile: vite-hono; Stack profile: x")
     ambiguous = brief_intake.intake({**BASE, "description": idea}, str(tmp_path))  # two items: refused, not guessed
     assert ambiguous["profile"] is None and ambiguous["code"] == "profile_unusable"
     dotted = brief_intake.intake(WEBUI_LINE.format(name="a.b"), str(tmp_path))
@@ -274,6 +274,21 @@ _PRECEDENCE = [
     ("a bad trailer is an error even beside a good hint", "profile: vite-hono\nMy app " + _TRAILER.format("nope"), None, False, True),
     ("two trailers are ambiguous even beside a hint", "profile: vite-hono\n" + _TRAILER.format("a") + " " + _TRAILER.format("b"),
      None, False, True),
+    ("idea starting with Location: swallowed the line, trailer still read", "Location: Zurich gyms. A class booking app " + _TRAILER.format("vite-hono"),
+     "vite-hono", False, False),
+    ("idea starting with Users:", "Users: gym members and staff. A booking app " + _TRAILER.format("vite-hono"), "vite-hono", False, False),
+    ("idea starting with Persistence:", "Persistence: yes please. A booking app " + _TRAILER.format("vite-hono"), "vite-hono", False, False),
+    ("idea starting with Run location =", "Run location = web, a booking app " + _TRAILER.format("vite-hono"), "vite-hono", False, False),
+    ("idea starting with Location: and a bad trailer name", "Location: Zurich. A booking app " + _TRAILER.format("nope"), None, False, True),
+    ("an idea that says (Intake forms) in prose", "Clinic app (Intake forms + scheduling) " + _TRAILER.format("vite-hono"), "vite-hono", False, False),
+    ("an idea that mentions stack profile: x in prose", "Build it on stack profile: supabase-nextjs maybe " + _TRAILER.format("vite-hono"),
+     "vite-hono", False, False),
+    ("two Stack profile lines are ambiguous", "persistence: yes\nStack profile: vite-hono\nStack profile: supabase-nextjs", None, False, True),
+    ("two Stack profile items inside the trailer are ambiguous", "My app (Intake — Stack profile: a; Stack profile: b.)", None, False, True),
+    ("a hint resolver kind other than not_found warns: con", "persistence: yes\nprofile: con", "supabase-nextjs", True, False),
+    ("a hint resolver kind other than not_found warns: nul", "persistence: yes\nprofile: nul", "supabase-nextjs", True, False),
+    ("a hint resolver kind other than not_found warns: com1", "persistence: yes\nprofile: com1", "supabase-nextjs", True, False),
+    ("an uppercase STACK PROFILE key is read", "persistence: yes\nSTACK PROFILE: vite-hono", "vite-hono", False, False),
     ("a blank strict field consults neither trailer nor hint", {**BASE, "profile": "", "profile_hint": "vite-hono",
      "description": "x " + _TRAILER.format("vite-hono")}, "supabase-nextjs", False, False),
 ]
@@ -287,4 +302,46 @@ def test_profile_source_precedence_table(tmp_path, case, brief, profile, warns, 
     if not errors:  # an error carries its own message in `warnings`; here only the hint warning is in question
         assert bool(out.get("warnings")) is warns, (case, out.get("warnings"))
     else:
-        assert out["code"] == "profile_unusable" and "was not used" not in " ".join(out["warnings"]), case
+        assert out["code"] == "profile_unusable" and "was ignored" not in " ".join(out["warnings"]), case
+
+
+def test_a_clinic_idea_without_a_trailer_item_names_no_profile(tmp_path):
+    out = brief_intake.intake({**BASE, "description": "Clinic app (Intake forms + scheduling)"}, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_requested" not in out and "profile_error" not in out
+
+
+def test_an_earlier_look_alike_trailer_stays_ambiguous_and_names_the_cause(tmp_path):
+    out = brief_intake.intake("Old (Intake — Stack profile: a) " + _TRAILER.format("b"), str(tmp_path))
+    assert out["profile"] is None and "more than one stack profile" in out["message"]
+
+
+def test_a_sibling_load_failure_carries_the_full_sanitised_refusal_shape(tmp_path, monkeypatch):
+    def gone(stem):
+        raise ImportError("brief_profile.py missing " + chr(0x202E) + chr(0x1B) + "[31m" + "x" * 400)
+
+    monkeypatch.setattr(brief_intake, "_sibling", gone)
+    out = brief_intake.intake({**BASE, "profile": "vite-hono"}, str(tmp_path))
+    assert out["refused"] is True and out["code"] == "profile_unusable" and out["issues"] == []
+    assert out["message"] == out["warnings"][0] and len(out["message"]) <= 300
+    assert chr(0x202E) not in out["message"] and chr(0x1B) not in out["message"]
+
+
+def test_an_uppercase_profile_word_still_loads_the_profile_check(tmp_path):
+    out = brief_intake.intake({**BASE, "PROFILE": "vite-hono"}, str(tmp_path))  # not a recognised key: no profile named
+    assert out["profile"] == "supabase-nextjs"
+    text = brief_intake.intake("persistence: yes\nSTACK PROFILE: nope", str(tmp_path))
+    assert text["profile"] is None and text["profile_error"]["code"] == "not_found"
+
+
+def test_resolver_detail_is_echoed_as_untrusted_quoted_data(tmp_path):
+    out = brief_intake.intake({**BASE, "profile": "no-such-stack"}, str(tmp_path))
+    assert "resolver said (untrusted): " in out["message"] and len(out["message"].split("resolver said")[1]) <= 330
+
+
+def test_a_sole_profile_hint_leaves_the_description_and_brief_unchanged(tmp_path):
+    hinted = brief_intake.intake("A booking tool for gyms\nprofile: vite-hono", str(tmp_path))
+    plain = brief_intake.intake("A booking tool for gyms\nprofile: free words here", str(tmp_path))
+    assert hinted["brief"]["description"] == "A booking tool for gyms profile: vite-hono"
+    assert set(hinted["brief"]) == {"description", "users", "persistence", "run_location"}
+    assert plain["brief"]["description"] == "A booking tool for gyms profile: free words here"
+    assert "_text" not in hinted["brief"] and "profile_hint" not in hinted["brief"]

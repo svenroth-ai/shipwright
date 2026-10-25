@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 14910,
-      "total": 14910
+      "passed": 14929,
+      "total": 14929
     },
     "integration": {
       "status": "not_run"
@@ -95,11 +95,16 @@
           "behavior": "one precedence rule over the profile sources: JSON field, text Stack profile key, last trailer, then only the bare hint; a hint never masks a strict source (table-driven)",
           "disposition": "tested",
           "evidence": "shared/tests/test_brief_profile.py PASSED"
+        },
+        {
+          "behavior": "final round: a one-line wizard brief whose idea starts with a brief key keeps its trailer profile; (Intake forms)/stack profile: prose in the idea no longer refuses; duplicate Stack profile lines are ambiguous; every resolver error kind of a bare hint is a warning; the case-insensitive gate, the sanitised refusal shape of a failed sibling load and the untrusted-resolver prefix hold",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
         }
       ],
       "counts": {
-        "testable": 14,
-        "tested": 14,
+        "testable": 15,
+        "tested": 15,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -112,7 +117,7 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 41,
+      "tests_run": 60,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
       "timestamp": "2026-10-25T20:16:13.943Z",
       "attempts": 1

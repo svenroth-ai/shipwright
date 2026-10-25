@@ -109,19 +109,11 @@ def map_brief(brief: dict, explicit: Optional[dict] = None) -> dict:  # normaliz
         profile, profile_reason = explicit["profile"], explicit["reason"]
 
     # Deploy target from run-location.
-    if run_location == "web":
-        deploy_target = "jelastic-dev"
-    elif run_location == "local":
-        deploy_target = "none"
-    else:
-        deploy_target = None
+    deploy_target = {"web": "jelastic-dev", "local": "none"}.get(run_location)
 
     auth_scope = {"public": "public", "team": "team", "just_me": "none"}.get(users)
 
-    if profile == "supabase-nextjs" and run_location == "web":
-        env_questions = list(SUPABASE_ENV_QUESTIONS)
-    else:
-        env_questions = []
+    env_questions = list(SUPABASE_ENV_QUESTIONS) if profile == "supabase-nextjs" and run_location == "web" else []
 
     answered = [q for q in BRIEF_QUESTIONS if brief.get(q) is not None]
     remaining = [q for q in BRIEF_QUESTIONS if brief.get(q) is None] + list(_ALWAYS_ASK)
@@ -169,22 +161,23 @@ def _parse_text_brief(text: str) -> dict:
         except (ValueError, json.JSONDecodeError):
             pass
 
-    fields, prose = {}, []
+    fields, meta, prose = {}, {"_text": text.strip()}, []  # meta: side channel for brief_profile.py, never a brief answer
     for line in text.splitlines():
         m = _KV_RE.match(line)
         key = ""
         if m:
             key = m.group(1).strip().lower().replace(" ", "_").replace("-", "_")
             key = _KEY_ALIASES.get(key, key)
-            if key == "profile" and line.lstrip()[:1] not in "-*":  # only a hint, and the line stays prose (brief_profile.py)
-                fields["profile_hint"] = m.group(2).strip()
+            if key == "profile" and line.lstrip()[:1] not in "-*":  # only a hint, and the line stays prose
+                meta["profile_hint"] = m.group(2).strip()
         if key in BRIEF_QUESTIONS or key == "stack_profile":
+            meta["_dup"] = meta.get("_dup") or (key == "stack_profile" and key in fields)  # two lines: refused
             fields[key] = m.group(2).strip()
         elif line.strip():
             prose.append(line.strip())  # keep non-kv prose as the description
     if prose and not fields.get("description"):
         fields["description"] = " ".join(prose)
-    return fields or {"description": text.strip()}
+    return {**(fields or {"description": text.strip()}), **meta}
 
 
 def load_brief(source: Optional[Union[str, dict]]) -> Optional[dict]:
@@ -270,12 +263,14 @@ def intake(source: Optional[Union[str, dict]], project_root: str = ".", package:
     if raw is None:
         return _no_brief_result()
     explicit = None
-    if "rofile" in str(raw):  # only a brief that can name a profile touches brief_profile.py and the resolver
+    if "rofile" in str(raw).lower():  # only a brief that can name a profile touches brief_profile.py and the resolver
         try:
             explicit = _sibling("brief_profile").select(raw, project_root)
-        except Exception as exc:  # missing or broken sibling: loud (exit 3), never a silent inference
-            explicit = {"profile": None, "reason": "profile check unavailable", "extra": {"warnings": [str(exc)],
-                        "profile_error": {"code": "resolver_unavailable", "message": str(exc)}}}
+        except Exception as exc:  # missing or broken sibling: the refusal shape of brief_profile._error, exit 3
+            msg = " ".join(re.sub(r"[^ -~]", " ", str(exc)).split())[:300]
+            explicit = {"profile": None, "reason": "profile check unavailable", "extra": {
+                "warnings": [msg], "profile_error": {"code": "resolver_unavailable", "message": msg},
+                "refused": True, "code": "profile_unusable", "message": msg, "issues": []}}
     return map_brief(normalize_brief(raw), explicit)
 
 

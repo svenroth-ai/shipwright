@@ -11,7 +11,8 @@ PRECEDENCE (one rule: strict sources always beat the bare hint; an explicit valu
 2. the ``Stack profile:`` / ``stack_profile:`` line of a ``key: value`` brief (it lands in the same field);
 3. the ``Stack profile: <name>`` item of the ``(Intake ...)`` trailer the WebUI writes today
    (``composeNewBrief`` in the WebUI ``IntentWizard/contract.ts``): the LAST ``(Intake`` in the text, which
-   must end it. Two trailers or two ``Stack profile:`` items are ambiguous and refused;
+   must end it. Two trailers, two items in the trailer or two ``Stack profile:`` lines are ambiguous and refused (only the trailer's
+   own items count: an idea that says "(Intake forms)" or "stack profile: x" in prose is ignored);
 4. ONLY when none of 1-3 exists: a HINT, a bare, unbulleted ``profile: x`` line of a ``key: value`` brief
    (``profile_hint``). Free text uses that word too ("Profile: none", "Profile: dentist SaaS ..."), so a hint
    counts only with the profile-name shape AND a resolver hit; anything else stays prose, is not used, and
@@ -43,6 +44,7 @@ FIELDS = ("profile", "stack_profile")
 AMBIGUOUS = "<more than one Stack profile item>"
 _SHARED_SCRIPTS = str(Path(__file__).resolve().parents[1])
 _ITEM_RE = re.compile(r"Stack profile:", re.IGNORECASE)
+_EARLIER_TRAILER_RE = re.compile(r"\(Intake[^)]*Stack profile:", re.IGNORECASE)
 _ITEM_VALUE_RE = re.compile(r"Stack profile:\s*([^;)]+)", re.IGNORECASE)
 _NAME_SHAPE = re.compile(r"[a-z0-9][a-z0-9-]*")
 # C0 and C1 controls, zero-width / bidi marks, bidi overrides and isolates, BOM: written as escapes on purpose
@@ -55,14 +57,17 @@ def _plain(text: Any) -> str:
 
 
 def _trailer_item(desc: str) -> tuple[str, Any]:
-    """``(kind, value)`` for the WebUI ``(Intake ...)`` trailer: the last one, ending the text."""
-    items = len(_ITEM_RE.findall(desc))
+    """``(kind, value)`` for the WebUI ``(Intake ...)`` trailer: the last one, ending the text.
+
+    Only the trailer's own ``Stack profile:`` items count: the idea part before it may say "(Intake forms)" or
+    "stack profile: x" in prose. An EARLIER ``(Intake ... Stack profile: ...)`` is a second trailer: ambiguous."""
     start = desc.rfind("(Intake")
-    if start < 0 or not items:
+    tail = desc[start:] if start >= 0 else ""
+    items = len(_ITEM_RE.findall(tail))
+    if not items:
         return "", None
-    if desc.count("(Intake") > 1 or items > 1:
+    if items > 1 or _EARLIER_TRAILER_RE.search(desc[:start]):
         return "ambiguous", AMBIGUOUS
-    tail = desc[start:]
     match = _ITEM_VALUE_RE.search(tail)
     if not match or not tail.rstrip().endswith(")"):
         return "", None
@@ -73,6 +78,8 @@ def requested(raw: Any) -> tuple[str, Any]:
     """``(kind, value)``: kind is ``""`` (none), ``strict``, ``hint`` or ``ambiguous``. ``value`` may be a non-string."""
     if not isinstance(raw, dict):
         return "", None
+    if raw.get("_dup"):  # two `Stack profile:` lines in a key: value brief
+        return "ambiguous", AMBIGUOUS
     blank = False
     for key in FIELDS:  # (1) JSON field, (2) text `Stack profile:` key: both land in these dict keys
         value = raw.get(key)
@@ -82,11 +89,11 @@ def requested(raw: Any) -> tuple[str, Any]:
             blank = True  # present but blank = no choice made here; the next field may still name one
             continue
         return "strict", value.strip() if isinstance(value, str) else value
-    desc = raw.get("description")
-    if not blank and isinstance(desc, str):
-        kind, value = _trailer_item(desc)  # (3) the last (Intake ...) trailer item
-        if kind:
-            return kind, value
+    if not blank:  # (3) the last (Intake ...) trailer item; `_text` is the whole one-line brief when a key swallowed it
+        for text in (raw.get("description"), raw.get("_text")):
+            kind, value = _trailer_item(text) if isinstance(text, str) else ("", None)
+            if kind:
+                return kind, value
     hint = raw.get("profile_hint")
     if blank or not isinstance(hint, str) or not hint.strip():
         return "", None  # a blank strict field means no choice: neither trailer nor hint is consulted
@@ -108,7 +115,8 @@ def _resolver() -> Any:
 
 
 def _error(name: Any, code: str, detail: Any) -> dict:
-    msg = f"the brief names stack profile {_plain(name)!r}, which cannot be used ({code}): {_plain(detail)}"
+    said = f"resolver said (untrusted): {_plain(detail)}" if isinstance(detail, Exception) else _plain(detail)
+    msg = f"the brief names stack profile {_plain(name)!r}, which cannot be used ({code}): {said}"
     return {
         "profile": None,
         "reason": f"brief names profile {_plain(name)!r}, which cannot be used -> NOT replaced by another profile",
@@ -132,7 +140,8 @@ def select(raw: Any, project_root: Any = ".") -> Optional[dict]:
     if not kind:
         return None
     if kind == "ambiguous":
-        return _error(name, "invalid", "give exactly one Stack profile item (or a profile field)")
+        return _error(name, "invalid", "the brief names more than one stack profile (several Stack profile lines or "
+                                    "items, or two Intake trailers); give exactly one")
     if kind == "hint" and not (isinstance(name, str) and _NAME_SHAPE.fullmatch(name) and name != "detecting"):
         return _ignored(name)  # free text that happens to start with "profile:" is not a choice
     if not isinstance(name, str):
@@ -142,8 +151,8 @@ def select(raw: Any, project_root: Any = ".") -> Optional[dict]:
     try:
         res = _resolver().resolve_profile(name, project_root)
     except ValueError as exc:  # the resolver's error family: not_found / invalid / schema_*
-        if kind == "hint" and getattr(exc, "kind", "") == "not_found":
-            return _ignored(name)  # a hint the resolver does not know is prose, not a typo to refuse
+        if kind == "hint":
+            return _ignored(name)  # whatever the resolver says of a bare hint (unknown, bad name, broken file): prose, warn
         return _error(name, getattr(exc, "kind", "error"), exc)  # _error prints it sanitized
     except Exception as exc:  # missing resolver tree or any unexpected failure: loud, never a silent inference
         return _error(name, "resolver_unavailable", exc)
