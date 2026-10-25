@@ -30,63 +30,52 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 4,
       "findings": [
         {
-          "severity": "medium",
-          "category": "architecture",
-          "file": "plugins/shipwright-test/scripts/lib/playwright_runner.py",
-          "line": 219,
-          "finding": "Hand-written importlib loader; siblings use shared_lib_loader.load_shared_lib",
-          "suggestion": "use load_shared_lib (fixed)",
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/tests/test_playwright_runner.py",
+          "line": 164,
+          "finding": "test_resolve_executable_uses_the_shared_resolver overclaims; it would pass if the loader failed. The discriminating test is test_run_playwright_resolves_npx_via_resolver.",
+          "suggestion": "Monkeypatch the private resolver with a sentinel or reword.",
           "source": "code-reviewer"
         },
         {
-          "severity": "medium",
+          "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-test/tests/test_playwright_runner.py",
-          "line": 140,
-          "finding": "No test exercised the real loader path",
-          "suggestion": "add direct test (fixed)",
+          "file": "plugins/shipwright-test/skills/test/references/step-2-smoke-test.md",
+          "line": 11,
+          "finding": "SHIPWRIGHT_DEV_URL now ranks below the profile dev_server; the note 'same precedence as Browser Verify' is only partly true.",
+          "suggestion": "Decide where the env override belongs and narrow the parenthetical.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "plugins/shipwright-test/scripts/lib/playwright_runner.py",
-          "line": 220,
-          "finding": "Docstring over-claims fallback parity",
-          "suggestion": "reworded",
+          "file": "plugins/shipwright-build/skills/build/references/browser-verify.md",
+          "line": 24,
+          "finding": "URL precedence restated three to four times in one file; profile-first departs from spec wording but matches dev_server/profile_config.py.",
+          "suggestion": "Keep one bullet; record the deviation.",
           "source": "code-reviewer"
         },
         {
-          "severity": "low",
-          "category": "architecture",
-          "file": "shared/scripts/browser_verify.py",
-          "line": 14,
-          "finding": "Unguarded sys.path insert",
-          "suggestion": "guard (fixed)",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
+          "severity": null,
           "category": "readability",
           "file": "shared/scripts/tests/test_browser_verify.py",
           "line": 7,
-          "finding": "import pytest ordering",
-          "suggestion": "cosmetic, accepted",
+          "finding": "import pytest not separated from stdlib imports.",
+          "suggestion": "Own group.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-25T16:55:38.706718+00:00",
+      "completed_at": "2026-10-25T17:00:06.414608+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "6e7d651d75c8d69452fbced5fff7c84c860449a0"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -94,12 +83,13 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T16:54:37.421050+00:00",
-      "disposition": "Stage 3 applies only to migrations, async, cross-plugin imports or irreversible ops; none touched, small complexity",
+      "completed_at": "2026-10-25T17:00:06.568008+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger: small change (npx resolver call, prose and profile host spelling), no migrations, async, cross-plugin imports beyond the existing shared loader, or irreversible operations; Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus",
+      "reason_code": "diff-below-threshold"
     },
     "external_code": {
       "review_type": "external_code",
@@ -120,14 +110,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T16:54:37.185533+00:00",
+      "completed_at": "2026-10-25T16:58:28.912464+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "6e7d651d75c8d69452fbced5fff7c84c860449a0"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
