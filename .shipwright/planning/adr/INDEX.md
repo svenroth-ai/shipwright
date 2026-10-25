@@ -196,3 +196,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Custom stack profiles reach the interview, the docs and an end-to-end proof](iterate-2026-10-24-s5-interview-docs-e2e-custom-profiles-end-to-end.md)
 - [Driven-run phase gate enforced by default (campaign A5)](iterate-2026-10-25-a5-test-migration-and-flip-gate-on-by-default.md)
 - [Skip reason, gate pass record and re-dispatch fencing for driven runs](iterate-2026-10-25-gate-honesty-followups-skip-reason-pass-record-and-redispatch-fencing.md)
+- [A skip that clears the last open task completes a blocked driven run](iterate-2026-10-25-run-completion-after-skips-skip-completes-a-blocked-run.md)

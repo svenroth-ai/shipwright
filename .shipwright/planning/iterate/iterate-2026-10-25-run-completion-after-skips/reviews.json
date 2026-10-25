@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-run-completion-after-skips",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T08:10:31.882709+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T08:19:20.593048+00:00",
+      "disposition": "small BUG iterate: plan/architecture review arms run at medium+ only (phase matrix); the diff>100 LOC rule is covered by the full internal cascade plus external code review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+          "line": 252,
+          "finding": "A skip that completes the run emits no event carrying the run status: the in-loop path emits only recovery and phase_skipped (neither has a run status), the generic recover-phase-task path nothing about completion; events.jsonl consumers never see this run finish.",
+          "suggestion": "Add runStatus=recovered.get('run_status') to the recovery emit, or emit a completion signal from mark_loop_complete, or document that events are not a completion source.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+          "line": 237,
+          "finding": "The new run_status==complete branch sits under the comment saying skipped/failed recoveries leave the pointer, and recover_single_session's docstring does not mention the completion stamp.",
+          "suggestion": "Move the mark_loop_complete call above that comment with its own comment and add a docstring sentence.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+          "line": 143,
+          "finding": "The early-return branch duplicates the closing _write_config + _ok of the main path (two exits, correct).",
+          "suggestion": "Optional: collect run_status into an extra dict and keep one exit.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T08:13:22.616861+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering (partial failure)",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py:144-148, plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py:201-203",
+          "line": null,
+          "finding": "Claim under doubt: the config write and the loop-state write cannot leave an inconsistent pair — The loop stamp runs after the locked config write, outside the lock; if save_loop_state fails or the process dies between them, run_config says complete and the loop says stopped, and a retried skip cannot heal it because _completion_unblocked returns False on a complete run so mark_loop_complete is never reached.",
+          "suggestion": "Make mark_loop_complete self-healing: call it whenever the run's status is complete, not only on the transition.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract (honesty of 'complete')",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py:46,86",
+          "line": null,
+          "finding": "Claim under doubt: --force-status failed never completes a run — recover X failed (run stays needs_validation), then recover Y skipped: TERMINAL_STATUSES counts failed as terminal so the run completes with X failed. complete_phase_task applies the same rule, but the stated claim is only true one call at a time.",
+          "suggestion": "Require no failed task, or rebut as matching complete_phase_task and reword the claim; add a failed-then-skip test either way.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling (producer disambiguation)",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py:40, plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_planning.py:223-231",
+          "line": null,
+          "finding": "Claim under doubt: absence of validation_issues reliably means the lifecycle produced the pause — A malformed v1 pause with validation_issues [] would be popped by update_step while status stays needs_validation, indistinguishable from the lifecycle pause.",
+          "suggestion": "A positive lifecycle marker, or rebut that v1 configs never reach this state.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (router path / mode guard)",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py:194-201",
+          "line": null,
+          "finding": "Claim under doubt: mark_loop_complete on the generic CLI is safe for non-single-session configs — The router path has no mode check; only loop_state presence and runId match guard it.",
+          "suggestion": "Add an is_single_session(config) check or document why runId suffices.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py:46",
+          "line": null,
+          "finding": "Claim under doubt: completing on all-terminal never closes a run with unmaterialised work — Skipping an open plan/split-N does not plan its build successor, so the run completes with split N never built.",
+          "suggestion": "Accept as operator intent and document, or check for unmaterialised successors.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T08:16:07.981726+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-10-25T08:19:09.546196+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] I reviewed the diff against the spec line by line.\n\n**Spec compliance**\n- The core fix (`_completion_unblocked` + same-write completion in `recover_phase_task`) matches the spec exactly: `skipped` + `needs_validation` + no `validation_issues` key + pipeline-terminal task done (`deploy`, or `changelog` when `deploy_target == \"none\"`) + all tasks terminal → `complete` in the same locked write, with `run_status` on the result. Covered.\n- `--force-status failed` never completes (guard is inside the skipped branch) — covered and tested.\n- Skipped tasks stay skipped — covered.\n- Loop pointer stamped by both recover CLIs, runId-guarded, self-healing on later skips — covered (`router.py` generic CLI, `recover_single_session` in-loop CLI, both tested).\n- All four docs updated (SKILL.md, single-session-loop.md, hooks-and-pipeline.md, guide.md).\n- Unit tests per case plus a real-subprocess CLI test that ends with `single-session-next → {\"action\": \"complete\"}` — the spec's test requirement is met.\n\n**Correctness**\n- The completion check runs after the task's status is already set to `skipped` in the same in-memory config, so a single-orphan run completes correctly; the two-orphan test verifies it does *not* fire with one still open.\n- `mark_loop_complete` correctly returns `None` for missing loop state, runId mismatch, non-single-session config, or a not-complete run; it's idempotent (tested).\n- The loop-state read in `recover_single_session` was moved earlier but the `awaiting_launch` realign path behaves identically; the `or loop_state` fallback preserves prior behavior when the mark is a no-op.\n\n**Tests**\n- The unit tests walk the *real* lifecycle to reach `needs_validation` (not a hand-forged config), assert both the positive and each negative condition (validation_issues, deploy not done, failed recover, running run, idempotent re-skip), and the integration test exercises the actual CLI subprocesses. A broken implementation would not pass these.\n- The negative […truncated]\n\n[openai] No concrete defects found in the supplied diff. The completion check matches the specified conditions, runs within the existing locked write, preserves skipped statuses, and excludes failed recoveries. Both recovery CLIs stamp the loop state with a runId guard, and the tests cover the main completion and blocking cases, including the subprocess CLI flow.\n\nShip-as-is based on static review. Local command execution was blocked by the environment, so I could not run the tests or inspect surrounding files.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T08:11:58.603715+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T08:19:20.730225+00:00",
+      "disposition": "small BUG iterate: plan/architecture review arms run at medium+ only (phase matrix); the diff>100 LOC rule is covered by the full internal cascade plus external code review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T08:19:20.909275+00:00",
+      "disposition": "small BUG iterate: plan/architecture review arms run at medium+ only (phase matrix); the diff>100 LOC rule is covered by the full internal cascade plus external code review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

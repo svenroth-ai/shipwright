@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. The completion check matches the specified conditions, runs within the existing locked write, preserves skipped statuses, and excludes failed recoveries. Both recovery CLIs stamp the loop state with a runId guard, and the tests cover the main completion and blocking cases, including the subprocess CLI flow.\n\nShip-as-is based on static review. Local command execution was blocked by the environment, so I could not run the tests or inspect surrounding files.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "I reviewed the diff against the spec line by line.\n\n**Spec compliance**\n- The core fix (`_completion_unblocked` + same-write completion in `recover_phase_task`) matches the spec exactly: `skipped` + `needs_validation` + no `validation_issues` key + pipeline-terminal task done (`deploy`, or `changelog` when `deploy_target == \"none\"`) + all tasks terminal \u2192 `complete` in the same locked write, with `run_status` on the result. Covered.\n- `--force-status failed` never completes (guard is inside the skipped branch) \u2014 covered and tested.\n- Skipped tasks stay skipped \u2014 covered.\n- Loop pointer stamped by both recover CLIs, runId-guarded, self-healing on later skips \u2014 covered (`router.py` generic CLI, `recover_single_session` in-loop CLI, both tested).\n- All four docs updated (SKILL.md, single-session-loop.md, hooks-and-pipeline.md, guide.md).\n- Unit tests per case plus a real-subprocess CLI test that ends with `single-session-next \u2192 {\"action\": \"complete\"}` \u2014 the spec's test requirement is met.\n\n**Correctness**\n- The completion check runs after the task's status is already set to `skipped` in the same in-memory config, so a single-orphan run completes correctly; the two-orphan test verifies it does *not* fire with one still open.\n- `mark_loop_complete` correctly returns `None` for missing loop state, runId mismatch, non-single-session config, or a not-complete run; it's idempotent (tested).\n- The loop-state read in `recover_single_session` was moved earlier but the `awaiting_launch` realign path behaves identically; the `or loop_state` fallback preserves prior behavior when the mark is a no-op.\n\n**Tests**\n- The unit tests walk the *real* lifecycle to reach `needs_validation` (not a hand-forged config), assert both the positive and each negative condition (validation_issues, deploy not done, failed recover, running run, idempotent re-skip), and the integration test exercises the actual CLI subprocesses. A broken implementation would not pass these.\n- The negative cases also assert `resolve_next_dispatch` still answers `needs_validation`, so a regression where the run completes but `single-session-next` disagrees would be caught (the integration test covers the positive of that pair).\n\n**Regression / security**\n- `extra` is empty for non-completing recovers, so `_ok(...)` output for all pre-existing paths is unchanged. `mark_loop_complete` is a no-op unless the config already says `complete` with a matching runId, so existing recover flows are unaffected. No new inputs reach sensitive sinks; skip reasons were already normalised/capped.\n\nThe only thing I noticed that is worth a mention (not a defect): `router.py` calls `mark_loop_complete` after *every* successful recover, including `awaiting_launch`/`failed` \u2014 but that's intentional (self-healing a lost loop write) and fully guarded, and the spec's \"when the run completed\" is satisfied by the config-status gate.\n\nOverall assessment: the change is a faithful, well-tested implementation of the spec with no defects found; ship as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-run-completion-after-skips",
+    "at": "2026-10-25T08:18:13.555697+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

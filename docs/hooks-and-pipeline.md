@@ -1368,7 +1368,9 @@ orchestrator wraps it and materialises new `phase_tasks[]` entries.
 task is `done` (or, for `deploy_target: "none"`, the changelog task — no deploy
 phase is scheduled and `pipeline` omits `deploy`) AND (2) all other `phase_tasks[]` are terminal (`done` or
 `skipped`). When (1) holds but (2) doesn't, `run.status =
-"needs_validation"` plus a `pipeline_completion_blocked` event. **Failure
+"needs_validation"` plus a `pipeline_completion_blocked` event; skipping the
+open tasks (`recover-phase-task --force-status skipped`) re-checks the invariant and
+completes the run once (2) holds. **Failure
 is terminal:** any `failed` task immediately flips `run.status = failed`.
 
 ### Phase Lifecycle (in-conversation loop)
@@ -1462,6 +1464,15 @@ appended to `shipwright_events.jsonl`. `single-session-recover` takes the same `
 and also puts it on its `recovery` loop event. The crashed session's later
 `complete-phase-task` is rejected with exit 2 (stale_version), so it cannot corrupt state
 after recovery.
+
+A skip is also how a `needs_validation` run finishes: when the run sits in the lifecycle's
+pause (pipeline-terminal task `done`, no `validation_issues`) and the skip leaves every
+`phase_tasks[]` entry terminal, the same locked write sets `run.status = "complete"` and
+the result carries `"run_status": "complete"`; the loop pointer
+(`.shipwright/run_loop_state.json`) is stamped `complete` too (by every later skip as
+well, so a lost loop write is repaired). A `--force-status failed` recover never completes
+the run by itself, but like the deploy completion it counts an already-`failed` task as
+terminal; a v1 `update-step` pause (it writes `validation_issues`) is never lifted by a skip.
 
 ---
 

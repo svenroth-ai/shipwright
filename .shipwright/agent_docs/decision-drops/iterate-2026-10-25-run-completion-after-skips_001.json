@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-run-completion-after-skips",
+  "date": "2026-10-25",
+  "section": "Iterate — bug: run completes after the last needs_validation blocker is skipped",
+  "title": "A skip that clears the last open task completes a blocked driven run",
+  "context": "complete_phase_task parks a driven run in needs_validation when deploy completes with other tasks open; the documented recovery skips them, but nothing re-checked the run afterwards, so single-session-next answered needs_validation forever and the run never finished.",
+  "decision": "recover_phase_task re-checks the lifecycle completion invariant in its own locked write after a skip (needs_validation, no validation_issues key, pipeline-terminal task done, every task terminal) and sets status complete with run_status in the result; both recover CLIs then stamp the loop pointer complete, after every skip so a lost loop write heals.",
+  "consequences": "A blocked run finishes once its open tasks are skipped; skipped tasks stay skipped; a failed recover never completes the run by itself, but an already-failed task counts as terminal exactly as in complete_phase_task (follow-up question). The v1 update-step pause is never lifted.",
+  "rationale": "The skip is the only command that can clear the lifecycle's blocker, so it is where the invariant must be re-evaluated; resolve_next_dispatch is read-only by contract.",
+  "rejected": "Re-checking in resolve_next_dispatch (read-only contract); a separate finish-run command (one more step for the operator); requiring no failed task (diverges from complete_phase_task).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-run-completion-after-skips-skip-completes-a-blocked-run.md"
+}

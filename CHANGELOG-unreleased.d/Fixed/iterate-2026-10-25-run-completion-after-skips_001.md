@@ -1,0 +1,1 @@
+A driven run that stopped at 'completion blocked' (deploy finished while other phases were still open) now finishes once the last open phase is skipped with `recover-phase-task --force-status skipped --reason`: the skip completes the run in the same write, `single-session-next` answers `complete`, and the loop status follows; before, the run stayed blocked forever
