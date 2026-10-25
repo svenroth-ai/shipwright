@@ -1,0 +1,1 @@
+The layer-promotion sweep now skips requirements in the advisory adopted spec before judging their evidence, so a bound-but-unexecuted test there no longer raises a permanent "escalated, operator decision needed" warning at every worktree setup

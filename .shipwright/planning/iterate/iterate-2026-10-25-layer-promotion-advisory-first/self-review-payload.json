@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Advisory-spec skip now precedes the escalation branches; ledger and collision handling stay first; other specs still escalate."},
+{"name":"Error Handling","verdict":"pass","note":"Pure decision function, no new boundary; node.get('spec_path') tolerates a missing path via is_advisory_spec(None)."},
+{"name":"Security Basics","verdict":"pass","note":"No input handling, secrets or auth touched."},
+{"name":"Test Quality","verdict":"pass","note":"New test asserts advisory skip for an absent bound test and the unchanged escalation in a non-advisory spec."},
+{"name":"Performance Basics","verdict":"pass","note":"One path check moved earlier; no loops or I/O."},
+{"name":"Naming & Structure","verdict":"pass","note":"layer_promotion.py is 362 lines before and after (already over the cap, no growth)."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; the skip reason code already existed."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

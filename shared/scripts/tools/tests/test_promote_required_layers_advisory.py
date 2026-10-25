@@ -109,6 +109,19 @@ def test_evaluate_fr_skips_the_adopted_spec_but_still_promotes_elsewhere():
 
 
 @pytest.mark.covers("FR-01.10")
+def test_evaluate_fr_skips_the_adopted_spec_even_when_the_evidence_is_ambiguous():
+    # A bound unit test that never ran in CI used to escalate (bound_test_absent)
+    # for the adopted spec, a decision no operator can act on: it never promotes.
+    absent = {"unit": [{**_LINK, "executed": "absent"}]}
+    node = {**_fr(".shipwright/planning/01-adopted/spec.md"), "tests": absent}
+    assert evaluate_fr(node, is_collision=False) == {
+        "fr": "FR-01.11", "action": "skip", "reason_code": SKIP_ADVISORY_SPEC,
+    }
+    elsewhere = {**node, "spec_path": ".shipwright/planning/02-feature/spec.md"}
+    assert evaluate_fr(elsewhere, is_collision=False)["action"] == "escalate"
+
+
+@pytest.mark.covers("FR-01.10")
 @pytest.mark.parametrize("path,expected", [
     (None, False), ("", False), ("spec.md", False),
     ("01-adopted/spec.md", True),
