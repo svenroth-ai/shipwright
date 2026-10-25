@@ -29,6 +29,17 @@ from phase_task_core import (
 # Splits freeze (design-stop hook)
 # ---------------------------------------------------------------------------
 
+def apply_frozen_splits(config: dict[str, Any], splits: list[str]) -> str:
+    """Write ``splits_frozen`` + ``runConditions.splitMode`` into ``config`` IN PLACE (no
+    I/O, no lock); returns the split mode. ``freeze_splits`` uses it under its own lock,
+    and single-session apply inside the completion's locked write (``on_complete``)."""
+    config["splits_frozen"] = splits
+    rc = dict(config.get("runConditions") or {})
+    rc["splitMode"] = "per_split" if splits else "none"
+    config["runConditions"] = rc
+    return rc["splitMode"]
+
+
 @_guard_lock_timeout
 def freeze_splits(project_root: Path) -> dict[str, Any]:
     """Freeze splits[] into run_config.splits_frozen + runConditions.splitMode.
@@ -45,14 +56,11 @@ def freeze_splits(project_root: Path) -> dict[str, Any]:
 
     with _PhaseTasksLock(project_root):
         config = _read_config(project_root)
-        config["splits_frozen"] = splits
-        rc = dict(config.get("runConditions") or {})
-        rc["splitMode"] = "per_split" if splits else "none"
-        config["runConditions"] = rc
+        mode = apply_frozen_splits(config, splits)
         _write_config(project_root, config)
 
     return _ok(
-        {"splits_frozen": splits, "splitMode": rc["splitMode"], "source": source},
+        {"splits_frozen": splits, "splitMode": mode, "source": source},
         warning=warning,
     )
 

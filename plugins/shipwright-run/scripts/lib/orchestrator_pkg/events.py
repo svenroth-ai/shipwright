@@ -70,11 +70,12 @@ def _run_id_of(project_root: Path) -> str:
 
 def _emit_phase_event(
     project_root: Path, event_type: str, phase: str | None,
-    *, phase_task_id: str | None, split_id: str | None,
+    *, phase_task_id: str | None, split_id: str | None, extra: dict | None = None,
 ) -> None:
     """Best-effort emit of a durable phase event via ``record_event.py``.
 
-    Shared by the phase-START and phase-END emitters below. Never raises — a
+    Shared by the phase-START / END / SKIPPED emitters below (``extra`` adds detail
+    keys). Never raises — a
     telemetry write must never crash a phase entry/exit path. ``errors=replace``
     guards the Windows cp1252 child-output decode landmine (an undecodable byte
     would otherwise raise ``UnicodeDecodeError``, which the except below does
@@ -87,6 +88,7 @@ def _emit_phase_event(
         "phaseTaskId": phase_task_id,
         "splitId": split_id,
         "runId": _run_id_of(project_root),
+        **(extra or {}),
     }
     cmd = [
         sys.executable, str(record_script),
@@ -163,6 +165,21 @@ def record_phase_end(
     event_type = "phase_failed" if status == "failed" else "phase_completed"
     _emit_phase_event(project_root, event_type, phase,
                       phase_task_id=phase_task_id, split_id=split_id)
+
+
+def record_phase_skipped(
+    project_root: Path, *, task: dict, recovered_from: str | None,
+) -> None:
+    """Durable ``phase_skipped`` event for an operator ``--force-status skipped``.
+
+    The tracked counterpart of ``phase_failed``: without it a skipped phase left no trace
+    in ``shipwright_events.jsonl``. Carries the stored ``skipReason`` and what the task was
+    before. Best-effort like the other phase events (a failed append is reported on stderr;
+    the reason stays on the task in run_config either way). Not deduped by record_event.
+    """
+    _emit_phase_event(project_root, "phase_skipped", task.get("phase"),
+                      phase_task_id=task.get("phaseTaskId"), split_id=task.get("splitId"),
+                      extra={"reason": task.get("skipReason"), "recoveredFrom": recovered_from})
 
 
 def _record_compliance_update_failed(

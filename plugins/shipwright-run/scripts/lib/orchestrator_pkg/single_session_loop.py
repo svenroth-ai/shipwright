@@ -156,7 +156,10 @@ def resolve_next_dispatch(project_root: Path) -> dict[str, Any]:
 def begin_dispatch(project_root: Path, *, phase_task_id: str) -> dict[str, Any]:
     """Claim the frontier task (lifecycle) + record a dispatch in loop_state.
     Idempotent: re-claiming an already-in_progress task by its own sessionUuid is
-    a no-op ok (crash-resume)."""
+    ok (crash-resume, gate retry) and does not re-run it (``executionCount`` unchanged),
+    but it ROTATES the task's ``version`` (``redispatch_phase_task``): only the newest
+    dispatch's descriptor can apply, so an earlier phase-runner's late result is refused
+    ``stale_version``."""
     lc = _lifecycle()
     task_res = lc.get_phase_task(project_root, phase_task_id)
     if not task_res.get("ok"):
@@ -169,6 +172,13 @@ def begin_dispatch(project_root: Path, *, phase_task_id: str) -> dict[str, Any]:
     )
     if not claim.get("ok"):
         return claim
+    if claim.get("idempotent"):
+        rotated = lc.redispatch_phase_task(
+            project_root, phase_task_id=phase_task_id, session_uuid=task["sessionUuid"],
+        )
+        if not rotated.get("ok"):
+            return rotated
+        claim = {**claim, **rotated, "idempotent": True}  # the rotated task wins
 
     config = load_run_config(project_root, migrate=False)
     run_id = config.get("runId", "unknown-run")

@@ -127,6 +127,7 @@ def _migrate_in_flight_security_tasks(
         if task.get("status") not in {"backlog", "awaiting_launch"}:
             continue
         task["status"] = "skipped"
+        task["skipReason"] = "security-decouple-migration"
         task["completedAt"] = now_iso
         task["result"] = {
             "ok": False,
@@ -181,7 +182,8 @@ def _print_security_decouple_notice(
         for tid in in_progress_ids:
             lines.append(
                 f"      uv run plugins/shipwright-run/scripts/lib/orchestrator.py "
-                f"recover-phase-task --phase-task-id {tid} --force-status skipped"
+                f"recover-phase-task --phase-task-id {tid} --force-status skipped "
+                f'--reason "<why>"'
             )
     lines.append(
         "  Run /shipwright-security manually for ad-hoc scans, or activate "

@@ -253,7 +253,7 @@ def build_event(args: argparse.Namespace) -> dict:
             event["changed_files"] = _parse_changed_files(args.changed_files)
 
     elif args.type in ("phase_started", "phase_completed",
-                       "phase_failed", "stale_stop_rejected"):
+                       "phase_failed", "stale_stop_rejected", "phase_skipped"):
         # phase_failed + stale_stop_rejected (deep-audit F15): the (removed) phase Stop hook
         # emits these for a failed phase / an owner-CAS-rejected stale stop. They
         # carry phase + (JSON) detail like phase_completed but are NOT phase-deduped.
@@ -574,7 +574,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--type", required=True,
                    choices=["task_created", "work_completed", "phase_started",
                             "phase_completed", "phase_failed", "stale_stop_rejected",
-                            "split_completed", "test_run",
+                            "split_completed", "test_run", "phase_skipped",
                             "event_amended",
                             "compliance_update_failed", "pipeline_migration",
                             "adopted", "grade_snapshot"],

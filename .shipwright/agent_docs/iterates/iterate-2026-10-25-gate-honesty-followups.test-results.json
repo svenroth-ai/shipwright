@@ -1,0 +1,164 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-gate-honesty-followups",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 22760,
+      "total": 22862
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 613,
+      "total": 613
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_gate_honesty_cli_integration.py integration-tests/test_driven_run_real_gate_e2e.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 3,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\gate-honesty-followups\\.shipwright\\runs\\iterate-2026-10-25-gate-honesty-followups\\surface_verification.log",
+      "timestamp": "2026-10-25T06:14:18.467Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a skip without a reason (none, empty, whitespace) is refused skip_reason_required and the run config stays byte-identical",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_a_skip_without_a_reason_is_refused_and_writes_nothing PASSED (3 params)"
+        },
+        {
+          "behavior": "the skip reason is stored on the skipped task as one normalised line, capped at 500 chars",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_the_reason_is_stored_on_the_skipped_task_as_one_bounded_line + test_a_long_reason_is_capped PASSED"
+        },
+        {
+          "behavior": "any later recover drops skipReason, the gate record and redispatchedAt; a non-skip recover needs no reason",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_reopening_a_skipped_task_drops_its_skip_reason_and_any_gate_record + test_a_non_skip_recover_needs_no_reason PASSED"
+        },
+        {
+          "behavior": "recover-phase-task CLI refuses a skip without --reason (exit 1) and with it records the reason and exactly one phase_skipped event",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_recover_phase_task_cli_refuses_a_skip_without_reason + test_recover_phase_task_cli_records_reason_and_one_event PASSED"
+        },
+        {
+          "behavior": "single-session-recover records the reason, one phase_skipped event and the reason on its recovery loop event",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_single_session_recover_cli_records_reason_event_and_loop_event PASSED"
+        },
+        {
+          "behavior": "record_event accepts phase_skipped with phase, split and detail and does not deduplicate it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_phase_skipped.py (2 cases) PASSED"
+        },
+        {
+          "behavior": "a passing gate writes phase_tasks[].gate (result, checked, phase, splitId, runId, at, counts, overridden) in the completion write",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_pass_record.py::test_a_passing_gate_is_recorded_on_the_completed_task + test_the_record_names_the_id_the_skill_minted_when_the_canon_check_used_it PASSED"
+        },
+        {
+          "behavior": "a gate that could not check is recorded not_checked; a rejected or ungated apply writes no record",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_pass_record.py::test_a_gate_that_could_not_check_is_recorded_not_checked + test_a_rejected_apply_writes_no_record + test_an_ungated_completion_writes_no_record PASSED"
+        },
+        {
+          "behavior": "an override writes the gate record with overridden true beside validation_overrides[]; an override refused on the locked config keeps its reason and writes nothing",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_gate_pass_record.py::test_an_override_is_recorded_on_the_task_beside_the_override_list + test_an_override_refused_on_the_locked_config_keeps_its_reason PASSED"
+        },
+        {
+          "behavior": "a re-dispatch of an in_progress task bumps version and redispatchedAt only (executionCount, claim, startedAt kept, idempotent true)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_redispatch_fencing.py::test_a_redispatch_rotates_the_version_and_nothing_else PASSED"
+        },
+        {
+          "behavior": "the first dispatch's late result (ok true or false) is refused stale_version and changes nothing; the CLI exits 2",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_redispatch_fencing.py::test_the_first_dispatchs_late_result_is_refused_and_changes_nothing (2 params) + test_the_stale_apply_exits_2_through_the_cli PASSED"
+        },
+        {
+          "behavior": "a re-dispatch landing while the stale apply's gate runs wins (the completion re-checks under the lock)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_redispatch_fencing.py::test_a_redispatch_landing_while_the_gate_runs_wins PASSED"
+        },
+        {
+          "behavior": "a stale design apply freezes no splits, also when its re-dispatch lands during its gate; a current design apply freezes in the completion write, gated or ungated",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_redispatch_fencing.py::test_a_stale_design_apply_does_not_refreeze_splits + test_a_design_redispatch_landing_while_the_gate_runs_freezes_nothing + test_a_current_design_apply_still_freezes_in_the_completion_write (2 params) PASSED"
+        },
+        {
+          "behavior": "the completion hook applies the freeze in place after the override; a refusing override leaves the config untouched",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_redispatch_fencing.py::test_the_completion_hook_freezes_in_place_and_a_refused_override_freezes_nothing PASSED"
+        },
+        {
+          "behavior": "a recover between claim and rotation records no dispatch; redispatch refuses an unknown task or a foreign claim",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_redispatch_fencing.py::test_a_recover_between_claim_and_rotation_records_no_dispatch + test_redispatch_refuses_an_unknown_task_or_a_foreign_claim PASSED"
+        },
+        {
+          "behavior": "a split-authority read failure at design apply returns freeze_splits_failed and the design task stays in_progress",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_loop.py::test_apply_design_surfaces_a_freeze_splits_failure_instead_of_completing PASSED"
+        },
+        {
+          "behavior": "through the real orchestrator CLI: pass record on completion, rejection then re-dispatch with a new version, the first descriptor refused exit 2, the fresh descriptor passes, a skip refused without a reason and recorded with exactly one phase_skipped event",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_gate_honesty_cli_integration.py::test_pass_record_fencing_and_skip_reason_compose PASSED"
+        },
+        {
+          "behavior": "guided driven run on real artifacts: rejected at every retry, the first dispatch's descriptor is refused stale_version after the retries, the latest descriptor passes once fixed and drives to complete",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_driven_run_real_gate_e2e.py::test_guided_run_stops_at_the_broken_artifact_and_passes_when_fixed PASSED"
+        },
+        {
+          "behavior": "the rest of the run plugin and the integration suite stay green under re-dispatch fencing",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-run/tests and integration-tests suites green (F0, integration 613/613)"
+        }
+      ],
+      "counts": {
+        "testable": 19,
+        "tested": 19,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-gate-honesty-followups",
+    "commit": "ae034400073efafb5d47e6fb6a272caed9f38b65",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

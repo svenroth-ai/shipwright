@@ -1,0 +1,54 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-codeql-uninit-phase-gate-state",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 23342,
+      "total": 23444
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-run pytest tests/test_single_session_gate_hardening.py tests/test_single_session_gate_override.py tests/test_phase_gate_no_bypass.py -q",
+      "exit_code": 0,
+      "tests_run": 59,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-25-codeql-uninit-phase-gate-state/surface_verification.log",
+      "timestamp": "2026-10-25T07:11:45.151Z"
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-codeql-uninit-phase-gate-state",
+    "commit": "6474ac54b644749c214dabcef139f84e0023bacd",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

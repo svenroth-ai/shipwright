@@ -12,6 +12,7 @@ validators, and it owns the policy around their answer:
     rejection          the answer when the gate fails, plus the retry position
     is_retryable       whether re-running the phase could fix the findings at all
     gate_summary       the ``gate`` block of a successful apply
+    gate_record        the durable ``phase_tasks[].gate`` block written with the completion
     failure_error      the issue summary a gate-terminal mark_phase_failed records
 
 Enforcement is ON by default (``ENFORCE_PHASE_GATE_DEFAULT``, flipped by A5 once every apply
@@ -19,8 +20,9 @@ test ran on real minimal artifacts — ``shared/testkit/minimal_valid_project.py
 passing ``enforce_gate=False``) and no override, apply never calls the gate. The switch is a
 function parameter only — no run-config key and no environment variable can turn the gate off.
 
-Nothing here writes: run_config mutations stay in ``phase_task_lifecycle``, and the apply
-path counts each rejection in loop state (``gateRejections``).
+Nothing here writes: run_config mutations stay in ``phase_task_lifecycle`` (the apply path
+hands ``gate_record`` / the override record to ``complete_phase_task(on_complete=...)``),
+and the apply path counts each rejection in loop state (``gateRejections``).
 """
 from __future__ import annotations
 
@@ -94,7 +96,7 @@ def evaluate_gate(
     project_root: Path, task: dict[str, Any], config: dict[str, Any], *,
     gate: Optional[GateFn] = None,
 ) -> dict[str, Any]:
-    """Run the gate for ``task``; return ``{ask, inform, checked}``.
+    """Run the gate for ``task``; return ``{ask, inform, checked, run_id}``.
 
     The split is the task's own; the run id is ``gate_run_id.canon_run_id``: the config's
     ``runId``, or the id the phase skill recorded in ``phase_history`` since this task was
@@ -105,7 +107,8 @@ def evaluate_gate(
     ``kind: canon_degraded`` note is promoted to ask: on this path a canon run that did
     not fully happen must not read as a pass (so a v2 override over it records ``fail``;
     only v1 records ``degraded``). An injected gate that raises becomes one ask-level
-    ``[gate-error]`` issue, as ``run_phase_gate`` does for its own.
+    ``[gate-error]`` issue, as ``run_phase_gate`` does for its own; so does a
+    ``canon_run_id`` that raises (the record then names the config's ``runId``).
 
     The promotion deliberately REVERSES ``phase_validators_canon._degraded``'s "inform,
     not ask" on this path only: the gate exists to fail closed. That is why A5 proved
@@ -113,10 +116,11 @@ def evaluate_gate(
     (``tests/test_phase_gate_cache_layouts.py``) before flipping enforcement on.
     """
     phase = task["phase"]
+    run_id = config.get("runId")  # if picking the canon id itself raises
     try:
+        run_id = canon_run_id(project_root, task, config)
         ask, inform, checked = (gate or run_phase_gate)(
-            project_root, phase, split_id=task.get("splitId"),
-            run_id=canon_run_id(project_root, task, config),
+            project_root, phase, split_id=task.get("splitId"), run_id=run_id,
         )
     except Exception as exc:  # noqa: BLE001 — a broken gate must not crash apply
         ask, inform, checked = [{
@@ -129,6 +133,7 @@ def evaluate_gate(
         "ask": [*ask, *degraded],
         "inform": [i for i in inform if i.get("kind") != "canon_degraded"],
         "checked": bool(checked),
+        "run_id": run_id,
     }
 
 
@@ -192,6 +197,7 @@ def retry_state(
     ``single-session-next`` always writes a matching state, so a driven run that goes
     through it is counted and gets its retries.
     """
+    state: Any = None  # bound up front: the loop below always returns or breaks, but say so
     for attempt in (1, 2):  # one re-read: a concurrent os.replace can fail a read on Windows
         try:
             state = load_loop_state(project_root)
@@ -266,6 +272,17 @@ def gate_summary(verdict: dict[str, Any]) -> dict[str, Any]:
         result = "pass" if verdict["checked"] else "not_checked"
     return {"result": result, "checked": verdict["checked"], "issues": verdict["ask"],
             "inform": verdict["inform"]}
+
+
+def gate_record(task: dict[str, Any], verdict: dict[str, Any], *, overridden: bool,
+                at: str) -> dict[str, Any]:
+    """The durable ``phase_tasks[].gate`` block a gated completion writes WITH the task:
+    what the gate said, for which phase/split, against which run id, when. Inform notes
+    are counted, not stored (they stay returned only, A5 decision 5)."""
+    return {"result": gate_summary(verdict)["result"], "checked": verdict["checked"],
+            "phase": task.get("phase"), "splitId": task.get("splitId"),
+            "runId": verdict.get("run_id"), "at": at, "issueCount": len(verdict["ask"]),
+            "informCount": len(verdict["inform"]), "overridden": overridden}
 
 
 def failure_error(verdict: dict[str, Any], attempt: Optional[int]) -> str:
