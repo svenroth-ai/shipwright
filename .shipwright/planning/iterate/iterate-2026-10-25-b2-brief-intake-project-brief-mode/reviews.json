@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T15:06:12.713212+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds verification commands but does not identify the mandatory call sites for every resume and every answer. Documentation changes alone cannot ensure that a changed package or removed approval is refused before processing an answer.",
+          "suggestion": "Wire `verify_run_config` into the resume and answer entry points before state mutation. Test package tampering, missing approval, and fixture approval without the environment flag through those actual entry points.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "write_run_config.py` will “verify first … record,” but the plan does not explain how it preserves the original recorded hash. If recording replaces that hash on resume, an edited, internally valid package could become the new baseline. A separate config write and record operation could also leave a config without its verification metadata.",
+          "suggestion": "Compare against the existing recorded hash before any write, refuse replacement on mismatch, and persist `brief_dir`, package identity/hash, and derived configuration together. Test that refusals leave the existing configuration unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Project brief mode exposes `verify-traces` and `check-fr-names`, but does not explicitly connect them to the gates they must enforce. Running them only during `apply` would allow later edits to evidence sections or FR names to bypass the content requirements.",
+          "suggestion": "Invoke these checks from the actual grill and requirements validation paths. Test that empty or unresolved evidence sections fail the grill gate and that FR-name divergence fails the relevant gate, including after initial application.  The module boundary and minimal routing edit fit the operator’s decision, and the proposed regression suites cover the main compatibility surfaces. The plan needs explicit enforcement wiring and recorded-hash persistence semantics before implementation; this review is based on the supplied text because repository inspection was blocked by the execution policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-25T15:05:55.787319+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach** — **Severity: medium**\n  The mini-plan puts the routing hook in `brief_intake.py` (\"directory or trailing slash → sibling module via file-path loader\"). This means `brief_intake.py` gains a dynamic import of `brief_dir_intake`, which is exactly the kind of cross-module coupling the operator's \"no re-export\" decision was meant to avoid drifting back in. Verify the hook is a pure dispatch (detect path type, delegate, return) with no shared state or helper leakage across the boundary, or the 300-line cap becomes the only thing preventing re-entanglement. Also confirm ADR-045's file-path loader works for the *sibling* case — the plan cites it for adopt's loader, but `brief_intake.py` itself may currently load under a different mechanism.\n\n- **Category: edge-case** — **Severity: medium**\n  \"Directory or trailing slash → directory intake\" routing is fragile: a user passing `--brief ./pkg/` gets the directory path; `--brief ./pkg` (no slash) hits the same code path only via `isdir()` check. But what about a *symlink to a directory* or a path that is a directory but not a valid package (no `brief.md`, no manifest)? The plan says \"bad brief_dir fails loudly,\" but be explicit that the distinction between \"not a directory\" (route to file loader → existing error), \"directory but not a package\" (exit 3 with package-validation error), and \"package with hash mismatch\" (exit 3) is intentional and tested. A trailing slash on a *file* path must still route to the file loader.\n\n- **Category: risk** — **Severity: medium**\n  `write_run_config.py` gains `--brief-dir` with \"exit 5\" while `brief_intake` main uses \"exit 3\" for refusal. Two different refusal exit codes for conceptually the same failure (refused brief) across adjacent tools is an operator confusion risk and a test-suite trap. If exit 5 is a pre-existing convention in `write_run_config.py`, fine — but confirm and document the mapping in `brief-mode.md`; if not, unify on one co […truncated]\n\n[openai] 1. **Category: security · Severity: high**  \n   **Finding:** The plan adds verification commands but does not identify the mandatory call sites for **every resume and every answer**. Documentation changes alone cannot ensure that a changed package or removed approval is refused before processing an answer.  \n   **Suggestion:** Wire `verify_run_config` into the resume and answer entry points before state mutation. Test package tampering, missing approval, and fixture approval without the environment flag through those actual entry points.\n\n2. **Category: risk · Severity: medium**  \n   **Finding:** `write_run_config.py` will “verify first … record,” but the plan does not explain how it preserves the original recorded hash. If recording replaces that hash on resume, an edited, internally valid package could become the new baseline. A separate config write and record operation could also leave a config without its verification metadata.  \n   **Suggestion:** Compare against the existing recorded hash before any write, refuse replacement on mismatch, and persist `brief_dir`, package identity/hash, and derived configuration together. Test that refusals leave the existing configuration unchanged.\n\n3. **Category: approach · Severity: medium**  \n   **Finding:** Project brief mode exposes `verify-traces` and `check-fr-names`, but does not explicitly connect them to the gates they must enforce. Running them only during `apply` would allow later edits to evidence sections or FR names to bypass the content requirements.  \n   **Suggestion:** Invoke these checks from the actual grill and requirements validation paths. Test that empty or unresolved evidence sections fail the grill gate and that FR-name divergence fails the relevant gate, including after initial application.\n\nThe module boundary and minimal routing edit fit the operator’s decision, and the proposed regression suites cover the main compatibility surfaces. The plan needs explicit enforcement wiring and rec […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_dir_intake.py",
+          "line": null,
+          "finding": "record() could re-baseline when the stored record block was dropped",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/brief_mode_checks.py",
+          "line": null,
+          "finding": "anchor check passed when no trace was brief-confirmed; anchor slug not tied to requirement_key",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/scripts/write_run_config.py",
+          "line": null,
+          "finding": "OSError during record escaped as traceback",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "parse_brief_md duplicates the heading split",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "gate wrappers, dead test code, sys.argv restore, n/a message, duplicate labels",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T15:23:53.087243+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6abbf551243075b861e0c2a3f3fe001ad13e628f"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: D1 LockTimeout is a RuntimeError, missed by handlers; half-written config — fixed: write_run_config unlinks on any failure and exits 5; both CLIs catch RuntimeError; test added",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: D2 brief_fr_names skipped when no FR row parsed although specs exist — fixed: skip only when no spec.md; test added",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: D3 replaced config erases the package record — fixed: verify refuses missing_record when brief/brief.json exists without brief_dir; documented; test added",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: D4 capability without trace not reported — fixed: missing_trace; test added",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: D5 fixture prefix case/space — fixed with test",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: D6 run CLI always tries package route for dir-shaped input — accepted and documented in brief-intake.md: a dir-shaped value is refused loudly when not a package",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: docstring claimed no lib import — fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T15:32:54.371815+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1ed8dc4e484f827fb2299852c1df1af0ecef489"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug / security",
+          "file": "shared/scripts/lib/brief_dir_intake.py`, `record()` — `recorded=cfg.get(\"brief_package\") if cfg.get(\"brief_dir\") == rel else None",
+          "line": null,
+          "finding": "If run_config already records `brief_dir = \"a\"` and someone runs `record --brief-dir b`, `recorded` becomes `None`, so the expected hash is taken from package `b`'s own `brief.json` (self-attested, trust-on-first-use) and the record is overwritten with it. This is exactly the \"second record re-baselines\" hole the docstring claims never happens, and the `brief_dir_conflict` code documented in `brief-intake.md` is never raised on this path (only `brief_project_mode._open` checks a conflict; `record` does not). The test `test_a_second_record_never_rebaselines_an_edited_package` only covers the same-dir case, so this passes.",
+          "suggestion": "If `cfg` has a `brief_dir` and it differs from `rel`, raise `BriefRefused(\"brief_dir_conflict\", ...)` instead of passing `recorded=None`. Add a test.  2. `write_run_config.py` destroys a pre-existing config on a late refusal",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-project/scripts/write_run_config.py`, the `bdi.record` failure handler — `config_path.unlink()",
+          "line": null,
+          "finding": "If `shipwright_run_config.json` already existed (e.g. a resume/re-run of write_run_config on a started run, or a config whose `autonomy`/`deploy_target` drifted from the brief → `config_mismatch`), the whole config — including any previously recorded `brief_dir`/`brief_package`/run state — is deleted. The unlink is only correct for a config this invocation just created.",
+          "suggestion": "Only unlink when this run created the file (track a `created_here` flag), otherwise leave the existing config untouched.  3. Free-text `--brief` payload ending in `/` now hard-fails instead of degrading",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/lib/brief_intake.py`, `_package_intake` — `text[-1] in \"/\\\\\"",
+          "line": null,
+          "finding": "The CLI always passes `package=True`. Any inline description that happens to end in a slash (e.g. `--brief \"clone of https://example.com/\"` — no spaces, under 240 chars) routes to the package path, `resolve_dir` refuses with `bad_brief_dir`, and `main` exits 3 with a refusal instead of treating it as a description as before. The test suite only covers the space-containing variant, which is exactly the input that sidesteps the bug.",
+          "suggestion": "On `bad_brief_dir` in the heuristic path (text did not name a directory the caller deliberately chose, e.g. no trailing slash), fall back to the description route; or only route to the package when the path is an existing directory, not on a trailing slash alone.  4. `intake_dir` can crash with a traceback on an unreadable `brief.md",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/brief_dir_intake.py`, `intake_dir` — `(bdir / \"brief.md\").read_text(...)",
+          "line": null,
+          "finding": "is_file()` guards existence, not readability/encoding; an `OSError`/`UnicodeDecodeError` propagates. `brief_intake.main` re-raises exceptions without `as_dict`, so the CLI produces a traceback rather than the documented structured exit-3 refusal. (`brief_project_mode._open` has the same read.)",
+          "suggestion": "Wrap the read in `try/except (OSError, ValueError)` and raise `BriefRefused(\"invalid_package\", ...)`.  5. `verify_run_config` passes when the config is absent/unreadable-but-brief-run",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/brief_dir_intake.py`, `verify_run_config` — `if \"brief_dir\" not in cfg: return {\"package\": False}",
+          "line": null,
+          "finding": "load_config` returns `{}` on `OSError` (including a transient permission error or a wrong `--project-root`), so the resume check reports \"no package\" and the run resumes without verification. The guards test asserts this behavior for a missing config dir, but it means a resume pointed at the wrong root fails open rather than loudly.",
+          "suggestion": "Distinguish \"config exists and has no brief_dir\" (pass) from \"config could not be read\" (refuse `bad_run_config`).  6. Possible test import-path fragility for `tools.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_brief_project_mode.py` — `import tools.brief_project_mode",
+          "line": null,
+          "finding": "The helpers file only puts `shared/scripts/lib` on `sys.path`; `import tools.brief_project_mode` needs `shared/scripts`. This works only if an existing conftest already adds it — worth confirming, since a fresh checkout running just this file would fail at collection, masking all the real assertions below it.",
+          "suggestion": "Add `shared/scripts` to `sys.path` in `_brief_dir_helpers.py` (or confirm the conftest does).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_intake.py:244 — `_package_intake` path filtering",
+          "line": null,
+          "finding": "Directory paths containing spaces are silently routed to legacy text intake. For example, `--brief \"my brief/\"` becomes a description instead of a verified package, bypassing package approval and hash checks. This also affects absolute paths beneath directories such as `dinovo GmbH`.",
+          "suggestion": "Check whether the source resolves to a directory before applying free-text exclusions. Explicit directory paths that cannot be opened should fail loudly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/brief_dir_intake.py:188 — `record` baseline selection",
+          "line": null,
+          "finding": "Recording a different directory discards the existing approval baseline. When `cfg[\"brief_dir\"] != rel`, `record` passes `recorded=None`, trusts the replacement package’s self-declared hash, and overwrites the stored directory and approval. A resumed run can therefore switch packages without respecting its previously recorded approval.",
+          "suggestion": "Refuse a different directory with `brief_dir_conflict` whenever the config already records a package. Preserve the existing hash baseline for all subsequent recordings.  Overall assessment: ship-with-fixes. The implementation covers much of B2, but directory routing and replacement-package handling need correction before shipping; I could not execute tests because shell access was blocked by policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T15:16:56.926173+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. `record()` silently re-baselines to a new self-attested package when `--brief-dir` differs from the recorded one**\n- Category: bug / security\n- Severity: high\n- File: `shared/scripts/lib/brief_dir_intake.py`, `record()` — `recorded=cfg.get(\"brief_package\") if cfg.get(\"brief_dir\") == rel else None`\n- Finding: If run_config already records `brief_dir = \"a\"` and someone runs `record --brief-dir b`, `recorded` becomes `None`, so the expected hash is taken from package `b`'s own `brief.json` (self-attested, trust-on-first-use) and the record is overwritten with it. This is exactly the \"second record re-baselines\" hole the docstring claims never happens, and the `brief_dir_conflict` code documented in `brief-intake.md` is never raised on this path (only `brief_project_mode._open` checks a conflict; `record` does not). The test `test_a_second_record_never_rebaselines_an_edited_package` only covers the same-dir case, so this passes.\n- Suggestion: If `cfg` has a `brief_dir` and it differs from `rel`, raise `BriefRefused(\"brief_dir_conflict\", ...)` instead of passing `recorded=None`. Add a test.\n\n**2. `write_run_config.py` destroys a pre-existing config on a late refusal**\n- Category: edge-case\n- Severity: medium\n- File: `plugins/shipwright-project/scripts/write_run_config.py`, the `bdi.record` failure handler — `config_path.unlink()`\n- Finding: If `shipwright_run_config.json` already existed (e.g. a resume/re-run of write_run_config on a started run, or a config whose `autonomy`/`deploy_target` drifted from the brief → `config_mismatch`), the whole config — including any previously recorded `brief_dir`/`brief_package`/run state — is deleted. The unlink is only correct for a config this invocation just created.\n- Suggestion: Only unlink when this run created the file (track a `created_here` flag), otherwise leave the existing config untouched.\n\n**3. Free-text `--brief` payload ending in `/` now hard-fails instead of degrading**\n- Category: regre […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_intake.py:244 — `_package_intake` path filtering\n- Finding: Directory paths containing spaces are silently routed to legacy text intake. For example, `--brief \"my brief/\"` becomes a description instead of a verified package, bypassing package approval and hash checks. This also affects absolute paths beneath directories such as `dinovo GmbH`.\n- Suggestion: Check whether the source resolves to a directory before applying free-text exclusions. Explicit directory paths that cannot be opened should fail loudly.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/lib/brief_dir_intake.py:188 — `record` baseline selection\n- Finding: Recording a different directory discards the existing approval baseline. When `cfg[\"brief_dir\"] != rel`, `record` passes `recorded=None`, trusts the replacement package’s self-declared hash, and overwrites the stored directory and approval. A resumed run can therefore switch packages without respecting its previously recorded approval.\n- Suggestion: Refuse a different directory with `brief_dir_conflict` whenever the config already records a package. Preserve the existing hash baseline for all subsequent recordings.\n\nOverall assessment: ship-with-fixes. The implementation covers much of B2, but directory routing and replacement-package handling need correction before shipping; I could not execute tests because shell access was blocked by policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T15:16:50.734685+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6abbf551243075b861e0c2a3f3fe001ad13e628f"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T15:05:55.933312+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T15:05:56.070976+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

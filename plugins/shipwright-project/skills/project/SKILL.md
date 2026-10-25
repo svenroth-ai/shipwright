@@ -228,25 +228,31 @@ canon, and the final summary banner.
 5. **Spec Completeness Gate** — Scope + FRs + NFRs in each spec.md
 6. **Manifest-Spec Consistency** — bijection between manifest and
    spec.md files
-7. **Grill-Trace Completeness Gate (P4.2)** — runs
+7. **Grill-Trace Completeness Gate (P4.2)** — run
    `verify_grill_trace_completeness.py` over every grill-trace record
    the interview wrote (see interview-protocol.md → "Capturing the
-   grill-trace"). **Code-enforced, the same way C1-C5 are**: it is
-   registered in `project_checks.run_project_checks()` and re-runs
-   automatically when the orchestrator's `update-step --step project`
-   call below evaluates `validate_phase()` — a missing trace, a blank
+   grill-trace"). **Code-enforced:** it is registered in
+   `project_checks.run_project_checks()`. In a driven run
+   `single-session-apply`'s phase gate runs that dispatcher (enforcing by
+   default) and rejects the result on red; on a standalone / legacy run
+   `update-step` does (it is inert in a driven run). Running the CLI
+   yourself first surfaces the same gap earlier. A missing trace, a blank
    dimension, an `assumed` value (no exceptions in this surface), an
-   undefined term, or an outcome with no fit criterion becomes an
-   ask-level issue that genuinely blocks completion, not a result the
-   agent alone decides how to act on. Running the CLI yourself first
-   (as below) surfaces the same gap earlier, before the update-step
-   call, so you fix it in the same turn instead of hitting the block.
-   Never judges prose quality, only structural completeness.
+   undefined term, or an outcome with no fit criterion means the phase is
+   NOT complete. Never judges prose quality, only structural completeness.
+
+   **Project brief mode** (the run was started with a Brief package, i.e.
+   `shipwright_run_config.json` carries `brief_dir`): the interview is
+   replaced by `brief_project_mode.py` — see
+   [references/brief-mode.md](references/brief-mode.md). The same dispatcher
+   also runs `brief_evidence_anchors` and `brief_fr_names` for such a run:
+   they read the brief's content, which the shape-only gate cannot.
 
 **Phase complete — update pipeline state** by running the
 C1/C2/C3/C5 + phase_history block from
-[references/step-8-completion.md](references/step-8-completion.md), then
-call the orchestrator update-step to mark the project phase complete.
+[references/step-8-completion.md](references/step-8-completion.md). On a
+standalone run, finish with the orchestrator `update-step` call; in a driven
+run it is inert — hand the result to `single-session-apply`, whose phase gate runs the checks.
 
 ---
 
@@ -267,6 +273,7 @@ the invalid-input-file and session-conflict prompts.
 - [step-6-spec-gen.md](references/step-6-spec-gen.md) — Spec Generation (links to spec-generation.md)
 - [step-7-scaffolding.md](references/step-7-scaffolding.md) — Project Scaffolding (links to project-scaffolding.md)
 - [step-8-completion.md](references/step-8-completion.md) — Completion + canon block + summary
+- [brief-mode.md](references/brief-mode.md) — Project brief mode: a Brief package replaces the interview
 - [error-handling.md](references/error-handling.md) — Error prompts
 - [interview-protocol.md](references/interview-protocol.md) — Interview guidance and question strategies
 - [split-heuristics.md](references/split-heuristics.md) — How to evaluate split quality

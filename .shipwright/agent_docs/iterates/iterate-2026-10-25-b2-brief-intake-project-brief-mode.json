@@ -1,0 +1,91 @@
+{
+  "run_id": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+  "date": "2026-10-25T16:58:45.358718Z",
+  "event_at": "2026-10-25T15:51:52.378102+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B2",
+  "spec": ".shipwright/planning/iterate/campaigns/brief-driven-run-b-intake-design-e2e/sub-iterates/B2-brief-intake-and-project-brief-mode.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a Brief package directory is read, hash-verified and routed from the run intake",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_dir_intake.py PASSED"
+      },
+      {
+        "behavior": "a refused package (tamper, missing approval, fixture approval without the switch) is a structured exit-3 error",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_dir_intake.py, shared/tests/test_brief_dir_intake_guards.py PASSED"
+      },
+      {
+        "behavior": "record stores the hash once; later checks compare against the record; a dropped record or other directory is refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_dir_intake.py, shared/tests/test_brief_dir_intake_guards.py PASSED"
+      },
+      {
+        "behavior": "a replaced run_config next to a package ends in missing_record, never silently in non-brief mode",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_dir_intake_guards.py PASSED"
+      },
+      {
+        "behavior": "free-text briefs and adopt keep their old behaviour (opt-in routing, no ENAMETOOLONG)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_dir_intake_guards.py PASSED"
+      },
+      {
+        "behavior": "project brief mode writes requirements, traces and glossary only after content checks pass",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_project_mode.py PASSED"
+      },
+      {
+        "behavior": "the real project gate fails on empty/foreign anchors, FR names that differ, missing traces and unparsed FR rows",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_project_mode.py PASSED"
+      },
+      {
+        "behavior": "record never re-baselines when either brief_dir or brief_package exists; recorded dirs are project-relative and link-safe",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_dir_intake_hardening.py PASSED"
+      },
+      {
+        "behavior": "single-session-resume/next/apply are blocked in code when the recorded package changed; a first baseline needs a fresh run; a stray package only warns",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_brief_resume_guard.py PASSED"
+      },
+      {
+        "behavior": "write_run_config --brief-dir: brief profile wins, refusal exits 5, lock timeout leaves no config",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_write_run_config_brief.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 10,
+      "covered_acs": 10
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_brief_dir_intake.py shared/tests/test_brief_dir_intake_guards.py shared/tests/test_brief_dir_intake_hardening.py shared/tests/test_brief_project_mode.py -q",
+    "exit_code": 0,
+    "tests_run": 61,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2\\.shipwright\\runs\\iterate-2026-10-25-b2-brief-intake-project-brief-mode\\surface_verification.log",
+    "timestamp": "2026-10-25T16:58:13.934Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
