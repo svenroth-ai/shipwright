@@ -39,6 +39,7 @@ def _flow(tmp_path, brief: dict):
     assert wrote.returncode == 0, wrote.stdout + wrote.stderr
     cfg = json.loads((tmp_path / "shipwright_run_config.json").read_text(encoding="utf-8"))
     nxt = _run([ORCH, "get-next-step", "--project-root", tmp_path], tmp_path)
+    assert nxt.returncode == 0, nxt.stdout + nxt.stderr
     return cfg, json.loads(nxt.stdout)
 
 
@@ -49,7 +50,7 @@ def test_named_project_profile_reaches_run_config_and_next_step(tmp_path):
     brief = {"description": "A tool", "users": "team", "persistence": "yes", "run_location": "local", "profile": "acme-stack"}
     cfg, step = _flow(tmp_path, brief)
     assert cfg["profile"] == "acme-stack"  # persistence=yes alone would have inferred supabase-nextjs
-    assert "acme-stack" in json.dumps(step)
+    assert step["profile"] == "acme-stack"  # the key later phases read from get-next-step
 
 
 def test_brief_without_profile_keeps_the_inferred_one(tmp_path):

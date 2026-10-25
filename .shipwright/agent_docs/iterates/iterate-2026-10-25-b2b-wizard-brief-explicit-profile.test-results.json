@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 14885,
-      "total": 14885
+      "passed": 14888,
+      "total": 14888
     },
     "integration": {
       "status": "not_run"
@@ -60,11 +60,21 @@
           "behavior": "the fixture-approval refusal says only the operator may set the switch",
           "disposition": "tested",
           "evidence": "shared/tests/test_brief_profile.py::test_fixture_refusal_says_only_the_operator_sets_the_switch PASSED"
+        },
+        {
+          "behavior": "the reserved placeholder 'detecting' is refused as invalid while 'generic' is accepted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
+        },
+        {
+          "behavior": "a free-text 'Profile: ...' line stays in the description; resolver messages lose control, C1 and bidi characters",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -77,10 +87,23 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 16,
+      "tests_run": 19,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
-      "timestamp": "2026-10-25T18:03:16.058Z",
+      "timestamp": "2026-10-25T18:54:33.075Z",
       "attempts": 1
     }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
   }
 }

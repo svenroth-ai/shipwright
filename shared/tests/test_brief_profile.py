@@ -147,3 +147,29 @@ def test_text_keys_keep_profile_ahead_of_its_alias_in_either_order(tmp_path):
 def test_trailer_item_is_validated_whole_not_by_its_first_word(tmp_path):
     out = brief_intake.intake(WEBUI_LINE.format(name="vite-hono invalid"), str(tmp_path))
     assert out["profile"] is None and out["profile_requested"] == "vite-hono invalid"
+
+
+def test_free_text_profile_line_stays_in_the_description(tmp_path):
+    out = brief_intake.intake("Profile: a SaaS for dentists", str(tmp_path))
+    assert "profile_requested" not in out and out["profile"] is None  # not a name shape: no refusal
+    assert "dentists" in (out["brief"]["description"] or "")
+    assert brief_intake.intake("Profile: vite-hono", str(tmp_path))["profile"] == "vite-hono"
+
+
+def test_detecting_placeholder_is_not_choosable_but_generic_is(tmp_path):
+    out = brief_intake.intake({**BASE, "profile": "detecting"}, str(tmp_path))
+    assert out["profile"] is None and out["profile_error"]["code"] == "invalid"
+    assert brief_intake.intake({**BASE, "profile": "generic"}, str(tmp_path))["profile"] == "generic"
+
+
+def test_resolver_messages_are_stripped_of_control_and_bidi_characters(tmp_path, monkeypatch):
+    class _Boom:
+        @staticmethod
+        def resolve_profile(name, project_root):
+            raise ValueError("x\x1b[31my\x9b\u202ez")
+
+    monkeypatch.setattr(brief_intake._sibling("brief_profile"), "_resolver", lambda: _Boom)
+    out = brief_intake.intake({**BASE, "profile": "some-stack"}, str(tmp_path))
+    msg = out["profile_error"]["message"]
+    assert "x" in msg and "y" in msg and "z" in msg
+    assert not any(ord(c) < 32 or 0x7F <= ord(c) <= 0x9F or c in "\u202a\u202b\u202c\u202d\u202e" for c in msg)

@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
-  "date": "2026-10-25T18:22:58.556469Z",
-  "event_at": "2026-10-25T15:51:52.378102+00:00",
+  "date": "2026-10-25T18:54:43.071652Z",
+  "event_at": "2026-10-25T18:22:58.879381+00:00",
   "type": "feature",
   "complexity": "medium",
   "prior_source": "keyword",
@@ -46,11 +46,21 @@
         "behavior": "the fixture-approval refusal says only the operator may set the switch",
         "disposition": "tested",
         "evidence": "shared/tests/test_brief_profile.py::test_fixture_refusal_says_only_the_operator_sets_the_switch PASSED"
+      },
+      {
+        "behavior": "the reserved placeholder 'detecting' is refused as invalid while 'generic' is accepted",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
+      },
+      {
+        "behavior": "a free-text 'Profile: ...' line stays in the description; resolver messages lose control, C1 and bidi characters",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
       }
     ],
     "counts": {
-      "testable": 7,
-      "tested": 7,
+      "testable": 9,
+      "tested": 9,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -63,9 +73,9 @@
     "surface": "cli",
     "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
     "exit_code": 0,
-    "tests_run": 16,
+    "tests_run": 19,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
-    "timestamp": "2026-10-25T18:03:16.058Z",
+    "timestamp": "2026-10-25T18:54:33.075Z",
     "attempts": 1
   },
   "declared_removals": [],

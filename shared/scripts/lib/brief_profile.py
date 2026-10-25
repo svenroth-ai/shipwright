@@ -32,7 +32,7 @@ from typing import Any, Optional
 FIELDS = ("profile", "stack_profile")
 _SHARED_SCRIPTS = str(Path(__file__).resolve().parents[1])
 _TRAILER_RE = re.compile(r"\(Intake\b[^)]*?\bStack profile:\s*([^;)]+)")
-_CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")
+_CTRL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f‪-‮⁦-⁩]")  # C0, C1 controls and bidi overrides
 
 
 def _plain(text: Any) -> str:
@@ -93,12 +93,14 @@ def select(raw: Any, project_root: Any = ".") -> Optional[dict]:
         return None
     if not isinstance(name, str):
         return _error(name, "invalid", "a profile must be given as a name (string)")
+    if name.lower() == "detecting":  # a placeholder state ("detect later"), not a stack a brief can choose
+        return _error(name, "invalid", "'detecting' is a reserved placeholder, not a stack profile")
     try:
         res = _resolver().resolve_profile(name, project_root)
     except ImportError as exc:
-        return _error(name, "resolver_unavailable", str(exc))
+        return _error(name, "resolver_unavailable", exc)
     except ValueError as exc:  # the resolver's error family: not_found / invalid / schema_*
-        return _error(name, getattr(exc, "kind", "error"), str(exc))
+        return _error(name, getattr(exc, "kind", "error"), exc)  # _error prints it sanitized
     return {
         "profile": res.name,
         "reason": f"brief names profile {res.name!r} ({res.source}): explicit value wins over inference",

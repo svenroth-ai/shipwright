@@ -132,7 +132,8 @@ when genuinely needed.
    brief for the pipeline.
 2. **Step 2** — skip `inference.py` for profile: `profile` + `deploy_target` are
    already fixed from the wizard answers. Only fall back to inference for a
-   field the brief left `null`.
+   field the brief left `null` — except when `profile_error` is set (exit 3):
+   stop and ask the user which profile to use, never infer one.
 3. **Step 3** — present the same INFERRED SETTINGS card, pre-filled from the
    brief. Ask only `remaining_questions` (typically just `autonomy`) plus each
    entry of `env_questions` when non-empty.
@@ -155,6 +156,9 @@ route has no brief version, the field is simply optional):
   result carries `profile_requested`, `profile_error {code, message}`, `warnings` and the package route's refusal
   shape (`refused: true`, `code: "profile_unusable"`, `message`, `issues`), and the CLI **exits 3**.
   Show the warning to the user and ask which profile to use (`resolve_profile.py list` names the choices).
+- `detecting` (the "detect later" placeholder) is not choosable and is refused as `invalid`; `generic` is accepted.
+  In a `key: value` text brief a `profile:` value counts as a name only in the shape `^[a-z0-9][a-z0-9-]*$`;
+  any other `Profile: ...` line stays prose in the description.
 - Pass `--project-root` so a project profile under `.shipwright/profiles/` resolves.
 - No profile in the brief: behaviour is unchanged (inference from `persistence`, no new keys in the result).
 

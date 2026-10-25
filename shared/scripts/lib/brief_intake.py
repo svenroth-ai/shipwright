@@ -156,6 +156,7 @@ def _no_brief_result() -> dict:
     }
 
 
+_NAME_SHAPE = re.compile(r"[a-z0-9][a-z0-9-]*$")  # a text-brief `profile:` is a name only in this shape (the resolver validates)
 _KEY_ALIASES = {"location": "run_location"}
 _KV_RE = re.compile(r"^\s*[-*]?\s*([A-Za-z_][\w -]*?)\s*[:=]\s*(.+?)\s*$")
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)  # greedy body + trailing-fence anchor: a nested {...} parses in full
@@ -178,7 +179,7 @@ def _parse_text_brief(text: str) -> dict:
         if m:
             key = m.group(1).strip().lower().replace(" ", "_").replace("-", "_")
             key = _KEY_ALIASES.get(key, key)
-        if key in BRIEF_QUESTIONS or key in ("profile", "stack_profile"):  # precedence: brief_profile.py
+        if key in BRIEF_QUESTIONS or (key in ("profile", "stack_profile") and _NAME_SHAPE.match(m.group(2).strip())):
             fields[key] = m.group(2).strip()
         elif line.strip():
             prose.append(line.strip())  # keep non-kv prose as the description
