@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -227,7 +228,7 @@ def _trace(outcome: str) -> dict:
 
 def _minimal_project(root: Path) -> None:
     """An extension-scope project phase that passes every ERROR-level project check."""
-    cfg = _config(root, scope="extension")
+    _config(root, scope="extension")
 
     def w(rel: str, text: str) -> None:
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -241,7 +242,6 @@ def _minimal_project(root: Path) -> None:
     w(".shipwright/agent_docs/build_dashboard.md", "# Dashboard\n\n- project: done\n")
     w("shipwright_events.jsonl", json.dumps({"type": "phase_completed", "event": "phase_completed",
                                              "phase": "project", "timestamp": "2026-10-24T00:00:00Z"}) + "\n")
-    _edit_config(root, phase_history={"project": [{"run_id": cfg["runId"], "outcome": "complete"}]})
     # The planted transcript: an interview ran, so the zero-traces check is live.
     w(".shipwright/planning/shipwright_project_interview.md", "# Interview\n")
 
@@ -253,7 +253,11 @@ def _write_trace(root: Path, outcome: str) -> None:
 
 
 def _real_apply(root: Path) -> dict:
-    return _apply(root, _dispatch(root), enforce_gate=True,
+    d = _dispatch(root)  # the phase records its history during ITS task, as the real skill does
+    at = datetime.now(timezone.utc).isoformat()
+    _edit_config(root, phase_history={"project": [{"run_id": _read(root)["runId"], "at": at,
+                                                   "outcome": "complete"}]})
+    return _apply(root, d, enforce_gate=True,
                   result=_result(root, artifact="shipwright_project_config.json"))
 
 

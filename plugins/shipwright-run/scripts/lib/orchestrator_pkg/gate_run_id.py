@@ -8,26 +8,32 @@ changelog and deploy mint one when it is unset. With enforcement on, every real 
 phase would have been rejected at its first apply, and an unattended run (no override)
 could never finish.
 
-The rule, deterministic and narrow:
+The rule, deterministic and narrow. Only entries recorded during THIS task count: written
+at or after its claim (``startedAt``), not dated in the future (beyond a small clock-skew
+tolerance), and for a split task with no ``split`` or this split. Among those:
 
-1. the run's own id when ``phase_history[<phase>]`` has an entry for it (unchanged);
-2. else the id of the NEWEST entry recorded since THIS task was claimed (``startedAt``)
-   — for a split task, one whose ``split`` is absent or names this split;
-3. else the run's id, so the check fails and names it.
+1. the run's own id when one of them carries it (a phase-runner exports ``runId``);
+2. else the id of the newest of them (a skill that minted its own id);
+3. with none, an id no entry can carry (``<runId>:no-phase_history-entry-since-claim``), so
+   the check FAILS and says why — returning the bare ``runId`` would let the canon check,
+   which matches any entry ever written, pass on an earlier split's or claim's entry.
 
-Rule 2 accepts "the phase wrote its audit entry during this task", which is what the check
-exists to prove; an entry from before the claim (an earlier task, another run) never counts.
-A task with no parseable ``startedAt`` gets rule 1/3 only. A ``runId`` that is absent
-(``None``) or blank is returned unchanged: the canon bridge owns those answers.
+So an earlier split's entry, the first claim's entry of a recovered task, or another run's
+entry never satisfies the check, even under the same id. A task with no parseable
+``startedAt`` (not claimed by the driven loop) gets the run's id unchanged: the canon check
+then behaves as it does outside a driven run. A ``runId`` that is absent (``None``) or
+blank is returned unchanged: the canon bridge owns those answers.
 """
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 _RUN_CONFIG = "shipwright_run_config.json"
+NO_ENTRY_SUFFIX = ":no-phase_history-entry-since-claim"
+_SKEW = timedelta(minutes=5)   # clock-skew tolerance for an entry's ``at``
 
 
 def _when(value: Any) -> Optional[datetime]:
@@ -53,15 +59,15 @@ def canon_run_id(project_root: Path, task: dict[str, Any], config: dict[str, Any
     bucket = history.get(task.get("phase")) if isinstance(history, dict) else None
     if not isinstance(bucket, list):
         return run_id
-    entries = [e for e in bucket if isinstance(e, dict) and isinstance(e.get("run_id"), str)
-               and e["run_id"].strip()]
-    if any(e["run_id"] == run_id for e in entries):
-        return run_id
     started = _when(task.get("startedAt"))
     if started is None:
         return run_id
+    latest = datetime.now(timezone.utc) + _SKEW
     split = task.get("splitId")
-    since = [e for e in entries
-             if (at := _when(e.get("at"))) is not None and at >= started
-             and (not split or e.get("split") in (None, split))]
-    return since[-1]["run_id"] if since else run_id
+    mine = [e for e in bucket
+            if isinstance(e, dict) and isinstance(e.get("run_id"), str) and e["run_id"].strip()
+            and (at := _when(e.get("at"))) is not None and started <= at <= latest
+            and (not split or e.get("split") in (None, split))]
+    if any(e["run_id"] == run_id for e in mine):
+        return run_id
+    return mine[-1]["run_id"] if mine else run_id + NO_ENTRY_SUFFIX

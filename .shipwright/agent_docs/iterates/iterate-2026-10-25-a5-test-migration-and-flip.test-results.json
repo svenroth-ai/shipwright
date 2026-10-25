@@ -4,13 +4,13 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 22720,
-      "total": 22720
+      "passed": 22728,
+      "total": 22728
     },
     "integration": {
       "status": "passed",
-      "passed": 611,
-      "total": 611
+      "passed": 612,
+      "total": 612
     },
     "pgtap": {
       "status": "not_run"
@@ -84,18 +84,18 @@
         {
           "behavior": "migrated run-root drives (loop, artifact guard, CLI, phase_started, resume) green on real minimal artifacts",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests suite 709 passed (F0)"
+          "evidence": "plugins/shipwright-run/tests suite 745 passed (F0)"
         },
         {
           "behavior": "migrated integration drives (pipeline, capstone, resume, handoff, cross-surface CAS fence, invocation mode) green on real minimal artifacts",
           "disposition": "tested",
-          "evidence": "integration-tests suite 608 passed (F0)",
+          "evidence": "integration-tests suite 612 passed (F0)",
           "category": "integration"
         },
         {
-          "behavior": "the canon phase_history run id is the run's runId, else the newest entry since this task was claimed (split-matched); older entries never count; no/naive claim time = runId only",
+          "behavior": "only a phase_history entry recorded during this task counts (claim <= at <= now+5min, split absent or matching): runId if one carries it, else the newest one's id, else a never-matching sentinel; an earlier split's/claim's entry never counts even under runId; no comparable claim time = runId",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_gate_run_id.py (21 cases) PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_gate_run_id.py (24 cases) PASSED"
         },
         {
           "behavior": "the real project/design/plan finalization blocks (extracted from the skill docs) pass the enforced gate, with a skill-minted id and with the runner-exported runId",
@@ -119,11 +119,27 @@
           "behavior": "an unknown/foreign/malformed retry state makes an enforced rejection terminal at once (guided ask_human, autonomous failed)",
           "disposition": "tested",
           "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_without_loop_state_the_first_rejection_is_terminal + test_a_loop_state_for_another_task_or_malformed_is_unknown PASSED"
+        },
+        {
+          "behavior": "with the runner-exported runId on every entry, plan/02 whose finalization writes no phase_history entry is rejected, passes on retry once it writes one, and build/02 (the build skill's real block) passes on its own split's entry",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_a_second_split_needs_its_own_entry_under_the_runs_id PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "phase_history[build] has sections takes the newest entry for the run id, preferring the current split's, not the first",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build_split_history.py (4 cases) PASSED"
+        },
+        {
+          "behavior": "a transient loop-state read failure is re-read once before the retry state counts as unknown",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_a_transient_read_failure_is_re_read_once PASSED"
         }
       ],
       "counts": {
-        "testable": 17,
-        "tested": 17,
+        "testable": 20,
+        "tested": 20,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -136,9 +152,9 @@
       "surface": "cli",
       "runner": "uv run pytest integration-tests/test_driven_run_real_gate_e2e.py integration-tests/test_phase_gate_real_skill_canon.py integration-tests/test_single_session_sole_mode.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 12,
+      "tests_run": 13,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-a-real-gates--A5\\.shipwright\\runs\\iterate-2026-10-25-a5-test-migration-and-flip\\surface_verification.log",
-      "timestamp": "2026-10-24T23:49:08.215Z",
+      "timestamp": "2026-10-25T00:12:48.841Z",
       "attempts": 1
     }
   },

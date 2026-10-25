@@ -3827,12 +3827,16 @@ an `ok:true` result on a current (`version` + `sessionUuid`) `in_progress` task 
 stale apply keeps `stale_version` / `stale_session` and a double apply its idempotent
 answer. `run_phase_gate` gets the task's `splitId` and the run id the canon
 `phase_history[<phase>] has run_id` check must find (`orchestrator_pkg/gate_run_id.py`, A5
-review): the config's `runId` when that phase has an entry for it, else the id of the newest
-entry recorded since THIS task was claimed (`startedAt`; for a split task one whose `split`
-is absent or names it), else `runId` (the check then fails and names it). Phase skills mint
+review). Only an entry recorded during THIS task counts: `at` between the claim
+(`startedAt`) and now + 5 min, and for a split task a `split` that is absent or names it.
+Among those, the config's `runId` if one carries it, else the newest one's id; with none,
+a sentinel id (`<runId>:no-phase_history-entry-since-claim`) no entry carries, so the check
+fails and names it, even when an earlier split's or claim's entry carries `runId`. Phase skills mint
 their own `SHIPWRIGHT_RUN_ID` when none is set, and `phase-runner.md` exports the run's
 `runId` before a skill's finalization block (project/design/plan keep a pre-set id since A5);
-an entry written before the claim never counts. An absent `runId` stays None (the canon
+all four skills pass `--run-id "$SHIPWRIGHT_RUN_ID"`, so the C3 marker and the entry carry
+one id. The build check `phase_history[build] has sections` takes the newest entry for the
+id, preferring the current split's. An absent `runId` stays None (the canon
 bridge falls back to `SHIPWRIGHT_RUN_ID`); an explicitly blank one stays blank and is
 ask-level there. `integration-tests/test_phase_gate_real_skill_canon.py` runs the skills'
 real finalization blocks against the gate. A `canon_degraded` note counts as an ask-level finding here (a v2

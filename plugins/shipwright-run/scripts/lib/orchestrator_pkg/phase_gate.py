@@ -192,10 +192,13 @@ def retry_state(
     ``single-session-next`` always writes a matching state, so a driven run that goes
     through it is counted and gets its retries.
     """
-    try:
-        state = load_loop_state(project_root)
-    except (OSError, ValueError):  # JSONDecodeError is a ValueError
-        return None
+    for attempt in (1, 2):  # one re-read: a concurrent os.replace can fail a read on Windows
+        try:
+            state = load_loop_state(project_root)
+            break
+        except (OSError, ValueError):  # JSONDecodeError is a ValueError
+            if attempt == 2:
+                return None
     if (not isinstance(state, dict) or state.get("runId") != config.get("runId")
             or state.get("currentPhaseTaskId") != phase_task_id):
         return None

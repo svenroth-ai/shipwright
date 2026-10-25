@@ -120,7 +120,7 @@ uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
 
 # phase_history (NEW 12.2) — audit trail entry.
 uv run "{shared_root}/scripts/tools/append_phase_history.py" \
-  --project-root "$(pwd)" --phase plan --run-id "{SHIPWRIGHT_RUN_ID}" \
+  --project-root "$(pwd)" --phase plan --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"split":"{split_name}","sections":{N},"outcome":"sectioned"}'
 
 # Mark plan phase complete. _validate_plan() runs the modular plan_checks

@@ -205,6 +205,21 @@ def test_an_unreadable_loop_state_is_unknown(tmp_project):
     assert phase_gate.retry_state(tmp_project, cfg, d["phaseTaskId"]) is None
 
 
+def test_a_transient_read_failure_is_re_read_once(tmp_project, monkeypatch):
+    cfg = _config(tmp_project)
+    d = _dispatch(tmp_project)
+    real, calls = phase_gate.load_loop_state, []
+
+    def flaky(root):
+        calls.append(root)
+        if len(calls) == 1:
+            raise PermissionError("delete-pending (concurrent os.replace)")
+        return real(root)
+    monkeypatch.setattr(phase_gate, "load_loop_state", flaky)
+    assert phase_gate.retry_state(tmp_project, cfg, d["phaseTaskId"]) is not None
+    assert len(calls) == 2
+
+
 def test_the_rejection_count_resets_with_the_pointer(tmp_project):
     assert advance_pointer({"gateRejections": 2, "attempt": 3}, completed_phase_task_id="a",
                            next_phase_task_id="b")["gateRejections"] == 0

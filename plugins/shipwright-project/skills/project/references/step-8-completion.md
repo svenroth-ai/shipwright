@@ -139,7 +139,7 @@ uv run "{shared_root}/scripts/tools/append_changelog_entry.py" \
 # phase_history append (NEW 12.1) — audit trail entry in
 # shipwright_run_config.json::phase_history[project].
 uv run "{shared_root}/scripts/tools/append_phase_history.py" \
-  --project-root "$(pwd)" --phase project --run-id "{SHIPWRIGHT_RUN_ID}" \
+  --project-root "$(pwd)" --phase project --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"outcome":"scaffolded","splits":{N},"profile":"{profile}"}'
 
 # Mark project phase complete (triggers compliance update automatically).

@@ -44,7 +44,7 @@ uv run "{shared_root}/scripts/tools/append_changelog_entry.py" \
 
 # phase_history — audit trail in shipwright_run_config.json::phase_history[design]
 uv run "{shared_root}/scripts/tools/append_phase_history.py" \
-  --project-root "$(pwd)" --phase design --run-id "{SHIPWRIGHT_RUN_ID}" \
+  --project-root "$(pwd)" --phase design --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"screens":{N},"flows":{M},"outcome":"approved"}'
 
 # Mark design phase complete. _validate_design() now runs the modular
