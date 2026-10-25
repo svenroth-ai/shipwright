@@ -1,0 +1,81 @@
+{
+  "run_id": "iterate-2026-10-25-stack-profile-followup",
+  "date": "2026-10-25T05:39:48.812230Z",
+  "event_at": "2026-10-24T23:08:35.872924+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/stack-profile-followup",
+  "spec": ".shipwright/planning/campaigns/2026-10-24-stack-profile-resolver-BRIEF.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-stack-profile-followup",
+  "prior_source": "keyword",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "module_wrappers seeds the fixpoint with PINNED_WRAPPERS",
+        "disposition": "tested",
+        "evidence": "test_stack_profile_py_guard.py::test_module_wrappers_are_seeded_with_the_pinned_ones + planted red _mine wrapper case PASSED"
+      },
+      {
+        "behavior": "return -1 is a loud failure return, not a swallow",
+        "disposition": "tested",
+        "evidence": "planted green case 'return -1' in test_swallow_rule_is_green_on_the_loud_handlers_and_the_neighbours PASSED"
+      },
+      {
+        "behavior": "suppress() and handlers share one name predicate (suppress(ProfileInvalid) flagged)",
+        "disposition": "tested",
+        "evidence": "two planted red suppress cases PASSED"
+      },
+      {
+        "behavior": "resolver-module exclusion assertion has teeth",
+        "disposition": "tested",
+        "evidence": "test_resolver_modules_are_excluded_by_location... asserts profile_resolver.py would be flagged: PASSED"
+      },
+      {
+        "behavior": "e2e _env drops every GIT_* variable",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_stack_profile_resolution_e2e.py: 6 passed"
+      },
+      {
+        "behavior": "BOM decoded, undecodable tracked file named in the AssertionError",
+        "disposition": "tested",
+        "evidence": "test_modules_decode_a_bom_and_name_the_file_that_cannot_be_read PASSED"
+      },
+      {
+        "behavior": "write-project-config in_progress degrade unchanged (comment-only edit)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project tests: 97 passed incl. test_missing_shared_tree_degrades_for_the_early_project_config_only"
+      },
+      {
+        "behavior": "S2 ADR stale lines and two BRIEF amendments",
+        "disposition": "tested",
+        "evidence": "documentation only; reviewed in the diff; prose guard tests still pass (33 passed)"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_stack_profile_py_guard.py shared/tests/test_stack_profile_prose_guard.py shared/tests/test_stack_profile_prose_commands.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 33,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\stack-profile-followup\\.shipwright\\runs\\iterate-2026-10-25-stack-profile-followup\\surface_verification.log",
+    "timestamp": "2026-10-25T05:38:51.650Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

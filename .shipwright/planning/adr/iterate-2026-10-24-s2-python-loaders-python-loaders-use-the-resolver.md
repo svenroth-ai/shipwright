@@ -60,7 +60,7 @@ Probes run against real files: BOM + CRLF + non-ASCII project profile through `t
 | Pass 1, low: stale `_load_profile_data` seam in `test_dev_server_no_web_server`, stale docstring, `_plain` untested | accepted-and-fixed |
 | Pass 1, low: no adopt cache-layout test | rejected-with-reason: adopt's `_scaffold_env_local` imports `validate_env` from the shared tree, which the shipwright-test and shipwright-design cache-layout tests already exercise |
 | Pass 1, low: `--project-root`, custom-profile-without-command error, docs size | accepted: additive, tested; S5 reconciles the docs |
-| Pass 2, blocking: S2 edits S1-owned `profile_resolver.py` / `profile_model.py` (D2 hot-file rule) | NOT resolved by the runner: the dispatch brief handed these S1 review findings (dangling symlink, NaN/Infinity, tamper-evident probe, rooted Windows path, low items) to S2 explicitly, so they are in scope of the task as given; the runner cannot grant itself a D2 amendment. Escalated to the orchestrator/operator with the exact file list (`profile_resolver.py`, `profile_model.py`, `resolve_profile.py`, `profile_test_isolation.py`, `test_profile_resolver_source_gaps.py`) |
+| Pass 2, blocking: S2 edits S1-owned `profile_resolver.py` / `profile_model.py` (D2 hot-file rule) | NOT resolved by the runner: the dispatch brief handed these S1 review findings (dangling symlink, NaN/Infinity, tamper-evident probe, rooted Windows path, low items) to S2 explicitly, so they are in scope of the task as given; the runner cannot grant itself a D2 amendment. Escalated to the orchestrator/operator with the exact file list (`profile_resolver.py`, `profile_model.py`, `resolve_profile.py`, `profile_test_isolation.py`, `test_profile_resolver_source_gaps.py`). Later: the edits went through the orchestrator's 3f-bis re-run and the unit merged as PR #899. |
 | Pass 2, low: `get_test_command` names `pc.ProfileInvalid`; glue module is a new helper | accepted: callers catch `ValueError` and branch on `.kind`; the raise-by-name is in the producer, not a catcher |
 | Pass 2, low: `shipwright_test_config.json` `enabled: true` with no profile still runs budgets | accepted: pre-existing, outside the 1a cell |
 
@@ -77,7 +77,7 @@ Probes run against real files: BOM + CRLF + non-ASCII project profile through `t
 
 ## Code and doubt review
 
-Not run in this unit: the Stage-1 gate did not pass (see above), so Stage 2 (`code-reviewer`) and Stage 3 (`doubt-reviewer`) were not started. The campaign orchestrator re-runs the cascade (3f-bis), as the unit brief states.
+Not run inside the runner: the Stage-1 gate did not pass there (see above), so Stage 2 (`code-reviewer`) and Stage 3 (`doubt-reviewer`) were not started. Update after merge: the campaign orchestrator re-ran the whole cascade (3f-bis) on the pinned head, the unit then merged as PR #899 (`1caabdcc6`); the Stage-1 escalation row above and the round 3 table are the record of that re-run's findings.
 
 ## Round 3 review dispositions
 

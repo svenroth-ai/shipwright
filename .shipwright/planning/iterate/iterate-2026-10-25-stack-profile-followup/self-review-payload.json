@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "All 4 requested groups done: 7 guard lows, write-project-config wording, S2 ADR stale lines, 2 BRIEF amendments; config-location defect untouched."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Undecodable tracked .py now fails with an AssertionError naming the file; BOM is accepted."},
+ {"name": "Security Basics", "verdict": "pass", "note": "Test-only changes plus a comment; no new input surface."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Each guard change has a planted red or green case; the resolver-module exclusion assertion fails if profile_resolver.py stops being flagged."},
+ {"name": "Performance Basics", "verdict": "n/a", "note": "Guard runs the same single index read."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "One shared _names_value_error predicate; stale noqa removed; ruff clean."},
+ {"name": "Affected Boundaries", "verdict": "n/a", "note": "No producer/consumer boundary changed."},
+ {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No skips added."}]}

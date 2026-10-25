@@ -15,7 +15,7 @@ import pytest
 
 from shared.tests.stack_profile_py_rules import (
     ALLOWLIST, PINNED_WRAPPERS, RESOLVER_MODULES, SWALLOW_ALLOWLIST, _all_swallows, _is_test_file, _modules,
-    path_findings, swallow_findings,
+    module_wrappers, path_findings, swallow_findings,
 )
 
 pytestmark = pytest.mark.covers("FR-01.06")
@@ -54,7 +54,10 @@ def test_pinned_wrappers_still_exist():
 
 def test_resolver_modules_are_excluded_by_location_and_the_allowlist_is_the_s3_family_only():
     assert RESOLVER_MODULES <= set(_modules())
-    assert all(rel not in RESOLVER_MODULES for rel, _, _ in _all_swallows())
+    # the exclusion is load-bearing: scanned, profile_resolver.py WOULD be flagged (it catches ProfileError around
+    # its own resolver calls); if it ever stops doing that the exclusion is stale. profile_model.py has no such
+    # handler today and is excluded as part of the resolver family.
+    assert swallow_findings(_modules()["shared/scripts/profile_resolver.py"], "shared/scripts/profile_resolver.py")
     assert set(SWALLOW_ALLOWLIST) == {
         ("plugins/shipwright-adopt/scripts/lib/profile_matcher.py", "_discover"),
         ("plugins/shipwright-adopt/scripts/lib/adopt_profile.py", "hint_warning")}
@@ -141,9 +144,35 @@ def test_swallow_rule_is_red_on_planted_handlers():
         # contextlib.suppress, and try/except*
         "def f():\n    with contextlib.suppress(ValueError):\n        pr.resolve_profile(n)\n",
         _try("pr.resolve_profile(n)", "return None").replace("except ", "except* "),
+        # suppress() names the same error family as a handler does
+        "def f():\n    with contextlib.suppress(ProfileInvalid):\n        pr.resolve_profile(n)\n",
+        "def f():\n    with contextlib.suppress(pc.ProfileNotFound):\n        pr.resolve_profile(n)\n",
+        # a local helper around a PINNED cross-module wrapper is itself a wrapper
+        _try("_mine(p)", "return None", prefix="def _mine(p):\n    return load_resolved(p, None, cwd)\n\n\n"),
     ]
     for src in swallowed:
         assert swallow_findings(src), src
+
+
+def test_module_wrappers_are_seeded_with_the_pinned_ones():
+    tree = ast.parse("def _mine(p):\n    return load_resolved(p, None, cwd)\n")
+    assert module_wrappers(tree) >= {"_mine"} | PINNED_WRAPPERS
+
+
+def test_modules_decode_a_bom_and_name_the_file_that_cannot_be_read(monkeypatch):
+    from shared.tests import stack_profile_py_rules as rules
+
+    monkeypatch.setattr(rules, "tracked", lambda *_: ["plugins/a.py", "plugins/b.py"])
+    monkeypatch.setattr(rules, "read_index", lambda names: {"plugins/a.py": b"\xef\xbb\xbfx = 1\n", "plugins/b.py": b"\xff"})
+    rules._modules.cache_clear()
+    try:
+        with pytest.raises(AssertionError, match="plugins/b.py"):
+            rules._modules()
+        monkeypatch.setattr(rules, "read_index", lambda names: {"plugins/a.py": b"\xef\xbb\xbfx = 1\n"})
+        rules._modules.cache_clear()
+        assert rules._modules() == {"plugins/a.py": "x = 1\n"}
+    finally:
+        rules._modules.cache_clear()
 
 
 def test_swallow_rule_is_green_on_the_loud_handlers_and_the_neighbours():
@@ -153,6 +182,7 @@ def test_swallow_rule_is_green_on_the_loud_handlers_and_the_neighbours():
         _try("pr.resolve_profile(n)", "return _fail(e)"),
         _try("pr.resolve_profile(n)", "return build_error(phase, exc=e)"),
         _try("pr.resolve_profile(n)", "return 3"),
+        _try("pr.resolve_profile(n)", "return -1"),  # a negative exit code is a failure, not a swallow
         _try("pr.resolve_profile(n)", "if e.kind == 'not_found':\n    return None\nraise"),
         _try("pr.resolve_profile(n)", "return None if e.kind == 'not_found' else 2"),
         _try("pr.resolve_profile(n)", "return e.exit_code"),

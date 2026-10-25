@@ -43,8 +43,8 @@ import ast
 import functools
 
 from shared.tests.index_files import read_index, tracked
-from shared.tests.stack_profile_py_handlers import (  # noqa: F401  (re-exported for the tests)
-    _TRY, _call_name, _catches_value_error, _handles_loudly, _propagates, _scope_nodes,
+from shared.tests.stack_profile_py_handlers import (
+    _TRY, _call_name, _catches_value_error, _handles_loudly, _names_value_error, _propagates, _scope_nodes,
 )
 
 # Rule 1 -- files that may name a "profiles" directory, and why. Reverse-checked.
@@ -87,7 +87,13 @@ def _is_test_file(rel: str) -> bool:
 @functools.lru_cache(maxsize=1)
 def _modules() -> dict[str, str]:
     names = [n for n in tracked("plugins/*.py", "shared/scripts/*.py") if not _is_test_file(n)]
-    return {n: b.decode("utf-8") for n, b in read_index(names).items()}
+    mods = {}
+    for n, b in read_index(names).items():
+        try:
+            mods[n] = b.decode("utf-8-sig")  # a BOM is legal in a tracked .py
+        except UnicodeDecodeError as exc:
+            raise AssertionError(f"guard cannot decode tracked file {n}: {exc}") from exc
+    return mods
 
 
 # ---------------------------------------------------------------------------------- rule 1
@@ -143,13 +149,11 @@ def _is_resolver_call(node: ast.AST, wrappers: frozenset[str] | set[str]) -> boo
     return name in RESOLVER_CALLS or name in wrappers
 
 
-
-
 def _suppresses(node: ast.AST) -> bool:
     """``with contextlib.suppress(ValueError)``: a swallow that has no handler to inspect."""
     return isinstance(node, (ast.With, ast.AsyncWith)) and any(
         isinstance(i.context_expr, ast.Call) and _call_name(i.context_expr) == "suppress"
-        and any(isinstance(a, (ast.Name, ast.Attribute)) and (getattr(a, "id", None) or a.attr) in ("ValueError", "Exception", "BaseException")
+        and any(isinstance(a, (ast.Name, ast.Attribute)) and _names_value_error(getattr(a, "id", None) or a.attr)
                 for a in i.context_expr.args) for i in node.items)
 
 
@@ -167,7 +171,7 @@ def _unprotected_resolver_call(fn: ast.AST, wrappers: set[str]) -> bool:
 def module_wrappers(tree: ast.AST) -> set[str]:
     """One-level closure, to a fixpoint: functions of this module that let a resolver error through."""
     funcs = {f.name: f for f in ast.walk(tree) if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))}
-    found: set[str] = set()
+    found: set[str] = set(PINNED_WRAPPERS)  # a local helper around a pinned cross-module wrapper is one too
     changed = True
     while changed:
         changed = False
@@ -180,13 +184,13 @@ def module_wrappers(tree: ast.AST) -> set[str]:
 
 def swallow_findings(source: str, rel: str = "<src>") -> list[str]:
     tree = _parse(source)
-    wrappers = module_wrappers(tree) | PINNED_WRAPPERS
+    wrappers = module_wrappers(tree)  # seeded with PINNED_WRAPPERS
     found = []
     for fn in (n for n in ast.walk(tree)
                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Module))):
         scope = fn.name if not isinstance(fn, ast.Module) else "<module>"
         for node in _scope_nodes(fn):
-            calls = lambda n: any(_is_resolver_call(c, wrappers) for s in n.body for c in ast.walk(s))  # noqa: E731
+            calls = lambda n: any(_is_resolver_call(c, wrappers) for s in n.body for c in ast.walk(s))
             if isinstance(node, _TRY) and calls(node):
                 found += [f"{rel}:{h.lineno}: {scope}" for h in node.handlers
                           if _catches_value_error(h) and not _handles_loudly(h)]

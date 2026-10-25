@@ -1,0 +1,1 @@
+The Python stack-profile guard now also flags `contextlib.suppress(Profile*)`, treats helpers around the pinned resolver wrappers as wrappers, accepts negative exit codes as failures and reads tracked files with a BOM; the end-to-end test scrubs every `GIT_*` variable.
