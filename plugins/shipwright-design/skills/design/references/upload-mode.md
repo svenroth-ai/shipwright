@@ -31,7 +31,7 @@ no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means S
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
   `design-manifest.md` (every screen listed with its Linked FRs).
 
-On the first apply an existing file that differs is never overwritten (exit 1). After exit 0, continue with the normal Design
+An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing screen or `visual-guidelines.md` is left as it is. After exit 0, continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
@@ -45,5 +45,9 @@ and writes nothing: later edits to `screens/NN-*.html` or `visual-guidelines.md`
 hash check (exit 3), and a marker from a different hash is refused too (exit 1): never re-apply
 over edited screens. A re-entry also checks that every `uploads/<mockup>` is still byte-identical to the package
 and every `screens/NN-*.html` still exists (`applied_files_missing`, exit 1); to re-apply onto missing files
-delete `brief-package-applied.json` (`exists_differs` still protects edited ones). `design-manifest.md` is
-regenerated on every first apply, also on a re-run after a crash.
+delete `brief-package-applied.json`: the re-apply writes ONLY what is missing and keeps edited screens and
+guidelines (an upload that differs is still `exists_differs`). `design-manifest.md` is regenerated on every
+apply. The upload comparison uses the package hash's own rule (CRLF equals LF for text). The design verifier
+check `brief_design_applied` (runs with the design phase checks, brief runs only) is red unless the marker
+holds the recorded package hash, every upload matches the package and every screen links at least the FR
+ids minted for its screen-map entry (extra ids are fine): retyping the screens by hand cannot pass it.

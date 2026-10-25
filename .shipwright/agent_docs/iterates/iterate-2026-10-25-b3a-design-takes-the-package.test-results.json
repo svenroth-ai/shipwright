@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 112,
-      "total": 112
+      "passed": 114,
+      "total": 114
     },
     "integration": {
       "status": "passed",
@@ -29,9 +29,9 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py -q",
       "exit_code": 0,
-      "tests_run": 25,
+      "tests_run": 27,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
-      "timestamp": "2026-10-25T18:34:45.342Z"
+      "timestamp": "2026-10-25T19:06:12.033Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -72,20 +72,30 @@
           "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_injection_replaces_an_old_comment_and_handles_a_bare_fragment, ::test_old_comments_are_all_replaced_even_with_a_gt_inside PASSED"
         },
         {
+          "behavior": "the design verifier brief_design_applied: no result without a brief; red without the marker, with typed FR ids or a lost upload; green after a real apply, extra ids allowed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_design_checks.py::test_a_run_without_a_brief_package_gets_no_result, ::test_a_brief_run_without_the_applied_marker_is_red, ::test_hand_written_screens_with_typed_ids_stay_red_even_with_a_forged_marker, ::test_after_a_real_apply_it_is_green_and_extra_review_loop_ids_are_fine, ::test_a_missing_upload_a_foreign_marker_and_a_lost_fr_row_are_red PASSED"
+        },
+        {
+          "behavior": "a re-apply after deleting the marker writes only missing targets and keeps edited screens and guidelines; an edited upload stays exists_differs; a deleted upload is noticed on re-entry",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
+        },
+        {
           "behavior": "re-entry with the recorded package hash is a no-op that keeps review-loop edits; a changed hash or a bad marker is refused; a crash mid-write leaves no truncated file; a re-entry notices a deleted screen or an edited upload; SKILL routes a Brief package before New Design Session",
           "disposition": "tested",
           "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_apply_then_reentry_keeps_review_loop_edits, ::test_in_process_a_changed_package_after_apply_is_refused, ::test_in_process_a_different_applied_hash_is_not_silently_reapplied, ::test_in_process_a_marker_that_is_not_a_json_object_is_an_issue, ::test_in_process_a_marker_with_invalid_json_is_an_issue, ::test_in_process_a_crash_mid_write_leaves_no_truncated_file_and_the_rerun_completes, ::test_in_process_already_applied_notices_a_deleted_screen_and_an_edited_upload; plugins/shipwright-design/tests/test_apply_brief_package.py::test_skill_routes_a_recorded_brief_package_before_a_new_design_session PASSED"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 10,
+        "tested": 10,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 10,
+        "covered_acs": 10
       }
     }
   },

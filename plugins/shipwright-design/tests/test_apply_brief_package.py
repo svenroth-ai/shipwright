@@ -74,14 +74,17 @@ def test_a_screen_without_requirements_or_a_non_html_mockup_is_refused(tmp_path)
 
 
 @pytest.mark.covers("FR-01.04")
-def test_a_differing_existing_screen_is_never_overwritten(project):
-    screens = project / ".shipwright" / "designs" / "screens"
-    screens.mkdir(parents=True)
-    (screens / "01-notes.html").write_text("hand edited", encoding="utf-8")
+def test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine(project):
+    uploads = project / ".shipwright" / "designs" / "uploads"
+    uploads.mkdir(parents=True)
+    (uploads / "01-notes.html").write_text("hand edited", encoding="utf-8")
     code, out = run(_TOOL, project)
     assert code == 1 and out["issues"][0]["code"] == "exists_differs"
-    assert (screens / "01-notes.html").read_text(encoding="utf-8") == "hand edited"
-    assert not (project / ".shipwright" / "designs" / "uploads").exists()
+    assert (uploads / "01-notes.html").read_text(encoding="utf-8") == "hand edited"
+    assert not (project / ".shipwright" / "designs" / "screens").exists()
+    (uploads / "01-notes.html").write_bytes(PAGE_A.replace(chr(13) + chr(10), chr(10)).encode("utf-8"))  # same text, LF checkout
+    code, out = run(_TOOL, project)
+    assert code == 0 and out["ok"]
 
 
 @pytest.mark.covers("FR-01.04")
@@ -128,7 +131,7 @@ def test_old_comments_are_all_replaced_even_with_a_gt_inside():
 
 
 @pytest.mark.covers("FR-01.04")
-def test_duplicate_mockup_and_differing_guidelines_are_refused(tmp_path):
+def test_duplicate_mockups_are_refused_and_differing_guidelines_are_kept(tmp_path):
     twice = [{"id": "x", "mockup": "01.html", "requirements": ["capture-note"]},
              {"id": "y", "mockup": "01.html", "requirements": ["list-notes"]}]
     root = make_project(tmp_path / "b", twice, {"01.html": PAGE_A})
@@ -139,8 +142,8 @@ def test_duplicate_mockup_and_differing_guidelines_are_refused(tmp_path):
     designs.mkdir(parents=True)
     (designs / "visual-guidelines.md").write_text("# other", encoding="utf-8")
     code, out = run(_TOOL, root)
-    assert code == 1 and out["issues"][0]["screen"] == "visual-guidelines.md"
-    assert not (designs / "screens").exists()
+    assert code == 0 and "visual-guidelines.md" in out["kept_existing"]
+    assert (designs / "visual-guidelines.md").read_text(encoding="utf-8") == "# other"
 
 
 @pytest.mark.covers("FR-01.04")

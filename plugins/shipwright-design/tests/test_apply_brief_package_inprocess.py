@@ -138,7 +138,7 @@ def test_in_process_a_crash_mid_write_leaves_no_truncated_file_and_the_rerun_com
 
     monkeypatch.setattr(os, "replace", flaky)
     code, out = main_json(tool, capsys, project)
-    assert code == 1 and out["issues"][0]["code"] == "unreadable_package"
+    assert code == 1 and out["issues"][0]["code"] == "io_error"
     designs = project / ".shipwright" / "designs"
     assert not (designs / "brief-package-applied.json").exists()
     assert not list(designs.rglob("*.tmp")) and all(f.stat().st_size > 0 for f in designs.rglob("*.html"))
@@ -159,4 +159,28 @@ def test_in_process_already_applied_notices_a_deleted_screen_and_an_edited_uploa
     assert code == 0 and (designs / "screens" / "02-editor.html").is_file()
     (designs / "uploads" / "01-notes.html").write_text("edited", encoding="utf-8")
     code, out = main_json(tool, capsys, project)
-    assert code == 1 and "byte-identical" in out["issues"][0]["message"]
+    assert code == 1 and "no longer matches" in out["issues"][0]["message"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_a_deleted_upload_is_noticed_on_reentry(project, tool, capsys):
+    main_json(tool, capsys, project)
+    (project / ".shipwright" / "designs" / "uploads" / "02-editor.html").unlink()
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and out["issues"][0]["code"] == "applied_files_missing" and "02-editor.html" in out["issues"][0]["message"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens(project, tool, capsys):
+    main_json(tool, capsys, project)
+    designs = project / ".shipwright" / "designs"
+    (designs / "screens" / "01-notes.html").write_text("edited in the review loop", encoding="utf-8")
+    (designs / "visual-guidelines.md").write_text("# edited", encoding="utf-8")
+    (designs / "screens" / "02-editor.html").unlink()
+    (designs / "brief-package-applied.json").unlink()  # the documented reset
+    code, out = main_json(tool, capsys, project)
+    assert code == 0 and out["ok"] and "already_applied" not in out
+    assert (designs / "screens" / "01-notes.html").read_text(encoding="utf-8") == "edited in the review loop"
+    assert (designs / "visual-guidelines.md").read_text(encoding="utf-8") == "# edited"
+    assert (designs / "screens" / "02-editor.html").is_file() and (designs / "brief-package-applied.json").is_file()
+    assert "01-notes.html" in out["kept_existing"]
