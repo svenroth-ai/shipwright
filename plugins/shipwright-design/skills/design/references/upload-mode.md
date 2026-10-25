@@ -31,7 +31,7 @@ no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means S
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
   `design-manifest.md` (on every non-no-op apply) (every screen listed with its Linked FRs).
 
-An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and a screen without its own upload stops the tool (`pre_existing_screen`, exit 1, nothing written: move the screen away, then apply again). The one exception is a reset where other uploads of the package exist and the screen still links its minted FR ids: it is kept. A foreign screen that happens to carry exactly those ids in such a reset is therefore kept too (a known hole: the gate does not prove the screens came from the tool). After exit 0, continue with the normal Design
+An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and an existing screen is kept only when it still links the FR ids minted for it AND at least one upload of the package exists (a reset); otherwise the tool stops (`pre_existing_screen`, exit 1, nothing written: move that screen away, delete nothing else, apply again), so "tool ok" means "gate green". A foreign screen that carries exactly the minted ids during a reset is still kept (an accepted hole: the gate does not prove the screens came from the tool). After exit 0, continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
@@ -56,6 +56,9 @@ later FR or screen rename turns the check red by design. It re-runs at a later d
 `_validate_design`) or by hand with `verify_phase --phase design|all`; build, iterate, adopt and compliance do not run it.
 Recovery: re-approve the package AND restart the run, so a fresh run_config records the new hash; never edit
 `brief_package` in run_config by hand (the hash check would refuse the re-approved package, exit 3, in the tool and the gate).
-Then the tool answers `package_changed_since_apply` (the marker still holds the old hash) and names the steps: copy any
-hand edits elsewhere, move the whole `.shipwright/designs/` directory away (old marker, uploads, screens, guidelines,
-manifest) and run the tool again.
+Then the tool answers `package_changed_since_apply` (the marker still holds the old hash). That is an **operator action**:
+the agent reports it and stops. The operator RENAMES (never deletes) the whole `.shipwright/designs/` directory, everything in
+it (uploads, screens, flows, chrome definition, feedback rounds, `index.html`, guidelines, manifest, marker), to
+`.shipwright/designs.superseded-<old-hash8>/` inside the project, copies back what should survive, and runs the tool again.
+In a git repository the re-applied uploads then show as modified against the committed ones; the uploads gate accepts that
+only when the marker holds the recorded hash and the upload equals the package's current mockup.

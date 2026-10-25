@@ -203,7 +203,7 @@ def test_a_bom_run_config_is_still_a_brief_run_and_a_malformed_one_is_red(tmp_pa
     path.write_bytes(chr(0xFEFF).encode("utf-8") + path.read_bytes())  # a hand-edited UTF-8 BOM
     [result] = check_brief_design_applied(root)
     assert not result.is_failure, result.detail
-    path.write_text("{ not json", encoding="utf-8")
+    path.write_text('{ "brief_dir": "brief", ', encoding="utf-8")  # malformed, but it names a brief
     [result] = check_brief_design_applied(root)
     assert result.is_failure and "bad_run_config" in result.detail
 
@@ -222,7 +222,7 @@ def test_the_documented_recovery_after_a_re_approved_package_ends_green(tmp_path
     proc = subprocess.run([sys.executable, str(TOOL), "--project-root", str(root)], capture_output=True, text=True)
     out = json.loads(proc.stdout)
     assert proc.returncode == 1 and out["issues"][0]["code"] == "package_changed_since_apply"
-    assert "move the whole .shipwright/designs/ directory away" in out["issues"][0]["message"]
+    assert "RENAMES (never deletes)" in out["issues"][0]["message"] and "operator action" in out["issues"][0]["message"]
     assert check_brief_design_applied(root)[0].is_failure
     shutil.move(str(root / ".shipwright" / "designs"), str(tmp_path / "old-designs"))  # the documented step
     _apply(root)

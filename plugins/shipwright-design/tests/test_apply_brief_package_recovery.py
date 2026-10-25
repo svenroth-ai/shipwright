@@ -50,3 +50,24 @@ def test_injection_skips_an_html_tag_inside_a_conditional_comment(tool):  # noqa
     out = registry.inject_requirements(page, ["FR-01.01"])
     assert out.index(b"<!-- Requirements") > out.index(b"<html lang=en>")
     assert out.count(b"<!-- Requirements") == 1
+
+
+@pytest.mark.covers("FR-01.04")
+def test_a_kept_screen_that_lost_its_ids_is_refused_with_a_remedy(project, tool, capsys):  # noqa: F811
+    main_json(tool, capsys, project)
+    designs = project / ".shipwright" / "designs"
+    (designs / "screens" / "01-notes.html").write_text("<html>retyped, no ids</html>", encoding="utf-8")
+    (designs / "brief-package-applied.json").unlink()
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and [i["code"] for i in out["issues"]] == ["pre_existing_screen"]
+    assert "move that screen away" in out["issues"][0]["message"] and "delete nothing else" in out["issues"][0]["message"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_an_empty_comment_and_a_leading_bom_do_not_break_injection(tool):  # noqa: F811
+    registry = tool._load(tool._HERE.parent / "lib" / "screen_registry.py", "_t_registry_bom")
+    out = registry.inject_requirements(b"<!--><html lang=en><body></body></html>", ["FR-01.01"])
+    assert out.index(b"<!-- Requirements") > out.index(b"<html lang=en>")
+    bom = chr(0xFEFF).encode("utf-8")
+    out = registry.inject_requirements(bom + b"<p>fragment</p>", ["FR-01.01"])
+    assert out.startswith(bom + b"<!-- Requirements: FR-01.01 -->") and out.count(bom) == 1

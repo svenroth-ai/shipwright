@@ -22,11 +22,12 @@ question (which screen does each upload represent, and which requirements does i
 * Reset: delete the marker. The re-apply writes ONLY the missing targets; an existing screen or
   ``visual-guidelines.md`` is left alone (edits survive), an existing upload that differs is
   ``exists_differs`` (restore it). ``design-manifest.md`` is regenerated on every non-no-op apply (not on ``already_applied``).
-  A screen without its own upload stops with ``pre_existing_screen`` (nothing written: move it away), unless
-  other uploads of the package exist (a reset) and the screen still links the FR ids minted for it. A missing
-  upload is restored byte-identical from the package.
-* A different package hash after an apply (``package_changed_since_apply``): re-approve and restart the run, then
-  move the whole ``.shipwright/designs/`` directory away and run again (the message names these steps).
+  An existing screen is kept only when it links the FR ids minted for it AND at least one upload of the package
+  exists (a reset); otherwise ``pre_existing_screen`` (nothing written: move that screen away). A missing upload is
+  restored byte-identical. A foreign screen with exactly the minted ids during a reset is an accepted hole.
+* A different package hash after an apply (``package_changed_since_apply``) is an OPERATOR action: re-approve and
+  restart the run, then the operator renames (never deletes) the whole ``.shipwright/designs/`` directory to
+  ``.shipwright/designs.superseded-<old-hash8>/`` and runs this tool again (the message says so).
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -90,10 +91,13 @@ def apply(project_root: Path) -> dict:
         missing = applied_file_issues(bdir, designs, screen_map)
         return {"ok": False, "issues": missing} if missing else {"ok": True, "already_applied": True, "package_sha256": applied}
     if applied is not None:
+        old = str(applied)[:8]
         return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from "
-                f"another package hash. To start over from the current package: copy any hand edits you want to keep elsewhere, "
-                f"then move the whole {DESIGNS}/ directory away (it holds {MARKER}, uploads/, screens/, visual-guidelines.md and "
-                "design-manifest.md of the old package) and run this tool again. Never re-apply over edited screens.")]}
+                f"another package hash ({old}). This is an operator action: report it and stop, do not do it on your own. The "
+                f"operator RENAMES (never deletes) the whole {DESIGNS}/ directory, everything in it (uploads/, screens/, flows/, "
+                f"chrome-definition.md, visual-guidelines.md, design-manifest.md, design-feedback-round*.md, index.html and "
+                f"{MARKER}), to {DESIGNS}.superseded-{old}/ inside the project, copies back what should survive, and runs this "
+                "tool again. Never re-apply over edited screens.")]}
     plan, issues = plan_screens(bdir, screen_map, fr_ids_by_slug(root))
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
@@ -106,12 +110,15 @@ def apply(project_root: Path) -> dict:
             issues.append(_issue("injection_failed", item["screen_file"], "the Requirements comment could not be injected readably"))
         targets += [(designs / "uploads" / item["mockup"], src, True), (designs / "screens" / item["screen_file"], page, False)]
     placed = any((designs / "uploads" / item["mockup"]).is_file() for item in plan)  # an earlier apply left uploads: a reset
-    for item in plan:  # a screen is kept only beside ITS upload, or (a reset) when it still links the ids minted for it
+    for item in plan:  # EVERY kept screen links the ids minted for it (so "tool ok" means "gate green"); without its own upload it needs a reset
         screen = designs / "screens" / item["screen_file"]
-        if screen.is_file() and not (designs / "uploads" / item["mockup"]).is_file() and not (
-                placed and set(item["frs"]) <= linked_frs(screen.read_text(encoding="utf-8", errors="ignore"))):
-            issues.append(_issue("pre_existing_screen", item["screen_file"], f"screens/{item['screen_file']} already exists "
-                                 "without its upload and without the minted FR ids: move the screen away, a foreign screen is never kept"))
+        if not screen.is_file():
+            continue
+        has_ids = set(item["frs"]) <= linked_frs(screen.read_text(encoding="utf-8", errors="ignore"))
+        if not has_ids or not placed:
+            issues.append(_issue("pre_existing_screen", item["screen_file"], f"screens/{item['screen_file']} already exists but "
+                                 "is not this package's screen (no own upload, or it lacks the minted FR ids): move that screen away, "
+                                 "delete nothing else, and run this tool again"))
     if guidelines.is_file():
         targets.append((designs / "visual-guidelines.md", guidelines.read_bytes(), False))
     for path, data, strict in targets:  # all checks first: a refusal writes nothing
@@ -119,11 +126,11 @@ def apply(project_root: Path) -> dict:
             issues.append(_issue("exists_differs", path.name, f"{path.name} exists and differs from the package: restore it, it is never overwritten"))
     if issues:
         return {"ok": False, "issues": issues}
-    atomic = bdi._lib("atomic_write").durable_atomic_write  # temp file + os.replace: a crash leaves no truncated file
+    atomic = bdi._lib("atomic_write").durable_atomic_write  # temp file + os.replace: a crash leaves no truncated file (the manifest is rewritten whole on the re-run: the marker is last)
     kept = []
     for path, data, _strict in targets:
         if path.is_file():
-            kept.append(path.name)  # an existing screen or guidelines file keeps its edits
+            kept.append(path.relative_to(designs).as_posix())  # an existing screen or guidelines file keeps its edits
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
         atomic(path, data)

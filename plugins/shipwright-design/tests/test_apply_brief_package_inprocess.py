@@ -173,16 +173,17 @@ def test_in_process_a_deleted_upload_is_noticed_on_reentry(project, tool, capsys
 def test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens(project, tool, capsys):
     main_json(tool, capsys, project)
     designs = project / ".shipwright" / "designs"
-    (designs / "screens" / "01-notes.html").write_text("edited in the review loop", encoding="utf-8")
+    notes = designs / "screens" / "01-notes.html"
+    notes.write_text(notes.read_text(encoding="utf-8") + "<p>edited in the review loop</p>", encoding="utf-8")
     (designs / "visual-guidelines.md").write_text("# edited", encoding="utf-8")
     (designs / "screens" / "02-editor.html").unlink()
     (designs / "brief-package-applied.json").unlink()  # the documented reset
     code, out = main_json(tool, capsys, project)
     assert code == 0 and out["ok"] and "already_applied" not in out
-    assert (designs / "screens" / "01-notes.html").read_text(encoding="utf-8") == "edited in the review loop"
+    assert "<p>edited in the review loop</p>" in notes.read_text(encoding="utf-8")
     assert (designs / "visual-guidelines.md").read_text(encoding="utf-8") == "# edited"
     assert (designs / "screens" / "02-editor.html").is_file() and (designs / "brief-package-applied.json").is_file()
-    assert "01-notes.html" in out["kept_existing"]
+    assert "screens/01-notes.html" in out["kept_existing"] and "visual-guidelines.md" in out["kept_existing"]
 
 
 @pytest.mark.covers("FR-01.04")

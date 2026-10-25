@@ -29,6 +29,14 @@ from .common import CheckResult
 NAME = "brief_design_applied"
 
 
+def _mentions_brief(project_root: Path) -> bool:
+    try:
+        raw = (project_root / "shipwright_run_config.json").read_text(encoding="utf-8-sig", errors="ignore")
+    except OSError:
+        return False
+    return "brief_dir" in raw or "brief_package" in raw
+
+
 def _applied(project_root: Path) -> list[CheckResult]:
     from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens
 
@@ -37,6 +45,8 @@ def _applied(project_root: Path) -> list[CheckResult]:
     except Exception as exc:  # noqa: BLE001 -- BriefRefused is a class per loader: duck-typed
         if not hasattr(exc, "as_dict"):
             raise
+        if exc.code == "bad_run_config" and not _mentions_brief(project_root):  # a malformed config of a non-brief project
+            return []
         return [CheckResult(NAME, False, f"the recorded Brief package does not verify: {exc.code}: {exc.message}")]
     if not verified.get("package"):  # neither brief_dir nor brief_package: not a brief run
         return []
