@@ -37,10 +37,10 @@ BUNDLED_VITE_HONO = SHARED / "profiles" / "vite-hono.json"
 DRIFT_CORE = ("unsupported schema_version 99", "supports stack-profile schema_version 1")
 
 
-# One scrubbed environment (built by _env) for git AND the subprocess runs: no GIT_DIR & co. inherited from a hook or a
+# One scrubbed environment (built by _env) for git AND the subprocess runs: no GIT_* variable inherited from a hook or a
 # worktree shell, which would point every command at the developer's own repository.
 def _env() -> dict[str, str]:  # read per call: the conftest sets SHIPWRIGHT_USER_PROFILES_DIR per test
-    return {**{k: v for k, v in os.environ.items() if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")},
+    return {**{k: v for k, v in os.environ.items() if not k.startswith("GIT_")},
             "PYTHONIOENCODING": "utf-8"}
 
 

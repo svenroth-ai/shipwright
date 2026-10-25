@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-stack-profile-followup",
+  "date": "2026-10-25",
+  "section": "Iterate - change: stack-profile-resolver follow-up cleanup",
+  "title": "Harden the S5 Python guard and settle the S5 hand-offs",
+  "context": "The stack-profile-resolver campaign (S1-S5) merged with documented leftovers: seven low findings in the S5 *.py guard, a misleading comment about the early-call degrade in write-project-config.py, stale not-started lines in the S2 ADR, and two BRIEF points the operator had to decide (the swallow-allowlist scope and the generated-render case of the S4 prose guard).",
+  "decision": "Seed module_wrappers with the pinned wrappers, treat signed int returns as failure codes, share one error-name predicate between handlers and suppress(), decode utf-8-sig and name an unreadable file, scrub every GIT_* variable in the e2e environment, replace the always-true exclusion assertion. Correct the write-project-config comment instead of removing the degrade (a test pins it). Amend the BRIEF: the swallow allowlist is the S3 matcher family; the prose guard reads the git index.",
+  "consequences": "The heuristic guard catches suppress(Profile*) and local helpers around pinned wrappers, and no longer reds on return -1. Blind spots stay as documented in stack_profile_py_rules.py. The config-location defect of write-project-config.py is left for its own iterate.",
+  "rationale": "The operator decided both BRIEF points; each guard change has a planted red or green case, and an independent opus code review approved with three lows, all fixed.",
+  "rejected": "(1) A GENERATED exemption in the prose guard - the S4 spec review rejected it and the index read already aligns dev tree and CI. (2) Removing the in_progress ImportError degrade - test_profile_name_check pins it. (3) More heuristic hardening rounds - the guard is documented as a heuristic.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-stack-profile-followup-stack-profile-follow-up-cleanup.md"
+}
