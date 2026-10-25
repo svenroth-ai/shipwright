@@ -98,16 +98,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T05:36:58.211647+00:00",
-      "disposition": "small, no risk flag, 77 changed lines (<=100); the code pass covered the diff",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T05:46:27.659314+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0a9aa08235e4a7456ea42f815844a1bcd9cc6062"
     },
     "plan_internal": {
       "review_type": "plan_internal",
