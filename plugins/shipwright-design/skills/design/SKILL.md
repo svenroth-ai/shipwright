@@ -41,7 +41,11 @@ Output:
 
 ### B. Detect Mode
 
-**New Design Session** (no `.shipwright/designs/` directory):
+**Brief package** (`shipwright_run_config.json` records `brief_dir` or `brief_package`) -- checked FIRST, before New Design Session; it needs neither `--upload` nor files in `uploads/`:
+- Run `uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"` (re-verifies the package; exit 3 = STOP)
+- `screen-map.json` answers the upload-screen-mapping question; continue in [Upload Mode](references/upload-mode.md) (flows for 2+ screens, gates). Do NOT generate the mapped screens from scratch
+
+**New Design Session** (no `.shipwright/designs/` directory, and no Brief package above):
 - Read specs, generate from scratch
 - Continue to Step 1
 
@@ -55,7 +59,6 @@ Output:
 - Scan `.shipwright/designs/uploads/` for existing mockups
 - Integrate into design-manifest.md
 - Generate only missing screens
-- **Brief package** (`brief_dir` in `shipwright_run_config.json`): `screen-map.json` answers the mapping question; run `scripts/checks/apply-brief-package.py` instead of asking
 - Skip to [Upload Mode](references/upload-mode.md)
 
 ### C. Detect Invocation Mode

@@ -1,6 +1,6 @@
 # Upload Mode
 
-When `.shipwright/designs/uploads/` contains files:
+When `.shipwright/designs/uploads/` contains files, or the run records a Brief package (see the last section; it needs no files beforehand):
 
 1. Scan directory for images (PNG, JPG), HTML files, and markdown files
 2. **Check for visual guidelines:** If a `.md` file contains "Visual Guidelines" or design tokens (colors, typography, spacing), treat it as the project's design foundation

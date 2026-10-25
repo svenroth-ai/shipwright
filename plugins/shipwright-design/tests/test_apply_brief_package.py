@@ -238,3 +238,30 @@ def test_a_malformed_screen_map_is_a_json_error_not_a_traceback(tmp_path):
     (root / "brief" / "screen-map.json").write_text("{", encoding="utf-8")
     code, out = run(_TOOL, root)
     assert code == 3 and out["refused"]  # the hash catches the edit first
+
+
+_SKILL = _REPO / "plugins" / "shipwright-design" / "skills" / "design" / "SKILL.md"
+
+
+@pytest.mark.covers("FR-01.04")
+def test_skill_routes_a_recorded_brief_package_before_a_new_design_session():
+    text = _SKILL.read_text(encoding="utf-8")
+    brief = text.index("**Brief package** (`shipwright_run_config.json` records `brief_dir`")
+    new_session = text.index("**New Design Session**")
+    upload = text.index("**Upload Integration**")
+    assert brief < new_session < upload  # evaluated first, not nested under --upload
+    section = text[brief:new_session]
+    assert "apply-brief-package.py" in section and "neither `--upload` nor files" in section
+
+
+@pytest.mark.covers("FR-01.04")
+def test_the_registry_check_accepts_the_tools_manifest(project):
+    run(_TOOL, project)
+    code = (
+        "import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]);"
+        "from tools.verifiers.design_checks import check_design_manifest_screens_exist as c;"
+        "r = c(Path(sys.argv[2])); print(r.detail); sys.exit(1 if r.is_failure else 0)"
+    )
+    proc = subprocess.run([sys.executable, "-c", code, str(_REPO / "shared" / "scripts"), str(project)],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
