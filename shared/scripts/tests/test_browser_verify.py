@@ -103,3 +103,18 @@ def test_resolves_npx_via_resolver(tmp_path, monkeypatch):
     assert argv[1] == "tsx"
     assert "http://127.0.0.1:3900" in argv
     assert not mock_run.call_args.kwargs.get("shell")
+
+
+@pytest.mark.covers("FR-01.05")
+def test_module_adds_its_own_dir_to_sys_path_when_missing(monkeypatch):
+    import importlib.util
+
+    import browser_verify
+
+    here = str(Path(browser_verify.__file__).resolve().parent)
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != here])
+    spec = importlib.util.spec_from_file_location("_browser_verify_fresh", browser_verify.__file__)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert sys.path[0] == here
+    assert callable(module.resolve_executable)

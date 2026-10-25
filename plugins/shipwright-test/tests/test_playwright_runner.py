@@ -162,3 +162,28 @@ def test_resolve_executable_uses_the_shared_resolver():
     finally:
         sys.path.remove(str(shared))
     assert playwright_runner._resolve_executable("npx") == expected
+
+
+@pytest.mark.covers("FR-01.06")
+def test_resolve_executable_inserts_shared_scripts_on_sys_path(monkeypatch):
+    import playwright_runner
+
+    shared = str(Path(playwright_runner.__file__).resolve().parents[4] / "shared" / "scripts")
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != shared])
+    playwright_runner._resolve_executable("npx")
+    assert sys.path[0] == shared
+
+
+@pytest.mark.covers("FR-01.06")
+def test_resolve_executable_falls_back_to_shutil_which(monkeypatch):
+    import playwright_runner
+    import shared_lib_loader
+
+    def boom(*args, **kwargs):
+        raise ImportError("shared tree unreachable")
+
+    monkeypatch.setattr(shared_lib_loader, "load_shared_lib", boom, raising=False)
+    monkeypatch.setattr(playwright_runner.shutil, "which", lambda name: "/fake/" + name)
+    assert playwright_runner._resolve_executable("npx") == "/fake/npx"
+    monkeypatch.setattr(playwright_runner.shutil, "which", lambda name: None)
+    assert playwright_runner._resolve_executable("npx") == "npx"
