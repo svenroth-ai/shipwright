@@ -154,20 +154,53 @@ def test_write_project_config_main_in_process(tmp_path, monkeypatch, capsys):
     assert json.loads((tmp_path / "shipwright_project_config.json").read_text())["profile"] == "generic"
 
 
-def test_write_project_config_profile_lookup_root_is_above_dot_shipwright(tmp_path):
-    """The skill call sites pass only --planning-dir <project>/.shipwright/planning: the profile LOOKUP must use
-    <project>. The write root is deliberately unchanged (config stays beside planning's parent, pre-existing)."""
+def _write_config(planning: Path, *extra: str, profile: str = "my-stack", status: str = "in_progress"):
+    return subprocess.run(
+        [sys.executable, str(_PROJECT_CONFIG), "--planning-dir", str(planning), "--profile", profile,
+         "--scope", "full_app", "--status", status, *extra],
+        capture_output=True, text=True, check=False,
+    )
+
+
+def test_write_project_config_without_project_root_uses_the_project_above_dot_shipwright(tmp_path):
+    """The skill call sites pass only --planning-dir <project>/.shipwright/planning (+ --profile-root): the profile
+    LOOKUP and the config WRITE both belong to <project>, where every reader (and adopt's writer) looks."""
     _profile(tmp_path, "my-stack")
     planning = tmp_path / ".shipwright" / "planning"
     planning.mkdir(parents=True)
-    done = subprocess.run(
-        [sys.executable, str(_PROJECT_CONFIG), "--planning-dir", str(planning), "--profile", "my-stack",
-         "--scope", "full_app", "--status", "in_progress"],
-        capture_output=True, text=True, check=False,
-    )
+    done = _write_config(planning)
     assert done.returncode == 0, done.stderr
-    assert (tmp_path / ".shipwright" / "shipwright_project_config.json").is_file()
-    assert not (tmp_path / "shipwright_project_config.json").exists()
+    assert (tmp_path / "shipwright_project_config.json").is_file()
+    assert not (tmp_path / ".shipwright" / "shipwright_project_config.json").exists()
+
+
+def test_write_project_config_complete_without_project_root_stores_the_canonical_planning_dir(tmp_path):
+    """The no-flag call from the project skill (step 7): planning_dir is relative to the PROJECT, so it reads
+    `.shipwright/planning` (as adopt's writer emits), and the agent_docs artifact is looked up in the project."""
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
+    (tmp_path / ".shipwright" / "agent_docs").mkdir()
+    done = _write_config(planning, "--profile-root", str(tmp_path), profile="vite-hono", status="complete")
+    assert done.returncode == 0, done.stderr
+    config = json.loads((tmp_path / "shipwright_project_config.json").read_text(encoding="utf-8"))
+    assert config["planning_dir"] == ".shipwright/planning"
+    assert config["artifacts"]["agent_docs"] is True  # artifact-path-canon: legacy
+    assert not (tmp_path / ".shipwright" / "shipwright_project_config.json").exists()
+
+
+def test_write_project_config_planning_dir_outside_dot_shipwright_keeps_its_parent_as_root(tmp_path):
+    """Not under `.shipwright`: nothing says where the project is, so the long-standing default (the planning
+    dir's parent) stands, and an explicit --project-root still wins over either derivation."""
+    planning = tmp_path / "notes" / "planning"  # artifact-path-canon: legacy
+    planning.mkdir(parents=True)
+    done = _write_config(planning, profile="generic")
+    assert done.returncode == 0, done.stderr
+    assert (tmp_path / "notes" / "shipwright_project_config.json").is_file()
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    done = _write_config(planning, "--project-root", str(elsewhere), profile="generic")
+    assert done.returncode == 0, done.stderr
+    assert (elsewhere / "shipwright_project_config.json").is_file()
 
 
 def test_missing_shared_tree_is_an_install_error_not_a_bad_name(tmp_path, monkeypatch, capsys):
@@ -188,6 +221,24 @@ def _load_project_config_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_project_root_derivation_in_process(tmp_path, monkeypatch):
+    """Same derivation as the subprocess tests above, run in this process so diff coverage sees it."""
+    module = _load_project_config_module()
+    under = tmp_path / "proj"
+    planning = under / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
+    argv = ["x", "--scope", "full_app", "--status", "in_progress", "--profile", "generic"]
+    monkeypatch.setattr(sys, "argv", [*argv, "--planning-dir", str(planning)])
+    assert module.main() == 0
+    assert (under / "shipwright_project_config.json").is_file()
+    assert not (under / ".shipwright" / "shipwright_project_config.json").exists()
+    outside = tmp_path / "notes" / "planning"  # artifact-path-canon: legacy
+    outside.mkdir(parents=True)
+    monkeypatch.setattr(sys, "argv", [*argv, "--planning-dir", str(outside)])
+    assert module.main() == 0
+    assert (tmp_path / "notes" / "shipwright_project_config.json").is_file()
 
 
 def test_file_mode_layout_finds_the_project_profile_through_profile_root(tmp_path):

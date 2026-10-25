@@ -11,6 +11,7 @@ Output (JSON): the written config
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -50,7 +51,8 @@ def main() -> int:
     parser.add_argument("--planning-dir", required=True, help="Path to planning directory")
     parser.add_argument("--profile", required=True, help="Profile name (e.g., supabase-nextjs)")
     parser.add_argument("--scope", required=True, choices=["full_app", "extension"], help="Project scope")
-    parser.add_argument("--project-root", help="Project root: where the config is written (defaults to parent of planning-dir, unchanged). The profile lookup root defaults to the project above <project>/.shipwright/planning")
+    parser.add_argument("--project-root", help="Project root: where the config is written. Defaults to the project above "
+                        "<project>/.shipwright/planning, else to the parent of planning-dir")
     parser.add_argument("--profile-root", help="Project whose .shipwright/profiles/ is searched for --profile (lookup only: "
                         "the config location is NOT affected). Pass it from a skill: with a requirements file "
                         "(@requirements.md) --planning-dir is that file's folder and says nothing about the project")
@@ -59,16 +61,19 @@ def main() -> int:
     args = parser.parse_args()
 
     planning_dir = Path(args.planning_dir).resolve()
-    project_root = Path(args.project_root).resolve() if args.project_root else planning_dir.parent
-    # Profile LOOKUP root only (where <root>/.shipwright/profiles is searched). Everything the
-    # writer does below (config location, gitignore, artifact checks) keeps `project_root`.
-    if args.profile_root:
-        lookup_root = Path(args.profile_root).resolve()
-    elif args.project_root:
-        lookup_root = project_root
+    raw_planning = Path(os.path.abspath(args.planning_dir))  # not resolved: a linked .shipwright keeps its name
+    under_dot_shipwright = raw_planning.parent.name == ".shipwright"
+    config_planning = planning_dir  # the planning dir as the config stores it: relative to project_root
+    if args.project_root:
+        project_root = Path(args.project_root).resolve()
+    elif under_dot_shipwright:  # the skills pass only <project>/.shipwright/planning: the project is above it
+        project_root = raw_planning.parent.parent
+        config_planning = raw_planning
     else:
-        raw_planning = Path(args.planning_dir).absolute()  # not resolved: a linked .shipwright keeps its name
-        lookup_root = raw_planning.parent.parent if raw_planning.parent.name == ".shipwright" else project_root
+        project_root = planning_dir.parent
+    # --profile-root only moves the profile LOOKUP (<root>/.shipwright/profiles); the config location,
+    # gitignore and artifact checks below always use `project_root`.
+    lookup_root = Path(args.profile_root).resolve() if args.profile_root else project_root
 
     from lib.profile_check import check_profile, describe  # project's own lib (path set above)
 
@@ -103,7 +108,7 @@ def main() -> int:
             "status": "complete",
             "scope": args.scope,
             "profile": args.profile,
-            "planning_dir": str(planning_dir.relative_to(project_root)),
+            "planning_dir": config_planning.relative_to(project_root).as_posix(),
             "splits": [
                 {"name": s, "status": "not_started"}
                 for s in state["splits"]

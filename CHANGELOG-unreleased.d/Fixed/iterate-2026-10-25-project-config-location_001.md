@@ -1,0 +1,1 @@
+`/shipwright-project` now writes `shipwright_project_config.json` into the project folder instead of `.shipwright/`, and stores `planning_dir` as `.shipwright/planning`, so the phase verifier and the other readers find it. A stale `.shipwright/shipwright_project_config.json` from an earlier scaffold is unread and can be deleted.

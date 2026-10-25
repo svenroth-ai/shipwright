@@ -1,0 +1,71 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-project-config-location",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 99,
+      "total": 99
+    },
+    "integration": {
+      "status": "skipped"
+    },
+    "pgtap": {
+      "status": "skipped"
+    },
+    "e2e": {
+      "status": "skipped"
+    },
+    "design_fidelity": {
+      "status": "skipped"
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Skill call with only --planning-dir <project>/.shipwright/planning writes the config to <project>/",
+          "disposition": "tested",
+          "evidence": "test_write_project_config_without_project_root_uses_the_project_above_dot_shipwright PASSED (red on the old code)"
+        },
+        {
+          "behavior": "Complete scaffold stores planning_dir as .shipwright/planning and finds the agent_docs artifact in the project",
+          "disposition": "tested",
+          "evidence": "test_write_project_config_complete_without_project_root_stores_the_canonical_planning_dir PASSED (red on the old code)"
+        },
+        {
+          "behavior": "A planning dir outside .shipwright keeps planning_dir.parent as root; an explicit --project-root wins",
+          "disposition": "tested",
+          "evidence": "test_write_project_config_planning_dir_outside_dot_shipwright_keeps_its_parent_as_root PASSED"
+        },
+        {
+          "behavior": "Round trip: the written file is read by lib.config.read_config and passes check_project_config_status_complete",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_project_config_round_trip.py PASSED (red when the script change is stashed)"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-project --extra dev pytest plugins/shipwright-project/tests -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 99,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\project-config-location\\.shipwright\\runs\\iterate-2026-10-25-project-config-location\\surface_verification.log",
+      "timestamp": "2026-10-25T07:05:02.951Z",
+      "attempts": 1
+    }
+  }
+}
