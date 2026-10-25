@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Binds state before the retry loop in retry_state; clears CodeQL py/uninitialized-local-variable (alert 1433)."},
+{"name":"Error Handling","verdict":"pass","note":"Unchanged: the loop still returns None on the second OSError/ValueError; a hypothetical fall-through now yields None via the existing isinstance check."},
+{"name":"Security Basics","verdict":"pass","note":"No input, IO or privilege change."},
+{"name":"Test Quality","verdict":"pass","note":"Behavior-preserving; existing gate seam/hardening/override/no-bypass suites cover retry_state (82 pass)."},
+{"name":"Performance Basics","verdict":"pass","note":"One assignment."},
+{"name":"Naming & Structure","verdict":"pass","note":"Matches surrounding comment density; Any already imported."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No IO boundary touched."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No tests added or edited."}
+]}
