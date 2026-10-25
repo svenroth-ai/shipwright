@@ -1,0 +1,6 @@
+{
+ "stage": "spec-compliance",
+ "verdict": "PASS",
+ "spec_citations": [],
+ "summary": "AC-1..AC-7 present and tested (skip reason + phase_skipped event, durable gate pass record, re-dispatch version fencing with real stale-apply tests, freeze inside the completion lock). Three lows (docs event-table row, unnormalised recovery-event reason, reused F0 evidence) were all fixed in f55671b9f / 8c9f7aaa2 (full non-resumed F0 on the merged head)."
+}

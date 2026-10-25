@@ -105,29 +105,139 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": 541,
+          "finding": "canon_run_id was evaluated outside the gate's try.",
+          "suggestion": "FIXED: inside try, defaults to config runId.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+          "line": 204,
+          "finding": "Dead-ish try around split resolution; private lc._ names used.",
+          "suggestion": "FIXED: marked defensive, public aliases added.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+          "line": 235,
+          "finding": "Recovery event reason not normalised.",
+          "suggestion": "FIXED: only stored normalised skipReason; --reason rejected for non-skip.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py",
+          "line": 175,
+          "finding": "claim and redispatch take two locks; fails closed.",
+          "suggestion": "ACCEPTED (single-master design).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/schemas/run_config.v2.schema.json",
+          "line": 1714,
+          "finding": "Schema/writer drift (skipReason cap, redispatchedAt null).",
+          "suggestion": "FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_core.py",
+          "line": 198,
+          "finding": "Pre-existing: missing version defaults 0 vs 1 elsewhere.",
+          "suggestion": "Follow-up card.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-25T06:11:57.841188+00:00",
-      "disposition": "standalone iterate dispatched by an orchestrator that runs the spec/code/doubt cascade itself (operator instruction); iteration-reviews.md Campaign sub-iterate rows",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T06:43:43.508552+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/skills/run/references/single-session-loop.md",
+          "line": null,
+          "finding": "Docs agree on where to dispatch from",
+          "suggestion": "L82 contradicted L38. RESOLVED: next is a read-only preview, dispatch only from single-session-next.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "input-validation",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+          "line": null,
+          "finding": "Reason requirement cannot be dodged",
+          "suggestion": "Invisible filler characters passed. RESOLVED: needs an alphanumeric after normalisation, fillers excluded explicitly, tests added.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "observability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+          "line": null,
+          "finding": "Recovery events carry clean operator text",
+          "suggestion": "RESOLVED, see code review.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py",
+          "line": null,
+          "finding": "Crash-resume keeps a written result usable",
+          "suggestion": "Rotation on resume refuses an unapplied result, so the phase re-runs. ACCEPTED as intended fencing and now documented.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py",
+          "line": null,
+          "finding": "Fencing holds against an adversary",
+          "suggestion": "Cooperative only: a raw claim-phase-task re-claim does not rotate. ACCEPTED, recorded as follow-up; the gate itself cannot be bypassed (raw complete refused).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "evidence",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+          "line": null,
+          "finding": "Done->skipped keeps gate evidence",
+          "suggestion": "The pass record is replaced; only git history keeps it. Documented, phase_skipped carries recoveredFrom.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-25T06:11:57.964145+00:00",
-      "disposition": "standalone iterate dispatched by an orchestrator that runs the spec/code/doubt cascade itself (operator instruction); iteration-reviews.md Campaign sub-iterate rows",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T06:43:43.649444+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -175,16 +285,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T06:11:57.717829+00:00",
-      "disposition": "standalone iterate dispatched by an orchestrator that runs the spec/code/doubt cascade itself (operator instruction); iteration-reviews.md Campaign sub-iterate rows",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T06:43:43.376424+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
