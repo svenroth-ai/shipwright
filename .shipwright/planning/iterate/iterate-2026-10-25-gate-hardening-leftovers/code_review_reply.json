@@ -1,0 +1,63 @@
+{
+  "section": "iterate-2026-10-25-gate-hardening-leftovers",
+  "verdict": "approve",
+  "summary": "Approve. Nothing blocks. All nine ACs trace to code, tests or docs. AC-9's ADR could not be checked because the diff leaves out planning artifacts. The cap marker is solid: `gateTerminal` is keyed to runId + task id + version, is written only on the `ask_human` terminal, and is read in the read-only resolver, so `next`, the post-apply `next` and the resume card all agree. It is lifted by recover (version bump) or by moving the frontier. The override refusal is now caught by type (`except phase_gate.OverrideRefused` in the hook, plus a `refusals` list and the `on_complete_failed` reason). A genuine subclass and a same-named impostor are both tested. The archived-split reader is covered for the validator, every build_checks section check, the phase_history split preference, retryability, the version-skew shim and the case where a compatible verifier raises `TypeError`. A mirror-parity test runs on real `archive_split` output. Bloat rules hold: build_checks.py is 454 lines (baseline 461, it shrank). Every touched run-plugin source file is 300 lines or less (largest: phase_gate.py at 296, single_session_apply.py at 287). The new test files are 283 and 154 lines. build_split.py imports only `__future__` and `typing`, so it is a true leaf, and nothing in the run plugin imports it. All other callers of the changed build_checks signatures pass `split_id` positionally or by keyword. The `require_sections` keyword-only parameter is kept. I found no `get('version', 0)` or `get('version', 1)` left in the run plugin. Findings are low only: one test-plan gap, a few stale comments, one private-name reach-in, one unused re-export, and a fragile signature-based skew check. I did not run tests or lint in this review.",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "integration-tests/test_gate_cap_holds_cli.py",
+      "line": 1,
+      "finding": "The mini-plan's test strategy promises two integration subprocess tests: one for the `ask_human` CLI answer, and 'one for the archived-split build gate through `single-session-apply`'. The spec's Verification section also names 'the real `archive_split.py` CLI before the build gate'. Only the cap test exists. The archived-split tests call the `archive_split()` function in-process and go straight to `validate_phase` and `run_build_checks`. Nothing drives a build/01 apply of a two-split run end to end, and that is the scenario the spec says was 'Probed: ... rejected by the enforced gate'.",
+      "suggestion": "Add one subprocess test: write-config with two splits, run the real `archive_split.py` CLI for 02, then `single-session-apply` the build/01 descriptor and assert that the gate passes or asks for that split. Otherwise, change the spec's Verification runner and the mini-plan to say what was actually run."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py",
+      "line": 183,
+      "finding": "`_awaiting_human` calls `phase_gate._human_can_override(config)`, a private helper of another module. This is now the second module that relies on that underscore name for the same `override_allowed` field (`phase_gate.rejection` is the first, at line 265).",
+      "suggestion": "Rename it to a public `human_can_override` in phase_gate (or add a public alias) and call that, so the coupling across modules is visible."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+      "line": 127,
+      "finding": "`resume_run` now passes the new `ask_human` action straight through, but its comment still lists only '(complete | failed | needs_validation | blocked)' and says 'The run already finished / is blocked'. The resume card's action vocabulary grew with no note at the consumer, and the WebUI follow-up is only mentioned in the spec.",
+      "suggestion": "Add `ask_human` (the frontier waits for a person past the gate cap) to that comment and to the `resume_run` docstring's Actions list."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+      "line": 223,
+      "finding": "The comment '# CAS reject (stale) — surface verbatim' now sits above a branch that also turns a captured `OverrideRefused` into `override_requires_human`. It no longer describes the block.",
+      "suggestion": "Change it to something like '# CAS reject (stale) or a hook refusal — surfaced verbatim, except an OverrideRefused (by type)'."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+      "line": 38,
+      "finding": "Reducibility X (dead code): the facade now re-exports `DEFAULT_TASK_VERSION`, but nothing reads it through `phase_task_lifecycle`. Grep finds it only in phase_task_core and the test, which imports `phase_task_core` directly. `task_version` is used through the facade (`lc.task_version`, `_lifecycle().task_version`). About 1 line saved; tests stay green because they read `core.DEFAULT_TASK_VERSION`. Non-blocking.",
+      "suggestion": "Drop the `DEFAULT_TASK_VERSION` line from the facade import and keep only `task_version`."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+      "line": 142,
+      "finding": "The skew check `'split_id' not in inspect.signature(_run).parameters` wrongly reports a compatible verifier as degraded if it takes `**kwargs`. It also raises `ValueError` or `TypeError` from `inspect.signature` if the callable is a builtin or a partial whose signature cannot be read. Neither happens today, but the shim is described as safe.",
+      "suggestion": "Also accept a `VAR_KEYWORD` parameter (`any(p.kind is p.VAR_KEYWORD for p in params.values())`). This is optional, since the shim is marked removable."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-run/scripts/lib/phase_validators.py",
+      "line": 619,
+      "finding": "The 'archived' condition `split_id and current and split_id != current` is now written out in three places: `phase_validators_split.sections_for_split`, `_validate_plan` (`recorded_split != split_id`) and `_validate_build` (tagging `kind: archived_split`). The mirror test pins the two `sections_for_split` copies, but not these inline repeats. The mirror itself is a documented, justified duplication (G5) and is not a finding.",
+      "suggestion": "Optional: add an `is_archived_split(build_config, split_id)` helper next to `sections_for_split` and use it in both validators, so the rule cannot drift between them."
+    }
+  ]
+}

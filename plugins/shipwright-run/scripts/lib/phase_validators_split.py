@@ -30,6 +30,24 @@ def _read_json(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+def sections_for_split(build_config: dict, split_id: Optional[str]) -> list:
+    """The build sections of ``split_id``: the current list, unless ``current_split`` has
+    moved on to another split (both known, different) — then the bucket ``archive_split``
+    filed it under (``split_<prefix>_sections``) when ``archive_split`` recorded this exact
+    name in ``completed_splits`` (a prefix alone can be shared or left over), or ``[]``.
+    The build skill archives a non-final split BEFORE the driven run applies its result.
+    Mirrors ``tools.verifiers.build_split.sections_for_split`` (pinned equal by a test)."""
+    if not isinstance(build_config, dict):
+        return []
+    sections = build_config.get("sections")
+    current = build_config.get("current_split") or ""
+    if split_id and current and split_id != current:
+        done = build_config.get("completed_splits")
+        sections = (build_config.get(f"split_{split_id.split('-', 1)[0]}_sections")
+                    if isinstance(done, list) and split_id in done else None)
+    return sections if isinstance(sections, list) else []
+
+
 def _has_html(directory: Path) -> bool:
     return directory.is_dir() and any(directory.glob("*.html"))
 
@@ -99,8 +117,9 @@ def _validate_plan(
     """Plan phase: sections defined and section files exist for the TASK's split.
 
     ``split_id`` is the plan task's own split and must be one of the run's resolved
-    splits when there are any (this also keeps it from naming a path outside
-    ``.shipwright/planning/``). Without one (a split-less run, or a caller
+    splits when there are any. Only then does the check also keep it from naming a path
+    outside ``.shipwright/planning/``: with no resolvable splits the id is used as given
+    (an existence check only, nothing is read). Without one (a split-less run, or a caller
     that does not know it) the build config's ``current_split`` is used, as before. When
     both are known and differ, the task split's archived sections are used; if there are
     none, that is reported instead of checking the wrong directory. With neither split
@@ -128,8 +147,8 @@ def _validate_plan(
         # A finished split's sections are archived under split_<prefix>_sections (the
         # key collect_all_build_sections reads), so a re-check after current_split moved
         # on still finds them.
-        archived = build_config.get(f"split_{split_id.split('-', 1)[0]}_sections")
-        if not (isinstance(archived, list) and archived):
+        archived = sections_for_split(build_config, split_id)
+        if not archived:
             issues.append({
                 "severity": "ask",
                 "message": (

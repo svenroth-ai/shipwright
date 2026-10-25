@@ -1,0 +1,288 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-gate-hardening-leftovers",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 22876,
+      "total": 22876
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 616,
+      "total": 616
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_gate_cap_holds_cli.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-25-gate-hardening-leftovers/surface_verification.json",
+      "timestamp": "2026-10-25T13:33:37.715Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-1 the skip-reason helper accepts only non-blank strings under either key; a blank reason falls through",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_late.py::test_skip_reason_accepts_only_non_blank_strings PASSED"
+        },
+        {
+          "behavior": "AC-2 an OverrideRefused subclass with another name reads override_requires_human",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_subclass_of_the_refusal_reads_override_requires_human PASSED"
+        },
+        {
+          "behavior": "AC-2 an unrelated exception merely named OverrideRefused stays on_complete_failed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_an_unrelated_exception_named_like_the_refusal_is_not_one PASSED"
+        },
+        {
+          "behavior": "AC-3 a design apply rejected by the gate (retry due or ask_human terminal) leaves the run config byte-identical",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_design_apply_the_gate_rejects_freezes_nothing PASSED"
+        },
+        {
+          "behavior": "AC-4 a guided run past the cap answers ask_human at next and in the resolver, changing nothing",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_guided_run_past_the_cap_is_not_redispatched PASSED"
+        },
+        {
+          "behavior": "AC-4 the CLI answers ask_human with exit 0",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_the_cli_answers_ask_human_with_exit_0 PASSED"
+        },
+        {
+          "behavior": "AC-4 a non-retryable terminal waits at once",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_non_retryable_terminal_waits_at_once PASSED"
+        },
+        {
+          "behavior": "AC-4 an unknown autonomy waits and offers no override",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_an_unknown_autonomy_waits_and_offers_no_override PASSED"
+        },
+        {
+          "behavior": "AC-4 a person can still override with the last descriptor",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_person_can_still_override_with_the_last_descriptor PASSED"
+        },
+        {
+          "behavior": "AC-4 a plain pass with the last descriptor moves the frontier on",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_plain_pass_with_the_last_descriptor_moves_on PASSED"
+        },
+        {
+          "behavior": "AC-4 recover gives the task fresh tries",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_recover_gives_the_task_fresh_tries PASSED"
+        },
+        {
+          "behavior": "AC-4 an autonomous run still takes the failed terminal with no marker",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_an_autonomous_run_still_takes_the_failed_terminal PASSED"
+        },
+        {
+          "behavior": "AC-4 a crash-resume after retryable rejections still dispatches",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_crash_resume_after_a_retryable_rejection_still_dispatches PASSED"
+        },
+        {
+          "behavior": "AC-4 a marker for another run, task or version (or malformed) is ignored",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_marker_for_another_run_task_or_version_is_ignored PASSED"
+        },
+        {
+          "behavior": "AC-4 an unreadable loop state never blocks the resolver",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_an_unreadable_loop_state_does_not_block_the_resolver PASSED"
+        },
+        {
+          "behavior": "AC-4 an uncounted ask_human terminal (pointer at another task) is held at next",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_cap_uncounted.py::test_an_uncounted_ask_human_terminal_is_held_at_next_too PASSED"
+        },
+        {
+          "behavior": "AC-4 an uncounted terminal with no loop state starts one and is held",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_cap_uncounted.py::test_an_uncounted_terminal_without_any_loop_state_starts_one PASSED"
+        },
+        {
+          "behavior": "AC-4 an uncounted terminal leaves an unreadable loop state alone",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_cap_uncounted.py::test_an_uncounted_terminal_leaves_an_unreadable_loop_state_alone PASSED"
+        },
+        {
+          "behavior": "AC-4 an archived-split terminal reports recover_useful false",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_cap_uncounted.py::test_an_archived_split_terminal_says_recover_would_not_help PASSED"
+        },
+        {
+          "behavior": "AC-4 an archived flag on a finding of another kind also reports recover_useful false",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_cap_uncounted.py::test_an_archived_flag_on_another_kind_also_says_recover_would_not_help PASSED"
+        },
+        {
+          "behavior": "AC-6 an archived complete split passes its build gate and the canon gets the split",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_an_archived_complete_split_passes_its_build_gate PASSED"
+        },
+        {
+          "behavior": "AC-6 an archived incomplete split asks with kind archived_split, not retryable",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_an_archived_incomplete_split_asks_and_is_not_retryable PASSED"
+        },
+        {
+          "behavior": "AC-6 a canon_degraded ask on an archived split keeps archived_split: true",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_an_archived_split_flags_a_finding_that_has_its_own_kind PASSED"
+        },
+        {
+          "behavior": "AC-6 a split with nothing archived asks by name and is not retryable",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_a_split_with_nothing_archived_asks_by_name PASSED"
+        },
+        {
+          "behavior": "AC-6 an empty current split keeps the current-split wording",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_an_empty_current_split_keeps_the_current_split_wording PASSED"
+        },
+        {
+          "behavior": "AC-6 the current split is judged as before",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_the_current_split_is_judged_as_before PASSED"
+        },
+        {
+          "behavior": "AC-6 a current-split build hands no split to the canon",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_a_current_split_build_hands_no_split_to_the_canon PASSED"
+        },
+        {
+          "behavior": "AC-6 the run plugin mirror agrees with the shared verifier over a case matrix",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_the_run_plugin_mirror_agrees_with_the_verifier PASSED"
+        },
+        {
+          "behavior": "AC-6 both readers agree on real archive_split output",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_both_readers_agree_on_a_real_archive_split_output PASSED"
+        },
+        {
+          "behavior": "AC-6 the bridge hands the split to the build checks only",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_the_bridge_hands_the_split_to_the_build_checks_only PASSED"
+        },
+        {
+          "behavior": "AC-6 an older build verifier without split_id is an ask-level canon_degraded note",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_an_older_build_verifier_is_a_degraded_ask_not_a_crash PASSED"
+        },
+        {
+          "behavior": "AC-6 a compatible verifier raising TypeError is not mistaken for an old one",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_a_compatible_verifier_that_fails_is_not_mistaken_for_an_old_one PASSED"
+        },
+        {
+          "behavior": "AC-6 a verifier taking **kwargs gets the split",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_build_gate_archived_split.py::test_a_verifier_taking_kwargs_gets_the_split PASSED"
+        },
+        {
+          "behavior": "AC-6 a bucket archive_split did not record for that exact name is ignored",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_ignores_a_bucket_archive_split_did_not_record_for_that_name PASSED"
+        },
+        {
+          "behavior": "AC-6 the archived split's missing C1 event is reported",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build_archived_split.py::test_the_archived_splits_missing_event_is_reported PASSED"
+        },
+        {
+          "behavior": "AC-6 without a split the checks read the current list as before",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build_archived_split.py::test_without_a_split_the_checks_read_the_current_list_as_before PASSED"
+        },
+        {
+          "behavior": "AC-6 an archived incomplete section fails the completeness check",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build_archived_split.py::test_an_archived_incomplete_section_fails_the_completeness_check PASSED"
+        },
+        {
+          "behavior": "AC-6 run_build_checks forwards the split",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build_archived_split.py::test_run_build_checks_forwards_the_split PASSED"
+        },
+        {
+          "behavior": "AC-6 the archived split is judged on its own phase_history entry",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build_archived_split.py::test_the_archived_split_is_judged_on_its_own_history_entry PASSED"
+        },
+        {
+          "behavior": "AC-8 a missing version reads as the one default everywhere",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_missing_version_reads_as_the_one_default_everywhere PASSED"
+        },
+        {
+          "behavior": "AC-8 a version-less task completes with the version its descriptor carries",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_a_version_less_task_completes_with_the_version_its_descriptor_carries PASSED"
+        },
+        {
+          "behavior": "AC-8 recover and redispatch bump a version-less task from the default",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_gate_hardening_leftovers.py::test_recover_and_redispatch_bump_a_version_less_task_from_the_default PASSED"
+        },
+        {
+          "behavior": "through the real orchestrator CLI the guided cap answers ask_human (exit 0, config byte-identical) and the override with the last descriptor completes",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_gate_cap_holds_cli.py::test_the_cap_holds_at_next_and_a_person_can_still_override PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "through the real orchestrator CLI a two-split run whose build/01 is archived by the real archive_split.py CLI passes its gate and drives to complete",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_gate_cap_holds_cli.py::test_an_archived_non_final_build_passes_and_the_run_completes PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 44,
+        "tested": 44,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-gate-hardening-leftovers",
+    "commit": "b44056fbf5ca998dcc48fa4eb5590c21c5fb43a6",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

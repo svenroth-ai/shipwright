@@ -39,6 +39,15 @@ CONFIG_NAME = "shipwright_run_config.json"
 
 TERMINAL_STATUSES = frozenset({"done", "failed", "skipped"})
 
+# The CAS ``version`` a task without one carries. Every task is created at 1, so an
+# old-format record that lacks the key reads as 1 at every reader (``task_version``).
+DEFAULT_TASK_VERSION = 1
+
+
+def task_version(task: dict[str, Any]) -> int:
+    """A task's CAS ``version``; absent reads as ``DEFAULT_TASK_VERSION``."""
+    return int(task.get("version", DEFAULT_TASK_VERSION))
+
 # Plugin-name -> phase mapping. Used by phase_session_start.py to know its
 # own expected phase from CLAUDE_PLUGIN_ROOT. Centralised here so callers
 # stay consistent.
@@ -195,7 +204,7 @@ def _check_owner_version(
     Returns None if OK. Returns a fail dict otherwise.
     Used by complete_phase_task and mark_phase_failed.
     """
-    actual_version = int(task.get("version", 0))
+    actual_version = task_version(task)
     if actual_version != int(expected_version):
         return _fail(
             "stale_version",

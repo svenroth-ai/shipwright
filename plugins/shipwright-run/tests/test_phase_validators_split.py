@@ -25,7 +25,7 @@ import phase_validators_split as split  # noqa: E402
 
 validate_phase = _pv.validate_phase
 
-pytestmark = pytest.mark.covers("FR-01.01/AC01")
+pytestmark = pytest.mark.covers("FR-01.01/AC02")
 
 
 @pytest.fixture
@@ -183,8 +183,18 @@ def test_plan_finds_an_archived_split_after_current_split_moved_on(tmp_path, can
     _plan_project(tmp_path, current_split="02-b", files_in="01-a")
     config = json.loads((tmp_path / "shipwright_build_config.json").read_text(encoding="utf-8"))
     config["split_01_sections"] = [{"name": "section-01"}]
+    config["completed_splits"] = ["01-a"]  # archive_split records the exact name
     _json(tmp_path, "shipwright_build_config.json", config)
     assert validate_phase("plan", tmp_path, split_id="01-a") == (True, [])
+
+
+def test_plan_ignores_a_bucket_archive_split_did_not_record_for_that_name(tmp_path, canon_calls):
+    """A shared or leftover prefix bucket is not this split's work (doubt review)."""
+    _plan_project(tmp_path, current_split="02-b", files_in="01-a")
+    config = json.loads((tmp_path / "shipwright_build_config.json").read_text(encoding="utf-8"))
+    config.update(split_01_sections=[{"name": "section-01"}], completed_splits=["01-other"])
+    _json(tmp_path, "shipwright_build_config.json", config)
+    assert validate_phase("plan", tmp_path, split_id="01-a")[0] is False
 
 
 def test_plan_split_less_layout_is_checked_when_no_split_is_known(tmp_path, canon_calls):
@@ -222,11 +232,12 @@ def test_plan_missing_sections_and_files(tmp_path, canon_calls):
     assert not valid and "Missing section files for: s9" in _msgs(issues)
 
 
-def test_build_forwards_the_run_id_to_the_canon_bridge(tmp_path, monkeypatch):
+def test_build_forwards_the_run_id_and_no_split_for_a_current_split(tmp_path, monkeypatch):
     calls: list = []
     monkeypatch.setattr(_pv, "_run_canon_checks",
-                        lambda phase, _r, _i, *, run_id=None: calls.append((phase, run_id)))
+                        lambda phase, _r, _i, *, run_id=None, split_id=None:
+                        calls.append((phase, run_id, split_id)))
     _json(tmp_path, "shipwright_build_config.json",
           {"sections": [{"name": "s1", "status": "complete", "tests_total": 3}]})
     assert validate_phase("build", tmp_path, split_id="01-a", run_id="r4") == (True, [])
-    assert calls == [("build", "r4")]
+    assert calls == [("build", "r4", None)]  # not archived: the current split, no skew risk

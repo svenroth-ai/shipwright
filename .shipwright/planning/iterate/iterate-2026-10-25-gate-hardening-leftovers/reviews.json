@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-gate-hardening-leftovers",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T12:51:20.172446+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC-4's `gateTerminal` marker is keyed to `(runId, task, version)`, but a crash between the gate rejection (which persists the marker) and the master reading `next` is handled — while a stale marker from a previous run against a re-dispatched task with a recycled version is only guarded by the key triple. If a task id is reused across runs (or the version resets after `single-session-recover` lifts it), the marker could refuse a dispatch that should go through.",
+          "suggestion": "Add a test asserting the marker is ignored once `gateRejections` for that (task, version) is below the cap, not just when the key differs — i.e., the marker is only consulted when the counter state corroborates it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "sections_for_split` is implemented twice (plugin validator and a new `shared/scripts/tools/verifiers/build_split.py` leaf), with a parity/mirror test as the only guard against drift. The architecture reviewer already flagged the duplicate key derivation between `archive_split` and the readers; the plan adds a third derivation site boundary.",
+          "suggestion": "Acceptable as scoped (import cycle prevents sharing), but the mirror test should feed the real `archive_split.py` output (the plan's integration test does) — make sure the unit parity test in `shared/tests` uses a case matrix that includes an empty-archived split and `split_id == current_split`, not just the happy path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Item 5 changes the default task version from 0 to 1 in the owner check. Existing in-flight projects may have persisted task records where `version` was defaulted/written inconsistently between writers; a task record with an explicit `version: 0` (if any writer ever emitted it) would now behave differently across the two readers if not all five reads are switched atomically.",
+          "suggestion": "The work breakdown does the constant + helper + all five reads as step 1 — keep that step as a single commit; grep for any literal `version: 0` or `get(\"version\", 0)` writes before switching.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC-2 makes the exception-based refusal path (`except phase_gate.OverrideRefused` in the composed completion hook) the only signal. If the locked-config hook raises `OverrideRefused` from a thread/inner context where the plugin's `phase_gate` module object differs (re-imported plugin), `except` on the class may not catch a same-named exception from a second module instance.",
+          "suggestion": "Low practical risk in a single-process CLI; but the test for \"subclass with another name → `override_requires_human`\" should be raised via a genuine subclass of the real class, not a duck-typed lookalike — confirm the red tests do exactly that (the plan's wording suggests they do).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The version-skew guard for an older installed `run_build_checks` (canon without `split_id`) is mentioned in the internal review but not explicitly in the Files or work breakdown.",
+          "suggestion": "Make it an explicit step under item 4: the canon bridge must inspect `run_build_checks.__code__` arity or catch `TypeError` and emit the `canon_degraded` ask-level note per AC-6 — otherwise an environment with the older shared module silently degrades.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "Known limitation: the WebUI may not know the `ask_human` next action and plan-canon checks get no `split_id`. Both are disclosed, but the `ask_human` action reaching the run SKILL.md terminal list is in Files — the WebUI gap means a UI-driven guided run could present a dispatch button that the CLI would refuse.",
+          "suggestion": "Fine to defer, but note it in the run SKILL.md so a human at the UI knows to consult the CLI/resolver answer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan still describes the superseded retry-cap approach. It puts the refusal in `next_dispatch`, calls it guided-only, and lists the persisted terminal marker as an alternative. It does not include changes to `loop_state` or the read-only `resolve_next_dispatch`. As written, it would miss AC-4’s crash-resume distinction, early non-retryable terminals, unknown autonomy, and consistent resume reporting.",
+          "suggestion": "Make the persisted `gateTerminal` approach the primary implementation. Add its writer and reader files, record it whenever the terminal is `ask_human`, and check it in the shared resolver before claiming anything. Explicitly test task/version/run matching, recovery, override completion, unreadable state, and unchanged autonomous behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan forwards `split_id` to canonical `run_build_checks` but omits the compatibility guard required by AC-6. An older installed verifier without that parameter would raise `TypeError` and break the archived-split gate.",
+          "suggestion": "Include capability detection before passing the keyword and return the specified ask-level `canon_degraded` result when unsupported. Test both an older signature and a compatible verifier that raises an internal `TypeError`, so implementation failures are not mistakenly classified as version skew.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The proposed archived-split view says every section read uses the view, but does not specify how `phase_history` selects the requested split. Substituting archived `sections` alone could still validate against the current split’s history or incorrectly accept a matching event from another split.",
+          "suggestion": "Specify that the view preserves the original configuration and selects the requested split’s history according to AC-6. Add a conflicting-history test where the current split contains a completion event but the archived split does not; the archived check must report the missing event.  The underlying fixes are sound and appropriately scoped. Revise the mini-plan to incorporate the already-decided terminal-marker design and make verifier compatibility and archived-history handling explicit before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T12:48:23.163460+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** AC-4's `gateTerminal` marker is keyed to `(runId, task, version)`, but a crash between the gate rejection (which persists the marker) and the master reading `next` is handled — while a *stale* marker from a previous run against a re-dispatched task with a recycled version is only guarded by the key triple. If a task id is reused across runs (or the version resets after `single-session-recover` lifts it), the marker could refuse a dispatch that should go through.\n  **Suggestion:** Add a test asserting the marker is ignored once `gateRejections` for that (task, version) is below the cap, not just when the key differs — i.e., the marker is only consulted when the counter state corroborates it.\n\n- **Category: approach — Severity: low**\n  **Finding:** `sections_for_split` is implemented twice (plugin validator and a new `shared/scripts/tools/verifiers/build_split.py` leaf), with a parity/mirror test as the only guard against drift. The architecture reviewer already flagged the duplicate key derivation between `archive_split` and the readers; the plan adds a third derivation site boundary.\n  **Suggestion:** Acceptable as scoped (import cycle prevents sharing), but the mirror test should feed the *real* `archive_split.py` output (the plan's integration test does) — make sure the unit parity test in `shared/tests` uses a case matrix that includes an empty-archived split and `split_id == current_split`, not just the happy path.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** Item 5 changes the default task version from 0 to 1 in the owner check. Existing in-flight projects may have persisted task records where `version` was defaulted/written inconsistently between writers; a task record with an *explicit* `version: 0` (if any writer ever emitted it) would now behave differently across the two readers if not all five reads are switched atomically.\n  **Suggestion:** The work breakdo […truncated]\n\n[openai] 1. **Category:** approach · **Severity:** high  \n   **Finding:** The mini-plan still describes the superseded retry-cap approach. It puts the refusal in `next_dispatch`, calls it guided-only, and lists the persisted terminal marker as an alternative. It does not include changes to `loop_state` or the read-only `resolve_next_dispatch`. As written, it would miss AC-4’s crash-resume distinction, early non-retryable terminals, unknown autonomy, and consistent resume reporting.  \n   **Suggestion:** Make the persisted `gateTerminal` approach the primary implementation. Add its writer and reader files, record it whenever the terminal is `ask_human`, and check it in the shared resolver before claiming anything. Explicitly test task/version/run matching, recovery, override completion, unreadable state, and unchanged autonomous behavior.\n\n2. **Category:** dependency · **Severity:** medium  \n   **Finding:** The mini-plan forwards `split_id` to canonical `run_build_checks` but omits the compatibility guard required by AC-6. An older installed verifier without that parameter would raise `TypeError` and break the archived-split gate.  \n   **Suggestion:** Include capability detection before passing the keyword and return the specified ask-level `canon_degraded` result when unsupported. Test both an older signature and a compatible verifier that raises an internal `TypeError`, so implementation failures are not mistakenly classified as version skew.\n\n3. **Category:** edge-case · **Severity:** medium  \n   **Finding:** The proposed archived-split view says every section read uses the view, but does not specify how `phase_history` selects the requested split. Substituting archived `sections` alone could still validate against the current split’s history or incorrectly accept a matching event from another split.  \n   **Suggestion:** Specify that the view preserves the original configuration and selects the requested split’s history according to AC-6. Add a conflicting-hist […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_gate_cap_holds_cli.py",
+          "line": 1,
+          "finding": "The mini-plan's test strategy promises two integration subprocess tests: one for the `ask_human` CLI answer, and 'one for the archived-split build gate through `single-session-apply`'. The spec's Verification section also names 'the real `archive_split.py` CLI before the build gate'. Only the cap test exists. The archived-split tests call the `archive_split()` function in-process and go straight to `validate_phase` and `run_build_checks`. Nothing drives a build/01 apply of a two-split run end to end, and that is the scenario the spec says was 'Probed: ... rejected by the enforced gate'.",
+          "suggestion": "Add one subprocess test: write-config with two splits, run the real `archive_split.py` CLI for 02, then `single-session-apply` the build/01 descriptor and assert that the gate passes or asks for that split. Otherwise, change the spec's Verification runner and the mini-plan to say what was actually run.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py",
+          "line": 183,
+          "finding": "`_awaiting_human` calls `phase_gate._human_can_override(config)`, a private helper of another module. This is now the second module that relies on that underscore name for the same `override_allowed` field (`phase_gate.rejection` is the first, at line 265).",
+          "suggestion": "Rename it to a public `human_can_override` in phase_gate (or add a public alias) and call that, so the coupling across modules is visible.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+          "line": 127,
+          "finding": "`resume_run` now passes the new `ask_human` action straight through, but its comment still lists only '(complete | failed | needs_validation | blocked)' and says 'The run already finished / is blocked'. The resume card's action vocabulary grew with no note at the consumer, and the WebUI follow-up is only mentioned in the spec.",
+          "suggestion": "Add `ask_human` (the frontier waits for a person past the gate cap) to that comment and to the `resume_run` docstring's Actions list.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+          "line": 223,
+          "finding": "The comment '# CAS reject (stale) — surface verbatim' now sits above a branch that also turns a captured `OverrideRefused` into `override_requires_human`. It no longer describes the block.",
+          "suggestion": "Change it to something like '# CAS reject (stale) or a hook refusal — surfaced verbatim, except an OverrideRefused (by type)'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
+          "line": 38,
+          "finding": "Reducibility X (dead code): the facade now re-exports `DEFAULT_TASK_VERSION`, but nothing reads it through `phase_task_lifecycle`. Grep finds it only in phase_task_core and the test, which imports `phase_task_core` directly. `task_version` is used through the facade (`lc.task_version`, `_lifecycle().task_version`). About 1 line saved; tests stay green because they read `core.DEFAULT_TASK_VERSION`. Non-blocking.",
+          "suggestion": "Drop the `DEFAULT_TASK_VERSION` line from the facade import and keep only `task_version`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": 142,
+          "finding": "The skew check `'split_id' not in inspect.signature(_run).parameters` wrongly reports a compatible verifier as degraded if it takes `**kwargs`. It also raises `ValueError` or `TypeError` from `inspect.signature` if the callable is a builtin or a partial whose signature cannot be read. Neither happens today, but the shim is described as safe.",
+          "suggestion": "Also accept a `VAR_KEYWORD` parameter (`any(p.kind is p.VAR_KEYWORD for p in params.values())`). This is optional, since the shim is marked removable.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators.py",
+          "line": 619,
+          "finding": "The 'archived' condition `split_id and current and split_id != current` is now written out in three places: `phase_validators_split.sections_for_split`, `_validate_plan` (`recorded_split != split_id`) and `_validate_build` (tagging `kind: archived_split`). The mirror test pins the two `sections_for_split` copies, but not these inline repeats. The mirror itself is a documented, justified duplication (G5) and is not a finding.",
+          "suggestion": "Optional: add an `is_archived_split(build_config, split_id)` helper next to `sections_for_split` and use it in both validators, so the rule cannot drift between them.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T12:56:44.008416+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b44056fbf5ca998dcc48fa4eb5590c21c5fb43a6"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "docs/hooks-and-pipeline.md (the new ask_human bullet); plugins/shipwright-run/skills/run/references/single-session-loop.md; plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py (_awaiting_human)",
+          "line": null,
+          "finding": "Claim under doubt: single-session-recover gives an archived-split build fresh tries — The build skill works on the build config's current_split. The dispatch splitId only says which task the session is (first-actions.md:26, section-state.md:32/156-161). Suppose build/01-a is archived (current_split=02-b) and its gate asks (kind archived_split, so ask_human at once). The docs and the ask_human answer then list `single-session-recover` as 'fresh tries'. The recovered task re-dispatches build/01-a, and that session builds 02-b's sections under 01-a's identity. 02-b may have no plan yet, because plan/02-b is the successor of build/01-a. It may also run archive_split again (current_split -> 03). The 01-a gate then re-judges the unchanged split_01_sections and asks again. So recover cannot fix this rejection, and it can shift later splits by one (the 02-b task later builds 03's work). Before this diff the gate always rejected, so nothing ran. Now the documented remedy actively runs the wrong split.",
+          "suggestion": "When any issue has kind archived_split, the ask_human answer and the docs should name only fixing the artifacts and re-applying, override, or mark-phase-failed, and should not offer recover. A flag such as `recover_useful: false` would carry this. Or show that recover of an archived build cannot trigger a build of current_split.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+          "line": null,
+          "finding": "Claim under doubt: AC-4: every gate rejection that takes the ask_human terminal records gateTerminal, so the cap holds in code — _gate_rejected (single_session_apply.py:267-275) writes the marker only `if state is not None`. phase_gate.retry_state returns None in four cases: no loop state, another runId, currentPhaseTaskId != the task, or two failed reads (the Windows os.replace race it retries once for). In each case rejection() takes the ask_human terminal at once ('fail closed'), but no marker is written. The next single-session-next then dispatches the task again (claim, rotate, record_dispatch). The single-session-loop.md text added here ('Past the cap single-session-next itself answers ask_human') is then false: a person-gated stop goes back to a re-dispatch.",
+          "suggestion": "For a terminal with state None, write the marker over a freshly loaded or initialised state when the loop file is readable and its runId matches, even if the pointer is not on this task. Or document plainly that an uncounted (state-None) ask_human terminal is not held at next, and add a test pinning that behaviour.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+          "line": null,
+          "finding": "Claim under doubt: the version-skew shim only affects checks that need split_id — phase_validators_canon.py:139-151 adds the ask-level canon_degraded whenever phase == build and split_id is truthy. That includes split_id == current_split, which covers every un-archived split build and the final split, where calling the old run_build_checks without split_id gives the same result. With a stale shared/ tree in the plugin cache (the cache carries separate trees), every build apply of a split run is now blocked; before this diff they passed. canon_degraded is non-retryable, so guided runs wait for a person and autonomous runs mark the phase failed on the first try.",
+          "suggestion": "Require split_id support only when split_id differs from build_config.current_split (read through the same build_split helper). Otherwise call _run without it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (gate now accepts)",
+          "file": "shared/scripts/tools/verifiers/build_split.py; plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "Claim under doubt: split_<prefix>_sections is this split's own work from this run — sections_for_split picks the bucket by prefix alone, whenever split_id != current_split. Nothing ties the bucket to the exact split name or the run. Three ways it can be the wrong bucket: (a) archive_split skips without writing when the key already exists (archive_split.py:58-67), so a split_NN_sections left from an earlier run or attempt survives; (b) names without a number share a prefix ('auth' and 'auth-api' both map to split_auth_sections); (c) a duplicated NN does the same. The gate used to reject these cases. Now it passes them, unless the canon phase_history check catches it, and that check falls back to the run's newest entry (`... or mine`) when no entry names the split.",
+          "suggestion": "Read the archived bucket only when `split_id in build_config.get('completed_splits', [])` (archive_split writes the exact name there). Or show that split names are always unique NN-prefixed and that the build config is reset per run.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T13:08:28.382336+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b44056fbf5ca998dcc48fa4eb5590c21c5fb43a6"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py:38 (`sections_for_split`)",
+          "line": null,
+          "finding": "The run-plugin mirror calls `build_config.get(\"sections\")` without an `isinstance(build_config, dict)` guard, while its shared twin (`build_split.sections_for_split`) returns `[]` for a non-dict. A caller passing a non-dict (e.g., a corrupted build config that `read_config` surfaces as a raw string) gets an `AttributeError` from the plugin version while the shared one degrades gracefully — and the \"pinned equal\" mirror test only ever passes dicts, so the divergence is untested.",
+          "suggestion": "Add the same `isinstance(build_config, dict)` guard (or route the plugin mirror through the shared module's constant) and add a non-dict case to the parametrized mirror test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators.py:133 (`_build_issues`, \"No sections found\" branch)",
+          "line": null,
+          "finding": "When `split_id` is supplied and equals `current_split` but `sections` is empty, the message becomes \"No sections found for split 'X'. Was /shipwright-build run?\" instead of the previous \"current split\" wording. Only the no-`split_id` path is pinned by `test_no_sections_without_a_split_keeps_its_old_message`, so this behavioral message change for an existing caller shape (split_id == current) is untested and could surprise any consumer matching on the old string.",
+          "suggestion": "Either keep the \"current split\" wording when `split_id == current`, or pin the new wording in a test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py:~170 (`_awaiting_human` reading loop state)",
+          "line": null,
+          "finding": "When the loop-state file is unreadable, `_awaiting_human` returns None and the resolver answers `dispatch`. That matches the spec (\"never blocks the resolver\"), but it means the claim then proceeds via `begin_dispatch`, which per the docs refuses an unreadable loop state — the master gets a hard error there instead of a clean signal. Not a correctness bug, just worth confirming `begin_dispatch`'s failure path is the intended surface for that state.",
+          "suggestion": "Confirm/cover with a test that `next_dispatch` on an unreadable loop state fails at `begin_dispatch` with a clear reason rather than a raw exception.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators.py",
+          "line": 135,
+          "finding": "issue.setdefault(\"kind\", \"archived_split\")` leaves existing kinds such as `canon_degraded` unchanged. When an archived build encounters an older canon verifier, none of its issues identify it as archived, so `_awaiting_human` returns `recover_useful: true`. This offers recovery even though redispatch would build the next split, violating AC-4 and AC-6.",
+          "suggestion": "Preserve archived-split context independently of the finding kind, and use that context to calculate `recover_useful`. Add a test combining an archived split with a canon-degraded rejection.  Overall assessment: ship-with-fixes. The implementation largely follows the specification, but archived-split context must survive canon failures so the terminal response gives correct recovery guidance.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T13:12:01.544197+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/phase_validators_split.py:38 (`sections_for_split`)\n  Finding: The run-plugin mirror calls `build_config.get(\"sections\")` without an `isinstance(build_config, dict)` guard, while its shared twin (`build_split.sections_for_split`) returns `[]` for a non-dict. A caller passing a non-dict (e.g., a corrupted build config that `read_config` surfaces as a raw string) gets an `AttributeError` from the plugin version while the shared one degrades gracefully — and the \"pinned equal\" mirror test only ever passes dicts, so the divergence is untested.\n  Suggestion: Add the same `isinstance(build_config, dict)` guard (or route the plugin mirror through the shared module's constant) and add a non-dict case to the parametrized mirror test.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/phase_validators.py:133 (`_build_issues`, \"No sections found\" branch)\n  Finding: When `split_id` is supplied and equals `current_split` but `sections` is empty, the message becomes \"No sections found for split 'X'. Was /shipwright-build run?\" instead of the previous \"current split\" wording. Only the no-`split_id` path is pinned by `test_no_sections_without_a_split_keeps_its_old_message`, so this behavioral message change for an existing caller shape (split_id == current) is untested and could surprise any consumer matching on the old string.\n  Suggestion: Either keep the \"current split\" wording when `split_id == current`, or pin the new wording in a test.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py:~170 (`_awaiting_human` reading loop state)\n  Finding: When the loop-state file is unreadable, `_awaiting_human` returns None and the resolver answers `dispatch`. That matches the spec (\"never blocks the resolver\"), but it means the *claim* then proceeds via `begin_dispatch`, which per the docs  […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-run/scripts/lib/phase_validators.py:135\n- Finding: `issue.setdefault(\"kind\", \"archived_split\")` leaves existing kinds such as `canon_degraded` unchanged. When an archived build encounters an older canon verifier, none of its issues identify it as archived, so `_awaiting_human` returns `recover_useful: true`. This offers recovery even though redispatch would build the next split, violating AC-4 and AC-6.\n- Suggestion: Preserve archived-split context independently of the finding kind, and use that context to calculate `recover_useful`. Add a test combining an archived split with a canon-degraded rejection.\n\nOverall assessment: ship-with-fixes. The implementation largely follows the specification, but archived-split context must survive canon failures so the terminal response gives correct recovery guidance.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T12:54:06.687414+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b44056fbf5ca998dcc48fa4eb5590c21c5fb43a6"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T12:40:50.409593+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T12:45:42.741983+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

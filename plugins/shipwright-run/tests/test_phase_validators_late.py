@@ -30,7 +30,7 @@ import phase_validators_late as late  # noqa: E402
 
 validate_phase = _pv.validate_phase
 
-pytestmark = pytest.mark.covers("FR-01.01/AC01")
+pytestmark = pytest.mark.covers("FR-01.01/AC02")
 
 
 @pytest.fixture(autouse=True)
@@ -155,6 +155,10 @@ def test_test_layers_accept_either_skip_key(tmp_path, key):
 def test_skip_reason_accepts_only_non_blank_strings():
     assert late._skip_reason({"reason": {"x": 1}, "skip_reason": " no db "}) == "no db"
     assert late._skip_reason({"reason": ["a"]}) == ""
+    for blank in ("", "   ", "\t\n"):
+        assert late._skip_reason({"reason": blank}) == ""
+        assert late._skip_reason({"skip_reason": blank}) == ""
+    assert late._skip_reason({"reason": "  ", "skip_reason": "no browser"}) == "no browser"
 
 
 def test_changelog_phase(tmp_path):

@@ -23,7 +23,7 @@ _spec.loader.exec_module(_pv)
 # importable by bare name once phase_validators has put its lib dir on sys.path
 import phase_validators_canon as canon  # noqa: E402
 
-pytestmark = pytest.mark.covers("FR-01.01/AC01")
+pytestmark = pytest.mark.covers("FR-01.01/AC02")
 
 
 def _hide_verifiers(monkeypatch):

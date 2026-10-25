@@ -65,6 +65,49 @@ def record_gate_rejection(state: dict[str, Any]) -> dict[str, Any]:
     return {**state, "gateRejections": int(state.get("gateRejections", 0)) + 1}
 
 
+def record_gate_terminal(
+    state: dict[str, Any], *, phase_task_id: str, version: int, issues: list[Any],
+) -> dict[str, Any]:
+    """Return a new state recording that a gate rejection of THIS task at THIS ``version``
+    took the ``ask_human`` terminal: the loop waits for a person (``gateTerminal``).
+
+    Keyed to the task's CAS version, so it needs no reset code of its own: a recover bumps
+    the version and a completion moves the frontier on, and either makes it stale."""
+    return {**state, "gateTerminal": {"phaseTaskId": phase_task_id, "version": int(version),
+                                      "issues": list(issues)}}
+
+
+def gate_terminal_for(
+    state: Any, *, run_id: Any, phase_task_id: Any, version: int,
+) -> Optional[dict[str, Any]]:
+    """The ``gateTerminal`` marker when it describes this run's task at this version."""
+    marker = state.get("gateTerminal") if isinstance(state, dict) else None
+    if (not isinstance(marker, dict) or state.get("runId") != run_id
+            or marker.get("phaseTaskId") != phase_task_id):
+        return None
+    try:
+        return marker if int(marker.get("version")) == int(version) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def hold_gate_terminal(
+    project_root: Path, *, run_id: Any, phase_task_id: str, version: int, issues: list[Any],
+) -> None:
+    """Record ``gateTerminal`` for an ``ask_human`` terminal no loop state counted (none, a
+    prior run's, a pointer at another task): onto this run's loop state, else a fresh one,
+    so ``single-session-next`` holds it too. An unreadable file is left alone (the next
+    dispatch refuses it on its own)."""
+    try:
+        state = load_loop_state(project_root)
+    except (OSError, ValueError):
+        return
+    if not isinstance(state, dict) or state.get("runId") != run_id:
+        state = init_loop_state(run_id, current_phase_task_id=phase_task_id)
+    save_loop_state(project_root, record_gate_terminal(
+        state, phase_task_id=phase_task_id, version=version, issues=issues))
+
+
 def loop_state_path(project_root: Path) -> Path:
     """Canonical loop-state path for a project."""
     return Path(project_root) / LOOP_STATE_REL_PATH

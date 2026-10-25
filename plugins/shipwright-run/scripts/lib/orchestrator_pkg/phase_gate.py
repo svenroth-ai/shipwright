@@ -64,7 +64,7 @@ TERMINAL_BY_AUTONOMY = {"guided": "ask_human", "autonomous": "failed", "unattend
 _HUMAN_AUTONOMY = frozenset({"guided", "autonomous"})
 
 # Findings a re-dispatch cannot fix (see ``is_retryable``).
-_NON_RETRYABLE_KINDS = frozenset({"canon_degraded", "critical_gate"})
+_NON_RETRYABLE_KINDS = frozenset({"canon_degraded", "critical_gate", "archived_split"})
 
 _MAX_ERROR_CHARS = 2000
 
@@ -222,7 +222,9 @@ def is_retryable(verdict: dict[str, Any]) -> bool:
     artifact faults, so retries would only burn phase-runner dispatches. A Phase-Quality
     critical-gate finding (``kind: critical_gate``) comes from the latest Stop-hook audit
     file, which nothing guarantees is rewritten per dispatch, so a retry may re-read the
-    same stale FAIL: it is not retryable either."""
+    same stale FAIL: it is not retryable either. Nor is a finding on a build split the
+    build skill already archived (``kind: archived_split``): a re-dispatched build works on
+    the next split."""
     return not any(
         i.get("kind") in _NON_RETRYABLE_KINDS
         or str(i.get("message", "")).startswith(GATE_ERROR_PREFIX)

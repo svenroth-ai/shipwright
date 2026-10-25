@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # _recovery), not this facade: moved functions resolve their helpers in their own module.
 from phase_task_core import (  # noqa: E402,F401
     CONFIG_NAME,
+    DEFAULT_TASK_VERSION,
     PLUGIN_PHASE_MAP,
     TERMINAL_STATUSES,
     LockTimeout,
@@ -48,6 +49,7 @@ from phase_task_core import (  # noqa: E402,F401
     _PhaseTasksLock,
     _read_config,
     _write_config,
+    task_version,
 )
 from phase_task_lookup import (  # noqa: E402,F401
     find_phase_task_by_session_uuid,

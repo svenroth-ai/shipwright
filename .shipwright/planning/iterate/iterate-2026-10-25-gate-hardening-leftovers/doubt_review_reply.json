@@ -1,0 +1,63 @@
+```json
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "persisted loop state (async/ordering), cross-plugin canon bridge, gate acceptance change",
+  "verdict": "proceed-after-addressing",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "single-session-recover gives an archived-split build fresh tries",
+      "disproof_attempt": "The build skill works on the build config's current_split. The dispatch splitId only says which task the session is (first-actions.md:26, section-state.md:32/156-161). Suppose build/01-a is archived (current_split=02-b) and its gate asks (kind archived_split, so ask_human at once). The docs and the ask_human answer then list `single-session-recover` as 'fresh tries'. The recovered task re-dispatches build/01-a, and that session builds 02-b's sections under 01-a's identity. 02-b may have no plan yet, because plan/02-b is the successor of build/01-a. It may also run archive_split again (current_split -> 03). The 01-a gate then re-judges the unchanged split_01_sections and asks again. So recover cannot fix this rejection, and it can shift later splits by one (the 02-b task later builds 03's work). Before this diff the gate always rejected, so nothing ran. Now the documented remedy actively runs the wrong split.",
+      "file": "docs/hooks-and-pipeline.md (the new ask_human bullet); plugins/shipwright-run/skills/run/references/single-session-loop.md; plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py (_awaiting_human)",
+      "what_would_resolve_it": "When any issue has kind archived_split, the ask_human answer and the docs should name only fixing the artifacts and re-applying, override, or mark-phase-failed, and should not offer recover. A flag such as `recover_useful: false` would carry this. Or show that recover of an archived build cannot trigger a build of current_split."
+    },
+    {
+      "severity": "medium",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "AC-4: every gate rejection that takes the ask_human terminal records gateTerminal, so the cap holds in code",
+      "disproof_attempt": "_gate_rejected (single_session_apply.py:267-275) writes the marker only `if state is not None`. phase_gate.retry_state returns None in four cases: no loop state, another runId, currentPhaseTaskId != the task, or two failed reads (the Windows os.replace race it retries once for). In each case rejection() takes the ask_human terminal at once ('fail closed'), but no marker is written. The next single-session-next then dispatches the task again (claim, rotate, record_dispatch). The single-session-loop.md text added here ('Past the cap single-session-next itself answers ask_human') is then false: a person-gated stop goes back to a re-dispatch.",
+      "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+      "what_would_resolve_it": "For a terminal with state None, write the marker over a freshly loaded or initialised state when the loop file is readable and its runId matches, even if the pointer is not on this task. Or document plainly that an uncounted (state-None) ask_human terminal is not held at next, and add a test pinning that behaviour."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the version-skew shim only affects checks that need split_id",
+      "disproof_attempt": "phase_validators_canon.py:139-151 adds the ask-level canon_degraded whenever phase == build and split_id is truthy. That includes split_id == current_split, which covers every un-archived split build and the final split, where calling the old run_build_checks without split_id gives the same result. With a stale shared/ tree in the plugin cache (the cache carries separate trees), every build apply of a split run is now blocked; before this diff they passed. canon_degraded is non-retryable, so guided runs wait for a person and autonomous runs mark the phase failed on the first try.",
+      "file": "plugins/shipwright-run/scripts/lib/phase_validators_canon.py",
+      "what_would_resolve_it": "Require split_id support only when split_id differs from build_config.current_split (read through the same build_split helper). Otherwise call _run without it."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract (gate now accepts)",
+      "claim_under_doubt": "split_<prefix>_sections is this split's own work from this run",
+      "disproof_attempt": "sections_for_split picks the bucket by prefix alone, whenever split_id != current_split. Nothing ties the bucket to the exact split name or the run. Three ways it can be the wrong bucket: (a) archive_split skips without writing when the key already exists (archive_split.py:58-67), so a split_NN_sections left from an earlier run or attempt survives; (b) names without a number share a prefix ('auth' and 'auth-api' both map to split_auth_sections); (c) a duplicated NN does the same. The gate used to reject these cases. Now it passes them, unless the canon phase_history check catches it, and that check falls back to the run's newest entry (`... or mine`) when no entry names the split.",
+      "file": "shared/scripts/tools/verifiers/build_split.py; plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+      "what_would_resolve_it": "Read the archived bucket only when `split_id in build_config.get('completed_splits', [])` (archive_split writes the exact name there). Or show that split names are always unique NN-prefixed and that the build config is reset per run."
+    }
+  ],
+  "lenses_attacked_without_finding": [
+    "Marker staleness: phaseTaskIds come from _new_phase_task_id (unique); versions only go up (recover and redispatch +1); advance_pointer and a completion move the frontier; runId is matched. No path I found makes a stale marker match again.",
+    "Version-less task: no writer emits version 0 or drops version; mark_phase_failed shares the owner check; the new default makes it accept more but only for records that are already malformed.",
+    "OverrideRefused by type: a refusal is recorded and re-raised, classified only together with on_complete_failed; the impostor class is not matched.",
+    "Unreadable loop state at the resolver: OSError/ValueError (UnicodeDecodeError included) and non-dict states read as no marker.",
+    "Resume card: resume_run passes ask_human through as `next` and keeps a non-zero exit, consistent with the other non-dispatch actions.",
+    "Compliance and verify consumers: audit_adapters needs at least 1 positional argument; the new split_id parameters are positional with defaults; run_all_checks is unchanged (current split).",
+    "Design freeze order: the freeze is computed only after the gate passes and is applied inside the locked write; a rejection returns before it."
+  ],
+  "summary": "Two medium doubts. (1) For an archived split, recover is offered as 'fresh tries' but re-dispatches a build of the next split under the old task. (2) The cap is not held when retry_state is None: ask_human is taken but no marker is written. Two lows: the skew shim over-blocks current-split builds, and the archived bucket is matched by prefix only, with no exact-name or freshness check. The implementer must fix or rebut each before commit."
+}
+```
+
+Files referenced:
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py (retry_state, rejection)
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-run/scripts/lib/phase_validators_canon.py
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-run/scripts/lib/phase_validators_split.py
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/shared/scripts/tools/verifiers/build_split.py
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/shared/scripts/tools/archive_split.py
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-build/skills/build/references/section-state.md
+- C:/01_Development/shipwright/.worktrees/gate-hardening-leftovers/plugins/shipwright-build/skills/build/references/first-actions.md

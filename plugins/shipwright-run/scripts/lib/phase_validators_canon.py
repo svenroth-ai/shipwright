@@ -10,6 +10,7 @@ result (see ``DEGRADED_PREFIX``). To patch the bridge in a test, patch
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import os
 from pathlib import Path
 from typing import Optional
@@ -77,6 +78,7 @@ def _run_canon_checks(
     issues: list[dict[str, str]],
     *,
     run_id: Optional[str] = None,
+    split_id: Optional[str] = None,
 ) -> None:
     """Shared canon verifier bridge used by every phase validator.
 
@@ -88,6 +90,10 @@ def _run_canon_checks(
     to ``SHIPWRIGHT_RUN_ID`` (legacy v1 / hook callers). Nothing is swallowed: absent
     verifiers or no run id at all are inform notes (``kind: canon_degraded``); broken
     verifiers or an explicitly empty run id are ask-level with the same ``kind``.
+
+    ``split_id`` reaches only the build checks (they judge that split's own sections, also
+    once ``archive_split`` filed them away). An installed build verifier too old to take it
+    is an ask-level ``canon_degraded`` finding, not a crash or a check of the wrong split.
     """
     try:
         from tools.verifiers.common import Severity
@@ -129,7 +135,22 @@ def _run_canon_checks(
         issues.append(_degraded(
             phase, f"no run id was supplied; phase_history[{phase}] was not checked",
         ))
-    for r in _run(project_root, run_id=run_id):
+    extra: dict[str, str] = {}
+    if phase == "build" and split_id:
+        # Version-skew shim: removable once no supported plugin cache carries a
+        # build_checks.run_build_checks without split_id.
+        params = inspect.signature(_run).parameters
+        if "split_id" not in params and not any(
+                p.kind is p.VAR_KEYWORD for p in params.values()):
+            issues.append({
+                "severity": "ask", "kind": "canon_degraded",
+                "message": (f"{DEGRADED_PREFIX} build: the installed canon build checks are "
+                            "older than the run plugin and cannot check one split; sync the "
+                            "plugin cache (restart the session) before completing this phase?"),
+            })
+            return
+        extra["split_id"] = split_id
+    for r in _run(project_root, run_id=run_id, **extra):
         if r.is_skipped or r.ok:
             continue
         severity = "ask" if r.severity == Severity.ERROR.value else "inform"

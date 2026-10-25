@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-gate-hardening-leftovers",
+  "date": "2026-10-25",
+  "section": "Iterate — change: gate hardening leftovers",
+  "title": "Driven-run gate leftovers: cap held in code, archived splits judged, one version default",
+  "context": "Leftovers of campaign brief-driven-run-a-real-gates: a guided cap that held only if the master stopped, a build gate that refused every correct non-final split after archive_split, a 0-vs-1 task version default, a class-name refusal check, stale docs and FR tags.",
+  "decision": "Persist a version-keyed gateTerminal marker read by the resolver (ask_human from single-session-next); judge the task's split via sections_for_split (exact completed_splits name, archived asks non-retryable); one DEFAULT_TASK_VERSION=1; catch OverrideRefused by type. Override provenance and raw claim-phase-task rotation documented only.",
+  "consequences": "A guided or uncounted ask_human terminal is held until a person overrides, recovers or fails the task; non-final driven builds pass their gate; an old shared verifier on an archived split is an ask-level canon_degraded note. Not covered: plan canon split, v1 update-step split, WebUI ask_human.",
+  "rationale": "The counters cannot tell a crash-resumed dispatch from a capped one; a marker keyed to run, task and version needs no reset path. Rotating in claim_phase_task would double-bump single-session-next and break the idempotent same-session re-claim; no production caller re-claims raw.",
+  "rejected": "Deriving the cap from attempt/gateRejections; moving archive_split to the next split (changes the build skill and the v1 path); rotating the version on a raw claim; a counter-corroborated marker.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-gate-hardening-leftovers-gate-hardening-leftovers.md"
+}

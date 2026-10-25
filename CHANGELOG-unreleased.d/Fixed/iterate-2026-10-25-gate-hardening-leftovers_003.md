@@ -1,0 +1,1 @@
+Driven runs: a phase task without a stored version is treated as version 1 everywhere, so it is no longer refused stale_version, and the override refusal is recognised by exception type instead of class name

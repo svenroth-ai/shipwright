@@ -32,8 +32,10 @@ if _LOCAL_LIB not in sys.path:
 from single_session import observability as obs  # noqa: E402
 from single_session.loop_state import (  # noqa: E402
     advance_pointer,
+    hold_gate_terminal,
     load_loop_state,
     record_gate_rejection,
+    record_gate_terminal,
     save_loop_state,
     set_status,
 )
@@ -162,7 +164,7 @@ def apply_phase_result(
     # lifecycle's authoritative CAS reason; let complete_phase_task report
     # stale_version / stale_session truthfully.
     cas_current = (
-        int(task.get("version", 1)) == int(expected_version)
+        lc.task_version(task) == int(expected_version)
         and task.get("sessionUuid") == session_uuid
     )
 
@@ -207,6 +209,7 @@ def apply_phase_result(
         except Exception as exc:  # noqa: BLE001 — defensive: the read never raises by contract
             return {"ok": False, "reason": "freeze_splits_failed", "error": str(exc)}
 
+    refusals: list[phase_gate.OverrideRefused] = []
     completion = lc.complete_phase_task(
         project_root,
         phase_task_id=phase_task_id,
@@ -215,12 +218,13 @@ def apply_phase_result(
         result=result,
         on_complete=completion_hook(override=on_complete, frozen_splits=frozen_splits,
                                     verdict=verdict, now=lc.now_iso,
-                                    freeze=lc.apply_frozen_splits),
+                                    freeze=lc.apply_frozen_splits, refusals=refusals),
     )
     if not completion.get("ok"):
-        # CAS reject (stale) — surface verbatim; loop_state left untouched.
+        # CAS reject (stale) or a hook refusal — surfaced verbatim, except an
+        # OverrideRefused (recognised by type); loop_state left untouched.
         reason = completion.get("reason")
-        if str(completion.get("blockMessage", "")).startswith(phase_gate.OverrideRefused.__name__):
+        if refusals and reason == "on_complete_failed":
             reason = "override_requires_human"  # the locked config lost its human
         return {"ok": False, "completion": completion, "reason": reason}
 
@@ -265,7 +269,14 @@ def _gate_rejected(
     rejected = phase_gate.rejection(config, verdict, state)
     if state is not None:
         # Durable count, so re-applying without a new single-session-next still hits the cap.
-        save_loop_state(project_root, record_gate_rejection(state))
+        state = record_gate_rejection(state)
+        if rejected["terminal"] == "ask_human":  # single-session-next now waits for a person
+            state = record_gate_terminal(state, phase_task_id=phase_task_id,
+                                         version=expected_version, issues=verdict["ask"])
+        save_loop_state(project_root, state)
+    elif rejected["terminal"] == "ask_human":  # uncounted, but held at next all the same
+        hold_gate_terminal(project_root, run_id=config.get("runId"), phase_task_id=phase_task_id,
+                           version=expected_version, issues=verdict["ask"])
     if rejected["terminal"] != "failed":
         return rejected
     failed = _lifecycle().mark_phase_failed(
