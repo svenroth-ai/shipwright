@@ -192,7 +192,12 @@ def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
             project_root,
             phase_task_id=args.phase_task_id,
             force_status=args.force_status,
+            reason=getattr(args, "reason", None),
         )
+        if result.get("ok") and args.force_status == "skipped":
+            from .events import record_phase_skipped
+            record_phase_skipped(project_root, task=result["phase_task"],
+                                 recovered_from=result.get("recovered_from"))
     elif cmd == "freeze-splits":
         result = freeze_splits(project_root)
     elif cmd == "plan-next-phase":

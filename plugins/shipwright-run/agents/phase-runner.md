@@ -23,7 +23,9 @@ You receive these parameters in the prompt:
 - `slashCommand`: the phase skill to execute (e.g. `/shipwright-plan`)
 - `project_root`: absolute path to the project root
 - `phaseTaskId`, `sessionUuid`, `version`: identity/CAS tokens (echo them back
-  to the master; do NOT invent them). `sessionUuid` is the task's CAS claim
+  to the master; do NOT invent them). `version` is THIS dispatch's: a re-dispatch of the
+  same phase (gate retry, resume) gets a new one, and a result carrying an older one is
+  refused, so never reuse a version from an earlier briefing. `sessionUuid` is the task's CAS claim
   token, NOT a Claude session id — you are a subagent of the master and have no
   bound session of your own.
 - `issues` (optional, re-dispatch only): the phase gate's findings from the previous

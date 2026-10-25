@@ -21,8 +21,9 @@ there is no orphaned live worker to race on resume. (Split-brain WAS a real conc
 under the removed multi_session mode, whose phases ran as independent external Claude
 processes that outlived the master; removing that mode removed the concern with it.)
 Resume simply re-dispatches the in_progress task idempotently (``begin_dispatch``
-re-claims by its own sessionUuid); the SS4 artifact persistence-guard still verifies
-outputs on apply.
+re-claims by its own sessionUuid and rotates the task's ``version``, so a result from
+any earlier dispatch is refused ``stale_version``); the SS4 artifact persistence-guard
+still verifies outputs on apply.
 """
 from __future__ import annotations
 
@@ -181,11 +182,13 @@ def mark_human_gate(
 
 def recover_single_session(
     project_root: Path, *, phase_task_id: str, force_status: str = "awaiting_launch",
+    reason: Optional[str] = None,
 ) -> dict[str, Any]:
     """recover-phase-task INSIDE the single-session loop + loop-pointer realign + event.
 
     Reuses the generic lifecycle mutator verbatim (bumps version, clears the claim, resets
-    status), then — only for a re-runnable ``awaiting_launch`` recovery — realigns the
+    status; ``skipped`` needs ``reason``, stored as ``skipReason`` and sent as a durable
+    ``phase_skipped`` event), then — only for a re-runnable ``awaiting_launch`` recovery — realigns the
     resumable loop pointer to the recovered task (attempt reset; loop status lifted back to
     ``running`` if the run had failed because of it), and emits a ``recovery`` event.
     Mode- and run-identity-gated. The generic ``recover-phase-task`` CLI is untouched for
@@ -199,10 +202,14 @@ def recover_single_session(
     run_was_failed = guard["config"].get("status") == "failed"
     lc = _lifecycle()
     recovered = lc.recover_phase_task(
-        project_root, phase_task_id=phase_task_id, force_status=force_status,
+        project_root, phase_task_id=phase_task_id, force_status=force_status, reason=reason,
     )
     if not recovered.get("ok"):
         return {"ok": False, "reason": recovered.get("reason"), "recover": recovered}
+    if force_status == "skipped":
+        from .events import record_phase_skipped
+        record_phase_skipped(project_root, task=recovered["phase_task"],
+                             recovered_from=recovered.get("recovered_from"))
 
     # Realign the loop pointer only for a re-runnable recovery (skipped/failed are terminal
     # — leave the pointer, the master resolves the next frontier via single-session-next).
@@ -225,6 +232,7 @@ def recover_single_session(
         phaseTaskId=phase_task_id, forceStatus=force_status,
         recoveredFrom=recovered.get("recovered_from"),
         newVersion=recovered.get("new_version"),
+        reason=recovered["phase_task"].get("skipReason"),  # normalised; None unless skipped
     )
     return {
         "ok": True,

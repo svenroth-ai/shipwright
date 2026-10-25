@@ -9,7 +9,8 @@ dict with ``ok`` flag and either ``phase_task`` or ``reason`` + ``blockMessage``
     - claim_phase_task: CAS awaiting_launch -> in_progress with wrong-skill check.
     - complete_phase_task: owner+version-checked done with run-completion invariant.
     - mark_phase_failed: owner+version-checked failed transition.
-    - recover_phase_task: bumps version, clears claim, resets status.
+    - recover_phase_task: bumps version, clears claim, resets status (skip needs a reason).
+    - redispatch_phase_task: bumps version of an in_progress task dispatched again.
     - validate_prerequisites: returns prereq status snapshot, fail-closed.
     - freeze_splits: design-stop hook entry — writes splits_frozen + splitMode
       with design->project->none fallback chain.
@@ -55,12 +56,17 @@ from phase_task_lookup import (  # noqa: E402,F401
 )
 from phase_task_planning import (  # noqa: E402,F401
     _normalise_splits,
+    apply_frozen_splits,
     _plan_next_inplace,
     _resolve_splits_with_fallback,
     freeze_splits,
     plan_next_phase,
 )
-from phase_task_recovery import recover_phase_task  # noqa: E402,F401
+from phase_task_recovery import recover_phase_task, redispatch_phase_task  # noqa: E402,F401
+
+# Public names for the two helpers single-session apply calls from outside this package.
+resolve_splits_with_fallback = _resolve_splits_with_fallback
+now_iso = _now_iso
 
 
 # ---------------------------------------------------------------------------
