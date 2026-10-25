@@ -161,3 +161,25 @@ def test_read_junit_cases_counts_distinct_cases_not_repeated_rows():
     xml = f"<testsuites><testsuite>{row}{row}{other_class}</testsuite></testsuites>"
     # the repeated row is one case; the same name under another class is a second one
     assert read_junit_cases(xml) == {"tests/test_a.py::test_x": 2}
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_nested_brackets_in_a_param_id_fold_to_the_function_id():
+    """pytest builds the id from the parameter VALUES, so a value that itself holds brackets
+    (`branches: [main]`) yields `test_x[branches: [main]-main-True]`. The fold must reach the
+    function id, or the join to a bound test reads it as never run."""
+    from scripts.lib.collectors._evidence_readers import read_junit, read_junit_cases
+
+    xml = (
+        "<testsuites><testsuite>"
+        '<testcase file="tests/t.py" name="test_x[branches: [main]-main-True]"/>'
+        '<testcase file="tests/t.py" name="test_x[branches-ignore: [main]-main-False]"/>'
+        '<testcase file="tests/t.py" name="test_y[a: [b]-1]"/>'
+        '<testcase file="tests/t.py" name="test_y[c: [d]-2]"><failure/></testcase>'
+        "</testsuite></testsuites>"
+    )
+    out = read_junit(xml)
+    assert set(out) == {"tests/t.py::test_x", "tests/t.py::test_y"}
+    assert out["tests/t.py::test_x"]["executed"] == "pass"
+    assert out["tests/t.py::test_y"]["executed"] == "fail"  # one failing case never hides behind a passing one
+    assert read_junit_cases(xml) == {"tests/t.py::test_x": 2, "tests/t.py::test_y": 1}

@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Root cause stated (first-] regex cannot fold bracketed parameter values); failing test first, then a one-line regex change; AC1-AC3 covered."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Pure string fold; no new failure path. Merge stays fail-closed (a failing case wins)."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No input surface change; the regex is linear (one greedy .* anchored at the end)."},
+ {"name": "Test Quality", "verdict": "pass", "note": "New test is red without the fix and asserts fold, fail-closed merge and case counts."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "Greedy .* with a single end anchor, no nested quantifiers."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "Comment explains why the fold starts at the first bracket."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "JUnit reader to traceability join: ids now match the bound function ids; existing reuse-predicate test accepts both forms."},
+ {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No skips added."}]}
