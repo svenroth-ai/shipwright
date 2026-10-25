@@ -123,10 +123,8 @@ def check_brief_fr_names(project_root: Path) -> list[CheckResult]:
 _BDI = "_shipwright_brief_mode_checks_bdi"
 
 
-def _package_hash(project_root: Path) -> list[CheckResult]:
-    """The recorded package must still verify against the hash held in run_config."""
-    if _brief(project_root) is None:
-        return []
+def verified_package(project_root: Path) -> dict:
+    """``verify_run_config``'s result for the recorded package (raises the loader's ``BriefRefused``)."""
     import importlib.util
     import sys
 
@@ -139,8 +137,15 @@ def _package_hash(project_root: Path) -> list[CheckResult]:
         except BaseException:
             sys.modules.pop(_BDI, None)
             raise
+    return sys.modules[_BDI].verify_run_config(project_root)
+
+
+def _package_hash(project_root: Path) -> list[CheckResult]:
+    """The recorded package must still verify against the hash held in run_config."""
+    if _brief(project_root) is None:
+        return []
     try:
-        out = sys.modules[_BDI].verify_run_config(project_root)
+        out = verified_package(project_root)
     except Exception as exc:  # noqa: BLE001 -- BriefRefused is a class per loader: duck-typed
         if not hasattr(exc, "as_dict"):
             raise

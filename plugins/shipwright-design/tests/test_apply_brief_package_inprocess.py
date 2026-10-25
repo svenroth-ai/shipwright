@@ -115,7 +115,6 @@ def test_in_process_a_marker_that_is_not_a_json_object_is_an_issue(project, tool
     assert code == 1 and out["issues"][0]["code"] == "bad_marker"
 
 
-
 @pytest.mark.covers("FR-01.04")
 def test_in_process_a_marker_with_invalid_json_is_an_issue(project, tool, capsys):
     main_json(tool, capsys, project)
@@ -184,3 +183,15 @@ def test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens
     assert (designs / "visual-guidelines.md").read_text(encoding="utf-8") == "# edited"
     assert (designs / "screens" / "02-editor.html").is_file() and (designs / "brief-package-applied.json").is_file()
     assert "01-notes.html" in out["kept_existing"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_in_process_a_first_apply_refuses_a_foreign_screen_and_writes_nothing(project, tool, capsys):
+    screen = project / ".shipwright" / "designs" / "screens" / "01-notes.html"
+    screen.parent.mkdir(parents=True)
+    screen.write_text("hand written", encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and [i["code"] for i in out["issues"]] == ["pre_existing_screen"]
+    assert screen.read_text(encoding="utf-8") == "hand written"
+    assert not (project / ".shipwright" / "designs" / "uploads").exists()
+    assert not (project / ".shipwright" / "designs" / "brief-package-applied.json").exists()

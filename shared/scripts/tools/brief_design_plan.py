@@ -19,9 +19,10 @@ from pathlib import Path
 
 from tools.grill_trace_fr_coverage import extract_fr_names, slugify
 
-_REQ_COMMENT_RE = re.compile(r"<!--\s*Requirements:(.*?)-->", re.IGNORECASE | re.DOTALL)
+# Same pattern as the design registry's ``parse_screen_linked_frs`` (the manifest's reader): the FIRST comment counts.
+_REQ_COMMENT_RE = re.compile(r"<!--\s*Requirements:\s*(?P<ids>[^>]*?)\s*-->", re.IGNORECASE)
 _FR_ID_RE = re.compile(r"^FR-\d{1,3}\.\d{1,3}$")
-_SNIFF_BYTES = 8192
+_SNIFF_BYTES = 8000  # pinned to brief_package_manifest._SNIFF_BYTES by a test
 
 
 def same_content(a: bytes, b: bytes) -> bool:
@@ -88,11 +89,9 @@ def plan_screens(bdir: Path, screen_map: dict, by_slug: dict[str, list[str]]) ->
 
 
 def linked_frs(html: str) -> set[str]:
-    """Every FR id named by any ``<!-- Requirements: ... -->`` comment of a screen."""
-    ids: set[str] = set()
-    for match in _REQ_COMMENT_RE.finditer(html):
-        ids |= {t.strip() for t in match.group(1).split(",") if _FR_ID_RE.match(t.strip())}
-    return ids
+    """The FR ids of a screen's FIRST ``<!-- Requirements: ... -->`` comment (the manifest's meaning)."""
+    match = _REQ_COMMENT_RE.search(html)
+    return {t.strip() for t in match.group("ids").split(",") if _FR_ID_RE.match(t.strip())} if match else set()
 
 
 def applied_file_issues(bdir: Path, designs: Path, screen_map: dict) -> list[dict]:
@@ -100,7 +99,9 @@ def applied_file_issues(bdir: Path, designs: Path, screen_map: dict) -> list[dic
     (hash rule), a screen must still exist (its content may have been edited in the review loop)."""
     issues = []
     for idx, entry in enumerate(screen_map.get("screens") or [], start=1):
-        mock = str(entry.get("mockup") or "")
+        mock = str(entry.get("mockup") or "") if isinstance(entry, dict) else ""
+        if not mock or mock != Path(mock).name or not (bdir / "mockups" / mock).is_file():
+            continue  # a malformed entry: plan_screens reports it plainly
         upload, screen = designs / "uploads" / mock, designs / "screens" / screen_file_name(idx, entry)
         if not upload.is_file() or not same_content(upload.read_bytes(), (bdir / "mockups" / mock).read_bytes()):
             issues.append({"code": "applied_files_missing", "screen": mock,

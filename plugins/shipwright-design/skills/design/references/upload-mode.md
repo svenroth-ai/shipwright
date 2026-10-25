@@ -29,9 +29,9 @@ no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means S
   FR `Name`); the FR ids are the ones Project minted in `spec.md`. A slug with no FR row stops the
   tool (exit 1, nothing written): finish Project first. Never type an FR id yourself;
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
-  `design-manifest.md` (every screen listed with its Linked FRs).
+  `design-manifest.md` (on every non-no-op apply) (every screen listed with its Linked FRs).
 
-An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing screen or `visual-guidelines.md` is left as it is. After exit 0, continue with the normal Design
+An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and a screen that already exists with no upload beside it on the first apply stops the tool (`pre_existing_screen`, exit 1, nothing written: move it away). After exit 0, continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
@@ -41,13 +41,16 @@ keep their own policy.
 `.shipwright/designs/brief-package-applied.json` once it has written everything. Run again with the
 same hash (a resumed Design, or the review loop coming back) it answers `already_applied`, exit 0,
 and writes nothing: later edits to `screens/NN-*.html` or `visual-guidelines.md` stay as they are.
-`exists_differs` can therefore only appear on the FIRST apply. A changed package is refused by the
+`exists_differs` can therefore only appear on the first apply or a reset. A changed package is refused by the
 hash check (exit 3), and a marker from a different hash is refused too (exit 1): never re-apply
 over edited screens. A re-entry also checks that every `uploads/<mockup>` is still byte-identical to the package
 and every `screens/NN-*.html` still exists (`applied_files_missing`, exit 1); to re-apply onto missing files
 delete `brief-package-applied.json`: the re-apply writes ONLY what is missing and keeps edited screens and
 guidelines (an upload that differs is still `exists_differs`). `design-manifest.md` is regenerated on every
-apply. The upload comparison uses the package hash's own rule (CRLF equals LF for text). The design verifier
-check `brief_design_applied` (runs with the design phase checks, brief runs only) is red unless the marker
-holds the recorded package hash, every upload matches the package and every screen links at least the FR
-ids minted for its screen-map entry (extra ids are fine): retyping the screens by hand cannot pass it.
+non-no-op apply (not on `already_applied`). The upload comparison uses the package hash's own rule (CRLF equals LF for text). The design verifier
+check `brief_design_applied` (runs with the design phase checks, brief runs only) is red unless the package still verifies, the marker
+holds the recorded package hash, every upload matches the package and every mapped screen links at least the FR
+ids minted for its screen-map entry (first `Requirements` comment; extra ids are fine). It does not prove the
+screens came from the tool. **Lifetime:** the approved package stays the contract for the life of the project, so a
+later FR or screen rename turns the check red by design. Recovery: approve a new package, delete the marker plus the
+affected `screens/` and `uploads/` files, and apply again.

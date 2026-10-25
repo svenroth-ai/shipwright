@@ -1,15 +1,19 @@
 """Design brief-mode check, registered in ``design_checks.run_design_checks`` (campaign
 brief-driven-run, B3a; BRIEF D8). It applies ONLY to a run whose ``shipwright_run_config.json``
-records a ``brief_dir`` -- every other project gets no result from here.
+records a ``brief_dir`` or a ``brief_package`` -- every other project gets no result from here.
 
-``brief_design_applied`` proves Design took the package instead of re-typing it (prose cannot):
+``brief_design_applied`` checks that Design's output still rests on the approved package (it does NOT
+prove the screens came from the tool). The package must still verify first (``verify_run_config``), then:
 
 * ``.shipwright/designs/brief-package-applied.json`` exists and its ``package_sha256`` equals the hash
   ``run_config`` recorded for the approved package;
 * every planned ``uploads/<mockup>`` exists and matches the package (the package hash's CRLF rule);
 * every planned ``screens/NN-id.html`` exists and its ``<!-- Requirements: ... -->`` comments name AT
-  LEAST the FR ids recomputed from the screen-map and the FR rows Project minted (a superset: review-loop
-  additions are fine, a retyped or dropped id is not -- which also makes a forged marker pointless).
+  LEAST the FR ids recomputed from the screen-map and the FR rows Project minted (a superset, read like the manifest does: the FIRST comment; review-loop
+  additions are fine, a retyped or dropped id is not).
+
+Lifetime: the approved package stays the contract for the life of the project; a later FR/screen rename turns this red
+by design -- changing it means a new package and a re-apply.
 
 Planning is shared with the writer (``tools/brief_design_plan.py``). No ``lib`` import (ADR-045).
 """
@@ -19,7 +23,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .brief_mode_checks import _brief, _guarded
+from .brief_mode_checks import _brief, _guarded, verified_package
 from .common import CheckResult, read_run_config
 
 NAME = "brief_design_applied"
@@ -27,14 +31,22 @@ MARKER = ".shipwright/designs/brief-package-applied.json"
 
 
 def _applied(project_root: Path) -> list[CheckResult]:
-    found = _brief(project_root)
-    if found is None:
+    cfg = read_run_config(project_root)
+    if not (cfg.get("brief_dir") or cfg.get("brief_package")):  # neither key: not a brief run
         return []
     from tools.brief_design_plan import applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens
 
+    try:  # the package must still verify BEFORE anything is read from it (a tampered map or mockup is red)
+        verified = verified_package(project_root)
+    except Exception as exc:  # noqa: BLE001 -- BriefRefused is a class per loader: duck-typed
+        if not hasattr(exc, "as_dict"):
+            raise
+        return [CheckResult(NAME, False, f"the recorded Brief package does not verify: {exc.code}: {exc.message}")]
+    found = _brief(project_root)
+    if found is None or not verified.get("package"):
+        return [CheckResult(NAME, False, "the recorded Brief package does not verify: missing_record: run_config holds no brief_dir")]
     rel, _raw = found
-    cfg = read_run_config(project_root)
-    recorded = (cfg.get("brief_package") or {}).get("package_sha256") if isinstance(cfg.get("brief_package"), dict) else None
+    recorded = verified.get("package_sha256")
     marker = project_root / MARKER
     try:
         applied = json.loads(marker.read_text(encoding="utf-8")).get("package_sha256") if marker.is_file() else None
@@ -56,7 +68,7 @@ def _applied(project_root: Path) -> list[CheckResult]:
                 problems.append(f"screens/{screen.name} does not link {lost} (the FR ids minted for its screen-map entry)")
     if problems:
         return [CheckResult(NAME, False, "; ".join(problems))]
-    return [CheckResult(NAME, True, f"{len(plan)} screen(s) applied from the approved package, uploads intact, minted FRs linked")]
+    return [CheckResult(NAME, True, f"{len(plan)} screen(s) mapped by the approved package, uploads intact, minted FRs linked")]
 
 
 def check_brief_design_applied(project_root: Path) -> list[CheckResult]:
