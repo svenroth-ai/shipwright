@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+  "date": "2026-10-25",
+  "section": "Iterate — feature: Design takes the Brief package (B3a)",
+  "title": "Design copies package mockups to screens/ and links FRs by slug",
+  "context": "A Brief package ships approved mockups and screen-map.json; Design must reach registry, FR-coverage and flow gates without hand-typed FR ids or a human mapping step.",
+  "decision": "New apply-brief-package.py re-verifies the package hash, keeps mockups byte-identical in uploads/, writes screens/NN-id.html with a Requirements comment resolved from capability slugs against Project-minted spec.md rows; all checks precede any write and a differing file is never overwritten.",
+  "consequences": "Upload-screen-mapping is answered by screen-map.json; ambiguous or unknown slugs stop the run; fixture 1 gained token headings and a new pinned hash. Snapshot isolation stays with U3, answer-time hash checks with U1/U2.",
+  "rationale": "A script is repeatable and testable where prose depends on agent discipline; it reuses the B2 verifier by file path (ADR-045) and the registry helper rather than a second hash or comment format.",
+  "rejected": "Prose-only upload-mode steps (cannot guarantee byte identity or minted ids); folding placement into screen_registry/setup script (second responsibility in a checker; architecture reviewer called this low severity).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

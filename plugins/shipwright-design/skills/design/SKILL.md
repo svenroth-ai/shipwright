@@ -55,6 +55,7 @@ Output:
 - Scan `.shipwright/designs/uploads/` for existing mockups
 - Integrate into design-manifest.md
 - Generate only missing screens
+- **Brief package** (`brief_dir` in `shipwright_run_config.json`): `screen-map.json` answers the mapping question; run `scripts/checks/apply-brief-package.py` instead of asking
 - Skip to [Upload Mode](references/upload-mode.md)
 
 ### C. Detect Invocation Mode

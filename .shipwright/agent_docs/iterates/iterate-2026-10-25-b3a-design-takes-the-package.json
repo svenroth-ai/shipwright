@@ -1,0 +1,76 @@
+{
+  "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+  "date": "2026-10-25T17:55:00.136602Z",
+  "event_at": "2026-10-25T17:54:39.972702+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B3a",
+  "spec": ".shipwright/planning/iterate/campaigns/brief-driven-run-b-intake-design-e2e/sub-iterates/B3a-design-takes-the-package.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-b3a-design-takes-the-package",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "mockups land byte-identical in uploads/ and screens/ copies carry the Linked-FR comment with ids minted in spec.md",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_uploads_are_byte_identical_and_screens_carry_minted_frs PASSED"
+      },
+      {
+        "behavior": "registry, FR-coverage, flows, standalone, chrome, tokens and uploads gates pass on the placed design",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_gates_pass_once_a_flow_is_added, ::test_manifest_and_visual_guidelines_are_written; integration-tests/test_design_takes_package.py PASSED (classic fixture 1)"
+      },
+      {
+        "behavior": "the flows gate still demands a flow for two screens",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_flows_gate_still_demands_a_flow_for_two_screens PASSED"
+      },
+      {
+        "behavior": "a changed or unrecorded package is refused (exit 3) and nothing is written",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_changed_package_is_refused_and_writes_nothing, ::test_no_recorded_package_is_refused PASSED"
+      },
+      {
+        "behavior": "unknown or ambiguous capability slugs, non-html or path-like mockups, duplicate mockups stop the run before any write",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_requirement_without_an_fr_row_stops_everything, ::test_a_screen_without_requirements_or_a_non_html_mockup_is_refused, ::test_an_ambiguous_slug_and_a_path_like_mockup_name_are_refused, ::test_duplicate_mockup_and_differing_guidelines_are_refused PASSED"
+      },
+      {
+        "behavior": "existing differing screen or guidelines are never overwritten; reruns are idempotent and complete a partial application",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_screen_is_never_overwritten, ::test_rerun_is_idempotent, ::test_a_rerun_completes_a_partially_applied_package PASSED"
+      },
+      {
+        "behavior": "Requirements comment injection replaces every old comment, keeps newline style and handles fragments",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package.py::test_injection_replaces_an_old_comment_and_handles_a_bare_fragment, ::test_old_comments_are_all_replaced_even_with_a_gt_inside PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py -q",
+    "exit_code": 0,
+    "tests_run": 16,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
+    "timestamp": "2026-10-25T17:53:08.441Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

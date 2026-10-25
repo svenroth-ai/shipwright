@@ -60,6 +60,23 @@ def parse_screen_linked_frs(html_path: Path) -> list[str]:
     return ids
 
 
+_REQ_COMMENT_RE = re.compile(rb"[ \t]*<!--\s*Requirements:.*?-->[ \t]*(?:\r?\n)?", re.IGNORECASE | re.DOTALL)
+_HTML_OPEN_RE = re.compile(rb"<html\b[^>]*>", re.IGNORECASE)
+_DOCTYPE_RE = re.compile(rb"<!doctype[^>]*>", re.IGNORECASE)
+
+
+def inject_requirements(data: bytes, frs: list[str]) -> bytes:
+    """``data`` with ONE ``<!-- Requirements: ... -->`` comment right after ``<html>`` (else after
+    the doctype, else first). The file's own newline style is kept; an older comment is replaced."""
+    nl = b"\r\n" if b"\r\n" in data else b"\n"
+    data = _REQ_COMMENT_RE.sub(b"", data)
+    comment = nl + b"<!-- Requirements: " + ", ".join(frs).encode("ascii") + b" -->" + nl
+    match = _HTML_OPEN_RE.search(data) or _DOCTYPE_RE.search(data)
+    if match is None:
+        return comment.lstrip() + data
+    return data[: match.end()] + comment + data[match.end():].lstrip(b"\r\n")
+
+
 def _read_existing_non_ui_frs_section(manifest_path: Path) -> str | None:
     """Return the verbatim ``## Non-UI FRs`` section from an existing
     manifest, or None if there is no existing manifest or no such section.

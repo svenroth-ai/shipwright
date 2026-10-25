@@ -9,3 +9,30 @@ When `.shipwright/designs/uploads/` contains files:
 5. Add to design-manifest.md with status "uploaded"
 6. Generate only screens not covered by uploads
 7. If visual guidelines found: use them for all generated screens, skip Step 6.5
+
+## Brief package: `screen-map.json` answers step 4
+
+When `shipwright_run_config.json` carries `brief_dir` (the run started from a Brief package), do
+**not** ask which screens the uploads represent (`design.upload-screen-mapping`): the package's
+`screen-map.json` is that answer. Run, from the project root:
+
+```bash
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"
+```
+
+It re-verifies the package against the hash `run_config` holds (exit 3 = changed, unapproved or
+no package: STOP, never repair it by hand), checks every screen-map entry, and only then writes:
+
+- `uploads/<mockup>.html`: the mockup **byte-identical** (the uploads gate keeps it that way);
+- `screens/NN-<screen id>.html`: a copy of the mockup with `<!-- Requirements: FR-xx.yy -->`
+  injected. A screen-map `requirements` entry is a capability slug (the lower-kebab form of the
+  FR `Name`); the FR ids are the ones Project minted in `spec.md`. A slug with no FR row stops the
+  tool (exit 1, nothing written): finish Project first. Never type an FR id yourself;
+- `visual-guidelines.md` from the package's `design_system` file, and a regenerated
+  `design-manifest.md` (every screen listed with its Linked FRs).
+
+An existing file that differs is never overwritten (exit 1). Then continue with the normal Design
+flow: generate the flows between the screens (the flows gate needs one for two or more screens),
+the chrome definition if any screen uses nav markup, and run
+`check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
+keep their own policy.
