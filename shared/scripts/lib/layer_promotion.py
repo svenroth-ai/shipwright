@@ -297,6 +297,10 @@ def evaluate_fr(
     if already_explicit:
         return _skip(fr_id, SKIP_ALREADY_EXPLICIT)
 
+    if is_advisory_spec(node.get("spec_path")):
+        # SPEC 6.2: stays `(inferred)`; decided before escalation (no operator call helps).
+        return _skip(fr_id, SKIP_ADVISORY_SPEC)
+
     if unrecognised_ok:
         return _escalate(
             fr_id, REASON_LAYER_UNDETERMINABLE,
@@ -324,10 +328,6 @@ def evaluate_fr(
         # automated rewrite would delete, so this run defers rather than
         # overwrites it.
         return _skip(fr_id, SKIP_LIVE_CELL_HAS_RESIDUAL_TEXT)
-
-    if is_advisory_spec(node.get("spec_path")):
-        # The live adopted spec stays `(inferred)` by decision (SPEC 6.2).
-        return _skip(fr_id, SKIP_ADVISORY_SPEC)
 
     # Widen by the single highest observable layer only, never by every
     # currently-ok layer: the spec's predicate names ONE layer ("the binding
