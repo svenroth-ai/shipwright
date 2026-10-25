@@ -24,23 +24,22 @@ import json
 from pathlib import Path
 
 from .brief_mode_checks import _guarded, verified_package
-from .common import CheckResult, read_run_config
+from .common import CheckResult
 
 NAME = "brief_design_applied"
 
 
 def _applied(project_root: Path) -> list[CheckResult]:
-    cfg = read_run_config(project_root)
-    if not (isinstance(cfg, dict) and ("brief_dir" in cfg or "brief_package" in cfg)):  # key PRESENCE, like verify_run_config
-        return []
     from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens
 
-    try:  # the package must still verify BEFORE anything is read from it (a tampered map or mockup is red)
+    try:  # the SAME parser as the resume check (utf-8-sig, key presence); the package must verify BEFORE anything is read from it
         verified = verified_package(project_root)
     except Exception as exc:  # noqa: BLE001 -- BriefRefused is a class per loader: duck-typed
         if not hasattr(exc, "as_dict"):
             raise
         return [CheckResult(NAME, False, f"the recorded Brief package does not verify: {exc.code}: {exc.message}")]
+    if not verified.get("package"):  # neither brief_dir nor brief_package: not a brief run
+        return []
     rel = str(verified["brief_dir"]).replace("\\", "/").strip("/")  # a verified package always has its brief_dir
     recorded = verified.get("package_sha256")
     marker_rel = f".shipwright/designs/{MARKER_NAME}"

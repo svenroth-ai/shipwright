@@ -205,14 +205,15 @@ def _applied(project, tool, capsys):
 @pytest.mark.covers("FR-01.04")
 def test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen(project, tool, capsys):
     designs = _applied(project, tool, capsys)
-    (designs / "screens" / "02-editor.html").write_text("edited", encoding="utf-8")
+    edited = designs / "screens" / "02-editor.html"
+    edited.write_text(edited.read_text(encoding="utf-8") + "<p>edited</p>", encoding="utf-8")  # keeps its minted ids
     (designs / "uploads" / "02-editor.html").unlink()
     assert main_json(tool, capsys, project)[0] == 1  # re-entry: applied_files_missing
     (designs / "brief-package-applied.json").unlink()
     code, out = main_json(tool, capsys, project)
     assert code == 0 and out["ok"]
     assert (designs / "uploads" / "02-editor.html").read_bytes() == (project / "brief" / "mockups" / "02-editor.html").read_bytes()
-    assert (designs / "screens" / "02-editor.html").read_text(encoding="utf-8") == "edited"
+    assert "<p>edited</p>" in edited.read_text(encoding="utf-8")
     assert (designs / "brief-package-applied.json").is_file()
 
 

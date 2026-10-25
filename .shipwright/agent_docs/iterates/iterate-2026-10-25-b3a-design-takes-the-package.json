@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
-  "date": "2026-10-25T20:34:17.297488Z",
+  "date": "2026-10-25T21:01:42.374921Z",
   "event_at": "2026-10-25T17:54:39.972702+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -50,12 +50,12 @@
       {
         "behavior": "the design verifier brief_design_applied: no result without a brief; red without the marker, with typed FR ids or a lost upload; green after a real apply, extra ids allowed",
         "disposition": "tested",
-        "evidence": "shared/tests/test_brief_design_checks.py::test_a_run_without_a_brief_package_gets_no_result, ::test_a_brief_run_without_the_applied_marker_is_red, ::test_hand_written_screens_with_typed_ids_stay_red_even_with_a_forged_marker, ::test_after_a_real_apply_it_is_green_and_extra_review_loop_ids_are_fine, ::test_a_missing_upload_a_foreign_marker_and_a_lost_fr_row_are_red, ::test_a_tampered_package_is_red_before_the_screen_map_is_trusted, ::test_a_recorded_package_without_brief_dir_is_still_a_brief_run_and_red, ::test_a_malformed_screen_map_entry_reads_plainly_not_opaquely, ::test_shared_plan_helpers_agree_with_the_hash_and_the_registry, ::test_fr_ids_by_slug_skips_the_iterate_folder_and_dedupes, ::test_a_null_brief_dir_is_still_a_brief_run_and_a_non_object_config_is_not PASSED"
+        "evidence": "shared/tests/test_brief_design_checks.py::test_a_run_without_a_brief_package_gets_no_result, ::test_a_brief_run_without_the_applied_marker_is_red, ::test_hand_written_screens_with_typed_ids_stay_red_even_with_a_forged_marker, ::test_after_a_real_apply_it_is_green_and_extra_review_loop_ids_are_fine, ::test_a_missing_upload_a_foreign_marker_and_a_lost_fr_row_are_red, ::test_a_tampered_package_is_red_before_the_screen_map_is_trusted, ::test_a_recorded_package_without_brief_dir_is_still_a_brief_run_and_red, ::test_a_malformed_screen_map_entry_reads_plainly_not_opaquely, ::test_shared_plan_helpers_agree_with_the_hash_and_the_registry, ::test_fr_ids_by_slug_skips_the_iterate_folder_and_dedupes, ::test_a_null_brief_dir_is_still_a_brief_run_and_a_non_object_config_is_not, ::test_a_forged_marker_with_hand_written_screens_is_red, ::test_a_bom_run_config_is_still_a_brief_run_and_a_malformed_one_is_red, ::test_the_documented_recovery_after_a_re_approved_package_ends_green, ::test_a_minted_id_that_is_not_an_fr_id_is_a_plan_issue PASSED"
       },
       {
         "behavior": "a re-apply after deleting the marker writes only missing targets and keeps edited screens and guidelines; an edited upload stays exists_differs; a deleted upload is noticed on re-entry",
         "disposition": "tested",
-        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry, ::test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen, ::test_in_process_an_edited_upload_is_recovered_by_restoring_it_from_the_package, ::test_in_process_a_deleted_manifest_is_regenerated_by_a_reset, ::test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_moved_away, ::test_in_process_an_unexpected_error_is_not_swallowed, ::test_injection_cannot_cut_markup_at_a_literal_requirements_in_a_script; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
+        "evidence": "plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py::test_in_process_reset_rewrites_only_missing_targets_and_keeps_edited_screens, ::test_in_process_a_deleted_upload_is_noticed_on_reentry, ::test_in_process_reset_after_a_deleted_upload_restores_it_and_keeps_the_edited_screen, ::test_in_process_an_edited_upload_is_recovered_by_restoring_it_from_the_package, ::test_in_process_a_deleted_manifest_is_regenerated_by_a_reset, ::test_in_process_screens_without_any_upload_and_no_marker_need_the_screens_moved_away, ::test_in_process_an_unexpected_error_is_not_swallowed, plugins/shipwright-design/tests/test_apply_brief_package_recovery.py::test_a_foreign_screen_without_its_upload_is_refused_even_when_other_uploads_exist, ::test_an_injection_the_reader_cannot_see_fails_that_screen, ::test_a_failed_module_load_is_not_left_in_sys_modules, ::test_injection_skips_an_html_tag_inside_a_conditional_comment, ::test_injection_cannot_cut_markup_at_a_literal_requirements_in_a_script; plugins/shipwright-design/tests/test_apply_brief_package.py::test_a_differing_existing_upload_is_never_overwritten_but_a_crlf_twin_is_fine PASSED"
       },
       {
         "behavior": "re-entry with the recorded package hash is a no-op that keeps review-loop edits; a changed hash or a bad marker is refused; a crash mid-write leaves no truncated file; a re-entry notices a deleted screen or an edited upload; SKILL routes a Brief package before New Design Session",
@@ -76,11 +76,11 @@
   },
   "surface_verification": {
     "surface": "cli",
-    "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py -q",
+    "runner": "uv run --extra dev pytest plugins/shipwright-design/tests/test_apply_brief_package.py plugins/shipwright-design/tests/test_apply_brief_package_inprocess.py plugins/shipwright-design/tests/test_apply_brief_package_recovery.py -q",
     "exit_code": 0,
-    "tests_run": 34,
+    "tests_run": 38,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3a\\.shipwright\\runs\\iterate-2026-10-25-b3a-design-takes-the-package\\surface_verification.log",
-    "timestamp": "2026-10-25T20:34:17.033Z"
+    "timestamp": "2026-10-25T21:01:42.145Z"
   },
   "declared_removals": [],
   "exemptions": {

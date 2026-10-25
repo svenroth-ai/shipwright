@@ -22,9 +22,11 @@ question (which screen does each upload represent, and which requirements does i
 * Reset: delete the marker. The re-apply writes ONLY the missing targets; an existing screen or
   ``visual-guidelines.md`` is left alone (edits survive), an existing upload that differs is
   ``exists_differs`` (restore it). ``design-manifest.md`` is regenerated on every non-no-op apply (not on ``already_applied``).
-  A screen while NONE of the package's uploads exists (a first apply, or a reset after every upload was lost)
-  stops with ``pre_existing_screen`` (nothing written): move that screen away. With at least one upload present
-  a missing upload is restored byte-identical from the package.
+  A screen without its own upload stops with ``pre_existing_screen`` (nothing written: move it away), unless
+  other uploads of the package exist (a reset) and the screen still links the FR ids minted for it. A missing
+  upload is restored byte-identical from the package.
+* A different package hash after an apply (``package_changed_since_apply``): re-approve and restart the run, then
+  move the whole ``.shipwright/designs/`` directory away and run again (the message names these steps).
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -44,7 +46,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.append(str(_SHARED_SCRIPTS))
 
-from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, plan_screens, same_content  # noqa: E402
+from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens, same_content  # noqa: E402
 
 DESIGNS = ".shipwright/designs"
 MARKER = MARKER_NAME  # written last; its hash makes a re-entry a no-op
@@ -54,7 +56,12 @@ def _load(path: Path, name: str):
     """A module by file path under a private name (ADR-045: never bind ``lib``)."""
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    sys.modules[name] = module  # registered before exec (ADR-045), dropped again when the load fails
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
     return module
 
 
@@ -68,7 +75,7 @@ def apply(project_root: Path) -> dict:
     info = bdi.verify_run_config(root)
     if not info.get("package"):
         raise bdi.BriefRefused("no_package", "run_config records no brief_dir: this run has no Brief package")
-    bdir, _ = bdi.recorded_dir(bdi.load_config(root)["brief_dir"], root)
+    bdir, _ = bdi.recorded_dir(info["brief_dir"], root)
     designs = root / DESIGNS
     marker = designs / MARKER
     try:
@@ -83,8 +90,10 @@ def apply(project_root: Path) -> dict:
         missing = applied_file_issues(bdir, designs, screen_map)
         return {"ok": False, "issues": missing} if missing else {"ok": True, "already_applied": True, "package_sha256": applied}
     if applied is not None:
-        return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", "the designs were applied from a different "
-                "package hash: re-approve and restart Design, never re-apply over edited screens")]}
+        return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from "
+                f"another package hash. To start over from the current package: copy any hand edits you want to keep elsewhere, "
+                f"then move the whole {DESIGNS}/ directory away (it holds {MARKER}, uploads/, screens/, visual-guidelines.md and "
+                "design-manifest.md of the old package) and run this tool again. Never re-apply over edited screens.")]}
     plan, issues = plan_screens(bdir, screen_map, fr_ids_by_slug(root))
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
@@ -92,13 +101,17 @@ def apply(project_root: Path) -> dict:
     targets: list[tuple[Path, bytes, bool]] = []  # (path, data, must match when it already exists)
     for item in plan:
         src = item["src"].read_bytes()
-        targets += [(designs / "uploads" / item["mockup"], src, True),
-                    (designs / "screens" / item["screen_file"], registry.inject_requirements(src, item["frs"]), False)]
+        page = registry.inject_requirements(src, item["frs"])
+        if linked_frs(page.decode("utf-8", errors="ignore")) != set(item["frs"]):  # the writer and the reader must agree
+            issues.append(_issue("injection_failed", item["screen_file"], "the Requirements comment could not be injected readably"))
+        targets += [(designs / "uploads" / item["mockup"], src, True), (designs / "screens" / item["screen_file"], page, False)]
     placed = any((designs / "uploads" / item["mockup"]).is_file() for item in plan)  # an earlier apply left uploads: a reset
-    for item in plan:  # no upload of this package anywhere + a screen = a foreign screen, never kept silently
-        if not placed and (designs / "screens" / item["screen_file"]).is_file():
+    for item in plan:  # a screen is kept only beside ITS upload, or (a reset) when it still links the ids minted for it
+        screen = designs / "screens" / item["screen_file"]
+        if screen.is_file() and not (designs / "uploads" / item["mockup"]).is_file() and not (
+                placed and set(item["frs"]) <= linked_frs(screen.read_text(encoding="utf-8", errors="ignore"))):
             issues.append(_issue("pre_existing_screen", item["screen_file"], f"screens/{item['screen_file']} already exists "
-                                 "and none of this package's uploads does: move the screen away, the first apply never keeps a foreign screen"))
+                                 "without its upload and without the minted FR ids: move the screen away, a foreign screen is never kept"))
     if guidelines.is_file():
         targets.append((designs / "visual-guidelines.md", guidelines.read_bytes(), False))
     for path, data, strict in targets:  # all checks first: a refusal writes nothing

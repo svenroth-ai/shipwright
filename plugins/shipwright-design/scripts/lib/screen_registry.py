@@ -63,16 +63,24 @@ def parse_screen_linked_frs(html_path: Path) -> list[str]:
 _REQ_COMMENT_RE = re.compile(rb"[ \t]*<!--\s*Requirements:[^<]*?-->[ \t]*(?:\r?\n)?", re.IGNORECASE)  # a comment holds no "<": a literal inside a script cannot cut markup
 _HTML_OPEN_RE = re.compile(rb"<html(?=[\s>])[^>]*>", re.IGNORECASE)  # not <html-preview>
 _DOCTYPE_RE = re.compile(rb"<!doctype[^>]*>", re.IGNORECASE)
+_COMMENT_SPAN_RE = re.compile(rb"<!--.*?-->", re.DOTALL)
+
+
+def _outside_comments(pattern: re.Pattern, data: bytes):
+    """The first match of ``pattern`` that does not start inside an ``<!-- ... -->`` span (a conditional comment)."""
+    spans = [m.span() for m in _COMMENT_SPAN_RE.finditer(data)]
+    return next((m for m in pattern.finditer(data) if not any(a <= m.start() < b for a, b in spans)), None)
 
 
 def inject_requirements(data: bytes, frs: list[str]) -> bytes:
     """``data`` with ONE ``<!-- Requirements: ... -->`` comment right after ``<html>`` (else after
-    the doctype, else first). The file's own newline style is kept; an older comment is replaced."""
+    the doctype, else first). The file's own newline style is kept; an older comment is replaced.
+    Known limit: a terminated ``<!-- Requirements: ... -->`` literal (no ``<`` inside) written inside a script is
+    removed like a real comment; an unterminated one is left alone."""
     nl = b"\r\n" if b"\r\n" in data else b"\n"
     data = _REQ_COMMENT_RE.sub(b"", data)
     comment = nl + b"<!-- Requirements: " + ", ".join(frs).encode("ascii") + b" -->" + nl
-    # Known limit: an "<html>" written inside an earlier HTML comment would be taken as the tag.
-    match = _HTML_OPEN_RE.search(data) or _DOCTYPE_RE.search(data)
+    match = _outside_comments(_HTML_OPEN_RE, data) or _outside_comments(_DOCTYPE_RE, data)
     if match is None:
         return comment.lstrip() + data
     return data[: match.end()] + comment + data[match.end():].lstrip(b"\r\n")

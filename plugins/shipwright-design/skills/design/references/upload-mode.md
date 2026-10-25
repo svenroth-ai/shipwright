@@ -12,7 +12,7 @@ When `.shipwright/designs/uploads/` contains files, or the run records a Brief p
 
 ## Brief package: `screen-map.json` answers step 4
 
-When `shipwright_run_config.json` carries `brief_dir` (the run started from a Brief package), do
+When `shipwright_run_config.json` carries `brief_dir` or `brief_package` (the run started from a Brief package), do
 **not** ask which screens the uploads represent (`design.upload-screen-mapping`): the package's
 `screen-map.json` is that answer. Run, from the project root:
 
@@ -31,7 +31,7 @@ no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means S
 - `visual-guidelines.md` from the package's `design_system` file, and a regenerated
   `design-manifest.md` (on every non-no-op apply) (every screen listed with its Linked FRs).
 
-An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and a screen that exists while none of the package's uploads does (a first apply, or a reset after every upload was lost) stops the tool (`pre_existing_screen`, exit 1, nothing written: move the screens away, then apply again). After exit 0, continue with the normal Design
+An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is, and a screen without its own upload stops the tool (`pre_existing_screen`, exit 1, nothing written: move the screen away, then apply again). The one exception is a reset where other uploads of the package exist and the screen still links its minted FR ids: it is kept. A foreign screen that happens to carry exactly those ids in such a reset is therefore kept too (a known hole: the gate does not prove the screens came from the tool). After exit 0, continue with the normal Design
 flow: generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
@@ -56,3 +56,6 @@ later FR or screen rename turns the check red by design. It re-runs at a later d
 `_validate_design`) or by hand with `verify_phase --phase design|all`; build, iterate, adopt and compliance do not run it.
 Recovery: re-approve the package AND restart the run, so a fresh run_config records the new hash; never edit
 `brief_package` in run_config by hand (the hash check would refuse the re-approved package, exit 3, in the tool and the gate).
+Then the tool answers `package_changed_since_apply` (the marker still holds the old hash) and names the steps: copy any
+hand edits elsewhere, move the whole `.shipwright/designs/` directory away (old marker, uploads, screens, guidelines,
+manifest) and run the tool again.

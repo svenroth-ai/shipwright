@@ -77,6 +77,7 @@ def plan_screens(bdir: Path, screen_map: dict, by_slug: dict[str, list[str]]) ->
             + [f"requirement {s!r} has no FR row in any spec.md (Project mints the ids)" for s in wanted if s not in by_slug]
             + [f"requirement {s!r} matches several FR rows {by_slug[s]}: ambiguous" for s in wanted if len(by_slug.get(s, ())) > 1]
             + ([] if wanted else ["no requirements: a screen must link at least one"])
+            + [f"minted id {fr!r} is not an FR id (FR-NN.NN)" for fr in frs if not _FR_ID_RE.match(fr)]
         )
         seen.add(sid)
         if mock.casefold() in seen_mockups:
