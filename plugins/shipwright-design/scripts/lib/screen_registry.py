@@ -63,7 +63,7 @@ def parse_screen_linked_frs(html_path: Path) -> list[str]:
 _REQ_COMMENT_RE = re.compile(rb"[ \t]*<!--\s*Requirements:[^<]*?-->[ \t]*(?:\r?\n)?", re.IGNORECASE)  # a comment holds no "<": a literal inside a script cannot cut markup
 _HTML_OPEN_RE = re.compile(rb"<html(?=[\s>])[^>]*>", re.IGNORECASE)  # not <html-preview>
 _DOCTYPE_RE = re.compile(rb"<!doctype[^>]*>", re.IGNORECASE)
-_COMMENT_SPAN_RE = re.compile(rb"<!--(?:-?>|.*?-->)", re.DOTALL)  # "<!-->" and "<!--->" are complete comments
+_COMMENT_SPAN_RE = re.compile(rb"<!--(?:-?>|.*?-->|.*\Z)", re.DOTALL)  # "<!-->" and "<!--->" are complete; an unterminated "<!--" runs to the end
 
 
 def _outside_comments(pattern: re.Pattern, data: bytes):

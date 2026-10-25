@@ -26,7 +26,6 @@ from pathlib import Path
 
 try:
     # loaded as lib.design_gate_extras (shared/tests)
-    from .brief_upload_accounting import accounted_by_applied_package
     from .design_gate_feedback import iteration_touched_flagged_screens, parse_feedback_round
     from .design_gate_html import (
         chrome_nav_targets_consistent,
@@ -37,7 +36,6 @@ try:
 except ImportError:
     # loaded as top-level design_gate_extras — check-design-gates.py puts
     # shared/scripts/lib itself on sys.path.
-    from brief_upload_accounting import accounted_by_applied_package
     from design_gate_feedback import iteration_touched_flagged_screens, parse_feedback_round
     from design_gate_html import (
         chrome_nav_targets_consistent,
@@ -162,8 +160,6 @@ def uploads_preserved(project_root: Path, uploads_dir: Path) -> GateResult:
         line[3:].strip().strip('"') for line in proc.stdout.splitlines()
         if line and ((line[0] in "MU") or (len(line) > 1 and line[1] == "M" and line[0] != "A"))
     ]
-    # a Brief-package re-apply (the documented recovery after a re-approved package) accounts for its own uploads
-    modified = [m for m in modified if not accounted_by_applied_package(project_root, uploads_dir / Path(m).name)]
     if modified:
         return GateResult(False, f"{len(modified)} uploaded file(s) modified after being supplied: {modified[:3]}")
     return GateResult(True, "no supplied upload was modified")

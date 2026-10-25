@@ -25,9 +25,12 @@ question (which screen does each upload represent, and which requirements does i
   An existing screen is kept only when it links the FR ids minted for it AND at least one upload of the package
   exists (a reset); otherwise ``pre_existing_screen`` (nothing written: move that screen away). A missing upload is
   restored byte-identical. A foreign screen with exactly the minted ids during a reset is an accepted hole.
-* A different package hash after an apply (``package_changed_since_apply``) is an OPERATOR action: re-approve and
-  restart the run, then the operator renames (never deletes) the whole ``.shipwright/designs/`` directory to
-  ``.shipwright/designs.superseded-<old-hash8>/`` and runs this tool again (the message says so).
+* A different package hash after an apply (``package_changed_since_apply``, with ``old_hash8``) is an OPERATOR action:
+  re-approve and restart the run; the operator renames (never deletes) ``.shipwright/designs/`` to
+  ``.shipwright/designs.superseded-<old-hash8>/``, commits the move in git, runs this tool FIRST, then copies back
+  non-screen artifacts and re-applies screen edits by hand (the message lists the steps).
+* A kept file that differs from the package (a pre-existing ``visual-guidelines.md``) is listed in
+  ``kept_existing_differs`` (a warning, not a refusal).
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -92,12 +95,16 @@ def apply(project_root: Path) -> dict:
         return {"ok": False, "issues": missing} if missing else {"ok": True, "already_applied": True, "package_sha256": applied}
     if applied is not None:
         old = str(applied)[:8]
-        return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from "
-                f"another package hash ({old}). This is an operator action: report it and stop, do not do it on your own. The "
-                f"operator RENAMES (never deletes) the whole {DESIGNS}/ directory, everything in it (uploads/, screens/, flows/, "
-                f"chrome-definition.md, visual-guidelines.md, design-manifest.md, design-feedback-round*.md, index.html and "
-                f"{MARKER}), to {DESIGNS}.superseded-{old}/ inside the project, copies back what should survive, and runs this "
-                "tool again. Never re-apply over edited screens.")]}
+        issue = _issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from another package hash "
+                       f"({old}). This is an operator action: report it and stop, do not do it on your own. The operator (1) RENAMES "
+                       f"(never deletes) the whole {DESIGNS}/ directory, everything in it, to {DESIGNS}.superseded-{old}/ inside the "
+                       f"project; (2) in a git repository COMMITS that move (git add -A {DESIGNS} {DESIGNS}.superseded-{old} && git "
+                       "commit), so the re-applied uploads show as new files, not as modified supplied ones; (3) runs this tool again "
+                       "FIRST; (4) only then copies back non-screen artifacts (feedback rounds, flows, chrome-definition.md) from the "
+                       "superseded directory and re-applies review-loop edits to screens by hand, keeping the Requirements comment. "
+                       "Never re-apply over edited screens.")
+        issue["old_hash8"] = old
+        return {"ok": False, "issues": [issue]}
     plan, issues = plan_screens(bdir, screen_map, fr_ids_by_slug(root))
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
@@ -127,16 +134,19 @@ def apply(project_root: Path) -> dict:
     if issues:
         return {"ok": False, "issues": issues}
     atomic = bdi._lib("atomic_write").durable_atomic_write  # temp file + os.replace: a crash leaves no truncated file (the manifest is rewritten whole on the re-run: the marker is last)
-    kept = []
+    kept, differs = [], []
     for path, data, _strict in targets:
         if path.is_file():
             kept.append(path.relative_to(designs).as_posix())  # an existing screen or guidelines file keeps its edits
+            if path.suffix != ".html" and not same_content(path.read_bytes(), data):  # screens differ by design; guidelines should not
+                differs.append(path.relative_to(designs).as_posix())
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
         atomic(path, data)
     registry.write_manifest(designs, profile_name=str(brief.get("profile") or ""))
     atomic(marker, json.dumps({"package_sha256": info["package_sha256"]}))
     return {"ok": True, "package_sha256": info["package_sha256"], "kept_existing": kept,
+            "kept_existing_differs": differs,  # a warning, not a refusal: a kept file that is not the package's own
             "screens": [{"file": f"screens/{i['screen_file']}", "upload": f"uploads/{i['mockup']}", "frs": i["frs"]} for i in plan]}
 
 

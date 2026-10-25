@@ -71,3 +71,22 @@ def test_an_empty_comment_and_a_leading_bom_do_not_break_injection(tool):  # noq
     bom = chr(0xFEFF).encode("utf-8")
     out = registry.inject_requirements(bom + b"<p>fragment</p>", ["FR-01.01"])
     assert out.startswith(bom + b"<!-- Requirements: FR-01.01 -->") and out.count(bom) == 1
+
+
+@pytest.mark.covers("FR-01.04")
+def test_a_pre_existing_differing_guidelines_file_is_kept_and_reported(project, tool, capsys):  # noqa: F811
+    guidelines = project / ".shipwright" / "designs" / "visual-guidelines.md"
+    guidelines.parent.mkdir(parents=True)
+    guidelines.write_text("# mine\n", encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 0 and out["kept_existing_differs"] == ["visual-guidelines.md"]
+    assert guidelines.read_text(encoding="utf-8") == "# mine\n"
+    (project / ".shipwright" / "designs" / "brief-package-applied.json").unlink()
+    assert main_json(tool, capsys, project)[1]["kept_existing_differs"] == ["visual-guidelines.md"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_an_unterminated_comment_hides_a_later_html_tag(tool):  # noqa: F811
+    registry = tool._load(tool._HERE.parent / "lib" / "screen_registry.py", "_t_registry_open")
+    out = registry.inject_requirements(b"<body><!-- never closed <html class=x>", ["FR-01.01"])
+    assert out.startswith(b"<!-- Requirements: FR-01.01 -->")  # the hidden tag was not used
