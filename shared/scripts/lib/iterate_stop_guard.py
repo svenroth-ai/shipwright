@@ -208,6 +208,15 @@ def _merged_out_of_band(worktree: Path, branch: str, run_started: str, state: di
                for p in prs)
 
 
+def _blocker_tool() -> str:
+    """Absolute path of ``record_hard_blocker.py``, so the block message's command runs as printed.
+    Fail-open: the bare file name when the path cannot be resolved (the message must never raise)."""
+    try:
+        return str(Path(__file__).resolve().parents[1].joinpath("tools", "record_hard_blocker.py").resolve(strict=True))
+    except (OSError, IndexError, RuntimeError):  # RuntimeError: symlink loop on Python < 3.13
+        return "record_hard_blocker.py"
+
+
 def _write_keeping_blocker(main_root: Path, run_id: str, state: dict) -> None:
     """Persist ``state``; a blocker recorded since it was read (``gh`` can take 8 s) survives."""
     fresh = read_state(main_root, run_id).get("blocker")
@@ -259,12 +268,14 @@ def decide(*, main_root: Path, run_id: str, worktree: Path, branch: str,
                                                "tool_count": tool_count})
     hint = next_phase_hint(worktree, run_id, branch)
     return (
-        f"Autonomous iterate {_safe(run_id)} is not finished: its PR is not MERGED with green checks "
-        f"(F11 delivery + F12). A summary or a question now is a contract violation. Next: {hint} "
-        "Continue without asking. If a named background task (F0 suite, reviewer, delivery watch) is still running, end the turn WITHOUT further tool calls and resume on its notification. If the operator's latest message explicitly told you to stop or "
+        f"Autonomous iterate {_safe(run_id)} is still open: its PR is not yet MERGED with green checks "
+        f"(F11 delivery + F12), so this is not the end of the run. Next: {hint} Keep going without asking. "
+        "If a background task you started (F0 suite, reviewer, resumed runner, delivery watch) is still "
+        "running, waiting for it is allowed: end the turn WITHOUT further tool calls and resume on its "
+        "notification. If the operator's latest message explicitly told you to stop or "
         "pause, or you are truly blocked (delivery exit 8, admin merge needed, operator-only decision, "
         "run abandoned), first run "
-        f'`uv run "{{shared_root}}/scripts/tools/record_hard_blocker.py" --run-id {_safe(run_id)} '
+        f'`uv run "{_blocker_tool()}" --run-id {_safe(run_id)} '
         f'--reason-code <{"|".join(HARD_BLOCKER_CODES)}> --detail "<why>"`, then stop; the F12 '
         "summary names the blocker. Operator kill switch: SHIPWRIGHT_ITERATE_STOP_GUARD=0."
     )
