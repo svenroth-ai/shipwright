@@ -31,7 +31,14 @@ Repeat until a terminal signal:
    The JSON `action` is one of:
    - `dispatch` → a `dispatch` descriptor (`phaseTaskId`, `phase`, `splitId`,
      `sessionUuid`, `version`, `slashCommand`, `title`). The task is now claimed
-     (in_progress) and a dispatch is recorded in loop state.
+     (in_progress) and a dispatch is recorded in loop state. Re-dispatching a task that
+     is already in_progress (a gate retry, a crash resume) **rotates its `version`**:
+     apply only with the descriptor of the LATEST `single-session-next`; an earlier
+     dispatch's result is refused `stale_version` (exit 2) and changes nothing. The
+     `next` previews that apply and `single-session-resume` return claim nothing, and
+     calling `single-session-next` again while a phase-runner is out supersedes it.
+     That includes a crash resume: a runner result written but not yet applied before
+     the crash carries the old version and is refused, so that phase is re-run.
    - `complete` → the pipeline finished. Stop; print the completion summary.
    - `failed` → a phase strict-stopped (`failed_tasks`). Stop; surface it.
    - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop.
@@ -74,7 +81,9 @@ Repeat until a terminal signal:
    freezes splits when a design phase completes (so build fans out per split),
    routes the result through `complete_phase_task` (an `ok:false` result
    strict-stops via `mark_phase_failed`, planning NO successor), and advances the
-   loop pointer. The `next` field carries the resolved next action — loop on it.
+   loop pointer. The `next` field is a read-only preview of the next action: to
+   continue, call `single-session-next` (step 1) and dispatch only from ITS descriptor —
+   never from this preview, whose `version` is the pre-rotation one.
 
    **The phase gate.** Between the artifact check and the completion, apply runs the
    phase's own validators and canon checks (`orchestrator_pkg/phase_gate.py`) — the gate
@@ -107,7 +116,10 @@ Repeat until a terminal signal:
    or the task is recovered. Without a loop state for this task (a library apply that never
    went through `single-session-next`) the position is unknown and nothing is capped. A gate
    that passes adds `gate: {result, checked, issues, inform}` to the
-   success payload; inform notes there are not persisted.
+   success payload, and the completed task keeps a durable `gate` record (`result`,
+   `checked`, `phase`, `splitId`, the `runId` the canon check used, `at`, `issueCount`,
+   `informCount`, `overridden`); the inform notes themselves are not persisted, only
+   counted.
 
    **Override (ASK FIRST).** `--override-reason "<why>"` on `single-session-apply` completes
    a phase over its gate: the gate still runs, and its findings, the reason, the task and
@@ -201,10 +213,16 @@ resumes via a **confirm card** rather than starting fresh:
 conversation, so when the master dies the runner dies with it — there is no orphaned
 live worker to race on resume. (Split-brain WAS a real hazard under the removed
 `multi_session` mode, whose phases ran as independent external Claude processes that
-outlived the master; removing that mode removed the hazard with it.)
+outlived the master; removing that mode removed the hazard with it.) The re-dispatch
+still rotates the task's `version`, so even a runner that did survive could not apply.
 `recover-phase-task` stays the manual escape for a truly wedged task; in the loop use
 `single-session-recover` (same lifecycle mutator + a `recovery` event + loop-pointer
-realign).
+realign). Either one with `--force-status skipped` needs `--reason "<why>"`: it is stored
+as the task's `skipReason` and sent as a `phase_skipped` event to the tracked log; with
+any other status `--reason` is refused (`reason_only_for_skip`). Recovering a `done`
+task to `skipped` replaces its `gate` pass record: that record then survives only in git
+history, and the `phase_skipped` event's `recoveredFrom: "done"` says a completion was
+overturned.
 
 ## Observability
 

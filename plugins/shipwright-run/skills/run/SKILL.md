@@ -210,7 +210,9 @@ gate is enforced by default), nothing was completed: follow the reference's
 person (guided) or stop failed (autonomous). Completing over the checks
 (`single-session-apply --override-reason "<why>"`) is **ASK FIRST**: only on the
 person's explicit answer, never on your own, and never by a phase-runner. Send every
-retry through `single-session-next` (the retry cap counts there and at apply).
+retry through `single-session-next` (the retry cap counts there and at apply). Each
+re-dispatch hands out a NEW `version`: apply with the latest one only (an earlier
+dispatch's result is refused `stale_version`).
 
 `pipelineLength` = `len(config.pipeline)` (always 7 post-decouple — security is
 no longer an orchestrator phase).
@@ -268,8 +270,9 @@ To recover, paste this in your terminal:
 
   uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {phaseTaskId}
 
-(add `--force-status awaiting_launch` to re-run that phase, or `--force-status skipped`
-to move on without its output.)
+(add `--force-status awaiting_launch` to re-run that phase, or `--force-status skipped
+--reason "<why>"` to move on without its output; a skip without a reason is refused, and
+the reason is stored on the task and in the tracked event log.)
 
 Then re-invoke /shipwright-run — the loop picks up from the recovered phase.
 ================================================================================
@@ -286,7 +289,7 @@ Deploy completed, but other phase tasks are non-terminal:
 
 To resolve, paste this in your terminal (one command per non-terminal task):
 
-  uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {ptk} --force-status skipped
+  uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {ptk} --force-status skipped --reason "<why>"
 
 Skipping does not finish the run by itself: single-session-apply sets
 run.status to "complete" only when deploy completes with every other task

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-gate-honesty-followups",
+  "date": "2026-10-25",
+  "section": "Iterate — change: gate honesty follow-ups",
+  "title": "Skip reason, gate pass record and re-dispatch fencing for driven runs",
+  "context": "The A5 review left three gaps: a forced skip recorded no reason or event, a passed gate left nothing durable, and a gate retry re-claimed the task with the same version so the earlier dispatch's result still passed the CAS.",
+  "decision": "A skip requires --reason (stored as phase_tasks[].skipReason, one phase_skipped event); every gated completion writes phase_tasks[].gate in the completion lock; every re-dispatch bumps version, and the design freeze moved into the completion's locked write.",
+  "consequences": "Three new optional phase_tasks[] keys and a new tracked event type; the master must apply with the latest single-session-next descriptor. A stale runner that reads the newer version itself is fenced only by the phase-runner contract.",
+  "rationale": "version is already the CAS counter every apply path checks and recover bumps, so rotating it needs no second token; writing the freeze inside the lock that checks the CAS leaves no window.",
+  "rejected": "A second fencing token field; requiring a reason only after a gate rejection; persisting inform notes; a separately fenced freeze before the completion (two locks leave a window).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-gate-honesty-followups-skip-reason-pass-record-and-redispatch-fencing.md"
+}

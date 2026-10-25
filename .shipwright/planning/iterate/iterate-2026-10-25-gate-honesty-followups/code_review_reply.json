@@ -1,0 +1,53 @@
+{
+ "section": "gate-honesty-followups",
+ "review": [
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+   "line": 541,
+   "finding": "canon_run_id was evaluated outside the gate's try.",
+   "suggestion": "FIXED: inside try, defaults to config runId."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+   "line": 204,
+   "finding": "Dead-ish try around split resolution; private lc._ names used.",
+   "suggestion": "FIXED: marked defensive, public aliases added."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+   "line": 235,
+   "finding": "Recovery event reason not normalised.",
+   "suggestion": "FIXED: only stored normalised skipReason; --reason rejected for non-skip."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py",
+   "line": 175,
+   "finding": "claim and redispatch take two locks; fails closed.",
+   "suggestion": "ACCEPTED (single-master design)."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/schemas/run_config.v2.schema.json",
+   "line": 1714,
+   "finding": "Schema/writer drift (skipReason cap, redispatchedAt null).",
+   "suggestion": "FIXED."
+  },
+  {
+   "severity": "info",
+   "category": "correctness",
+   "file": "plugins/shipwright-run/scripts/lib/phase_task_core.py",
+   "line": 198,
+   "finding": "Pre-existing: missing version defaults 0 vs 1 elsewhere.",
+   "suggestion": "Follow-up card."
+  }
+ ]
+}

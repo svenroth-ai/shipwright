@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "AC-1..7 each have a test (run-plugin unit tests plus the real-CLI integration test); every refusal path asserts a byte-identical run config."},
+    {"name": "Error Handling", "verdict": "pass", "note": "A blank skip reason is refused before the lock; redispatch refusals surface as claim_failed with no loop-state write; a split-read raise returns freeze_splits_failed before completion."},
+    {"name": "Security Basics", "verdict": "pass", "note": "The operator reason is normalised to one printable line capped at 500 chars, JSON-encoded into the event detail, and the schema says to render it as data."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Mutation checks (rotation, freeze guard, gate hook, in-lock freeze) make the new tests fail; no assertion was weakened, and the e2e guided test now also asserts that the first descriptor is refused stale_version."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "One extra locked read-modify-write per re-dispatch only; the design freeze adds no lock because it rides the completion's write."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "The new completion_hook.py (52 LOC) keeps single_session_apply.py under 300 LOC; apply_frozen_splits is shared by freeze_splits and the hook; the grandfathered files did not grow."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "All four producer/consumer rows round-trip through the real CLI: run_config skipReason, gate and version, plus the tracked phase_skipped event read back by the integration test."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff reports no findings for the changed test files."}
+  ]
+}

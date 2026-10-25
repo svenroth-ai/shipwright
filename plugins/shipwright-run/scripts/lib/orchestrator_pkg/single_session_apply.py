@@ -41,6 +41,7 @@ from single_session.orchestrator_context import verify_artifacts_exist  # noqa: 
 from single_session.result_contract import validate_phase_runner_result  # noqa: E402
 
 from . import phase_gate  # noqa: E402
+from .completion_hook import completion_hook  # noqa: E402
 from .config_io import is_single_session, load_run_config, mode_rejection  # noqa: E402
 
 
@@ -118,7 +119,8 @@ def apply_phase_result(
     through the lifecycle, returned as a strict-stop, recoverable with
     ``single-session-recover``). ``override_reason`` (not None) runs the gate, then
     writes the override record and the completion under ONE lock through
-    ``complete_phase_task(on_complete=...)``. ``gate`` injects the gate function
+    ``complete_phase_task(on_complete=...)``. Every gated completion (pass or override)
+    also writes ``phase_tasks[].gate`` there (``completion_hook``). ``gate`` injects the gate function
     (tests; default ``validation_record.run_phase_gate``).
 
     (0) FIRST: the DRIVABILITY guard. ``apply`` is the loop's most destructive entry
@@ -133,8 +135,9 @@ def apply_phase_result(
     (2) On-disk PERSISTENCE GUARD (SS4): an ``ok`` result may not CLAIM an artifact it did
     not write to disk — a missing claim is rejected fail-closed BEFORE any mutation,
     closing the section-writer silent-loss class at the loop level.
-    (3) A design phase that completed ok freezes splits BEFORE completion, so the
-    design->plan successor sees ``splits_frozen`` and build fans out per split.
+    (3) A design phase that completed ok freezes splits IN the completion's locked write
+    (``completion_hook``, before the successor is planned), so the design->plan successor
+    sees ``splits_frozen``, build fans out per split, and a stale apply freezes nothing.
     (4) Route through ``complete_phase_task`` — ok=False strict-stops via
     ``mark_phase_failed`` (NO successor); ok=True marks done + plans the next.
     (5) Advance the loop pointer / stamp the terminal loop status.
@@ -197,15 +200,12 @@ def apply_phase_result(
             return _gate_rejected(project_root, config, verdict, phase_task_id=phase_task_id,
                                   session_uuid=session_uuid, expected_version=expected_version)
 
-    if phase == "design" and result.get("ok"):
-        try:
-            freeze_result = lc.freeze_splits(project_root)
-        except Exception as exc:  # noqa: BLE001 — never crash the loop on freeze
+    frozen_splits = None
+    if phase == "design" and result.get("ok") and gate_due:  # a stale apply freezes nothing
+        try:  # read the split authority now; it is written with the completion, under its lock
+            frozen_splits = lc.resolve_splits_with_fallback(project_root)[0]
+        except Exception as exc:  # noqa: BLE001 — defensive: the read never raises by contract
             return {"ok": False, "reason": "freeze_splits_failed", "error": str(exc)}
-        if not freeze_result.get("ok"):
-            detail = freeze_result.get("blockMessage") or freeze_result.get("reason", "")
-            return {"ok": False, "reason": "freeze_splits_failed", "error": detail,
-                     "freeze_result": freeze_result}
 
     completion = lc.complete_phase_task(
         project_root,
@@ -213,7 +213,9 @@ def apply_phase_result(
         session_uuid=session_uuid,
         expected_version=expected_version,
         result=result,
-        on_complete=on_complete,
+        on_complete=completion_hook(override=on_complete, frozen_splits=frozen_splits,
+                                    verdict=verdict, now=lc.now_iso,
+                                    freeze=lc.apply_frozen_splits),
     )
     if not completion.get("ok"):
         # CAS reject (stale) — surface verbatim; loop_state left untouched.

@@ -1,0 +1,49 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "trigger": "concurrency/ordering (version fencing), irreversible run_config + event writes",
+ "doubts": [
+  {
+   "severity": "low",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "Docs agree on where to dispatch from",
+   "file": "plugins/shipwright-run/skills/run/references/single-session-loop.md",
+   "what_would_resolve_it": "L82 contradicted L38. RESOLVED: next is a read-only preview, dispatch only from single-session-next."
+  },
+  {
+   "severity": "low",
+   "lens": "input-validation",
+   "claim_under_doubt": "Reason requirement cannot be dodged",
+   "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+   "what_would_resolve_it": "Invisible filler characters passed. RESOLVED: needs an alphanumeric after normalisation, fillers excluded explicitly, tests added."
+  },
+  {
+   "severity": "low",
+   "lens": "observability",
+   "claim_under_doubt": "Recovery events carry clean operator text",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+   "what_would_resolve_it": "RESOLVED, see code review."
+  },
+  {
+   "severity": "low",
+   "lens": "reversibility",
+   "claim_under_doubt": "Crash-resume keeps a written result usable",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py",
+   "what_would_resolve_it": "Rotation on resume refuses an unapplied result, so the phase re-runs. ACCEPTED as intended fencing and now documented."
+  },
+  {
+   "severity": "info",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "Fencing holds against an adversary",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py",
+   "what_would_resolve_it": "Cooperative only: a raw claim-phase-task re-claim does not rotate. ACCEPTED, recorded as follow-up; the gate itself cannot be bypassed (raw complete refused)."
+  },
+  {
+   "severity": "info",
+   "lens": "evidence",
+   "claim_under_doubt": "Done->skipped keeps gate evidence",
+   "file": "plugins/shipwright-run/scripts/lib/phase_task_recovery.py",
+   "what_would_resolve_it": "The pass record is replaced; only git history keeps it. Documented, phase_skipped carries recoveredFrom."
+  }
+ ]
+}

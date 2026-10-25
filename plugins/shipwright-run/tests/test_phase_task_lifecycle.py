@@ -376,10 +376,10 @@ def test_recover_force_failed(v2_project):
     assert res["ok"] is True
     assert res["phase_task"]["status"] == "failed"
 
-
+@pytest.mark.covers("FR-01.01/AC03")
 def test_recover_force_skipped_adds_to_completed_ids(v2_project):
     tid = _project_task_id(v2_project)
-    res = recover_phase_task(v2_project, phase_task_id=tid, force_status="skipped")
+    res = recover_phase_task(v2_project, phase_task_id=tid, force_status="skipped", reason="x")
     assert res["ok"] is True
     assert res["phase_task"]["status"] == "skipped"
     assert tid in _read_cfg(v2_project)["completed_phase_task_ids"]

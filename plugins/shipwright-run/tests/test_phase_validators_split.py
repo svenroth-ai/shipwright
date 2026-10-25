@@ -134,7 +134,7 @@ def test_recover_to_skipped_then_complete_does_not_launder_design(tmp_path, cano
         {"phaseTaskId": "pt-design", "phase": "design", "splitId": None,
          "status": "in_progress", "version": 1}]})
     assert lifecycle.recover_phase_task(tmp_path, phase_task_id="pt-design",
-                                        force_status="skipped")["ok"]
+                                        force_status="skipped", reason="no UI")["ok"]
     valid, issues = validate_phase("design", tmp_path)
     assert not valid and "No mockups found" in _msgs(issues) and canon_calls == []
 

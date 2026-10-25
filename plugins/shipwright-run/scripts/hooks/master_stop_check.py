@@ -165,7 +165,8 @@ def run(project_root: Path) -> int:
                 t, orch_path, force_status="awaiting_launch",
             ))
             lines.append(
-                "    (use --force-status skipped to move on without re-running this phase)"
+                "    (use --force-status skipped --reason \"<why>\" to move on without re-running"
+                " this phase)"
             )
         lines.append("")
         lines.append("After recover-phase-task, re-invoke /shipwright-run — the master")

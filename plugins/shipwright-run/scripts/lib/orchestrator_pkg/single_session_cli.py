@@ -95,7 +95,7 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
         else:  # single-session-recover
             result = recover_single_session(
                 project_root, phase_task_id=args.phase_task_id,
-                force_status=args.force_status,
+                force_status=args.force_status, reason=getattr(args, "reason", None),
             )
         print(json.dumps(result, indent=2))
         return 0 if result.get("ok") else 1
