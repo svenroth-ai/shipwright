@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS. The diff meets every B4 requirement in the sub-iterate spec and BRIEF section 3 row B4; nothing missing, no scope creep. Notes: adopt will never auto-match chat-first-json (backend empty by design); one test name says schema but only resolves."}

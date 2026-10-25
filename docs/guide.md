@@ -66,7 +66,7 @@ Shipwright is for engineers, BAs, architects, and tech leads who work with Claud
 
 ### Discipline Layer — the Harness around AI Coding
 
-Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The three stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
+Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The four stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
 
@@ -1372,12 +1372,13 @@ A **stack profile** is a JSON file that defines everything about your technology
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
-Three profiles ship out-of-the-box:
+Four profiles ship out-of-the-box:
 
 | Profile | Layout | When to use |
 |---------|--------|-------------|
 | `supabase-nextjs` (default) | Single-service Next.js + Supabase | Standard SaaS: Next.js full-stack with Supabase as backend |
 | `vite-hono` | Multi-service: Vite (frontend) + Hono (backend) | Split frontend/backend with a separate API server (or any project that wants the Vite dev-experience) |
+| `chat-first-json` | Chat on one side, a served pane on the other; Python (FastAPI) + local JSON files; pytest + Playwright; no deploy | Chat-first apps whose data is local JSON (`ux_shape: chat-first`); declares its own dev server (port 3900, `/api/health`) so preview, smoke test and Browser Verify need no npm default |
 | `python-plugin-monorepo` | Python `uv` workspace, no web server | Libraries, frameworks, or CLI / plugin monorepos with no deployable frontend (pytest + ruff, no dev server, no deploy target) |
 
 **Your own profile.** If none of them fits, write one. Shipwright looks for `<name>.json` in `<project>/.shipwright/profiles/` (commit it, so every checkout and iterate worktree sees it), then `~/.shipwright/profiles/` (all your projects), then the built-in ones; the first file found wins, and a broken file is an error, never a silent fallback to another stack. The `/shipwright-project` interview offers custom profiles next to the built-in ones, `/shipwright-adopt --profile <name>` selects one, and results report where the profile came from (`project`, `user` or `bundled`). A profile with the name of a built-in one replaces it and triggers a prominent warning. Locations, how to start from a copy, minimum fields, `schema_version`, and the trust note: [docs/stack-profiles.md](stack-profiles.md).

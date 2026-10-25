@@ -1,0 +1,19 @@
+{
+  "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+  "date": "2026-10-25T15:15:27.975404Z",
+  "event_at": "2026-10-25T14:03:55.395633+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B4",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-b4-chat-first-profile-sc",
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_migrations"
+  ]
+}

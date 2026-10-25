@@ -2,8 +2,8 @@
 
 A **stack profile** is a small JSON file that tells Shipwright how your technology stack
 works: which commands run the tests, which services make up the dev server, which
-environment variables are needed, which budgets apply. Shipwright ships three
-(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`). If none of them fits your
+environment variables are needed, which budgets apply. Shipwright ships four
+(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`). If none of them fits your
 stack, you can write your own and every phase uses it.
 
 Two names are special and are not files: `generic` means "no stack file, use the
@@ -73,7 +73,7 @@ is ignored (keys starting with `_` are comments). The ones that change behaviour
 | `services` / `dev_server` | dev server, preview, browser verify | neither declared: Shipwright falls back to `dev_url` in `shipwright_build_config.json`, then to `npm run dev` |
 | `required_env_vars` | `validate_env.py` | |
 | `design_system` | `/shipwright-design` | |
-| `ux_shape`, `ui_host` | brief-driven runs | optional plain strings (for example `"ux_shape": "chat-first"`); no loader reads them yet, the value format is defined by the unit that first reads them, and profiles without them work unchanged |
+| `ux_shape`, `ui_host` | brief-driven runs | optional plain strings (for example `"ux_shape": "chat-first"`; the bundled `chat-first-json` declares both); no loader reads them yet, the value format is defined by the unit that first reads them, and profiles without them work unchanged |
 | `rules`, `folder_structure`, `migrations` | project scaffolding | |
 | `stack` | adopt matching | what adopt compares a repository against |
 

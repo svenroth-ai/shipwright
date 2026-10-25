@@ -151,7 +151,8 @@ uv run "{shared_root}/scripts/smoke_test.py" --url "{dev_url}" --timeout 10 --he
 ```
 
 DEV URL sources (in order): `shipwright_build_config.json.dev_url` ->
-`SHIPWRIGHT_DEV_URL` env -> `http://localhost:3000` default.
+`SHIPWRIGHT_DEV_URL` env -> the profile's `dev_server` block (URL and
+`ready_path` as `--health-path`) -> `http://localhost:3000` default.
 The smoke-test script is shared (`{shared_root}/scripts/smoke_test.py`), not a
 project file. On failure: diagnose, autonomous fix, retry, then ASK after 2.
 Full body: see [step-2-smoke-test](references/step-2-smoke-test.md).

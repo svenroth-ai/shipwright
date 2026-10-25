@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:54:35.182309+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 extracts `parse_test_output`/`run_tests` from `test_runner.py` into `command_runner.py` solely to get under the 300-line bloat gate before making net-zero edits. This is a mechanical file split, not a refactor driven by the change — it adds an indirection layer (re-export shim) and a second file where one existed, purely to satisfy a gate. If the bloat baseline mechanism allows adding an entry (the file \"has no bloat-baseline entry\" — so add one), that's the simpler path; otherwise trimming genuinely dead code in test_runner.py is preferable to a shim.",
+          "suggestion": "Check whether the bloat gate permits registering a baseline for an untouched legacy file; if not, verify the extraction is truly behavior-identical (import-order, `__all__`, monkeypatch targets — tests that patch `test_runner.run_tests` by attribute will silently break if `run_tests` is only a re-export, since patching the alias doesn't patch the original module's reference used internally).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "The `run_tests`/`parse_test_output` move is the only change to existing code paths, and it's the riskiest kind: a pure-move refactor whose failure mode is silent (imports still resolve via re-export, but internal call sites and test monkeypatching may bind to the wrong module). \"Zero behaviour change\" claims need verification against every import site, not just the three test files listed in step 5.",
+          "suggestion": "Grep for all `from ... import test_runner` / `test_runner.run_tests` usages and any `mock.patch(\"plugins.shipwright-test...test_runner...\")` strings across the repo; patch-target strings won't fail loudly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The spec says the test_runner.py change must be \"net-zero for the profile's commands\" and lists blockers including \"the smoke default\" and \"the _DEFAULT_SERVICE fallback,\" but the mini-plan resolves these with doc updates and \"not reached\" arguments rather than code. If any caller constructs the dev server URL from the smoke default (`:3000`) without consulting the profile's `dev_server` block, a chat-first project's Playwright run will target the wrong port (3900 vs 3000). The docs-only fix assumes the runner already reads the profile's port when the block exists.",
+          "suggestion": "Confirm in code (not docs) that the smoke/verify paths read `dev_server.port` from the resolved profile when present; if they don't, this needs a small code change and the \"no code change\" claims for those blockers are wrong.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "The profile declares `dev_server` as `uv run uvicorn app.main:app --port 3900`, which presupposes the project scaffolding (step-7 guidance) generates `app/main.py` with a `/api/health` route. Step 4 mentions scaffolding guidance but the acceptance test (\"a project created from it builds, tests…\") means the guidance must be in place and covered by tests in this same change, or the acceptance check fails.",
+          "suggestion": "Make the step-7 scaffolding change part of the unit spec's located-files list and add a Playwright/pytest test that scaffolds a project from the profile and runs it end-to-end (this appears to be the B4 acceptance criterion; the step-5 test list doesn't obviously include it).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "\"Backend deliberately empty (FastAPI named in notes) so adopt scoring of existing fixtures is unchanged\" — this couples profile correctness to adopt-matcher implementation details. If the matcher later scores `stack.frontend` or ux_shape, chat-first projects could drift. The adopt test covers existing fixtures but not future matcher changes.",
+          "suggestion": "Add a comment in the profile JSON noting the empty backend is load-bearing for adopt matching, so a future editor doesn't \"fix\" it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security /",
+          "file": null,
+          "line": null,
+          "finding": "Dev server command `uv run uvicorn app.main:app --port 3900` — the constraint is documented as \"no shell metacharacters\" for the WebUI preview; port 3900 is fine. No real security concern beyond ensuring the profile schema rejects shell metacharacters if that rule is only convention.",
+          "suggestion": "If the resolver doesn't already validate the command, add the metacharacter check to `test_chat_first_json_profile.py` so the invariant is tested, not just documented.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "profile_config.py` at 301 lines is \"deliberately not touched\" and behavior \"pinned by\" the new test. If the profile genuinely declares every key, `_DEFAULT_SERVICE` is unreachable — fine — but the pinning test should assert the unreachable path specifically (i.e., that the resolved config for this profile contains no default-service values), not merely that resolution succeeds.",
+          "suggestion": "Assert the resolved service list equals exactly the profile-declared service, so a future regression to the fallback fails loudly.  Overall assessment: The approach is sound and well-researched — the F17 blocker table shows real code-level diligence. Main revisions needed: justify or simplify the test_runner split (watch monkeypatch breakage), verify the smoke-default/port resolution is a code path rather than a docs promise, and make the scaffold-from-profile end-to-end acceptance explicit in the test plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan validates the profile’s configuration but does not explicitly verify the generated project required by B4. Declaring `uv run uvicorn app.main:app --port 3900`, pytest, and Playwright does not ensure step-7 scaffolding creates the importable app, Python dependencies, frontend assets, health endpoint, and browser-test setup. The deliberately empty backend makes concrete scaffolding instructions especially important.",
+          "suggestion": "Specify those generated artifacts in step 7 and add a generated-project acceptance check: resolve and validate the profile, scaffold a project, build it, start its declared server, verify `/api/health` and the served pane, run pytest and Playwright through the normal runner, and confirm deployment is skipped. Assert the profile’s commands retain their arguments through runner execution.  The declarative approach is sound, and avoiding loader branches keeps the change focused. The main gap is proving the scaffolded project works through the existing workflow; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T14:54:19.316423+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: approach / Severity: medium**\n  Finding: Step 1 extracts `parse_test_output`/`run_tests` from `test_runner.py` into `command_runner.py` solely to get under the 300-line bloat gate before making net-zero edits. This is a mechanical file split, not a refactor driven by the change — it adds an indirection layer (re-export shim) and a second file where one existed, purely to satisfy a gate. If the bloat baseline mechanism allows adding an entry (the file \"has no bloat-baseline entry\" — so add one), that's the simpler path; otherwise trimming genuinely dead code in test_runner.py is preferable to a shim.\n  Suggestion: Check whether the bloat gate permits registering a baseline for an untouched legacy file; if not, verify the extraction is truly behavior-identical (import-order, `__all__`, monkeypatch targets — tests that patch `test_runner.run_tests` by attribute will silently break if `run_tests` is only a re-export, since patching the alias doesn't patch the original module's reference used internally).\n\n- **Category: risk / Severity: high**\n  Finding: The `run_tests`/`parse_test_output` move is the only change to existing code paths, and it's the riskiest kind: a pure-move refactor whose failure mode is silent (imports still resolve via re-export, but internal call sites and test monkeypatching may bind to the wrong module). \"Zero behaviour change\" claims need verification against every import site, not just the three test files listed in step 5.\n  Suggestion: Grep for all `from ... import test_runner` / `test_runner.run_tests` usages and any `mock.patch(\"plugins.shipwright-test...test_runner...\")` strings across the repo; patch-target strings won't fail loudly.\n\n- **Category: edge-case / Severity: medium**\n  Finding: The spec says the test_runner.py change must be \"net-zero for the profile's commands\" and lists blockers including \"the smoke default\" and \"the _DEFAULT_SERVICE fallback,\" but the mini-plan resolves these with doc […truncated]\n\n[openai] - **Category:** dependency\n  **Severity:** medium\n  **Finding:** The plan validates the profile’s configuration but does not explicitly verify the generated project required by B4. Declaring `uv run uvicorn app.main:app --port 3900`, pytest, and Playwright does not ensure step-7 scaffolding creates the importable app, Python dependencies, frontend assets, health endpoint, and browser-test setup. The deliberately empty backend makes concrete scaffolding instructions especially important.\n  **Suggestion:** Specify those generated artifacts in step 7 and add a generated-project acceptance check: resolve and validate the profile, scaffold a project, build it, start its declared server, verify `/api/health` and the served pane, run pytest and Playwright through the normal runner, and confirm deployment is skipped. Assert the profile’s commands retain their arguments through runner execution.\n\nThe declarative approach is sound, and avoiding loader branches keeps the change focused. The main gap is proving the scaffolded project works through the existing workflow; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_chat_first_json_profile.py",
+          "line": 586,
+          "finding": "test repetition",
+          "suggestion": "drop redundant asserts",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": 34,
+          "finding": "_LIB sys.path add/remove not covered by a package-mode probe",
+          "suggestion": "optional probe",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": 38,
+          "finding": "command_runner loaded under bare name in package mode",
+          "suggestion": "note patch target",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-test/scripts/lib/command_runner.py",
+          "line": 4,
+          "finding": "docstring explains provenance",
+          "suggestion": "describe what it does",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/profiles/chat-first-json.json",
+          "line": 64,
+          "finding": "notes overstated Browser Verify use of /api/health",
+          "suggestion": "reworded (fixed)",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T15:21:01.532337+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bf40f1052bfb5fc56496e6de12152025f7055012"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/skills/project/references/step-7-scaffolding.md",
+          "line": null,
+          "finding": "Claim under doubt: scaffolded Playwright runs against the served pane on 3900 — template webServer is npm run dev on :3000 and the json reporter is unspecified",
+          "suggestion": "name webServer command/url and the reporter (fixed)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": null,
+          "finding": "Claim under doubt: profile e2e command is what runs — bundled e2e always goes through playwright_runner",
+          "suggestion": "note in profile (fixed)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-adopt/scripts/lib/profile_matcher.py",
+          "line": null,
+          "finding": "Claim under doubt: adopt matching never changes — can win a python repo if python-plugin-monorepo is shadowed by an invalid project file",
+          "suggestion": "rebutted as a deliberately broken override edge case",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "line": null,
+          "finding": "Claim under doubt: re-export invisible to callers — bare-name command_runner module in package mode; stale nosemgrep pointers",
+          "suggestion": "rebutted, mirrors _SHARED hygiene",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T15:26:04.855903+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e7d53271b83faa1c9568af69f0cda4156ff94507"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/tests/test_chat_first_json_profile.py` / `plugins/shipwright-test/tests/test_test_runner_chat_first.py` (whole change)",
+          "line": null,
+          "finding": "Acceptance B4 requires \"a project created from it builds, tests with pytest and Playwright on the served pane and needs no deploy.\" No automated test scaffolds a project from the profile and runs it; the completeness record itself marks this \"untestable\" and defers the live proof to campaign unit B7. The scaffolding guidance in `step-7-scaffolding.md` is prompt prose only (it even instructs the agent to hand-write `playwright.config.ts` because the shared template's default port is wrong — a known trap with no code or test preventing a scaffolded project from inheriting port 3000).",
+          "suggestion": "Either land a minimal generated-project acceptance test (scaffold in tmp_path, assert `/api/health` responds and the runner commands execute) or record the AC as explicitly deferred in the campaign status rather than satisfied.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "plugins/shipwright-test/skills/test/SKILL.md` + `references/step-2-smoke-test.md`, `plugins/shipwright-build/skills/build/references/browser-verify.md",
+          "line": null,
+          "finding": "The F17 blockers \"smoke default\" and \"Browser Verify without a dev server\" are cleared purely by documentation — the precedence chain \"dev_url → env → profile dev_server → :3000\" and the `--url http://localhost:3900` instruction exist only in prose read by an agent; no code path enforces them. The external plan review flagged exactly this (medium, \"docs-only fix assumes the runner already reads the profile's port\") and the disposition says \"confirmed prompt-resolved,\" which is weaker than the spec's framing (\"URL/health path now taken from the profile's dev_server before the :3000 default\"). If an agent skips the prose, the failure mode is silent probing of port 3000.",
+          "suggestion": "At minimum add a unit test that `smoke_test.py --url`/browser-verify argument derivation exists as claimed, or move the profile-port resolution into a shared helper the prose invokes, so the invariant is pinned in code, not in prompt text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/profiles/chat-first-json.json` (`\"testing\"` block)",
+          "line": null,
+          "finding": "The `testing` block carries a stray top-level `\"command\": \"uv run pytest\"` alongside the per-layer `unit.command` and `e2e.command`. It is consumed by nothing in the diff and any future loader that reads `testing.command` as a default (as other profiles may use it) would silently run pytest for undeclared layers instead of skipping them with a reason — contradicting the skip behavior the new runner test pins.",
+          "suggestion": "Remove the stray key, or verify what existing profiles/consumers do with `testing.command` and match it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression |",
+          "file": "plugins/shipwright-test/scripts/lib/test_runner.py` (new `_LIB` sys.path handling)",
+          "line": null,
+          "finding": "Unlike the `_SHARED` entry, which the module deliberately removes after importing (\"shared/scripts holds a `tools` package that would shadow this plugin's own\"), the appended `_LIB` (the plugin's own `scripts/lib`) is left on `sys.path` permanently. If two plugins follow this pattern, same-named sibling modules (e.g. `profile_consumer`, `command_runner`) from different plugins collide first-wins, and any module named like a stdlib/shared module in `scripts/lib` shadows it for everything imported afterwards.",
+          "suggestion": "Import via a package-qualified path or pop `_LIB` after the import, mirroring the existing `_SHARED` hygiene.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-test/tests/test_test_runner_chat_first.py::test_chat_first_undeclared_layers_are_skipped_with_a_reason",
+          "line": null,
+          "finding": "The test asserts `out[\"skipped\"] is True` and the profile name appears in `skip_reason`, but never asserts the pgtap layer did not execute `npx`/npm or that `command` is absent/None. A regression where undeclared layers silently fall back to the npm default (the exact F17-class failure this change is about) would still pass unless skip_reason text changed.",
+          "suggestion": "Also assert the record contains no command/exit_code implying a run occurred (e.g. `out.get(\"command\") in (None, \"\")` and `out[\"passed\"] == 0` with the skip reason present), so a silent default-command run fails loudly.  Overall: the approach (data-only profile, no loader branches, deliberate empty backend, pinned no-default-leak test) is sound and the extraction looks genuinely behavior-preserving, but the acceptance criterion's end-to-end proof is deferred to another unit and two of the five F17 blockers are cleared by prose only — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-25T15:19:05.830938+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] The substantive code changes are small: a new bundled profile JSON, a mechanical extraction of `run_tests`/`parse_test_output` into `command_runner.py`, three new test files, and prose updates. Findings:\n\n- Category: spec | Severity: medium\n  File: `shared/tests/test_chat_first_json_profile.py` / `plugins/shipwright-test/tests/test_test_runner_chat_first.py` (whole change)\n  Finding: Acceptance B4 requires \"a project created from it builds, tests with pytest and Playwright on the served pane and needs no deploy.\" No automated test scaffolds a project from the profile and runs it; the completeness record itself marks this \"untestable\" and defers the live proof to campaign unit B7. The scaffolding guidance in `step-7-scaffolding.md` is prompt prose only (it even instructs the agent to hand-write `playwright.config.ts` because the shared template's default port is wrong — a known trap with no code or test preventing a scaffolded project from inheriting port 3000).\n  Suggestion: Either land a minimal generated-project acceptance test (scaffold in tmp_path, assert `/api/health` responds and the runner commands execute) or record the AC as explicitly deferred in the campaign status rather than satisfied.\n\n- Category: spec | Severity: medium\n  File: `plugins/shipwright-test/skills/test/SKILL.md` + `references/step-2-smoke-test.md`, `plugins/shipwright-build/skills/build/references/browser-verify.md`\n  Finding: The F17 blockers \"smoke default\" and \"Browser Verify without a dev server\" are cleared purely by documentation — the precedence chain \"dev_url → env → profile dev_server → :3000\" and the `--url http://localhost:3900` instruction exist only in prose read by an agent; no code path enforces them. The external plan review flagged exactly this (medium, \"docs-only fix assumes the runner already reads the profile's port\") and the disposition says \"confirmed prompt-resolved,\" which is weaker than the spec's framing (\"URL/health path now taken from the profile's  […truncated]\n\n[openai] <no review returned: codex exec exited 1: Error: turn/start: turn/start failed: Input exceeds the maximum length of 1048576 characters. (code -32602), data: {\"input_error_code\":\"input_too_large\",\"max_chars\":1048576,\"actual_chars\":1486555}>",
+      "verdicts": {
+        "openai": "unavailable",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T15:18:51.972663+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "7303ef1d0a0578d2aa9de8f60ad4a1ef39e54f40"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:54:19.476912+00:00",
+      "disposition": "effective complexity small (Step 3.4); internal arms are medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T14:54:19.636788+00:00",
+      "disposition": "effective complexity small (Step 3.4); internal arms are medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

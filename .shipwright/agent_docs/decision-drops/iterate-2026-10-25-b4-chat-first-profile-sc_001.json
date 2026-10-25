@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+  "date": "2026-10-25",
+  "section": "Iterate — change: bundled chat-first-json stack profile",
+  "title": "Bundle a data-only chat-first-json stack profile",
+  "context": "A chat-first app (chat plus a served pane, local JSON, no deploy) had no bundled profile, so dev server, smoke and Browser Verify fell back to npm defaults on port 3000.",
+  "decision": "Add shared/profiles/chat-first-json.json declaring its own dev_server, pytest, Playwright and deploy null; split test_runner.py (command_runner.py) to get under its cap; no loader branches on ux_shape.",
+  "consequences": "Chat-first projects build, test and preview from the profile alone; no CI or CodeQL template exists for it by design; adopt scoring of existing fixtures is unchanged.",
+  "rationale": "Every key needed is already consumed by existing loaders; an empty stack.backend keeps adopt from preferring this profile over python-plugin-monorepo for FastAPI repos.",
+  "rejected": "Loader special cases keyed on ux_shape; registering a bloat baseline instead of splitting test_runner.py; listing fastapi under stack.backend.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-b4-chat-first-profile-sc-chat-first-json-profile.md"
+}

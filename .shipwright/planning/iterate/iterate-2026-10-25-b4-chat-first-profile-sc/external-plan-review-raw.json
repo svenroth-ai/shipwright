@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: approach / Severity: medium**\n  Finding: Step 1 extracts `parse_test_output`/`run_tests` from `test_runner.py` into `command_runner.py` solely to get under the 300-line bloat gate before making net-zero edits. This is a mechanical file split, not a refactor driven by the change \u2014 it adds an indirection layer (re-export shim) and a second file where one existed, purely to satisfy a gate. If the bloat baseline mechanism allows adding an entry (the file \"has no bloat-baseline entry\" \u2014 so add one), that's the simpler path; otherwise trimming genuinely dead code in test_runner.py is preferable to a shim.\n  Suggestion: Check whether the bloat gate permits registering a baseline for an untouched legacy file; if not, verify the extraction is truly behavior-identical (import-order, `__all__`, monkeypatch targets \u2014 tests that patch `test_runner.run_tests` by attribute will silently break if `run_tests` is only a re-export, since patching the alias doesn't patch the original module's reference used internally).\n\n- **Category: risk / Severity: high**\n  Finding: The `run_tests`/`parse_test_output` move is the only change to existing code paths, and it's the riskiest kind: a pure-move refactor whose failure mode is silent (imports still resolve via re-export, but internal call sites and test monkeypatching may bind to the wrong module). \"Zero behaviour change\" claims need verification against every import site, not just the three test files listed in step 5.\n  Suggestion: Grep for all `from ... import test_runner` / `test_runner.run_tests` usages and any `mock.patch(\"plugins.shipwright-test...test_runner...\")` strings across the repo; patch-target strings won't fail loudly.\n\n- **Category: edge-case / Severity: medium**\n  Finding: The spec says the test_runner.py change must be \"net-zero for the profile's commands\" and lists blockers including \"the smoke default\" and \"the _DEFAULT_SERVICE fallback,\" but the mini-plan resolves these with doc updates and \"not reached\" arguments rather than code. If any caller constructs the dev server URL from the smoke default (`:3000`) without consulting the profile's `dev_server` block, a chat-first project's Playwright run will target the wrong port (3900 vs 3000). The docs-only fix assumes the runner already reads the profile's port when the block exists.\n  Suggestion: Confirm in code (not docs) that the smoke/verify paths read `dev_server.port` from the resolved profile when present; if they don't, this needs a small code change and the \"no code change\" claims for those blockers are wrong.\n\n- **Category: dependency / Severity: medium**\n  Finding: The profile declares `dev_server` as `uv run uvicorn app.main:app --port 3900`, which presupposes the project scaffolding (step-7 guidance) generates `app/main.py` with a `/api/health` route. Step 4 mentions scaffolding guidance but the acceptance test (\"a project created from it builds, tests\u2026\") means the guidance must be in place and covered by tests in this same change, or the acceptance check fails.\n  Suggestion: Make the step-7 scaffolding change part of the unit spec's located-files list and add a Playwright/pytest test that scaffolds a project from the profile and runs it end-to-end (this appears to be the B4 acceptance criterion; the step-5 test list doesn't obviously include it).\n\n- **Category: edge-case / Severity: low**\n  Finding: \"Backend deliberately empty (FastAPI named in notes) so adopt scoring of existing fixtures is unchanged\" \u2014 this couples profile correctness to adopt-matcher implementation details. If the matcher later scores `stack.frontend` or ux_shape, chat-first projects could drift. The adopt test covers existing fixtures but not future matcher changes.\n  Suggestion: Add a comment in the profile JSON noting the empty backend is load-bearing for adopt matching, so a future editor doesn't \"fix\" it.\n\n- **Category: security / Severity: low**\n  Finding: Dev server command `uv run uvicorn app.main:app --port 3900` \u2014 the constraint is documented as \"no shell metacharacters\" for the WebUI preview; port 3900 is fine. No real security concern beyond ensuring the profile schema rejects shell metacharacters if that rule is only convention.\n  Suggestion: If the resolver doesn't already validate the command, add the metacharacter check to `test_chat_first_json_profile.py` so the invariant is tested, not just documented.\n\n- **Category: risk / Severity: low**\n  Finding: `profile_config.py` at 301 lines is \"deliberately not touched\" and behavior \"pinned by\" the new test. If the profile genuinely declares every key, `_DEFAULT_SERVICE` is unreachable \u2014 fine \u2014 but the pinning test should assert the *unreachable* path specifically (i.e., that the resolved config for this profile contains no default-service values), not merely that resolution succeeds.\n  Suggestion: Assert the resolved service list equals exactly the profile-declared service, so a future regression to the fallback fails loudly.\n\n**Overall assessment**: The approach is sound and well-researched \u2014 the F17 blocker table shows real code-level diligence. Main revisions needed: justify or simplify the test_runner split (watch monkeypatch breakage), verify the smoke-default/port resolution is a code path rather than a docs promise, and make the scaffold-from-profile end-to-end acceptance explicit in the test plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** dependency\n  **Severity:** medium\n  **Finding:** The plan validates the profile\u2019s configuration but does not explicitly verify the generated project required by B4. Declaring `uv run uvicorn app.main:app --port 3900`, pytest, and Playwright does not ensure step-7 scaffolding creates the importable app, Python dependencies, frontend assets, health endpoint, and browser-test setup. The deliberately empty backend makes concrete scaffolding instructions especially important.\n  **Suggestion:** Specify those generated artifacts in step 7 and add a generated-project acceptance check: resolve and validate the profile, scaffold a project, build it, start its declared server, verify `/api/health` and the served pane, run pytest and Playwright through the normal runner, and confirm deployment is skipped. Assert the profile\u2019s commands retain their arguments through runner execution.\n\nThe declarative approach is sound, and avoiding loader branches keeps the change focused. The main gap is proving the scaffolded project works through the existing workflow; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b4-chat-first-profile-sc",
+    "at": "2026-10-25T14:52:40.831724+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
