@@ -63,8 +63,14 @@ def test_in_process_a_different_applied_hash_is_not_silently_reapplied(project, 
     main_json(tool, capsys, project)
     marker = project / ".shipwright" / "designs" / "brief-package-applied.json"
     marker.write_text(json.dumps({"package_sha256": "0" * 64}), encoding="utf-8")
+    before = sorted(p.name for p in (project / ".shipwright" / "designs").rglob("*"))
     code, out = main_json(tool, capsys, project)
     assert code == 1 and out["issues"][0]["code"] == "package_changed_since_apply"
+    assert "will not re-apply over them" in out["issues"][0]["message"] and "operator-led" in out["issues"][0]["message"]
+    assert sorted(p.name for p in (project / ".shipwright" / "designs").rglob("*")) == before  # nothing written
+    marker.write_text(json.dumps({"package_sha256": "NOT-A-HASH"}), encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 1 and out["issues"][0]["code"] == "bad_marker"
 
 
 @pytest.mark.covers("FR-01.04")

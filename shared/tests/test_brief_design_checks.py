@@ -7,7 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import shutil
 
 import pytest
 
@@ -209,28 +208,6 @@ def test_a_bom_run_config_is_still_a_brief_run_and_a_malformed_one_is_red(tmp_pa
 
 
 @pytest.mark.covers("FR-01.04")
-def test_the_documented_recovery_after_a_re_approved_package_ends_green(tmp_path):
-    root = _project(tmp_path)
-    _apply(root)
-    pkg = root / "brief"
-    (pkg / "scope.md").write_text(chr(35) + " Scope" + chr(10) + chr(10) + "In: notes, and now more." + chr(10), encoding="utf-8")
-    brief = json.loads((pkg / "brief.json").read_text(encoding="utf-8"))
-    brief["package_sha256"] = bp.package_sha256(pkg)
-    (pkg / "brief.json").write_text(json.dumps(brief), encoding="utf-8")
-    write_config(root)  # a restarted run: a fresh run_config records the NEW hash
-    bdi.record(root, "brief")
-    proc = subprocess.run([sys.executable, str(TOOL), "--project-root", str(root)], capture_output=True, text=True)
-    out = json.loads(proc.stdout)
-    assert proc.returncode == 1 and out["issues"][0]["code"] == "package_changed_since_apply"
-    assert "RENAMES (never deletes)" in out["issues"][0]["message"] and "operator action" in out["issues"][0]["message"]
-    assert check_brief_design_applied(root)[0].is_failure
-    shutil.move(str(root / ".shipwright" / "designs"), str(tmp_path / "old-designs"))  # the documented step
-    _apply(root)
-    [result] = check_brief_design_applied(root)
-    assert not result.is_failure, result.detail
-
-
-@pytest.mark.covers("FR-01.04")
 def test_a_minted_id_that_is_not_an_fr_id_is_a_plan_issue(tmp_path):
     from tools.brief_design_plan import plan_screens
 
@@ -238,3 +215,11 @@ def test_a_minted_id_that_is_not_an_fr_id_is_a_plan_issue(tmp_path):
     (tmp_path / "mockups" / "m.html").write_text("<html></html>", encoding="utf-8")
     plan, issues = plan_screens(tmp_path, {"screens": [{"id": "a", "mockup": "m.html", "requirements": ["x"]}]}, {"x": ["BAD"]})
     assert plan == [] and "not an FR id" in issues[0]["message"]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_a_malformed_run_config_of_a_non_brief_project_gives_no_result(tmp_path):
+    (tmp_path / "shipwright_run_config.json").write_text("{ not json", encoding="utf-8")
+    assert check_brief_design_applied(tmp_path) == []
+    (tmp_path / "shipwright_run_config.json").write_text('{ "brief_dir": ', encoding="utf-8")
+    assert check_brief_design_applied(tmp_path)[0].is_failure

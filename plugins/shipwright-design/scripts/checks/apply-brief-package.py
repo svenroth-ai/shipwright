@@ -25,12 +25,11 @@ question (which screen does each upload represent, and which requirements does i
   An existing screen is kept only when it links the FR ids minted for it AND at least one upload of the package
   exists (a reset); otherwise ``pre_existing_screen`` (nothing written: move that screen away). A missing upload is
   restored byte-identical. A foreign screen with exactly the minted ids during a reset is an accepted hole.
-* A different package hash after an apply (``package_changed_since_apply``, with ``old_hash8``) is an OPERATOR action:
-  re-approve and restart the run; the operator renames (never deletes) ``.shipwright/designs/`` to
-  ``.shipwright/designs.superseded-<old-hash8>/``, commits the move in git, runs this tool FIRST, then copies back
-  non-screen artifacts and re-applies screen edits by hand (the message lists the steps).
+* A different package hash after an apply is refused (``package_changed_since_apply``, exit 1, nothing written):
+  redoing an applied Design phase for a changed package is an operator-led decision (follow-up), see the message.
 * A kept file that differs from the package (a pre-existing ``visual-guidelines.md``) is listed in
-  ``kept_existing_differs`` (a warning, not a refusal).
+  ``kept_existing_differs`` (a warning, not a refusal); any file in ``screens/``, ``uploads/`` or ``flows/`` (and
+  ``chrome-definition.md``) that the package did not place is listed in ``foreign_existing``. The agent reports both.
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -41,6 +40,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -53,6 +53,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens, same_content  # noqa: E402
 
 DESIGNS = ".shipwright/designs"
+_HASH_RE = re.compile(r"[0-9a-f]{64}")
 MARKER = MARKER_NAME  # written last; its hash makes a re-entry a no-op
 
 
@@ -89,22 +90,18 @@ def apply(project_root: Path) -> dict:
     if not isinstance(recorded, dict):
         return {"ok": False, "issues": [_issue("bad_marker", MARKER, f"{MARKER} must hold a JSON object")]}
     applied = recorded.get("package_sha256")
+    if applied is not None and not (isinstance(applied, str) and _HASH_RE.fullmatch(applied)):
+        return {"ok": False, "issues": [_issue("bad_marker", MARKER, f"{MARKER} package_sha256 must be a 64-character lowercase hex hash")]}
     screen_map = json.loads((bdir / "screen-map.json").read_text(encoding="utf-8-sig"))
     if applied == info["package_sha256"]:  # re-entry: screen edits (review loop) stay untouched
         missing = applied_file_issues(bdir, designs, screen_map)
         return {"ok": False, "issues": missing} if missing else {"ok": True, "already_applied": True, "package_sha256": applied}
     if applied is not None:
-        old = str(applied)[:8]
-        issue = _issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from another package hash "
-                       f"({old}). This is an operator action: report it and stop, do not do it on your own. The operator (1) RENAMES "
-                       f"(never deletes) the whole {DESIGNS}/ directory, everything in it, to {DESIGNS}.superseded-{old}/ inside the "
-                       f"project; (2) in a git repository COMMITS that move (git add -A {DESIGNS} {DESIGNS}.superseded-{old} && git "
-                       "commit), so the re-applied uploads show as new files, not as modified supplied ones; (3) runs this tool again "
-                       "FIRST; (4) only then copies back non-screen artifacts (feedback rounds, flows, chrome-definition.md) from the "
-                       "superseded directory and re-applies review-loop edits to screens by hand, keeping the Requirements comment. "
-                       "Never re-apply over edited screens.")
-        issue["old_hash8"] = old
-        return {"ok": False, "issues": [issue]}
+        return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from a "
+                "different package: this tool will not re-apply over them. Redoing an already-applied Design phase for a changed "
+                "package is an operator-led decision outside this unit (follow-up). If the operator wants it: remove "
+                f"{DESIGNS}/ (git history keeps the old files; nothing is copied back automatically), re-approve the package, "
+                "restart the run, and run this tool again.")]}
     plan, issues = plan_screens(bdir, screen_map, fr_ids_by_slug(root))
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
@@ -134,6 +131,10 @@ def apply(project_root: Path) -> dict:
     if issues:
         return {"ok": False, "issues": issues}
     atomic = bdi._lib("atomic_write").durable_atomic_write  # temp file + os.replace: a crash leaves no truncated file (the manifest is rewritten whole on the re-run: the marker is last)
+    placed_rel = {f"screens/{i['screen_file']}" for i in plan} | {f"uploads/{i['mockup']}" for i in plan}
+    foreign = sorted(p.relative_to(designs).as_posix() for sub in ("screens", "uploads", "flows") if (designs / sub).is_dir()
+                     for p in (designs / sub).rglob("*") if p.is_file() and p.relative_to(designs).as_posix() not in placed_rel)
+    foreign += ["chrome-definition.md"] if (designs / "chrome-definition.md").is_file() else []
     kept, differs = [], []
     for path, data, _strict in targets:
         if path.is_file():
@@ -146,6 +147,7 @@ def apply(project_root: Path) -> dict:
     registry.write_manifest(designs, profile_name=str(brief.get("profile") or ""))
     atomic(marker, json.dumps({"package_sha256": info["package_sha256"]}))
     return {"ok": True, "package_sha256": info["package_sha256"], "kept_existing": kept,
+            "foreign_existing": foreign,  # not placed by this package (flows of an earlier Design run on a reset are expected)
             "kept_existing_differs": differs,  # a warning, not a refusal: a kept file that is not the package's own
             "screens": [{"file": f"screens/{i['screen_file']}", "upload": f"uploads/{i['mockup']}", "frs": i["frs"]} for i in plan]}
 

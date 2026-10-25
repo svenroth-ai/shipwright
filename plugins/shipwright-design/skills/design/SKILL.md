@@ -42,7 +42,7 @@ Output:
 ### B. Detect Mode
 
 **Brief package** (`shipwright_run_config.json` records `brief_dir` or `brief_package`) -- checked FIRST, before every other mode (including `@file` Iterate on Existing) and before New Design Session; it needs neither `--upload` nor files in `uploads/`:
-- Run `uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"` (re-verifies the package). **Any non-zero exit (1 or 3) = STOP**: report the issues; never generate or hand-copy the mapped screens and never type an FR id yourself. Only exit 0 (ok or `already_applied`) continues
+- Run `uv run "${SHIPWRIGHT_PLUGIN_ROOT}/scripts/checks/apply-brief-package.py" --project-root "$(pwd)"` (re-verifies the package). **Any non-zero exit (1 or 3) = STOP**: report the issues; never generate or hand-copy the mapped screens and never type an FR id yourself. Only exit 0 (ok or `already_applied`) continues. On a first apply or a reset, read `foreign_existing` and `kept_existing_differs` in the output: when either list is non-empty, REPORT it to the operator (files the package did not place, or a kept guidelines file that differs) before going on, never silently continue
 - `screen-map.json` answers the upload-screen-mapping question; after exit 0 (the tool is idempotent, so it always runs first) continue with the mode the arguments ask for: an `@file` argument -> Iterate on Existing, otherwise -> [Upload Mode](references/upload-mode.md) (flows for 2+ screens, gates). Do NOT generate the mapped screens from scratch
 
 **New Design Session** (no `.shipwright/designs/` directory, and no Brief package above):

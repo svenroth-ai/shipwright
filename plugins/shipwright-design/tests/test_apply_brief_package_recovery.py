@@ -90,3 +90,13 @@ def test_an_unterminated_comment_hides_a_later_html_tag(tool):  # noqa: F811
     registry = tool._load(tool._HERE.parent / "lib" / "screen_registry.py", "_t_registry_open")
     out = registry.inject_requirements(b"<body><!-- never closed <html class=x>", ["FR-01.01"])
     assert out.startswith(b"<!-- Requirements: FR-01.01 -->")  # the hidden tag was not used
+
+
+@pytest.mark.covers("FR-01.04")
+def test_a_first_apply_lists_material_the_package_did_not_place(project, tool, capsys):  # noqa: F811
+    designs = project / ".shipwright" / "designs"
+    (designs / "screens").mkdir(parents=True)
+    (designs / "screens" / "03-dashboard.html").write_text("<html>mine</html>", encoding="utf-8")
+    (designs / "chrome-definition.md").write_text("# chrome\n", encoding="utf-8")
+    code, out = main_json(tool, capsys, project)
+    assert code == 0 and out["foreign_existing"] == ["screens/03-dashboard.html", "chrome-definition.md"]

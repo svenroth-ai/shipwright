@@ -51,16 +51,12 @@ non-no-op apply (not on `already_applied`). The upload comparison uses the packa
 check `brief_design_applied` (runs with the design phase checks, brief runs only) is red unless the package still verifies, the marker
 holds the recorded package hash, every upload matches the package and every mapped screen links at least the FR
 ids minted for its screen-map entry (first `Requirements` comment; extra ids are fine). It does not prove the
-screens came from the tool. **Lifetime:** the approved package stays the contract for the life of the project, so a
+screens came from the tool, nor that the design set equals the package: foreign material that was already in `screens/`,
+`uploads/` or `flows/` (listed in `foreign_existing`) can satisfy the FR-coverage and flows gates. **Lifetime:** the approved package stays the contract for the life of the project, so a
 later FR or screen rename turns the check red by design. It re-runs at a later design phase gate (`phase_gate` ->
 `_validate_design`) or by hand with `verify_phase --phase design|all`; build, iterate, adopt and compliance do not run it.
-Recovery: re-approve the package AND restart the run, so a fresh run_config records the new hash; never edit
-`brief_package` in run_config by hand (the hash check would refuse the re-approved package, exit 3, in the tool and the gate).
-Then the tool answers `package_changed_since_apply` (the marker still holds the old hash). That is an **operator action**:
-the agent reports it and stops. The operator, in this order: (1) RENAMES (never deletes) the whole `.shipwright/designs/` directory,
-everything in it, to `.shipwright/designs.superseded-<old-hash8>/` inside the project (the refusal carries `old_hash8`);
-(2) in a git repository COMMITS that move (`git add -A .shipwright/designs .shipwright/designs.superseded-<hash8> && git
-commit`), so the re-applied uploads show as new files and the uploads gate (a committed upload must never show as modified)
-stays strict and goes green; (3) runs the tool FIRST; (4) only then copies back non-screen artifacts (feedback rounds,
-flows, `chrome-definition.md`) from the superseded directory and re-applies review-loop edits to the screens by hand,
-keeping each screen's Requirements comment (copying screens back first would be refused: `pre_existing_screen`).
+A package that changes after Design applied the old one is refused by the tool (`package_changed_since_apply`, exit 1, nothing
+written, and the hash check refuses a hand-edited `brief_package`, exit 3). Redoing an applied Design phase for a changed
+package is an operator-led decision outside this unit (a follow-up); if the operator wants it, they remove
+`.shipwright/designs/` (git history keeps the old files; nothing is copied back automatically), re-approve the package,
+restart the run and run the tool again. The agent only reports the refusal.
