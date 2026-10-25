@@ -191,13 +191,21 @@ def test_the_real_wizard_line_ending_in_the_profile_is_read(tmp_path):
     assert brief_intake.intake(line.replace("vite-hono.)", "vite-hono..)"), str(tmp_path))["profile"] is None
 
 
-def test_bare_profile_words_in_a_text_brief_stay_prose(tmp_path):
-    for text in ("description: A shop\n- profile: avatar\n- profile: public", "A shop app\nProfile: none",
-                 "A shop app\nProfile: vite-hon"):  # a bare key is a hint only: unknown / unbulleted-free text is ignored
-        out = brief_intake.intake(text, str(tmp_path))
-        assert out["profile"] is None and "profile_error" not in out and "profile_requested" not in out
-    shop = brief_intake.intake("A shop app\n- profile: avatar", str(tmp_path))
-    assert "avatar" in shop["brief"]["description"]  # the line is NOT removed from the description
+def test_bare_profile_words_in_a_text_brief_stay_prose_but_never_silently(tmp_path):
+    hostile = "x\x1b[31my" + chr(0x202E) + "z" * 400
+    for value in ("none", "vite-hon", "a SaaS for dentists", "detecting", hostile):
+        out = brief_intake.intake("persistence: yes\nprofile: " + value, str(tmp_path))
+        assert out["profile"] == "supabase-nextjs"  # inference stays (the line is prose) ...
+        assert "profile_error" not in out and "profile_requested" not in out  # ... exit 0, not a refusal ...
+        assert len(out["warnings"]) == 1 and "Stack profile: <name>" in out["warnings"][0]  # ... but never silent
+        assert not any(ord(c) < 32 or 0x7F <= ord(c) <= 0x9F or ord(c) == 0x202E for c in out["warnings"][0])
+        assert len(out["warnings"][0]) < 600
+    assert "vite-hon" in brief_intake.intake("persistence: yes\nprofile: vite-hon", str(tmp_path))["warnings"][0]
+    shop = brief_intake.intake("A shop app\nProfile: none", str(tmp_path))
+    assert "Profile: none" in shop["brief"]["description"]  # the line is NOT removed from the description
+    bullets = brief_intake.intake("description: A shop\n- profile: avatar\n- profile: public", str(tmp_path))
+    assert "warnings" not in bullets and bullets["profile"] is None  # bulleted lines are not hints at all
+    assert "warnings" not in brief_intake.intake("persistence: yes\nno profile line here", str(tmp_path))
 
 
 def test_misspelled_stack_profile_key_is_refused_not_inferred(tmp_path):

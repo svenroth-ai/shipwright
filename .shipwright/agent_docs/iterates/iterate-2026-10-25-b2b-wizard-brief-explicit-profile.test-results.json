@@ -85,11 +85,16 @@
           "behavior": "a brief naming no profile never loads the profile module; a missing module or unexpected resolver failure is resolver_unavailable only when a profile is named",
           "disposition": "tested",
           "evidence": "shared/tests/test_brief_profile.py PASSED"
+        },
+        {
+          "behavior": "an unused bare profile: hint adds a sanitised non-blocking warning (exit 0, line kept, inference stays) and briefs with no profile line gain no new key",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -104,7 +109,7 @@
       "exit_code": 0,
       "tests_run": 27,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
-      "timestamp": "2026-10-25T19:28:03.802Z",
+      "timestamp": "2026-10-25T19:52:24.448Z",
       "attempts": 1
     }
   },

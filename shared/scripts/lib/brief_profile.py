@@ -12,7 +12,8 @@ Where the name comes from (first hit wins; an explicit value always beats infere
    used is an error (exit 3);
 2. a HINT: a bare, unbulleted ``profile: x`` line of a ``key: value`` brief (``profile_hint``). Free text
    uses that word too ("Profile: none", "- profile: avatar"), so a hint counts only when it has the
-   profile-name shape AND the resolver finds it; anything else stays prose and is ignored;
+   profile-name shape AND the resolver finds it; anything else stays prose, is not used, and adds a
+   non-blocking ``warnings`` entry (exit 0) that points to ``Stack profile: <name>``;
 3. the ``Stack profile: <name>`` item of the ``(Intake ...)`` trailer the WebUI writes today
    (``composeNewBrief`` in the WebUI ``IntentWizard/contract.ts``): the LAST ``(Intake`` in the text, which
    must end it. Two trailers or two ``Stack profile:`` items are ambiguous and refused.
@@ -109,15 +110,23 @@ def _error(name: Any, code: str, detail: Any) -> dict:
     }
 
 
+def _ignored(value: Any) -> dict:
+    """A bare ``profile:`` hint that was NOT used: no override (inference stays), but never silent."""
+    msg = (f"the line 'profile: {_plain(value)}' was not used as a stack profile, so the profile is inferred from "
+           "the answers; to name a stack write 'Stack profile: <name>'")
+    return {"extra": {"warnings": [msg]}}
+
+
 def select(raw: Any, project_root: Any = ".") -> Optional[dict]:
-    """None when the brief names no profile, else ``{profile, reason, extra}`` for ``map_brief``."""
+    """None when the brief names no profile, else ``{profile, reason, extra}`` for ``map_brief``
+    (an unused hint: ``{extra}`` only, so inference stays and only a warning is added)."""
     kind, name = requested(raw)
     if not kind:
         return None
     if kind == "ambiguous":
         return _error(name, "invalid", "give exactly one Stack profile item (or a profile field)")
     if kind == "hint" and not (isinstance(name, str) and _NAME_SHAPE.fullmatch(name) and name != "detecting"):
-        return None  # free text that happens to start with "profile:" is not a choice
+        return _ignored(name)  # free text that happens to start with "profile:" is not a choice
     if not isinstance(name, str):
         return _error(name, "invalid", "a profile must be given as a name (string)")
     if name.lower() == "detecting":  # a placeholder state ("detect later"), not a stack a brief can choose
@@ -126,7 +135,7 @@ def select(raw: Any, project_root: Any = ".") -> Optional[dict]:
         res = _resolver().resolve_profile(name, project_root)
     except ValueError as exc:  # the resolver's error family: not_found / invalid / schema_*
         if kind == "hint" and getattr(exc, "kind", "") == "not_found":
-            return None  # a hint the resolver does not know is prose, not a typo to refuse
+            return _ignored(name)  # a hint the resolver does not know is prose, not a typo to refuse
         return _error(name, getattr(exc, "kind", "error"), exc)  # _error prints it sanitized
     except Exception as exc:  # missing resolver tree or any unexpected failure: loud, never a silent inference
         return _error(name, "resolver_unavailable", exc)

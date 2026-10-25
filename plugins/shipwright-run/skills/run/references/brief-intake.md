@@ -152,8 +152,10 @@ route has no brief version, the field is simply optional):
 - **The trailer** is the LAST `(Intake` in the text and must end it, so a user idea before it cannot name a
   profile; two trailers or two `Stack profile:` items are ambiguous and refused (`profile_unusable`).
 - **A bare `profile:` line** of a `key: value` brief is only a hint: it counts when it is unbulleted, has the
-  profile-name shape and the resolver knows it; otherwise ("Profile: none", "- profile: avatar", free text) it
-  stays in the description and is ignored. Use `Stack profile:` for a choice that must not be ignored.
+  profile-name shape and the resolver knows it. Otherwise ("Profile: none", free text, a misspelled name) the line
+  stays in the description, is NOT used (the profile is inferred) and the result gains a non-blocking `warnings`
+  entry that names the ignored value (exit 0): show it to the user. A bulleted line ("- profile: avatar") is not a
+  hint at all. Use `Stack profile: <name>` for a choice that must be used or refused.
 - **An explicit name always beats inference** (`persistence`); the result gains `profile_requested`,
   `profile_source` (`project|user|bundled|builtin`) and `warnings`; `env_questions` follow the CHOSEN profile.
 - **The resolver decides** (`shared/scripts/profile_resolver.py`: project > user > bundled): project and user

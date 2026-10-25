@@ -105,7 +105,7 @@ def map_brief(brief: dict, explicit: Optional[dict] = None) -> dict:  # normaliz
     else:
         profile = None
         profile_reason = "persistence unknown -> profile still to decide"
-    if explicit:  # a profile the brief names beats inference (brief_profile.py)
+    if explicit and "profile" in explicit:  # a profile the brief names beats inference (brief_profile.py)
         profile, profile_reason = explicit["profile"], explicit["reason"]
 
     # Deploy target from run-location.
