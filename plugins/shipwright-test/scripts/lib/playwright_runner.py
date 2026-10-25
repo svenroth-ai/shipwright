@@ -33,6 +33,7 @@ change, update that check's formula to match.
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -214,6 +215,25 @@ def _extract_error(result: dict) -> str:
     return ""
 
 
+def _resolve_executable(name: str) -> str:
+    """Resolve ``name`` the way shared ``lib.cmd_resolver`` does.
+
+    On Windows ``npx`` is ``npx.cmd``; a bare name fails under ``shell=False``.
+    The shared helper is loaded through ``shared_lib_loader`` (not ``import lib...``) because
+    this plugin has its own ``lib`` package (ADR-045). Falls back to
+    ``shutil.which`` when the shared tree is not reachable.
+    """
+    try:
+        shared_scripts = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
+        if shared_scripts not in sys.path:
+            sys.path.insert(0, shared_scripts)
+        from shared_lib_loader import load_shared_lib  # noqa: PLC0415
+
+        return load_shared_lib("cmd_resolver", prefer_private=True).resolve_executable(name)
+    except Exception:  # noqa: BLE001 - resolution must never break the run
+        return shutil.which(name) or name
+
+
 def run_playwright(cwd: Path, timeout: int = 300) -> dict:
     """Run `npx playwright test` and return structured results."""
     results_path = cwd / "e2e-results.json"
@@ -224,7 +244,7 @@ def run_playwright(cwd: Path, timeout: int = 300) -> dict:
 
     try:
         proc = subprocess.run(
-            ["npx", "playwright", "test"],
+            [_resolve_executable("npx"), "playwright", "test"],
             cwd=str(cwd),
             capture_output=True,
             text=True,

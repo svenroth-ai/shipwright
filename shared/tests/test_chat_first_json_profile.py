@@ -43,10 +43,10 @@ def test_dev_server_is_the_declared_block_not_the_default_service(tmp_path):
     services, warnings = dev_server._get_services("chat-first-json", tmp_path)
     assert warnings == [] and len(services) == 1
     svc = services[0]
-    assert svc == {"name": "primary", "command": "uv run uvicorn app.main:app --port 3900",
-                   "host": "localhost", "scheme": "http", "port": 3900, "ready_path": "/api/health",
+    assert svc == {"name": "primary", "command": "uv run uvicorn app.main:app --host 127.0.0.1 --port 3900",
+                   "host": "127.0.0.1", "scheme": "http", "port": 3900, "ready_path": "/api/health",
                    "ready_timeout_seconds": 60, "primary": True}  # exactly the declared block, no default leaked
-    assert svc["command"] == "uv run uvicorn app.main:app --port 3900"
+    assert svc["command"] == "uv run uvicorn app.main:app --host 127.0.0.1 --port 3900"
     assert svc["command"] != dev_server._DEFAULT_SERVICE["command"]
     assert (svc["port"], svc["ready_path"], svc["primary"]) == (3900, "/api/health", True)
     assert not _SHELL_META.search(svc["command"])  # the WebUI preview starts this one executable
@@ -67,7 +67,7 @@ def test_testing_block_names_pytest_and_playwright_and_deploy_is_none():
     assert data["deploy"] is None
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.13")
 def test_ci_and_codeql_mapping_stay_an_explicit_none():
     assert "chat-first-json" not in TEMPLATE_BY_PROFILE
     assert template_path_for_profile("chat-first-json", "bundled") is None

@@ -1,0 +1,6 @@
+{"section":"B4b","review":[
+{"severity":"medium","category":"architecture","file":"plugins/shipwright-test/scripts/lib/playwright_runner.py","line":219,"finding":"Hand-written importlib loader; siblings use shared_lib_loader.load_shared_lib","suggestion":"use load_shared_lib (fixed)"},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-test/tests/test_playwright_runner.py","line":140,"finding":"No test exercised the real loader path","suggestion":"add direct test (fixed)"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-test/scripts/lib/playwright_runner.py","line":220,"finding":"Docstring over-claims fallback parity","suggestion":"reworded"},
+{"severity":"low","category":"architecture","file":"shared/scripts/browser_verify.py","line":14,"finding":"Unguarded sys.path insert","suggestion":"guard (fixed)"},
+{"severity":"low","category":"readability","file":"shared/scripts/tests/test_browser_verify.py","line":7,"finding":"import pytest ordering","suggestion":"cosmetic, accepted"}]}

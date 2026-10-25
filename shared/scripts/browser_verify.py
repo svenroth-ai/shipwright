@@ -20,6 +20,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Windows ships npx as npx.cmd; resolve it (no shell=True).
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lib.cmd_resolver import resolve_executable  # noqa: E402
+
 
 def run_browser_verify(
     cwd: Path,
@@ -39,7 +44,7 @@ def run_browser_verify(
     # Run the TypeScript helper
     try:
         proc = subprocess.run(
-            ["npx", "tsx", str(verify_script), "--url", url, "--output", str(result_file)],
+            [resolve_executable("npx"), "tsx", str(verify_script), "--url", url, "--output", str(result_file)],
             cwd=str(cwd),
             capture_output=True,
             text=True,

@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b4b-windows-npx-browser-verify-url",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:28:02.200551+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:28:02.323621+00:00",
+      "disposition": "plan_review_required is false: small complexity, no risk flag, diff_loc 100 is not above 100 (Step 3.4)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "plugins/shipwright-test/scripts/lib/playwright_runner.py",
+          "line": 219,
+          "finding": "Hand-written importlib loader; siblings use shared_lib_loader.load_shared_lib",
+          "suggestion": "use load_shared_lib (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/tests/test_playwright_runner.py",
+          "line": 140,
+          "finding": "No test exercised the real loader path",
+          "suggestion": "add direct test (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-test/scripts/lib/playwright_runner.py",
+          "line": 220,
+          "finding": "Docstring over-claims fallback parity",
+          "suggestion": "reworded",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/browser_verify.py",
+          "line": 14,
+          "finding": "Unguarded sys.path insert",
+          "suggestion": "guard (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tests/test_browser_verify.py",
+          "line": 7,
+          "finding": "import pytest ordering",
+          "suggestion": "cosmetic, accepted",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T16:55:38.706718+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6e7d651d75c8d69452fbced5fff7c84c860449a0"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:54:37.421050+00:00",
+      "disposition": "Stage 3 applies only to migrations, async, cross-plugin imports or irreversible ops; none touched, small complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:28:02.450810+00:00",
+      "disposition": "diff of 100 changed lines is not above the 100-line threshold and complexity is small with no risk flag",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:54:37.185533+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6e7d651d75c8d69452fbced5fff7c84c860449a0"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:28:02.578356+00:00",
+      "disposition": "effective complexity small is below the medium internal-arm threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T16:28:02.713674+00:00",
+      "disposition": "effective complexity small is below the medium internal-arm threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

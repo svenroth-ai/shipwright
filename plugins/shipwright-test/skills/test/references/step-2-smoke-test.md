@@ -8,10 +8,11 @@ uv run "{shared_root}/scripts/smoke_test.py" \
 ```
 
 **DEV URL sources (in order):**
-1. `shipwright_build_config.json` -> `dev_url`
-2. Environment variable `SHIPWRIGHT_DEV_URL`
-3. The profile's `dev_server` block (`scheme://host:port`, and its `ready_path` as
-   `--health-path`), e.g. `chat-first-json` -> `http://localhost:3900` + `/api/health`
+1. The profile's `dev_server` block (`scheme://host:port`, and its `ready_path` as
+   `--health-path`), e.g. `chat-first-json` -> `http://127.0.0.1:3900` + `/api/health`
+   (same precedence as Browser Verify and `dev_server.py`)
+2. `shipwright_build_config.json` -> `dev_url`
+3. Environment variable `SHIPWRIGHT_DEV_URL`
 4. Default: `http://localhost:3000` (a node stack's port; never right for a profile that declares its own)
 
 If no DEV URL and app not running: skip with note.

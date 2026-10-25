@@ -131,3 +131,34 @@ def test_run_playwright_success(mock_run, tmp_path):
     result = run_playwright(tmp_path)
     assert result["success"] is True
     assert result["passed"] == 1
+
+
+@pytest.mark.covers("FR-01.06")
+def test_run_playwright_resolves_npx_via_resolver(tmp_path, monkeypatch):
+    """Windows-style npx.cmd: argv[0] is the resolved path, never a bare npx."""
+    import playwright_runner
+
+    monkeypatch.setattr(playwright_runner, "_resolve_executable", lambda name: f"C:/node/{name}.cmd")
+    with patch("playwright_runner.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        run_playwright(tmp_path)
+    argv = mock_run.call_args.args[0]
+    assert argv[0] == "C:/node/npx.cmd"
+    assert argv[1:] == ["playwright", "test"]
+    assert not mock_run.call_args.kwargs.get("shell")
+
+
+@pytest.mark.covers("FR-01.06")
+def test_resolve_executable_uses_the_shared_resolver():
+    """The real loader path works (not just the shutil fallback)."""
+    import playwright_runner
+
+    shared = Path(playwright_runner.__file__).resolve().parents[4] / "shared" / "scripts"
+    sys.path.insert(0, str(shared))
+    try:
+        from shared_lib_loader import load_shared_lib
+
+        expected = load_shared_lib("cmd_resolver", prefer_private=True).resolve_executable("npx")
+    finally:
+        sys.path.remove(str(shared))
+    assert playwright_runner._resolve_executable("npx") == expected

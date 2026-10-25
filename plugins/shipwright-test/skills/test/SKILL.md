@@ -150,9 +150,9 @@ Full body: see [step-1.6-pgtap-tests](references/step-1.6-pgtap-tests.md).
 uv run "{shared_root}/scripts/smoke_test.py" --url "{dev_url}" --timeout 10 --health-path "/api/health"
 ```
 
-DEV URL sources (in order): `shipwright_build_config.json.dev_url` ->
-`SHIPWRIGHT_DEV_URL` env -> the profile's `dev_server` block (URL and
-`ready_path` as `--health-path`) -> `http://localhost:3000` default.
+DEV URL sources (in order): the profile's `dev_server` block (URL and
+`ready_path` as `--health-path`) -> `shipwright_build_config.json.dev_url` ->
+`SHIPWRIGHT_DEV_URL` env -> `http://localhost:3000` default (same precedence as Browser Verify and `dev_server.py`).
 The smoke-test script is shared (`{shared_root}/scripts/smoke_test.py`), not a
 project file. On failure: diagnose, autonomous fix, retry, then ASK after 2.
 Full body: see [step-2-smoke-test](references/step-2-smoke-test.md).
