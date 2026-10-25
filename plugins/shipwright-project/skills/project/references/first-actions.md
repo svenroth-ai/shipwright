@@ -46,6 +46,7 @@ Before starting the project interview:
 6. **If "Full Pipeline"**:
    - Run the plugin script: `uv run "{plugin_root}/scripts/write_run_config.py" --project-root {project_path}`
    - This writes `shipwright_run_config.json` with `status="pending"`, `profile=detected`, `created_at=now`.
+   - Given a Brief package, add `--brief-dir {package_dir}`: it is verified first (exit 5 = refused, nothing written), its `profile` wins over detection and `brief_dir` is stored.
    - Then proceed with the normal interview flow.
 7. **If "Standalone Spec"**:
    - Skip config writing entirely.

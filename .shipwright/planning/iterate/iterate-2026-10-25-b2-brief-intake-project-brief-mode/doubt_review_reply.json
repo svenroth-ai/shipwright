@@ -1,0 +1,8 @@
+{"section": "B2-brief-intake-and-project-brief-mode", "doubts": [
+{"severity":"high","lens":"correctness","claim_under_doubt":"D1 LockTimeout is a RuntimeError, missed by handlers; half-written config","disproof_attempt":"fixed: write_run_config unlinks on any failure and exits 5; both CLIs catch RuntimeError; test added"},
+{"severity":"medium","lens":"correctness","claim_under_doubt":"D2 brief_fr_names skipped when no FR row parsed although specs exist","disproof_attempt":"fixed: skip only when no spec.md; test added"},
+{"severity":"low","claim_under_doubt":"D3 replaced config erases the package record","disproof_attempt":"fixed: verify refuses missing_record when brief/brief.json exists without brief_dir; documented; test added"},
+{"severity":"low","claim_under_doubt":"D4 capability without trace not reported","disproof_attempt":"fixed: missing_trace; test added"},
+{"severity":"low","claim_under_doubt":"D5 fixture prefix case/space","disproof_attempt":"fixed with test"},
+{"severity":"low","claim_under_doubt":"D6 run CLI always tries package route for dir-shaped input","disproof_attempt":"accepted and documented in brief-intake.md: a dir-shaped value is refused loudly when not a package"},
+{"severity":"low","claim_under_doubt":"docstring claimed no lib import","disproof_attempt":"fixed"}]}

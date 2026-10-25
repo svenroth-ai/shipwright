@@ -11,6 +11,7 @@ Maps the subcommands the master drives to the pure loop functions in
 
 Exit-code map (shared with ``router.dispatch_lifecycle``):
     0 -> dispatch / terminal signal / successful apply
+    3 -> next / apply / resume refused: the recorded Brief package no longer verifies
     2 -> fail-closed CAS reject on apply (stale_version / stale_session)
     1 -> guard (mode_unsupported / no_config), claim failure, invalid result, IO error,
          phase_gate_failed / override refusals (run_config and the task unchanged; a
@@ -45,6 +46,16 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
     # Lazy import keeps the base orchestrator surface free of the loop module
     # (and, transitively, the CAS machinery) until a subcommand actually runs.
     from .single_session_loop import apply_phase_result, next_dispatch
+
+    if args.command in ("single-session-next", "single-session-apply", "single-session-resume"):
+        from .brief_resume_guard import check
+
+        refused, warned = check(project_root)  # a changed Brief package blocks the command in code
+        for line in warned:
+            print(f"WARNING: {line}", file=sys.stderr)
+        if refused:
+            print(json.dumps(refused, indent=2))
+            return 3
 
     if args.command == "single-session-next":
         result = next_dispatch(project_root)

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach** \u2014 **Severity: medium**\n  The mini-plan puts the routing hook in `brief_intake.py` (\"directory or trailing slash \u2192 sibling module via file-path loader\"). This means `brief_intake.py` gains a dynamic import of `brief_dir_intake`, which is exactly the kind of cross-module coupling the operator's \"no re-export\" decision was meant to avoid drifting back in. Verify the hook is a pure dispatch (detect path type, delegate, return) with no shared state or helper leakage across the boundary, or the 300-line cap becomes the only thing preventing re-entanglement. Also confirm ADR-045's file-path loader works for the *sibling* case \u2014 the plan cites it for adopt's loader, but `brief_intake.py` itself may currently load under a different mechanism.\n\n- **Category: edge-case** \u2014 **Severity: medium**\n  \"Directory or trailing slash \u2192 directory intake\" routing is fragile: a user passing `--brief ./pkg/` gets the directory path; `--brief ./pkg` (no slash) hits the same code path only via `isdir()` check. But what about a *symlink to a directory* or a path that is a directory but not a valid package (no `brief.md`, no manifest)? The plan says \"bad brief_dir fails loudly,\" but be explicit that the distinction between \"not a directory\" (route to file loader \u2192 existing error), \"directory but not a package\" (exit 3 with package-validation error), and \"package with hash mismatch\" (exit 3) is intentional and tested. A trailing slash on a *file* path must still route to the file loader.\n\n- **Category: risk** \u2014 **Severity: medium**\n  `write_run_config.py` gains `--brief-dir` with \"exit 5\" while `brief_intake` main uses \"exit 3\" for refusal. Two different refusal exit codes for conceptually the same failure (refused brief) across adjacent tools is an operator confusion risk and a test-suite trap. If exit 5 is a pre-existing convention in `write_run_config.py`, fine \u2014 but confirm and document the mapping in `brief-mode.md`; if not, unify on one code.\n\n- **Category: edge-case** \u2014 **Severity: medium**\n  \"Verify the hash before write-config, on every resume and every answer\" \u2014 but the hash verification result must also account for the package *changing between resume steps* (e.g., operator edits `brief.md` mid-run). The plan implies refuse-on-mismatch, which is correct, but make sure the recorded-hash rule in `open_package` clearly distinguishes \"recorded hash\" (from run_config) from \"package manifest hash\" \u2014 a run started before A1's hash scheme exists will have no recorded hash. Define that behavior: refuse (loud) or re-record?\n\n- **Category: edge-case** \u2014 **Severity: low**\n  FR Names equal brief Names: `check-fr-names` needs a defined behavior when a brief Name collides with an existing requirement Name from a *prior non-brief run* in the same project (resume of a run started without a brief). Does brief mode require a fresh run, or can an existing run adopt a brief_dir retroactively? Spec says brief_dir is persisted at intake, so presumably fresh-run-only \u2014 state it explicitly to avoid a half-supported path.\n\n- **Category: security** \u2014 **Severity: low**\n  `fixture:<id>` approval gated on `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` is correct, but ensure the env var is checked at *verify time* (every resume/answer), not just intake time \u2014 otherwise an operator could set the flag only for intake and approvals silently persist. Also ensure the fixture approval is recorded in a way that a later verify without the flag fails, which the \"refuse a missing approval\" rule should cover \u2014 worth an explicit test.\n\n- **Category: dependency** \u2014 **Severity: low**\n  \"Depends on B1 only\" \u2014 but the plan touches `run SKILL.md` Step 1/4/resume, `hooks-and-pipeline.md`, and `step-8-completion.md`. If B1 or A1 touched overlapping doc sections, note the merge order; the doc-fix for \"update-step enforces validation\" is independent and trivially safe, so no real risk, just confirm no conflict with B1's edits.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  `verify-traces` resolves evidence anchors to \"non-empty brief.md sections.\" Define the anchor grammar (heading text? slug? line anchor?) and the behavior when brief.md is *edited after* traces were written: anchors that no longer resolve must fail the gate, which is the point \u2014 but if the hash rule already freezes the package, is post-intake brief.md mutation even possible mid-run? If the hash freezes it, verify-traces' anchor check is redundant with hash verification for in-run edits and only matters at completion. Confirm which layer owns that check and that it isn't double-failing with confusing messages.\n\n## Overall assessment\n\nThe approach is sound and respects the operator's no-extraction constraint: new modules, minimal wiring edit, adopt untouched. The main risks are routing ambiguity for directory-shaped inputs and inconsistent refusal exit codes between `brief_intake` and `write_run_config`; both are cheap to nail down now rather than in review of the code.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: security \u00b7 Severity: high**  \n   **Finding:** The plan adds verification commands but does not identify the mandatory call sites for **every resume and every answer**. Documentation changes alone cannot ensure that a changed package or removed approval is refused before processing an answer.  \n   **Suggestion:** Wire `verify_run_config` into the resume and answer entry points before state mutation. Test package tampering, missing approval, and fixture approval without the environment flag through those actual entry points.\n\n2. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** `write_run_config.py` will \u201cverify first \u2026 record,\u201d but the plan does not explain how it preserves the original recorded hash. If recording replaces that hash on resume, an edited, internally valid package could become the new baseline. A separate config write and record operation could also leave a config without its verification metadata.  \n   **Suggestion:** Compare against the existing recorded hash before any write, refuse replacement on mismatch, and persist `brief_dir`, package identity/hash, and derived configuration together. Test that refusals leave the existing configuration unchanged.\n\n3. **Category: approach \u00b7 Severity: medium**  \n   **Finding:** Project brief mode exposes `verify-traces` and `check-fr-names`, but does not explicitly connect them to the gates they must enforce. Running them only during `apply` would allow later edits to evidence sections or FR names to bypass the content requirements.  \n   **Suggestion:** Invoke these checks from the actual grill and requirements validation paths. Test that empty or unresolved evidence sections fail the grill gate and that FR-name divergence fails the relevant gate, including after initial application.\n\nThe module boundary and minimal routing edit fit the operator\u2019s decision, and the proposed regression suites cover the main compatibility surfaces. The plan needs explicit enforcement wiring and recorded-hash persistence semantics before implementation; this review is based on the supplied text because repository inspection was blocked by the execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+    "at": "2026-10-25T14:57:12.767448+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

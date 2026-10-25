@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Directory read, overrides win, brief_dir persisted and re-verified, file route and adopt unchanged, refusals for hash/approval/fixture, anchors checked in code, FR Names compared, stale update-step prose fixed. brief_intake.py 295 lines."},
+{"name":"Error Handling","verdict":"pass","note":"BriefRefused with closed codes and exit 3 (5 in write_run_config); no fallback to the self-attested hash once run_config exists; OS/lock errors reported structurally."},
+{"name":"Security Basics","verdict":"pass","note":"Hash and approval verified before write-config, resume and answers; recorded hash never re-baselined; config drift refused; fixture approval gated on the env switch; trust-on-first-use limit documented. Known limit: read-then-verify narrows but does not close TOCTOU."},
+{"name":"Test Quality","verdict":"pass","note":"Tests cover each refusal path, resume, tamper with rewritten hash, ordinary free text staying a description; gate run as a real subprocess."},
+{"name":"Performance Basics","verdict":"pass","note":"One directory scan per verification; small files only."},
+{"name":"Naming & Structure","verdict":"pass","note":"New logic in two new modules under 300 lines; brief_intake gets a routing hook only; ADR-045 loaders by file path."},
+{"name":"Affected Boundaries","verdict":"pass","note":"run_config producer (record) and consumers (verify, project mode, orchestrator readers) round-tripped; CRLF and BOM brief.md probed; CLI end to end."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff: no findings."}]}

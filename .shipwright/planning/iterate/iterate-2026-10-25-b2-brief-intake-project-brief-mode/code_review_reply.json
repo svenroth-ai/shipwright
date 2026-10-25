@@ -1,0 +1,6 @@
+{"section": "B2-brief-intake-and-project-brief-mode", "review": [
+{"severity":"high","category":"correctness","file":"shared/scripts/lib/brief_dir_intake.py","finding":"record() could re-baseline when the stored record block was dropped","disposition":"fixed (missing_record), test added"},
+{"severity":"medium","category":"correctness","file":"shared/scripts/tools/verifiers/brief_mode_checks.py","finding":"anchor check passed when no trace was brief-confirmed; anchor slug not tied to requirement_key","disposition":"fixed (wrong_source, anchor_key_mismatch), tests added"},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-project/scripts/write_run_config.py","finding":"OSError during record escaped as traceback","disposition":"fixed (config unlinked, exit 5)"},
+{"severity":"low","category":"architecture","finding":"parse_brief_md duplicates the heading split","disposition":"not changed: it also collects labels per line; both share the same regex semantics and are pinned by tests"},
+{"severity":"low","finding":"gate wrappers, dead test code, sys.argv restore, n/a message, duplicate labels","disposition":"fixed"}]}

@@ -8,12 +8,18 @@ Detects the stack profile from package.json (simple heuristic: presence of
 'next' dep -> supabase-nextjs). Errors clearly if no detectable stack.
 
 Usage:
-    uv run write_run_config.py --project-root /path/to/project
+    uv run write_run_config.py --project-root /path/to/project [--brief-dir brief]
+
+``--brief-dir`` names a Brief package (shared/scripts/lib/brief_dir_intake.py): it is
+verified (hash + approval) BEFORE anything is written (exit 5 if refused), its ``profile``
+wins over detection, and ``brief_dir`` + the approved hash are stored in the config so a
+resume finds and re-verifies it.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 import uuid
@@ -111,10 +117,27 @@ def write_run_config(project_root: Path, profile: str) -> Path:
     return config_path
 
 
+def _load_brief_dir_intake():
+    """Shared package intake, loaded by file path (ADR-045: this plugin owns its own ``lib``)."""
+    path = Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib" / "brief_dir_intake.py"
+    name = "_shipwright_project_brief_dir_intake"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    sys.modules[name] = mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return mod
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write shipwright_run_config.json for a new project")
     parser.add_argument("--project-root", required=True, type=Path)
     parser.add_argument("--profile", type=str, help="Override auto-detected profile")
+    parser.add_argument("--brief-dir", type=str, default=None, help="Brief package directory (project-relative)")
     args = parser.parse_args()
 
     project_root: Path = args.project_root.resolve()
@@ -122,7 +145,19 @@ def main() -> int:
         print(f"ERROR: not a directory: {project_root}", file=sys.stderr)
         return 1
 
-    profile = args.profile or detect_profile(project_root)
+    bdi = _load_brief_dir_intake() if args.brief_dir else None
+    package_profile = None
+    if bdi:
+        try:
+            package_profile = bdi.intake_dir(args.brief_dir, project_root)["profile"]
+            if args.profile and args.profile != package_profile:
+                raise bdi.BriefRefused("config_mismatch", f"--profile {args.profile!r} differs from the "
+                                       f"approved brief profile {package_profile!r}")
+        except bdi.BriefRefused as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 5
+
+    profile = args.profile or package_profile or detect_profile(project_root)
     if not profile:
         print(
             "ERROR: could not detect stack profile from package.json. "
@@ -147,6 +182,16 @@ def main() -> int:
     except FileExistsError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 3
+
+    if bdi:
+        try:
+            bdi.record(project_root, args.brief_dir)
+        except BaseException as exc:  # package changed in between, lock timeout, I/O: never leave a config without its record
+            config_path.unlink(missing_ok=True)
+            if not isinstance(exc, (bdi.BriefRefused, OSError, RuntimeError)):
+                raise
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 5
 
     print(f"Wrote {config_path} with profile={profile}")
     return 0
