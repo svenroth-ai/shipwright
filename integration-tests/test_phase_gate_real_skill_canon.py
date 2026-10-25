@@ -103,7 +103,8 @@ def _run_phase(project: Path, phase: str, *, runner_run_id: str | None,
                drop: str | None = None) -> tuple[dict, int, dict]:
     d = _next(project)
     assert d["phase"] == phase, d
-    return d, *_finish(project, d, runner_run_id=runner_run_id, drop=drop)
+    code, applied = _finish(project, d, runner_run_id=runner_run_id, drop=drop)
+    return d, code, applied
 
 
 def _finish(project: Path, d: dict, *, runner_run_id: str | None,
