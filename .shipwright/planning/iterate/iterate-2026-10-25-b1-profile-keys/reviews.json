@@ -88,54 +88,43 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/tests/test_stack_profile_schema.py",
-          "line": null,
-          "finding": "new keys not covered by the hand-checker parity mutations (fixed: added ux-ui-strings, ux-shape-int, ui-host-dict)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
           "severity": "low",
           "category": "correctness",
-          "file": "shared/schemas/stack_profile.schema.json",
-          "line": null,
-          "finding": "ux_shape description claimed preflight validates the profile value (fixed)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/tests/test_stack_profile_schema.py",
-          "line": null,
-          "finding": "duplicate bundled-profiles assertion (removed)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
           "file": "docs/stack-profiles.md",
-          "line": null,
-          "finding": "example used YAML syntax (fixed to JSON)",
-          "suggestion": null,
+          "line": 76,
+          "finding": "Row sits under 'ones that change behaviour' with Read-by 'brief-driven runs' yet says no loader reads them yet.",
+          "suggestion": "Reword Read-by to '(none yet; reserved)'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/schemas/stack_profile.schema.json",
+          "line": 61,
+          "finding": "ux_shape and ui_host descriptions are worded differently; 'no loader reads it yet' goes stale.",
+          "suggestion": "Use the same timeless wording.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_stack_profile_schema.py",
+          "line": 156,
+          "finding": "Second half of the new test duplicates mutation re-checks; small duplication, adds a real direction check.",
+          "suggestion": "Optional: fold into the existing pass/fail fixture test.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-25T14:11:30.178051+00:00",
+      "completed_at": "2026-10-25T14:18:45.409093+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "e18731cc1c529516ffdf33d07b5656b8ebbc5be1"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -143,11 +132,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T14:05:55.323509+00:00",
-      "disposition": "closed by reason_code diff-below-threshold",
+      "completed_at": "2026-10-25T14:18:45.551443+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff; the code change is 23 lines (schema + docs + test); Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
+      "model_tier": "opus",
       "reason_code": "diff-below-threshold"
     },
     "external_code": {
@@ -200,14 +190,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T14:05:36.569865+00:00",
+      "completed_at": "2026-10-25T14:17:50.852705+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "25150826ea42181e6b85360af1a07cd14f149b61"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
