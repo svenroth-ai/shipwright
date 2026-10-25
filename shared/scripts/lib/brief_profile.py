@@ -45,7 +45,8 @@ AMBIGUOUS = "<more than one Stack profile item>"
 _SHARED_SCRIPTS = str(Path(__file__).resolve().parents[1])
 _ITEM_RE = re.compile(r"Stack profile:", re.IGNORECASE)
 _INTAKE_RE = re.compile(r"\(Intake", re.IGNORECASE)
-_EARLIER_TRAILER_RE = re.compile(r"\(Intake[^()]*Stack profile:", re.IGNORECASE)
+_HEAD_RE = re.compile(r"\(Intake[^()]*", re.IGNORECASE)
+_EARLIER_TRAILER_RE = re.compile(r"\(Intake[^()]*Stack profile:[ \t]*[a-z0-9][a-z0-9-]*\.?[ \t]*[;)]", re.IGNORECASE)
 _ITEM_VALUE_RE = re.compile(r"Stack profile:[ \t]*([^;)\r\n]+)", re.IGNORECASE)
 _NAME_SHAPE = re.compile(r"[a-z0-9][a-z0-9-]*")
 # C0 and C1 controls, zero-width / bidi marks, bidi overrides and isolates, BOM: written as escapes on purpose
@@ -57,25 +58,36 @@ def _plain(text: Any) -> str:
     return _CTRL_RE.sub(" ", str(text))[:300]
 
 
-def _trailer_item(desc: str) -> tuple[str, Any]:
-    """``(kind, value)`` for the WebUI ``(Intake ...)`` trailer: the last one (any case), ending the text.
+def _trailer_item(text: str) -> tuple[str, Any]:
+    """``(kind, value)`` for the WebUI ``(Intake ...)`` trailer. THE ONE PRINCIPLE: it is read only from the LAST
+    physical line of the raw text (split on newlines); joined prose, other lines and keys never produce one.
 
-    Kinds: ``""`` none; ``strict``; ``ambiguous``; ``misplaced`` (the last ``(Intake`` holds a ``Stack profile:``
-    item but does not end the text: not a trailer, never used, but reported). Only the trailer's own items count:
-    the idea may say "(Intake forms)" or "stack profile: x" in prose. An EARLIER ``(Intake ... Stack profile: ...)``
-    is a second trailer: ambiguous. Every pattern here is linear in the text (no nested unbounded span)."""
+    On that line the last ``(Intake`` (any case) must hold a ``Stack profile:`` item before any inner bracket (so
+    "(Intake forms) ... stack profile: x" is prose) and the line must end with ``)``. Kinds: ``""`` none; ``strict``;
+    ``ambiguous`` (two items, or an earlier complete ``(Intake ... Stack profile: <name>)``); ``misplaced`` (an item in
+    the last ``(Intake`` but the line does not end with ``)``: not a trailer, never used, but reported). An item
+    value never spans a line. Every pattern is linear in the line."""
+    line = text.rstrip().split("\n")[-1]
     last = None
-    for last in _INTAKE_RE.finditer(desc):
+    for last in _INTAKE_RE.finditer(line):
         pass
-    tail = desc[last.start():] if last else ""
-    if not _ITEM_RE.search(tail):
+    if not last:
+        return "", None
+    tail = line[last.start():]
+    head = _HEAD_RE.match(tail).group(0)
+    if not _ITEM_RE.search(head):
         return "", None
     if not tail.rstrip().endswith(")"):
         return "misplaced", None
-    if len(_ITEM_RE.findall(tail)) > 1 or _EARLIER_TRAILER_RE.search(desc, 0, last.start()):
+    if len(_ITEM_RE.findall(head)) > 1 or _EARLIER_TRAILER_RE.search(line, 0, last.start()):
         return "ambiguous", AMBIGUOUS
-    match = _ITEM_VALUE_RE.search(tail)
+    match = _ITEM_VALUE_RE.search(head)
     return ("strict", match.group(1).strip().removesuffix(".").strip()) if match else ("", None)
+
+
+def _raw_text(raw: dict) -> Any:
+    """The raw text the trailer is read from: the text brief itself, or a JSON brief's description."""
+    return raw["_text"] if "_text" in raw else raw.get("description")
 
 
 def requested(raw: Any) -> tuple[str, Any]:
@@ -84,13 +96,8 @@ def requested(raw: Any) -> tuple[str, Any]:
         return "", None
     if raw.get("_dup"):  # two `Stack profile:` lines in a key: value brief
         return "ambiguous", AMBIGUOUS
-    trailer, blank = ("", None), False
-    for text in (raw.get("description"), raw.get("_text")):  # (3) the last trailer; `_text` = a one-line brief
-        trailer = _trailer_item(text) if isinstance(text, str) else ("", None)
-        if trailer[0] in _SOURCES:
-            break
-    if "_text" in raw and trailer[0] in _SOURCES:
-        return trailer  # the WebUI one-liner: a key at the start of the line is the idea, the trailer is the choice
+    text = _raw_text(raw)
+    trailer, blank = _trailer_item(text) if isinstance(text, str) else ("", None), False
     for key in FIELDS:  # (1) JSON field, (2) text `Stack profile:` key: both land in these dict keys
         value = raw.get(key)
         if value is None:
@@ -99,10 +106,13 @@ def requested(raw: Any) -> tuple[str, Any]:
             blank = True  # present but blank = no choice made here; the next field may still name one
             continue
         value = value.strip() if isinstance(value, str) else value
-        if "_dup" in raw and trailer[0] == "strict" and trailer[1] != value:
-            return "ambiguous", AMBIGUOUS  # a text key and a trailer disagree: never pick one silently
+        if "_dup" in raw and trailer[0] in _SOURCES:  # a text key AND a wizard trailer
+            if text.rstrip().endswith(value):
+                return trailer  # the key swallowed the trailer line itself: it was the start of the idea
+            if trailer[0] == "strict" and trailer[1] != value:
+                return "ambiguous", AMBIGUOUS  # they disagree: never pick one silently
         return "strict", value
-    if not blank and trailer[0] in _SOURCES:
+    if not blank and trailer[0] in _SOURCES:  # (3) the wizard trailer
         return trailer
     hint = raw.get("profile_hint")
     if blank or not isinstance(hint, str) or not hint.strip():
@@ -191,8 +201,8 @@ def _select(raw: Any, project_root: Any) -> Optional[dict]:
 
 def _misplaced(raw: Any) -> bool:
     """A ``Stack profile:`` item in an ``(Intake`` part that does not end the text: tolerated (never used), but said."""
-    texts = (raw.get("description"), raw.get("_text")) if isinstance(raw, dict) else ()
-    return any(isinstance(t, str) and _trailer_item(t)[0] == "misplaced" for t in texts)
+    text = _raw_text(raw) if isinstance(raw, dict) else None
+    return isinstance(text, str) and _trailer_item(text)[0] == "misplaced"
 
 
 def select(raw: Any, project_root: Any = ".") -> Optional[dict]:

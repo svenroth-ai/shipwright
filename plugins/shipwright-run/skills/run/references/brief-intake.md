@@ -156,23 +156,18 @@ So a wizard line that starts with "Profile: dentist SaaS (Intake - ...; Stack pr
   `key: value` brief (strict: a name that cannot be used exits 3, even misspelled), or the `Stack profile: <name>`
   item of the one-line `(Intake ...)` trailer the WebUI writes today (`composeNewBrief` in the WebUI
   `IntentWizard/contract.ts`). A field wins over the trailer.
-- **The trailer** is the LAST `(Intake` in the text and must end it, so a user idea before it cannot name a
-  profile. Only the trailer's own `Stack profile:` items count: an idea that says "(Intake forms)" or
-  "stack profile: x" in prose is ignored. Two items in the trailer, an earlier `(Intake ... Stack profile: ...)`
-  or two `Stack profile:` lines of a text brief are ambiguous and refused (`profile_unusable`, message
-  "more than one stack profile"). A one-line wizard brief whose idea starts with a brief key
-  ("Location: Zurich gyms. A booking app (Intake - ...)") is read whole, so its trailer still counts. The marker
-  `(Intake` is matched in any case. If the last `(Intake` holds a `Stack profile:` item but does not end the
-  brief (text or a stray `.` after the closing bracket), it is NOT a trailer: nothing is used and the result gains a
-  non-blocking `warnings` entry (also beside a bare hint). It only warns, never refuses, on purpose: the same words
-  appear in ordinary prose ("Compare Stack profile: a with ... later"), and a refusal there would punish a normal idea.
-  An item value never spans a line. The whole text counts as a one-line brief only when it IS one physical line
-  (the WebUI case): there its trailer is the choice and a key at the start of the line is just the idea. In a
-  multi-line brief the `Stack profile:` line is the choice and a differing trailer in the prose is ambiguous.
-  A fenced ```json block is the brief only when its opening fence starts a line (a lead-in sentence before it is fine); a fence inside an idea is prose. A text `Stack profile:` line and a trailer item that DISAGREE are ambiguous
-  (refused, "more than one stack profile"); if they agree, fine. The WebUI writes one physical line and never
-  adds a text key (`composeNewBrief`, `IntentWizard/contract.ts`: the idea is only `trim()`med, the server
-  flattens newlines), so a disagreement means a hand-written multi-line brief.
+- **The trailer: one principle.** The wizard trailer is read ONLY from the LAST physical line of the raw text
+  (split on newlines; for a JSON brief, its `description`). Joined prose, other lines and keys never produce one. On
+  that line the last `(Intake` (any case) must hold a `Stack profile:` item before any inner bracket and the line must
+  end with `)`: "(Intake forms) ... stack profile: x" is prose. An item value never spans a line. Two items, or an
+  earlier complete `(Intake ... Stack profile: <name>)`, are ambiguous and refused (`profile_unusable`, "more than one
+  stack profile"). If the last `(Intake` holds an item but the line does not end with `)`, it is NOT a trailer: nothing
+  is used and the result gains a non-blocking `warnings` entry (also beside a bare hint); it only warns, never
+  refuses, because the same words appear in ordinary prose. A key that swallowed the trailer line ("Location: Zurich.
+  App (Intake - ...)") does not hide it: the last line is read whole. A text `Stack profile:` line elsewhere and a
+  trailer that DISAGREE are ambiguous; if they agree, fine; a trailer on an earlier line is not read at all.
+- **A fenced ```json block** is the brief as before (unanchored), EXCEPT when the last line is a wizard trailer line:
+  then the text is a wizard brief and the fence is just part of the idea.
 - **A bare `profile:` line** of a `key: value` brief is only a hint: it counts when it is unbulleted, has the
   profile-name shape and the resolver knows it. Otherwise ("Profile: none", free text, a misspelled name) the line
   stays in the description, is NOT used (this holds for every resolver answer to a hint: unknown, a reserved device
@@ -196,7 +191,7 @@ So a wizard line that starts with "Profile: dentist SaaS (Intake - ...; Stack pr
   Show the warning to the user and ask which profile to use (`resolve_profile.py list` names the choices).
 - `detecting` (the "detect later" placeholder) is not choosable and is refused as `invalid`; `generic` is accepted.
 - Pass `--project-root` so a project profile under `.shipwright/profiles/` resolves.
-- No profile in the brief: behaviour is unchanged (inference from `persistence`, no new keys in the result).
+- No profile in the brief: behaviour is unchanged (inference from `persistence`; the result gains no new key, except a non-blocking `warnings` entry for a profile-looking key or a misplaced trailer).
 
 ## Partial brief
 

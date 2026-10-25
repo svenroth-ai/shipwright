@@ -145,9 +145,10 @@ def _no_brief_result() -> dict:
 
 _KEY_ALIASES = {"location": "run_location"}
 _KV_RE = re.compile(r"^[ \t]*(?:[-*][ \t]*)?([A-Za-z_][\w-]*(?: +[\w-]+)*)[ \t]*[:=][ \t]*(.+)$")  # each space has ONE owner: linear
-_FENCE_RE = re.compile(r"^[ 	]*```(?:json)?\s*(\{.*\})\s*```", re.DOTALL | re.M)  # the opening fence starts a LINE: a fence inside an idea is prose
+_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)  # greedy body + trailing-fence anchor: a nested {...} parses in full
+_WIZARD_LINE_RE = re.compile(r"\(Intake[^()]*Stack profile:.*\)\s*\Z", re.I)  # a last line like that IS a wizard brief: no fence is its brief
 _PRIVATE = ("_text", "_dup", "profile_hint")  # side channel to brief_profile.py: only the text parser may set it
-_NAMES_PROFILE = re.compile(r"(?:^|;)[ \t]*(?:stack[ _-]?)?profile[ \t]*[:=]|[\"'](?:stack_)?profile(?:_hint)?[\"']\s*:", re.I | re.M)
+_NAMES_PROFILE = re.compile(r"(?:^|;)[ \t]*(?:stack[ _-]?)?profile[ \t]*[:=]|\(Intake[^()]*Stack profile:|[\"'](?:stack_)?profile(?:_hint)?[\"']\s*:", re.I | re.M)
 
 
 class _TextBrief(dict): """The text parser's output: the only brief that may carry ``_PRIVATE`` keys."""
@@ -155,15 +156,13 @@ class _TextBrief(dict): """The text parser's output: the only brief that may car
 
 def _parse_text_brief(text: str) -> dict:
     """Parse a text brief: fenced ```json``` block, else ``key: value`` lines, else description-only."""
-    fence = _FENCE_RE.search(text)
+    fence = None if _WIZARD_LINE_RE.search(text.rstrip().split("\n")[-1]) else _FENCE_RE.search(text)
     if fence:
         try:
             return json.loads(fence.group(1))
         except (ValueError, json.JSONDecodeError):
             pass
-    fields, meta, prose = {}, {"_dup": False}, []  # meta: side channel for brief_profile.py, never a brief answer
-    if len(text.strip().splitlines()) == 1:
-        meta["_text"] = text.strip()  # the WebUI one-liner: its trailer is read even when a key swallowed the line
+    fields, meta, prose = {}, {"_dup": False, "_text": text.strip()}, []  # meta: side channel for brief_profile.py (the wizard trailer is read from the LAST line of _text)
     for line in text.splitlines():
         m = _KV_RE.match(line)
         key = ""

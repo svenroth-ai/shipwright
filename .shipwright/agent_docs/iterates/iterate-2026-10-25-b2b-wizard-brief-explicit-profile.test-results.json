@@ -4,8 +4,8 @@
     "date": "2026-10-25",
     "unit": {
       "status": "passed",
-      "passed": 14948,
-      "total": 14948
+      "passed": 14955,
+      "total": 14955
     },
     "integration": {
       "status": "not_run"
@@ -110,11 +110,16 @@
           "behavior": "round 7: a valid multi-line brief naming one profile is not refused (one-line text only, no value spans a newline); a fence inside an idea does not replace the brief; the Stack profile line stays in the description; a misplaced trailer warns beside a hint; the key-line and fence regexes are linear; the exact WebUI one-liner with a project profile reaches the run config",
           "disposition": "tested",
           "evidence": "shared/tests/test_brief_profile.py, plugins/shipwright-run/tests/test_brief_profile_e2e.py PASSED"
+        },
+        {
+          "behavior": "round 8: the wizard trailer is read only from the last physical line of the raw text; prose that only looks like a trailer is neither refused nor warned; the original unanchored fence is restored (no-profile briefs parse as before B2b) except when the last line is a wizard trailer; text key and trailer conflicts are checked in both orders; a swallowed-key trailer on the last line is read",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_profile.py PASSED"
         }
       ],
       "counts": {
-        "testable": 17,
-        "tested": 17,
+        "testable": 18,
+        "tested": 18,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -127,7 +132,7 @@
       "surface": "cli",
       "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 78,
+      "tests_run": 85,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
       "timestamp": "2026-10-25T20:16:13.943Z",
       "attempts": 1

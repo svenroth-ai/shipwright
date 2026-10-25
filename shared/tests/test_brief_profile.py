@@ -291,8 +291,6 @@ _PRECEDENCE = [
     ("an uppercase STACK PROFILE key is read", "persistence: yes\nSTACK PROFILE: vite-hono", "vite-hono", False, False),
     ("a blank strict field consults neither trailer nor hint", "persistence: yes\nStack profile:  \nprofile: vite-hono\nMy app "
      + _TRAILER.format("vite-hono"), "supabase-nextjs", False, False),
-    ("a text Stack profile key beats a forged-looking hint line and a fence in the idea", 'persistence: yes\nStack profile: vite-hono\nMy ```json {"profile": "generic"} ``` idea',
-     "vite-hono", False, False),
     ("a fence inside the idea of a one-liner does not replace the brief", 'My app ```json {"profile": "generic"} ``` ' + _TRAILER.format("vite-hono"),
      "vite-hono", False, False),
 ]
@@ -359,7 +357,7 @@ def test_a_non_trailer_tail_with_two_items_is_ignored_not_refused(tmp_path):
     idea = "Clinic (Intake forms). Compare Stack profile: a with Stack profile: b later"
     out = brief_intake.intake({**BASE, "description": idea}, str(tmp_path))
     assert out["profile"] == "supabase-nextjs" and "profile_error" not in out and "refused" not in out
-    assert out["warnings"] and "does not end the brief" in out["warnings"][0]  # not silent, not blocking
+    assert not out.get("warnings")  # no item sits inside the (Intake group: this is prose, nothing to report
 
 
 def test_a_trailer_followed_by_text_or_a_stray_dot_is_reported_not_dropped(tmp_path):
@@ -471,3 +469,64 @@ def test_the_fallback_gate_needs_a_real_profile_key_not_a_sentence(tmp_path, mon
     out = brief_intake.intake("We want a stack profile: that is easy to host, and user profiles", str(tmp_path))
     assert "profile_error" not in out
     assert brief_intake.intake("A tool; Stack profile: vite-hono", str(tmp_path))["code"] == "profile_unusable"
+
+
+def test_the_trailer_is_read_only_from_the_last_physical_line(tmp_path):
+    first = brief_intake.intake("My app " + _TRAILER.format("supabase-nextjs") + "\nmore words after it", str(tmp_path))
+    assert first["profile"] is None  # no answers to infer from, and the first line is not read
+    assert "profile_requested" not in first and "profile_error" not in first and not first.get("warnings")
+    last = brief_intake.intake("persistence: yes\nMy app\nreminders by SMS " + _TRAILER.format("vite-hono"), str(tmp_path))
+    assert last["profile"] == "vite-hono"
+
+
+@pytest.mark.parametrize("brief", [
+    "Patient app (Intake forms)\nStack profile: vite-hono\nWith reminders (SMS)",
+    "Patient (intake forms) built on stack profile: whatever (later)",
+])
+def test_prose_that_only_looks_like_a_trailer_is_neither_refused_nor_warned(tmp_path, brief):
+    out = brief_intake.intake(brief, str(tmp_path))
+    assert "profile_error" not in out and "refused" not in out and not out.get("warnings")
+    assert out["profile"] in ("vite-hono", None)
+
+
+def test_a_key_line_and_a_trailer_last_line_are_checked_in_both_orders(tmp_path):
+    trailer = "My app " + _TRAILER.format("vite-hono")
+    agree = brief_intake.intake("Stack profile: vite-hono\n" + trailer, str(tmp_path))
+    assert agree["profile"] == "vite-hono" and not agree.get("warnings")
+    differ = brief_intake.intake("Stack profile: generic\n" + trailer, str(tmp_path))
+    assert differ["profile"] is None and "more than one stack profile" in differ["message"]
+    key_last = brief_intake.intake(trailer + "\nStack profile: generic", str(tmp_path))  # the trailer is not on the last line
+    assert key_last["profile"] == "generic" and not key_last.get("warnings")
+
+
+def test_a_swallowed_key_trailer_on_the_last_line_is_read(tmp_path):
+    line = "Users: gym staff. App " + _TRAILER.format("vite-hono")
+    out = brief_intake.intake("persistence: yes\n" + line, str(tmp_path))
+    assert out["profile"] == "vite-hono" and out["profile_requested"] == "vite-hono"
+
+
+def test_only_a_complete_earlier_trailer_makes_the_brief_ambiguous(tmp_path):
+    loose = brief_intake.intake("Old (Intake — Stack profile: a b c) app " + _TRAILER.format("vite-hono"), str(tmp_path))
+    assert loose["profile"] == "vite-hono"  # "a b c" is not a profile name: not a second trailer
+
+
+def test_a_fence_in_a_wizard_brief_is_prose_but_a_fence_without_a_trailer_is_the_brief(tmp_path):
+    fence = '```json {"profile": "generic"} ``` '
+    for text in (fence + "my idea " + _TRAILER.format("vite-hono"),  # fence at position 0 of the one-liner
+                 "My idea " + fence + _TRAILER.format("vite-hono"),  # fence mid-line
+                 "Idea\n" + fence + "\nmore " + _TRAILER.format("vite-hono")):  # multi-line, last line is the trailer
+        out = brief_intake.intake(text, str(tmp_path))
+        assert out["profile"] == "vite-hono", text
+    plain = brief_intake.intake('Brief: ```json {"description": "A tool", "persistence": "yes", "profile": "generic"}```', str(tmp_path))
+    assert plain["profile"] == "generic" and plain["brief"]["description"] == "A tool"  # as before B2b
+    lead = brief_intake.intake('Brief: ```json {"description": "A tool", "persistence": "no"}```', str(tmp_path))
+    assert lead["profile"] == "vite-hono" and lead["brief"]["description"] == "A tool" and "profile_requested" not in lead
+
+
+def test_the_fallback_gate_sees_a_wizard_trailer_line(tmp_path, monkeypatch):
+    def gone(stem):
+        raise ImportError("brief_profile.py missing")
+
+    monkeypatch.setattr(brief_intake, "_sibling", gone)
+    out = brief_intake.intake("My app " + _TRAILER.format("vite-hono"), str(tmp_path))
+    assert out["code"] == "profile_unusable"
