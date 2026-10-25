@@ -69,29 +69,125 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 149,
+          "finding": "_WIZARD_LINE_RE is quadratic on a hostile last line of a 256 KB text brief (edge)",
+          "suggestion": "check endswith(')') before the regex",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 159,
+          "finding": "fence-skip regex and _trailer_item decide 'wizard line' differently on exotic last lines (edge)",
+          "suggestion": "derive both from one helper",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 174,
+          "finding": "hand-written 'Stack profile: vite-hono.' keeps the trailing period and is refused loudly",
+          "suggestion": "strip one trailing period like the trailer path",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 151,
+          "finding": "fallback gate misses a bulleted Stack profile line, only when the sibling module is broken (edge)",
+          "suggestion": "allow an optional bullet",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 177,
+          "finding": "pre-existing: an idea starting with a brief key loses its description",
+          "suggestion": "treat a wizard trailer last line as prose (follow-up)",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-25T17:50:17.320543+00:00",
-      "disposition": "orchestrator instruction (campaign B2b): the orchestrator runs the spec/code/doubt reviewers with model=opus; the sub-iterate-runner did not spawn them (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T22:41:22.664518+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3fbc03e1a55bbe1a4a4cc0f748fd916dd52ce06f"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: wizard trailer contract holds between WebUI and intake — an item order with brackets before Stack profile would drop the profile; today's producer is fine",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: a bare profile hint never takes over a normal brief — 'Profile: generic' selects the generic sentinel",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: a brief naming no profile is unchanged — stray-key warning also fires for domain keys like customer_profile",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/brief_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: a wizard brief always selects the wizard profile — text added after the closing parenthesis makes the trailer misplaced; safe fallback",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-run/tests/test_brief_profile_e2e.py",
+          "line": null,
+          "finding": "Claim under doubt: e2e test reflects a fully parsed brief — pre-existing: key-led idea loses description",
+          "suggestion": "accepted as follow-up; not core path",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-25T17:50:17.480366+00:00",
-      "disposition": "orchestrator instruction (campaign B2b): the orchestrator runs the spec/code/doubt reviewers with model=opus; the sub-iterate-runner did not spawn them (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T22:41:22.809189+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3fbc03e1a55bbe1a4a4cc0f748fd916dd52ce06f"
     },
     "external_code": {
       "review_type": "external_code",
@@ -193,16 +289,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T17:50:17.191266+00:00",
-      "disposition": "orchestrator instruction (campaign B2b): the orchestrator runs the spec/code/doubt reviewers with model=opus; the sub-iterate-runner did not spawn them (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T22:41:06.560416+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3fbc03e1a55bbe1a4a4cc0f748fd916dd52ce06f"
     },
     "plan_internal": {
       "review_type": "plan_internal",
