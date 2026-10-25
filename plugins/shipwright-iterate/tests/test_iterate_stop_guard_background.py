@@ -71,6 +71,10 @@ def test_only_a_terminal_status_finishes_a_task() -> None:
     {"stdout": "Command running in background with ID: b2"},  # a synchronous Bash that printed the sentence
     {"taskId": "m1", "persistent": True},                    # persistent monitor: never finishes
     {"isAsync": False},
+    {"success": True, "message": "Message queued for agent a1"},  # a SendMessage to a RUNNING agent: nothing resumed
+    {"success": True, "resumedAgentId": None},
+    {"success": False, "resumedAgentId": "a1"},                   # a resume that failed: no notice will ever come
+    {"isAsync": False, "resumedAgentId": "a1"},                   # a synchronous resume returns inline
 ])
 def test_these_results_are_not_launches(result) -> None:
     pending: dict = {}
@@ -83,6 +87,57 @@ def test_a_non_persistent_monitor_and_a_timed_out_command_are_launches() -> None
     bg.track(pending, _launch("m", {"taskId": "m1", "persistent": False, "timeoutMs": 1}))
     bg.track(pending, _launch("c", {"backgroundTaskId": "b9", "timedOutAfterMs": 120000}))
     assert set(pending) == {"m", "c"}
+
+
+# The structured result Claude Code returns for a SendMessage that wakes a FINISHED agent (real shape,
+# session e2b0254b, 2026-10-25): no isAsync / backgroundTaskId / taskId, the wake-up is only named here.
+RESUME = {"success": True, "message": "Resuming agent ac3c9a9", "resumedAgentId": "ac3c9a903894290da",
+          "revivedAgentId": "ac3c9a903894290da", "pin": {"id": "ac3c9a903894290da", "ref": "11a147"}}
+
+
+def test_a_resumed_agent_counts_as_waiting_after_every_earlier_task_finished() -> None:
+    """The 06:28 incident: the runner was woken by SendMessage while nothing else ran, so the guard saw
+    pending == {} and blocked three Stops while the runner worked."""
+    pending: dict = {}
+    bg.track(pending, _launch("first"))
+    bg.track(pending, _done("first"))
+    assert not bg.waiting(pending, NOW)
+    bg.track(pending, _launch("toolu_send", RESUME))
+    assert pending["toolu_send"]["kind"] == "agent" and bg.waiting(pending, NOW)
+
+
+def test_the_resumed_agents_notice_carries_the_sendmessage_tool_use_id_and_clears_it() -> None:
+    pending: dict = {}
+    bg.track(pending, _launch("toolu_send", RESUME))
+    bg.track(pending, _done("toolu_send", status="running"))
+    assert "toolu_send" in pending
+    bg.track(pending, _done("toolu_send"))
+    assert pending == {} and not bg.waiting(pending, NOW)
+
+
+def test_a_resumed_agent_stops_counting_after_the_agent_bound() -> None:
+    pending: dict = {}
+    bg.track(pending, _launch("toolu_send", RESUME, when=NOW))
+    assert bg.waiting(pending, NOW + timedelta(seconds=bg.BG_MAX_AGE_SECONDS["agent"] - 1))
+    assert not bg.waiting(pending, NOW + timedelta(seconds=bg.BG_MAX_AGE_SECONDS["agent"] + 1))
+
+
+def test_a_revived_agent_id_alone_is_enough() -> None:
+    pending: dict = {}
+    bg.track(pending, _launch("t", {"success": True, "revivedAgentId": "a9"}))
+    assert set(pending) == {"t"}
+
+
+def test_the_hook_in_a_real_worktree_is_silent_while_a_resumed_agent_runs(tmp_path: Path) -> None:
+    main, _ = _seed(tmp_path)
+    transcript = _transcript(tmp_path)
+    with open(transcript, "a", encoding="utf-8") as fh:
+        fh.write(_launch("toolu_first", when=datetime.now(timezone.utc)) + "\n" + _done("toolu_first") + "\n"
+                 + _launch("toolu_send", RESUME, when=datetime.now(timezone.utc)) + "\n")
+    assert _run_hook(main, transcript) is None  # the resumed runner is still working: waiting is the job
+    with open(transcript, "a", encoding="utf-8") as fh:
+        fh.write(_done("toolu_send") + "\n")
+    assert _run_hook(main, transcript)["decision"] == "block"
 
 
 def test_a_notice_on_the_same_line_as_its_own_launch_wins() -> None:

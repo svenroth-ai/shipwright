@@ -1,0 +1,52 @@
+{
+  "section": "iterate-2026-10-25-stop-guard-resumed-agent",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/iterate_stop_guard_background.py",
+      "line": 40,
+      "finding": "The new check `result.get(\"resumedAgentId\") or result.get(\"revivedAgentId\")` ignores `success` and `isAsync`. Two cases can silence the guard for the full 2 h agent bound even though nothing is running. (1) A resume that fails but still echoes the agent id (`success: False, resumedAgentId: \"a1\"`): no completion notice will ever arrive. (2) A synchronous (foreground) resume whose result is returned inline, if that result also carries `resumedAgentId`: again no notice comes. Neither shape has been observed, so this is not a confirmed bug. Still, the guard should fail closed: a field that only means 'an agent id was named' is weaker than the `isAsync is True` check used for the other agent launch path. Two cases are safe: a result quoted inside tool output (Read/grep of a transcript), because only the top-level structured `toolUseResult` is checked; and a SendMessage to a still-running agent, which has no resumedAgentId.",
+      "suggestion": "Tighten the check to `if (result.get(\"resumedAgentId\") or result.get(\"revivedAgentId\")) and result.get(\"success\") is not False and result.get(\"isAsync\") is not False: return \"agent\"`. This keeps the observed real shape (success True, no isAsync) and drops the failed and synchronous cases. Add parametrized non-launch cases for `{\"success\": False, \"resumedAgentId\": \"a1\"}` and `{\"isAsync\": False, \"resumedAgentId\": \"a1\"}`."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py",
+      "line": 76,
+      "finding": "The new non-launch case `{\"success\": False, \"resumedAgentId\": \"\"}` passes only because the empty string is falsy, not because of `success: False`. It looks like a test for 'a failed resume is not a launch' but proves nothing about that. Under the current code, `{\"success\": False, \"resumedAgentId\": \"a1\"}` IS treated as a launch, and no test covers that.",
+      "suggestion": "Change the case to a non-empty id with `success: False`, together with the tightening above, or drop it. `{\"success\": True, \"resumedAgentId\": None}` already covers the empty-value case."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/iterate_stop_guard_background.py",
+      "line": 18,
+      "finding": "The accepted-risk note covers only a background shell that never ends (30 min). The new path adds a related, still bounded, residual risk: a resumed agent whose notice never arrives, or whose notice carries a different id than the SendMessage call, keeps the guard quiet for up to 2 h. The isAsync agent path has the same 2 h bound, so the risk is acceptable, but it is not written down. Notice matching depends on one observed transcript (toolu_012wq... notice carrying the SendMessage id). If a future harness version keys the notice on the original Agent call id instead, every resume would leave a 2 h quiet window and no test would catch it.",
+      "suggestion": "Add one sentence to the accepted-risk note saying that a resume whose notice never arrives, or names another id, is bounded by the 2 h agent limit, and that matching relies on the observed notice carrying the SendMessage tool-use-id."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/iterate_stop_guard.py",
+      "line": 160,
+      "finding": "`_blocker_tool` catches only `(OSError, IndexError)`. On Python 3.11/3.12 (the CI interpreter is pinned to 3.11), `Path.resolve(strict=True)` raises `RuntimeError` on a symlink loop; 3.13 changed this to OSError. The hook's outer `except Exception` would then let the Stop through: the block is lost and the session is not trapped. The docstring says the message 'must never raise', so the code does not fully do what it promises.",
+      "suggestion": "Catch `(OSError, IndexError, RuntimeError)`, or `Exception` with a short comment, so the fallback to the bare file name actually covers every failure."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/iterate_stop_guard_background.py",
+      "line": 9,
+      "finding": "The docstring parenthetical now has two different ` -- ` asides inside one comma list. It reads as if `backgroundTaskId` belonged to the SendMessage aside. The docs/hooks-and-pipeline.md row has the same problem: `/` separators are mixed with an embedded em-dash clause, so the `backgroundTaskId` item looks attached to the resume clause.",
+      "suggestion": "Split the docstring into list-like clauses separated by semicolons, or move the resume explanation into its own sentence after the parenthetical. Apply the same fix to the docs row."
+    }
+  ],
+  "notes": {
+    "a_false_positive_analysis": "A result quoted in tool output cannot trigger the check: only the top-level structured toolUseResult dict is read. A SendMessage to a running agent has no resumedAgentId and is correctly not tracked. The remaining risks are a failed resume or a synchronous resume carrying the id (finding 1), and a notice that never arrives or names another id; all are bounded at 2 h, matching the existing isAsync agent path.",
+    "b_notice_matching": "The logic is right if the notice really carries the SendMessage tool_use_id; it rests on the one observation the caller cited.",
+    "c_path_derivation": "Correct. parents[1] of shared/scripts/lib/iterate_stop_guard.py is shared/scripts; tools/record_hard_blocker.py exists. The path is quoted, so spaces in Windows paths are fine.",
+    "d_tests": "monkeypatch.setattr(guard, '__file__', ...) works. Apart from finding 2, no test passes for the wrong reason. iterate_stop_guard.py is 281 lines, under the 300-line limit.",
+    "review_type": "full-review (Claude-only; no external LLM review was run)"
+  }
+}

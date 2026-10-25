@@ -1,0 +1,118 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-stop-guard-resumed-agent",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 23356,
+      "total": 23458
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-iterate --extra dev pytest plugins/shipwright-iterate/tests -q -p no:cacheprovider -k stop_guard",
+      "exit_code": 0,
+      "tests_run": 81,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-25-stop-guard-resumed-agent/surface_verification.log",
+      "timestamp": "2026-10-25T07:11:05.593Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A SendMessage result that resumed a finished agent counts as a pending agent launch after every earlier task finished",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_a_resumed_agent_counts_as_waiting_after_every_earlier_task_finished PASSED"
+        },
+        {
+          "behavior": "The resumed agent's notice (carrying the SendMessage tool-use-id) clears it; a non-terminal notice does not",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_the_resumed_agents_notice_carries_the_sendmessage_tool_use_id_and_clears_it PASSED"
+        },
+        {
+          "behavior": "A resumed agent stops counting after the 2 h agent bound",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_a_resumed_agent_stops_counting_after_the_agent_bound PASSED"
+        },
+        {
+          "behavior": "revivedAgentId alone is enough to count as a launch",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_a_revived_agent_id_alone_is_enough PASSED"
+        },
+        {
+          "behavior": "Queued-to-running, null/empty id, failed and synchronous resume shapes are not launches",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_these_results_are_not_launches (3 resume shapes + failed + synchronous) PASSED"
+        },
+        {
+          "behavior": "The real hook in a real worktree stays silent while a resumed agent runs and blocks again after its notice",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_the_hook_in_a_real_worktree_is_silent_while_a_resumed_agent_runs PASSED"
+        },
+        {
+          "behavior": "Block message says the run is still open, drops 'contract violation', names MERGED as the finish line",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_message.py::test_the_message_says_the_run_is_open_not_that_the_agent_broke_a_contract PASSED"
+        },
+        {
+          "behavior": "Block message says waiting on a background task is allowed (end the turn without tool calls)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_message.py::test_the_message_says_waiting_on_a_background_task_is_allowed PASSED"
+        },
+        {
+          "behavior": "record_hard_blocker command carries a resolved, existing, absolute path instead of {shared_root}",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_message.py::test_the_record_hard_blocker_command_is_a_real_path_not_a_template PASSED"
+        },
+        {
+          "behavior": "Next phase, hard-blocker codes and kill switch are kept in the message",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_message.py::test_the_message_keeps_the_next_phase_the_hard_blocker_codes_and_the_kill_switch PASSED"
+        },
+        {
+          "behavior": "An unresolvable tool path falls back to the bare file name and never breaks the block",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_message.py::test_an_unresolvable_tool_path_never_breaks_the_block PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-stop-guard-resumed-agent",
+    "commit": "298287321b90c30d88def09daf7f816a1262c77b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

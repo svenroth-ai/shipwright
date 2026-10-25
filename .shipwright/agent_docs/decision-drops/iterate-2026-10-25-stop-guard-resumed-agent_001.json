@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-stop-guard-resumed-agent",
+  "date": "2026-10-25",
+  "section": "Iterate — bug: stop-guard tracks resumed agents",
+  "title": "Stop-guard counts a resumed agent as pending work",
+  "context": "The iterate Stop-guard blocked three Stops while a runner it had woken with SendMessage was still working: that result carries resumedAgentId but no isAsync, so it was never tracked as a background task.",
+  "decision": "Count a resume result (resumedAgentId/revivedAgentId, unless success or isAsync say otherwise) as an agent launch keyed by the SendMessage tool-use-id; reword the block message and print a resolved record_hard_blocker path.",
+  "consequences": "A resumed runner no longer triggers futile blocks; the residual risk is a resume whose notice never arrives, bounded by the existing 2 h agent limit.",
+  "rationale": "Found by replaying the real transcript through the scanner (pending was empty at 06:28:04). The opus code review tightened the check against failed/synchronous shapes and widened the path fallback to RuntimeError; GLM and GPT approved with no findings.",
+  "rejected": "Allowing the Stop on any queued SendMessage (too broad: silences a plain message to a running agent); hiding the error display (not possible from a plugin, the UI shows every block).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
