@@ -41,7 +41,8 @@ Repeat until a terminal signal:
      the crash carries the old version and is refused, so that phase is re-run.
    - `complete` → the pipeline finished. Stop; print the completion summary.
    - `failed` → a phase strict-stopped (`failed_tasks`). Stop; surface it.
-   - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop.
+   - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop; skipping
+     the last of them (`--force-status skipped --reason`) completes the run.
    - `mode_unsupported` / `no_config` → not a drivable single-session run; do not
      loop. Print the returned `message` (a mode-less or removed-`multi_session`
      config migrates by setting `"mode": "single_session"` and re-invoking).

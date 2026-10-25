@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from phase_task_core import (
+    TERMINAL_STATUSES,
     _PhaseTasksLock,
     _fail,
     _find_task,
@@ -24,6 +25,25 @@ from phase_task_core import (
 MAX_SKIP_REASON_CHARS = 500
 # Letters that render as blank (Hangul fillers): ``isalnum()`` is True for them.
 _BLANK_LETTERS = frozenset("ᅟᅠㅤﾠ")
+
+
+def _completion_unblocked(config: dict[str, Any]) -> bool:
+    """True when a ``needs_validation`` run may now complete: the lifecycle's own
+    run-completion invariant (``complete_phase_task``), re-checked after a skip.
+
+    Only the lifecycle producer's pause is lifted — "pipeline-terminal task done while
+    others were non-terminal". It writes no ``validation_issues``; the other producer
+    (``step_planning.update_step``, v1 gate findings) always does, and a skip answers
+    none of them, so any ``validation_issues`` key keeps the pause. The pipeline-terminal
+    phase is ``deploy``, or ``changelog`` when ``deploy_target`` is ``"none"`` (the
+    state machine's two ``None`` successors)."""
+    if config.get("status") != "needs_validation" or "validation_issues" in config:
+        return False
+    tasks = config.get("phase_tasks") or []
+    last = "changelog" if config.get("deploy_target") == "none" else "deploy"
+    if not any(t.get("phase") == last and t.get("status") == "done" for t in tasks):
+        return False
+    return all(t.get("status") in TERMINAL_STATUSES for t in tasks)
 
 
 def normalise_skip_reason(reason: Optional[str]) -> str:
@@ -59,6 +79,14 @@ def recover_phase_task(
 
     If force_status == "awaiting_launch" and run was failed because of THIS
     task, run.status is reset to "in_progress" so the pipeline can resume.
+
+    If force_status == "skipped" and the run sits in the lifecycle's ``needs_validation``
+    (pipeline-terminal task done, others were open) and the skip leaves every task
+    terminal, run.status becomes "complete" in the same write and the result carries
+    ``run_status="complete"`` (``_completion_unblocked``). A ``failed`` recover never
+    completes the run by itself; like ``complete_phase_task``, the invariant counts an
+    already-``failed`` task as terminal, so a later skip of the last open task does. A
+    skipped task's successors are not planned: skipping is the operator's call.
     """
     if force_status not in {"awaiting_launch", "failed", "skipped"}:
         return _fail(
@@ -87,6 +115,7 @@ def recover_phase_task(
 
         old_status = task.get("status")
         old_version = int(task.get("version", 1))
+        extra: dict[str, Any] = {}
 
         task["version"] = old_version + 1
         task["claimedBySessionUuid"] = None
@@ -113,9 +142,13 @@ def recover_phase_task(
                 if phase_task_id not in completed_ids:
                     completed_ids.append(phase_task_id)
                 config["completed_phase_task_ids"] = completed_ids
+                # The skip may have been the last thing holding the run open: complete
+                # it in THIS write (both or neither), as complete_phase_task would have.
+                if _completion_unblocked(config):
+                    config["status"] = extra["run_status"] = "complete"
 
         _write_config(project_root, config)
-        return _ok(task, recovered_from=old_status, new_version=task["version"])
+        return _ok(task, recovered_from=old_status, new_version=task["version"], **extra)
 
 
 @_guard_lock_timeout

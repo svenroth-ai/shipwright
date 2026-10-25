@@ -180,6 +180,32 @@ def mark_human_gate(
     return {"ok": True, "status": new_status, "loopState": _loop_pointer(loop_state)}
 
 
+def mark_loop_complete(project_root: Path) -> Optional[dict[str, Any]]:
+    """Stamp the loop pointer ``complete`` when the run is complete (self-healing).
+
+    A skip that clears the last ``needs_validation`` blocker flips ``run.status`` to
+    ``complete`` inside the lifecycle; the loop status that the deploy apply left at
+    ``stopped`` is not re-read by ``single-session-next`` (it decides from run_config),
+    so without this the handoff would keep showing a stopped loop for a finished run.
+    The recover CLIs call it after EVERY successful skip, not only the completing one: the
+    loop write is outside the lifecycle lock, so if it is lost after the config write, the
+    next skip of any task repairs the pair. Only for an explicit ``single_session`` run, only
+    for the SAME run (``runId`` match), and only when run_config really says ``complete``;
+    returns the state (saved when it changed), or None when not applicable. Emits nothing
+    itself: run_config is the completion authority, and the in-loop recover carries
+    ``runStatus`` on its own ``recovery`` event."""
+    loop_state = load_loop_state(project_root)
+    config = load_run_config(project_root, migrate=False)
+    if (loop_state is None or not is_single_session(config)
+            or config.get("status") != "complete"
+            or loop_state.get("runId") != config.get("runId")):
+        return None
+    if loop_state.get("status") != "complete":
+        loop_state = set_status(loop_state, "complete")
+        save_loop_state(project_root, loop_state)
+    return loop_state
+
+
 def recover_single_session(
     project_root: Path, *, phase_task_id: str, force_status: str = "awaiting_launch",
     reason: Optional[str] = None,
@@ -190,9 +216,11 @@ def recover_single_session(
     status; ``skipped`` needs ``reason``, stored as ``skipReason`` and sent as a durable
     ``phase_skipped`` event), then — only for a re-runnable ``awaiting_launch`` recovery — realigns the
     resumable loop pointer to the recovered task (attempt reset; loop status lifted back to
-    ``running`` if the run had failed because of it), and emits a ``recovery`` event.
-    Mode- and run-identity-gated. The generic ``recover-phase-task`` CLI is untouched for
-    not a drivable single-session run.
+    ``running`` if the run had failed because of it), and emits a ``recovery`` event. A skip
+    that completes a ``needs_validation`` run (``run_status: complete``) puts ``runStatus`` on
+    that event, and any skip on a complete run stamps the loop pointer ``complete``
+    (``mark_loop_complete``). Mode- and run-identity-gated. The generic
+    ``recover-phase-task`` CLI is untouched for not a drivable single-session run.
     """
     guard = _guard(project_root)
     if not guard.get("ok"):
@@ -211,9 +239,13 @@ def recover_single_session(
         record_phase_skipped(project_root, task=recovered["phase_task"],
                              recovered_from=recovered.get("recovered_from"))
 
+    loop_state = load_loop_state(project_root)
+    # A skip on a complete run (this one finished it, or an earlier one did and its loop
+    # write was lost) stamps the loop pointer complete.
+    if force_status == "skipped":
+        loop_state = mark_loop_complete(project_root) or loop_state
     # Realign the loop pointer only for a re-runnable recovery (skipped/failed are terminal
     # — leave the pointer, the master resolves the next frontier via single-session-next).
-    loop_state = load_loop_state(project_root)
     if loop_state is not None and force_status == "awaiting_launch":
         loop_state = {**loop_state, "currentPhaseTaskId": phase_task_id, "attempt": 0,
                       "gateRejections": 0}
@@ -233,6 +265,7 @@ def recover_single_session(
         recoveredFrom=recovered.get("recovered_from"),
         newVersion=recovered.get("new_version"),
         reason=recovered["phase_task"].get("skipReason"),  # normalised; None unless skipped
+        runStatus=recovered.get("run_status"),  # "complete" when this skip finished the run
     )
     return {
         "ok": True,

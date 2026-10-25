@@ -291,10 +291,9 @@ To resolve, paste this in your terminal (one command per non-terminal task):
 
   uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {ptk} --force-status skipped --reason "<why>"
 
-Skipping does not finish the run by itself: single-session-apply sets
-run.status to "complete" only when deploy completes with every other task
-terminal, which already happened here, and no driven command re-checks it
-(known gap). Skipped tasks stay "skipped", never "done".
+The skip that leaves every task terminal also completes the run, in the same
+write: its JSON shows "run_status": "complete" and single-session-next then
+answers "complete". Skipped tasks stay "skipped", never "done".
 ================================================================================
 ```
 
