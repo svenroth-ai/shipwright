@@ -363,9 +363,10 @@ def check_phase_history_build_has_sections(
     project_root: Path,
     run_id: str,
 ) -> CheckResult:
-    """Extends ``check_phase_history_has_run`` for build: the entry for
-    the current ``run_id`` must also contain a ``sections`` array
-    matching ``build_config.sections[].name``.
+    """Extends ``check_phase_history_has_run`` for build: the NEWEST entry for ``run_id``
+    (preferring one for ``build_config.current_split``: one run id can span every build
+    split, and its first entry belongs to an earlier split) must carry a ``sections``
+    array matching ``build_config.sections[].name``.
     """
     name = "phase_history[build] entry has sections array"
     if not run_id:
@@ -379,16 +380,15 @@ def check_phase_history_build_has_sections(
     if not isinstance(bucket, list):
         return CheckResult(name, False, "phase_history[build] missing")
 
-    entry = next((e for e in bucket if e.get("run_id") == run_id), None)
+    mine = [e for e in bucket if isinstance(e, dict) and e.get("run_id") == run_id]
+    split = _read_build_config(project_root).get("current_split")
+    entry = ([e for e in mine if split and e.get("split") == split] or mine or [None])[-1]
     if not entry:
         return CheckResult(name, False, f"run_id={run_id} not in phase_history[build]")
 
     sections = entry.get("sections")
     if not isinstance(sections, list) or not sections:
-        return CheckResult(
-            name, False,
-            f"phase_history[build][{run_id}] has no sections array",
-        )
+        return CheckResult(name, False, f"phase_history[build][{run_id}] has no sections array")
 
     completed = {s.get("name") for s in _completed_sections(project_root)}
     recorded = {s.get("id") for s in sections if isinstance(s, dict)}

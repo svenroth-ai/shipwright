@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-a5-test-migration-and-flip",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T22:52:44.753531+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "The default flip (change 4) and the e2e test (change 5) are listed as separate steps, with no stated ordering. If the flip lands before the e2e test, there's a window where the flagship acceptance criterion (\"a deliberately broken artifact stops a driven run end to end\") isn't covered by CI.",
+          "suggestion": "Land the e2e test (and the negative control) in the same commit as — or before — the flip. Make the flip a one-line final commit so a bisect lands on a green state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The shared builder is imported by a bare `sys.path` insert of its directory. `minimal_valid_project` is a generic enough name that a collision with any identically-named module in either test root (or a third-party dep) would silently shadow one of them, and the failure would be confusing (wrong `write_phase` behavior).",
+          "suggestion": "Either give the builder a distinctive name (e.g. `sw_testkit_minimal_project.py`) or insert the `shared/testkit` directory at a controlled position in `sys.path` (front, per-root once) and assert `__file__` resolves into `shared/testkit` in a cheap sanity check. Document the import mechanism in the module docstring since two roots depend on it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "C1 satisfaction via a `phase_history` terminal outcome instead of a `phase_completed` event works around the dedup key, but it means no migrated test exercises the real event path for loop termination. If the event keying changes later, nothing in these tests would catch a regression in the \"natural\" C1 route.",
+          "suggestion": "Keep at least one test (or add a small one in `_gate_seam`/e2e) that exercises `phase_completed`-driven termination so the event path retains coverage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "test_phase_gate_cache_layouts.py` runs \"the real gate over a minimal valid project\" in isolated subprocesses for each of four layouts. It's stated this was \"also probed by hand against the real installed cache\" — hand-probing isn't reproducible, and if any layout test needs the real cache present, it'll be environment-dependent in CI.",
+          "suggestion": "Make sure all four layout tests construct their layouts from fixtures (temp dirs), with no dependence on a developer's installed cache. If the installed-cache check is worth keeping, gate it behind an env var as an optional smoke test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Raw `complete-phase-task ok:true` call sites switch to `single-session-apply`. If any of those tests existed specifically to cover the raw command's CLI surface (arg parsing, output shape), switching loses that coverage even though assertions weren't weakened.",
+          "suggestion": "Verify per call site that `complete-phase-task`'s direct surface retains at least one direct test elsewhere; if not, keep one raw-path test (with a real artifact via the builder).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Runtime impact is acknowledged (\"seconds, not milliseconds\") but there's no budget or mitigation mentioned. A dozen files × real canon checks per phase could noticeably lengthen CI, tempting a later weakening.",
+          "suggestion": "Measure the suite delta in this change; if it's large, parallelize or trim redundant full drives (the e2e already covers full drives, so unit tests could use shorter manifests) — without weakening any assertion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Rejecting the `enforce_gate=False` fixture alternative is correct — worth noting explicitly in the PR description so a reviewer doesn't \"simplify\" it back.",
+          "suggestion": "Carry the two rejected alternatives into the PR notes verbatim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The default-flip checks are described primarily as seam/hardening assertions. Those could pass while a CLI argument default or resumed-session setting still supplies an explicit `False`, bypassing the new default.",
+          "suggestion": "Run the real-gating end-to-end cases without any enforcement override. Include a session created before the flip, if enforcement configuration is persisted, to establish the intended upgrade behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The end-to-end scenarios cover rejection and eventual completion, but do not explicitly require proof that rejection leaves completion history and successor scheduling untouched. Those are important assertions when retries and recovery reuse loop state.",
+          "suggestion": "Assert that the rejected phase has no successful completion record and its successor cannot run. After repair, assert that completion and successor creation happen exactly once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Satisfying C1 through fixture-written `phase_history` is reasonable, but it could obscure whether the real loop records the prerequisite correctly. The shared builder should not supply history that the end-to-end run itself is supposed to produce.",
+          "suggestion": "Keep synthetic prerequisite history limited to isolated phase tests; have the full CLI scenarios generate that history through actual transitions.  The approach is sound and appropriately scoped: it exercises real validators, preserves assertions, and verifies installation layouts before enabling enforcement. These findings are verification refinements; no fundamental redesign is needed.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T22:52:25.763577+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach / Severity: medium**\n  **Finding:** The default flip (change 4) and the e2e test (change 5) are listed as separate steps, with no stated ordering. If the flip lands before the e2e test, there's a window where the flagship acceptance criterion (\"a deliberately broken artifact stops a driven run end to end\") isn't covered by CI.\n  **Suggestion:** Land the e2e test (and the negative control) in the same commit as — or before — the flip. Make the flip a one-line final commit so a bisect lands on a green state.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** The shared builder is imported by a bare `sys.path` insert of its directory. `minimal_valid_project` is a generic enough name that a collision with any identically-named module in either test root (or a third-party dep) would silently shadow one of them, and the failure would be confusing (wrong `write_phase` behavior).\n  **Suggestion:** Either give the builder a distinctive name (e.g. `sw_testkit_minimal_project.py`) or insert the `shared/testkit` directory at a controlled position in `sys.path` (front, per-root once) and assert `__file__` resolves into `shared/testkit` in a cheap sanity check. Document the import mechanism in the module docstring since two roots depend on it.\n\n- **Category: risk / Severity: low**\n  **Finding:** C1 satisfaction via a `phase_history` terminal outcome instead of a `phase_completed` event works around the dedup key, but it means no migrated test exercises the real event path for loop termination. If the event keying changes later, nothing in these tests would catch a regression in the \"natural\" C1 route.\n  **Suggestion:** Keep at least one test (or add a small one in `_gate_seam`/e2e) that exercises `phase_completed`-driven termination so the event path retains coverage.\n\n- **Category: edge-case / Severity: low**\n  **Finding:** `test_phase_gate_cache_layouts.py` runs \"the real gate over a minimal valid project\" in isolated s […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The default-flip checks are described primarily as seam/hardening assertions. Those could pass while a CLI argument default or resumed-session setting still supplies an explicit `False`, bypassing the new default.  \n   **Suggestion:** Run the real-gating end-to-end cases without any enforcement override. Include a session created before the flip, if enforcement configuration is persisted, to establish the intended upgrade behavior.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The end-to-end scenarios cover rejection and eventual completion, but do not explicitly require proof that rejection leaves completion history and successor scheduling untouched. Those are important assertions when retries and recovery reuse loop state.  \n   **Suggestion:** Assert that the rejected phase has no successful completion record and its successor cannot run. After repair, assert that completion and successor creation happen exactly once.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Satisfying C1 through fixture-written `phase_history` is reasonable, but it could obscure whether the real loop records the prerequisite correctly. The shared builder should not supply history that the end-to-end run itself is supposed to produce.  \n   **Suggestion:** Keep synthetic prerequisite history limited to isolated phase tests; have the full CLI scenarios generate that history through actual transitions.\n\nThe approach is sound and appropriately scoped: it exercises real validators, preserves assertions, and verifies installation layouts before enabling enforcement. These findings are verification refinements; no fundamental redesign is needed.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py",
+          "line": 43,
+          "finding": "AST no-bypass guard covered enforce_gate= only; gate= seam and ENFORCE_PHASE_GATE_DEFAULT assignment were unflagged.",
+          "suggestion": "Flag gate= and flag assignment. FIXED in 7688d81fe.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/minimal_valid_project.py",
+          "line": 83,
+          "finding": "write_phase silently accepted unknown phases. FIXED: deploy listed explicitly, ValueError otherwise.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py",
+          "line": 1688,
+          "finding": "module-scoped layout copies raised FileExistsError on rerun. FIXED: dirs_exist_ok.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_single_session_pipeline.py",
+          "line": 1309,
+          "finding": "ok:false payload dropped its stub artifact claim. FIXED: restored.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/test_driven_run_real_gate_e2e.py",
+          "line": 1016,
+          "finding": "MAX_GATE_RETRIES copied instead of imported. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T00:21:37.767041+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "Real phase skills satisfy the enforced gate's phase_history run-id check",
+          "suggestion": "Skills invent their own SHIPWRIGHT_RUN_ID; gate required config.runId. RESOLVED in 7688d81fe: gate_run_id.py plus skill-doc and phase-runner changes plus a real-skill-finalization integration test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py",
+          "line": null,
+          "finding": "The scoped run-id rule rejects stale entries (round 2)",
+          "suggestion": "Rule 1 had no time or split filter (rubber stamp for plan/02 and re-claims). RESOLVED in c9785e85f: since-claim, split and now+5min filters with a fail-closed sentinel id; 24 unit cases plus a two-split integration test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/tools/verifiers/build_checks.py",
+          "line": null,
+          "finding": "build/02 passes the sections check",
+          "suggestion": "First-entry selection falsely rejected build/02. RESOLVED in c9785e85f: newest, split-preferring entry; shared/tests/test_verifiers_build_split_history.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/testkit/minimal_valid_project.py",
+          "line": null,
+          "finding": "Builder reflects production event behaviour",
+          "suggestion": "Skill phase_completed dedup swallows the loop end event; docs and ADR reworded as a production event-loss path. RESOLVED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "Unknown loop state still has a retry cap",
+          "suggestion": "Unknown state is now terminal; one re-read first. RESOLVED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-fidelity",
+          "file": "shared/testkit/minimal_valid_project.py",
+          "line": null,
+          "finding": "Integration build/02 leg pins the build_checks fix",
+          "suggestion": "Both splits share one section name so the integration leg does not catch a revert; the shared/tests unit test does. ACCEPTED (pinned elsewhere).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/build_checks.py",
+          "line": null,
+          "finding": "build_checks checks sections for non-final splits",
+          "suggestion": "archive_split clears sections before apply, so non-final splits compare nothing; pre-existing, docstring overstates. ACCEPTED, noted for the report.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T00:21:37.908027+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/minimal_valid_project.py — module level `_APPENDIX = Path(...).read_text(...)",
+          "line": null,
+          "finding": "_APPENDIX` is read at import time. If `shared/templates/codex-agents-md-appendix.md` is absent (a checkout that didn't fetch the template, or a layout test copying only parts of `shared/`), the import itself raises and every one of the ~12 migrated test files fails at collection with an unrelated error.",
+          "suggestion": "Read the template lazily inside `_project()` (or raise with a clear message naming the missing file) instead of at module import.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py — `test_no_shipped_code_switches_the_gate_off",
+          "line": null,
+          "finding": "The scan covers only `shared/scripts` and `plugins//scripts`. It misses `shared/testkit` and any repo-root scripts; also `enforce_gate=None` is silently whitelisted, so a shipped caller passing `enforce_gate=None` (which may resolve to \"off\" depending on the callee's `if enforce_gate is None` handling) would not be flagged. If `None` is not a real off-switch in `apply_phase_result`, the whitelist is broader than the test's stated guarantee.",
+          "suggestion": "Confirm `enforce_gate=None` means \"use the default\" in the callee; if so, document it in the test. Consider including `shared/testkit` in the scan roots.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/minimal_valid_project.py — `_changelog",
+          "line": null,
+          "finding": "The changelog entry hardcodes `## [0.1.0] - 2026-10-25` while `_git` tags `v0.1.0` with the real current date. If a changelog canon check ever compares the entry date to the tag date, this fixture silently diverges. Also `_git(\"tag\", \"-f\", ...)` re-tags on repeat invocations, which is correct only because of `-f` — fine, but the hardcoded date is a latent trap.",
+          "suggestion": "Derive the date from `datetime.now(timezone.utc).date().isoformat()`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/minimal_valid_project.py — `_plan",
+          "line": null,
+          "finding": "When `split_id` is not in the project config's splits, it falls back to `FR-01.01`, which is split 01's FR. A plan for a foreign split would then claim an FR belonging to another split; any cross-split FR-exclusivity check in the plan validator would fail confusingly. Currently no migrated test hits this path, so it is latent.",
+          "suggestion": "Raise or skip FR attribution when the split is unknown rather than silently reusing split 01's FR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/testkit/minimal_valid_project.py — `_finish_phase",
+          "line": null,
+          "finding": "_finish_phase` does a read-modify-write of `shipwright_run_config.json` with no locking. Tests call it just before `single-session-apply`, which performs a locked write of the same file; nothing races today (sequential test flow), but any test that runs `write_phase` while an apply subprocess is in flight would corrupt the config. Test-only, low risk.",
+          "suggestion": "Acceptable as-is; a comment noting it must not run concurrently with an apply would suffice.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_driven_run_real_gate_e2e.py — `_drive_to_complete",
+          "line": null,
+          "finding": "The hardcoded phase sequence `(\"plan\", \"build\", \"plan\", \"build\", ...)` assumes exactly two splits (matching `DEFAULT_SPLITS`). If `mvp.DEFAULT_SPLITS` or the profile's split count ever changes, this test fails for an unrelated reason with a confusing assertion. Minor brittleness in an otherwise strong test.",
+          "suggestion": "Drive the loop from `single-session-next` answers (loop until `action == \"complete\"`) rather than a fixed sequence.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-24T22:54:17.212350+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/minimal_valid_project.py — module level `_APPENDIX = Path(...).read_text(...)`\n  Finding: `_APPENDIX` is read at import time. If `shared/templates/codex-agents-md-appendix.md` is absent (a checkout that didn't fetch the template, or a layout test copying only parts of `shared/`), the import itself raises and every one of the ~12 migrated test files fails at collection with an unrelated error.\n  Suggestion: Read the template lazily inside `_project()` (or raise with a clear message naming the missing file) instead of at module import.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-run/tests/test_single_session_gate_hardening.py — `test_no_shipped_code_switches_the_gate_off`\n  Finding: The scan covers only `shared/scripts` and `plugins/*/scripts`. It misses `shared/testkit` and any repo-root scripts; also `enforce_gate=None` is silently whitelisted, so a shipped caller passing `enforce_gate=None` (which may resolve to \"off\" depending on the callee's `if enforce_gate is None` handling) would not be flagged. If `None` is not a real off-switch in `apply_phase_result`, the whitelist is broader than the test's stated guarantee.\n  Suggestion: Confirm `enforce_gate=None` means \"use the default\" in the callee; if so, document it in the test. Consider including `shared/testkit` in the scan roots.\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/minimal_valid_project.py — `_changelog`\n  Finding: The changelog entry hardcodes `## [0.1.0] - 2026-10-25` while `_git` tags `v0.1.0` with the real current date. If a changelog canon check ever compares the entry date to the tag date, this fixture silently diverges. Also `_git(\"tag\", \"-f\", ...)` re-tags on repeat invocations, which is correct only because of `-f` — fine, but the hardcoded date is a latent trap.\n  Suggestion: Derive the date from `datetime.now(timezone.utc).date().isoformat()`.\n\n- Category: edge-case\n  Severi […truncated]\n\n[openai] No concrete defects found in the supplied diff. It migrates the affected tests to a shared artifact builder, adds real-gate rejection and recovery coverage for both autonomy modes, checks cache layouts, and enables enforcement by default.\n\nOverall assessment: ship-as-is based on the supplied diff. Full BRIEF A5 compliance remains unverified because that section was not provided; environment policy also blocked repository inspection and test execution.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T00:21:37.632528+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T22:52:25.916010+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-24T22:52:26.061867+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

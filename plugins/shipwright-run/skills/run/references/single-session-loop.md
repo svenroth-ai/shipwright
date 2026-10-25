@@ -76,14 +76,14 @@ Repeat until a terminal signal:
    strict-stops via `mark_phase_failed`, planning NO successor), and advances the
    loop pointer. The `next` field carries the resolved next action — loop on it.
 
-   **The phase gate.** Between the artifact check and the completion, apply can run
-   the phase's own validators and canon checks (`orchestrator_pkg/phase_gate.py`).
-   Enforcement is **off by default** for now (it is switched on once every test runs on
-   real artifacts); with it off apply behaves exactly as above. When it runs and finds
-   ask-level issues, apply answers `ok:false`, `reason: "phase_gate_failed"`: the task
-   stays `in_progress` and only the rejection is counted (loop state `gateRejections`).
-   While enforcement is on, never complete a phase with the raw `complete-phase-task` — it
-   is refused (`use_single_session_apply`). Handle the answer by its `terminal`:
+   **The phase gate.** Between the artifact check and the completion, apply runs the
+   phase's own validators and canon checks (`orchestrator_pkg/phase_gate.py`) — the gate
+   is **enforced by default**. When it finds ask-level issues, apply answers `ok:false`,
+   `reason: "phase_gate_failed"`: the task stays `in_progress` and only the rejection is
+   counted (loop state `gateRejections`). Never complete a phase with the raw
+   `complete-phase-task` — it is refused (`use_single_session_apply`). On a pass, relay
+   any `gate.inform` notes (warnings, not blockers) to the person: they are returned, not
+   stored. Handle a rejection by its `terminal`:
    - `terminal: null` → a retry is due. Call `single-session-next` (it re-dispatches the
      same task and counts the dispatch), then brief the phase-runner again **with
      `issues[]`** — the rejection's `issues` copied verbatim as data — so it fixes those

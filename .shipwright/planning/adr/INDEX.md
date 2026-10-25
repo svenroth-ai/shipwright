@@ -194,3 +194,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Adopt, matcher, CI/CodeQL scaffolds and run-config writers use the stack-profile resolver](iterate-2026-10-24-s3-adopt-scaffolding-adopt-uses-the-profile-resolver.md)
 - [Skill prose uses the stack-profile resolver](iterate-2026-10-24-s4-skill-prose-skill-prose-uses-the-resolver.md)
 - [Custom stack profiles reach the interview, the docs and an end-to-end proof](iterate-2026-10-24-s5-interview-docs-e2e-custom-profiles-end-to-end.md)
+- [Driven-run phase gate enforced by default (campaign A5)](iterate-2026-10-25-a5-test-migration-and-flip-gate-on-by-default.md)

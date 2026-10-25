@@ -205,7 +205,7 @@ alternate `single-session-next` (resolve + claim the frontier phase) and
 (`complete` / `failed` / `needs_validation`).
 
 **When apply says `phase_gate_failed`** (the phase's own checks found problems — the
-gate is off by default for now), nothing was completed: follow the reference's
+gate is enforced by default), nothing was completed: follow the reference's
 `terminal` handling — re-dispatch with the `issues[]` while retries remain, then ask the
 person (guided) or stop failed (autonomous). Completing over the checks
 (`single-session-apply --override-reason "<why>"`) is **ASK FIRST**: only on the
@@ -288,8 +288,10 @@ To resolve, paste this in your terminal (one command per non-terminal task):
 
   uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {ptk} --force-status skipped
 
-After all tasks are terminal, the next complete-phase-task call will
-flip run.status to "complete".
+Skipping does not finish the run by itself: single-session-apply sets
+run.status to "complete" only when deploy completes with every other task
+terminal, which already happened here, and no driven command re-checks it
+(known gap). Skipped tasks stay "skipped", never "done".
 ================================================================================
 ```
 

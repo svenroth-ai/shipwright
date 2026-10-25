@@ -3,15 +3,13 @@
 The raw ``complete-phase-task`` is refused while the gate is enforced; the override is an
 autonomy ALLOWLIST checked again on the locked config; gate rejections are counted durably
 in loop state, so re-applying without ``single-session-next`` still reaches the cap; a loop
-pointer at another task means "unknown" (no cap); critical-gate findings are not retried;
-and the canon verifiers the gate depends on resolve from the installed plugin layout.
+pointer at another task means "unknown" (no cap); critical-gate findings are not retried.
+The canon verifiers' plugin-cache layouts: ``test_phase_gate_cache_layouts.py``.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -37,8 +35,6 @@ pytestmark = pytest.mark.covers("FR-01.01/AC02")
 
 ASK = {"severity": "ask", "message": "Sections not complete: 01. Continue?"}
 WHY = "the reviewer confirmed the sections are deliberately deferred"
-_LIB = Path(__file__).resolve().parent.parent / "scripts" / "lib"
-_SHARED_SCRIPTS = Path(__file__).resolve().parents[3] / "shared" / "scripts"
 
 
 def _config(root: Path, autonomy: str = "guided") -> dict:
@@ -95,9 +91,9 @@ def _raw_complete(root, d, result, capsys):
 
 
 def test_raw_completion_is_refused_while_the_gate_is_enforced(tmp_project, monkeypatch, capsys):
+    assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is True  # A5: on by default
     _config(tmp_project)
     d = _dispatch(tmp_project)
-    monkeypatch.setattr(phase_gate, "ENFORCE_PHASE_GATE_DEFAULT", True)
     code, out = _raw_complete(tmp_project, d, _result(tmp_project), capsys)
     assert (code, out["reason"]) == (2, "use_single_session_apply")
     assert "single-session-apply" in out["error"]
@@ -107,8 +103,8 @@ def test_raw_completion_is_refused_while_the_gate_is_enforced(tmp_project, monke
     assert code == 0 and _status(tmp_project, d) == "failed"
 
 
-def test_raw_completion_is_unchanged_with_enforcement_off(tmp_project, capsys):
-    assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is False
+def test_raw_completion_is_unchanged_with_enforcement_off(tmp_project, monkeypatch, capsys):
+    monkeypatch.setattr(phase_gate, "ENFORCE_PHASE_GATE_DEFAULT", False)
     _config(tmp_project)
     d = _dispatch(tmp_project)
     code, out = _raw_complete(tmp_project, d, _result(tmp_project), capsys)
@@ -168,20 +164,25 @@ def test_reapplying_without_next_still_reaches_the_cap(tmp_project):
     assert load_loop_state(tmp_project)["gateRejections"] == MAX_GATE_RETRIES + 1
 
 
-def test_without_loop_state_there_is_no_cap(tmp_project):
-    """Documented: a library apply with no single-session-next is never counted."""
-    cfg = _config(tmp_project)
+@pytest.mark.covers("FR-01.01/AC02")
+@pytest.mark.parametrize("autonomy,terminal", [("guided", "ask_human"), ("autonomous", "failed")])
+def test_without_loop_state_the_first_rejection_is_terminal(tmp_project, autonomy, terminal):
+    """A library apply with no single-session-next cannot be counted, so it fails closed:
+    the terminal at once (A5 review), never an uncapped "retry is due"."""
+    cfg = _config(tmp_project, autonomy)
     seed = cfg["phase_tasks"][0]
-    phase_task_lifecycle.claim_phase_task(
+    claimed = phase_task_lifecycle.claim_phase_task(
         tmp_project, phase_task_id=seed["phaseTaskId"], session_uuid=seed["sessionUuid"],
         expected_phase="project",
     )
     d = {"phaseTaskId": seed["phaseTaskId"], "sessionUuid": seed["sessionUuid"],
-         "version": seed.get("version", 1)}
-    for _ in range(MAX_GATE_RETRIES + 2):
-        out = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
-        assert (out["attempt"], out["gate_rejections"], out["terminal"]) == (None, None, None)
-    assert load_loop_state(tmp_project) is None
+         "version": claimed["phase_task"]["version"]}
+    out = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
+    gate = out if out.get("reason") == "phase_gate_failed" else out["gate"]
+    assert (gate["attempt"], gate["gate_rejections"], gate["terminal"]) == (None, None, terminal)
+    task = json.loads((tmp_project / "shipwright_run_config.json").read_text(
+        encoding="utf-8"))["phase_tasks"][0]
+    assert task["status"] == ("in_progress" if autonomy == "guided" else "failed")
 
 
 @pytest.mark.parametrize("edit", [{"currentPhaseTaskId": "ptk-other"}, {"runId": "run-other"},
@@ -194,7 +195,7 @@ def test_a_loop_state_for_another_task_or_malformed_is_unknown(tmp_project, edit
     path.write_text(json.dumps({**state, **edit}), encoding="utf-8")
     assert phase_gate.retry_state(tmp_project, cfg, d["phaseTaskId"]) is None
     out = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
-    assert (out["attempt"], out["terminal"]) == (None, None)
+    assert (out["attempt"], out["terminal"]) == (None, "ask_human")   # unknown: fail closed
 
 
 def test_an_unreadable_loop_state_is_unknown(tmp_project):
@@ -202,6 +203,21 @@ def test_an_unreadable_loop_state_is_unknown(tmp_project):
     d = _dispatch(tmp_project)
     (tmp_project / ".shipwright" / "run_loop_state.json").write_text("{bad", encoding="utf-8")
     assert phase_gate.retry_state(tmp_project, cfg, d["phaseTaskId"]) is None
+
+
+def test_a_transient_read_failure_is_re_read_once(tmp_project, monkeypatch):
+    cfg = _config(tmp_project)
+    d = _dispatch(tmp_project)
+    real, calls = phase_gate.load_loop_state, []
+
+    def flaky(root):
+        calls.append(root)
+        if len(calls) == 1:
+            raise PermissionError("delete-pending (concurrent os.replace)")
+        return real(root)
+    monkeypatch.setattr(phase_gate, "load_loop_state", flaky)
+    assert phase_gate.retry_state(tmp_project, cfg, d["phaseTaskId"]) is not None
+    assert len(calls) == 2
 
 
 def test_the_rejection_count_resets_with_the_pointer(tmp_project):
@@ -251,31 +267,3 @@ def test_a_critical_gate_finding_is_not_retryable(tmp_project):
     out = _apply(tmp_project, _dispatch(tmp_project), enforce_gate=True, gate=_gate(issues))
     assert (out["retryable"], out["terminal"]) == (False, "ask_human")
 
-
-# --- 3. the canon verifiers resolve from the installed plugin layout ------------------
-
-def test_the_gate_finds_the_canon_verifiers_in_the_plugin_cache_layout(tmp_path):
-    """Installed: <cache>/shipwright/<plugin>/<version>/scripts/lib + <cache>/shipwright/shared.
-
-    A5 precondition: this layout is proven here; every other layout the cache may use
-    must be proven too before enforcement is flipped on."""
-    cache = tmp_path / "shipwright"
-    lib = cache / "shipwright-run" / "9.9.9" / "scripts" / "lib"
-    skip = shutil.ignore_patterns("tests", "__pycache__", "*.pyc")
-    shutil.copytree(_LIB, lib, ignore=skip)
-    shutil.copytree(_SHARED_SCRIPTS, cache / "shared" / "scripts", ignore=skip)
-    phases = ("project", "design", "plan", "build", "test", "changelog", "deploy")
-    probe = (
-        "import sys, importlib, importlib.util\n"
-        f"sys.path.insert(0, {str(lib)!r})\n"
-        "import phase_validators  # puts <cache>/shared/scripts on sys.path\n"
-        "importlib.import_module('tools.verifiers.common')\n"
-        f"for phase in {phases!r}:\n"
-        "    importlib.import_module(f'tools.verifiers.{phase}_checks')\n"
-        "print(importlib.util.find_spec('tools.verifiers').origin)\n"
-    )
-    proc = subprocess.run([sys.executable, "-I", "-c", probe], cwd=tmp_path,
-                          capture_output=True, text=True, encoding="utf-8", check=False)
-    assert proc.returncode == 0, proc.stderr
-    origin = Path(proc.stdout.strip()).resolve()
-    assert origin.is_relative_to((cache / "shared" / "scripts").resolve())

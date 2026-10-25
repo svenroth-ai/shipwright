@@ -14,8 +14,12 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
+
+import minimal_valid_project as mvp  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import single_session_loop as loop  # noqa: E402
 from orchestrator_pkg.single_session_cli import dispatch_single_session  # noqa: E402
@@ -36,20 +40,17 @@ def _next(project_root: Path) -> int:
 
 
 def _apply_ok(project_root: Path, dispatch: dict) -> dict:
-    """Play the phase-runner: persist artifacts + apply an ok result."""
+    """Play the phase-runner: persist its real artifacts + apply an ok result."""
     phase = dispatch["phase"]
-    result = build_phase_runner_result(
-        ok=True, phase=phase, summary=f"{phase} done",
-        artifacts=[f"artifacts/{phase}.md"], reason=None, split_id=dispatch["splitId"],
-    )
-    for rel in result["artifacts"]:
-        p = project_root / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text("x", encoding="utf-8")
     if phase == "design":  # single-pass build: no splits
         (project_root / "shipwright_design_config.json").write_text(
             json.dumps({"splits": []}), encoding="utf-8",
         )
+    result = build_phase_runner_result(
+        ok=True, phase=phase, summary=f"{phase} done", reason=None,
+        artifacts=mvp.write_phase(project_root, phase, dispatch["splitId"]),
+        split_id=dispatch["splitId"],
+    )
     return loop.apply_phase_result(
         project_root, phase_task_id=dispatch["phaseTaskId"],
         session_uuid=dispatch["sessionUuid"], expected_version=dispatch["version"],
@@ -139,6 +140,7 @@ def test_run_plugin_emitters_forward_split_id(monkeypatch, tmp_project):
     assert "--split-id" not in end_cmd  # None split → phase-only dedup, unchanged
 
 
+@pytest.mark.covers("FR-01.01/AC01")
 def test_single_session_apply_emits_paired_phase_completed(tmp_project, capsys):
     """single-session-next (start) + single-session-apply (end) write a PAIRED
     phase_started + phase_completed to the tracked shipwright_events.jsonl —
@@ -150,13 +152,9 @@ def test_single_session_apply_emits_paired_phase_completed(tmp_project, capsys):
 
     result = build_phase_runner_result(
         ok=True, phase=dispatch["phase"], summary="project done",
-        artifacts=[f"artifacts/{dispatch['phase']}.md"], reason=None,
+        artifacts=mvp.write_phase(tmp_project, dispatch["phase"]), reason=None,
         split_id=dispatch["splitId"],
     )
-    for rel in result["artifacts"]:
-        p = tmp_project / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text("x", encoding="utf-8")
     result_path = tmp_project / "result.json"
     result_path.write_text(json.dumps(result), encoding="utf-8")
 

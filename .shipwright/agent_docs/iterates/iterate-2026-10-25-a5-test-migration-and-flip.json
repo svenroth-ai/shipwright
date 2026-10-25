@@ -1,0 +1,149 @@
+{
+  "run_id": "iterate-2026-10-25-a5-test-migration-and-flip",
+  "date": "2026-10-25T00:13:02.237970Z",
+  "event_at": "2026-10-24T23:08:35.872924+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/a5-test-migration-and-flip",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-25-a5-test-migration-and-flip/sub_iterate_spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-25-a5-test-migration-and-flip",
+  "prior_source": "default",
+  "risk_flags": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "phase gate enforced by default: an apply with no enforce parameter calls the gate",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_enforcement_is_on_by_default PASSED"
+      },
+      {
+        "behavior": "explicit enforce_gate=False never calls the gate",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_seam.py::test_enforcement_off_never_calls_the_gate PASSED"
+      },
+      {
+        "behavior": "raw complete-phase-task ok:true refused use_single_session_apply (exit 2, task stays in_progress); ok:false strict-stop still completes",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_lifecycle_cli.py::test_claim_then_complete_via_cli PASSED"
+      },
+      {
+        "behavior": "canon verifiers resolve in the Claude cache, mirror, Codex bundle and checkout layouts (gate clean, verifiers from that layout's shared tree) ; common + all seven phases' check modules import from it",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py::test_the_enforced_gate_runs_its_canon_checks_in_every_layout PASSED (4 params)"
+      },
+      {
+        "behavior": "a layout without verifiers fails closed: canon_degraded ask naming the installation fix",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py::test_a_layout_without_the_verifiers_stops_the_gate_loudly PASSED"
+      },
+      {
+        "behavior": "no shipped code passes enforce_gate or a gate= swap, or assigns ENFORCE_PHASE_GATE_DEFAULT (override-reason is the only production bypass)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py::test_no_shipped_code_switches_the_gate_off_or_swaps_it + test_the_scan_catches_each_bypass_shape PASSED"
+      },
+      {
+        "behavior": "every pipeline phase a driven run can dispatch has a validator",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py::test_every_phase_a_driven_run_can_dispatch_has_a_validator PASSED"
+      },
+      {
+        "behavior": "guided driven run: a broken design artifact is rejected at every retry via single-session-next (no completion, no successor), ends at ask_human, passes once fixed and drives to complete",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_driven_run_real_gate_e2e.py::test_guided_run_stops_at_the_broken_artifact_and_passes_when_fixed PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "autonomous driven run: the capped rejection fails the phase; recover + fix passes and drives to complete",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_driven_run_real_gate_e2e.py::test_autonomous_run_fails_the_phase_at_the_cap_and_recovers_when_fixed PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "full 7-phase split-fanned pipeline completes on real minimal artifacts under the enforced gate",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_single_session_sole_mode.py::test_full_pipeline_runs_to_complete_without_the_engine PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "migrated run-root drives (loop, artifact guard, CLI, phase_started, resume) green on real minimal artifacts",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests suite 745 passed (F0)"
+      },
+      {
+        "behavior": "migrated integration drives (pipeline, capstone, resume, handoff, cross-surface CAS fence, invocation mode) green on real minimal artifacts",
+        "disposition": "tested",
+        "evidence": "integration-tests suite 612 passed (F0)",
+        "category": "integration"
+      },
+      {
+        "behavior": "only a phase_history entry recorded during this task counts (claim <= at <= now+5min, split absent or matching): runId if one carries it, else the newest one's id, else a never-matching sentinel; an earlier split's/claim's entry never counts even under runId; no comparable claim time = runId",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_gate_run_id.py (24 cases) PASSED"
+      },
+      {
+        "behavior": "the real project/design/plan finalization blocks (extracted from the skill docs) pass the enforced gate, with a skill-minted id and with the runner-exported runId",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate PASSED (2 params)",
+        "category": "integration"
+      },
+      {
+        "behavior": "a phase whose finalization writes no phase_history entry is still rejected",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_a_phase_that_writes_no_audit_entry_is_still_rejected PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "known event loss pinned: the skill's phase_completed wins the dedup, the loop's end event for that (phase, splitId) is dropped",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "an unknown/foreign/malformed retry state makes an enforced rejection terminal at once (guided ask_human, autonomous failed)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_without_loop_state_the_first_rejection_is_terminal + test_a_loop_state_for_another_task_or_malformed_is_unknown PASSED"
+      },
+      {
+        "behavior": "with the runner-exported runId on every entry, plan/02 whose finalization writes no phase_history entry is rejected, passes on retry once it writes one, and build/02 (the build skill's real block) passes on its own split's entry",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_phase_gate_real_skill_canon.py::test_a_second_split_needs_its_own_entry_under_the_runs_id PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "phase_history[build] has sections takes the newest entry for the run id, preferring the current split's, not the first",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verifiers_build_split_history.py (4 cases) PASSED"
+      },
+      {
+        "behavior": "a transient loop-state read failure is re-read once before the retry state counts as unknown",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py::test_a_transient_read_failure_is_re_read_once PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 20,
+      "tested": 20,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest integration-tests/test_driven_run_real_gate_e2e.py integration-tests/test_phase_gate_real_skill_canon.py integration-tests/test_single_session_sole_mode.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 13,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-a-real-gates--A5\\.shipwright\\runs\\iterate-2026-10-25-a5-test-migration-and-flip\\surface_verification.log",
+    "timestamp": "2026-10-25T00:12:48.841Z",
+    "attempts": 1
+  }
+}

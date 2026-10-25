@@ -2,7 +2,8 @@
 
 `cross_component` coverage for iterate-2026-07-14-phase-invocation-mode. The unit tests
 pin each component in isolation; this drives the ACTUAL pipeline — `create_config` ->
-`claim_phase_task` -> `freeze_splits` -> `complete_phase_task` -> `plan_next` — across a
+`claim_phase_task` -> `single-session-apply` (gate, `freeze_splits`, `complete_phase_task`,
+`plan_next`) over each phase's real minimal artifacts — across a
 full split-fanned run, and asserts that the thing a dispatched phase skill asks
 ("am I a pipeline phase?") gets the right answer at EVERY frontier.
 
@@ -26,10 +27,14 @@ _REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO / "shared" / "scripts" / "tools"))
 sys.path.insert(0, str(_REPO / "shared" / "scripts" / "lib"))
 sys.path.insert(0, str(_REPO / "plugins" / "shipwright-run" / "scripts" / "lib"))
+sys.path.insert(0, str(_REPO / "shared" / "testkit"))
 
+import minimal_valid_project as mvp  # noqa: E402
 import phase_task_lifecycle as ptl  # noqa: E402
 from get_phase_context import build_phase_context  # noqa: E402
 from orchestrator import create_config  # noqa: E402
+from orchestrator_pkg.single_session_apply import apply_phase_result  # noqa: E402
+from single_session.result_contract import build_phase_runner_result  # noqa: E402
 
 SPLITS = ["01-core", "02-ui"]
 
@@ -97,7 +102,7 @@ def _drive(project: Path):
         if task is None:
             return
         ptk, phase = task["phaseTaskId"], task["phase"]
-        session_uuid, version = task["sessionUuid"], task["version"]
+        session_uuid = task["sessionUuid"]
 
         claimed = ptl.claim_phase_task(
             project, phase_task_id=ptk, session_uuid=session_uuid, expected_phase=phase,
@@ -106,15 +111,15 @@ def _drive(project: Path):
 
         yield phase, task["splitId"], ptk, _read_cfg(project)
 
-        # `single-session-apply` freezes splits when the design phase completes, so the
-        # build fans out per split. Mirror that ordering.
-        if phase == "design":
-            assert ptl.freeze_splits(project)["ok"]
-
-        applied = ptl.complete_phase_task(
+        # Complete it as the master does: `single-session-apply` runs the (enforced) phase
+        # gate over the phase's real artifacts, freezes the splits after design (so build
+        # fans out per split) and completes through the lifecycle.
+        applied = apply_phase_result(
             project, phase_task_id=ptk, session_uuid=session_uuid,
-            expected_version=version,
-            result={"ok": True, "phase": phase, "summary": "ok", "artifacts": []},
+            expected_version=claimed["phase_task"]["version"],
+            result=build_phase_runner_result(
+                ok=True, phase=phase, summary="ok", split_id=task["splitId"],
+                artifacts=mvp.write_phase(project, phase, task["splitId"], splits=SPLITS)),
         )
         assert applied["ok"], applied
 

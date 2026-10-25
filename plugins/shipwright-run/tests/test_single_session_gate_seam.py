@@ -1,9 +1,8 @@
 """The phase-gate SEAM in single-session apply (campaign brief-driven-run-a-real-gates, A4).
 
-Injected gates only: what apply does with the gate's answer. Enforcement off must leave
-apply unchanged; a failed gate is a non-mutating rejection; a stale or double apply keeps
-its CAS / idempotent answer; the retry cap ends in the per-autonomy terminal. The override
-and the real-validator path live in ``test_single_session_gate_override.py``.
+Injected gates only. On by default (A5), off leaves apply unchanged; a failed gate is a
+non-mutating rejection; a stale or double apply keeps its CAS / idempotent answer; the
+retry cap ends in the per-autonomy terminal. Override + real validators: ``_override.py``.
 """
 from __future__ import annotations
 
@@ -43,9 +42,8 @@ def _config(root: Path, autonomy: str = "guided") -> dict:
 
 
 def _result(root: Path, phase: str = "project") -> dict:
-    art = root / "artifacts" / f"{phase}.md"
-    art.parent.mkdir(parents=True, exist_ok=True)
-    art.write_text(f"# {phase}\n", encoding="utf-8")
+    (root / "artifacts").mkdir(exist_ok=True)
+    (root / "artifacts" / f"{phase}.md").write_text(f"# {phase}\n", encoding="utf-8")
     return build_phase_runner_result(ok=True, phase=phase, summary=f"{phase} done",
                                      artifacts=[f"artifacts/{phase}.md"])
 
@@ -79,12 +77,16 @@ def _dispatch(root):
     return nxt["dispatch"]
 
 
-def test_enforcement_off_by_default_never_calls_the_gate(tmp_project):
-    """Off: the gate is not called (the failed-task refusal and attempt realignment apply
-    regardless; they have their own tests)."""
-    assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is False
+def test_enforcement_is_on_by_default(tmp_project):  # A5 flipped it
+    assert phase_gate.ENFORCE_PHASE_GATE_DEFAULT is True
     _config(tmp_project)
-    applied = _apply(tmp_project, _dispatch(tmp_project), gate=_never)
+    assert _apply(tmp_project, _dispatch(tmp_project), gate=_gate([ASK]))["reason"] == "phase_gate_failed"
+
+
+def test_enforcement_off_never_calls_the_gate(tmp_project):
+    """Off (``enforce_gate=False``): the gate is not called."""
+    _config(tmp_project)
+    applied = _apply(tmp_project, _dispatch(tmp_project), enforce_gate=False, gate=_never)
     assert applied["ok"] is True
     assert set(applied) == {"ok", "completion", "run_status", "next"}  # no gate block
 
@@ -134,7 +136,7 @@ def test_a_stale_apply_keeps_its_cas_answer(tmp_project):
 def test_a_double_apply_of_a_done_task_stays_idempotent(tmp_project):
     _config(tmp_project)
     d = _dispatch(tmp_project)
-    assert _apply(tmp_project, d)["ok"] is True
+    assert _apply(tmp_project, d, gate=_gate())["ok"] is True
     again = _apply(tmp_project, d, enforce_gate=True, gate=_never)
     assert again["ok"] is True and again["completion"]["idempotent"] is True
 
@@ -251,7 +253,7 @@ def test_without_loop_state_the_retry_position_is_unknown(tmp_project):
     d = {"phaseTaskId": seed["phaseTaskId"], "sessionUuid": seed["sessionUuid"],
          "version": seed.get("version", 1)}
     applied = _apply(tmp_project, d, enforce_gate=True, gate=_gate(ask=[ASK]))
-    assert (applied["attempt"], applied["terminal"]) == (None, None)
+    assert (applied["attempt"], applied["terminal"]) == (None, "ask_human")  # fail closed
     assert applied["gate_rejections"] is None
 
 

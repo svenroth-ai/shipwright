@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but this is barely a new mechanism: the checks already exist and can already block; flipping the default actually *removes* a standing mechanism (the off-switch and the documented \"checks are off\" exception), and the only new permanent thing is one shared test builder and one test.\n\n2. **The smallest thing that would do.** Option A, and it is close to the smallest possible: flip the constant, one shared minimal-valid-output helper with a defined owner, one end-to-end stop-test. Option B is smaller to write but permanently enshrines the off-switch in the test suite \u2014 it turns the tests into documentation that the checks don't really work, which is the failure mode this change exists to close. Option C keeps a configuration surface nobody has shown a need for; nothing in the brief says any consumer wants non-enforcing driven runs.\n\n3. **What it costs to keep.** The helper must track the real checks: every tightening of a check will break tests until the helper is updated. That coupling is fine \u2014 it's the same signal the flip is meant to create \u2014 but it should be attributed: a check change that breaks the helper is a coordinated change to both, and that expectation should be written where check changes are reviewed. The dual-root import constraint means the helper is duplicated or symlinked across two test roots; that duplication is a small standing drift risk and worth an explicit \"update both\" note.\n\n4. **What it forecloses.** Essentially nothing. Any future consumer who genuinely needs unchecked runs can still pass the switch per call \u2014 the mechanism remains, only the default moves. The fail-closed-on-unloadable-layout constraint is already the right shape and doesn't add a new surface.\n\n5. **Findings**\n\n- Category: ownership\n- Severity: low\n- Finding: The shared helper's upkeep (\"keep it in step with the checks\") is assigned to \"the pipeline maintainers\" in the abstract; a check change will present as mysterious test breakage to whoever lands it.\n- Suggestion: Name the coupling in the checks' own file comment or contributing note: \"tightening this check requires updating the minimal builder in both test roots,\" so the failure reads as coordination, not regression.\n\nNo other findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014choose A:** enforcing the existing phase checks by default is proportionate because advancing past broken work defeats the pipeline\u2019s completion contract.\n\n2. **Smallest thing:** flip the existing default, replace placeholder artifacts with one shared minimal-valid-artifact helper importable from both test roots, and add one test proving broken output stops progression.\n\n3. **Cost to keep:** pipeline maintainers must update the shared fixtures when artifact requirements change. The existing checks, retry policy and overrides retain their existing maintenance obligations.\n\n4. **What it forecloses:** none identified; per-call test overrides remain available, and the existing recorded override handles intentional exceptions.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-25-a5-test-migration-and-flip",
+    "at": "2026-10-24T22:49:00.564927+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

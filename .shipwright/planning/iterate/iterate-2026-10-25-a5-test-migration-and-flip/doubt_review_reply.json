@@ -1,0 +1,56 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "trigger": "irreversible default flip / cross-plugin boundary (skills -> run gate -> shared verifiers)",
+ "doubts": [
+  {
+   "severity": "high",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "Real phase skills satisfy the enforced gate's phase_history run-id check",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+   "what_would_resolve_it": "Skills invent their own SHIPWRIGHT_RUN_ID; gate required config.runId. RESOLVED in 7688d81fe: gate_run_id.py plus skill-doc and phase-runner changes plus a real-skill-finalization integration test."
+  },
+  {
+   "severity": "high",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "The scoped run-id rule rejects stale entries (round 2)",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py",
+   "what_would_resolve_it": "Rule 1 had no time or split filter (rubber stamp for plan/02 and re-claims). RESOLVED in c9785e85f: since-claim, split and now+5min filters with a fail-closed sentinel id; 24 unit cases plus a two-split integration test."
+  },
+  {
+   "severity": "high",
+   "lens": "boundary-contract",
+   "claim_under_doubt": "build/02 passes the sections check",
+   "file": "shared/scripts/tools/verifiers/build_checks.py",
+   "what_would_resolve_it": "First-entry selection falsely rejected build/02. RESOLVED in c9785e85f: newest, split-preferring entry; shared/tests/test_verifiers_build_split_history.py."
+  },
+  {
+   "severity": "medium",
+   "lens": "hidden-coupling",
+   "claim_under_doubt": "Builder reflects production event behaviour",
+   "file": "shared/testkit/minimal_valid_project.py",
+   "what_would_resolve_it": "Skill phase_completed dedup swallows the loop end event; docs and ADR reworded as a production event-loss path. RESOLVED."
+  },
+  {
+   "severity": "medium",
+   "lens": "concurrency-ordering",
+   "claim_under_doubt": "Unknown loop state still has a retry cap",
+   "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+   "what_would_resolve_it": "Unknown state is now terminal; one re-read first. RESOLVED."
+  },
+  {
+   "severity": "low",
+   "lens": "test-fidelity",
+   "claim_under_doubt": "Integration build/02 leg pins the build_checks fix",
+   "file": "shared/testkit/minimal_valid_project.py",
+   "what_would_resolve_it": "Both splits share one section name so the integration leg does not catch a revert; the shared/tests unit test does. ACCEPTED (pinned elsewhere)."
+  },
+  {
+   "severity": "low",
+   "lens": "correctness",
+   "claim_under_doubt": "build_checks checks sections for non-final splits",
+   "file": "shared/scripts/tools/verifiers/build_checks.py",
+   "what_would_resolve_it": "archive_split clears sections before apply, so non-final splits compare nothing; pre-existing, docstring overstates. ACCEPTED, noted for the report."
+  }
+ ]
+}

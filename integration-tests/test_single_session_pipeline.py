@@ -30,6 +30,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
+
+import minimal_valid_project as mvp  # noqa: E402
 ORCHESTRATOR = str(
     REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py",
 )
@@ -81,22 +84,21 @@ def _apply(project: Path, dispatch: dict, *, ok: bool = True) -> dict:
     payload + call apply. A real phase-runner writes its outputs to disk BEFORE
     returning, so we do too — the SS4 on-disk persistence guard verifies it."""
     phase = dispatch["phase"]
-    artifact_rel = f"artifacts/{phase}.md"
+    # ok: leave on disk what the phase really writes — the enforced phase gate checks it,
+    # and the SS4 guard checks every claimed artifact exists. A failed result keeps its
+    # original (unwritten) stub claim: a strict-stop is neither gated nor guarded.
+    artifacts = (mvp.write_phase(project, phase, dispatch.get("splitId")) if ok
+                 else [f"artifacts/{phase}.md"])
     payload = {
         "ok": ok,
         "phase": phase,
         "summary": f"{phase} completed" if ok else f"{phase} failed",
-        "artifacts": [artifact_rel],
+        "artifacts": artifacts,
     }
     if dispatch.get("splitId"):
         payload["splitId"] = dispatch["splitId"]
     if not ok:
         payload["reason"] = f"{phase} blew up in the runner"
-
-    if ok:  # persist the claimed artifact so the loop's SS4 guard passes
-        art = project / artifact_rel
-        art.parent.mkdir(parents=True, exist_ok=True)
-        art.write_text(f"# {phase}\n", encoding="utf-8")
 
     result_path = project / f".result-{dispatch['phaseTaskId']}.json"
     result_path.write_text(json.dumps(payload), encoding="utf-8")

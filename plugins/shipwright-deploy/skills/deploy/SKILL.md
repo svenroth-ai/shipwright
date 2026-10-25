@@ -158,8 +158,8 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.p
 The tool prints structured JSON with `runId`, `phase`, `splitId`, `prerequisites`,
 `runConditions`, and a `skill_artifacts_to_read` list. Read those artifacts
 before proceeding so this phase session has full context for what came before.
-Deploy is the pipeline-terminal phase — when this session's Stop hook fires
-`complete-phase-task`, the run will flip to `status="complete"`.
+Deploy is the pipeline-terminal phase — once the master's `single-session-apply` (deploy
+checks first) accepts this phase's result, the run flips to `status="complete"`.
 
 If NO `phaseTaskId` was handed to you, this is a standalone invocation —
 continue with Step 1 below as normal.

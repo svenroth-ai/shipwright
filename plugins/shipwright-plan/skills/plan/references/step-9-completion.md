@@ -85,8 +85,9 @@ and `phase_history` entry share one id. Missing env var → safe degrade
 (stderr warning, no canon marker, Stop hook regenerates normally).
 
 ```bash
-# If the orchestrator didn't already set it, derive one here:
-export SHIPWRIGHT_RUN_ID="plan-$(date +%Y%m%d-%H%M%S)-{split_name}"
+# If the orchestrator didn't already set it, derive one here (a driven run's id is kept):
+: "${SHIPWRIGHT_RUN_ID:=plan-$(date +%Y%m%d-%H%M%S)-{split_name}}"
+export SHIPWRIGHT_RUN_ID
 
 # Update plan config to complete
 uv run "{plugin_root}/scripts/checks/write-plan-config.py" \
@@ -119,7 +120,7 @@ uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
 
 # phase_history (NEW 12.2) — audit trail entry.
 uv run "{shared_root}/scripts/tools/append_phase_history.py" \
-  --project-root "$(pwd)" --phase plan --run-id "{SHIPWRIGHT_RUN_ID}" \
+  --project-root "$(pwd)" --phase plan --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"split":"{split_name}","sections":{N},"outcome":"sectioned"}'
 
 # Mark plan phase complete. _validate_plan() runs the modular plan_checks

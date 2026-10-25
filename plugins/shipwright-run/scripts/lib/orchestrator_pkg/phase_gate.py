@@ -8,16 +8,16 @@ validators, and it owns the policy around their answer:
     evaluate_gate      run the gate for ONE phase task (injectable; v1's run_phase_gate by default)
     check_override     the --override-reason preconditions (reason, ok result, a human exists)
     override_hook      the lifecycle hook writing the override record WITH the completion
-    retry_state        the loop state when it describes the gated task (else unknown: no cap)
+    retry_state        the loop state when it describes the gated task (else unknown: terminal)
     rejection          the answer when the gate fails, plus the retry position
     is_retryable       whether re-running the phase could fix the findings at all
     gate_summary       the ``gate`` block of a successful apply
     failure_error      the issue summary a gate-terminal mark_phase_failed records
 
-Enforcement is OFF by default (``ENFORCE_PHASE_GATE_DEFAULT``): with it off and no override,
-apply never calls the gate and its behaviour is unchanged. A5 migrates the stub-artifact tests
-and flips the default. The switch is a function parameter only — no run-config key and no
-environment variable can turn the gate off.
+Enforcement is ON by default (``ENFORCE_PHASE_GATE_DEFAULT``, flipped by A5 once every apply
+test ran on real minimal artifacts — ``shared/testkit/minimal_valid_project.py``). Off (a test
+passing ``enforce_gate=False``) and no override, apply never calls the gate. The switch is a
+function parameter only — no run-config key and no environment variable can turn the gate off.
 
 Nothing here writes: run_config mutations stay in ``phase_task_lifecycle``, and the apply
 path counts each rejection in loop state (``gateRejections``).
@@ -33,6 +33,7 @@ _LOCAL_LIB = str(Path(__file__).resolve().parents[1])
 if _LOCAL_LIB not in sys.path:
     sys.path.insert(0, _LOCAL_LIB)
 
+from orchestrator_pkg.gate_run_id import canon_run_id  # noqa: E402
 from single_session.loop_state import (  # noqa: E402
     MAX_GATE_RETRIES,
     gate_retries_exhausted,
@@ -46,8 +47,8 @@ from .validation_record import (  # noqa: E402
     run_phase_gate,
 )
 
-# A5 flips this to True once every apply test runs on real minimal artifacts.
-ENFORCE_PHASE_GATE_DEFAULT = False
+# On since A5: every driven apply runs the phase gate (tests opt out per call).
+ENFORCE_PHASE_GATE_DEFAULT = True
 
 # What a gate rejection does once MAX_GATE_RETRIES is exhausted, per run autonomy.
 # ``unattended`` (campaign U) behaves at least as autonomous. An unknown value takes the
@@ -95,9 +96,10 @@ def evaluate_gate(
 ) -> dict[str, Any]:
     """Run the gate for ``task``; return ``{ask, inform, checked}``.
 
-    The split is the task's own; the run id is ``config.get("runId")`` forwarded
-    unchanged: None when the config has none (the canon bridge then falls back to the
-    environment), never a coerced ``""``. An explicitly blank ``runId`` in the config is
+    The split is the task's own; the run id is ``gate_run_id.canon_run_id``: the config's
+    ``runId``, or the id the phase skill recorded in ``phase_history`` since this task was
+    claimed (skills mint their own). An absent ``runId`` stays None (the canon bridge then
+    falls back to the environment), never a coerced ``""``; an explicitly blank one is
     forwarded as-is, so the bridge raises its ask-level finding instead of validating
     against whatever run the environment names. A
     ``kind: canon_degraded`` note is promoted to ask: on this path a canon run that did
@@ -106,14 +108,15 @@ def evaluate_gate(
     ``[gate-error]`` issue, as ``run_phase_gate`` does for its own.
 
     The promotion deliberately REVERSES ``phase_validators_canon._degraded``'s "inform,
-    not ask" on this path only: the gate exists to fail closed. Precondition for A5's
-    flip: ``shared/scripts/tools/verifiers`` must ship in every plugin-cache layout, or
-    every enforced apply stops on a degraded canon run.
+    not ask" on this path only: the gate exists to fail closed. That is why A5 proved
+    ``shared/scripts/tools/verifiers`` resolves in every layout the plugin ships in
+    (``tests/test_phase_gate_cache_layouts.py``) before flipping enforcement on.
     """
     phase = task["phase"]
     try:
         ask, inform, checked = (gate or run_phase_gate)(
-            project_root, phase, split_id=task.get("splitId"), run_id=config.get("runId"),
+            project_root, phase, split_id=task.get("splitId"),
+            run_id=canon_run_id(project_root, task, config),
         )
     except Exception as exc:  # noqa: BLE001 — a broken gate must not crash apply
         ask, inform, checked = [{
@@ -184,14 +187,18 @@ def retry_state(
     """The loop state when it describes THIS task of THIS run; else None (unknown).
 
     Unknown = no loop state, one from another run, one pointing at a different task, or an
-    unreadable/malformed one. Unknown means no cap: a direct library apply without
-    ``single-session-next`` is not counted. ``single-session-next`` always writes a
-    matching state, so a driven run that goes through it is counted.
+    unreadable/malformed one. Unknown cannot be counted, so ``rejection`` treats it as
+    terminal (A5 review): an uncounted rejection must never be retryable forever.
+    ``single-session-next`` always writes a matching state, so a driven run that goes
+    through it is counted and gets its retries.
     """
-    try:
-        state = load_loop_state(project_root)
-    except (OSError, ValueError):  # JSONDecodeError is a ValueError
-        return None
+    for attempt in (1, 2):  # one re-read: a concurrent os.replace can fail a read on Windows
+        try:
+            state = load_loop_state(project_root)
+            break
+        except (OSError, ValueError):  # JSONDecodeError is a ValueError
+            if attempt == 2:
+                return None
     if (not isinstance(state, dict) or state.get("runId") != config.get("runId")
             or state.get("currentPhaseTaskId") != phase_task_id):
         return None
@@ -226,13 +233,14 @@ def rejection(
     retry is due, else ``ask_human`` / ``failed`` per autonomy: once the dispatch
     ``attempt`` or this rejection's number (``gate_rejections``) exceeds
     ``MAX_GATE_RETRIES``, or at once for a non-retryable finding. ``state`` None = unknown
-    (``attempt`` and ``gate_rejections`` None): no cap applies, a retry is reported as due.
+    (``attempt`` and ``gate_rejections`` None): the count cannot be kept, so the terminal is
+    taken at once (fail closed) rather than reporting a retry that nothing would cap.
     """
     attempt = int(state.get("attempt", 0)) if state is not None else None
     prior = int(state.get("gateRejections", 0)) if state is not None else None
     retryable = is_retryable(verdict)
     exhausted = state is not None and gate_retries_exhausted(attempt, prior)
-    final = exhausted or not retryable
+    final = state is None or exhausted or not retryable
     return {
         "ok": False,
         "reason": "phase_gate_failed",

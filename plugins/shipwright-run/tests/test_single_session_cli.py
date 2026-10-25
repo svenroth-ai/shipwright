@@ -14,7 +14,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
 
+import minimal_valid_project as mvp  # noqa: E402
 import phase_task_lifecycle  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import cli as cli_mod  # noqa: E402
@@ -57,13 +59,9 @@ def _ns(**kw) -> argparse.Namespace:
 
 
 def _valid_result(project_root: Path, phase: str = "project", *, ok: bool = True) -> Path:
-    artifact_rel = f"artifacts/{phase}.md"
-    if ok:  # a successful phase-runner has persisted its artifact to disk (SS4 guard)
-        art = project_root / artifact_rel
-        art.parent.mkdir(parents=True, exist_ok=True)
-        art.write_text(f"# {phase}\n", encoding="utf-8")
-    payload = {"ok": ok, "phase": phase, "summary": f"{phase} done",
-               "artifacts": [artifact_rel]}
+    # A successful phase-runner has persisted its real (gate-valid) artifacts (SS4 guard).
+    artifacts = mvp.write_phase(project_root, phase) if ok else [f"artifacts/{phase}.md"]
+    payload = {"ok": ok, "phase": phase, "summary": f"{phase} done", "artifacts": artifacts}
     if not ok:
         payload["reason"] = f"{phase} failed"
     p = project_root / "result.json"

@@ -31,6 +31,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 ORCHESTRATOR = str(
     REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py",
 )
+sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
+import minimal_valid_project as mvp  # noqa: E402
 
 
 def _run_cli(args: list[str], project_root: Path) -> subprocess.CompletedProcess:
@@ -76,13 +78,9 @@ def _events(project: Path) -> list[dict]:
 
 
 def _persist_and_apply(project: Path, dispatch: dict) -> dict:
-    phase = dispatch["phase"]
-    artifact_rel = f"artifacts/{phase}.md"
-    art = project / artifact_rel
-    art.parent.mkdir(parents=True, exist_ok=True)
-    art.write_text(f"# {phase}\n", encoding="utf-8")
+    phase = dispatch["phase"]  # the phase's real artifacts: the enforced gate checks them
     payload = {"ok": True, "phase": phase, "summary": f"{phase} done",
-               "artifacts": [artifact_rel]}
+               "artifacts": mvp.write_phase(project, phase, dispatch.get("splitId"))}
     if dispatch.get("splitId"):
         payload["splitId"] = dispatch["splitId"]
     result_path = project / f".result-{dispatch['phaseTaskId']}.json"

@@ -16,6 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
 
@@ -86,7 +88,11 @@ def test_claim_wrong_skill_exits_2_fail_closed(tmp_project, monkeypatch):
     assert out["reason"] == "wrong_skill"
 
 
-def test_claim_happy_then_complete_via_cli(tmp_project, monkeypatch):
+@pytest.mark.covers("FR-01.01/AC02")
+def test_claim_then_complete_via_cli(tmp_project, monkeypatch):
+    """The phase gate is enforced, so a raw ``complete-phase-task`` ok:true of this
+    (single_session) run is refused — ``single-session-apply`` owns that — and the task
+    stays claimed; an ok:false strict-stop is never gated and completes through the CLI."""
     cfg = _setup_project(tmp_project, monkeypatch)
     tid = cfg["phase_tasks"][0]["phaseTaskId"]
     sid = cfg["phase_tasks"][0]["sessionUuid"]
@@ -101,16 +107,22 @@ def test_claim_happy_then_complete_via_cli(tmp_project, monkeypatch):
 
     # complete
     result_file = tmp_project / "result.json"
+    complete = ["complete-phase-task", "--phase-task-id", tid, "--session-uuid", sid,
+                "--version", str(claimed_version), "--result-json", str(result_file)]
     result_file.write_text(json.dumps({"ok": True, "artifacts": []}), encoding="utf-8")
-    res = _run([
-        "complete-phase-task", "--phase-task-id", tid,
-        "--session-uuid", sid, "--version", str(claimed_version),
-        "--result-json", str(result_file),
-    ], tmp_project)
+    res = _run(complete, tmp_project)
+    assert res.returncode == 2, res.stdout
+    assert json.loads(res.stdout)["reason"] == "use_single_session_apply"
+    task = json.loads(_run(["get-phase-task", "--phase-task-id", tid], tmp_project).stdout)
+    assert task["phase_task"]["status"] == "in_progress"
+
+    result_file.write_text(json.dumps({"ok": False, "artifacts": [], "error": "boom"}),
+                           encoding="utf-8")
+    res = _run(complete, tmp_project)
     assert res.returncode == 0, res.stdout
     out = json.loads(res.stdout)
-    assert out["ok"] is True
-    assert out["next_phase_task"]["phase"] == "design"
+    assert out["ok"] is True and out["run_status"] == "failed"
+    assert out.get("next_phase_task") is None
 
 
 def test_complete_missing_result_json_exits_1(tmp_project, monkeypatch):

@@ -1,0 +1,41 @@
+{
+ "section": "A5-test-migration-and-flip",
+ "review": [
+  {
+   "severity": "low",
+   "category": "security",
+   "file": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py",
+   "line": 43,
+   "finding": "AST no-bypass guard covered enforce_gate= only; gate= seam and ENFORCE_PHASE_GATE_DEFAULT assignment were unflagged.",
+   "suggestion": "Flag gate= and flag assignment. FIXED in 7688d81fe."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/testkit/minimal_valid_project.py",
+   "line": 83,
+   "finding": "write_phase silently accepted unknown phases. FIXED: deploy listed explicitly, ValueError otherwise."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py",
+   "line": 1688,
+   "finding": "module-scoped layout copies raised FileExistsError on rerun. FIXED: dirs_exist_ok."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "integration-tests/test_single_session_pipeline.py",
+   "line": 1309,
+   "finding": "ok:false payload dropped its stub artifact claim. FIXED: restored."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "integration-tests/test_driven_run_real_gate_e2e.py",
+   "line": 1016,
+   "finding": "MAX_GATE_RETRIES copied instead of imported. FIXED."
+  }
+ ]
+}

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. It migrates the affected tests to a shared artifact builder, adds real-gate rejection and recovery coverage for both autonomy modes, checks cache layouts, and enables enforcement by default.\n\nOverall assessment: ship-as-is based on the supplied diff. Full BRIEF A5 compliance remains unverified because that section was not provided; environment policy also blocked repository inspection and test execution.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/minimal_valid_project.py \u2014 module level `_APPENDIX = Path(...).read_text(...)`\n  Finding: `_APPENDIX` is read at import time. If `shared/templates/codex-agents-md-appendix.md` is absent (a checkout that didn't fetch the template, or a layout test copying only parts of `shared/`), the import itself raises and every one of the ~12 migrated test files fails at collection with an unrelated error.\n  Suggestion: Read the template lazily inside `_project()` (or raise with a clear message naming the missing file) instead of at module import.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-run/tests/test_single_session_gate_hardening.py \u2014 `test_no_shipped_code_switches_the_gate_off`\n  Finding: The scan covers only `shared/scripts` and `plugins/*/scripts`. It misses `shared/testkit` and any repo-root scripts; also `enforce_gate=None` is silently whitelisted, so a shipped caller passing `enforce_gate=None` (which may resolve to \"off\" depending on the callee's `if enforce_gate is None` handling) would not be flagged. If `None` is not a real off-switch in `apply_phase_result`, the whitelist is broader than the test's stated guarantee.\n  Suggestion: Confirm `enforce_gate=None` means \"use the default\" in the callee; if so, document it in the test. Consider including `shared/testkit` in the scan roots.\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/minimal_valid_project.py \u2014 `_changelog`\n  Finding: The changelog entry hardcodes `## [0.1.0] - 2026-10-25` while `_git` tags `v0.1.0` with the real current date. If a changelog canon check ever compares the entry date to the tag date, this fixture silently diverges. Also `_git(\"tag\", \"-f\", ...)` re-tags on repeat invocations, which is correct only because of `-f` \u2014 fine, but the hardcoded date is a latent trap.\n  Suggestion: Derive the date from `datetime.now(timezone.utc).date().isoformat()`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/minimal_valid_project.py \u2014 `_plan`\n  Finding: When `split_id` is not in the project config's splits, it falls back to `FR-01.01`, which is split 01's FR. A plan for a foreign split would then claim an FR belonging to another split; any cross-split FR-exclusivity check in the plan validator would fail confusingly. Currently no migrated test hits this path, so it is latent.\n  Suggestion: Raise or skip FR attribution when the split is unknown rather than silently reusing split 01's FR.\n\n- Category: bug\n  Severity: low\n  File: shared/testkit/minimal_valid_project.py \u2014 `_finish_phase`\n  Finding: `_finish_phase` does a read-modify-write of `shipwright_run_config.json` with no locking. Tests call it just before `single-session-apply`, which performs a locked write of the same file; nothing races today (sequential test flow), but any test that runs `write_phase` while an apply subprocess is in flight would corrupt the config. Test-only, low risk.\n  Suggestion: Acceptable as-is; a comment noting it must not run concurrently with an apply would suffice.\n\n- Category: test\n  Severity: low\n  File: integration-tests/test_driven_run_real_gate_e2e.py \u2014 `_drive_to_complete`\n  Finding: The hardcoded phase sequence `(\"plan\", \"build\", \"plan\", \"build\", ...)` assumes exactly two splits (matching `DEFAULT_SPLITS`). If `mvp.DEFAULT_SPLITS` or the profile's split count ever changes, this test fails for an unrelated reason with a confusing assertion. Minor brittleness in an otherwise strong test.\n  Suggestion: Drive the loop from `single-session-next` answers (loop until `action == \"complete\"`) rather than a fixed sequence.\n\n## Positive notes\n\nThe change does implement the spec: the builder is ADR-044-safe (stdlib-only, no shadowable package names), the real-gating e2e file covers both autonomy terminals plus recovery, the cache-layout precondition test covers all four layouts with a negative control, and `ENFORCE_PHASE_GATE_DEFAULT = True` is flipped with docs/skill references updated consistently. The e2e test genuinely validates behavior (planted defect, retry cap, terminal per autonomy, recovery, drive to complete) \u2014 a broken gate would not pass it. The `_result`/`_persist` migration in the existing test files is faithful, and the backcompat test now correctly distinguishes the CAS refusal from a gate refusal.\n\nOverall: sound, ship-as-is; the findings above are refinements, none blocking.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-a5-test-migration-and-flip",
+    "at": "2026-10-24T22:52:54.850046+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
