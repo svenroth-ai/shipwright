@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "spec_compliance", "verdict": "pass", "note": "Both requested items are in: a SendMessage resume (resumedAgentId/revivedAgentId) is tracked as an agent launch under the SendMessage tool_use_id, and the block message is reworded with a resolved record_hard_blocker path. Nothing beyond scope (no fan-out or session-id changes)."},
+  {"name": "error_handling", "verdict": "pass", "note": "_blocker_tool() fails open to the bare file name on OSError/IndexError (pinned by a test that points __file__ away from tools/), so the message can never raise; the scanner change adds no new failure path."},
+  {"name": "security_basics", "verdict": "pass", "note": "No new input surface: the scanner only reads structured fields of a local transcript, and the new path is derived from __file__, not from transcript or user input. No secrets."},
+  {"name": "test_quality", "verdict": "pass", "note": "Tests assert outcomes: pending/waiting state across the real incident sequence (resume after all earlier tasks finished), notice clearing by the SendMessage id, bound expiry, non-launch shapes, an end-to-end hook run in a real worktree, and message content incl. an existing absolute path. Verified red before the fix (9 failed), green after (80 passed)."},
+  {"name": "performance_basics", "verdict": "pass", "note": "One extra dict lookup per transcript line that already carries a toolUseResult; the path resolve runs only when a block message is built."},
+  {"name": "naming_structure", "verdict": "pass", "note": "Matches the surrounding module (small private helper, docstring style); all touched files stay under 300 lines (281/114/271/61)."},
+  {"name": "affected_boundaries", "verdict": "pass", "note": "Boundary = Claude Code transcript JSONL (producer) -> track() (consumer). Probed with the real toolUseResult shape captured from session e2b0254b and by replaying that transcript through the fixed scanner: at all three previously blocked Stops (06:28:21/:29/:37) waiting is now True."},
+  {"name": "test_hygiene_probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+]}

@@ -6,8 +6,11 @@ running: end the turn WITHOUT further tool calls and resume on its notification"
 ends its turn on purpose, and the task's completion notice wakes it again. That
 Stop is not a premature give-up, so the guard stays silent while such a task is
 pending. A launch is a tool_result entry whose structured ``toolUseResult`` says so
-(``isAsync`` for an agent, ``backgroundTaskId`` for a shell -- also one the harness
-moved to the background after its timeout, ``taskId`` for a non-persistent monitor);
+(``isAsync`` for an agent; ``resumedAgentId`` / ``revivedAgentId`` for a finished agent a
+``SendMessage`` woke again, unless the result says it failed or ran synchronously;
+``backgroundTaskId`` for a shell -- also one the harness moved to the background after its
+timeout; ``taskId`` for a non-persistent monitor). A resumed agent's completion notice carries
+the ``SendMessage`` call's tool-use-id, not the original launch's;
 tool output that merely quotes a launch sentence has none of these fields and does
 not count. Its completion is the ``<task-notification>`` carrying the same
 ``tool-use-id`` and a terminal ``status``. Persistent monitors never finish and are
@@ -15,6 +18,9 @@ not tracked. A task whose notice never arrives stops counting after a bound (age
 2 h, shell 30 min), so a crashed session cannot silence the guard for good.
 Accepted risk: a background shell that never ends AND whose agent stops early is not
 caught for up to 30 min (nothing wakes the agent, so there is no later Stop to block).
+Likewise a resumed agent whose notice never arrives, or names another id than the
+``SendMessage`` call (matching rests on the one observed transcript), keeps the guard
+quiet for at most the 2 h agent bound.
 """
 
 from __future__ import annotations
@@ -35,6 +41,9 @@ def _launch_kind(result: object) -> str | None:
         return None
     if result.get("isAsync") is True:
         return "agent"
+    if (result.get("resumedAgentId") or result.get("revivedAgentId")) \
+            and result.get("success") is not False and result.get("isAsync") is not False:
+        return "agent"  # SendMessage that woke a finished agent: no isAsync, the notice names THIS call's id
     if result.get("backgroundTaskId") or (result.get("taskId") and result.get("persistent") is False):
         return "shell"
     return None

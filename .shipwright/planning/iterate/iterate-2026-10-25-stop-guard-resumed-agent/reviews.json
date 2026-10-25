@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-stop-guard-resumed-agent",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:49:49.873033+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:54:14.905750+00:00",
+      "disposition": "small iterate: plan only runs at medium+ (phase matrix); no mini-plan/architecture review at this complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard_background.py",
+          "line": 40,
+          "finding": "The new check `result.get(\"resumedAgentId\") or result.get(\"revivedAgentId\")` ignores `success` and `isAsync`. Two cases can silence the guard for the full 2 h agent bound even though nothing is running. (1) A resume that fails but still echoes the agent id (`success: False, resumedAgentId: \"a1\"`): no completion notice will ever arrive. (2) A synchronous (foreground) resume whose result is returned inline, if that result also carries `resumedAgentId`: again no notice comes. Neither shape has been observed, so this is not a confirmed bug. Still, the guard should fail closed: a field that only means 'an agent id was named' is weaker than the `isAsync is True` check used for the other agent launch path. Two cases are safe: a result quoted inside tool output (Read/grep of a transcript), because only the top-level structured `toolUseResult` is checked; and a SendMessage to a still-running agent, which has no resumedAgentId.",
+          "suggestion": "Tighten the check to `if (result.get(\"resumedAgentId\") or result.get(\"revivedAgentId\")) and result.get(\"success\") is not False and result.get(\"isAsync\") is not False: return \"agent\"`. This keeps the observed real shape (success True, no isAsync) and drops the failed and synchronous cases. Add parametrized non-launch cases for `{\"success\": False, \"resumedAgentId\": \"a1\"}` and `{\"isAsync\": False, \"resumedAgentId\": \"a1\"}`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py",
+          "line": 76,
+          "finding": "The new non-launch case `{\"success\": False, \"resumedAgentId\": \"\"}` passes only because the empty string is falsy, not because of `success: False`. It looks like a test for 'a failed resume is not a launch' but proves nothing about that. Under the current code, `{\"success\": False, \"resumedAgentId\": \"a1\"}` IS treated as a launch, and no test covers that.",
+          "suggestion": "Change the case to a non-empty id with `success: False`, together with the tightening above, or drop it. `{\"success\": True, \"resumedAgentId\": None}` already covers the empty-value case.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard_background.py",
+          "line": 18,
+          "finding": "The accepted-risk note covers only a background shell that never ends (30 min). The new path adds a related, still bounded, residual risk: a resumed agent whose notice never arrives, or whose notice carries a different id than the SendMessage call, keeps the guard quiet for up to 2 h. The isAsync agent path has the same 2 h bound, so the risk is acceptable, but it is not written down. Notice matching depends on one observed transcript (toolu_012wq... notice carrying the SendMessage id). If a future harness version keys the notice on the original Agent call id instead, every resume would leave a 2 h quiet window and no test would catch it.",
+          "suggestion": "Add one sentence to the accepted-risk note saying that a resume whose notice never arrives, or names another id, is bounded by the 2 h agent limit, and that matching relies on the observed notice carrying the SendMessage tool-use-id.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/iterate_stop_guard.py",
+          "line": 160,
+          "finding": "`_blocker_tool` catches only `(OSError, IndexError)`. On Python 3.11/3.12 (the CI interpreter is pinned to 3.11), `Path.resolve(strict=True)` raises `RuntimeError` on a symlink loop; 3.13 changed this to OSError. The hook's outer `except Exception` would then let the Stop through: the block is lost and the session is not trapped. The docstring says the message 'must never raise', so the code does not fully do what it promises.",
+          "suggestion": "Catch `(OSError, IndexError, RuntimeError)`, or `Exception` with a short comment, so the fallback to the bare file name actually covers every failure.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/iterate_stop_guard_background.py",
+          "line": 9,
+          "finding": "The docstring parenthetical now has two different ` -- ` asides inside one comma list. It reads as if `backgroundTaskId` belonged to the SendMessage aside. The docs/hooks-and-pipeline.md row has the same problem: `/` separators are mixed with an embedded em-dash clause, so the `backgroundTaskId` item looks attached to the resume clause.",
+          "suggestion": "Split the docstring into list-like clauses separated by semicolons, or move the resume explanation into its own sentence after the parenthetical. Apply the same fix to the docs row.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-25T06:52:26.173766+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:54:15.360259+00:00",
+      "disposition": "Stage 3 is conditional (migrations, async/concurrency, cross-plugin imports, irreversible ops); this diff is a pure-function transcript-scan predicate, a message string and tests - none apply. spec, code and two external legs (glm, openai) all passed.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:54:14.739476+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] I reviewed the diff against the three spec points.\n\n**Spec 1 — resumed-agent tracking (iterate_stop_guard_background.py):** The `_launch_kind` branch is correct: it fires only when `resumedAgentId`/`revivedAgentId` is present, `success` is not `False`, and `isAsync` is not `False`. It is placed before the shell branch but after the `isAsync is True` branch, so ordering is sound. The keying by the SendMessage tool_use_id matches the spec's claim that the task-notification carries that id, and the existing `track`/`done` machinery keys by the tool-use id in both cases, so the notice clears the entry without any new code — which the tests verify (`test_the_resumed_agents_notice_carries_the_sendmessage_tool_use_id_and_clears_it`). The 2 h agent bound is inherited (`test_a_resumed_agent_stops_counting_after_the_agent_bound`). The negative cases (queued-to-running agent, `resumedAgentId: None`, failed resume, synchronous resume) are all covered with distinct shapes.\n\n**Spec 2 — block message (iterate_stop_guard.py):** The rewrite drops \"contract violation\", says \"still open\", states waiting is allowed, and uses `_blocker_tool()` for a resolved absolute path with a fail-open bare-name fallback. `_blocker_tool` resolves `shared/scripts/tools/record_hard_blocker.py` correctly from `shared/scripts/lib/`, and the docstring's example (scripts/tools/) matches the actual layout. The `Path.resolve(strict=True)` + exception catch (including `RuntimeError` for symlink loops) is a reasonable fail-open.\n\n**Spec 3 — docs row:** Updated, including the resumed-agent sentence. Done.\n\n**Tests:** The new tests are behavioral, not smoke tests — they assert `pending` state, `waiting()` transitions, and end-to-end hook silence/blocking through a real transcript, plus a broken-`__file__` fail-open path. The message tests check for copy-paste-runnability (absolute, exists on disk) and the required content, which would fail if the message regressed.\n\nOne minor note (not a defect): `t […truncated]\n\n[openai] No concrete defects found in the diff. The resumed-agent logic tracks launches by the existing tool-use ID, applies the agent timeout, and excludes empty IDs, explicit failures, and synchronous results. The tests cover completion notices, timeout behavior, and hook integration.\n\nThe block message and documentation meet the specification, including the resolved script path and fallback. Ship-as-is. I could not run the tests because command execution was blocked by the environment.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:50:47.738188+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:54:15.039075+00:00",
+      "disposition": "small iterate: plan_internal only runs at medium+ (phase matrix); no mini-plan/architecture review at this complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T06:54:15.191651+00:00",
+      "disposition": "small iterate: architecture_internal only runs at medium+ (phase matrix); no mini-plan/architecture review at this complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
