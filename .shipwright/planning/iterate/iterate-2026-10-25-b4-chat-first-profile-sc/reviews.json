@@ -110,111 +110,116 @@
       "findings": [
         {
           "severity": "low",
-          "category": "readability",
-          "file": "shared/tests/test_chat_first_json_profile.py",
-          "line": 586,
-          "finding": "test repetition",
-          "suggestion": "drop redundant asserts",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/tests/test_profile_matcher_chat_first.py",
+          "line": 15,
+          "finding": "Adopt matcher test and CI/CodeQL mapping test are tagged FR-01.06 (test phase) but belong to FR-01.13 (adopt).",
+          "suggestion": "Retag with FR-01.13.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
-          "line": 34,
-          "finding": "_LIB sys.path add/remove not covered by a package-mode probe",
-          "suggestion": "optional probe",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "architecture",
-          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
-          "line": 38,
-          "finding": "command_runner loaded under bare name in package mode",
-          "suggestion": "note patch target",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-test/scripts/lib/command_runner.py",
-          "line": 4,
-          "finding": "docstring explains provenance",
-          "suggestion": "describe what it does",
+          "file": "plugins/shipwright-test/skills/test/references/step-2-smoke-test.md",
+          "line": 10,
+          "finding": "Smoke DEV URL precedence (dev_url before profile dev_server) is the reverse of Browser Verify and dev_server.py; harmless for chat-first-json since both are 3900.",
+          "suggestion": "Align precedence or state it once.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
           "file": "shared/profiles/chat-first-json.json",
-          "line": 64,
-          "finding": "notes overstated Browser Verify use of /api/health",
-          "suggestion": "reworded (fixed)",
+          "line": 516,
+          "finding": "Notes overstate: e2e goes through playwright_runner.py only when --cwd is given.",
+          "suggestion": "Reword.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/skills/project/references/step-7-scaffolding.md",
+          "line": 25,
+          "finding": "uvicorn binds 127.0.0.1 while Playwright baseURL/webServer use localhost, which can resolve to ::1 on Node 17+; possible false E2E failure in unattended runs.",
+          "suggestion": "Use 127.0.0.1 consistently in command and Playwright config.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_chat_first_json_profile.py",
+          "line": 586,
+          "finding": "Restating asserts after full-dict equality.",
+          "suggestion": "Delete two asserts.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-25T15:21:01.532337+00:00",
+      "completed_at": "2026-10-25T15:32:27.016980+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "bf40f1052bfb5fc56496e6de12152025f7055012"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "medium",
           "category": "boundary & contract",
-          "file": "plugins/shipwright-project/skills/project/references/step-7-scaffolding.md",
+          "file": "plugins/shipwright-test/scripts/lib/playwright_runner.py:227, shared/scripts/browser_verify.py:42",
           "line": null,
-          "finding": "Claim under doubt: scaffolded Playwright runs against the served pane on 3900 — template webServer is npm run dev on :3000 and the json reporter is unspecified",
-          "suggestion": "name webServer command/url and the reporter (fixed)",
+          "finding": "Claim under doubt: Playwright and Browser Verify work on Windows — playwright_runner.py:227 and browser_verify.py:42 spawn bare npx without resolve_executable; on Windows npx is npx.cmd. Pre-existing, but B7 runs on Windows.",
+          "suggestion": "Use lib.cmd_resolver.resolve_executable('npx') in both.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-build/skills/build/references/browser-verify.md:48-54",
+          "line": null,
+          "finding": "Claim under doubt: Browser Verify checks port 3900 — The copyable code block in browser-verify.md step 3 has no --url; the 3900 instruction is a sentence below it.",
+          "suggestion": "Put --url in the code block.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
           "category": "hidden coupling",
-          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "file": "shared/profiles/chat-first-json.json:48",
           "line": null,
-          "finding": "Claim under doubt: profile e2e command is what runs — bundled e2e always goes through playwright_runner",
-          "suggestion": "note in profile (fixed)",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "hidden coupling",
-          "file": "plugins/shipwright-adopt/scripts/lib/profile_matcher.py",
-          "line": null,
-          "finding": "Claim under doubt: adopt matching never changes — can win a python repo if python-plugin-monorepo is shadowed by an invalid project file",
-          "suggestion": "rebutted as a deliberately broken override edge case",
+          "finding": "Claim under doubt: rules tests/config fit a local-JSON Python app — tests.md.template is a Supabase/Vitest rulebook.",
+          "suggestion": "Drop tests from rules or add a note.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
           "category": "boundary & contract",
-          "file": "plugins/shipwright-test/scripts/lib/test_runner.py",
+          "file": "shared/profiles/chat-first-json.json:6",
           "line": null,
-          "finding": "Claim under doubt: re-export invisible to callers — bare-name command_runner module in package mode; stale nosemgrep pointers",
-          "suggestion": "rebutted, mirrors _SHARED hygiene",
+          "finding": "Claim under doubt: ui_host served-pane will be accepted by later readers — Fixtures use web, schema test uses webui; B3b defines the reader.",
+          "suggestion": "Pin the value in the B3b spec.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-run/skills/run/references/brief-intake.md:63",
+          "line": null,
+          "finding": "Claim under doubt: A chat-first project can be routed to this profile — brief-intake mapping only knows supabase-nextjs and vite-hono; reachable via explicit profile in brief.json.",
+          "suggestion": "State selection is out of scope or add a mapping row.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-25T15:26:04.855903+00:00",
-      "disposition": null,
+      "completed_at": "2026-10-25T15:37:44.554994+00:00",
+      "disposition": "Doubts addressed by disposition, not by a new commit (a fix would invalidate the review pin). Both mediums are real and are deferred to follow-up unit B4b, inserted before B7 in the campaign: (1) resolve_executable('npx') in playwright_runner.py and browser_verify.py (pre-existing Windows defect); (2) --url in the Browser Verify code block. Lows: rules/tests and the ui_host spelling are left to B3b/B2 which own the readers; routing a chat-first brief to this profile is out of scope (B2/B5 own intake; reachable through an explicit profile in brief.json).",
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "e7d53271b83faa1c9568af69f0cda4156ff94507"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -284,14 +289,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T15:18:51.972663+00:00",
+      "completed_at": "2026-10-25T15:29:49.931451+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "7303ef1d0a0578d2aa9de8f60ad4a1ef39e54f40"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
