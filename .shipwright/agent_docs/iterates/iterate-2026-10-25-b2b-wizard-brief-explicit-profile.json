@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
-  "date": "2026-10-25T20:48:41.752755Z",
+  "date": "2026-10-25T21:17:10.533729Z",
   "event_at": "2026-10-25T18:22:58.879381+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -86,11 +86,16 @@
         "behavior": "final round: a one-line wizard brief whose idea starts with a brief key keeps its trailer profile; (Intake forms)/stack profile: prose in the idea no longer refuses; duplicate Stack profile lines are ambiguous; every resolver error kind of a bare hint is a warning; the case-insensitive gate, the sanitised refusal shape of a failed sibling load and the untrusted-resolver prefix hold",
         "disposition": "tested",
         "evidence": "shared/tests/test_brief_profile.py PASSED"
+      },
+      {
+        "behavior": "round 6: prose that is not a trailer is never refused (warned), the earlier-trailer pattern is linear (200 KB input), a text Stack profile key that disagrees with the trailer is ambiguous, a prose-only mention of profiles never fails on a missing module, a generic resolver failure on a hint warns, a misplaced/lower-case trailer is reported, stackProfile-like JSON keys warn, private parser keys in JSON briefs are dropped",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_profile.py PASSED"
       }
     ],
     "counts": {
-      "testable": 15,
-      "tested": 15,
+      "testable": 16,
+      "tested": 16,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -103,7 +108,7 @@
     "surface": "cli",
     "runner": "uv run --extra dev pytest shared/tests/test_brief_profile.py -q -p no:cacheprovider",
     "exit_code": 0,
-    "tests_run": 60,
+    "tests_run": 70,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B2b\\.shipwright\\runs\\iterate-2026-10-25-b2b-wizard-brief-explicit-profile\\surface_verification.log",
     "timestamp": "2026-10-25T20:16:13.943Z",
     "attempts": 1

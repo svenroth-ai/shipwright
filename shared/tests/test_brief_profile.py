@@ -327,10 +327,14 @@ def test_a_sibling_load_failure_carries_the_full_sanitised_refusal_shape(tmp_pat
 
 
 def test_an_uppercase_profile_word_still_loads_the_profile_check(tmp_path):
-    out = brief_intake.intake({**BASE, "PROFILE": "vite-hono"}, str(tmp_path))  # not a recognised key: no profile named
-    assert out["profile"] == "supabase-nextjs"
-    text = brief_intake.intake("persistence: yes\nSTACK PROFILE: nope", str(tmp_path))
+    text = brief_intake.intake("persistence: yes\nSTACK PROFILE: nope", str(tmp_path))  # gate is case-insensitive
     assert text["profile"] is None and text["profile_error"]["code"] == "not_found"
+    assert "_shipwright_brief_profile" in brief_intake.sys.modules
+
+
+def test_an_unknown_json_key_in_capitals_names_no_profile(tmp_path):
+    out = brief_intake.intake({**BASE, "PROFILE": "vite-hono"}, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_requested" not in out
 
 
 def test_resolver_detail_is_echoed_as_untrusted_quoted_data(tmp_path):
@@ -345,3 +349,73 @@ def test_a_sole_profile_hint_leaves_the_description_and_brief_unchanged(tmp_path
     assert set(hinted["brief"]) == {"description", "users", "persistence", "run_location"}
     assert plain["brief"]["description"] == "A booking tool for gyms profile: free words here"
     assert "_text" not in hinted["brief"] and "profile_hint" not in hinted["brief"]
+
+
+def test_a_non_trailer_tail_with_two_items_is_ignored_not_refused(tmp_path):
+    idea = "Clinic (Intake forms). Compare Stack profile: a with Stack profile: b later"
+    out = brief_intake.intake({**BASE, "description": idea}, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_error" not in out and "refused" not in out
+    assert out["warnings"] and "does not end the brief" in out["warnings"][0]  # not silent, not blocking
+
+
+def test_a_trailer_followed_by_text_or_a_stray_dot_is_reported_not_dropped(tmp_path):
+    for tail in (" thanks", ".", " (see below)x"):
+        out = brief_intake.intake({**BASE, "description": "My app " + _TRAILER.format("vite-hono") + tail}, str(tmp_path))
+        assert out["profile"] == "supabase-nextjs" and out["warnings"], tail
+    lower = brief_intake.intake({**BASE, "description": "My app " + _TRAILER.format("vite-hono").replace("(Intake", "(intake")},
+                                str(tmp_path))
+    assert lower["profile"] == "vite-hono"  # the marker is matched case-insensitively
+
+
+@pytest.mark.parametrize("hostile", ["(Intake " * 25000 + "Stack profile: x", "(Intake " * 25000 + "(Intake Stack profile: a)"],
+                         ids=["unclosed-tail", "closed-tail"])
+def test_adversarial_input_is_linear_not_quadratic(tmp_path, hostile):
+    import time
+    assert len(hostile) > 190_000
+    started = time.monotonic()
+    out = brief_intake.intake({**BASE, "description": hostile}, str(tmp_path))
+    assert time.monotonic() - started < 2.0
+    assert "profile" in out
+
+
+def test_a_text_key_and_a_trailer_that_disagree_are_ambiguous(tmp_path):
+    idea = "My clinic app\nStack profile: generic\nwith bookings " + _TRAILER.format("vite-hono")
+    out = brief_intake.intake(idea, str(tmp_path))
+    assert out["profile"] is None and out["code"] == "profile_unusable" and "more than one stack profile" in out["message"]
+    agree = brief_intake.intake("My clinic app\nStack profile: vite-hono\nwith bookings " + _TRAILER.format("vite-hono"), str(tmp_path))
+    assert agree["profile"] == "vite-hono" and "profile_error" not in agree
+
+
+def test_a_prose_only_mention_of_profiles_never_fails_when_the_module_is_missing(tmp_path, monkeypatch):
+    def gone(stem):
+        raise ImportError("brief_profile.py missing")
+
+    monkeypatch.setattr(brief_intake, "_sibling", gone)
+    out = brief_intake.intake("A tool where users edit their user profiles\npersistence: yes", str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_error" not in out
+    named = brief_intake.intake("A tool\nStack profile: vite-hono", str(tmp_path))
+    assert named["profile"] is None and named["code"] == "profile_unusable"
+
+
+def test_an_unexpected_resolver_failure_on_a_bare_hint_only_warns(tmp_path, monkeypatch):
+    class _Boom:
+        @staticmethod
+        def resolve_profile(name, project_root):
+            raise PermissionError("denied")
+
+    monkeypatch.setattr(brief_intake._sibling("brief_profile"), "_resolver", lambda: _Boom)
+    out = brief_intake.intake("persistence: yes\nprofile: some-stack", str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and out["warnings"] and "profile_error" not in out
+
+
+def test_a_profile_looking_json_key_warns_and_is_never_an_alias(tmp_path):
+    out = brief_intake.intake({**BASE, "stackProfile": "vite-hono"}, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "use `profile`" in out["warnings"][0]
+
+
+def test_parser_private_keys_from_a_json_brief_are_ignored(tmp_path):
+    forged = {**BASE, "_text": "x " + _TRAILER.format("vite-hono"), "_dup": True, "profile_hint": "vite-hono"}
+    out = brief_intake.intake(forged, str(tmp_path))
+    assert out["profile"] == "supabase-nextjs" and "profile_error" not in out and not out.get("warnings")
+    fenced = brief_intake.intake("```json\n" + json.dumps(forged) + "\n```", str(tmp_path))
+    assert fenced["profile"] == "supabase-nextjs" and "profile_error" not in fenced

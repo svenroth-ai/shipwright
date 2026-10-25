@@ -26,8 +26,7 @@ from typing import Optional, Union
 # The four wizard answers, in interview order (the questions a brief file can pre-answer).
 BRIEF_QUESTIONS = ["description", "users", "persistence", "run_location"]
 
-# Non-brief question the wizard never sets -> always still asked.
-_ALWAYS_ASK = ["autonomy"]
+_ALWAYS_ASK = ["autonomy"]  # non-brief question the wizard never sets -> always still asked
 
 # required_env_vars.build of shared/profiles/supabase-nextjs.json.
 SUPABASE_ENV_QUESTIONS = [
@@ -100,15 +99,12 @@ def map_brief(brief: dict, explicit: Optional[dict] = None) -> dict:  # normaliz
     if persistence == "yes":
         profile, profile_reason = "supabase-nextjs", "persistence=yes -> real database (supabase-nextjs)"
     elif persistence in ("no", "unsure"):
-        profile = "vite-hono"
-        profile_reason = "persistence=%s -> local zero-signup default (vite-hono)" % persistence
+        profile, profile_reason = "vite-hono", "persistence=%s -> local zero-signup default (vite-hono)" % persistence
     else:
-        profile = None
-        profile_reason = "persistence unknown -> profile still to decide"
+        profile, profile_reason = None, "persistence unknown -> profile still to decide"
     if explicit and "profile" in explicit:  # a profile the brief names beats inference (brief_profile.py)
         profile, profile_reason = explicit["profile"], explicit["reason"]
 
-    # Deploy target from run-location.
     deploy_target = {"web": "jelastic-dev", "local": "none"}.get(run_location)
 
     auth_scope = {"public": "public", "team": "team", "just_me": "none"}.get(users)
@@ -150,6 +146,12 @@ def _no_brief_result() -> dict:
 _KEY_ALIASES = {"location": "run_location"}
 _KV_RE = re.compile(r"^\s*[-*]?\s*([A-Za-z_][\w -]*?)\s*[:=]\s*(.+?)\s*$")
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)  # greedy body + trailing-fence anchor: a nested {...} parses in full
+_PRIVATE = ("_text", "_dup", "profile_hint")  # side channel to brief_profile.py: only the text parser may set it
+_NAMES_PROFILE = re.compile(r"stack.?profile|^\s*[-*]?\s*profile\s*[:=]|[\"']profile[\"']\s*:", re.I | re.M)
+
+
+class _TextBrief(dict):
+    """A brief parsed from ``key: value`` text (the only source allowed to carry ``_PRIVATE`` keys)."""
 
 
 def _parse_text_brief(text: str) -> dict:
@@ -177,7 +179,7 @@ def _parse_text_brief(text: str) -> dict:
             prose.append(line.strip())  # keep non-kv prose as the description
     if prose and not fields.get("description"):
         fields["description"] = " ".join(prose)
-    return {**(fields or {"description": text.strip()}), **meta}
+    return _TextBrief({**(fields or {"description": text.strip()}), **meta})
 
 
 def load_brief(source: Optional[Union[str, dict]]) -> Optional[dict]:
@@ -263,10 +265,13 @@ def intake(source: Optional[Union[str, dict]], project_root: str = ".", package:
     if raw is None:
         return _no_brief_result()
     explicit = None
+    raw = {k: v for k, v in raw.items() if k not in _PRIVATE} if type(raw) is dict else raw  # only the text parser sets them
     if "rofile" in str(raw).lower():  # only a brief that can name a profile touches brief_profile.py and the resolver
         try:
             explicit = _sibling("brief_profile").select(raw, project_root)
         except Exception as exc:  # missing or broken sibling: the refusal shape of brief_profile._error, exit 3
+            if not _NAMES_PROFILE.search(str(raw.get("_text") or raw) if isinstance(raw, dict) else str(raw)):
+                return map_brief(normalize_brief(raw), None)  # the word only appeared in prose: nothing was named
             msg = " ".join(re.sub(r"[^ -~]", " ", str(exc)).split())[:300]
             explicit = {"profile": None, "reason": "profile check unavailable", "extra": {
                 "warnings": [msg], "profile_error": {"code": "resolver_unavailable", "message": msg},
