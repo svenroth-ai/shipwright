@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-campaign-b-brief",
+  "date": "2026-10-25",
+  "section": "Iterate — change: campaign B plan, real end-to-end unit",
+  "title": "Campaign B gets a real end-to-end run through the WebUI instead of the optional Supabase profile",
+  "context": "Campaign B had no end-to-end proof that a Brief package becomes a working chat-first application, and its optional Supabase profile was not wanted.",
+  "decision": "Drop the Supabase profile unit, create the chat-first fixture in B3b, and add unit B7: an operator-started Playwright run through a second WebUI instance with a temporary HOME, documented with a screenshot per step.",
+  "consequences": "The real run is operator acceptance outside the campaign DAG; CI only checks what needs no model. Permission mode and budget are explicit operator inputs without defaults.",
+  "rationale": "An Opus review against the merged code and the WebUI checkout found the fixture autonomy value invalid, the temp HOME unprovisioned, and the WebUI unable to apply a permission mode, so the plan now states how each is handled.",
+  "rejected": "Running the real agent inside the campaign; reusing the WebUI's fake plugin cache; a CI type check that needs a new Node job.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
