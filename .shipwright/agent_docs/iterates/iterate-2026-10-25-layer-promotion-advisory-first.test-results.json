@@ -1,0 +1,71 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-25-layer-promotion-advisory-first",
+    "date": "2026-10-25",
+    "unit": {
+      "status": "passed",
+      "passed": 23406,
+      "total": 23508
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests/test_promote_required_layers_advisory.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 11,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-25-layer-promotion-advisory-first/surface_verification.json",
+      "timestamp": "2026-10-25T12:20:00.000Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "evaluate_fr skips an advisory-spec FR as advisory_spec_never_promoted even when a bound unit test is absent from the CI evidence (previously escalated bound_test_absent)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_promote_required_layers_advisory.py::test_evaluate_fr_skips_the_adopted_spec_even_when_the_evidence_is_ambiguous PASSED"
+        },
+        {
+          "behavior": "the same ambiguous evidence in a non-advisory spec still escalates, and unambiguous evidence in the adopted spec still skips",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers_advisory.py::test_evaluate_fr_skips_the_adopted_spec_even_when_the_evidence_is_ambiguous (escalate leg), ::test_evaluate_fr_skips_the_adopted_spec_but_still_promotes_elsewhere PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-25-layer-promotion-advisory-first",
+    "commit": null,
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

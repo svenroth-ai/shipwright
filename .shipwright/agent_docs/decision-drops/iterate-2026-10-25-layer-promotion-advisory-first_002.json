@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-layer-promotion-advisory-first",
+  "date": "2026-10-25",
+  "section": "Iterate â€” bug: advisory-spec check ran after the escalation branches in evaluate_fr",
+  "title": "Decide the advisory-spec skip before evidence-based escalation",
+  "context": "evaluate_fr returned SKIP_ADVISORY_SPEC only after the unrecognised_ok and bound_test_absent escalations. FR-01.17 in the advisory adopted spec has a bound unit test that did not run in CI, so it escalated on every sweep and every worktree setup warned that an operator decision was needed.",
+  "decision": "Move the is_advisory_spec check directly after the already_explicit skip, ahead of the escalation branches. Ledger handling and collision handling stay first.",
+  "consequences": "Advisory-spec requirements now report advisory_spec_never_promoted regardless of evidence quality; the recurring escalation warning for FR-01.17 disappears. Other specs still escalate on ambiguous evidence (pinned by a regression test).",
+  "rationale": "The adopted spec keeps Layers cells (inferred) by decision (SPEC 6.2), so no operator decision can change the outcome; asking for one is noise that trains people to ignore the sweep warning.",
+  "rejected": "Recording a promoted decision via record_layer_promotion_decision.py contradicts SPEC 6.2; recording demoted writes a permanent ledger veto for a requirement that is never promoted anyway.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
