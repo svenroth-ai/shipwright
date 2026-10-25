@@ -1,0 +1,6 @@
+{
+ "stage": "spec-compliance",
+ "verdict": "PASS",
+ "spec_citations": [],
+ "summary": "Final verdict after 3 rounds. Round 1 REJECTed (layout proof narrower than the replaced test; run SKILL.md still recommended raw complete-phase-task); both fixed in 7688d81fe and re-verified by the doubt re-reviews, which read the fixed layout test and SKILL.md. A5 meets BRIEF A5 acceptance: ENFORCE_PHASE_GATE_DEFAULT=True, verifiers proven in four plugin layouts for all seven phases with a negative control, one shared builder usable from both roots, migrated tests not weakened, e2e broken-artifact test, force-skip and inform-note decisions recorded, docs updated. Residual: the SKILL.md template states honestly that no single-session command finishes a run after skips (known gap)."
+}

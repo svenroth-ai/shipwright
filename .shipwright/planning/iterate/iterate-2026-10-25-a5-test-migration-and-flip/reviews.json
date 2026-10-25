@@ -123,29 +123,139 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-run/tests/test_phase_gate_no_bypass.py",
+          "line": 43,
+          "finding": "AST no-bypass guard covered enforce_gate= only; gate= seam and ENFORCE_PHASE_GATE_DEFAULT assignment were unflagged.",
+          "suggestion": "Flag gate= and flag assignment. FIXED in 7688d81fe.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/minimal_valid_project.py",
+          "line": 83,
+          "finding": "write_phase silently accepted unknown phases. FIXED: deploy listed explicitly, ValueError otherwise.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_phase_gate_cache_layouts.py",
+          "line": 1688,
+          "finding": "module-scoped layout copies raised FileExistsError on rerun. FIXED: dirs_exist_ok.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_single_session_pipeline.py",
+          "line": 1309,
+          "finding": "ok:false payload dropped its stub artifact claim. FIXED: restored.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/test_driven_run_real_gate_e2e.py",
+          "line": 1016,
+          "finding": "MAX_GATE_RETRIES copied instead of imported. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T22:52:44.972826+00:00",
-      "disposition": "campaign orchestrator instruction for this unit: the sub-iterate-runner must not spawn the internal cascade; the orchestrator runs spec/code/doubt at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T00:21:37.767041+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "Real phase skills satisfy the enforced gate's phase_history run-id check",
+          "suggestion": "Skills invent their own SHIPWRIGHT_RUN_ID; gate required config.runId. RESOLVED in 7688d81fe: gate_run_id.py plus skill-doc and phase-runner changes plus a real-skill-finalization integration test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py",
+          "line": null,
+          "finding": "The scoped run-id rule rejects stale entries (round 2)",
+          "suggestion": "Rule 1 had no time or split filter (rubber stamp for plan/02 and re-claims). RESOLVED in c9785e85f: since-claim, split and now+5min filters with a fail-closed sentinel id; 24 unit cases plus a two-split integration test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/tools/verifiers/build_checks.py",
+          "line": null,
+          "finding": "build/02 passes the sections check",
+          "suggestion": "First-entry selection falsely rejected build/02. RESOLVED in c9785e85f: newest, split-preferring entry; shared/tests/test_verifiers_build_split_history.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/testkit/minimal_valid_project.py",
+          "line": null,
+          "finding": "Builder reflects production event behaviour",
+          "suggestion": "Skill phase_completed dedup swallows the loop end event; docs and ADR reworded as a production event-loss path. RESOLVED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+          "line": null,
+          "finding": "Unknown loop state still has a retry cap",
+          "suggestion": "Unknown state is now terminal; one re-read first. RESOLVED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-fidelity",
+          "file": "shared/testkit/minimal_valid_project.py",
+          "line": null,
+          "finding": "Integration build/02 leg pins the build_checks fix",
+          "suggestion": "Both splits share one section name so the integration leg does not catch a revert; the shared/tests unit test does. ACCEPTED (pinned elsewhere).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/build_checks.py",
+          "line": null,
+          "finding": "build_checks checks sections for non-final splits",
+          "suggestion": "archive_split clears sections before apply, so non-final splits compare nothing; pre-existing, docstring overstates. ACCEPTED, noted for the report.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-24T22:52:45.091737+00:00",
-      "disposition": "campaign orchestrator instruction for this unit: the sub-iterate-runner must not spawn the internal cascade; the orchestrator runs spec/code/doubt at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T00:21:37.908027+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -220,16 +330,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-24T22:52:44.859309+00:00",
-      "disposition": "campaign orchestrator instruction for this unit: the sub-iterate-runner must not spawn the internal cascade; the orchestrator runs spec/code/doubt at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-25T00:21:37.632528+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
