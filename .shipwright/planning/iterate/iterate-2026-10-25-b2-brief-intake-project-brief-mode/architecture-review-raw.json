@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Answer:** Yes, this should exist roughly as proposed \u2014 the package format and its hash library already exist and nothing consumes them; this is wiring up consumption, not a new standing mechanism.\n\n2. **Smallest thing that would do:** Option A. A sibling module that imports brief_intake helpers, brief_dir persisted in run_config alongside the approved hash, and re-verification on resume. Option B is the same result with a forbidden (and riskier, adopt-touching) refactor in front of it; Option C leaves a real, committed artifact silently degraded into a \"plain description\" with a guessed profile \u2014 a correctness hole, not a hypothetical.\n\n3. **Cost to keep:** One more intake route to reason about on every change to brief handling; the hash-and-approval fields in run_config must stay meaningful forever; the evidence-anchor content check adds a second thing the Project grill gate enforces that must be kept aligned with the anchor syntax in prose.\n\n4. **Forecloses:** Modestly: the package layout and hash become a semi-public contract once resume depends on the stored hash \u2014 changing brief_package.py's layout or hash rules later must be version-aware.\n\n5. Findings:\n\n- Category: proportionality\n- Severity: low\n- Finding: The \"fixture approval requires SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1\" switch is a new standing knob that every future operator has to know about.\n- Suggestion: Fine to keep, but document it in exactly one place (run/references/brief-intake.md) and consider whether refusing fixture approvals outright with no env escape is simpler \u2014 if no real workflow needs the flag, drop it.\n\n- Category: ownership\n- Severity: low\n- Finding: Re-verification \"on every resume and every answer\" is a promise about call sites scattered across existing flows; it is the kind of invariant that erodes silently.\n- Suggestion: Put the verify call inside the shared resume/run_config read path (one function) rather than at each call site, so the invariant survives refactors by construction rather than by discipline.\n\nNo other findings. The content-check on evidence anchors is a check inside an existing gate, not a new mechanism; the module split respects the operator's decision and adopt's constraint.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014choose A:** directory intake and Project brief mode address a present failure, and a sibling module is proportionate without restructuring the shared file route.\n\n2. **Smallest thing that would do:** Add a directory adapter using the existing package hash library and brief helpers; persist the directory and approved hash in run_config; verify at the required entry points; generate Project artifacts through existing writers and validate their supporting brief content. Keep brief_intake\u2019s change to routing.\n\n3. **What it costs to keep:** Maintain the package-to-Project mapping, approval policy, and verification calls across config creation, resume, and answers. These checks must run automatically through the normal execution path; correctness cannot depend on an operator remembering a separate validation command.\n\n4. **What it forecloses:** Editing an approved package during a run requires explicit reapproval. Future package-format changes must preserve or deliberately migrate the persisted approval relationship.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+    "at": "2026-10-25T14:57:12.767448+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

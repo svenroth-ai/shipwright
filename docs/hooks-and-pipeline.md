@@ -5982,3 +5982,19 @@ The convention is doc-only (codified here + drift-protected by
 A future iterate may add a programmatic `pre-rebase` guard if the doc
 proves insufficient (deferred from iterate-2026-05-27 per external review
 finding OpenAI #12).
+
+## Brief package intake and Project brief mode
+
+`/shipwright-run --brief <dir>` reads a Brief package (campaign brief-driven-run B2; layout and hash: `shared/scripts/lib/brief_package.py`). **Who reads and writes what:**
+
+| Step | Code | Reads | Writes |
+|---|---|---|---|
+| Intake | `brief_intake.py` routes a directory to `brief_dir_intake.intake_dir` (sibling module, loaded by file path, ADR-045) | the package | nothing; the result carries `profile`/`deploy_target`/`autonomy` from `brief.json` (brief fields override derived values) |
+| `write-config` (project plugin) | `write_run_config.py --brief-dir` | the package | refuses (exit 5) before writing; then `brief_dir` + `brief_package {package_sha256, approved_by, approved_at, fixture_approval_accepted}` in `shipwright_run_config.json` |
+| `write-config` (run plugin) | `brief_dir_intake.py record` right after `orchestrator.py write-config` | the package | the same two run_config keys |
+| Every resume, next and apply | `single-session-resume` / `-next` / `-apply` call `orchestrator_pkg/brief_resume_guard.py` first (code-enforced; the Project-phase gate also runs `brief_package_hash`) | `brief_dir` + the recorded hash from run_config | nothing; exit 3 = hash mismatch, changed approval, or missing record |
+| Every recorded gate answer | `brief_dir_intake.py verify` (agent-instructed; code enforcement deferred to U1/U2, no answer code exists yet) | the same | nothing; exit 3 as above |
+| Project phase | `tools/brief_project_mode.py apply` (+ early `verify-traces` / `check-fr-names`) | `brief.md` | transcript pointer, `requirements.md`, grill-traces, `CONTEXT.md` terms |
+| Project phase gate | `verifiers/brief_mode_checks.py` via `run_project_checks` (apply-path phase gate, `update-step`) | run_config `brief_dir`, `brief.md`, grill-traces, `spec.md` | `brief_evidence_anchors`, `brief_fr_names` results (no result when run_config has no `brief_dir`) |
+
+The expected hash is first taken from `brief.json`, then held in run_config (outside the package). `approved_by: "fixture:<id>"` is accepted only with `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1`. `update-step` is inert in a driven run; the Project checks run there through the apply-path phase gate (`single-session-apply`, enforcing by default). Brief mode adds the content checks the shape-only grill gate cannot make: empty sections and dimensions are refused when the artifacts are written, unresolved anchors and FR Names that differ from the brief fail the gate. The package hash is not re-verified by that gate; resume re-verifies in code and answers by instruction (trust on first use: the first hash comes from `brief.json` itself). Residual risk deferred to U3: the package is verified and read in place (no run-scoped snapshot, `evidence/` outside the hash), so a swap between check and read is not caught.

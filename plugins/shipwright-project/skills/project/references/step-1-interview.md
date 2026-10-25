@@ -4,6 +4,9 @@ See [interview-protocol.md](interview-protocol.md) for detailed guidance.
 
 **Goal:** Surface the user's mental model of the project and combine it with Claude's intelligence.
 
+**Brief package run** (`shipwright_run_config.json` has `brief_dir`): do not interview —
+follow [brief-mode.md](brief-mode.md) and continue at Step 4 with its output.
+
 ## Context to read (depends on input mode)
 
 - **File mode**: Read `{initial_file}` — the requirements file seeds the conversation

@@ -41,6 +41,7 @@ from pathlib import Path
 
 from . import _project_gate_wiring as _gate_wiring
 from .agents_md_completion_check import check_agents_md_completion
+from .brief_mode_checks import check_brief_evidence_anchors, check_brief_fr_names, check_brief_package
 from .common import (
     CheckResult,
     Severity,
@@ -208,6 +209,10 @@ def run_project_checks(
     results.append(check_manifest_splits_match_dirs(project_root))
     results.append(check_agents_md_completion(project_root))
     results.extend(check_grill_trace_completeness(project_root))
+    # Project brief mode (B2): content checks the shape-only gate cannot make; no result for a project without brief_dir
+    results.extend(check_brief_package(project_root))
+    results.extend(check_brief_evidence_anchors(project_root))
+    results.extend(check_brief_fr_names(project_root))
 
     # FR-01.02 #4/#15, #5, #10, #11 (req3-06-enforcement-mono sub-iterate e2)
     results.append(_gate_wiring.check_basis_forbids_assumed(project_root))

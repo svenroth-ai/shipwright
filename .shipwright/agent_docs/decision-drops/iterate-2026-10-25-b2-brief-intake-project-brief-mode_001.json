@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+  "date": "2026-10-25",
+  "section": "Iterate — feature: brief intake from a package directory and Project brief mode",
+  "title": "Brief package intake lives in sibling modules; hash anchored in run_config; brief content checked in the project gate",
+  "context": "A Brief package directory was read as plain text, brief_dir was not stored, the approved hash was never re-checked, and the shape-only grill gate accepted evidence pointing at empty text.",
+  "decision": "brief_dir_intake.py (verify, approval, record, resume check) and brief_project_mode.py (artifacts) are new siblings; brief_intake.py only routes (opt-in); brief_mode_checks.py adds anchor and FR-name checks to run_project_checks.",
+  "consequences": "First hash comes from brief.json (trust on first use), taken only on a fresh run; resume/next/apply are code-checked, gate answers stay agent-instructed until U1/U2. Deferred to U3: no run-scoped verified snapshot, evidence/ outside the hash (residual TOCTOU). Accepted: a replaced config on a fresh run ends brief mode with a warning only. Fixture approval needs SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1.",
+  "rationale": "The operator dropped the brief_intake extraction (both architecture reviewers rejected it), so a routing hook plus siblings keeps adopt and the file route unchanged at 295 lines.",
+  "rejected": "Extract brief_intake first (dropped by the operator); read the package only in the unattended unit (leaves a silent misroute); verify only at intake (no protection on resume).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

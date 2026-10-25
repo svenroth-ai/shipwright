@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/brief_intake.py:244 \u2014 `_package_intake` path filtering\n- Finding: Directory paths containing spaces are silently routed to legacy text intake. For example, `--brief \"my brief/\"` becomes a description instead of a verified package, bypassing package approval and hash checks. This also affects absolute paths beneath directories such as `dinovo GmbH`.\n- Suggestion: Check whether the source resolves to a directory before applying free-text exclusions. Explicit directory paths that cannot be opened should fail loudly.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/lib/brief_dir_intake.py:188 \u2014 `record` baseline selection\n- Finding: Recording a different directory discards the existing approval baseline. When `cfg[\"brief_dir\"] != rel`, `record` passes `recorded=None`, trusts the replacement package\u2019s self-declared hash, and overwrites the stored directory and approval. A resumed run can therefore switch packages without respecting its previously recorded approval.\n- Suggestion: Refuse a different directory with `brief_dir_conflict` whenever the config already records a package. Preserve the existing hash baseline for all subsequent recordings.\n\nOverall assessment: ship-with-fixes. The implementation covers much of B2, but directory routing and replacement-package handling need correction before shipping; I could not execute tests because shell access was blocked by policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**1. `record()` silently re-baselines to a new self-attested package when `--brief-dir` differs from the recorded one**\n- Category: bug / security\n- Severity: high\n- File: `shared/scripts/lib/brief_dir_intake.py`, `record()` \u2014 `recorded=cfg.get(\"brief_package\") if cfg.get(\"brief_dir\") == rel else None`\n- Finding: If run_config already records `brief_dir = \"a\"` and someone runs `record --brief-dir b`, `recorded` becomes `None`, so the expected hash is taken from package `b`'s own `brief.json` (self-attested, trust-on-first-use) and the record is overwritten with it. This is exactly the \"second record re-baselines\" hole the docstring claims never happens, and the `brief_dir_conflict` code documented in `brief-intake.md` is never raised on this path (only `brief_project_mode._open` checks a conflict; `record` does not). The test `test_a_second_record_never_rebaselines_an_edited_package` only covers the same-dir case, so this passes.\n- Suggestion: If `cfg` has a `brief_dir` and it differs from `rel`, raise `BriefRefused(\"brief_dir_conflict\", ...)` instead of passing `recorded=None`. Add a test.\n\n**2. `write_run_config.py` destroys a pre-existing config on a late refusal**\n- Category: edge-case\n- Severity: medium\n- File: `plugins/shipwright-project/scripts/write_run_config.py`, the `bdi.record` failure handler \u2014 `config_path.unlink()`\n- Finding: If `shipwright_run_config.json` already existed (e.g. a resume/re-run of write_run_config on a started run, or a config whose `autonomy`/`deploy_target` drifted from the brief \u2192 `config_mismatch`), the whole config \u2014 including any previously recorded `brief_dir`/`brief_package`/run state \u2014 is deleted. The unlink is only correct for a config this invocation just created.\n- Suggestion: Only unlink when this run created the file (track a `created_here` flag), otherwise leave the existing config untouched.\n\n**3. Free-text `--brief` payload ending in `/` now hard-fails instead of degrading**\n- Category: regression\n- Severity: low\n- File: `shared/scripts/lib/brief_intake.py`, `_package_intake` \u2014 `text[-1] in \"/\\\\\"`\n- Finding: The CLI always passes `package=True`. Any inline description that happens to end in a slash (e.g. `--brief \"clone of https://example.com/\"` \u2014 no spaces, under 240 chars) routes to the package path, `resolve_dir` refuses with `bad_brief_dir`, and `main` exits 3 with a refusal instead of treating it as a description as before. The test suite only covers the space-containing variant, which is exactly the input that sidesteps the bug.\n- Suggestion: On `bad_brief_dir` in the heuristic path (text did not name a directory the caller deliberately chose, e.g. no trailing slash), fall back to the description route; or only route to the package when the path is an existing directory, not on a trailing slash alone.\n\n**4. `intake_dir` can crash with a traceback on an unreadable `brief.md`**\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/lib/brief_dir_intake.py`, `intake_dir` \u2014 `(bdir / \"brief.md\").read_text(...)`\n- Finding: `is_file()` guards existence, not readability/encoding; an `OSError`/`UnicodeDecodeError` propagates. `brief_intake.main` re-raises exceptions without `as_dict`, so the CLI produces a traceback rather than the documented structured exit-3 refusal. (`brief_project_mode._open` has the same read.)\n- Suggestion: Wrap the read in `try/except (OSError, ValueError)` and raise `BriefRefused(\"invalid_package\", ...)`.\n\n**5. `verify_run_config` passes when the config is absent/unreadable-but-brief-run**\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/lib/brief_dir_intake.py`, `verify_run_config` \u2014 `if \"brief_dir\" not in cfg: return {\"package\": False}`\n- Finding: `load_config` returns `{}` on `OSError` (including a transient permission error or a wrong `--project-root`), so the resume check reports \"no package\" and the run resumes without verification. The guards test asserts this behavior for a missing config dir, but it means a resume pointed at the wrong root fails open rather than loudly.\n- Suggestion: Distinguish \"config exists and has no brief_dir\" (pass) from \"config could not be read\" (refuse `bad_run_config`).\n\n**6. Possible test import-path fragility for `tools.*`**\n- Category: test\n- Severity: low\n- File: `shared/tests/test_brief_project_mode.py` \u2014 `import tools.brief_project_mode`\n- Finding: The helpers file only puts `shared/scripts/lib` on `sys.path`; `import tools.brief_project_mode` needs `shared/scripts`. This works only if an existing conftest already adds it \u2014 worth confirming, since a fresh checkout running just this file would fail at collection, masking all the real assertions below it.\n- Suggestion: Add `shared/scripts` to `sys.path` in `_brief_dir_helpers.py` (or confirm the conftest does).\n\n## Positive notes\n\nThe tests are substantive: they check exit codes, artifact contents, the real grill-gate subprocess, tamper-then-rebaseline, forged-hash rewrite, changed approver, and fixture-gate re-check on resume \u2014 a wrong implementation would not pass them (except finding #1's uncovered path). Spec compliance is otherwise good: hash verify before write-config and on resume, fixture env gate, overrides win, `--brief` file route preserved, stale-prose fixes applied, new test files, brief_intake kept unsplit with minimal wiring.\n\nOverall: works and is well-tested on the happy and most refusal paths, but the `record` re-baseline hole and the config deletion should be fixed before this guards an approval-anchored campaign.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b2-brief-intake-project-brief-mode",
+    "at": "2026-10-25T15:07:39.891914+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

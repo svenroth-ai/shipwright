@@ -72,7 +72,8 @@ The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
 
 **Input sources (in priority order):**
 0. **Brief** (WebUI Intent Wizard): a pre-delivered file/payload with the four
-   wizard answers → run [brief-intake.md](references/brief-intake.md), ask ONLY what's missing.
+   wizard answers, **or a Brief package directory** (`--brief brief/`) →
+   run [brief-intake.md](references/brief-intake.md), ask ONLY what's missing.
 1. **File**: `@requirements.md` → read and summarize
 2. **Inline**: `"Build a SaaS time tracker..."` → use as starting context
 3. **Chat**: No input → ask: "What do you want to build?"
@@ -145,6 +146,10 @@ uv run "{plugin_root}/scripts/lib/orchestrator.py" write-config \
   --deploy-target "{target}" \
   --project-root "$(pwd)"
 ```
+
+**Brief package:** straight after `write-config`, record it (verifies hash + approval,
+stores `brief_dir` for resume): `uv run "{plugin_root}/../../shared/scripts/lib/brief_dir_intake.py" record --project-root "$(pwd)" --brief-dir "{brief_dir}"`
+— exit 3 means refused (details in [brief-intake.md](references/brief-intake.md)); stop and show it.
 
 This writes `shipwright_run_config.json` at `schemaVersion: 2` with
 `mode: single_session` (the sole mode — `--mode` exists but has exactly one
@@ -310,6 +315,12 @@ config resumes it — see
 [single-session-loop.md § Resumability](references/single-session-loop.md#resumability-ss5)
 for the full protocol.
 
+0. **Brief package run** (config has `brief_dir`): first
+   `uv run "{plugin_root}/../../shared/scripts/lib/brief_dir_intake.py" verify --project-root "{project_root}"`
+   (also before applying any recorded gate answer). Exit 3 = the package changed since approval:
+   stop, show the output, do not resume. `single-session-resume` below runs the same check itself and
+   exits 3 with the refusal (as do `-next` and `-apply`), so a run cannot proceed past a changed package.
+   If `record` itself fails after `write-config`, delete the just-written run_config before starting over.
 1. Read the resume decision (**read-only** — claims nothing, emits nothing):
    ```bash
    uv run "{plugin_root}/scripts/lib/orchestrator.py" single-session-resume \

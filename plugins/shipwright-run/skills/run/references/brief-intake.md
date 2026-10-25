@@ -9,6 +9,57 @@ wizard already answered.
 **No brief → nothing changes.** When Step 1 finds no brief, skip this entire
 file and run Step 1-3 exactly as today. Brief-intake is purely additive.
 
+## A Brief package directory
+
+`--brief brief/` (a directory, or a path with a trailing slash) names a **Brief package**
+(layout and hash: `shared/scripts/lib/brief_package.py`; fields: BRIEF D1). The same
+command reads it:
+
+```bash
+uv run "{plugin_root}/../../shared/scripts/lib/brief_intake.py" --brief "brief/" --project-root "$(pwd)"
+```
+
+The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`, `ux_shape`,
+`ui_host`, `allow_parallel_builders`, `env_preflight` and `package` (hash + approval). Rules:
+
+- **Brief fields override derived values:** `profile`, `deploy_target` and `autonomy` come from
+  `brief.json`; `remaining_questions` is empty, so nothing the package answers is re-asked.
+- **Verified before use:** layout and hash must verify, and `brief.json` needs `approved_by` and
+  `approved_at`. `approved_by: "fixture:<id>"` is accepted only with
+  `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` (the acceptance is recorded in `run_config`).
+- **A bad package fails loudly** (exit 3, JSON `{"refused": true, "code": ..., "issues": [...]}`;
+  codes: `bad_brief_dir`, `invalid_package`, `hash_mismatch`, `missing_approval`,
+  `fixture_approval_refused`, `approval_changed`, `missing_record`, `config_mismatch`, `brief_dir_conflict`). It never degrades to the interview.
+- **`brief_dir` is persisted** by `brief_dir_intake.py record` (Step 4) together with the approved
+  hash, so a resume finds the package and compares against a hash held outside it;
+  `single-session-resume`, `-next` and `-apply` re-check it IN CODE (`orchestrator_pkg/brief_resume_guard.py`,
+  exit 3 blocks the command), and the Project-phase gate goes red on a hash mismatch (`brief_package_hash`); applying a recorded gate answer is still agent-instructed (`brief_dir_intake.py verify`),
+  and code enforcement for answers is deferred to U1/U2 (no answer code exists yet).
+- `record` takes a first-time baseline only on a FRESH run (every phase task still awaiting launch,
+  `run_already_started` otherwise): trusting the package's own hash is only legitimate before any work.
+  If run_config lost its record on a started run, restore the original run_config, or re-approve the
+  package (new `approved_at`) and restart the run; do NOT run `record` again to "repair" it.
+- If `record` fails after `write-config`, delete the just-written run_config and fix the package before
+  starting over (the config is not usable without its record).
+- `record` treats EITHER `brief_dir` or `brief_package` as an existing record and never re-baselines;
+  both the recorded `brief_dir` and `brief.json`'s own `brief_dir` must be project-relative (no `..`,
+  no absolute path, no link leading out of the project) and must name the same directory; a changed
+  `approved_by` OR `approved_at` is `approval_changed` on resume.
+- **Residual risk, stated plainly (deferred to U3):** B2 verifies the package in place and the Project
+  phase reads it in place; there is no run-scoped verified snapshot, and `evidence/` is outside the hash.
+  A file swapped between the check and the read (TOCTOU) is therefore not caught until the next
+  `verify`. A snapshot copy with `evidence/` excluded belongs to the unattended campaign (U3).
+- **Limit, stated plainly:** the hash proves the package is unchanged since the run first read it (trust on first use); it does not prove a person approved that content, because `approved_by` and the first hash come from `brief.json` itself. Real approval anchoring is the unattended campaign's job (U3).
+- A one-line `--brief` value that names an existing directory (or ends in `/` with no spaces) is read as a
+  package from now on, so it is refused loudly when it is not one; a description never has that shape.
+- `brief_dir_intake.py verify` also refuses a project whose run_config records a `brief_package` but no
+  `brief_dir`. A top-level directory whose `brief.json` names itself, next to a run that records no package,
+  is only a printed WARNING (a project may commit a package and still run a normal interview run); a replaced
+  config on a fresh run therefore ends brief mode without a refusal (residual risk, accepted).
+- The CLI `--autonomy` accepts only `guided|autonomous` today; a package whose autonomy is
+  `unattended` cannot be written until the unattended mode lands: stop and say so.
+- `/shipwright-project` in a package run does not interview: `skills/project/references/brief-mode.md`.
+
 ## The four wizard answers
 
 | Field | Wizard question | Values |
