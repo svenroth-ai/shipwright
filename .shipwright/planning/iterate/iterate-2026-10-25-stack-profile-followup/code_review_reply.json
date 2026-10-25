@@ -1,0 +1,6 @@
+{"section": "iterate-2026-10-25-stack-profile-followup", "verdict": "approve",
+ "summary": "Approve, no high or medium findings. Dispositions: all three lows accepted-and-fixed (assertion narrowed to profile_resolver.py with honest comment, tautological assertion deleted, redundant PINNED_WRAPPERS union dropped).",
+ "review": [
+  {"severity": "low", "category": "correctness", "file": "shared/tests/test_stack_profile_py_guard.py", "line": 59, "finding": "The any-module assertion has teeth only for profile_resolver.py; profile_model.py has no resolver handler.", "suggestion": "Assert on profile_resolver.py and say so in the comment. Fixed."},
+  {"severity": "low", "category": "readability", "file": "shared/tests/test_stack_profile_py_guard.py", "line": 60, "finding": "assert not {...} & RESOLVER_MODULES can never fail (_all_swallows filters the same set).", "suggestion": "Delete the line. Fixed."},
+  {"severity": "low", "category": "readability", "file": "shared/tests/stack_profile_py_rules.py", "line": 187, "finding": "| PINNED_WRAPPERS is redundant after seeding in module_wrappers.", "suggestion": "Drop the union. Fixed."}]}

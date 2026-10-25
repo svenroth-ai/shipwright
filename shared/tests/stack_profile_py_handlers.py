@@ -10,6 +10,7 @@ import re
 
 PROFILE_ERRORS = ("ProfileError", "ProfileNotFound", "ProfileInvalid", "ProfileSchemaDrift")
 
+
 def _call_name(node: ast.Call) -> str:
     f = node.func
     return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
@@ -23,11 +24,15 @@ def _handler_names(handler: ast.ExceptHandler) -> list[str]:
             for e in (t.elts if isinstance(t, ast.Tuple) else [t]) if isinstance(e, (ast.Name, ast.Attribute))]
 
 
+def _names_value_error(name: str) -> bool:
+    """An exception class name that covers the resolver's ValueError family (handlers and ``suppress``)."""
+    return name in ("ValueError", "Exception", "BaseException") or name.endswith(PROFILE_ERRORS)
+
+
 def _catches_value_error(handler: ast.ExceptHandler) -> bool:
     if handler.type is None:
         return True
-    return any(n in ("ValueError", "Exception", "BaseException") or n.endswith(PROFILE_ERRORS)
-               for n in _handler_names(handler))
+    return any(_names_value_error(n) for n in _handler_names(handler))
 
 
 def _is_exit_call(node: ast.AST) -> bool:
@@ -37,6 +42,13 @@ def _is_exit_call(node: ast.AST) -> bool:
 def _exits_zero(call: ast.Call) -> bool:
     """``sys.exit()``, ``sys.exit(0)``, ``SystemExit(None)``: success is not a failure exit."""
     return not call.args or (isinstance(call.args[0], ast.Constant) and call.args[0].value in (0, None))
+
+
+def _is_nonzero_int(v: ast.AST) -> bool:
+    """``3``, ``-1``: a failure code (``True`` is not one, ``0`` is success)."""
+    if isinstance(v, ast.UnaryOp) and isinstance(v.op, (ast.USub, ast.UAdd)):
+        v = v.operand
+    return isinstance(v, ast.Constant) and isinstance(v.value, int) and not isinstance(v.value, bool) and v.value != 0
 
 
 def _raises_zero_exit(exc: ast.AST | None) -> bool:
@@ -117,7 +129,7 @@ def _handles_loudly(handler: ast.ExceptHandler) -> bool:
             return True
         elif isinstance(n, ast.Return) and n.value is not None:
             v = n.value
-            if isinstance(v, ast.Constant) and isinstance(v.value, int) and not isinstance(v.value, bool) and v.value != 0:
+            if _is_nonzero_int(v):
                 return True
             if isinstance(v, ast.Call) and _receives(v, handler.name):
                 return True
@@ -128,7 +140,7 @@ def _propagates(handler: ast.ExceptHandler) -> bool:
     """The handler lets the error through: bare ``raise``, ``raise exc`` or ``raise ... from exc``."""
     for n in _scope_nodes(handler, lambdas=True):
         if isinstance(n, ast.Raise):
-            named = lambda x: isinstance(x, ast.Name) and x.id == handler.name  # noqa: E731
+            named = lambda x: isinstance(x, ast.Name) and x.id == handler.name
             if n.exc is None or named(n.exc) or named(n.cause):
                 return True
     return False

@@ -73,8 +73,9 @@ def main() -> int:
     from lib.profile_check import check_profile, describe  # project's own lib (path set above)
 
     # The early phase-tracking call (in_progress + reserved sentinel) names no profile file, so it
-    # must not gain a new failure mode; a missing shared tree degrades like the gitignore merge there
-    # (the early call only), while --status complete keeps the hard install error (exit 1).
+    # must not gain a new failure mode: the sentinel skips the check entirely. The ImportError degrade
+    # below is reached only by a direct in_progress call naming a real profile (no skill makes one;
+    # pinned by test_profile_name_check); --status complete keeps the hard install error (exit 1).
     early_sentinel = args.status == "in_progress" and args.profile in ("generic", "detecting")
     if not early_sentinel:
         try:
