@@ -68,7 +68,7 @@ uv run "{plugin_root}/scripts/checks/write-project-config.py" \
   --scope "{scope}"
 ```
 
-`--profile-root` is `{project_root}` (lookup only; where the config is written does not change). Always pass it. The writer exits 4 when the name does not resolve to a usable profile (unknown, malformed, invalid or too new) and 1 when the shared tree is missing on a complete scaffold.
+`--profile-root` is `{project_root}` (lookup only; it does not move the config, which is written to the project above `<project>/.shipwright/planning`). Always pass it. The writer exits 4 when the name does not resolve to a usable profile (unknown, malformed, invalid or too new) and 1 when the shared tree is missing on a complete scaffold.
 
 On the `--status complete` (full-scaffold) path this also merges the
 canonical `.shipwright/` artifact-ignore block (SSoT:

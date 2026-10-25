@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-project-config-location",
+  "date": "2026-10-25",
+  "section": "Iterate - bug: write-project-config wrote the project config to the wrong folder",
+  "title": "Derive the project root above .shipwright when only --planning-dir is passed",
+  "context": "The project skill calls write-project-config.py with only --planning-dir <project>/.shipwright/planning. The project root was derived as planning_dir.parent, so shipwright_project_config.json landed in <project>/.shipwright/ with planning_dir stored as planning, while every reader (lib.config, the phase verifier, the stop-hook handoff, the gate manifest) looks at <project>/shipwright_project_config.json. The S5 test pinned the wrong location as pre-existing.",
+  "decision": "When --project-root is absent and the planning dir sits directly under a .shipwright folder, the project root is the folder above .shipwright, derived once from the unresolved path (a linked .shipwright stays valid) and also used for the profile lookup. An explicit --project-root stays authoritative; any other planning dir keeps planning_dir.parent. planning_dir is stored as a posix path relative to the project.",
+  "consequences": "New projects get the config where the readers look and the canonical planning_dir. Projects scaffolded earlier may keep a stale, unread .shipwright/shipwright_project_config.json. Requirements-file mode (planning dir outside the project) is unchanged and tracked as a follow-up.",
+  "rationale": "Reproduced first (file landed in .shipwright/), root cause confirmed against adopt's writer which emits the project-root location, fix covered by three unit tests and a round trip through the real readers, red without the fix.",
+  "rejected": "(1) Passing --project-root at the skill call sites: in requirements-file mode the planning dir lies outside the project and the complete scaffold would raise in relative_to. (2) Deleting the stale file in the writer: nothing reads it.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-project-config-location-write-project-config-location.md"
+}
