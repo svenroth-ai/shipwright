@@ -150,29 +150,125 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/playwright.config.ts",
+          "line": 7,
+          "finding": "no real deadline (timeout 0, no action timeout); fixed: test.setTimeout from the budget, action and navigation timeouts, bounded finally",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "integration-tests/e2e-webui/src/stack.ts",
+          "line": 122,
+          "finding": "only the server pid was killed; agent children and a re-written credentials copy could survive; fixed: whole process tree killed before the wipe, second wipe after stop",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/auth.ts",
+          "line": 63,
+          "finding": "copy kept the source mtime so the stale scrub could delete a live copy; fixed with utimes",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/driver.ts",
+          "line": 67,
+          "finding": "isVisible ignores its timeout so the confirm click could be missed; fixed with waitFor, approval recorded after the click",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "integration-tests/e2e-webui/src/stack.ts",
+          "line": 42,
+          "finding": "whole environment passed to the agent; fixed with an allowlist and an explicit NODE_ subset without NODE_AUTH_TOKEN",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/stack.ts",
+          "line": 305,
+          "finding": "orphan agent after the server died on its own, pty process groups, unguarded second wipe, teardown tail longer than the margin: documented follow-ups",
+          "suggestion": "follow-up",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T04:05:34.782516+00:00",
-      "disposition": "orchestrator instruction: the campaign orchestrator runs the spec, code and doubt cascade at 3f-bis; the runner did not spawn it (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T04:42:25.534734+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6dcb0b2d3c30621b3d376e18cfce42b490205d18"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency and ordering",
+          "file": "integration-tests/e2e-webui/playwright.config.ts",
+          "line": null,
+          "finding": "Claim under doubt: a stuck run always ends and always writes a report — timeout 0 and no action timeout meant one hung click blocked forever; fixed with a real test timeout, action and navigation timeouts and a bounded finally; the re-review confirmed the finally cannot hang.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "integration-tests/e2e-webui/src/provision.ts",
+          "line": null,
+          "finding": "Claim under doubt: the temp HOME isolates the agent and a real pipeline can finish — no git identity in the temp HOME and the whole environment leaked; fixed with a gitconfig and an environment allowlist.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": "integration-tests/e2e-webui/README.md",
+          "line": null,
+          "finding": "Claim under doubt: the building agent cannot read the answer key — with bypassPermissions it can reach the repo via SHIPWRIGHT_MONOREPO_PATH; the README now says not handed to the agent; a hard barrier is a follow-up.",
+          "suggestion": "follow-up (accepted, documented)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "integration-tests/e2e-webui/src/auth.ts",
+          "line": null,
+          "finding": "Claim under doubt: a copied login cannot harm the operator login — refresh token rotation may log the operator out; the README prefers CLAUDE_CODE_OAUTH_TOKEN and states the risk.",
+          "suggestion": "documented",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T04:05:34.931783+00:00",
-      "disposition": "orchestrator instruction: the campaign orchestrator runs the spec, code and doubt cascade at 3f-bis; the runner did not spawn it (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T04:42:25.652920+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6dcb0b2d3c30621b3d376e18cfce42b490205d18"
     },
     "external_code": {
       "review_type": "external_code",
@@ -301,16 +397,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-26T04:05:34.598444+00:00",
-      "disposition": "orchestrator instruction: the campaign orchestrator runs the spec, code and doubt cascade at 3f-bis; the runner did not spawn it (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T04:42:25.405654+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6dcb0b2d3c30621b3d376e18cfce42b490205d18"
     },
     "plan_internal": {
       "review_type": "plan_internal",
