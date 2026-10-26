@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+  "date": "2026-10-25",
+  "section": "Iterate — feature: wizard brief keeps the stack profile it names",
+  "title": "A profile named in the brief wins over inference and is resolver-checked",
+  "context": "The WebUI wizard writes the chosen stack profile into the brief line, but brief_intake read no profile and derived it only from persistence, so a named profile was lost.",
+  "decision": "brief_profile.py finds the name (profile field or Stack profile: item), asks profile_resolver, and map_brief lets it win; an unusable name stays null with profile_error and exit 3.",
+  "consequences": "Additive keys only when a profile is named; the Stack profile: wording becomes a WebUI compatibility commitment; no WebUI change needed for the current output; adopt unchanged.",
+  "rationale": "One sibling module keeps brief_intake.py below its size at no growth, and the resolver stays the only authority on which file a name means.",
+  "rejected": "Validate only in write-config (no early warning); ask the WebUI to write JSON first (does not fix intake ignoring profiles).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-25-b2b-wizard-brief-explicit-profile-contract.md"
+}

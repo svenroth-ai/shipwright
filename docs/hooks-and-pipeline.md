@@ -5990,6 +5990,7 @@ finding OpenAI #12).
 | Step | Code | Reads | Writes |
 |---|---|---|---|
 | Intake | `brief_intake.py` routes a directory to `brief_dir_intake.intake_dir` (sibling module, loaded by file path, ADR-045) | the package | nothing; the result carries `profile`/`deploy_target`/`autonomy` from `brief.json` (brief fields override derived values) |
+| Intake (file / wizard brief) | `brief_intake.py` loads `brief_profile.py` (file path, ADR-045) only for a brief that can name a profile; it asks `profile_resolver.py` (project > user > bundled) | the brief; the named profile through the resolver | nothing; `profile` beats inference, an unusable name is `profile_error` + exit 3 (`profile_unusable`), a brief naming none never touches the resolver |
 | `write-config` (project plugin) | `write_run_config.py --brief-dir` | the package | refuses (exit 5) before writing; then `brief_dir` + `brief_package {package_sha256, approved_by, approved_at, fixture_approval_accepted}` in `shipwright_run_config.json` |
 | `write-config` (run plugin) | `brief_dir_intake.py record` right after `orchestrator.py write-config` | the package | the same two run_config keys |
 | Every resume, next and apply | `single-session-resume` / `-next` / `-apply` call `orchestrator_pkg/brief_resume_guard.py` first (code-enforced; the Project-phase gate also runs `brief_package_hash`) | `brief_dir` + the recorded hash from run_config | nothing; exit 3 = hash mismatch, changed approval, or missing record |

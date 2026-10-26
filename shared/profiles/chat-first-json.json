@@ -18,8 +18,8 @@
   },
 
   "dev_server": {
-    "command": "uv run uvicorn app.main:app --port 3900",
-    "host": "localhost",
+    "command": "uv run uvicorn app.main:app --host 127.0.0.1 --port 3900",
+    "host": "127.0.0.1",
     "scheme": "http",
     "port": 3900,
     "ready_path": "/api/health",
@@ -61,5 +61,5 @@
     "plugin": []
   },
 
-  "notes": "Backend: FastAPI served by uvicorn (add both to pyproject.toml at their latest versions). They are not listed under stack.backend on purpose: adopt scores a profile by the dependency names it declares, and a FastAPI entry would pull every FastAPI repo away from the profile that fits it. A bundled profile's e2e layer always runs through playwright_runner.py (npx playwright test with the json reporter), so testing.e2e.command documents that rather than selecting it. A chat-first app has no separate deploy step (deploy_target none): there is no deploy block and no CI template mapping for this profile, deliberately. The dev_server block is a single executable command without shell metacharacters because the WebUI preview starts only that block and ignores 'services'. /api/health must answer 200 once the app is up: dev_server.py readiness (which Browser Verify starts) and the smoke test (--health-path) wait on it."
+  "notes": "Backend: FastAPI served by uvicorn (add both to pyproject.toml at their latest versions). They are not listed under stack.backend on purpose: adopt scores a profile by the dependency names it declares, and a FastAPI entry would pull every FastAPI repo away from the profile that fits it. The e2e layer goes through playwright_runner.py (npx playwright test with the json reporter) when --cwd is given, so testing.e2e.command documents that rather than selecting it. The host is 127.0.0.1 everywhere (uvicorn --host, dev_server host, Playwright baseURL) so Node's localhost-to-::1 resolution cannot cause a false failure. A chat-first app has no separate deploy step (deploy_target none): there is no deploy block and no CI template mapping for this profile, deliberately. The dev_server block is a single executable command without shell metacharacters because the WebUI preview starts only that block and ignores 'services'. /api/health must answer 200 once the app is up: dev_server.py readiness (which Browser Verify starts) and the smoke test (--health-path) wait on it."
 }

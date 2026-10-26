@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b4b-windows-npx-browser-verify-url",
+  "date": "2026-10-25",
+  "section": "Iterate - bug: Windows-safe npx spawn and Browser Verify URL",
+  "title": "Resolve npx per platform and pass the profile URL to Browser Verify",
+  "context": "B4 doubt review found bare npx spawns fail on Windows (npx.cmd), the Browser Verify command omitted --url, smoke and Browser Verify disagreed on URL precedence, and localhost can resolve to ::1 for Node while uvicorn listens on IPv4.",
+  "decision": "playwright_runner and browser_verify resolve npx via the shared resolve_executable (argv arrays, no shell). browser-verify.md carries --url in its code block. Precedence is profile dev_server, then build_config dev_url. chat-first-json and step-7 guidance use 127.0.0.1 everywhere.",
+  "consequences": "Windows runs (campaign B7) no longer fail at spawn. playwright_runner loads the shared helper by file path (plugin has its own lib package, ADR-045) with a shutil.which fallback.",
+  "rationale": "Same resolver playwright_setup.py already uses; no shell=True keeps profile strings out of a shell.",
+  "rejected": "shell=True (injection surface); import lib.cmd_resolver from the plugin (lib name collision).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

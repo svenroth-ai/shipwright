@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 The `Stack profile:` value is parsed out of free prose (\"`<idea> (Intake - ...; Stack profile: <name>; ...)`\"). Names containing `;`, `)` or newlines, an idea that itself contains \"Stack profile:\", a truncated trailer, or a double-occurrence of the item are all plausible and unhandled in the plan. **Suggestion:** anchor the parse to the `(Intake ...)` trailer specifically, take the last `Stack profile:` occurrence inside it, strip at `;`/`)`, and add tests for a name containing special characters and a trailer containing the literal string \"Stack profile:\" in the idea.\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 Plan point 2 introduces the alias `stack_profile` \u2192 `profile`. If a brief carries both keys with different values, precedence is undefined, and the \"explicit value always beats inference\" rule becomes ambiguous. **Suggestion:** define precedence explicitly (e.g., `profile` wins, or refuse with a warning on conflict) and test it.\n\n- **Category: risk** \u2014 **Severity: medium** \u2014 \"Env questions follow the chosen profile\" changes the meaning of the persistence answer when the brief names a profile that implies a different persistence setup than the wizard's persistence answer. This is a behaviour change for existing briefs that name a profile \u2014 the spec says \"no profile in the brief means unchanged behaviour\", but profile-present briefs may get different env answers than today's inference. **Suggestion:** confirm with the operator (Sven's request) that env re-derivation is intended, and add a test for profile-present + persistence-answer-mismatch.\n\n- **Category: risk** \u2014 **Severity: low** \u2014 New CLI exit code 3 on `profile_error`: any caller (adopt, run skill scripts, CI) that switches on exit codes or treats non-zero as generic failure should be checked before this lands. If adopt calls the CLI, its tests staying green is the gate \u2014 call that out as a verification step, not an assumption. **Suggestion:** grep for callers of the intake CLI and document the exit code in brief-intake.md.\n\n- **Category: dependency** \u2014 **Severity: medium** \u2014 The spec requires the brief-contract finding (field name, version, and any WebUI-side change) recorded in the ADR and the result. The mini-plan's \"Finding\" section does the investigation but never states the conclusion \"no WebUI change needed / WebUI must change X\". Since the WebUI writes only prose (no structured `profile` field today), your `brief_profile.py` accepting a structured `profile` key is speculative for this route \u2014 harmless if additive, but say so. **Suggestion:** in the result, state explicitly: contract is the prose trailer in `contract.ts composeNewBrief`, version = none for the file route, WebUI change = none required (or name it if one is).\n\n- **Category: risk** \u2014 **Severity: low** \u2014 Cosmetic \"synonym tables re-wrapped\" and \"duplicate sibling loaders folded into _sibling()\" are refactors smuggled into a behavioural change; they expand the diff that reviewers and adopt must re-verify for zero user value. **Suggestion:** keep the refactor if it's genuinely needed to stay under the 300-line cap, otherwise split it out or drop it. The net \u22123 lines is not a goal in itself.\n\n- **Category: security** \u2014 **Severity: low** \u2014 Good: resolver-only resolution, control-character stripping, never reading profile files by path. One gap: the plan doesn't say whether the *profile name* is echoed into warnings/run-config output; make sure the warning text (which may be shown to agents) includes the operator-only NEVER-rule context consistent with the brief_dir_intake rewording, so an agent seeing \"profile rejected\" doesn't improvise setting env vars. **Suggestion:** mirror the operator-only wording pattern in profile-error warnings.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 Unresolvable-name UX: the plan returns `profile: null, profile_requested, profile_error` but /shipwright-run then \"runs with no profile\" \u2014 exactly the silent degradation the operator complained about. **Suggestion:** confirm that downstream (run config / get-next-step) treats `profile_requested + profile_error` as a hard stop or a visible per-run warning, not just an intake-side warning that later phases ignore. Add this assertion to the e2e test.\n\nThe approach is fundamentally sound: single decision point in intake, resolver-mediated, additive contract, and the carry-over is addressed with correct scope discipline. The findings above are refinements, mostly around prose-parsing edge cases and making the \"loud warning\" actually loud downstream.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency \u00b7 Severity: medium**  \n   **Finding:** The plan states the contract finding but does not include the required ADR update. It also does not establish how the prose-only WebUI output relates to the file formats accepted by run and adopt, or explicitly state whether the WebUI needs a change.  \n   **Suggestion:** Record the contract locations, supported fields, version expectations, and prose compatibility in the ADR. State explicitly whether the existing WebUI output works unchanged.\n\n2. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** Invalid profiles produce `profile: null` plus an error and CLI exit code 3, but the plan does not specify how Step 4 handles that exit. If the caller continues with the JSON payload, the original silent fallback remains possible.  \n   **Suggestion:** Make a profile validation error stop intake before config writing or detection. Extend the end-to-end test to prove an unknown profile produces a clear diagnostic and cannot create or update a run config with a fallback profile.\n\n3. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** Profile extraction lacks explicit rules for conflicting fields, malformed values, and ambiguous prose. In particular, a present but empty or non-string `profile` must not accidentally trigger inference or select a trailer value.  \n   **Suggestion:** Define deterministic precedence for `profile`, `stack_profile`, and the wizard trailer. Distinguish absence from invalid input, reject malformed explicit values, and restrict prose extraction to the recognized wizard trailer. Test conflicting fields and malformed explicit values.\n\n4. **Category: dependency \u00b7 Severity: medium**  \n   **Finding:** The listed tests do not explicitly cover adopt\u2019s separate test root or the required operator-only refusal wording. Shared intake changes and sibling loading can affect adopt even when run\u2019s tests pass.  \n   **Suggestion:** Add the refusal-message assertion, run adopt\u2019s existing suite, and verify the new sibling loads through adopt\u2019s entry point. Include explicit project/user profile resolution coverage.\n\nThe approach is sound: intake is the right place to preserve and validate the choice, and the sibling module respects the size constraint. The error propagation, contract documentation, and required regression coverage need to be made explicit before implementation proceeds.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+    "at": "2026-10-25T17:49:04.727349+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

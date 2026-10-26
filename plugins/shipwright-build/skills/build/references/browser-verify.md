@@ -21,6 +21,7 @@ If `has_frontend_changes == false`, skip. Otherwise Browser Verify is mandatory.
 
 ## Prerequisite Self-Healing (before running — do NOT skip)
 
+- URL precedence (same as `dev_server.py` and the test phase smoke test): the profile's `dev_server` block first, then `shipwright_build_config.json` `dev_url`.
 - A profile that declares `dev_server` (for example `chat-first-json`, served pane on port 3900) needs nothing here: step 2 starts exactly that block and it never falls back to the `npm run dev` default.
 - If profile has no `dev_server` config but `shipwright_build_config.json` has `dev_url`: use that URL.
 - If neither: autodetect via `package.json` scripts (Vite 5173 / Next 3000 / Astro 4321).
@@ -48,10 +49,10 @@ If profile has no `dev_server` config: check `shipwright_build_config.json` for 
 3. **Run browser verify:**
 
 ```bash
-uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
+uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root} --url "{dev_url}"
 ```
 
-`browser_verify.py` defaults to `http://localhost:3000`. When the profile's `dev_server` block (or `dev_url`) names another port, pass it: `--url "{scheme}://{host}:{port}"` (for `chat-first-json`: `--url http://localhost:3900`).
+`{dev_url}` is the URL step 2 started: the profile's `dev_server` block (`{scheme}://{host}:{port}`; for `chat-first-json`: `http://127.0.0.1:3900`), else `shipwright_build_config.json` `dev_url`, else `http://localhost:3000` (the `browser_verify.py` default). Always pass it: without `--url` a profile on another port is checked against the wrong address.
 
 4. **Evaluate result:**
    - **Success** (no console errors, page loads): Continue to Step 5

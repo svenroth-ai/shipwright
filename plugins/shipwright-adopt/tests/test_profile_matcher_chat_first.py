@@ -12,7 +12,7 @@ import pytest
 from lib.profile_matcher import match_profile
 from lib.stack_detector import detect_stack
 
-pytestmark = pytest.mark.covers("FR-01.06")
+pytestmark = pytest.mark.covers("FR-01.13")
 
 _PROFILES = Path(__file__).resolve().parents[3] / "shared" / "profiles"
 

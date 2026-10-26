@@ -4,6 +4,7 @@ import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import pytest
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -83,3 +84,37 @@ def test_parses_console_errors(tmp_path):
 
     assert result["success"] is False
     assert len(result["console_errors"]) == 1
+
+
+@pytest.mark.covers("FR-01.05")
+def test_resolves_npx_via_resolver(tmp_path, monkeypatch):
+    """Windows-style npx.cmd: argv[0] is the resolved path, no shell."""
+    import browser_verify
+
+    e2e = tmp_path / "e2e"
+    e2e.mkdir()
+    (e2e / "browser-verify.ts").write_text("// dummy")
+    monkeypatch.setattr(browser_verify, "resolve_executable", lambda name: f"C:/node/{name}.cmd")
+    with patch("browser_verify.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        run_browser_verify(tmp_path, url="http://127.0.0.1:3900")
+    argv = mock_run.call_args.args[0]
+    assert argv[0] == "C:/node/npx.cmd"
+    assert argv[1] == "tsx"
+    assert "http://127.0.0.1:3900" in argv
+    assert not mock_run.call_args.kwargs.get("shell")
+
+
+@pytest.mark.covers("FR-01.05")
+def test_module_adds_its_own_dir_to_sys_path_when_missing(monkeypatch):
+    import importlib.util
+
+    import browser_verify
+
+    here = str(Path(browser_verify.__file__).resolve().parent)
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != here])
+    spec = importlib.util.spec_from_file_location("_browser_verify_fresh", browser_verify.__file__)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert sys.path[0] == here
+    assert callable(module.resolve_executable)

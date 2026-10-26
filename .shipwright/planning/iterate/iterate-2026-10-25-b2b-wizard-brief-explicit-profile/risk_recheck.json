@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b2b-wizard-brief-explicit-profile",
+  "risk_recheck": {
+    "changed_file_count": 8,
+    "diff_loc": 386,
+    "risk_flags": [
+      "touches_billing",
+      "touches_migrations"
+    ],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}
