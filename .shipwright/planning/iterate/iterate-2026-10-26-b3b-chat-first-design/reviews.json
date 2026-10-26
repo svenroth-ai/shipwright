@@ -150,29 +150,98 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py",
+          "line": 106,
+          "finding": "brief.json parsed in two places on re-entry and first apply",
+          "suggestion": "read once before the re-entry branch (edge, optional)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/brief_chat_plan.py",
+          "line": 284,
+          "finding": "flow_page evaluates (panes or {}) three times",
+          "suggestion": "bind panes = panes or {} once (edge, optional)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py",
+          "line": 108,
+          "finding": "bad_chat_map on re-entry replaces collected applied_files_missing issues; unreachable after hash verification",
+          "suggestion": "leave as is",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/tests/test_brief_chat_plan.py",
+          "line": 526,
+          "finding": "wall-clock 5 s limit in chip-rule timing test may flake on loaded Windows CI",
+          "suggestion": "keep the limit generous (optional)",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T01:35:20.500111+00:00",
-      "disposition": "the orchestrator runs the spec/code/doubt reviewers for this unit (instruction of the campaign orchestrator); the runner does not spawn the cascade",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T02:00:50.609183+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1e73fb24a977b6fef24cb5a04caebb0f38049f7"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "hidden coupling and blast radius",
+          "file": "shared/scripts/tools/brief_chat_plan.py",
+          "line": null,
+          "finding": "Claim under doubt: brief_chat_first_applied proves every golden path has its generated flow mockup — A pre-existing flow file with the same name is kept on first apply and listed in kept_existing_differs; the verifier only checks existence. The case is reported, not silent.",
+          "suggestion": "State in the docs that a kept_existing_differs flow means the check proves only existence (edge).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary and contract",
+          "file": "shared/scripts/tools/brief_chat_plan.py",
+          "line": null,
+          "finding": "Claim under doubt: the generated flow page is standalone — flow_page embeds the mockup as escaped srcdoc so the standalone gate does not see external refs inside it; today the screens/ copies of the same mockups are scanned, so the package stops at first apply.",
+          "suggestion": "Document that the flow's standalone status rests on the screens/ scan (edge).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py",
+          "line": null,
+          "finding": "Claim under doubt: re-entry stays a no-op for every already applied package — A chat-first package applied with B3a-only code has a marker but no flows and now reports applied_files_missing. No chat-first fixture existed before B3b so this is unlikely in a live run; repair is delete marker and re-run.",
+          "suggestion": "Confirm no live B3a-only chat-first run exists (edge).",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T01:35:20.691964+00:00",
-      "disposition": "Stage 3 runs behind the orchestrator's Stage 2",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T02:00:50.755577+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1e73fb24a977b6fef24cb5a04caebb0f38049f7"
     },
     "external_code": {
       "review_type": "external_code",
@@ -256,16 +325,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-26T01:35:20.291612+00:00",
-      "disposition": "the orchestrator runs the spec/code/doubt reviewers for this unit (instruction of the campaign orchestrator); the runner does not spawn the cascade",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T02:00:50.493393+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1e73fb24a977b6fef24cb5a04caebb0f38049f7"
     },
     "plan_internal": {
       "review_type": "plan_internal",
