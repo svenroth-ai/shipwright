@@ -39,8 +39,9 @@ export class Report {
     now: Date = new Date(),
   ) {
     this.startedIso = now.toISOString();
-    this.dir = path.join(root, this.startedIso.replace(/[:.]/g, "-"));
-    fs.mkdirSync(this.dir, { recursive: true });
+    // The folder name is the timestamp plus a random suffix (mkdtemp), so it cannot be guessed or pre-created.
+    fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+    this.dir = fs.mkdtempSync(path.join(root, `${this.startedIso.replace(/[:.]/g, "-")}-`));
   }
 
   /** Records a step; a screenshot failure is noted in the step, never thrown. */
@@ -93,7 +94,7 @@ export class Report {
   /** Writes report.md; callable repeatedly so a failed or aborted run still leaves a report. */
   write(status: string): string {
     const file = path.join(this.dir, "report.md");
-    fs.writeFileSync(file, this.render(status), "utf8");
+    fs.writeFileSync(file, this.render(status), { encoding: "utf8", mode: 0o600 });
     return file;
   }
 

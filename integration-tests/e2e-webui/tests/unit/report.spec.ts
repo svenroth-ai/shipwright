@@ -49,6 +49,34 @@ test("report: every placeholder of the committed template is filled, screenshots
 });
 
 // @covers FR-01.04
+test("report: the folder name is unpredictable, owner-only on POSIX, and two reports never share a folder", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-rep-"));
+  try {
+    const when = new Date("2026-01-02T03:04:05.678Z");
+    const meta = { authSource: "env token", config: {} };
+    const list = new Checklist(parseChecklist(expected));
+    const a = new Report(path.join(root, "e2e-report"), meta, list, template, when);
+    const b = new Report(path.join(root, "e2e-report"), meta, list, template, when);
+    expect(a.dir).not.toBe(b.dir);
+    expect(path.basename(a.dir)).toMatch(/^2026-01-02T03-04-05-678Z-[A-Za-z0-9]{6}$/);
+    if (process.platform !== "win32") {
+      expect(fs.statSync(a.dir).mode & 0o777).toBe(0o700);
+      expect(fs.statSync(a.write("complete")).mode & 0o777).toBe(0o600);
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.04
+test("checklist: a backslash and a pipe in a cell are both escaped, every occurrence", () => {
+  const list = new Checklist(parseChecklist(expected));
+  list.record("H01", "pass", "a\\|b | c\\d \\ e|f");
+  const row = list.toMarkdown().split("\n").find((l) => l.startsWith("| H01 |")) ?? "";
+  expect(row).toContain("a\\\\\\|b \\| c\\\\d \\\\ e\\|f");
+});
+
+// @covers FR-01.04
 test("idle watch: only a changing snapshot counts as progress", () => {
   let now = 0;
   const watch = new IdleWatch(20 * 60_000, () => now);

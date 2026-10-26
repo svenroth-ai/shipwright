@@ -42,7 +42,7 @@ export interface LoginCopy {
 /** Copies the login file into tempHome/.claude and returns a handle that deletes it again. */
 export function copyLogin(realHome: string, tempHome: string): LoginCopy {
   const target = loginFile(tempHome);
-  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o700 });
   fs.copyFileSync(loginFile(realHome), target);
   // A copy keeps the source mtime on Windows; stamp it now so the stale-copy scrub never mistakes a live copy for an old one.
   const now = new Date();

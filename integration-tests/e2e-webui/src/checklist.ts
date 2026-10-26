@@ -43,5 +43,6 @@ export class Checklist {
 }
 
 function cell(text: string): string {
-  return text.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  // Backslashes first, so an existing backslash cannot cancel the escape added for a pipe.
+  return text.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }

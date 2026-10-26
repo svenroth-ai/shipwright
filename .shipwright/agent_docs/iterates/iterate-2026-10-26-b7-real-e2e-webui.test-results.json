@@ -115,9 +115,9 @@
       "surface": "web",
       "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test -c integration-tests/e2e-webui/playwright.config.ts integration-tests/e2e-webui/tests/unit",
       "exit_code": 0,
-      "tests_run": 18,
+      "tests_run": 20,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B7\\.shipwright\\runs\\iterate-2026-10-26-b7-real-e2e-webui\\surface_verification.log",
-      "timestamp": "2026-10-26T04:31:54.762Z",
+      "timestamp": "2026-10-26T05:12:33.981Z",
       "attempts": 1
     }
   },
@@ -129,7 +129,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
-    "commit": "9ebe7b66b38d76a5ab89e2d40e2cc356998df2ac",
+    "commit": "c28234c03354cdbefc65f6984dcab87be6e1f29e",
     "dirty": true,
     "base": null,
     "release": null

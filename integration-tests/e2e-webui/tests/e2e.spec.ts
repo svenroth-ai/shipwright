@@ -60,12 +60,13 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
   if (notReady.length > 0) throw new Error(`Refusing to start: WebUI checkout not ready (npm ci in server/ and client/): ${notReady.join(", ")}`);
 
   const deadline = Date.now() + cfg.maxMinutes * 60_000; // one overall deadline, from the start of the run
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const runDir = path.join(cfg.workdir, `run-${stamp}`);
+  // The run folder gets an unpredictable name (mkdtemp, prefix run- is what the stale-login scrub scans) and owner-only rights.
+  fs.mkdirSync(cfg.workdir, { recursive: true, mode: 0o700 });
+  const runDir = fs.mkdtempSync(path.join(cfg.workdir, "run-"));
   const tempHome = path.join(runDir, "home");
   const projectPath = path.join(runDir, "project");
-  fs.mkdirSync(tempHome, { recursive: true });
-  fs.mkdirSync(projectPath, { recursive: true });
+  fs.mkdirSync(tempHome, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(projectPath, { recursive: true, mode: 0o700 });
 
   const checklist = new Checklist(parseChecklist(fs.readFileSync(expectedFile, "utf8")));
   const template = fs.readFileSync(path.join(projectRoot, "report-template.md"), "utf8");
