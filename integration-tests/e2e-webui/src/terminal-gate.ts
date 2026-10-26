@@ -27,9 +27,24 @@ export function needsTerminalAnswer(terminalText: string, lastAnsweredMs: number
   return readTerminalMenu(terminalText) !== null && nowMs - lastAnsweredMs > REANSWER_AFTER_MS;
 }
 
+/**
+ * Claude Code's own safety dialog ("Dangerous rm operation ... Do you want to proceed? 1. Yes 2. No") also shows
+ * under bypassPermissions. It is refused, never approved: the dialog itself tells the agent to rewrite the command
+ * safely, and "Yes" would switch the safety net off.
+ */
+export function isDangerousOperationPrompt(terminalText: string): boolean {
+  return /Dangerous [^\n]*operation/i.test(terminalText) && /Do you want to proceed\?/.test(terminalText) && /[❯>]\s*1\.\s*Yes/.test(terminalText);
+}
+
 /** Presses Enter on the highlighted first option when a menu is on screen; returns what was answered. */
 export async function answerTerminalMenu(page: Page, lastAnsweredMs: number): Promise<TerminalMenu | null> {
   const text = await page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => "");
+  if (Date.now() - lastAnsweredMs > REANSWER_AFTER_MS && isDangerousOperationPrompt(text)) {
+    await page.locator(".xterm-helper-textarea").first().focus({ timeout: 5000 });
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    return { question: "Claude Code safety dialog: dangerous operation", option: "No (refused; the agent rewrites the command)" };
+  }
   if (!needsTerminalAnswer(text, lastAnsweredMs, Date.now())) return null;
   const menu = readTerminalMenu(text);
   await page.locator(".xterm-helper-textarea").first().focus({ timeout: 5000 });

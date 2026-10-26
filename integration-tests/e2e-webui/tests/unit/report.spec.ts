@@ -7,7 +7,7 @@ import { runChatScript, type ChatMap, type Send } from "../../src/chat.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { IdleWatch } from "../../src/idle.js";
 import { Report } from "../../src/report.js";
-import { needsTerminalAnswer, readTerminalMenu } from "../../src/terminal-gate.js";
+import { isDangerousOperationPrompt, needsTerminalAnswer, readTerminalMenu } from "../../src/terminal-gate.js";
 
 const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const fixtures = path.join(repo, "integration-tests", "fixtures");
@@ -24,6 +24,10 @@ test("terminal menu: the highlighted first option with its footer, recorded, nev
   expect(needsTerminalAnswer(commit, 990_000, 1_000_000)).toBe(false);
   expect(needsTerminalAnswer(approve.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
   expect(needsTerminalAnswer(["1. Not highlighted", "Enter to select"].join("\n"), 0, 1_000_000)).toBe(false);
+  const danger = ["Dangerous rm operation on possibly-empty variable path:", "Do you want to proceed?", "❯ 1. Yes", "2. No"].join("\n");
+  expect(isDangerousOperationPrompt(danger)).toBe(true);
+  expect(isDangerousOperationPrompt(danger.replace("Dangerous rm", "Plain rm"))).toBe(false);
+  expect(needsTerminalAnswer(danger, 0, 1_000_000)).toBe(false);
   const submit = ["Review your answers", "Ready to submit your answers?", "❯ 1. Submit answers", "2. Cancel"].join("\n");
   expect(readTerminalMenu(submit)?.option).toBe("Submit answers");
 });
