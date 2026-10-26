@@ -1118,7 +1118,8 @@ After build completes: shows split summary table. After test completes: shows te
 > via `shared/scripts/tools/resolve_gate_policy.py`; the full contract is
 > `shared/prompts/single-session-gate-discipline.md` and the catalog is documented
 > in `shared/config/gate_catalog.md`, generated beside its JSON source. Under
-> `autonomy: unattended` the resolver also reports a gate's reviewed `unattended_answer`
+> an explicit `--autonomy unattended` (passed by the master/CLI, never defaulted from
+> `run_config`) the resolver also reports a gate's reviewed `unattended_answer`
 > (`lib/gate_unattended.py`: only `orchestrator-approve`, non-constitution, non-denylisted
 > gates may carry one; `should_stop` is unchanged, the master/CLI applies it). The
 > mechanism is **inert** — every gate resolves to
