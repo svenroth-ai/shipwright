@@ -50,7 +50,7 @@ uv run "{shared_root}/scripts/tools/get_phase_context.py" \
 Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from the returned
 `mode`, which is exactly one of:
 
-- **`pipeline`** — you were dispatched. Enforce gates, and do the phase's real work.
+- **`pipeline`** — you were dispatched. Enforce gates (Single-Session Gate Discipline: [first-actions](references/first-actions.md)), and do the phase's real work.
   **Do NOT call `orchestrator.py update-step`** (nor any other run-state write): in a
   driven run `single-session-apply` owns phase completion — it records your status when
   it applies your result. See `plugins/shipwright-run/skills/run/SKILL.md`. (`update-step`
@@ -140,7 +140,7 @@ Rules:
 
 If no previous tag exists: suggest `v0.1.0`.
 
-**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
+**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.version-suggestion`):
 Accept the suggested version automatically. No prompt.
 
 **Guided mode** (default):
@@ -248,7 +248,7 @@ format details.
 
 **Goal:** Show the generated changelog entry to the user.
 
-**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
+**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.entry-preview`):
 Skip preview confirmation. Proceed directly to Step 6.
 
 **Guided mode** (default):

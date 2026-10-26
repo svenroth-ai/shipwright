@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. The mechanism is INERT (every gate resolves to 'interactive') for any config that is not an explicit single_session run — a standalone or adopted project is unaffected. The sibling gate_catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) — edit here, then regenerate.",
+  "description": "Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/test/changelog/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. The mechanism is INERT (every gate resolves to 'interactive') for any config that is not an explicit single_session run — a standalone or adopted project is unaffected. The sibling gate_catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) — edit here, then regenerate.",
   "policies": {
     "auto-default": "Under single_session the subagent proceeds with the documented default_answer and does NOT call AskUserQuestion / end the turn.",
     "orchestrator-approve": "Under single_session the subagent STOPS and returns a gate-pending result to the orchestrator to surface to a human; it never auto-answers. Under autonomy 'unattended' the master/CLI auto-approves ONLY a gate with constitution=false that carries a reviewed `unattended_answer` (see `unattended_policy`); every other orchestrator-approve gate escalates. A future autonomous orchestrator MAY surface-and-wait or auto-approve ONLY gates with constitution=false; a constitution=true orchestrator-approve gate (e.g. skip-test-layer, >3 failed fixes, a missing secret) always reaches a human.",
@@ -149,7 +149,7 @@
       "unattended_answer": "Approve (only with a valid hash-verified Brief package and a passing FR-coverage self-check).",
       "constitution": false,
       "fires": "always",
-      "summary": "Step 3.5: first pixels-seen checkpoint (3 preview screens). SENSITIVE: a human must eyeball the visual direction — never auto-approved."
+      "summary": "Step 3.5: first pixels-seen checkpoint (3 preview screens). SENSITIVE: a human must eyeball the visual direction; from U3 an unattended run answers it with the reviewed unattended_answer, only with a valid hash-verified package and FR-coverage self-check."
     },
     {
       "id": "design.chrome-nav-confirm",
@@ -168,7 +168,7 @@
       "unattended_answer": "Approve (only with a valid hash-verified Brief package and a passing FR-coverage self-check).",
       "constitution": false,
       "fires": "always",
-      "summary": "Step 8.5: all-screens sign-off + phase exit. SENSITIVE: the design phase's human approval gate — subagent runs the automated FR-Coverage self-check, then stops for a human."
+      "summary": "Step 8.5: all-screens sign-off + phase exit. SENSITIVE: the design phase's human approval gate — subagent runs the automated FR-Coverage self-check, then stops; from U3 an unattended run answers it with the reviewed unattended_answer."
     },
     {
       "id": "design.iterate-what-to-change",
@@ -187,7 +187,7 @@
       "unattended_answer": "Approve (only with a valid hash-verified Brief package).",
       "constitution": false,
       "fires": "never",
-      "summary": "Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop."
+      "summary": "Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop; from U3 an unattended run also answers it with the reviewed unattended_answer."
     },
     {
       "id": "plan.validate-input",
@@ -394,7 +394,7 @@
       "default_answer": null,
       "constitution": true,
       "fires": "conditional",
-      "summary": "Smoke / E2E / design-fidelity still failing after 2 failed fix attempts on the same root cause, or groups parked. Constitution ASK-FIRST + NEVER 'loop >3 debugging attempts without escalating'; also covers 'skipping test layers' (a layer is never silently dropped)."
+      "summary": "Smoke / E2E / design-fidelity still failing after the skill's fix retries (max 3), or groups parked. Constitution ASK-FIRST + NEVER 'loop >3 debugging attempts without escalating'; also covers 'skipping test layers' (a layer is never silently dropped)."
     },
     {
       "id": "changelog.out-of-sequence-continue",

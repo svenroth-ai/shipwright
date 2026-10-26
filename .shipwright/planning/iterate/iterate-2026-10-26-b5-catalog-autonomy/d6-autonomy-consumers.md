@@ -1,7 +1,7 @@
 # D6 autonomy consumer list (B5)
 
 Source: `git grep -nE "autonomy|autonomous" -- plugins shared` (tracked files, tests and *.jsonl excluded).
-278 matching lines in 85 files. Rule: `unattended` behaves at least as `autonomous` at every site keyed on `autonomous`;
+275 matching lines in 85 files. Rule: `unattended` behaves at least as `autonomous` at every site keyed on `autonomous`;
 a site keyed on human presence (the phase-gate override) deliberately keeps refusing it.
 
 | file | hits | disposition |
@@ -57,7 +57,7 @@ a site keyed on human presence (the phase-gate override) deliberately keeps refu
 | `plugins/shipwright-test/skills/test/references/step-2-smoke-test.md` | 1 | REVIEWED: no behavior keyed on the autonomy value |
 | `plugins/shipwright-test/skills/test/references/step-3-playwright-e2e.md` | 2 | CHANGED: auto-fix mode |
 | `shared/config/gate_catalog.json` | 13 | CHANGED: unattended_answer + test/changelog gates (SSoT) |
-| `shared/config/gate_catalog.md` | 9 | REVIEWED: no behavior keyed on the autonomy value |
+| `shared/config/gate_catalog.md` | 9 | GENERATED from gate_catalog.json (regenerated) |
 | `shared/constitution.md` | 5 | CHANGED: confirm tables name unattended (line 73 already 'regardless of autonomy level'; override paragraph already refuses unattended) |
 | `shared/prompts/single-session-gate-discipline.md` | 4 | CHANGED: Autonomy unattended section |
 | `shared/schemas/run_config.v2.schema.json` | 3 | CHANGED: enum += unattended, supervised (adopt writes it) |
@@ -72,8 +72,8 @@ a site keyed on human presence (the phase-gate override) deliberately keeps refu
 | `shared/scripts/lib/campaign_graph.py` | 1 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/lib/campaign_session_lock.py` | 1 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/lib/campaign_wave.py` | 2 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
-| `shared/scripts/lib/gate_policy.py` | 8 | CHANGED: validator, resolver autonomy input |
-| `shared/scripts/lib/gate_unattended.py` | 3 | REVIEWED: no behavior keyed on the autonomy value |
+| `shared/scripts/lib/gate_policy.py` | 5 | CHANGED: validator, resolver autonomy input |
+| `shared/scripts/lib/gate_unattended.py` | 3 | NEW: unattended-answer rules (denylist, validator check, resolver lookup) |
 | `shared/scripts/lib/iterate_stop_guard.py` | 6 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/lib/iterate_stop_guard_transcript.py` | 16 | UNRELATED: iterate's --autonomous flag, not run_config.autonomy |
 | `shared/scripts/lib/loop_claim.py` | 2 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
@@ -85,7 +85,7 @@ a site keyed on human presence (the phase-gate override) deliberately keeps refu
 | `shared/scripts/tools/record_ci_supplychain_ack.py` | 2 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/tools/record_hard_blocker.py` | 2 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/tools/reset_tool_counter.py` | 1 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
-| `shared/scripts/tools/resolve_gate_policy.py` | 7 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
+| `shared/scripts/tools/resolve_gate_policy.py` | 7 | CHANGED: explicit --autonomy only (never defaulted from run_config), reports unattended_answer |
 | `shared/scripts/tools/review_unavailable_note.py` | 3 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/tools/verifiers/_iterate_run_id.py` | 1 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `shared/scripts/tools/verifiers/integration_coverage.py` | 2 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
@@ -122,10 +122,10 @@ plugins/shipwright-build/skills/build/references/migration-safety.md:41:regardle
 plugins/shipwright-build/skills/build/references/migration-safety.md:76:**Migration apply is a serialized critical section.** In autonomous / unattended mode with parallel section-builders, only one agent at a time may create/apply migrations. See section-builder agent docs for serialization protocol.
 plugins/shipwright-build/skills/build/references/migration-safety.md:89:In autonomous / unattended subagent mode: log the manual step as a warning, skip tests matching `blocks_tests_for` keywords, and flag in result JSON.
 plugins/shipwright-build/skills/build/references/requirement-writeback.md:47:guided and autonomous paths cannot drift apart.
-plugins/shipwright-changelog/skills/changelog/SKILL.md:143:**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
-plugins/shipwright-changelog/skills/changelog/SKILL.md:251:**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
+plugins/shipwright-changelog/skills/changelog/SKILL.md:143:**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.version-suggestion`):
+plugins/shipwright-changelog/skills/changelog/SKILL.md:251:**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.entry-preview`):
 plugins/shipwright-changelog/skills/changelog/references/first-actions.md:6:(`unattended` autonomy behaves at least as `autonomous`). Resolve before you stop:
-plugins/shipwright-changelog/skills/changelog/references/first-actions.md:17:Gates: `changelog.version-suggestion` and `changelog.entry-preview` are `auto-default` (accept), matching the autonomous-mode text in Steps 4 and 5.
+plugins/shipwright-changelog/skills/changelog/references/first-actions.md:20:suggested version and the entry preview, whatever the run's autonomy. The phase-runner has no
 plugins/shipwright-deploy/skills/deploy/SKILL.md:75:Under single-session pipeline mode (`run_config.mode == "single_session"`), interactive gates follow a per-gate policy — resolve via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase deploy --list`. PROD / destructive-migration / rollback gates stay **hard-stop** (explicit human confirmation, always, regardless of autonomy, `unattended` included). Full contract: `shared/prompts/single-session-gate-discipline.md`.
 plugins/shipwright-iterate/agents/sub-iterate-runner.md:10:You are an autonomous iterate agent executing a single sub-iterate within a campaign.
 plugins/shipwright-iterate/agents/sub-iterate-runner.md:117:- **Branch B — `missing_keys`:** autonomous; cannot prompt. Log, proceed, record the opt-out;
@@ -205,13 +205,13 @@ plugins/shipwright-run/scripts/lib/single_session/loop_state.py:14:autonomous lo
 plugins/shipwright-run/skills/run/SKILL.md:102:| **Autonomy** | Default: `guided` (phases stop at gates for you); user can choose `autonomous` or `unattended` (approved Brief package only) |
 plugins/shipwright-run/skills/run/SKILL.md:116:Autonomy:   {guided | autonomous | unattended}
 plugins/shipwright-run/skills/run/SKILL.md:132:    - "Change autonomy"
-plugins/shipwright-run/skills/run/SKILL.md:150:  --autonomy "{autonomy}" \
-plugins/shipwright-run/skills/run/SKILL.md:223:person (guided) or stop failed (autonomous). Completing over the checks
-plugins/shipwright-run/skills/run/SKILL.md:381:- [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous vs unattended behavior (within phases)
+plugins/shipwright-run/skills/run/SKILL.md:152:  --autonomy "{autonomy}" \
+plugins/shipwright-run/skills/run/SKILL.md:225:person (guided) or stop failed (autonomous). Completing over the checks
+plugins/shipwright-run/skills/run/SKILL.md:383:- [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous vs unattended behavior (within phases)
 plugins/shipwright-run/skills/run/references/autonomy-levels.md:14:Interactive process through Spec and Design with autonomous Build and Test
 plugins/shipwright-run/skills/run/references/autonomy-levels.md:33:Autonomous, with no human reachable. **Rule:** every site keyed on "autonomous" treats
-plugins/shipwright-run/skills/run/references/autonomy-levels.md:50:  "autonomy": "guided"
-plugins/shipwright-run/skills/run/references/autonomy-levels.md:56:/shipwright-run --autonomous "Build a todo app"
+plugins/shipwright-run/skills/run/references/autonomy-levels.md:51:  "autonomy": "guided"
+plugins/shipwright-run/skills/run/references/autonomy-levels.md:57:/shipwright-run --autonomous "Build a todo app"
 plugins/shipwright-run/skills/run/references/brief-intake.md:22:The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`, `ux_shape`,
 plugins/shipwright-run/skills/run/references/brief-intake.md:25:- **Brief fields override derived values:** `profile`, `deploy_target` and `autonomy` come from
 plugins/shipwright-run/skills/run/references/brief-intake.md:61:- The CLI `--autonomy` accepts `guided|autonomous|unattended`. A package's `unattended` is written as
@@ -259,9 +259,9 @@ shared/constitution.md:81:  `autonomous` run can override (`unattended`, or no a
 shared/constitution.md:115:| PROD deploy | Always confirm, even in autonomous or unattended mode |
 shared/constitution.md:116:| Destructive SQL | Always confirm, even in autonomous or unattended mode |
 shared/prompts/single-session-gate-discipline.md:33:| `hard-stop` | **Still STOP.** An explicit human decision is required regardless of autonomy: PROD deploy, destructive SQL, migration-apply failure, rollback (`shared/constitution.md` ASK FIRST / NEVER). |
-shared/prompts/single-session-gate-discipline.md:37:Under `autonomy: unattended` the resolver adds `unattended_answer` to a gate's
-shared/prompts/single-session-gate-discipline.md:42:behaves at least as `autonomous` everywhere else.
-shared/prompts/single-session-gate-discipline.md:59:  `constitution: true` is NEVER auto-approvable by any autonomy level — even an
+shared/prompts/single-session-gate-discipline.md:37:When the master/CLI passes `--autonomy unattended` explicitly, the resolver adds
+shared/prompts/single-session-gate-discipline.md:44:behaves at least as `autonomous` everywhere else.
+shared/prompts/single-session-gate-discipline.md:61:  `constitution: true` is NEVER auto-approvable by any autonomy level — even an
 shared/schemas/run_config.v2.schema.json:11:    "autonomy",
 shared/schemas/run_config.v2.schema.json:39:    "autonomy": { "enum": ["guided", "autonomous", "unattended", "supervised"] },
 shared/schemas/run_config.v2.schema.json:133:          "autonomy": { "type": "string", "description": "Driven path only: the run's autonomy level when the override was applied, so an override in an autonomous run can be told apart afterwards." },
@@ -287,16 +287,13 @@ shared/scripts/lib/campaign_session_lock.py:8:``autonomous_loop.py``'s ``file_lo
 shared/scripts/lib/campaign_wave.py:70:    collide with it. A shipwright-build ``--autonomous`` section id (that
 shared/scripts/lib/campaign_wave.py:126:    shipwright-build `--autonomous` section) passes through unchanged; the
 shared/scripts/lib/gate_policy.py:12:                                (constitution-locked; no autonomy bypasses it).
-shared/scripts/lib/gate_policy.py:170:def read_run_config_autonomy(project_root: Any) -> Optional[str]:
-shared/scripts/lib/gate_policy.py:171:    """The run's ``autonomy`` from run_config, or ``None`` (same total-read guard as
-shared/scripts/lib/gate_policy.py:179:    value = parsed.get("autonomy") if isinstance(parsed, dict) else None
-shared/scripts/lib/gate_policy.py:197:    autonomy: Optional[str] = None,
-shared/scripts/lib/gate_policy.py:212:    ``autonomy="unattended"`` adds ``unattended_answer`` (the reviewed answer of an
-shared/scripts/lib/gate_policy.py:225:        "autonomy": autonomy,
-shared/scripts/lib/gate_policy.py:243:        "unattended_answer": unattended_answer_for(gate, autonomy),
+shared/scripts/lib/gate_policy.py:184:    autonomy: Optional[str] = None,
+shared/scripts/lib/gate_policy.py:199:    ``autonomy="unattended"`` adds ``unattended_answer`` (the reviewed answer of an
+shared/scripts/lib/gate_policy.py:212:        "autonomy": autonomy,
+shared/scripts/lib/gate_policy.py:230:        "unattended_answer": unattended_answer_for(gate_id, gate, autonomy),
 shared/scripts/lib/gate_unattended.py:3:``autonomy: unattended`` is opt-in per gate. An ``orchestrator-approve`` gate that is
-shared/scripts/lib/gate_unattended.py:58:def unattended_answer_for(gate: dict[str, Any], autonomy: Optional[str]) -> Optional[str]:
-shared/scripts/lib/gate_unattended.py:62:    if autonomy != UNATTENDED or validate_unattended(gate.get("id", "?"), gate):
+shared/scripts/lib/gate_unattended.py:58:def unattended_answer_for(gate_id: str, gate: dict[str, Any], autonomy: Optional[str]) -> Optional[str]:
+shared/scripts/lib/gate_unattended.py:63:    if autonomy != UNATTENDED or validate_unattended(gate_id, gate, gate_id):
 shared/scripts/lib/iterate_stop_guard.py:1:"""Stop-guard for an ``--autonomous`` iterate run.
 shared/scripts/lib/iterate_stop_guard.py:3:An autonomous iterate is only done when its PR is MERGED and the checks are
 shared/scripts/lib/iterate_stop_guard.py:13:* the latest iterate invocation in the session is not ``--autonomous`` (or is a
@@ -358,13 +355,13 @@ shared/scripts/tools/record_ci_supplychain_ack.py:27:(this campaign's own runner
 shared/scripts/tools/record_hard_blocker.py:6:"""Record the one legitimate reason an --autonomous iterate may stop early.
 shared/scripts/tools/record_hard_blocker.py:9:autonomous run's PR is not MERGED. A recorded hard blocker lifts the guard for
 shared/scripts/tools/reset_tool_counter.py:4:Used by the orchestrator between sections in autonomous mode
-shared/scripts/tools/resolve_gate_policy.py:39:    read_run_config_autonomy,
-shared/scripts/tools/resolve_gate_policy.py:59:    p.add_argument("--autonomy", help="run autonomy (default: run_config.autonomy); "
-shared/scripts/tools/resolve_gate_policy.py:70:def _resolved_rows(catalog: dict, mode: str, phase: str | None, autonomy: str | None) -> list[dict]:
-shared/scripts/tools/resolve_gate_policy.py:75:        r = resolve_gate_policy(gid, mode=mode, catalog=catalog, autonomy=autonomy)
-shared/scripts/tools/resolve_gate_policy.py:125:    autonomy = args.autonomy if args.autonomy is not None else read_run_config_autonomy(args.project_root)
-shared/scripts/tools/resolve_gate_policy.py:129:            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog, autonomy=autonomy)
-shared/scripts/tools/resolve_gate_policy.py:152:    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase, autonomy)}, indent=2))
+shared/scripts/tools/resolve_gate_policy.py:58:    p.add_argument("--autonomy", help="master path only: with 'unattended', add the gate's reviewed "
+shared/scripts/tools/resolve_gate_policy.py:69:def _resolved_rows(catalog: dict, mode: str, phase: str | None, autonomy: str | None) -> list[dict]:
+shared/scripts/tools/resolve_gate_policy.py:74:        r = resolve_gate_policy(gid, mode=mode, catalog=catalog, autonomy=autonomy)
+shared/scripts/tools/resolve_gate_policy.py:124:    autonomy = args.autonomy  # explicit only: --list from a phase-runner must not expose answers
+shared/scripts/tools/resolve_gate_policy.py:128:            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog, autonomy=autonomy)
+shared/scripts/tools/resolve_gate_policy.py:145:                "autonomy": args.autonomy,
+shared/scripts/tools/resolve_gate_policy.py:153:    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase, autonomy)}, indent=2))
 shared/scripts/tools/review_unavailable_note.py:10:``--file-triage`` (autonomous runs) also files ONE triage card per run asking
 shared/scripts/tools/review_unavailable_note.py:93:                "unavailable (the reviewer could not run) and continued autonomously. "
 shared/scripts/tools/review_unavailable_note.py:114:                        help="also file one re-run triage card for this run (autonomous runs)")

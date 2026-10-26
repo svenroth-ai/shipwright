@@ -133,9 +133,11 @@ AskUserQuestion:
     - "Skip deploy"
 ```
 
-**Preflight rule (master-side):** when `remaining_questions` and `env_questions` are both
-empty (every Brief-package run), do not ask "Settings look correct?": print the card and go
-to Step 4. The approved, hash-verified package is the confirmation; `unattended` has no one to ask.
+**Preflight rule (master-side):** skip "Settings look correct?" ONLY when brief intake returned
+`source == "package"` AND `remaining_questions` and `env_questions` are both empty: print the card
+and go to Step 4 (the approved, hash-verified package is the confirmation). The no-brief and wizard
+paths are unchanged and still ask. A package with a non-empty `env_preflight` still gets its
+`env_questions`; settling `env_preflight` under `unattended` is U3's preflight.
 
 There is no execution-mode question: `single_session` is the sole pipeline mode.
 

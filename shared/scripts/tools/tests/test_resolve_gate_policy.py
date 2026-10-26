@@ -123,10 +123,19 @@ def test_autonomy_unattended_adds_the_reviewed_answer_without_unblocking(capsys)
 
 
 @pytest.mark.covers("FR-01.01")
-def test_autonomy_defaults_to_run_config(capsys, tmp_path):
+def test_run_config_autonomy_never_exposes_the_answer(capsys, tmp_path):
+    """Phase-runners call --list/--gate without --autonomy: run_config must not leak answers."""
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({"mode": "single_session", "autonomy": "unattended"}), encoding="utf-8")
     _, out, _ = _run(capsys, ["--gate", "design.review-loop-finalize", "--project-root", str(tmp_path)])
-    assert json.loads(out)["unattended_answer"]
-    _, out, _ = _run(capsys, ["--gate", "build.migration-apply-fail", "--project-root", str(tmp_path)])
     assert json.loads(out)["unattended_answer"] is None
+    _, out, _ = _run(capsys, ["--phase", "design", "--list", "--project-root", str(tmp_path)])
+    assert all(g["unattended_answer"] is None for g in json.loads(out)["gates"])
+
+
+@pytest.mark.covers("FR-01.01")
+def test_unknown_gate_fallback_carries_the_same_keys(capsys):
+    _, out, _ = _run(capsys, ["--gate", "nope.x", "--mode", "single_session", "--autonomy", "unattended"])
+    data = json.loads(out)
+    assert data["unattended_answer"] is None and data["autonomy"] == "unattended"
+    assert data["effective_policy"] == "interactive"

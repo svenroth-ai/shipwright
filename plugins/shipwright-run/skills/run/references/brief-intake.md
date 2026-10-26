@@ -136,8 +136,9 @@ when genuinely needed.
    stop and ask the user which profile to use, never infer one.
 3. **Step 3** — present the same INFERRED SETTINGS card, pre-filled from the
    brief. Ask only `remaining_questions` (typically just `autonomy`) plus each
-   entry of `env_questions` when non-empty; with both empty (every package run) it
-   is a master-side preflight, not a question: print the card, go to Step 4.
+   entry of `env_questions` when non-empty. Only when `source == "package"` and both are
+   empty is it a master-side preflight, not a question: print the card, go to Step 4 (wizard
+   and no-brief paths unchanged; `env_preflight` under `unattended` is U3's to settle).
 4. **Step 4** — pass `--profile {profile}` and `--deploy-target {deploy_target}`
    to `orchestrator.py write-config` exactly as the legacy flow would.
 

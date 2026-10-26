@@ -14,4 +14,9 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy
 -> STOP and return a gate-pending result; `interactive` -> behave as documented. Full
 contract: `shared/prompts/single-session-gate-discipline.md`.
 
-Gates: `changelog.version-suggestion` and `changelog.entry-preview` are `auto-default` (accept), matching the autonomous-mode text in Steps 4 and 5.
+Gates: `changelog.version-suggestion` (Step 4) and `changelog.entry-preview` (Step 5) are `auto-default` (accept).
+
+**Driven run, stated plainly:** in a driven (`single_session`) run the changelog phase auto-accepts the
+suggested version and the entry preview, whatever the run's autonomy. The phase-runner has no
+AskUserQuestion, and the release PR stays open (it is not auto-merged). This is a documented change for
+guided driven runs, which used to be asked.

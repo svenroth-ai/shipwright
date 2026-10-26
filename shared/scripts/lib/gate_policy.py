@@ -167,19 +167,6 @@ def read_run_config_mode(project_root: Any) -> str:
     return SINGLE_SESSION if mode == SINGLE_SESSION else INERT_MODE
 
 
-def read_run_config_autonomy(project_root: Any) -> Optional[str]:
-    """The run's ``autonomy`` from run_config, or ``None`` (same total-read guard as
-    ``read_run_config_mode``)."""
-    if project_root is None:
-        return None
-    try:
-        parsed = json.loads(durable_read_text(Path(project_root) / _CONFIG_NAME, encoding="utf-8-sig"))
-    except (ValueError, OSError, RecursionError, TypeError):
-        return None
-    value = parsed.get("autonomy") if isinstance(parsed, dict) else None
-    return value if isinstance(value, str) else None
-
-
 def effective_mode(*, explicit: Optional[str], env: Optional[str], project_root: Any) -> str:
     """Resolve the run mode by precedence: explicit > env > run_config > default."""
     for candidate in (explicit, env):
@@ -240,7 +227,7 @@ def resolve_gate_policy(
         "effective_policy": policy,
         "should_stop": should_stop,
         "default_answer": gate["default_answer"] if policy == AUTO_DEFAULT else None,
-        "unattended_answer": unattended_answer_for(gate, autonomy),
+        "unattended_answer": unattended_answer_for(gate_id, gate, autonomy),
     }
 
 

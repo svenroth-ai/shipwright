@@ -34,11 +34,13 @@ Mode precedence: `--mode` > `$SHIPWRIGHT_RUN_MODE` > `run_config.mode` >
 
 ## Autonomy `unattended`
 
-Under `autonomy: unattended` the resolver adds `unattended_answer` to a gate's
-result. You (the phase-runner) **still STOP** on every `orchestrator-approve` gate:
+When the master/CLI passes `--autonomy unattended` explicitly, the resolver adds
+`unattended_answer` to a gate's result. It is never defaulted from run_config, so
+you (the phase-runner) always see `null`. You **still STOP** on every `orchestrator-approve` gate:
 only the master/CLI applies that answer, after its own package-hash and
-FR-coverage checks. A gate with no `unattended_answer` (including every
-constitution-locked, `hard-stop` and denylisted gate) escalates. `unattended`
+FR-coverage checks. An `orchestrator-approve` gate with no `unattended_answer` (including every
+constitution-locked and denylisted one) escalates; `hard-stop` always stops;
+`auto-default` gates proceed. `unattended`
 behaves at least as `autonomous` everywhere else.
 
 ## Non-negotiables

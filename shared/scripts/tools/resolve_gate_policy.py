@@ -36,7 +36,6 @@ from lib.gate_policy import (  # noqa: E402
     GateCatalogError,
     effective_mode,
     load_catalog,
-    read_run_config_autonomy,
     render_catalog_markdown,
     resolve_gate_policy,
 )
@@ -56,8 +55,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="print shared/config/gate_catalog.md")
     p.add_argument("--phase", choices=COVERED_PHASES, help="filter --list to one phase")
     p.add_argument("--mode", help="explicit run mode (highest precedence)")
-    p.add_argument("--autonomy", help="run autonomy (default: run_config.autonomy); "
-                   "'unattended' adds the gate's reviewed unattended_answer, if any")
+    p.add_argument("--autonomy", help="master path only: with 'unattended', add the gate's reviewed "
+                   "unattended_answer. Never defaulted from run_config, so phase-runners get None")
     p.add_argument("--project-root", default=".", help="root holding shipwright_run_config.json")
     p.add_argument(
         "--output",
@@ -122,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         project_root=args.project_root,
     )
 
-    autonomy = args.autonomy if args.autonomy is not None else read_run_config_autonomy(args.project_root)
+    autonomy = args.autonomy  # explicit only: --list from a phase-runner must not expose answers
 
     if args.gate:
         try:
@@ -143,6 +142,8 @@ def main(argv: list[str] | None = None) -> int:
                 "effective_policy": INTERACTIVE,
                 "should_stop": True,
                 "default_answer": None,
+                "autonomy": args.autonomy,
+                "unattended_answer": None,
                 "unknown_gate": True,
             }
         print(json.dumps(result, indent=2))

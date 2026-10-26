@@ -37,7 +37,7 @@ def is_denylisted(gate_id: str) -> bool:
     return gate_id in UNATTENDED_DENYLIST or gate_id.endswith(_DENIED_SUFFIXES)
 
 
-def validate_unattended(where: str, gate: dict[str, Any]) -> list[str]:
+def validate_unattended(where: str, gate: dict[str, Any], gate_id: Optional[str] = None) -> list[str]:
     """Errors for one gate's ``unattended_answer`` (none when the key is absent)."""
     if "unattended_answer" not in gate:
         return []
@@ -49,16 +49,17 @@ def validate_unattended(where: str, gate: dict[str, Any]) -> list[str]:
         errors.append(f"{where}: only orchestrator-approve gates may carry an unattended_answer")
     if gate.get("constitution") is True:
         errors.append(f"{where}: constitution-locked gate must not carry an unattended_answer")
-    gid = gate.get("id")
+    gid = gate_id if gate_id is not None else gate.get("id")
     if isinstance(gid, str) and is_denylisted(gid):
         errors.append(f"{where}: denylisted gate must not carry an unattended_answer")
     return errors
 
 
-def unattended_answer_for(gate: dict[str, Any], autonomy: Optional[str]) -> Optional[str]:
+def unattended_answer_for(gate_id: str, gate: dict[str, Any], autonomy: Optional[str]) -> Optional[str]:
     """The reviewed answer, only under ``unattended`` and only for an eligible gate
     (fail closed: a locked / hard-stop / denylisted gate never yields one even if an
-    unvalidated catalog dict carries it)."""
-    if autonomy != UNATTENDED or validate_unattended(gate.get("id", "?"), gate):
+    unvalidated catalog dict carries it; the denylist keys on the resolver's ``gate_id``,
+    never on an inner ``id``)."""
+    if autonomy != UNATTENDED or validate_unattended(gate_id, gate, gate_id):
         return None
     return gate.get("unattended_answer")

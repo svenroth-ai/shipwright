@@ -2,7 +2,7 @@
 
 When invoked with `--autonomous` flag (or when `/shipwright-run` dispatches in `autonomy: autonomous` or `unattended` mode), build all pending sections sequentially without manual gates.
 
-**`unattended`:** same loop, always sequential; the parallel `section-builder` fan-out needs `allow_parallel_builders: true` in the approved Brief package. A gate with no reviewed `unattended_answer` escalates instead of being answered (`shared/prompts/single-session-gate-discipline.md`).
+**`unattended`:** same loop, always sequential; from U3 the parallel `section-builder` fan-out needs `allow_parallel_builders: true` in the approved Brief package. An `orchestrator-approve` gate with no reviewed `unattended_answer` escalates instead of being answered (`shared/prompts/single-session-gate-discipline.md`).
 
 **Flag:** `/shipwright-build --autonomous` or `/shipwright-build --from 02 --autonomous`
 

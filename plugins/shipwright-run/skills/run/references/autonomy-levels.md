@@ -31,16 +31,17 @@ including fixes. Deploy stays interactive.
 ## Unattended
 
 Autonomous, with no human reachable. **Rule:** every site keyed on "autonomous" treats
-`unattended` the same; the only differences are that a gate with no reviewed
-`unattended_answer` (`shared/config/gate_catalog.json`) escalates instead of asking,
+`unattended` the same; the only differences are that an `orchestrator-approve` gate with no reviewed
+`unattended_answer` (`shared/config/gate_catalog.json`) escalates instead of asking
+(`auto-default` gates proceed, `hard-stop` always stops),
 and that no override of a failed phase gate is accepted (nobody to decide it).
 
 - **Gates:** only `design.preview-approval`, `design.review-loop-finalize` and
   `design.upload-screen-mapping` carry an answer; the master/CLI applies it after the
-  package-hash and FR-coverage checks. Constitution-locked, `hard-stop` and denylisted
+  package-hash and FR-coverage checks (from U3). Constitution-locked, `hard-stop` and denylisted
   gates always escalate.
-- **Build:** sequential; parallel `section-builder`s need `allow_parallel_builders: true`.
-- **Start:** only from an approved Brief package (a plain seed is refused at preflight).
+- **Build (from U3):** sequential; parallel `section-builder`s need `allow_parallel_builders: true`.
+- **Start:** only from an approved Brief package (from U3 a plain seed is refused at preflight; today `write-config` accepts the value).
 
 ## Configuration
 

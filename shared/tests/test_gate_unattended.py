@@ -131,11 +131,12 @@ def test_resolver_fails_closed_on_an_unvalidated_ineligible_answer():
     assert r["unattended_answer"] is None
 
 
-@pytest.mark.parametrize("text", ["", "{", "[]", '{"autonomy": 3}', '{"mode": "single_session"}'])
-def test_unreadable_or_absent_autonomy_never_reads_as_unattended(tmp_path, text):
-    from lib.gate_policy import read_run_config_autonomy
 
-    (tmp_path / "shipwright_run_config.json").write_text(text, encoding="utf-8")
-    assert read_run_config_autonomy(tmp_path) is None
-    assert read_run_config_autonomy(tmp_path / "missing") is None
-    assert read_run_config_autonomy(None) is None
+def test_resolver_denylist_keys_on_the_gate_id_not_an_inner_id():
+    cat = load_catalog()
+    gate = {**cat["gates"]["build.env-validation-missing-vars"], "unattended_answer": "Continue."}
+    gate.pop("id")  # a catalog dict without an inner id must still be denied by the resolver's id
+    cat["gates"]["build.env-validation-missing-vars"] = gate
+    r = resolve_gate_policy("build.env-validation-missing-vars", mode=SINGLE_SESSION, catalog=cat,
+                            autonomy="unattended")
+    assert r["unattended_answer"] is None

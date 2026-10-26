@@ -734,7 +734,7 @@ Two guarantees hold regardless of how autonomous you set the run. A checkpoint m
 
 The complete list of checkpoints, with each one's setting and its default answer, is `shared/config/gate_catalog.json` in the Shipwright repository (`gate_catalog.md` beside it is the same content as a readable table).
 
-The third autonomy level, `unattended` (only from an approved Brief package), behaves like autonomous everywhere and adds one rule: a stop-and-ask checkpoint is answered automatically only if the catalog carries a reviewed answer for it (today three design approvals); every other one, and every constitution-locked or denylisted one, escalates instead.
+The third autonomy level, `unattended` (only from an approved Brief package), behaves like autonomous everywhere and adds one rule: a stop-and-ask checkpoint will be answered automatically (from the unattended-mode work, U3) only if the catalog carries a reviewed answer for it (today three design approvals); every other one, and every constitution-locked or denylisted one, escalates instead.
 
 **How it works**
 
