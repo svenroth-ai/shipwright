@@ -69,29 +69,116 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/skills/run/SKILL.md",
+          "line": 136,
+          "finding": "Step 3 preflight skip not tied to a package intake; fixed (keyed on source == package and both lists empty)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 66,
+          "finding": "gate discipline block linked only in the standalone branch; fixed (top-level link, gate ids named, driven-run auto-accept documented)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/gate_catalog.json",
+          "line": 609,
+          "finding": "changelog gates auto-default change guided driven behaviour; documented as decided (phase-runner has no AskUserQuestion, release PR stays open)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/resolve_gate_policy.py",
+          "line": 140,
+          "finding": "unknown-gate fallback lacked unattended keys; fixed",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 1121,
+          "finding": "stale run_config-default sentence; fixed after fix-round review",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T02:10:50.810580+00:00",
-      "disposition": "The campaign orchestrator spawns spec-reviewer and code-reviewer for this unit (3f-bis); the runner brief forbids spawning the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T03:21:23.421840+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cd893f3ad44d3f1ea3acf2877ae75cbf64c8981e"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": "shared/scripts/tools/resolve_gate_policy.py",
+          "line": null,
+          "finding": "Claim under doubt: only the master can act on an unattended_answer — phase-runners received the answer via the run_config default; fixed: the resolver emits it only for an explicit --autonomy, tests added.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py",
+          "line": null,
+          "finding": "Claim under doubt: unattended starts only from an approved package — prose-only until U3 (plain-seed fail-fast is U3 by decision); unattended is autonomous minus overrides in the window; recorded as a follow-up.",
+          "suggestion": "U3 plain-seed fail-fast (accepted deferral)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-run/skills/run/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: Step 3 skip cannot skip a needed question — now keyed on source package; env_preflight under unattended is U3's preflight.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary and contract",
+          "file": "shared/scripts/lib/gate_unattended.py",
+          "line": null,
+          "finding": "Claim under doubt: denylist check is fail-closed for any catalog dict — fixed: denylist is checked against the resolver gate_id, with a resolve-time test.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T02:10:51.038475+00:00",
-      "disposition": "Stage 3 runs only behind a Stage 2 pass, and the internal cascade is run by the campaign orchestrator for this unit",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T03:21:23.554448+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cd893f3ad44d3f1ea3acf2877ae75cbf64c8981e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -166,16 +253,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-26T02:10:50.577516+00:00",
-      "disposition": "The campaign orchestrator spawns spec-reviewer and code-reviewer for this unit (3f-bis); the runner brief forbids spawning the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T03:21:23.278728+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cd893f3ad44d3f1ea3acf2877ae75cbf64c8981e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
