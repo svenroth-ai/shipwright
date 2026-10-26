@@ -74,6 +74,11 @@ def _issue(code: str, screen: str, message: str) -> dict:
     return {"code": code, "screen": screen, "message": message}
 
 
+def _unmapped(by_slug: dict, plan: list) -> list:
+    """Minted FR ids that no planned screen links."""
+    return sorted({i for ids in by_slug.values() for i in ids} - {fr for it in plan for fr in it["frs"]})
+
+
 def apply(project_root: Path) -> dict:
     root = Path(project_root).resolve()
     bdi = _load(_SHARED_SCRIPTS / "lib" / "brief_dir_intake.py", "_shipwright_design_brief_dir_intake")
@@ -95,7 +100,11 @@ def apply(project_root: Path) -> dict:
     screen_map = json.loads((bdir / "screen-map.json").read_text(encoding="utf-8-sig"))
     if applied == info["package_sha256"]:  # re-entry: screen edits (review loop) stay untouched
         missing = applied_file_issues(bdir, designs, screen_map)
-        return {"ok": False, "issues": missing} if missing else {"ok": True, "already_applied": True, "package_sha256": applied}
+        if missing:
+            return {"ok": False, "issues": missing}
+        by_slug = fr_ids_by_slug(root)  # the STOP on an unmapped FR must survive a resume
+        return {"ok": True, "already_applied": True, "package_sha256": applied,
+                "unmapped_frs": _unmapped(by_slug, plan_screens(bdir, screen_map, by_slug)[0])}
     if applied is not None:
         return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from a "
                 "different package: this tool will not re-apply over them. Redoing an already-applied Design phase for a changed "
@@ -149,7 +158,7 @@ def apply(project_root: Path) -> dict:
     atomic(marker, json.dumps({"package_sha256": info["package_sha256"]}))
     return {"ok": True, "package_sha256": info["package_sha256"], "kept_existing": kept,
             "foreign_existing": foreign,  # not placed by this package (flows of an earlier Design run on a reset are expected)
-            "unmapped_frs": sorted({i for ids in by_slug.values() for i in ids} - {fr for it in plan for fr in it["frs"]}),  # informational: the agent reports
+            "unmapped_frs": _unmapped(by_slug, plan),  # informational: the agent reports
             "kept_existing_differs": differs,  # a warning, not a refusal: a kept file that is not the package's own
             "screens": [{"file": f"screens/{i['screen_file']}", "upload": f"uploads/{i['mockup']}", "frs": i["frs"]} for i in plan]}
 

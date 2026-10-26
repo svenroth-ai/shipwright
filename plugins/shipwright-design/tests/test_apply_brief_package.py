@@ -172,6 +172,7 @@ def test_skill_routes_a_recorded_brief_package_before_a_new_design_session():
     assert "`design.preview-approval` still fires on the APPLIED screens" in section  # D5/D9: the human gate stays
     assert "`unmapped_frs`" in section and "`tokens`/`standalone`/`chrome` gate caused by package content" in section
     assert "foreign_existing" in section and "kept_existing_differs" in section and "never silently continue" in section
+    assert "a red `fr-coverage` gate (never write a `## Non-UI FRs` entry or an ADR, never generate a screen)" in section
     assert "Step 6a, 8, 8.5, 9 as normal" in section and "STOP and report to the operator" in section
     assert "a Brief package is in use" in text  # the Step 6.5 skip condition names the case
 

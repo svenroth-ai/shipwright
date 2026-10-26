@@ -108,3 +108,5 @@ def test_a_minted_fr_that_no_screen_maps_is_listed_as_unmapped(tmp_path, tool, c
     root = make_project(tmp_path, [{"id": "notes", "mockup": "01.html", "requirements": ["capture-note"]}], {"01.html": PAGE_A})
     code, out = main_json(tool, capsys, root)
     assert code == 0 and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"]  # informational: the agent stops and reports
+    code, out = main_json(tool, capsys, root)  # a resume
+    assert code == 0 and out["already_applied"] is True and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"]
