@@ -36,3 +36,6 @@ is a recorded decision in the end-to-end procedure); record metric, tolerance an
 | PNG chunk CRC never verified (GLM) | accepted-and-fixed |
 | createRequire ignores NODE_PATH, opt-in test cannot pass (GLM, high) | rejected-with-reason: the real-Chromium test passes with NODE_PATH set (run locally) |
 | Spec says extend design_fidelity_check.py (GLM) | rejected-with-reason: see plan review |
+
+## Follow-ups (deferred, not built)
+Login/auth screens; a per-run screenshot output dir; PNG decoder speed; hue/wording differences; Playwright provisioning in CI.

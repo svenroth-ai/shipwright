@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
-  "date": "2026-10-26T01:52:43.112765Z",
+  "date": "2026-10-26T02:16:05.722127Z",
   "event_at": "2026-10-26T01:49:37.097874+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -51,26 +51,41 @@
         "behavior": "unattended-agent prose pinned: every outcome has STOP/continue, never waive/edit/approve, documented metric equals code constants",
         "disposition": "tested",
         "evidence": "plugins/shipwright-test/tests/test_screenshot_check_prose.py (5 tests), plugins/shipwright-test/tests/test_skill_references_link.py PASSED"
+      },
+      {
+        "behavior": "Design's flat screen-routes.json is accepted; the screen as Design left it is compared (else the upload) and named in the result; captured flag and timeout scale with job count",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_screenshot_check_review_fixes.py::test_design_format_flat_routes_are_accepted, ::test_flat_and_nested_shapes_parse_to_the_same_entries, ::test_the_screen_as_design_left_it_wins_over_the_upload, ::test_captured_flag_and_scaled_timeout PASSED"
+      },
+      {
+        "behavior": "Playwright is also resolved from the service dir that holds playwright.config.ts",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_screenshot_check_review_fixes.py::test_playwright_is_also_looked_for_in_the_service_dir, ::test_search_dirs_reach_the_capture_command PASSED"
+      },
+      {
+        "behavior": "test-phase validator blocks a Brief-package project without a passing, captured, standard-tolerance screenshot_check; projects without a package are unaffected",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_screenshot.py::test_project_without_a_package_is_unaffected, ::test_package_without_a_result_blocks, ::test_package_with_a_passing_fresh_result_is_valid, ::test_package_with_anything_but_a_real_pass_blocks PASSED"
       }
     ],
     "counts": {
-      "testable": 8,
-      "tested": 8,
+      "testable": 11,
+      "tested": 11,
       "untestable": 0,
       "untested_testable": 0
     },
     "enumeration_basis": {
-      "acs": 8,
-      "covered_acs": 8
+      "acs": 11,
+      "covered_acs": 11
     }
   },
   "surface_verification": {
     "surface": "cli",
-    "runner": "uv run --extra dev pytest plugins/shipwright-test/tests/test_png_compare.py plugins/shipwright-test/tests/test_screenshot_check.py plugins/shipwright-test/tests/test_screenshot_check_capture.py plugins/shipwright-test/tests/test_screenshot_check_prose.py -q",
+    "runner": "uv run --extra dev pytest plugins/shipwright-test/tests/test_png_compare.py plugins/shipwright-test/tests/test_screenshot_check.py plugins/shipwright-test/tests/test_screenshot_check_capture.py plugins/shipwright-test/tests/test_screenshot_check_prose.py plugins/shipwright-test/tests/test_screenshot_check_review_fixes.py -q",
     "exit_code": 0,
-    "tests_run": 55,
+    "tests_run": 61,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3c\\.shipwright\\runs\\iterate-2026-10-26-b3c-screenshot-check-in-test\\surface_verification.log",
-    "timestamp": "2026-10-26T01:52:34.899Z"
+    "timestamp": "2026-10-26T02:15:48.559Z"
   },
   "declared_removals": [],
   "exemptions": {

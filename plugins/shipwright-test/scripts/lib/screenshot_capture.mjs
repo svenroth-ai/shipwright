@@ -22,13 +22,22 @@ const viewport = { width: Number(arg("width", "1280")), height: Number(arg("heig
 const result = { ok: true, captured: [], errors: [] };
 
 let chromium;
-try {
-  const req = createRequire(join(project, "package.json"));
-  let pw;
-  try { pw = req("playwright"); } catch { pw = req("@playwright/test"); }
-  chromium = pw.chromium;
-} catch (e) {
-  console.log(JSON.stringify({ ok: false, captured: [], errors: [{ out: "", error: `playwright not resolvable from ${project}: ${e.message}` }] }));
+// Playwright lives where playwright_setup.py installed it: the project root, or a service dir in a multi-service repo.
+const searchDirs = [project, ...process.argv.flatMap((a, i, all) => (a === "--search" && all[i + 1] ? [resolve(all[i + 1])] : []))];
+const failures = [];
+for (const dir of searchDirs) {
+  try {
+    const req = createRequire(join(dir, "package.json"));
+    let pw;
+    try { pw = req("playwright"); } catch { pw = req("@playwright/test"); }
+    chromium = pw.chromium;
+    break;
+  } catch (e) {
+    failures.push(`${dir}: ${String(e.message).split(String.fromCharCode(10))[0]}`);
+  }
+}
+if (!chromium) {
+  console.log(JSON.stringify({ ok: false, captured: [], errors: [{ out: "", error: `playwright not resolvable from ${failures.join("; ")}` }] }));
   process.exit(0);
 }
 

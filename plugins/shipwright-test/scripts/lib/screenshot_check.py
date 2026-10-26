@@ -60,6 +60,31 @@ def _approved_for(root: Path, mockup: str, screen_map: dict) -> Path | None:
     return same if same.is_file() else None
 
 
+def _route_entries(data) -> tuple[str, list]:
+    """``(base_url, entries)`` of screen-routes.json: Design writes a flat ``{mockup: route}`` dict, Build/others the nested form."""
+    if isinstance(data, dict) and "screens" in data:
+        return str(data.get("base_url") or ""), data["screens"] if isinstance(data["screens"], list) else []
+    if isinstance(data, dict):
+        return "", [{"mockup": k, **(v if isinstance(v, dict) else {"route": v})} for k, v in data.items()]
+    return "", []
+
+
+def _builder_file(root: Path, mockup: str) -> Path | None:
+    """The file the builder worked from: the screen as Design left it (review-loop edits count), else None."""
+    designs = root / ".shipwright" / "designs"
+    for cand in (designs / mockup, designs / "screens" / Path(mockup).name):
+        if Path(mockup).name and cand.is_file():
+            return cand
+    return None
+
+
+def _playwright_dirs(root: Path) -> list[Path]:
+    """Where playwright_setup may have installed Playwright: the root, or the service dir holding playwright.config.ts."""
+    found = [p.parent for p in sorted(root.glob("*/playwright.config.ts")) + sorted(root.glob("*/*/playwright.config.ts"))
+             if "node_modules" not in p.parts]
+    return [d for d in found if d != root]
+
+
 def _screen_map(root: Path) -> dict:
     cfg = _read_json(root / "shipwright_run_config.json")
     brief_dir = cfg.get("brief_dir") if isinstance(cfg, dict) else None
@@ -80,7 +105,8 @@ def _capture(root: Path, jobs: list[dict], timeout: int) -> str | None:
     try:
         proc = subprocess.run(
             [node, str(script), "--project", str(root), "--jobs", str(jobs_file),
-             "--width", str(VIEWPORT[0]), "--height", str(VIEWPORT[1])],
+             "--width", str(VIEWPORT[0]), "--height", str(VIEWPORT[1]),
+             *[a for d in _playwright_dirs(root) for a in ("--search", str(d))]],
             cwd=str(root), capture_output=True, text=True, timeout=timeout, encoding="utf-8",
         )
     except (subprocess.TimeoutExpired, OSError) as exc:
@@ -94,17 +120,17 @@ def _capture(root: Path, jobs: list[dict], timeout: int) -> str | None:
 
 
 def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: float = png_compare.TOLERANCE,
-                         capture: bool = True, timeout: int = 300) -> dict:
+                         capture: bool = True, timeout: int | None = None) -> dict:
     root = Path(root)
     designs = root / ".shipwright" / "designs"
     if not (designs / MARKER).is_file():
         return {"applies": False, "status": "skipped", "reason": "no Brief package was applied by Design"}
-    base = {"applies": True, "metric": png_compare.METRIC, "tolerance": tolerance, "viewport": list(VIEWPORT)}
+    base = {"applies": True, "metric": png_compare.METRIC, "tolerance": tolerance, "viewport": list(VIEWPORT), "captured": capture}
     data = _read_json(designs / "screen-routes.json")
-    entries = data.get("screens") if isinstance(data, dict) else None
-    if not isinstance(entries, list) or not entries:
+    file_base_url, entries = _route_entries(data)
+    if not entries:
         return {**base, "status": "error", "screens": [], "error": "screen-routes.json is missing or lists no screens"}
-    base_url = (base_url or (data.get("base_url") if isinstance(data, dict) else "") or "").rstrip("/")
+    base_url = (base_url or file_base_url).rstrip("/")
     if capture and not base_url:
         return {**base, "status": "error", "screens": [], "error": "no running app: pass --base-url"}
 
@@ -122,14 +148,16 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
         route = str(entry.get("sample_route") or entry.get("route") or "") if isinstance(entry, dict) else ""
         stem = f"{idx:02d}-{Path(mockup).stem}" if Path(mockup).stem else ""  # unique per entry: same-named mockups never share a file
         approved = _approved_for(root, mockup, smap)
+        source = _builder_file(root, mockup) or approved
         res = {"mockup": mockup, "route": route, "status": "pending", "stem": stem, **({"approved": approved} if approved else {})}
-        if not stem or approved is None:
-            res.update(status="error", error=f"no approved mockup in uploads/ for {mockup!r}")
+        if not stem or source is None:
+            res.update(status="error", error=f"no approved mockup in screens/ or uploads/ for {mockup!r}")
         elif not route.startswith("/") or _DYNAMIC_RE.search(route):
             res.update(status="error", error=f"route {route!r} is not a concrete path: add a 'sample_route' to its screen-routes.json entry")
         else:
+            res["compared_with"] = source.relative_to(root).as_posix()
             if capture:
-                jobs += [{"url": approved.resolve().as_uri(), "out": str(shots / "approved" / f"{stem}.png")},
+                jobs += [{"url": source.resolve().as_uri(), "out": str(shots / "approved" / f"{stem}.png")},
                          {"url": f"{base_url}{route}", "out": str(shots / "built" / f"{stem}.png")}]
         results.append(res)
     covered = {res["approved"].name for res in results if "approved" in res}
@@ -140,7 +168,7 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
             results.append({"mockup": mock, "route": "", "status": "error", "error": (
                 f"package screen {mock!r} has no entry in screen-routes.json: it was never built or mapped" if has_upload
                 else f"package screen {mock!r} has no entry in screen-routes.json and no approved mockup in uploads/")})
-    failure = _capture(root, jobs, timeout) if capture and jobs else None
+    failure = _capture(root, jobs, timeout or 60 + 45 * len(jobs)) if capture and jobs else None
     for res in results:
         if res["status"] != "pending":
             continue

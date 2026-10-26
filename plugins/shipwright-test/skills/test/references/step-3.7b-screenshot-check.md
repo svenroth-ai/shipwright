@@ -14,7 +14,12 @@ uv run "{plugin_root}/scripts/lib/screenshot_check.py" --cwd "{project_root}" --
 ```
 Per screen of `screen-routes.json` it screenshots the approved mockup (`.shipwright/designs/uploads/`, found through the
 package's `screen-map.json`) and the built route in the same Chromium at 1280x800, then compares them.
-A dynamic route (`/items/[id]`) needs a `sample_route` key in its `screen-routes.json` entry. Every screen of the
+`screen-routes.json` is read in Design's flat form (`{"01-login.html": "/login"}`) or the nested form
+(`{"screens": [{"mockup": ..., "route": ...}]}`). A screen is compared as Design left it
+(`.shipwright/designs/screens/NN-id.html`, review-loop edits included), else the approved upload; the result names the file
+(`compared_with`). A dynamic route (`/items/[id]`) needs a `sample_route` key: switch that entry to the nested form.
+You MAY add `sample_route` or missing route entries to `screen-routes.json`: that is test wiring, not a mockup.
+A package screen that is a modal or lives inside another page may be absent from `screen-routes.json` only if Design skipped it too. Every screen of the
 package's `screen-map.json` must appear in `screen-routes.json` (a package screen that was never built is an `error`),
 and an approved mockup that renders blank is an `error`. Only the first viewport (1280x800, the fold) is compared;
 the viewport is recorded in the result. Run it only when the marker file exists (the tool also checks).
@@ -41,9 +46,11 @@ followed by a re-run of the tool, max 3 rounds; still red → STOP and report as
 
 **3. Record** in `shipwright_test_results.json`:
 ```json
-{"screenshot_check": {"applies": true, "status": "pass", "metric": "grid-luma-occupancy-diff-ratio",
+{"screenshot_check": {"applies": true, "status": "pass", "captured": true, "metric": "grid-luma-occupancy-diff-ratio",
   "tolerance": 0.15, "passed": 2, "total": 2,
   "screens": [{"mockup": "01-dashboard.html", "route": "/dashboard", "status": "pass", "diff_ratio": 0.02}]}}
 ```
-Completion gate: with a Brief package the layer's result must be `pass` — `fail`/`error` keep the test phase
+Record the tool's output unchanged (`captured` and `tolerance` are checked). With a Brief package the test-phase validator
+BLOCKS unless this block has `applies: true`, `status: "pass"`, `captured: true` and the standard tolerance; never use
+`--no-capture` or `--tolerance` for the recorded run. Completion gate: with a Brief package the layer's result must be `pass` — `fail`/`error` keep the test phase
 `incomplete`. Without one: `skipped: no Brief package`.
