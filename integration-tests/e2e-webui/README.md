@@ -7,7 +7,8 @@ this project's structure rules hold: `integration-tests/test_e2e_webui_project.p
 
 The app it builds is the social engagement desk in `../fixtures/social-engagement/`. The answer key is
 `../fixtures/social-engagement-expected-result.md` (hard items must hold, soft items are compared by eye). It sits
-next to the package, not inside it, so it is not part of the package hash and the building agent cannot read it.
+next to the package, not inside it, so it is not part of the package hash and is not handed to the building agent. It is not hidden from it either: with
+`bypassPermissions` the agent can reach this repository through `SHIPWRIGHT_MONOREPO_PATH` and could read the file.
 
 ## One-time setup
 
@@ -38,8 +39,16 @@ so delete the run folder when you are done with it. (The spec removes `.claude.j
 
 Exposure to know about: while the run lasts, the agent runs with the chosen permission mode and the temp HOME, so it
 can read the copied login file (or the auth variables in its environment). Prefer `CLAUDE_CODE_OAUTH_TOKEN`. After a
-hard kill (SIGKILL, closed console) no handler runs: the next start scrubs leftovers, or delete
-`<workdir>/run-*/home/.claude/.credentials.json` yourself.
+hard kill (SIGKILL, closed console) no handler runs: the next start scrubs leftovers (login copy and `.claude.json`, only
+those older than the run budget plus an hour), or delete `<workdir>/run-*/home/.claude/.credentials.json` yourself.
+
+More things to know:
+- A copied login can log you out of Claude Code if the provider rotates refresh tokens while the second copy is in use;
+  prefer `CLAUDE_CODE_OAUTH_TOKEN`.
+- The agent's transcripts under `<workdir>/run-*/home` persist after the run, and the terminal screenshots in the report
+  may show anything the agent prints. Review the report folder before sharing it.
+- From a git worktree the default env-file location resolves next to the worktrees folder, not next to your main
+  checkout; set `SHIPWRIGHT_E2E_ENV_FILE` to point at the file.
 
 ## Run
 
@@ -58,8 +67,9 @@ way a user does, waits for completion, opens the app through the project preview
 commands, and puts each approved mockup beside its built screen.
 
 It ends on completion, failure, a wall-clock budget overrun, or an **idle abort**: 20 minutes without a new phase
-state, project file change or terminal output change (typically a prompt it cannot answer). It then takes a
-screenshot and writes the report up to that point.
+state, project file change or terminal output change (typically a prompt it cannot answer). It fires on no progress
+whether or not a prompt is found; the inbox check only adds detail to the report. It then takes a screenshot and writes
+the report up to that point. `SHIPWRIGHT_E2E_MAX_MINUTES` is a real limit for the whole run, builds included.
 
 ## Output
 

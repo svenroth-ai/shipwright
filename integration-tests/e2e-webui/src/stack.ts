@@ -1,7 +1,7 @@
 // Own stack starter, modelled on the WebUI's client/e2e/isolated-stack.mjs: build the server and client,
 // then start the server (which also serves the built client) with HOME/USERPROFILE pointing at the temp
 // HOME. Every child process uses a fixed argv array (no shell string, no env-built command line).
-import { spawn, type ChildProcess } from "node:child_process";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -19,13 +19,32 @@ export interface Stack {
 /** Each build step gets its own limit so a hung build is reported as a build problem, not as an idle agent. */
 export const BUILD_STEP_TIMEOUT_MS = 20 * 60_000;
 
-function runNode(args: string[], cwd: string, label: string): Promise<void> {
+/** Kills the child AND its whole process tree (fixed argv, no shell). Never throws; the tree may already be gone. */
+export function killTree(child: ChildProcess): void {
+  const pid = child.pid;
+  if (pid === undefined || child.exitCode !== null) return;
+  try {
+    if (process.platform === "win32") execFileSync("taskkill", ["/PID", String(pid), "/T", "/F"], { stdio: "ignore", timeout: 30_000 });
+    else process.kill(-pid, "SIGKILL");
+  } catch {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      // already gone
+    }
+  }
+}
+
+/** Build steps count against the overall deadline: a step may use at most the time that is left. */
+function runNode(args: string[], cwd: string, label: string, deadline: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, args, { cwd, stdio: "inherit" });
+    const limit = Math.min(BUILD_STEP_TIMEOUT_MS, deadline - Date.now());
+    if (limit <= 0) return reject(new Error(`${label} not started: the overall time budget is used up`));
+    const child = spawn(process.execPath, args, { cwd, stdio: "inherit", detached: process.platform !== "win32" });
     const timer = setTimeout(() => {
-      child.kill();
-      reject(new Error(`${label} timed out after ${BUILD_STEP_TIMEOUT_MS / 60_000} minutes`));
-    }, BUILD_STEP_TIMEOUT_MS);
+      killTree(child);
+      reject(new Error(`${label} timed out after ${Math.round(limit / 60_000)} minutes (step limit or overall budget)`));
+    }, limit);
     child.once("error", (e) => { clearTimeout(timer); reject(e); });
     child.once("exit", (code) => {
       clearTimeout(timer);
@@ -35,16 +54,22 @@ function runNode(args: string[], cwd: string, label: string): Promise<void> {
   });
 }
 
+const ENV_ALLOW = new Set([
+  "PATH", "Path", "PATHEXT", "SystemRoot", "SYSTEMROOT", "SystemDrive", "windir", "ComSpec", "ProgramData", "ProgramFiles",
+  "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL", "TERM", "PLAYWRIGHT_BROWSERS_PATH",
+]);
+
 /**
- * Environment for the WebUI server (and so the agent): the operator's environment (PATH, auth variables)
- * with every home-like location pointed at the temp HOME, so nothing resolves to the real one.
+ * Environment for the WebUI server (and so the agent). An allowlist, not the operator's whole environment:
+ * the basics a process needs, NODE_*, the values the starter itself exports in `extra` (which carries only the
+ * chosen auth variable and the SHIPWRIGHT_* settings), and every home-like location pointed at the temp HOME.
  */
 export function childEnv(base: NodeJS.ProcessEnv, home: string, extra: Record<string, string>): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...base, ...extra, HOME: home, USERPROFILE: home };
-  delete env.CLAUDE_CONFIG_DIR;
-  delete env.XDG_CONFIG_HOME;
-  delete env.XDG_DATA_HOME;
-  delete env.XDG_CACHE_HOME;
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(base)) {
+    if (value !== undefined && (ENV_ALLOW.has(key) || key.startsWith("NODE_"))) env[key] = value;
+  }
+  Object.assign(env, extra, { HOME: home, USERPROFILE: home });
   env.APPDATA = path.join(home, "AppData", "Roaming");
   env.LOCALAPPDATA = path.join(home, "AppData", "Local");
   return env;
@@ -61,11 +86,11 @@ async function freePort(): Promise<number> {
   });
 }
 
-async function waitFor(url: string, child: ChildProcess, seconds = 60): Promise<void> {
-  for (let i = 0; i < seconds * 2; i += 1) {
+async function waitFor(url: string, child: ChildProcess, deadline: number, seconds = 60): Promise<void> {
+  for (let i = 0; i < seconds * 2 && Date.now() < deadline; i += 1) {
     if (child.exitCode !== null) throw new Error(`WebUI server exited before it was ready (exit ${child.exitCode})`);
     try {
-      if ((await fetch(url)).ok) return;
+      if ((await fetch(url, { signal: AbortSignal.timeout(5000) })).ok) return;
     } catch {
       // not listening yet
     }
@@ -89,6 +114,8 @@ export interface StartInput {
   home: string;
   /** Extra env for the server (and so the agent): the fixture acceptance flag. */
   extraEnv: Record<string, string>;
+  /** Epoch ms of the overall deadline; build steps and the readiness wait count against it. */
+  deadline: number;
 }
 
 export async function startStack(input: StartInput): Promise<Stack> {
@@ -101,9 +128,9 @@ export async function startStack(input: StartInput): Promise<Stack> {
   const clientDir = path.join(webuiDir, "client");
   // Build under the operator's normal environment; only the running server gets the temp HOME.
   const buildStarted = Date.now();
-  await runNode(["node_modules/typescript/bin/tsc", "-p", "tsconfig.json"], serverDir, "WebUI server build");
-  await runNode(["scripts/copy-assets.mjs"], serverDir, "WebUI asset copy");
-  await runNode(["node_modules/vite/bin/vite.js", "build"], clientDir, "WebUI client build");
+  await runNode(["node_modules/typescript/bin/tsc", "-p", "tsconfig.json"], serverDir, "WebUI server build", input.deadline);
+  await runNode(["scripts/copy-assets.mjs"], serverDir, "WebUI asset copy", input.deadline);
+  await runNode(["node_modules/vite/bin/vite.js", "build"], clientDir, "WebUI client build", input.deadline);
 
   const buildMs = Date.now() - buildStarted;
   fs.mkdirSync(path.join(home, "AppData", "Roaming"), { recursive: true });
@@ -112,6 +139,7 @@ export async function startStack(input: StartInput): Promise<Stack> {
   const server = spawn(process.execPath, ["dist/index.js"], {
     cwd: serverDir,
     stdio: "ignore",
+    detached: process.platform !== "win32", // own process group, so the whole tree can be killed
     env: childEnv(process.env, home, {
       ...input.extraEnv,
       PORT: String(port),
@@ -119,18 +147,15 @@ export async function startStack(input: StartInput): Promise<Stack> {
       SHIPWRIGHT_NETWORK_PROFILE: "local",
     }),
   });
-  const killSync = () => {
-    if (server.exitCode === null) server.kill();
-  };
+  const killSync = () => killTree(server);
   const baseUrl = `http://127.0.0.1:${port}`;
   const stop = async () => {
-    if (server.exitCode !== null) return;
-    const done = new Promise<void>((r) => server.once("exit", () => r()));
-    server.kill();
-    await Promise.race([done, new Promise((r) => setTimeout(r, 5000))]);
+    const done = new Promise<void>((r) => (server.exitCode !== null ? r() : server.once("exit", () => r())));
+    killTree(server);
+    await Promise.race([done, new Promise((r) => setTimeout(r, 15_000))]);
   };
   try {
-    await waitFor(`${baseUrl}/api/projects`, server);
+    await waitFor(`${baseUrl}/api/projects`, server, input.deadline);
   } catch (error) {
     await stop();
     throw error;

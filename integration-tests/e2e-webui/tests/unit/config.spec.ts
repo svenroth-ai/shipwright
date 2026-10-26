@@ -103,6 +103,7 @@ test("provisioning writes the permission mode, the real plugins and the folder t
     const state = JSON.parse(fs.readFileSync(path.join(temp, ".claude.json"), "utf8"));
     expect(state.projects[project].hasTrustDialogAccepted).toBe(true);
     expect(JSON.stringify(state)).not.toContain("customApiKeyResponses");
+    expect(fs.readFileSync(path.join(temp, ".gitconfig"), "utf8")).toMatch(/name = .+\n\temail = .+/);
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }
@@ -140,16 +141,64 @@ test("stale login copies from killed runs are scrubbed; other files stay", async
 });
 
 // @covers FR-01.04
-test("child env points every home-like location at the temp HOME and keeps PATH and auth", async () => {
+test("child env is an allowlist: basics, NODE_*, the starter's own values and the chosen auth variable only", async () => {
   const { childEnv } = await import("../../src/stack.js");
+  const { authEnv } = await import("../../src/auth.js");
   const home = path.join(os.tmpdir(), "h");
-  const env = childEnv(
-    { PATH: "/bin", CLAUDE_CONFIG_DIR: "/real", XDG_CONFIG_HOME: "/real", APPDATA: "/real", HOME: "/real", ANTHROPIC_API_KEY: "k" },
-    home, { PORT: "1" },
-  );
+  const operator = {
+    PATH: "/bin", NODE_OPTIONS: "--x", TEMP: "/t", CLAUDE_CONFIG_DIR: "/real", XDG_CONFIG_HOME: "/real", APPDATA: "/real", HOME: "/real",
+    ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "t", GITHUB_TOKEN: "g", AWS_SECRET_ACCESS_KEY: "a", SHIPWRIGHT_E2E_MAX_MINUTES: "9",
+  };
+  const env = childEnv(operator, home, { ...authEnv("env token", operator), PORT: "1" });
   expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
   expect(env.XDG_CONFIG_HOME).toBeUndefined();
   expect([env.HOME, env.USERPROFILE]).toEqual([home, home]);
   expect(env.APPDATA?.startsWith(home) && env.LOCALAPPDATA?.startsWith(home)).toBe(true);
-  expect([env.PATH, env.ANTHROPIC_API_KEY, env.PORT]).toEqual(["/bin", "k", "1"]);
+  expect([env.PATH, env.NODE_OPTIONS, env.TEMP, env.PORT, env.CLAUDE_CODE_OAUTH_TOKEN]).toEqual(["/bin", "--x", "/t", "1", "t"]);
+  for (const leaked of ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY", "SHIPWRIGHT_E2E_MAX_MINUTES"]) {
+    expect(env[leaked], leaked).toBeUndefined();
+  }
+  expect(authEnv("copied login", operator)).toEqual({});
+});
+
+// @covers FR-01.04
+test("a copied login is stamped now, so the stale scrub keeps it; an old .claude.json is scrubbed", async () => {
+  const { scrubStaleLogins } = await import("../../src/auth.js");
+  const real = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-real-"));
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-work-"));
+  try {
+    fs.mkdirSync(path.join(real, ".claude"));
+    fs.writeFileSync(loginFile(real), "x");
+    const old = new Date(Date.now() - 48 * 3_600_000);
+    fs.utimesSync(loginFile(real), old, old);
+    const home = path.join(work, "run-1", "home");
+    copyLogin(real, home);
+    fs.writeFileSync(path.join(home, ".claude.json"), "{}");
+    fs.utimesSync(path.join(home, ".claude.json"), old, old);
+    expect(scrubStaleLogins(work, 3_600_000)).toBe(1); // only the old .claude.json
+    expect(fs.existsSync(loginFile(home))).toBe(true);
+    expect(fs.existsSync(path.join(home, ".claude.json"))).toBe(false);
+  } finally {
+    fs.rmSync(real, { recursive: true, force: true });
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.04
+test("killTree ends the child AND its grandchild", async () => {
+  const { spawn } = await import("node:child_process");
+  const { killTree } = await import("../../src/stack.js");
+  const grand = "setInterval(() => {}, 1000)";
+  const parent = `const c = require("node:child_process").spawn(process.execPath, ["-e", ${JSON.stringify(grand)}], { stdio: "ignore" });` +
+    "console.log(c.pid); setInterval(() => {}, 1000);";
+  const child = spawn(process.execPath, ["-e", parent], { stdio: ["ignore", "pipe", "ignore"], detached: process.platform !== "win32" });
+  const grandPid = await new Promise<number>((resolve, reject) => child.stdout!.once("data", (d) => {
+    const line = String(d).replace(/\[[0-9;]*m/g, "").split(/\r?\n/).find((x) => /^\d+$/.test(x.trim()));
+    line ? resolve(Number(line.trim())) : reject(new Error(`no pid in: ${JSON.stringify(String(d).slice(0, 200))}`));
+  }));
+  const alive = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+  expect([grandPid, alive(grandPid)]).toEqual([grandPid, true]);
+  killTree(child);
+  for (let i = 0; i < 40 && alive(grandPid); i += 1) await new Promise((r) => setTimeout(r, 100));
+  expect(alive(grandPid)).toBe(false);
 });

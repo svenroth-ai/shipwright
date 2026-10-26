@@ -18,6 +18,13 @@ export function pickAuthSource(env: NodeJS.ProcessEnv, realHome: string): AuthSo
   );
 }
 
+/** Only the auth variable of the chosen source goes to the child processes; a copied login needs none. */
+export function authEnv(source: AuthSource, env: NodeJS.ProcessEnv): Record<string, string> {
+  if (source === "env token") return { CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN ?? "" };
+  if (source === "env key") return { ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ?? "" };
+  return {};
+}
+
 export function loginFile(home: string): string {
   return path.join(home, ".claude", ".credentials.json");
 }
@@ -37,6 +44,9 @@ export function copyLogin(realHome: string, tempHome: string): LoginCopy {
   const target = loginFile(tempHome);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(loginFile(realHome), target);
+  // A copy keeps the source mtime on Windows; stamp it now so the stale-copy scrub never mistakes a live copy for an old one.
+  const now = new Date();
+  fs.utimesSync(target, now, now);
   try {
     fs.chmodSync(target, 0o600);
   } catch {
@@ -58,11 +68,13 @@ export function scrubStaleLogins(workdir: string, minAgeMs: number, now: number 
   let removed = 0;
   for (const entry of fs.readdirSync(workdir, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.startsWith("run-")) continue;
-    const stale = loginFile(path.join(workdir, entry.name, "home"));
-    // A copy younger than the run budget may belong to a run that is still alive (shared default workdir).
-    if (fs.existsSync(stale) && now - fs.statSync(stale).mtimeMs >= minAgeMs) {
-      fs.rmSync(stale, { force: true });
-      removed += 1;
+    const home = path.join(workdir, entry.name, "home");
+    // The login copy and the .claude.json (API-key approval record). A file younger than the run budget may belong to a live run.
+    for (const stale of [loginFile(home), path.join(home, ".claude.json")]) {
+      if (fs.existsSync(stale) && now - fs.statSync(stale).mtimeMs >= minAgeMs) {
+        fs.rmSync(stale, { force: true });
+        removed += 1;
+      }
     }
   }
   return removed;

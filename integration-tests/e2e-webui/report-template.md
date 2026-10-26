@@ -29,6 +29,10 @@ deleted when the run ends.
 
 {{CHECKLIST}}
 
+## Screenshot check of the Test phase (approved mockups against built screens)
+
+{{SCREENSHOT_CHECK}}
+
 ## Gates answered
 
 {{GATES}}

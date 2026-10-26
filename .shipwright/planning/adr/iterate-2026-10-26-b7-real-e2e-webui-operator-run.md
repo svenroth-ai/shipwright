@@ -22,3 +22,4 @@ runs in no pipeline, and the local `npm run typecheck` and `npm run test:unit` a
 - Hard checks H07 and H09 judge replies by wording; assert resulting thread state through a follow-up read.
 - Define the idle abort as "no progress AND a pending prompt" strictly; today it aborts on no progress and records whether the inbox held a prompt.
 - Stand-alone cost note: a run costs real tokens; the first real run is operator acceptance, outside the campaign.
+- Fix round 1 skipped on purpose: SIGHUP handling, masking secrets in terminal screenshots, a hard barrier against the agent reading the answer key, a check that the workdir is not inside the repo.

@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
-  "date": "2026-10-26T04:21:04.169558Z",
+  "date": "2026-10-26T04:36:09.264247Z",
   "event_at": "2026-10-26T04:09:46.423692+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -64,6 +64,26 @@
         "evidence": "test_e2e_webui_project.py structure tests PASSED"
       },
       {
+        "behavior": "whole server process tree is killed before the login copy is removed, secrets wiped again after stop",
+        "disposition": "tested",
+        "evidence": "unit config.spec.ts: killTree ends the child AND its grandchild PASSED; shutdown runs every step once PASSED"
+      },
+      {
+        "behavior": "child env is an allowlist carrying only the chosen auth variable; agent git identity exists in the temp HOME",
+        "disposition": "tested",
+        "evidence": "unit config.spec.ts: child env is an allowlist...; provisioning writes ... .gitconfig PASSED"
+      },
+      {
+        "behavior": "copied login is stamped now so the stale scrub keeps a live copy; old .claude.json is scrubbed",
+        "disposition": "tested",
+        "evidence": "unit config.spec.ts: a copied login is stamped now... PASSED"
+      },
+      {
+        "behavior": "Test phase screenshot check is read into the report and fills S03; absent reads as not recorded",
+        "disposition": "tested",
+        "evidence": "unit report.spec.ts: screenshot check from the Test phase fills S03 and the report PASSED"
+      },
+      {
         "behavior": "a real agent run through the WebUI turns the package into a working app",
         "disposition": "untestable",
         "reason_code": "requires-external-nondeterministic-service",
@@ -71,8 +91,8 @@
       }
     ],
     "counts": {
-      "testable": 10,
-      "tested": 10,
+      "testable": 14,
+      "tested": 14,
       "untestable": 1,
       "untested_testable": 0
     }

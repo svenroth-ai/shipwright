@@ -35,7 +35,7 @@ export async function tourApp(app: Page, mockPage: Page, fixtureDir: string, rep
     if (mockup) {
       const file = `mockup-${screenId}.png`;
       await mockPage.goto(pathToFileURL(path.join(fixtureDir, "mockups", mockup)).href);
-      await mockPage.screenshot({ path: path.join(report.dir, file), fullPage: true });
+      await mockPage.screenshot({ path: path.join(report.dir, file), fullPage: true, timeout: 30_000 });
       images.push(file);
     }
     await report.step(`Screen ${screenId}`, app, note, images);

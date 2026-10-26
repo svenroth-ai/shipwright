@@ -57,20 +57,36 @@ export async function findTaskId(request: APIRequestContext, base: string, proje
   return mine.length > 0 ? mine[mine.length - 1].taskId : null;
 }
 
-/** One pass of what a user does at a gate: approve the design review, launch the next phase. Returns what was done. */
-export async function answerGates(page: Page): Promise<string[]> {
+const seen = (page: Page, id: string, ms: number) =>
+  page.getByTestId(id).waitFor({ state: "visible", timeout: ms }).then(() => true, () => false);
+const gone = (page: Page, id: string, ms: number) =>
+  page.getByTestId(id).waitFor({ state: "hidden", timeout: ms }).then(() => true, () => false);
+
+export interface GateState {
+  /** A "next phase" launch was clicked and its button has not gone away yet: never click it again. */
+  launchPending: boolean;
+}
+
+/**
+ * One pass of what a user does at a gate: approve the design review, launch the next phase. Returns what
+ * was done, recorded only after the click really happened.
+ */
+export async function answerGates(page: Page, state: GateState): Promise<string[]> {
   const done: string[] = [];
-  const approve = page.getByTestId("design-gate-approve");
-  if (await approve.isVisible().catch(() => false)) {
-    await approve.click();
-    const confirm = page.getByTestId("design-gate-approve-confirm");
-    if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) await confirm.click();
-    done.push("design review approved");
+  if (await seen(page, "design-gate-approve", 1000)) {
+    await page.getByTestId("design-gate-approve").click();
+    if (await seen(page, "design-gate-approve-confirm", 3000)) {
+      await page.getByTestId("design-gate-approve-confirm").click();
+      done.push("design review approved");
+    } else if (await gone(page, "design-gate-approve", 5000)) {
+      done.push("design review approved (no confirmation dialog)");
+    }
   }
-  const next = page.getByTestId("continue-pipeline-launch-btn");
-  if (await next.isVisible().catch(() => false)) {
-    await next.click();
+  if (state.launchPending && (await gone(page, "continue-pipeline-launch-btn", 1000))) state.launchPending = false;
+  if (!state.launchPending && (await seen(page, "continue-pipeline-launch-btn", 1000))) {
+    await page.getByTestId("continue-pipeline-launch-btn").click();
     done.push("launched the next pipeline phase");
+    state.launchPending = !(await gone(page, "continue-pipeline-launch-btn", 30_000));
   }
   return done;
 }

@@ -91,3 +91,32 @@ export function checkProjectFiles(projectPath: string, fixtureDir: string, check
   checklist.record("H04", mockups.length > 0 && missing.length === 0 ? "pass" : "fail",
     missing.length === 0 ? `${screens.length} screens, one per approved mockup` : `no screen for: ${missing.join(", ")}`);
 }
+
+export interface ScreenshotCheck {
+  status: string;
+  summary: string;
+}
+
+/** The B3c screenshot check the Test phase recorded in the project's shipwright_test_results.json. */
+export function readScreenshotCheck(projectPath: string): ScreenshotCheck {
+  const none = { status: "not recorded", summary: "not recorded (no screenshot_check block in shipwright_test_results.json)" };
+  try {
+    const file = path.join(projectPath, "shipwright_test_results.json");
+    const block = (JSON.parse(fs.readFileSync(file, "utf8")) as { screenshot_check?: Record<string, unknown> }).screenshot_check;
+    if (!block || typeof block !== "object") return none;
+    const screens = Array.isArray(block.screens) ? (block.screens as Record<string, unknown>[]) : [];
+    const lines = [
+      `status: ${String(block.status)}; metric: ${String(block.metric)}; tolerance: ${String(block.tolerance)}; passed ${String(block.passed)} of ${String(block.total)}`,
+      ...screens.map((s) => `- ${String(s.mockup)} (${String(s.route)}): ${String(s.status)}, diff_ratio ${String(s.diff_ratio)}`),
+    ];
+    return { status: String(block.status), summary: lines.join("\n") };
+  } catch {
+    return none;
+  }
+}
+
+/** Fills soft item S03 from the recorded check; an absent check stays "not evaluated". */
+export function recordScreenshotCheck(checklist: Checklist, check: ScreenshotCheck): void {
+  if (check.status === "not recorded") return checklist.record("S03", "not evaluated", "screenshot check not recorded");
+  checklist.record("S03", check.status === "pass" ? "pass" : "fail", `Test phase screenshot check: ${check.status}`);
+}

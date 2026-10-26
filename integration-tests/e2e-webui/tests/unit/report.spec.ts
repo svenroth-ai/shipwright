@@ -129,3 +129,31 @@ test("project file checks: complete project passes H01-H04, a missing screen fai
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// @covers FR-01.04
+test("screenshot check from the Test phase fills S03 and the report; absent reads as not recorded", async () => {
+  const { readScreenshotCheck, recordScreenshotCheck } = await import("../../src/progress.js");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-shot-"));
+  try {
+    const absent = readScreenshotCheck(dir);
+    expect(absent.status).toBe("not recorded");
+    const none = new Checklist(parseChecklist(expected));
+    recordScreenshotCheck(none, absent);
+    expect(none.items.find((i) => i.id === "S03")!.verdict).toBe("not evaluated");
+
+    fs.writeFileSync(path.join(dir, "shipwright_test_results.json"), JSON.stringify({ screenshot_check: {
+      applies: true, status: "pass", metric: "grid-luma-occupancy-diff-ratio", tolerance: 0.15, passed: 1, total: 1,
+      screens: [{ mockup: "01-board-new.html", route: "/", status: "pass", diff_ratio: 0.02 }] } }));
+    const got = readScreenshotCheck(dir);
+    expect(got.summary).toContain("tolerance: 0.15");
+    expect(got.summary).toContain("01-board-new.html (/): pass, diff_ratio 0.02");
+    const list = new Checklist(parseChecklist(expected));
+    recordScreenshotCheck(list, got);
+    expect(list.items.find((i) => i.id === "S03")!.verdict).toBe("pass");
+    const report = new Report(dir, { authSource: "env token", config: {} }, list, template);
+    report.setScreenshotCheck(got.summary);
+    expect(report.render("x")).toContain("diff_ratio 0.02");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

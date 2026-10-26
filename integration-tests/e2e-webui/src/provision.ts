@@ -78,5 +78,7 @@ export function provisionHome(input: ProvisionInput): PluginInfo[] {
   };
   if (input.apiKeyTail) state.customApiKeyResponses = { approved: [input.apiKeyTail], rejected: [] };
   writeJson(path.join(tempHome, ".claude.json"), state);
+  // The agent commits run with HOME = the temp HOME, which has no git identity of its own.
+  fs.writeFileSync(path.join(tempHome, ".gitconfig"), "[user]\n\tname = Shipwright E2E\n\temail = e2e@example.invalid\n", "utf8");
   return plugins;
 }

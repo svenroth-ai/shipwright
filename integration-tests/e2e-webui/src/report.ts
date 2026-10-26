@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Checklist } from "./checklist.js";
 
 export interface Shooter {
-  screenshot(options: { path: string; fullPage?: boolean }): Promise<unknown>;
+  screenshot(options: { path: string; fullPage?: boolean; timeout?: number }): Promise<unknown>;
 }
 
 interface StepEntry {
@@ -27,6 +27,7 @@ export class Report {
   private gates: string[] = [];
   private escalations: string[] = [];
   private modelSpend = "not available";
+  private screenshotCheck = "not recorded";
   private readonly started = Date.now();
   private readonly startedIso: string;
 
@@ -49,7 +50,7 @@ export class Report {
     if (shooter) {
       const file = `${String(n).padStart(2, "0")}-${slug(title)}.png`;
       try {
-        await shooter.screenshot({ path: path.join(this.dir, file), fullPage: true });
+        await shooter.screenshot({ path: path.join(this.dir, file), fullPage: true, timeout: 30_000 });
         images.push(file);
       } catch (error) {
         note = `${note} (screenshot failed: ${(error as Error).message})`.trim();
@@ -64,6 +65,9 @@ export class Report {
   }
   escalation(text: string): void {
     this.escalations.push(text);
+  }
+  setScreenshotCheck(text: string): void {
+    this.screenshotCheck = text;
   }
   setModelSpend(text: string): void {
     this.modelSpend = text;
@@ -80,6 +84,7 @@ export class Report {
       CHECKLIST: this.checklist.toMarkdown(),
       GATES: list(this.gates, "none"),
       ESCALATIONS: list(this.escalations, "none"),
+      SCREENSHOT_CHECK: this.screenshotCheck,
       MODEL_SPEND: this.modelSpend,
     };
     return this.template.replace(/\{\{([A-Z_]+)\}\}/g, (whole, key: string) => (key in fill ? fill[key] : whole));
