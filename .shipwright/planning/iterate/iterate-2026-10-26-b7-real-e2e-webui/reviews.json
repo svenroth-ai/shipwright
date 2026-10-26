@@ -209,14 +209,14 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-26T04:42:25.534734+00:00",
+      "completed_at": "2026-10-26T05:14:43.089628+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "6dcb0b2d3c30621b3d376e18cfce42b490205d18"
+      "reviewed_commit": "a2328799432411172ef5222f1741c7361fd2d2ff"
     },
     "doubt": {
       "review_type": "doubt",
@@ -261,14 +261,14 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-26T04:42:25.652920+00:00",
+      "completed_at": "2026-10-26T05:14:43.240398+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "6dcb0b2d3c30621b3d376e18cfce42b490205d18"
+      "reviewed_commit": "a2328799432411172ef5222f1741c7361fd2d2ff"
     },
     "external_code": {
       "review_type": "external_code",
@@ -401,14 +401,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-26T04:42:25.405654+00:00",
+      "completed_at": "2026-10-26T05:14:42.947443+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "6dcb0b2d3c30621b3d376e18cfce42b490205d18"
+      "reviewed_commit": "a2328799432411172ef5222f1741c7361fd2d2ff"
     },
     "plan_internal": {
       "review_type": "plan_internal",
