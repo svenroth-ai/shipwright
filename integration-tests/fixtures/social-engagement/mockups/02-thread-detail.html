@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thread shown in full</title>
+<style>
+:root { --color-bg:#f6f7f9; --color-surface:#fff; --color-text:#111827; --color-muted:#6b7280; --color-border:#d0d5dd; --color-primary:#2563eb; --color-on-primary:#fff; --space-2:8px; --space-3:12px; --space-4:16px; --radius-lg:12px; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; font-size: 16px; color: var(--color-text); background: var(--color-bg); }
+.chat-app { display: grid; grid-template-columns: minmax(280px, 2fr) 3fr; height: 100vh; }
+.chat { display: flex; flex-direction: column; border-right: 1px solid var(--color-border); background: var(--color-surface); }
+.chat-log { flex: 1; overflow-y: auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.msg { max-width: 85%; padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); }
+.msg-user { align-self: flex-end; background: var(--color-primary); color: var(--color-on-primary); }
+.msg-app { align-self: flex-start; background: var(--color-bg); border: 1px solid var(--color-border); }
+.chip-row { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
+.chip { border: 1px solid var(--color-border); border-radius: 999px; padding: 4px 12px; background: var(--color-bg); cursor: pointer; }
+.chat-input { display: flex; gap: var(--space-2); padding: var(--space-4); border-top: 1px solid var(--color-border); }
+.chat-input input { flex: 1; padding: var(--space-2); }
+.btn-primary { background: var(--color-primary); color: var(--color-on-primary); border: 0; border-radius: 8px; padding: 8px 16px; }
+.pane { display: flex; flex-direction: column; overflow: hidden; }
+.pane-tabs { display: flex; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); }
+.pane-tab { border: 0; background: none; padding: 6px 12px; cursor: pointer; }
+.pane-tab.active { border-bottom: 2px solid var(--color-primary); font-weight: 600; }
+.pane-body { flex: 1; overflow-y: auto; padding: var(--space-4); }
+.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-3); }
+.badge { font-size: 13px; border-radius: 999px; padding: 2px 8px; color: #fff; }
+.badge-new { background: #b45309; } .badge-drafted { background: #1d4ed8; } .badge-posted { background: #15803d; }
+.muted { color: var(--color-muted); }
+@media (max-width: 768px) { .chat-app { grid-template-columns: 1fr; height: auto; } }
+</style>
+</head>
+<body>
+<div class="chat-app">
+<section class="chat" aria-label="Chat">
+<div class="chat-log"><div class="msg msg-user">show thread 1</div><div class="msg msg-app">Thread 1 on Reddit.</div></div>
+<div class="chip-row"><button class="chip" type="button">fetch new matches</button><button class="chip" type="button">show thread 1</button><button class="chip" type="button">set keywords: onboarding, pricing</button></div>
+<form class="chat-input"><input type="text" placeholder="Type a command" aria-label="Message"><button class="btn-primary" type="button">Send</button></form>
+</section>
+<section class="pane" aria-label="Pane">
+<div class="pane-tabs" role="tablist"><button class="pane-tab active" role="tab" type="button">Reddit</button><button class="pane-tab" role="tab" type="button">Hacker News</button><button class="pane-tab" role="tab" type="button">LinkedIn</button></div>
+<div class="pane-body">
+<div class="card"><strong>#1 How do you handle onboarding for a new tool?</strong> <span class="badge badge-new">new</span><div class="muted">Reddit, posted by u/maria_k</div><p>We are looking for something that gets a new teammate productive in a day. Pricing matters too. Any experience?</p><p class="muted">No draft yet.</p></div>
+</div>
+</section>
+</div>
+</body>
+</html>

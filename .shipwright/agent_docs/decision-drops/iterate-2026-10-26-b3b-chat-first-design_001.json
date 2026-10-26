@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-26-b3b-chat-first-design",
+  "date": "2026-10-26",
+  "section": "Iterate - feature: Chat-first design (B3b)",
+  "title": "Chat-first Brief packages: chat-map.json, generated flows, Layout D, chip rule",
+  "context": "A chat-first Brief package (chat plus pane) had no layout, no link from typed commands to pane-state screens, and no flow mockups for the flows gate.",
+  "decision": "apply-brief-package.py checks chat-map.json against screen-map.json by one rule (capability screen exists and lists the capability's requirements) and writes one flow mockup per golden path; verifier brief_chat_first_applied; chrome gate refuses a chip with nav-item/topnav-link; Layout D snippet; references/chat-first.md holds the agent's STOP table.",
+  "consequences": "Pane-state screens live in screen-map.json. Accepted: the chip rule applies to every project and reads comments; a chat-only FR absent from chat-map.json is undetected (follow-up); unmapped_frs stays informational; TOCTOU stays with U3. Review findings fixed: re-entry flow check, FR-count check, flows inline the pane mockup.",
+  "rationale": "A script and a verifier are repeatable where prose depends on agent discipline; flows are generated so the unattended agent never authors or edits them; reuses B3a's plan module and the existing gates.",
+  "rejected": "Prose-only flows; a separate chat-first design tool; no-op (fails the chat-first acceptance).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

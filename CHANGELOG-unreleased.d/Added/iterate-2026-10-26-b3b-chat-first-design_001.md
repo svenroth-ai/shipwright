@@ -1,0 +1,1 @@
+feat(design): Design takes chat-first Brief packages: chat-map.json is checked against the screen-map, a flow mockup is generated per golden path, chat chips may not be navigation, and a complete social engagement desk fixture ships for the real end-to-end run

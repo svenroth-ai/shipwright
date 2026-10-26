@@ -1,0 +1,99 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-26-b3b-chat-first-design",
+    "date": "2026-10-26",
+    "unit": {
+      "status": "passed",
+      "passed": 14121,
+      "total": 14121
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "chat-map.json is checked against screen-map.json by one rule; each defect is a named bad_chat_map issue and nothing is written",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_chat_first_package.py::test_a_capability_without_its_pane_state_screen_stops_the_tool, ::test_other_chat_map_defects_are_issues; shared/tests/test_brief_chat_plan.py::test_each_defect_is_named PASSED"
+        },
+        {
+          "behavior": "one flow mockup per golden path is generated (escaped, standalone, inlines the approved pane-state mockup)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_brief_chat_plan.py::test_flow_pages_are_escaped_standalone_and_numbered, ::test_the_flow_shows_the_pane_state_mockup_standalone; plugins/shipwright-design/tests/test_chat_first_package.py::test_the_generated_flow_inlines_the_approved_pane_mockup PASSED"
+        },
+        {
+          "behavior": "re-entry reports ux_shape/ui_host/flows, keeps flow edits, reports a deleted flow as applied_files_missing and the marker-delete repair restores it",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_chat_first_package.py::test_reentry_reports_the_shape_and_keeps_flow_edits, ::test_reentry_with_a_deleted_flow_is_applied_files_missing_and_repairable PASSED"
+        },
+        {
+          "behavior": "a pre-existing differing flow is reported in kept_existing_differs",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_chat_first_package.py::test_a_flow_that_was_already_there_and_differs_is_reported PASSED"
+        },
+        {
+          "behavior": "the chrome gate refuses a chat chip carrying nav-item/topnav-link; the chip rule is regex-free and fast",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_chat_first_package.py::test_a_chip_used_as_navigation_turns_the_chrome_gate_red; shared/tests/test_brief_chat_plan.py::test_chip_rule, ::test_chip_rule_is_fast_on_hostile_markup PASSED"
+        },
+        {
+          "behavior": "verifier brief_chat_first_applied is red without a flow or a linked FR and gives no result for a classic package",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_chat_first_package.py::test_the_verifier_is_red_without_a_flow_or_a_linked_fr, ::test_a_classic_package_gets_no_flows_and_no_chat_check PASSED"
+        },
+        {
+          "behavior": "the social-engagement fixture passes A1's dry harness and every design gate incl. boundary in a real git repo",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_chat_first_design.py PASSED"
+        },
+        {
+          "behavior": "the chat-first prose (Layout D, STOP table, never type FR ids) is pinned",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_chat_first_package.py::test_the_chat_first_prose_is_pinned PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest integration-tests/test_chat_first_design.py -q",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3b\\.shipwright\\runs\\iterate-2026-10-26-b3b-chat-first-design\\surface_verification.log",
+      "timestamp": "2026-10-26T01:28:56.889Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

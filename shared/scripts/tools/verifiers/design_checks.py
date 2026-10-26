@@ -33,6 +33,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .brief_chat_checks import check_brief_chat_first_applied
 from .brief_design_checks import check_brief_design_applied
 from .common import (
     CheckResult,
@@ -259,6 +260,7 @@ def run_design_checks(
     results.append(check_design_manifest_screens_exist(project_root))
     results.append(check_design_fr_coverage(project_root))
     results.extend(check_brief_design_applied(project_root))  # brief runs only (B3a)
+    results.extend(check_brief_chat_first_applied(project_root))  # chat-first brief runs only (B3b)
 
     # Canon (C4 skipped by policy)
     results.append(check_c1_phase_event_recorded(project_root, "design"))

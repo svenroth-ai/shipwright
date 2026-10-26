@@ -28,6 +28,7 @@ try:
     # loaded as lib.design_gate_extras (shared/tests)
     from .design_gate_feedback import iteration_touched_flagged_screens, parse_feedback_round
     from .design_gate_html import (
+        chip_nav_class_violations,
         chrome_nav_targets_consistent,
         screen_declares_nav,
         standalone_html_violations,
@@ -38,6 +39,7 @@ except ImportError:
     # shared/scripts/lib itself on sys.path.
     from design_gate_feedback import iteration_touched_flagged_screens, parse_feedback_round
     from design_gate_html import (
+        chip_nav_class_violations,
         chrome_nav_targets_consistent,
         screen_declares_nav,
         standalone_html_violations,
@@ -46,6 +48,7 @@ except ImportError:
 
 __all__ = [
     "GateResult",
+    "chip_nav_class_violations",
     "chrome_nav_targets_consistent",
     "flows_present_for_multi_screen_app",
     "iteration_touched_flagged_screens",
