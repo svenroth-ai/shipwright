@@ -56,7 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = subparsers.add_parser("write-config")
     p.add_argument("--scope", required=True, choices=["full_app", "extension"])
     p.add_argument("--profile", default=None)
-    p.add_argument("--autonomy", default="guided", choices=["guided", "autonomous"])
+    p.add_argument("--autonomy", default="guided", choices=["guided", "autonomous", "unattended"])
     # ``choices`` advertises ONLY the real mode, so `--help` and the usage line never
     # present the removed one as selectable. The ``type`` hook still intercepts the
     # removed literal FIRST (argparse applies type before choices), so passing it yields

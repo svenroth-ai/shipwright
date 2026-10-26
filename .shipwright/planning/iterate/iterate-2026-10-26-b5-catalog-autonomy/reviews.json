@@ -1,0 +1,296 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-26-b5-catalog-autonomy",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T02:10:42.483819+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The proposed validator enforces the denylist but does not explicitly enforce the allowlist. Any other non-constitution `orchestrator-approve` gate could acquire an `unattended_answer`, despite the requirement to pin eligibility per gate.",
+          "suggestion": "Reject `unattended_answer` unless the gate ID is one of the three explicitly eligible gates. Test an otherwise valid approval gate outside that allowlist, alongside denylisted, locked, and hard-stop gates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan returns `unattended_answer` while leaving `should_stop` unchanged, but does not identify the master/CLI execution changes that actually apply the answer. Returning metadata alone does not establish the intended behavior or guarantee that hash and FR-coverage checks precede automatic approval.",
+          "suggestion": "Name the consuming execution paths and specify the ordering: resolve effective autonomy, validate prerequisites and coverage, then apply the catalog answer. Add integration tests proving eligible gates proceed unattended and failed checks still stop execution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Autonomy precedence and failure behavior are underspecified. Adding a CLI override, a run-config reader, and a schema value creates practical ambiguity around absent configuration, invalid values, and conflicting inputs.",
+          "suggestion": "Define explicit CLI versus run-config precedence, preserve existing behavior when autonomy is absent, and reject invalid explicit values. Test that malformed or unreadable configuration cannot silently enable unattended execution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The scope explicitly includes catalog completion for test, smoke, and changelog asks, but the plan only describes test and changelog additions. It also promises consumer edits without explicitly delivering the required grep inventory or running doc-sync.",
+          "suggestion": "Account for smoke asks and phase coverage, or document that existing entries already satisfy them. Include the D6 consumer grep inventory in the PR, explain retained human-presence restrictions, and make doc-sync a completion check.  The catalog-centered approach is sound, but allowlist enforcement and the actual unattended execution path need explicit implementation and verification before approval. The scope omissions should also be resolved so acceptance can be assessed directly.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-26T02:10:42.662257+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: medium**\n`should_stop` is left unchanged and the master/CLI \"applies the answer after hash + FR-coverage checks.\" This means the safety decision is split across two places: the validator decides *whether* an unattended answer is admissible, and the caller decides *whether it actually stops the run*. Any consumer that forgets the application step (or applies it before the hash/FR-coverage checks) silently reverts to supervised behavior — and there's no test listed that asserts the ordering (answer applied only after checks pass). Add an explicit test that a stop-with-unattended-answer is rejected when hash/coverage checks fail, and that a consumer missing the application step fails loudly rather than defaulting to \"stop anyway.\"\n\n**Category: edge-case — Severity: medium**\n`unattended_answer_for` \"fails closed\" — clarify what closed means here for a non-denylisted gate that has no `unattended_answer` in the catalog (e.g. someone adds `deploy.preview` later). Presumably it raises or returns supervised; the validator should pin this behavior with a test. Also: the denylist uses suffix *families* (`out-of-sequence-continue`) while the allowlist is exact ids — the interaction needs a test where an id matches both (e.g. a new `test.out-of-sequence-continue` gate is in the suffix family and in the catalog); the spec says denylist wins, but the plan doesn't state precedence explicitly.\n\n**Category: dependency — Severity: medium**\n`COVERED_PHASES` is being extended to test and changelog \"tuple and JSON together,\" and the .md is regenerated — but nothing mentions consumers of the *old* catalog format (older gate_policy.py reading a newer catalog with unknown fields like `unattended_answer`, or vice versa during a partial rollout). If the catalog and validator can be deployed out of sync, add a version/schema field or state explicitly that they ship atomically in one PR.\n\n**Category: approach — Severity: low**\n`read_run_con […truncated]\n\n[openai] 1. **Category:** security  \n   **Severity:** high  \n   **Finding:** The proposed validator enforces the denylist but does not explicitly enforce the allowlist. Any other non-constitution `orchestrator-approve` gate could acquire an `unattended_answer`, despite the requirement to pin eligibility per gate.  \n   **Suggestion:** Reject `unattended_answer` unless the gate ID is one of the three explicitly eligible gates. Test an otherwise valid approval gate outside that allowlist, alongside denylisted, locked, and hard-stop gates.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The plan returns `unattended_answer` while leaving `should_stop` unchanged, but does not identify the master/CLI execution changes that actually apply the answer. Returning metadata alone does not establish the intended behavior or guarantee that hash and FR-coverage checks precede automatic approval.  \n   **Suggestion:** Name the consuming execution paths and specify the ordering: resolve effective autonomy, validate prerequisites and coverage, then apply the catalog answer. Add integration tests proving eligible gates proceed unattended and failed checks still stop execution.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Autonomy precedence and failure behavior are underspecified. Adding a CLI override, a run-config reader, and a schema value creates practical ambiguity around absent configuration, invalid values, and conflicting inputs.  \n   **Suggestion:** Define explicit CLI versus run-config precedence, preserve existing behavior when autonomy is absent, and reject invalid explicit values. Test that malformed or unreadable configuration cannot silently enable unattended execution.\n\n4. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The scope explicitly includes catalog completion for **test, smoke, and changelog** asks, but the plan only describes test and changelog additions. It also promises consumer edits wi […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/skills/run/SKILL.md",
+          "line": 136,
+          "finding": "Step 3 preflight skip not tied to a package intake; fixed (keyed on source == package and both lists empty)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 66,
+          "finding": "gate discipline block linked only in the standalone branch; fixed (top-level link, gate ids named, driven-run auto-accept documented)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/gate_catalog.json",
+          "line": 609,
+          "finding": "changelog gates auto-default change guided driven behaviour; documented as decided (phase-runner has no AskUserQuestion, release PR stays open)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/resolve_gate_policy.py",
+          "line": 140,
+          "finding": "unknown-gate fallback lacked unattended keys; fixed",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 1121,
+          "finding": "stale run_config-default sentence; fixed after fix-round review",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-26T03:21:23.421840+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cd893f3ad44d3f1ea3acf2877ae75cbf64c8981e"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": "shared/scripts/tools/resolve_gate_policy.py",
+          "line": null,
+          "finding": "Claim under doubt: only the master can act on an unattended_answer — phase-runners received the answer via the run_config default; fixed: the resolver emits it only for an explicit --autonomy, tests added.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py",
+          "line": null,
+          "finding": "Claim under doubt: unattended starts only from an approved package — prose-only until U3 (plain-seed fail-fast is U3 by decision); unattended is autonomous minus overrides in the window; recorded as a follow-up.",
+          "suggestion": "U3 plain-seed fail-fast (accepted deferral)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-run/skills/run/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: Step 3 skip cannot skip a needed question — now keyed on source package; env_preflight under unattended is U3's preflight.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary and contract",
+          "file": "shared/scripts/lib/gate_unattended.py",
+          "line": null,
+          "finding": "Claim under doubt: denylist check is fail-closed for any catalog dict — fixed: denylist is checked against the resolver gate_id, with a resolve-time test.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-26T03:21:23.554448+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cd893f3ad44d3f1ea3acf2877ae75cbf64c8981e"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec /",
+          "file": "shared/config/gate_catalog.json` (entire file) / `shared/scripts/lib/gate_catalog_render.py",
+          "line": 84,
+          "finding": "The acceptance criterion says \"doc-sync green\" — `gate_catalog.md` is generated from the JSON and must be regenerated after every edit (the JSON header says so explicitly). This diff adds six new gates, `unattended_answer` fields on three design gates, and a new `unattended_policy` key, but contains no change to `shared/config/gate_catalog.md`. Unless it was regenerated in an unshown hunk, the generated doc is stale and doc-sync is red. Also note: the new `unattended_policy` top-level key is never validated by `validate_catalog` (unknown top-level keys are silently accepted), so drift there would also go unnoticed.",
+          "suggestion": "Regenerate `gate_catalog.md` (`resolve_gate_policy.py --render-doc`) and include it in the PR; confirm the doc-sync check runs in CI.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec /",
+          "file": "shared/config/gate_catalog.json:360-410",
+          "line": null,
+          "finding": "The unit scope names \"catalog completion (test, smoke, changelog asks)\". The test phase adds only `out-of-sequence-continue`, `dev-server-port`, and `fix-attempts-exhausted`; the changelog phase adds three. If the test-phase skill has other interactive asks (e.g. flaky-E2E retry confirmation, blocked manual-step confirmation per migration-safety \"wait for user confirmation\"), they remain uncataloged — the docs edited in this diff (`migration-safety.md`, `step-3-playwright-e2e.md`) describe additional decision points not represented as gates. Verify the completion list against the test/changelog skill text; missing gates will fall through to `interactive` in a driven run and stall an unattended run.",
+          "suggestion": "Cross-check every AskUserQuestion site in the test/changelog skills against the catalog; add any missing gate ids or record them explicitly as `pending_phases`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec /",
+          "file": "PR description (not in diff)",
+          "line": null,
+          "finding": "The AC requires \"every D6 consumer of the autonomy value (produce the grep list in the PR)\". The diff updates many prose consumers, but this cannot be verified from the diff alone; any consumer that branches on `autonomy == \"autonomous\"` in code (not markdown) would still miss `unattended`. The two code touchpoints shown are `cli.py` and the resolver; if other Python scripts compare autonomy strings, they are unhandled here.",
+          "suggestion": "Grep for `autonomous` across `/scripts/` and include the list in the PR; patch any code-level equality checks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test /",
+          "file": "plugins/shipwright-run/tests/test_autonomy_unattended.py:33-35",
+          "line": null,
+          "finding": "The schema test asserts `{\"guided\",\"autonomous\",\"unattended\",\"supervised\"} <= set(enum)` but never pins that `unattended` is accepted end-to-end by anything other than the CLI choices — it passes even if downstream write-config validation (schema validation in `orchestrator_pkg`) rejects `unattended`. It's a weak test if write-config validates against the schema; the parametrized CLI test does cover the write path, so risk is low, but the schema assertion on `supervised` is unrelated scope creep that could mask a deliberate narrowing later.",
+          "suggestion": "Fine as-is, but consider asserting the enum exactly if the set is meant to be closed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": "shared/scripts/tools/resolve_gate_policy.py",
+          "line": 125,
+          "finding": "autonomy \"\"` (explicit empty string) silently falls back to the run-config value via `args.autonomy or read_run_config_autonomy(...)`. A caller explicitly passing an empty autonomy to force \"no autonomy\" gets the config's `unattended` instead. Minor, but it's the same class of precedence bug `--mode` solves with an explicit sentinel.",
+          "suggestion": "Use `args.autonomy if args.autonomy is not None else read_run_config_autonomy(...)`.  Checked and found sound: `unattended_answer_for` fails closed on unvalidated/ineligible gates (verified by the mutating test); `resolve_gate_policy` returns `unattended_answer: None` in inert mode; `should_stop` is never changed by autonomy; `validate_unattended`'s ordering and type checks; the denylist pinning tests would genuinely catch edits; `read_run_config_autonomy` mirrors the total-read guard of `read_run_config_mode`.  Overall assessment: The core mechanism (allowlist, validator, denylist, resolver plumbing, tests) is solid and well-tested; the gaps are the likely-stale generated `gate_catalog.md` and unverified completeness of the gate/consumer inventories — ship-with-fixes after regenerating the doc and confirming the grep list.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/config/gate_catalog.json",
+          "line": 14,
+          "finding": "The catalog adds `test` and `changelog`, six gates, and three unattended answers, but its generated sibling `gate_catalog.md` is absent from the diff. The checked-in documentation therefore remains inconsistent with the JSON and the updated renderer, leaving the explicit “doc-sync green” acceptance criterion unmet.",
+          "suggestion": "Regenerate `shared/config/gate_catalog.md` using the updated renderer, include it in the change, and run the documentation synchronization check.  Overall assessment: ship-with-fixes. The supplied diff has a concrete documentation synchronization gap; I could not run checks because workspace command execution was blocked by policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-26T02:10:42.859964+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec / Severity: medium\n  File: `shared/config/gate_catalog.json` (entire file) / `shared/scripts/lib/gate_catalog_render.py:84`\n  Finding: The acceptance criterion says \"doc-sync green\" — `gate_catalog.md` is generated from the JSON and must be regenerated after every edit (the JSON header says so explicitly). This diff adds six new gates, `unattended_answer` fields on three design gates, and a new `unattended_policy` key, but contains **no change to `shared/config/gate_catalog.md`**. Unless it was regenerated in an unshown hunk, the generated doc is stale and doc-sync is red. Also note: the new `unattended_policy` top-level key is never validated by `validate_catalog` (unknown top-level keys are silently accepted), so drift there would also go unnoticed.\n  Suggestion: Regenerate `gate_catalog.md` (`resolve_gate_policy.py --render-doc`) and include it in the PR; confirm the doc-sync check runs in CI.\n\n- Category: spec / Severity: low\n  File: `shared/config/gate_catalog.json:360-410`\n  Finding: The unit scope names \"catalog completion (test, smoke, changelog asks)\". The test phase adds only `out-of-sequence-continue`, `dev-server-port`, and `fix-attempts-exhausted`; the changelog phase adds three. If the test-phase skill has other interactive asks (e.g. flaky-E2E retry confirmation, blocked manual-step confirmation per migration-safety \"wait for user confirmation\"), they remain uncataloged — the docs edited in this diff (`migration-safety.md`, `step-3-playwright-e2e.md`) describe additional decision points not represented as gates. Verify the completion list against the test/changelog skill text; missing gates will fall through to `interactive` in a driven run and stall an unattended run.\n  Suggestion: Cross-check every AskUserQuestion site in the test/changelog skills against the catalog; add any missing gate ids or record them explicitly as `pending_phases`.\n\n- Category: spec / Severity: low\n  File: PR description (not in dif […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/config/gate_catalog.json:14\n- Finding: The catalog adds `test` and `changelog`, six gates, and three unattended answers, but its generated sibling `gate_catalog.md` is absent from the diff. The checked-in documentation therefore remains inconsistent with the JSON and the updated renderer, leaving the explicit “doc-sync green” acceptance criterion unmet.\n- Suggestion: Regenerate `shared/config/gate_catalog.md` using the updated renderer, include it in the change, and run the documentation synchronization check.\n\nOverall assessment: ship-with-fixes. The supplied diff has a concrete documentation synchronization gap; I could not run checks because workspace command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T03:21:23.278728+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cd893f3ad44d3f1ea3acf2877ae75cbf64c8981e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T02:10:51.273748+00:00",
+      "disposition": "Effective complexity is small (Step 3.4); the internal plan and architecture arms run at medium and above only",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T02:10:51.704089+00:00",
+      "disposition": "Effective complexity is small (Step 3.4); the internal plan and architecture arms run at medium and above only",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

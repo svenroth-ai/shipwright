@@ -55,6 +55,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="print shared/config/gate_catalog.md")
     p.add_argument("--phase", choices=COVERED_PHASES, help="filter --list to one phase")
     p.add_argument("--mode", help="explicit run mode (highest precedence)")
+    p.add_argument("--autonomy", help="master path only: with 'unattended', add the gate's reviewed "
+                   "unattended_answer. Never defaulted from run_config, so phase-runners get None")
     p.add_argument("--project-root", default=".", help="root holding shipwright_run_config.json")
     p.add_argument(
         "--output",
@@ -64,12 +66,12 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def _resolved_rows(catalog: dict, mode: str, phase: str | None) -> list[dict]:
+def _resolved_rows(catalog: dict, mode: str, phase: str | None, autonomy: str | None) -> list[dict]:
     rows: list[dict] = []
     for gid, g in catalog["gates"].items():
         if phase and g["phase"] != phase:
             continue
-        r = resolve_gate_policy(gid, mode=mode, catalog=catalog)
+        r = resolve_gate_policy(gid, mode=mode, catalog=catalog, autonomy=autonomy)
         rows.append(
             {
                 "gate_id": gid,
@@ -78,6 +80,7 @@ def _resolved_rows(catalog: dict, mode: str, phase: str | None) -> list[dict]:
                 "effective_policy": r["effective_policy"],
                 "should_stop": r["should_stop"],
                 "default_answer": r["default_answer"],
+                "unattended_answer": r["unattended_answer"],
                 "constitution": g["constitution"],
                 "fires": g["fires"],
                 "summary": g["summary"],
@@ -118,9 +121,11 @@ def main(argv: list[str] | None = None) -> int:
         project_root=args.project_root,
     )
 
+    autonomy = args.autonomy  # explicit only: --list from a phase-runner must not expose answers
+
     if args.gate:
         try:
-            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog)
+            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog, autonomy=autonomy)
         except KeyError:
             # LLM-facing SAFE fallback: an unknown gate must not crash a phase
             # subagent into a retry loop. Resolve to `interactive` (ask the
@@ -137,13 +142,15 @@ def main(argv: list[str] | None = None) -> int:
                 "effective_policy": INTERACTIVE,
                 "should_stop": True,
                 "default_answer": None,
+                "autonomy": args.autonomy,
+                "unattended_answer": None,
                 "unknown_gate": True,
             }
         print(json.dumps(result, indent=2))
         return 0
 
     # --list (optionally --phase)
-    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase)}, indent=2))
+    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase, autonomy)}, indent=2))
     return 0
 
 

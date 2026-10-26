@@ -1,0 +1,92 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-26-b5-catalog-autonomy",
+    "date": "2026-10-26",
+    "unit": {
+      "status": "passed",
+      "passed": 18166,
+      "total": 18166
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "exactly design.preview-approval, design.review-loop-finalize and design.upload-screen-mapping carry an unattended_answer",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_shipped_allowlist_is_exactly_the_three_design_gates PASSED"
+        },
+        {
+          "behavior": "denylist pinned by id (11 ids + out-of-sequence-continue / prereqs-missing families) and every id exists in the catalog",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_denylist_is_pinned_and_every_id_exists_in_the_catalog PASSED"
+        },
+        {
+          "behavior": "validate_catalog rejects unattended_answer on denylisted, constitution-locked, hard-stop, auto-default and blank/non-string entries",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_validator_rejects_an_ineligible_unattended_answer PASSED (9 params)"
+        },
+        {
+          "behavior": "resolver reports the answer only under autonomy unattended, never changes should_stop, fails closed on an unvalidated ineligible gate, inert outside a run",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_resolver_reports_the_answer_only_under_unattended PASSED; ::test_resolver_fails_closed_on_an_unvalidated_ineligible_answer PASSED"
+        },
+        {
+          "behavior": "unreadable, absent or non-string run_config autonomy never reads as unattended; CLI --autonomy overrides run_config",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_unreadable_or_absent_autonomy_never_reads_as_unattended PASSED; shared/scripts/tools/tests/test_resolve_gate_policy.py::test_autonomy_defaults_to_run_config PASSED"
+        },
+        {
+          "behavior": "write-config accepts guided/autonomous/unattended, rejects a typo; schema enum names unattended and supervised",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_autonomy_unattended.py PASSED (5 tests)"
+        },
+        {
+          "behavior": "test and changelog phases cataloged (COVERED_PHASES tuple and JSON together), each phase skill carries its gate-discipline block, gate_catalog.md in sync",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_gate_discipline_present.py PASSED; test_gate_catalog.py PASSED; test_gate_catalog_doc_sync.py PASSED"
+        },
+        {
+          "behavior": "D6 prose consumers (run/build/test/changelog/deploy prompts, constitution tables, guide) read unattended as autonomous",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "prompt text read by an agent; live proof is campaign unit B7's real end-to-end run"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -49,7 +49,7 @@ git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolv
 
 ## Handling Results
 
-### Autonomous mode
+### Autonomous mode (also `autonomy: unattended`)
 - **high + medium severity**: Fix immediately, no prompt
 - **low severity**: Fix if trivial, otherwise log
 

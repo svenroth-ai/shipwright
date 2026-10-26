@@ -28,7 +28,7 @@ uv run "{plugin_root}/scripts/lib/playwright_runner.py" --cwd {project_root}
    - If all passed: continue to Step 4
    - If failures and `--fix` flag active: invoke auto-fix
 
-5. **Auto-fix mode** (autonomous mode or `--fix` flag):
+5. **Auto-fix mode** (autonomous / unattended mode or `--fix` flag):
 
    **Group failures by root cause** before fixing:
    - Auth/login failures (e.g., loginAs timeout, missing credentials)

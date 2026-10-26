@@ -36,7 +36,7 @@
     },
     "scope": { "enum": ["full_app", "extension"] },
     "profile": { "type": ["string", "null"] },
-    "autonomy": { "enum": ["guided", "autonomous"] },
+    "autonomy": { "enum": ["guided", "autonomous", "unattended", "supervised"] },
     "mode": {
       "enum": ["single_session"],
       "description": "Pipeline execution mode. 'single_session' is the SOLE mode: the /shipwright-run master drives every phase via a phase-runner subagent in ONE conversation, so the pipeline advances on every surface. The former 'multi_session' mode (each phase its own external bound Claude session, claimed/completed by SessionStart+Stop hooks) was REMOVED together with its engine in iterate-2026-07-14-remove-multi-session. DRIVABILITY IS AN EXPLICIT LITERAL: a run is a driven pipeline iff it records 'single_session'. NOTE the deliberate ABSENCE of a JSON-Schema `default`: absence is MEANINGFUL here (it means 'not a drivable run'), so there is no assume-when-absent value a consumer may fill in — a `default` would let a schema-default consumer (ajv useDefaults) silently reinterpret a mode-less pre-SS1 config as a drivable one, which is exactly what the explicit-literal rule forbids. The field stays OPTIONAL (not in 'required') purely for READ-compatibility: a mode-less config, and one still carrying 'multi_session', LOADS fine (so historical runs stay inspectable) but is refused by every execution entry point with an actionable migration message (set mode: single_session + resume; phase_tasks[] are shared and re-claim is idempotent, so no phase work is lost)."

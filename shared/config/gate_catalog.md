@@ -5,16 +5,16 @@
 > edit by hand - edit the JSON and regenerate (shell-agnostic writer):
 > `uv run shared/scripts/tools/resolve_gate_policy.py --render-doc --output shared/config/gate_catalog.md`
 
-Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. The mechanism is INERT (every gate resolves to 'interactive') for any config that is not an explicit single_session run - a standalone or adopted project is unaffected. The sibling gate_catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) - edit here, then regenerate.
+Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/test/changelog/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. The mechanism is INERT (every gate resolves to 'interactive') for any config that is not an explicit single_session run - a standalone or adopted project is unaffected. The sibling gate_catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) - edit here, then regenerate.
 
 ## Policies
 
 - **`auto-default`** - Under single_session the subagent proceeds with the documented default_answer and does NOT call AskUserQuestion / end the turn.
-- **`orchestrator-approve`** - Under single_session the subagent STOPS and returns a gate-pending result to the orchestrator to surface to a human; it never auto-answers. A future autonomous orchestrator MAY surface-and-wait or auto-approve ONLY gates with constitution=false; a constitution=true orchestrator-approve gate (e.g. skip-test-layer, >3 failed fixes, a missing secret) always reaches a human.
+- **`orchestrator-approve`** - Under single_session the subagent STOPS and returns a gate-pending result to the orchestrator to surface to a human; it never auto-answers. Under autonomy 'unattended' the master/CLI auto-approves ONLY a gate with constitution=false that carries a reviewed `unattended_answer` (see `unattended_policy`); every other orchestrator-approve gate escalates. A future autonomous orchestrator MAY surface-and-wait or auto-approve ONLY gates with constitution=false; a constitution=true orchestrator-approve gate (e.g. skip-test-layer, >3 failed fixes, a missing secret) always reaches a human.
 - **`hard-stop`** - Under single_session the subagent ALWAYS stops for an explicit human decision; no autonomy setting bypasses it. Constitution-locked class (PROD deploy, destructive SQL, migration-apply failure, rollback).
 
-**Covered phases:** project, design, plan, build, deploy.
-**Pending (follow-up):** test, changelog, security - test / changelog / security phase gates are a deliberate SS2 follow-up (not silently dropped). This catalog is additive - extend `gates` to cover them. The sub-iterate spec scoped SS2 to project/design/plan/build/deploy.
+**Covered phases:** project, design, plan, build, test, changelog, deploy.
+**Pending (follow-up):** security - security phase gates are a deliberate follow-up (not silently dropped). This catalog is additive - extend `gates` to cover them.
 
 ## `project`
 
@@ -38,11 +38,11 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 | `design.brand-extraction-confirm` | auto-default | conditional | no | Step 2.5: confirm auto-extracted brand tokens. Fires only when an existing website is known. **Default:** Use the site-extracted brand tokens as the foundation (they remain overridable downstream). |
 | `design.design-interview` | auto-default | always | no | Step 3: 3-5 design-system/brand/layout questions. Every field has a documented default. **Default:** Untitled UI flavor + Clean & Modern character + Sidebar nav (or the Step 2.5 extracted tokens if present); the visual direction is re-checked at design.preview-approval. |
 | `design.screen-list-confirm` | auto-default | always | no | Confirm the proposed screen list after the design interview. **Default:** Accept the FR-derived screen list (re-verified by the FR-Coverage Gate at finalize). |
-| `design.preview-approval` | orchestrator-approve | always | no | Step 3.5: first pixels-seen checkpoint (3 preview screens). SENSITIVE: a human must eyeball the visual direction - never auto-approved. |
+| `design.preview-approval` | orchestrator-approve | always | no | Step 3.5: first pixels-seen checkpoint (3 preview screens). SENSITIVE: a human must eyeball the visual direction; from U3 an unattended run answers it with the reviewed unattended_answer, only with a valid hash-verified package and FR-coverage self-check. **Unattended:** Approve (only with a valid hash-verified Brief package and a passing FR-coverage self-check). |
 | `design.chrome-nav-confirm` | auto-default | always | no | Step 3.7: confirm the derived chrome/navigation structure. **Default:** Accept the screen-list-derived navigation (mechanical; cheaply corrected later via Chrome Change Propagation). |
-| `design.review-loop-finalize` | orchestrator-approve | always | no | Step 8.5: all-screens sign-off + phase exit. SENSITIVE: the design phase's human approval gate - subagent runs the automated FR-Coverage self-check, then stops for a human. |
+| `design.review-loop-finalize` | orchestrator-approve | always | no | Step 8.5: all-screens sign-off + phase exit. SENSITIVE: the design phase's human approval gate - subagent runs the automated FR-Coverage self-check, then stops; from U3 an unattended run answers it with the reviewed unattended_answer. **Unattended:** Approve (only with a valid hash-verified Brief package and a passing FR-coverage self-check). |
 | `design.iterate-what-to-change` | orchestrator-approve | never | no | Single-screen iteration mode only (@file HTML arg). Not reached in a fresh from-scratch pipeline run. |
-| `design.upload-screen-mapping` | orchestrator-approve | never | no | Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop. |
+| `design.upload-screen-mapping` | orchestrator-approve | never | no | Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop; from U3 an unattended run also answers it with the reviewed unattended_answer. **Unattended:** Approve (only with a valid hash-verified Brief package). |
 
 ## `plan`
 
@@ -72,6 +72,23 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 | `build.browser-verify-fix-exhausted` | orchestrator-approve | conditional | no | browser_verify still failing after 3 browser-fixer retries. Return the diagnosis to the orchestrator; don't auto-swallow a reproduced UI failure. |
 | `build.debugging-escalation-3-failures` | orchestrator-approve | conditional | yes (locked) | 2 failed fixes same root cause, or 3 total. Constitution ASK-FIRST + NEVER 'loop >3 debugging attempts without escalating' - surface attempt-log + alternatives. |
 | `build.code-review-finding-triage` | auto-default | conditional | no | Step 6b guided-mode per-finding triage. Already fully suppressed (auto-accept) in build's autonomous mode. **Default:** Auto-accept and fix every finding, logging each as 'auto-fixed (autonomous mode)' - mirrors build's existing autonomous behaviour. |
+
+## `test`
+
+| Gate | Policy | Fires | Constitution | Summary / default |
+|---|---|---|---|---|
+| `test.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-test during a driven run; the orchestrator owns sequencing. |
+| `test.dev-server-port` | orchestrator-approve | conditional | no | Prerequisite self-healing cannot derive the dev-server port/URL for smoke or E2E. Cannot be invented; return control for a port rather than skip the layer. |
+| `test.prerequisite-source-missing` | orchestrator-approve | conditional | no | Prerequisite self-healing (test data, screen routes, E2E plan) cannot auto-generate an artifact because there is no source data to derive it from. Return control rather than skip the layer. |
+| `test.fix-attempts-exhausted` | orchestrator-approve | conditional | yes (locked) | Smoke / E2E / design-fidelity still failing after the skill's fix retries (max 3), or groups parked. Constitution ASK-FIRST + NEVER 'loop >3 debugging attempts without escalating'; also covers 'skipping test layers' (a layer is never silently dropped). |
+
+## `changelog`
+
+| Gate | Policy | Fires | Constitution | Summary / default |
+|---|---|---|---|---|
+| `changelog.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-changelog during a driven run; the orchestrator owns sequencing. |
+| `changelog.version-suggestion` | auto-default | always | no | Step 4: confirm the suggested release version. Already auto-accepted in changelog's autonomous mode. **Default:** Accept the suggested version (derived from commit types: breaking = major, feat = minor, else patch). |
+| `changelog.entry-preview` | auto-default | always | no | Step 5: preview and confirm the generated entry. Already skipped in changelog's autonomous mode. **Default:** Accept the generated changelog entry and proceed (git history and the unreleased drops remain the audit trail). |
 
 ## `deploy`
 

@@ -26,6 +26,8 @@ from typing import Any, Optional
 
 from lib.atomic_write import durable_read_text
 from lib.gate_catalog_render import render_catalog_doc
+from lib.gate_unattended import unattended_answer_for, validate_unattended
+
 # Policies (order = escalation strength).
 AUTO_DEFAULT = "auto-default"
 ORCHESTRATOR_APPROVE = "orchestrator-approve"
@@ -36,7 +38,7 @@ POLICIES = (AUTO_DEFAULT, ORCHESTRATOR_APPROVE, HARD_STOP)
 INTERACTIVE = "interactive"
 
 FIRES = ("always", "conditional", "never")
-COVERED_PHASES = ("project", "design", "plan", "build", "deploy")
+COVERED_PHASES = ("project", "design", "plan", "build", "test", "changelog", "deploy")
 
 # ``single_session`` is the sole pipeline mode (mirror of run_config.v2 /
 # orchestrator_pkg.constants — shared can't import a plugin).
@@ -122,6 +124,7 @@ def validate_catalog(data: Any) -> list[str]:
             errors.append(f"{where}: only auto-default gates may carry a default_answer")
         if g.get("constitution") is True and policy == AUTO_DEFAULT:
             errors.append(f"{where}: constitution-locked gate must not be auto-default")
+        errors.extend(validate_unattended(where, g))
 
     return errors
 
@@ -177,7 +180,8 @@ def effective_mode(*, explicit: Optional[str], env: Optional[str], project_root:
 # --------------------------------------------------------------------------- #
 
 def resolve_gate_policy(
-    gate_id: str, *, mode: str, catalog: Optional[dict[str, Any]] = None
+    gate_id: str, *, mode: str, catalog: Optional[dict[str, Any]] = None,
+    autonomy: Optional[str] = None,
 ) -> dict[str, Any]:
     """Resolve the effective policy for ``gate_id`` under ``mode``.
 
@@ -191,6 +195,10 @@ def resolve_gate_policy(
     trusted here except for the constitution/auto-default clamp below — an
     unknown ``policy`` string is echoed verbatim in ``effective_policy`` (still
     with ``should_stop=True``, since only the literal ``auto-default`` proceeds).
+
+    ``autonomy="unattended"`` adds ``unattended_answer`` (the reviewed answer of an
+    eligible gate, else ``None``). ``should_stop`` is unchanged: the master/CLI, not
+    the resolver, applies the answer after its own checks.
     """
     cat = catalog if catalog is not None else load_catalog()
     gate = cat["gates"][gate_id]  # KeyError on unknown id — intentional
@@ -201,6 +209,8 @@ def resolve_gate_policy(
         "constitution": gate["constitution"],
         "fires": gate["fires"],
         "summary": gate["summary"],
+        "autonomy": autonomy,
+        "unattended_answer": None,
     }
 
     if mode != SINGLE_SESSION:
@@ -217,6 +227,7 @@ def resolve_gate_policy(
         "effective_policy": policy,
         "should_stop": should_stop,
         "default_answer": gate["default_answer"] if policy == AUTO_DEFAULT else None,
+        "unattended_answer": unattended_answer_for(gate_id, gate, autonomy),
     }
 
 

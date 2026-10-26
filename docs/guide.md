@@ -722,7 +722,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 **Which decisions the pipeline makes without asking you**
 
-A driven run answers many of the questions a phase would otherwise put to you, so it can keep going while you are away. Which ones it may answer is not left to the agent's judgement — every interactive checkpoint in the `project`, `design`, `plan`, `build` and `deploy` phases is listed in advance with one of three settings:
+A driven run answers many of the questions a phase would otherwise put to you, so it can keep going while you are away. Which ones it may answer is not left to the agent's judgement — every interactive checkpoint in the `project`, `design`, `plan`, `build`, `test`, `changelog` and `deploy` phases is listed in advance with one of three settings:
 
 | Setting | What happens in a driven run |
 |---|---|
@@ -733,6 +733,8 @@ A driven run answers many of the questions a phase would otherwise put to you, s
 Two guarantees hold regardless of how autonomous you set the run. A checkpoint marked as constitution-locked — a secret, a production deploy, skipping a test layer — is **never** answered automatically. And the whole mechanism is inert outside a driven run: a standalone or adopted project keeps every one of its ordinary interactive prompts.
 
 The complete list of checkpoints, with each one's setting and its default answer, is `shared/config/gate_catalog.json` in the Shipwright repository (`gate_catalog.md` beside it is the same content as a readable table).
+
+The third autonomy level, `unattended` (only from an approved Brief package), behaves like autonomous everywhere and adds one rule: a stop-and-ask checkpoint will be answered automatically (from the unattended-mode work, U3) only if the catalog carries a reviewed answer for it (today three design approvals); every other one, and every constitution-locked or denylisted one, escalates instead.
 
 **How it works**
 

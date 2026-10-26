@@ -58,8 +58,8 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
   `brief_dir`. A top-level directory whose `brief.json` names itself, next to a run that records no package,
   is only a printed WARNING (a project may commit a package and still run a normal interview run); a replaced
   config on a fresh run therefore ends brief mode without a refusal (residual risk, accepted).
-- The CLI `--autonomy` accepts only `guided|autonomous` today; a package whose autonomy is
-  `unattended` cannot be written until the unattended mode lands: stop and say so.
+- The CLI `--autonomy` accepts `guided|autonomous|unattended`. A package's `unattended` is written as
+  given; only the gates in the catalog allowlist can then be answered by the master (U3), the rest escalate.
 - `/shipwright-project` in a package run does not interview: `skills/project/references/brief-mode.md`.
 
 ## The four wizard answers
@@ -136,7 +136,9 @@ when genuinely needed.
    stop and ask the user which profile to use, never infer one.
 3. **Step 3** — present the same INFERRED SETTINGS card, pre-filled from the
    brief. Ask only `remaining_questions` (typically just `autonomy`) plus each
-   entry of `env_questions` when non-empty.
+   entry of `env_questions` when non-empty. Only when `source == "package"` and both are
+   empty is it a master-side preflight, not a question: print the card, go to Step 4 (wizard
+   and no-brief paths unchanged; `env_preflight` under `unattended` is U3's to settle).
 4. **Step 4** — pass `--profile {profile}` and `--deploy-target {deploy_target}`
    to `orchestrator.py write-config` exactly as the legacy flow would.
 

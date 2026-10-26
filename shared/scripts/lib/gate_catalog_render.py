@@ -84,6 +84,8 @@ def render_catalog_doc(
             note = g["summary"]
             if g["policy"] == auto_default and g.get("default_answer"):
                 note = f"{note} **Default:** {g['default_answer']}"
+            if g.get("unattended_answer"):
+                note = f"{note} **Unattended:** {g['unattended_answer']}"
             const = "yes (locked)" if g["constitution"] else "no"
             lines.append(
                 f"| `{g['id']}` | {g['policy']} | {g['fires']} | {const} | {_cell(note)} |"

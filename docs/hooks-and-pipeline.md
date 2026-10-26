@@ -1113,11 +1113,15 @@ After build completes: shows split summary table. After test completes: shows te
 > per-gate policy from `shared/config/gate_catalog.json`: `auto-default` (proceed
 > with a documented answer, no END-TURN), `orchestrator-approve` (stop and surface
 > to a human), or `hard-stop` (always require a human — PROD deploy, destructive
-> SQL, migration-apply failure, rollback; constitution-locked). At startup the five
-> phase skills (`project`, `design`, `plan`, `build`, `deploy`) read the policy
+> SQL, migration-apply failure, rollback; constitution-locked). At startup the seven
+> phase skills (`project`, `design`, `plan`, `build`, `test`, `changelog`, `deploy`) read the policy
 > via `shared/scripts/tools/resolve_gate_policy.py`; the full contract is
 > `shared/prompts/single-session-gate-discipline.md` and the catalog is documented
-> in `shared/config/gate_catalog.md`, generated beside its JSON source. The
+> in `shared/config/gate_catalog.md`, generated beside its JSON source. Under
+> an explicit `--autonomy unattended` (passed by the master/CLI, never defaulted from
+> `run_config`) the resolver also reports a gate's reviewed `unattended_answer`
+> (`lib/gate_unattended.py`: only `orchestrator-approve`, non-constitution, non-denylisted
+> gates may carry one; `should_stop` is unchanged, the master/CLI applies it). The
 > mechanism is **inert** — every gate resolves to
 > `interactive` — for any config that is not an explicit `single_session` run, so a
 > standalone or adopted project keeps its ordinary interactive gates. That

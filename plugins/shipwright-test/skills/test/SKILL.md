@@ -127,7 +127,7 @@ uv run "{plugin_root}/scripts/lib/test_runner.py" --profile "{profile}" \
   --cwd "{project_root}" --layer unit
 ```
 
-Autonomous mode auto-applies `--fix` behavior. Max 3 retries, structured
+Autonomous (and unattended) mode auto-applies `--fix` behavior. Max 3 retries, structured
 debugging (root cause -> pattern check -> hypothesis -> fix -> re-run).
 A profile error (exit 2/3, `success: false` with a `kind`) is a profile problem: stop and show the message, do not retry or edit project code.
 Full body: see [step-1-unit-tests](references/step-1-unit-tests.md).
