@@ -30,6 +30,8 @@ question (which screen does each upload represent, and which requirements does i
 * A kept file that differs from the package (a pre-existing ``visual-guidelines.md``) is listed in
   ``kept_existing_differs`` (a warning, not a refusal); any file in ``screens/``, ``uploads/`` or ``flows/`` (and
   ``chrome-definition.md``) that the package did not place is listed in ``foreign_existing``. The agent reports both, and ``unmapped_frs`` (minted FR ids no screen covers; informational).
+* chat-first (``ux_shape``): ``chat-map.json`` is checked against the screen-map and one flow mockup per golden path is
+  written to ``flows/`` (``tools/brief_chat_plan.py``); the result carries ``ux_shape``, ``ui_host`` and ``flows``.
 * ``visual-guidelines.md`` is taken from the package's ``design_system`` file.
 
 All checks run before the first write. Exit 0 ok, 1 package content issues, 3 package refused.
@@ -50,6 +52,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.append(str(_SHARED_SCRIPTS))
 
+from tools.brief_chat_plan import plan_flows  # noqa: E402
 from tools.brief_design_plan import MARKER_NAME, applied_file_issues, fr_ids_by_slug, linked_frs, plan_screens, same_content  # noqa: E402
 
 DESIGNS = ".shipwright/designs"
@@ -100,10 +103,17 @@ def apply(project_root: Path) -> dict:
     screen_map = json.loads((bdir / "screen-map.json").read_text(encoding="utf-8-sig"))
     if applied == info["package_sha256"]:  # re-entry: screen edits (review loop) stay untouched
         missing = applied_file_issues(bdir, designs, screen_map)
+        shape = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
+        kept_flows, flow_problems = plan_flows(bdir, screen_map) if shape.get("ux_shape") == "chat-first" else ([], [])
+        if flow_problems:  # a chat-map broken or changed after the apply is not "already applied"
+            return {"ok": False, "issues": flow_problems}
+        missing += [_issue("applied_files_missing", f["file"], f"flows/{f['file']} is missing") for f in kept_flows
+                    if not (designs / "flows" / f["file"]).is_file()]
         if missing:
             return {"ok": False, "issues": missing}
         by_slug = fr_ids_by_slug(root)  # the report of an unmapped FR must survive a resume
         return {"ok": True, "already_applied": True, "package_sha256": applied,
+                "ux_shape": shape.get("ux_shape"), "ui_host": shape.get("ui_host"), "flows": [f"flows/{f['file']}" for f in kept_flows],
                 "unmapped_frs": _unmapped(by_slug, plan_screens(bdir, screen_map, by_slug)[0])}
     if applied is not None:
         return {"ok": False, "issues": [_issue("package_changed_since_apply", "-", f"the designs in {DESIGNS}/ were applied from a "
@@ -115,6 +125,9 @@ def apply(project_root: Path) -> dict:
     plan, issues = plan_screens(bdir, screen_map, by_slug)
     registry = _load(_HERE.parent / "lib" / "screen_registry.py", "_shipwright_design_own_lib_screen_registry")
     brief = json.loads((bdir / "brief.json").read_text(encoding="utf-8-sig"))
+    chat_first = brief.get("ux_shape") == "chat-first"
+    flows, flow_issues = plan_flows(bdir, screen_map) if chat_first else ([], [])  # chat-first: one flow mockup per golden path (B3b)
+    issues += flow_issues
     guidelines = bdir / str(brief.get("design_system") or "")
     targets: list[tuple[Path, bytes, bool]] = []  # (path, data, must match when it already exists)
     for item in plan:
@@ -123,6 +136,7 @@ def apply(project_root: Path) -> dict:
         if linked_frs(page.decode("utf-8", errors="ignore")) != set(item["frs"]):  # the writer and the reader must agree
             issues.append(_issue("injection_failed", item["screen_file"], "the Requirements comment could not be injected readably"))
         targets += [(designs / "uploads" / item["mockup"], src, True), (designs / "screens" / item["screen_file"], page, False)]
+    targets += [(designs / "flows" / f["file"], f["html"].encode("utf-8"), False) for f in flows]
     placed = any((designs / "uploads" / item["mockup"]).is_file() for item in plan)  # an earlier apply left uploads: a reset
     for item in plan:  # EVERY kept screen links the ids minted for it (so "tool ok" means "gate green"); without its own upload it needs a reset
         screen = designs / "screens" / item["screen_file"]
@@ -141,7 +155,7 @@ def apply(project_root: Path) -> dict:
     if issues:
         return {"ok": False, "issues": issues}
     atomic = bdi._lib("atomic_write").durable_atomic_write  # targets and marker: temp file + os.replace. design-manifest.md is written by the registry and is NOT atomic; the marker comes last: a crash leaves no marker and the next run completes the missing targets
-    placed_rel = {f"screens/{i['screen_file']}" for i in plan} | {f"uploads/{i['mockup']}" for i in plan}
+    placed_rel = {f"screens/{i['screen_file']}" for i in plan} | {f"uploads/{i['mockup']}" for i in plan} | {f"flows/{f['file']}" for f in flows}
     foreign = sorted(p.relative_to(designs).as_posix() for sub in ("screens", "uploads", "flows") if (designs / sub).is_dir()
                      for p in (designs / sub).rglob("*") if p.is_file() and p.relative_to(designs).as_posix() not in placed_rel)
     foreign += ["chrome-definition.md"] if (designs / "chrome-definition.md").is_file() else []
@@ -149,7 +163,7 @@ def apply(project_root: Path) -> dict:
     for path, data, _strict in targets:
         if path.is_file():
             kept.append(path.relative_to(designs).as_posix())  # an existing screen or guidelines file keeps its edits
-            if path.suffix != ".html" and not same_content(path.read_bytes(), data):  # screens differ by design; guidelines should not
+            if (path.suffix != ".html" or path.parent.name == "flows") and not same_content(path.read_bytes(), data):  # screens differ by design; guidelines should not
                 differs.append(path.relative_to(designs).as_posix())
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +172,7 @@ def apply(project_root: Path) -> dict:
     atomic(marker, json.dumps({"package_sha256": info["package_sha256"]}))
     return {"ok": True, "package_sha256": info["package_sha256"], "kept_existing": kept,
             "foreign_existing": foreign,  # not placed by this package (flows of an earlier Design run on a reset are expected)
+            "ux_shape": brief.get("ux_shape"), "ui_host": brief.get("ui_host"), "flows": [f"flows/{f['file']}" for f in flows],
             "unmapped_frs": _unmapped(by_slug, plan),  # informational: the agent reports
             "kept_existing_differs": differs,  # a warning, not a refusal: a kept file that is not the package's own
             "screens": [{"file": f"screens/{i['screen_file']}", "upload": f"uploads/{i['mockup']}", "frs": i["frs"]} for i in plan]}

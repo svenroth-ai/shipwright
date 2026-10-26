@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/brief_chat_plan.py:174 (`applied_problems`, the `needed = {by_slug[s][0] ... if len(by_slug.get(s, ())) == 1}` line)\n- Finding: A capability requirement slug that minted **zero** FR ids (typo in the package, or an FR row Project never minted) is silently skipped, so the pane-state screen's Linked-FR comment is never verified for it \u2014 the verifier goes green. The spec's own wording is \"each such pane-state screen links the FR ids minted for them\"; slugs mapping to exactly one FR are the only ones checked. The same applies to slugs that mint >1 FR id (only the first is checked).\n- Suggestion: for slugs with zero FR ids, emit a problem (\"capability X requirement Y has no minted FR\"); for multi-id slugs, require all ids, mirroring `linked_frs` set comparison as done elsewhere.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/checks/apply-brief-package.py:105-109 (re-entry branch)\n- Finding: On re-entry, `plan_flows(bdir, screen_map)[0]` discards the issues slot. If `chat-map.json` was corrupted/removed after the apply, the tool answers `already_applied` **exit 0** with `flows: []`, while the prose in chat-first.md promises \"`flows` lists the package's flow files (also on `already_applied`)\". The agent is told to continue on exit 0; only the later phase-gate verifier would catch it, not at apply time. Also, a package whose golden paths were edited after apply reports a stale-but-ok `flows` list (index-based filenames shift silently).\n- Suggestion: on re-entry, if `chat_first` and `plan_flows` returns issues (or the chat-map is unreadable), refuse with `bad_chat_map` instead of answering `already_applied`.\n\n- Category: bug\n- Severity: low\n- File: shared/scripts/tools/brief_chat_plan.py:104-112 (`chat_map_issues`, the `elif screen not in screens`)\n- Finding: When a capability's `requirements` are malformed (not a non-empty string list), the dangling `screen` reference is never checked \u2014 the `elif` skips it. A package with both defects reports only the requirements issue; after fixing requirements, a dangling screen would then refuse. Not wrong output, but an incomplete refusal on a defect the doc says is \"never silently skipped\".\n- Suggestion: check `screen in screens` independently of the requirements check.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/tools/verifiers/brief_chat_checks.py:23-26 (`except Exception as exc: if not hasattr(exc, \"as_dict\"): raise`)\n- Finding: Any exception from `verified_package` that isn't a \"BriefRefused-like\" (e.g. `FileNotFoundError` on a partially deleted brief dir, `KeyError` on a malformed `brief.json`) is re-raised and escapes to `_guarded`. If `_guarded` (pre-existing, not shown) only converts `BriefRefused`-shaped errors, a stray unreadable brief.json could crash the whole design-gate run instead of yielding a red result. Depends on `_guarded`'s breadth; worth confirming.\n- Suggestion: verify `_guarded` catches arbitrary exceptions, or broaden the except to return a red CheckResult naming the failure.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_brief_chat_plan.py:59-62 (`test_a_screen_map_entry_that_is_malformed_never_crashes_the_chat_check`)\n- Finding: The test only asserts the returned list is truthy \u2014 it does not assert *which* issues appear, so an implementation that flags every valid capability as broken would still pass. Similarly, several `_refused` tests in the plugin suite assert only that some issue matches the needle; they would not catch a tool that refuses *valid* packages too (though the happy-path tests elsewhere do mitigate this).\n- Suggestion: pin the expected issue count/codes in the malformed-screen-map test.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/design_gate_html.py:67-77 (`chip_nav_class_violations`)\n- Finding: The scanner deliberately reads class attributes inside HTML comments (the test asserts `<!-- <a class=\"chip nav-item\"> -->` is a violation). A screen that documents the rule in a commented-out code sample would fail the chrome gate even though no rendered element is navigation. It is documented as intended in chat-first.md, but it is a false-positive class the agent is told to STOP on and never fix by editing.\n- Suggestion: if intentional, fine; otherwise have `parse_tags` skip comment bodies for this rule only.\n\n## Assessment\n\nThe unit is substantially implemented to spec \u2014 chat-map checking, generated flow mockups, the chip gate rule, Layout D, the full fixture package, and dry-harness/real-repo acceptance tests are all present and the tests are mostly behavioral (refusals, verifier red paths, re-entry repair). The gaps are narrow: the verifier silently skips unminted/multi-FR slugs, and the re-entry path can answer exit-0 with an empty flow list when the chat-map is broken. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/brief_chat_plan.py:143\n- Finding: Generated flow mockups show each user command alongside only a pane ID and filename. They never display the corresponding pane state, so reviewers cannot inspect the visual progression of a golden path. The tests validate labels and file existence, allowing this incomplete implementation to pass.\n- Suggestion: Render the mapped pane-state mockup for each step, keeping the generated flow standalone. Add an assertion that the flow contains the expected pane content, rather than only its filename.\n\nOverall assessment: ship-with-fixes. The capability mapping and chip checks are implemented, but the generated flows need to show the pane states to fulfill the flow-mockup requirement.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-26-b3b-chat-first-design",
+    "at": "2026-10-26T01:32:25.746116+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
