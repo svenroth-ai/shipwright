@@ -11,24 +11,36 @@ export async function createProject(page: Page, base: string, name: string, proj
   await page.getByPlaceholder("My Awesome App").fill(name);
   await page.getByPlaceholder(/my-app/).fill(projectPath);
   // Steps: info -> stack profile -> ... -> confirmation. Pick the profile when its card shows, then walk on.
+  // The profile list loads after the step opens; picking nothing saves the project as "custom".
+  let picked = false;
   for (let i = 0; i < 6; i += 1) {
     const card = page.getByTestId(`stack-profile-card-${profile}`);
-    if (await card.isVisible().catch(() => false)) await card.click();
+    if (!picked && (await page.locator('[data-testid^="stack-profile-card-"]').first().waitFor({ timeout: i === 0 ? 1000 : 20_000 }).then(() => true, () => false))) {
+      await card.waitFor({ timeout: 20_000 });
+      await card.click();
+      picked = true;
+    }
     const next = page.getByTestId("wizard-next");
     const label = (await next.textContent())?.trim() ?? "";
     await next.click();
     if (label.startsWith("Create")) break;
   }
   await page.getByTestId("wizard-modal").waitFor({ state: "hidden", timeout: 30_000 });
+  const saved = await findProject(page.request, base, projectPath);
+  if (saved.profile !== profile) throw new Error(`The project was saved with profile "${saved.profile}", not "${profile}"`);
+}
+
+async function findProject(request: APIRequestContext, base: string, projectPath: string): Promise<{ id: string; profile?: string }> {
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
+  const res = await request.get(`${base}/api/projects`);
+  const body = (await res.json()) as { data?: { id: string; path?: string; profile?: string }[] };
+  const hit = (body.data ?? []).find((p) => p.path && norm(p.path) === norm(projectPath));
+  if (!hit) throw new Error("The new project is not in the WebUI's project list");
+  return hit;
 }
 
 export async function findProjectId(request: APIRequestContext, base: string, projectPath: string): Promise<string> {
-  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
-  const res = await request.get(`${base}/api/projects`);
-  const body = (await res.json()) as { data?: { id: string; path?: string }[] };
-  const hit = (body.data ?? []).find((p) => p.path && norm(p.path) === norm(projectPath));
-  if (!hit) throw new Error("The new project is not in the WebUI's project list");
-  return hit.id;
+  return (await findProject(request, base, projectPath)).id;
 }
 
 export async function openBoard(page: Page, base: string, projectId: string): Promise<void> {

@@ -67,7 +67,8 @@ export async function runChatScript(send: Send, map: ChatMap, checklist: Checkli
   set("H10", ["onboarding", "pricing", "integrations"].every((w) => text(kw).toLowerCase().includes(w)), `"${kw?.reply}"`);
 
   const answered = log.filter((e) => e.answer);
-  const complete = answered.length === log.length && answered.every((e) => typeof e.answer!.reply === "string" && e.answer!.pane != null);
+  // `pane` is null when the view does not change (unknown id, refused action): the key must be there, not the value.
+  const complete = answered.length === log.length && answered.every((e) => typeof e.answer!.reply === "string" && "pane" in e.answer!);
   set("H11", complete, `${answered.length}/${log.length} answers carried reply and pane`);
   return log;
 }
