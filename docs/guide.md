@@ -977,6 +977,7 @@ A round claiming it changed a requirement is refused unless a requirements file 
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
 - Design fidelity verification results (code-level comparison of implementation vs mockup HTML)
 - Design fidelity triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
+- **Screenshot check (blocking, Brief-package projects only)** -- screenshots each built screen and its approved mockup in Chromium and compares them (grid metric, tolerance 0.15, both recorded as `screenshot_check` in `shipwright_test_results.json`); `fail` or `error` stops the test phase. Other projects skip it and keep the non-blocking fidelity step
 - Performance budget results in `shipwright_test_results.json.performance` (Lighthouse score + LCP, gzipped bundle size, pass/warn/fail per budget) -- when the profile or `shipwright_test_config.json` opts in
 - Updated `.shipwright/agent_docs/conventions.md` with test learnings (when flaky patterns or infra quirks discovered)
 - A summary report printed to the terminal

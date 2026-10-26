@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
+  "date": "2026-10-26",
+  "section": "Iterate — feature: Screenshot check in the Test phase (B3c)",
+  "title": "Blocking screenshot check, Brief-package projects only",
+  "context": "An unattended run approves designs before the build, but the Test phase had no gate proving the built screens still look like the approved mockups; the structural fidelity step is non-blocking.",
+  "decision": "New screenshot_check.py captures mockup and built route in Chromium and compares a luminance+content grid (tolerance 0.15); fail or error blocks. Applies only with a Brief package marker.",
+  "consequences": "Layout-level only: wrong wording or hue-only changes pass. Tolerance is one constant, tuned in the end-to-end procedure. Needs Playwright and a running app; a missing one is an error, never a pass.",
+  "rationale": "Separation was measured on real Chromium (right 0.02, wrong 0.30-0.99). Luminance alone failed on blank pages, so a content flag was added. No third-party dependency.",
+  "rejected": "Make design_fidelity_check blocking (compares source text, not the screen); extend that grandfathered file; per-project tolerance knob; leave to human review.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-26-b3c-screenshot-check-in-test-screenshot-check.md"
+}

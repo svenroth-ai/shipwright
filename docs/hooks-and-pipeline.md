@@ -1072,7 +1072,7 @@ Dashboard uses `PIPELINE_PHASES` as canonical order. The previous
 "compliance" column was retired alongside the v7 decouple — compliance
 docs are still populated as an auto-background side effect, but the
 dashboard no longer renders a phase column for them.
-After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity).
+After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity). With a Brief package (`.shipwright/designs/brief-package-applied.json`) the test phase also runs the blocking screenshot check (`screenshot_check.py`, step 3.7b) and records `screenshot_check`; the test-phase validator (`phase_validators_late._validate_test`) BLOCKS a Brief-package project unless that block has `applies: true`, `status: "pass"`, `captured: true` and the standard tolerance (0.15, read from the test plugin when it sits beside the run plugin, else a pinned literal; projects without a package are unaffected).
 
 ---
 

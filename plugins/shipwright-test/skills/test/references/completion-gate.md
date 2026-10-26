@@ -12,6 +12,7 @@ Before marking the test phase complete, ALL test layers must have an explicit re
 | Journey coverage | `covered`, `gaps`, `no_specs`, or `undetermined: {diagnostic}` |
 | Consistency | `pass`, `warning`, or `skipped: {reason}` |
 | Design fidelity | `pass`, `fail`, or `skipped: {reason}` |
+| Screenshot check | `pass` or `skipped: no Brief package` (a Brief package makes `fail`/`error` BLOCK the phase) |
 | Performance | `pass`, `warning` (gate=warn), `fail` (gate=block), or `skipped: {reason}` |
 
 If any layer has NO result (was never executed and has no skip reason):
@@ -41,6 +42,7 @@ Valid skip reasons:
 - `skipped: no .shipwright/designs/visual-guidelines.md` (Consistency)
 - `skipped: profile has no UI` (Consistency)
 - `skipped: no screen-routes.json` (Design fidelity)
+- `skipped: no Brief package` (Screenshot check)
 - `skipped: profile opts out (testing.performance.enabled is false)` (Performance)
 - `skipped: no dev_url available` (Performance — Lighthouse sub-check only)
 - `skipped: no build artifacts found` (Performance — bundle sub-check only)

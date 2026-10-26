@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Blocking screenshot check beside the untouched non-blocking Step 3.7; metric and tolerance recorded in every result; planted-wrong-screen test at unit level and against real Chromium (right 0.02, wrong 0.30-0.99); no Brief package means applies:false."},
+{"name":"Error Handling","verdict":"pass","note":"Exit 0 pass, 1 fail, 2 error; unreadable/corrupt/oversized PNG, size mismatch, capture failure, missing node/browser, HTTP errors and unmapped package screens are errors, never passes; stale pictures are cleared before a capture."},
+{"name":"Security Basics","verdict":"pass","note":"No shell, argv lists only; PNG decode bounded (chunk size, pixel cap, no interlace); no ReDoS-prone regex; mockup is loaded via file:// in a throwaway Chromium context."},
+{"name":"Test Quality","verdict":"pass","note":"Metric tests on synthetic PNGs incl. every filter/colour type; check tests for outcomes and exit codes; subprocess hand-off tested by patching the module object; one real-Chromium test (skips with an explicit reason); prose pins for the unattended outcome table."},
+{"name":"Performance Basics","verdict":"pass","note":"Pure-Python decode about 1s per 1280x800 shot, one pass per image."},
+{"name":"Naming & Structure","verdict":"pass","note":"New files only (png_compare 160, screenshot_check 175 lines, tests under 300); grandfathered design_fidelity_check.py untouched."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer Playwright PNG (real Chromium output decoded by png_compare) and consumers screen-routes.json / brief screen-map / uploads round-tripped in the real-browser test; stale-file, duplicate-stem and CRC probes run."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No sleeps; the Playwright test skips with an explicit reason unless opted in."}]}
