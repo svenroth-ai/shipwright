@@ -7,7 +7,7 @@ import { runChatScript, type ChatMap, type Send } from "../../src/chat.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { IdleWatch } from "../../src/idle.js";
 import { Report } from "../../src/report.js";
-import { needsTerminalApproval } from "../../src/terminal-gate.js";
+import { needsTerminalAnswer, readTerminalMenu } from "../../src/terminal-gate.js";
 
 const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const fixtures = path.join(repo, "integration-tests", "fixtures");
@@ -16,13 +16,14 @@ const template = fs.readFileSync(path.resolve(import.meta.dirname, "..", "..", "
 const chatMap = JSON.parse(fs.readFileSync(path.join(fixtures, "social-engagement", "chat-map.json"), "utf8")) as ChatMap;
 
 // @covers FR-01.04
-test("terminal approval: only the design menu with its footer, and never twice in a minute", () => {
-  const menu = "Do you approve the five design screens?\n❯ 1. Approve screens\n2. Request changes\nEnter to select";
-  expect(needsTerminalApproval(menu, 0, 1_000_000)).toBe(true);
-  expect(needsTerminalApproval(menu, 990_000, 1_000_000)).toBe(false);
-  expect(needsTerminalApproval(menu.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
-  expect(needsTerminalApproval("1. Something else\nEnter to select", 0, 1_000_000)).toBe(false);
-  expect(needsTerminalApproval("❯ 1. Approve mockups\n2. I have feedback\nEnter to select", 0, 1_000_000)).toBe(true);
+test("terminal menu: the highlighted first option with its footer, recorded, never twice in 15 seconds", () => {
+  const approve = ["Do you approve the mockups?", "❯ 1. Approve mockups", "2. I have feedback", "Enter to select"].join("\n");
+  const commit = ["How should I handle the failing check?", "❯ 1. Commit earlier output first", "2. Leave it", "Enter to select"].join("\n");
+  expect(needsTerminalAnswer(approve, 0, 1_000_000)).toBe(true);
+  expect(readTerminalMenu(commit)).toEqual({ question: "How should I handle the failing check?", option: "Commit earlier output first" });
+  expect(needsTerminalAnswer(commit, 990_000, 1_000_000)).toBe(false);
+  expect(needsTerminalAnswer(approve.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
+  expect(needsTerminalAnswer(["1. Not highlighted", "Enter to select"].join("\n"), 0, 1_000_000)).toBe(false);
 });
 
 // @covers FR-01.04

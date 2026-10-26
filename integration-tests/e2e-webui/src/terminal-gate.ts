@@ -1,23 +1,37 @@
-// The design review under `guided` autonomy is an AskUserQuestion menu in the embedded terminal, not the
-// Mission-view gate card, and the WebUI inbox does not list it. A user answers it by pressing Enter on the
-// preselected "Approve screens" option; so does the spec.
+// Under `guided` autonomy the gates are AskUserQuestion menus in the embedded terminal (the design review,
+// the "commit earlier output first?" question of the boundary check, ...). The WebUI inbox does not list them
+// and the agent words them differently on every run. A user answers by pressing Enter on the highlighted
+// first option, which is the agent's recommendation; so does the spec, and it records question and option.
 import type { Page } from "@playwright/test";
 
-// The agent words the question itself ("Approve screens", "Approve mockups", ...), so match on the first option.
-const MENU = /1\.\s*Approve\b/i;
+const OPTION_ONE = /[❯>]\s*1\.\s*(\S[^\n]*)/;
 const FOOTER = /Enter to select/;
 /** After one Enter, stale scrollback must not trigger a second one for this long. */
-export const REANSWER_AFTER_MS = 60_000;
+export const REANSWER_AFTER_MS = 15_000;
 
-export function needsTerminalApproval(terminalText: string, lastAnsweredMs: number, nowMs: number): boolean {
-  return MENU.test(terminalText) && FOOTER.test(terminalText) && nowMs - lastAnsweredMs > REANSWER_AFTER_MS;
+export interface TerminalMenu {
+  question: string;
+  option: string;
 }
 
-/** Presses Enter on the preselected option when the design approval menu is on screen. */
-export async function answerTerminalApproval(page: Page, lastAnsweredMs: number): Promise<boolean> {
+/** The menu on screen (highlighted first option and the footer), or null. Pure. */
+export function readTerminalMenu(terminalText: string): TerminalMenu | null {
+  const m = OPTION_ONE.exec(terminalText);
+  if (!m || !FOOTER.test(terminalText)) return null;
+  const before = terminalText.slice(0, m.index).split("\n").map((l) => l.trim()).filter(Boolean);
+  return { question: before.slice(-3).join(" ").slice(-200), option: m[1].trim().slice(0, 80) };
+}
+
+export function needsTerminalAnswer(terminalText: string, lastAnsweredMs: number, nowMs: number): boolean {
+  return readTerminalMenu(terminalText) !== null && nowMs - lastAnsweredMs > REANSWER_AFTER_MS;
+}
+
+/** Presses Enter on the highlighted first option when a menu is on screen; returns what was answered. */
+export async function answerTerminalMenu(page: Page, lastAnsweredMs: number): Promise<TerminalMenu | null> {
   const text = await page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => "");
-  if (!needsTerminalApproval(text, lastAnsweredMs, Date.now())) return false;
+  if (!needsTerminalAnswer(text, lastAnsweredMs, Date.now())) return null;
+  const menu = readTerminalMenu(text);
   await page.locator(".xterm-helper-textarea").first().focus({ timeout: 5000 });
   await page.keyboard.press("Enter");
-  return true;
+  return menu;
 }

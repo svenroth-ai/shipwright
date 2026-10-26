@@ -1,7 +1,7 @@
 // Drives the WebUI like a person: expert project wizard, New pipeline from the task board, gates, preview.
 // Test ids are the WebUI's own (checked against the shipwright-webui checkout at authoring time; re-check).
 import type { APIRequestContext, Page } from "@playwright/test";
-import { answerTerminalApproval } from "./terminal-gate.js";
+import { answerTerminalMenu } from "./terminal-gate.js";
 
 const ACTIVE_PROJECT_KEY = "webui.activeProjectId";
 
@@ -103,9 +103,10 @@ export async function answerGates(page: Page, state: GateState): Promise<string[
       done.push("design review approved (no confirmation dialog)");
     }
   }
-  if (await answerTerminalApproval(page, state.terminalApprovalMs)) {
+  const menu = await answerTerminalMenu(page, state.terminalApprovalMs);
+  if (menu) {
     state.terminalApprovalMs = Date.now();
-    done.push("design review approved (menu in the terminal)");
+    done.push(`terminal question answered with its first option "${menu.option}" (${menu.question})`);
   }
   if (state.launchPending && (await gone(page, "continue-pipeline-launch-btn", 1000))) state.launchPending = false;
   if (!state.launchPending && (await seen(page, "continue-pipeline-launch-btn", 1000))) {
