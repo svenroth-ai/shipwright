@@ -1,7 +1,8 @@
 // Under `guided` autonomy the gates are AskUserQuestion menus in the embedded terminal (the design review,
-// the "commit earlier output first?" question of the boundary check, ...). The WebUI inbox does not list them
-// and the agent words them differently on every run. A user answers by pressing Enter on the highlighted
-// first option, which is the agent's recommendation; so does the spec, and it records question and option.
+// the "commit earlier output first?" question of the boundary check, the screenshot-check exemption, ...). The
+// WebUI inbox does not list them and the agent words them differently on every run. A user answers by pressing
+// Enter on the highlighted first option, which is the agent's recommendation; so does the spec, and it records
+// what it saw. Long menus scroll their first lines out of the visible rows, so the footer is the signal.
 import type { Page } from "@playwright/test";
 
 const OPTION_ONE = /[❯>]\s*1\.\s*(\S[^\n]*)/;
@@ -15,16 +16,31 @@ export interface TerminalMenu {
   option: string;
 }
 
-/** The menu on screen (highlighted first option and the footer), or null. Pure. */
+/** The menu on screen (its footer), or null. Pure. */
 export function readTerminalMenu(terminalText: string): TerminalMenu | null {
+  if (!FOOTER.test(terminalText)) return null;
   const m = OPTION_ONE.exec(terminalText);
-  if (!m || !FOOTER.test(terminalText)) return null;
-  const before = terminalText.slice(0, m.index).split("\n").map((l) => l.trim()).filter(Boolean);
-  return { question: before.slice(-3).join(" ").slice(-200), option: m[1].trim().slice(0, 80) };
+  const lines = terminalText.split("\n").map((l) => l.trim()).filter(Boolean);
+  const before = m ? terminalText.slice(0, m.index).split("\n").map((l) => l.trim()).filter(Boolean) : lines;
+  return {
+    question: before.slice(-3).join(" ").slice(-200),
+    option: m ? m[1].trim().slice(0, 80) : "(first option; its line is scrolled out of view)",
+  };
 }
 
 export function needsTerminalAnswer(terminalText: string, lastAnsweredMs: number, nowMs: number): boolean {
   return readTerminalMenu(terminalText) !== null && nowMs - lastAnsweredMs > REANSWER_AFTER_MS;
+}
+
+/**
+ * The Test phase asks what to do when the screenshot check cannot capture the app: patch the app or the tool
+ * (a feature or a weakened security header the brief did not ask for), complete with a recorded exemption, or
+ * stop. When the exemption is the SECOND visible option, the spec takes it; when it is first, the plain Enter
+ * already does. The report lists it as an escalation: it is a gap in the screenshot check, not a decision of
+ * the brief.
+ */
+export function wantsExemption(terminalText: string): boolean {
+  return /2\.\s*Complete with exemption/.test(terminalText) && /Stop the run/.test(terminalText) && FOOTER.test(terminalText);
 }
 
 /**
@@ -36,34 +52,26 @@ export function isDangerousOperationPrompt(terminalText: string): boolean {
   return /Dangerous [^\n]*operation/i.test(terminalText) && /Do you want to proceed\?/.test(terminalText) && /[❯>]\s*1\.\s*Yes/.test(terminalText);
 }
 
-/**
- * The Test phase asks what to do when the screenshot check cannot open the chat-only pane-state screens: add URL
- * routes (a feature the brief did not ask for, the highlighted first option), complete with a recorded exemption,
- * or stop. The spec takes the recorded exemption (second option) so the run reaches the app checks; the report
- * lists it as an escalation because it is a gap in the screenshot check, not a decision of the brief.
- */
-export function wantsExemption(terminalText: string): boolean {
-  return /Complete with exemption/.test(terminalText) && /Stop the run/.test(terminalText) && FOOTER.test(terminalText);
-}
-
-/** Presses Enter on the highlighted first option when a menu is on screen; returns what was answered. */
+/** Answers the menu on screen, if any; returns what was answered. */
 export async function answerTerminalMenu(page: Page, lastAnsweredMs: number): Promise<TerminalMenu | null> {
   const text = await page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => "");
-  if (Date.now() - lastAnsweredMs > REANSWER_AFTER_MS && isDangerousOperationPrompt(text)) {
-    await page.locator(".xterm-helper-textarea").first().focus({ timeout: 5000 });
+  if (Date.now() - lastAnsweredMs <= REANSWER_AFTER_MS) return null;
+  const input = page.locator(".xterm-helper-textarea").first();
+  if (isDangerousOperationPrompt(text)) {
+    await input.focus({ timeout: 5000 });
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
     return { question: "Claude Code safety dialog: dangerous operation", option: "No (refused; the agent rewrites the command)" };
   }
-  if (Date.now() - lastAnsweredMs > REANSWER_AFTER_MS && wantsExemption(text)) {
-    await page.locator(".xterm-helper-textarea").first().focus({ timeout: 5000 });
+  if (wantsExemption(text)) {
+    await input.focus({ timeout: 5000 });
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
-    return { question: "Test phase: screenshot comparison cannot open chat-only screens", option: "Complete with exemption (plugin gap, recorded as an escalation)" };
+    return { question: "Test phase: screenshot check cannot capture the app", option: "Complete with exemption (plugin gap, recorded as an escalation)" };
   }
-  if (!needsTerminalAnswer(text, lastAnsweredMs, Date.now())) return null;
   const menu = readTerminalMenu(text);
-  await page.locator(".xterm-helper-textarea").first().focus({ timeout: 5000 });
+  if (!menu) return null;
+  await input.focus({ timeout: 5000 });
   await page.keyboard.press("Enter");
   return menu;
 }

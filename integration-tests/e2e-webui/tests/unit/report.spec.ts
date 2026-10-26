@@ -23,7 +23,12 @@ test("terminal menu: the highlighted first option with its footer, recorded, nev
   expect(readTerminalMenu(commit)).toEqual({ question: "How should I handle the failing check?", option: "Commit earlier output first" });
   expect(needsTerminalAnswer(commit, 990_000, 1_000_000)).toBe(false);
   expect(needsTerminalAnswer(approve.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
-  expect(needsTerminalAnswer(["1. Not highlighted", "Enter to select"].join("\n"), 0, 1_000_000)).toBe(false);
+  const scrolled = ["you whether to complete over it.", "2. Stop the run", "Enter to select"].join("\n");
+  expect(needsTerminalAnswer(scrolled, 0, 1_000_000)).toBe(true);
+  expect(readTerminalMenu(scrolled)?.option).toContain("scrolled out of view");
+  expect(needsTerminalAnswer("no menu here", 0, 1_000_000)).toBe(false);
+  const firstIsExemption = ["❯ 1. Complete with exemption", "2. Stop the run", "Enter to select"].join("\n");
+  expect(wantsExemption(firstIsExemption)).toBe(false);
   const danger = ["Dangerous rm operation on possibly-empty variable path:", "Do you want to proceed?", "❯ 1. Yes", "2. No"].join("\n");
   expect(isDangerousOperationPrompt(danger)).toBe(true);
   expect(isDangerousOperationPrompt(danger.replace("Dangerous rm", "Plain rm"))).toBe(false);
