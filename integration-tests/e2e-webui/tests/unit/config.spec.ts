@@ -141,13 +141,13 @@ test("stale login copies from killed runs are scrubbed; other files stay", async
 });
 
 // @covers FR-01.04
-test("child env is an allowlist: basics, NODE_*, the starter's own values and the chosen auth variable only", async () => {
+test("child env is an allowlist: basics, a NODE_* subset, the starter's own values and the chosen auth variable only", async () => {
   const { childEnv } = await import("../../src/stack.js");
   const { authEnv } = await import("../../src/auth.js");
   const home = path.join(os.tmpdir(), "h");
   const operator = {
     PATH: "/bin", NODE_OPTIONS: "--x", TEMP: "/t", CLAUDE_CONFIG_DIR: "/real", XDG_CONFIG_HOME: "/real", APPDATA: "/real", HOME: "/real",
-    ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "t", GITHUB_TOKEN: "g", AWS_SECRET_ACCESS_KEY: "a", SHIPWRIGHT_E2E_MAX_MINUTES: "9",
+    ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "t", GITHUB_TOKEN: "g", AWS_SECRET_ACCESS_KEY: "a", NODE_AUTH_TOKEN: "n", SHIPWRIGHT_E2E_MAX_MINUTES: "9",
   };
   const env = childEnv(operator, home, { ...authEnv("env token", operator), PORT: "1" });
   expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
@@ -155,7 +155,7 @@ test("child env is an allowlist: basics, NODE_*, the starter's own values and th
   expect([env.HOME, env.USERPROFILE]).toEqual([home, home]);
   expect(env.APPDATA?.startsWith(home) && env.LOCALAPPDATA?.startsWith(home)).toBe(true);
   expect([env.PATH, env.NODE_OPTIONS, env.TEMP, env.PORT, env.CLAUDE_CODE_OAUTH_TOKEN]).toEqual(["/bin", "--x", "/t", "1", "t"]);
-  for (const leaked of ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY", "SHIPWRIGHT_E2E_MAX_MINUTES"]) {
+  for (const leaked of ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY", "NODE_AUTH_TOKEN", "SHIPWRIGHT_E2E_MAX_MINUTES"]) {
     expect(env[leaked], leaked).toBeUndefined();
   }
   expect(authEnv("copied login", operator)).toEqual({});

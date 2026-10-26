@@ -56,18 +56,20 @@ function runNode(args: string[], cwd: string, label: string, deadline: number): 
 
 const ENV_ALLOW = new Set([
   "PATH", "Path", "PATHEXT", "SystemRoot", "SYSTEMROOT", "SystemDrive", "windir", "ComSpec", "ProgramData", "ProgramFiles",
-  "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL", "TERM", "PLAYWRIGHT_BROWSERS_PATH",
+  "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL", "TERM", "PLAYWRIGHT_BROWSERS_PATH", "USERNAME",
+  "NODE_OPTIONS", "NODE_EXTRA_CA_CERTS", "NODE_PATH", "NODE_ENV", "SSL_CERT_FILE", "CLAUDE_CODE_GIT_BASH_PATH",
+  "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy",
 ]);
 
 /**
  * Environment for the WebUI server (and so the agent). An allowlist, not the operator's whole environment:
- * the basics a process needs, NODE_*, the values the starter itself exports in `extra` (which carries only the
+ * the basics a process needs (an explicit NODE_* subset, never NODE_AUTH_TOKEN), proxy/CA settings, the values the starter itself exports in `extra` (which carries only the
  * chosen auth variable and the SHIPWRIGHT_* settings), and every home-like location pointed at the temp HOME.
  */
 export function childEnv(base: NodeJS.ProcessEnv, home: string, extra: Record<string, string>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
   for (const [key, value] of Object.entries(base)) {
-    if (value !== undefined && (ENV_ALLOW.has(key) || key.startsWith("NODE_"))) env[key] = value;
+    if (value !== undefined && ENV_ALLOW.has(key)) env[key] = value;
   }
   Object.assign(env, extra, { HOME: home, USERPROFILE: home });
   env.APPDATA = path.join(home, "AppData", "Roaming");
