@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T01:40:18.716474+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Playwright must be \"resolved from the project,\" but many projects won't have Playwright installed (the spec only says \"needs a running app and Playwright\" — it doesn't guarantee the project has it). Exit code 2 (error) is blocking, so a project with a brief package but no Playwright dependency will hard-fail the Test phase with no remediation path documented.",
+          "suggestion": "Define behavior explicitly: either the check auto-installs Playwright into a scratch location, installs the `@playwright/test` browsers via `npx playwright install chromium`, or the step doc includes a concrete STOP-and-report instruction for the agent to install it. Also confirm the running-app server URL is discovered robustly (port conflicts, dev server not started) — those also land in exit 2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "file://` screenshots of uploaded mockups render in a browser context where fonts, relative assets (images, CSS referenced relatively in an HTML mockup), and webfonts may load differently than in the tool that produced the approved mockup. This can push a correct screen over the 0.15 tolerance, or worse, a wrong screen under it if the mockup renders mostly blank (missing assets → low edge-cell counts).",
+          "suggestion": "The calibration numbers (0.02 vs 0.99) suggest single-screen tests only; verify a mockup with external/relative assets during the real-Chromium calibration, and consider falling back to \"error\" (not fail) when the mockup page throws load errors or is >X% blank.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Fixed 1280x800 viewport: screens that are responsive or longer than the viewport get truncated/clipped inconsistently between mockup and build; a scroll-height mismatch isn't captured by a viewport screenshot. Also no handling for routes requiring auth or interaction to reach the compared state.",
+          "suggestion": "Document the constraint (compare viewport-fold only at 1280x800) in the step reference, and record viewport in the result JSON so a human reviewing the metric understands what was compared. If any brief screens need login, either skip-with-reason or navigate to the state first.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The byte-for-byte claim for projects without a package depends on the check not invoking anything new before reading the marker file. If the new step is added to SKILL.md's flow for all projects, agents may still run `screenshot_check.py` speculatively.",
+          "suggestion": "Make the marker check the first line of `screenshot_check.py` (emit `{\"applies\": false}` and exit 0 immediately), and state in the step doc that the command is only invoked when the marker exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The planted-wrong-screen unit test uses synthetic PNGs; the hard acceptance gate is \"separates a planted wrong screen from a right one,\" which arguably requires the real-Chromium path (real screenshots through Playwright + the actual compare pipeline). A synthetic-PNG test only validates the comparator, not the end-to-end separation.",
+          "suggestion": "Make the planted-wrong-screen acceptance test the Playwright-gated one (with the skip reason), and note in the completion gate that the acceptance criterion is only truly satisfied on a machine with Playwright available. Alternatively, add a fixture-pair of real captured PNGs committed to the repo so the gate runs hermetically.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Screenshotting `file://` URLs of uploads/ means the mockup content (potentially containing scripts) executes in a Chromium context with file-scheme access. Low practical risk in a dev-agent context, but scripts in a malicious uploaded mockup could affect timing/rendering (flaky metric) or read other local files if browser flags allow.",
+          "suggestion": "Route through a small static HTTP server on localhost instead of `file://`, or launch Chromium with `--disable-web-security`-free defaults and block scripts via route interception for the mockup capture. Also route-block network requests during mockup capture so flaky external webfonts don't change results.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Non-deterministic rendering: webfonts, animations, lazy-loaded content, and scrollbars can shift luminance between runs. Tolerance 0.15 with a calibrated 0.02 pass margin gives headroom, but a single flaky failure blocks the phase.",
+          "suggestion": "Capture with `animations: 'disabled'`, wait for network-idle + a small settle delay, and hide scrollbars; record these settings in the result JSON alongside metric and tolerance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "reducibility",
+          "file": null,
+          "line": null,
+          "finding": "A dependency-free zlib PNG decoder is ~100+ lines of unpinned-format code (interlacing, color types, bit depths, tRNS). PNG edge cases are a real bug source and the decoder only needs to handle screenshots you generate plus mockup PNGs.",
+          "suggestion": "Fine to keep it dependency-free, but restrict explicitly to non-interlaced 8-bit RGBA/RGB and fail with exit 2 on anything else — the spec's PNGs are all tool-generated. Also consider Pillow as an allowed stdlib-adjacent alternative if the plugin's dependency policy permits; only stay hand-rolled if it must be dependency-free.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The proposed metric can accept materially wrong screens. Mean luminance and a binary edge flag discard color and most within-cell structure; different content can produce similar signatures. The reported calibration does not establish reliable separation across the approved screens.",
+          "suggestion": "Calibrate against actual approved mockups and representative wrong screens, including altered text, missing components, and incorrect colors. Use a comparison that preserves color and spatial detail, with the metric and tolerance recorded per result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The hard acceptance gate can remain unverified because the real Chromium test may skip. Synthetic PNG tests establish comparator behavior, but do not prove that route resolution, capture, and comparison distinguish a right built screen from a planted wrong one.",
+          "suggestion": "Require the end-to-end planted-wrong-screen test in the acceptance environment, with Playwright, Chromium, and a running fixture app provisioned. Local skips can remain, but must not count as satisfying acceptance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The plan explicitly leaves `design_fidelity_check.py` and Step 3.7 untouched, whereas the specification names them as extension points. A separate orchestration path risks duplicating screen discovery and producing inconsistent applicability or results.",
+          "suggestion": "Extend the existing entry point to invoke the blocking check for applicable packages while preserving its existing behavior otherwise. Keep capture and comparison helpers separate only where useful.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "A fixed viewport does not establish comparable captures. Mockup dimensions and browser scaling, unfinished font/image loading, animations, authentication redirects, and application readiness can produce misleading results. A screenshot of a mockup opened through `file://` also needs explicit sizing rules.",
+          "suggestion": "Define the mockup rendering contract and capture readiness conditions. Verify the expected route and authenticated state, wait for required assets, stabilize animations, and treat unsupported dimensions or unsuccessful navigation as blocking errors.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not define coverage enforcement. An applied package with missing mappings, missing mockups, or zero resolved screens could accidentally produce a successful empty run. Likewise, a malformed applicability marker must not silently become `applies: false`.",
+          "suggestion": "Require every expected screen to resolve to a valid route and mockup. Fail with an error for malformed package metadata, incomplete mappings, missing assets, or an empty applicable screen set; record per-screen results and the aggregate outcome.  The blocking-check direction is sound, but the comparison’s discrimination and the mandatory end-to-end acceptance test need strengthening before implementation is approved. This assessment is based on the supplied specification and plan; repository inspection was blocked by the execution policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-26T01:40:18.914800+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  **Finding:** Playwright must be \"resolved from the project,\" but many projects won't have Playwright installed (the spec only says \"needs a running app and Playwright\" — it doesn't guarantee the project has it). Exit code 2 (error) is blocking, so a project with a brief package but no Playwright dependency will hard-fail the Test phase with no remediation path documented.\n  **Suggestion:** Define behavior explicitly: either the check auto-installs Playwright into a scratch location, installs the `@playwright/test` browsers via `npx playwright install chromium`, or the step doc includes a concrete STOP-and-report instruction for the agent to install it. Also confirm the running-app server URL is discovered robustly (port conflicts, dev server not started) — those also land in exit 2.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `file://` screenshots of uploaded mockups render in a browser context where fonts, relative assets (images, CSS referenced relatively in an HTML mockup), and webfonts may load differently than in the tool that produced the approved mockup. This can push a *correct* screen over the 0.15 tolerance, or worse, a wrong screen under it if the mockup renders mostly blank (missing assets → low edge-cell counts).\n  **Suggestion:** The calibration numbers (0.02 vs 0.99) suggest single-screen tests only; verify a mockup with external/relative assets during the real-Chromium calibration, and consider falling back to \"error\" (not fail) when the mockup page throws load errors or is >X% blank.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** Fixed 1280x800 viewport: screens that are responsive or longer than the viewport get truncated/clipped inconsistently between mockup and build; a scroll-height mismatch isn't captured by a viewport screenshot. Also no handling for routes requiring auth or interaction to reach the compared state.\n  **Suggestion:** Document the […truncated]\n\n[openai] 1. **Category: approach | Severity: high**  \n   **Finding:** The proposed metric can accept materially wrong screens. Mean luminance and a binary edge flag discard color and most within-cell structure; different content can produce similar signatures. The reported calibration does not establish reliable separation across the approved screens.  \n   **Suggestion:** Calibrate against actual approved mockups and representative wrong screens, including altered text, missing components, and incorrect colors. Use a comparison that preserves color and spatial detail, with the metric and tolerance recorded per result.\n\n2. **Category: dependency | Severity: high**  \n   **Finding:** The hard acceptance gate can remain unverified because the real Chromium test may skip. Synthetic PNG tests establish comparator behavior, but do not prove that route resolution, capture, and comparison distinguish a right built screen from a planted wrong one.  \n   **Suggestion:** Require the end-to-end planted-wrong-screen test in the acceptance environment, with Playwright, Chromium, and a running fixture app provisioned. Local skips can remain, but must not count as satisfying acceptance.\n\n3. **Category: approach | Severity: medium**  \n   **Finding:** The plan explicitly leaves `design_fidelity_check.py` and Step 3.7 untouched, whereas the specification names them as extension points. A separate orchestration path risks duplicating screen discovery and producing inconsistent applicability or results.  \n   **Suggestion:** Extend the existing entry point to invoke the blocking check for applicable packages while preserving its existing behavior otherwise. Keep capture and comparison helpers separate only where useful.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** A fixed viewport does not establish comparable captures. Mockup dimensions and browser scaling, unfinished font/image loading, animations, authentication redirects, and application readiness can produce mi […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T01:40:19.650817+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents; the orchestrator runs the code review (model=opus) in 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T01:40:19.878067+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents; the orchestrator runs the doubt review (model=opus) in 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_capture.mjs:26-29 (and tests/test_screenshot_check_playwright.py:60)",
+          "line": null,
+          "finding": "Playwright is resolved exclusively via `createRequire(join(project, \"package.json\"))`. `createRequire` does not honor `NODE_PATH`, so the integration test's `monkeypatch.setenv(\"NODE_PATH\", NODE_MODULES)` has no effect. When someone opts in by setting `SHIPWRIGHT_PLAYWRIGHT_NODE_MODULES`, the test does not skip and does not pass — the capture script reports \"playwright not resolvable from …\" and the hard-gate AC test fails. The opt-in wiring for the only real-Chromium test of the hard acceptance criterion is broken.",
+          "suggestion": "In `screenshot_capture.mjs`, fall back to a plain `import(\"playwright\")` (which does honor `NODE_PATH`) or `createRequire(import.meta.url)` when the project-relative resolution fails; or have the test create a `package.json` + `node_modules` symlink inside the temp project.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py:118-128 (`run_screenshot_check`, jobs building)",
+          "line": null,
+          "finding": "Screenshot filenames are derived only from `Path(mockup).stem`. Two `screen-routes.json` entries pointing at mockups with the same stem (e.g. `screens/01-dashboard.html` and `old/01-dashboard.html`, or `a/01-dashboard.html` and `b/01-dashboard.html`) silently overwrite each other's screenshots in `approved/`/`built/`, so one screen is compared against the other's pair — wrong pass/fail with no error.",
+          "suggestion": "Make the output name unique per entry (e.g. include the route or an index in the filename), or error when a duplicate stem is detected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_capture.mjs:47-48",
+          "line": null,
+          "finding": "page.addStyleTag` is injected after `networkidle` but before screenshot — fine — however `caret-color`/animation suppression cannot help with elements that appear via JS after `load`; more concretely, mockups opened via `file://` that reference remote fonts/CSS will block on network but fonts may still swap in after screenshot (no `document.fonts.ready` wait), causing luminance noise. Not the tolerance-level calibration the docstring assumes (\"the right built screen scored 0.02\") when mockup and built app use different webfonts.",
+          "suggestion": "Await `page.evaluate(() => document.fonts.ready)` (with a timeout catch) before the screenshot.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-test/scripts/lib/png_compare.py:40-49 (`_chunks`)",
+          "line": null,
+          "finding": "Chunk CRCs are never verified. A corrupted-but-decodable PNG (bit-flip in IDAT is caught by zlib, but a corrupted IHDR/PLTE-less path) can silently produce garbage luminance. Given the check is a blocking gate, a CRC check is cheap insurance.",
+          "suggestion": "Verify `zlib.crc32(kind + body)` against the trailing CRC and raise `PngError` on mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-test/scripts/lib/design_fidelity_check.py (not modified)",
+          "line": null,
+          "finding": "The spec says to extend `design_fidelity_check.py` (beside which the new check sits); the diff implements the new check as a fully separate `screenshot_check.py` and leaves `design_fidelity_check.py` untouched. The tests explicitly pin that the old step is unchanged, so the intent (non-fidelity behaviour preserved, no package ⇒ today's behaviour) is met — but if \"extend\" meant wiring the blocking result through the fidelity script's reporting path, that's not done; results recording is delegated to the prose step (agent writes `screenshot_check` into `shipwright_test_results.json`), so nothing in code enforces the recording.",
+          "suggestion": "If the recording must be guaranteed, add a code path (or test) that the `screenshot_check` key is written; otherwise document this as intentional.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-test/tests/test_screenshot_check_capture.py:16-24 (`fake_run`)",
+          "line": null,
+          "finding": "fake_run` stashes the command on the function object (`run.cmd = cmd`), and the assertion `run.cmd[-4:] == [\"--width\", \"1280\", \"--height\", \"800\"]` re-reads the same closure — this works, but `run` in `test_successful_capture_returns_none_and_passes_viewport` shadows nothing problematic. No defect here; the tests do genuinely assert the command line and jobs file. (Noting only that `run` is also the name of the test module's helper convention in the sibling file — no actual bug.)",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": 137,
+          "finding": "Capture failures can pass using stale screenshots. Output paths are reused across runs, and existing PNG pairs are compared even when `_capture` reports failure. After one passing run, stopping the app or returning HTTP 500 can therefore still produce `status: \"pass\"` and exit 0.",
+          "suggestion": "Use a fresh output directory for each run and require successful capture of every expected screenshot. Any capture failure must produce a blocking `error`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-test/scripts/lib/png_compare.py",
+          "line": 156,
+          "finding": "A blank built screen passes for sparse approved layouts. For example, a white mockup with a small centered form occupying fewer than 96 grid cells differs from a completely blank white screen in less than the allowed 15%. The blank check only checks the approved image, so this visibly wrong screen is accepted.",
+          "suggestion": "Reject blank built screenshots explicitly and calibrate content-loss detection for sparse screens. Add a planted blank-screen test using a light, sparse approved form.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": 131,
+          "finding": "Package coverage is enforced only when the omitted screen’s uploaded mockup still exists. If a package screen is absent from both `screen-routes.json` and `uploads/`, it is silently excluded, allowing the remaining screens to pass despite incomplete package coverage.",
+          "suggestion": "Require every screen-map entry to have a route mapping regardless of upload existence. Report missing approved files separately as blocking errors.  Overall assessment: ship-with-fixes. The blocking workflow and separation tests are present, but stale captures and sparse layouts can let incorrect builds pass.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-26T01:40:19.157666+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: bug**\n  **Severity: high**\n  File: plugins/shipwright-test/scripts/lib/screenshot_capture.mjs:26-29 (and tests/test_screenshot_check_playwright.py:60)\n  Finding: Playwright is resolved exclusively via `createRequire(join(project, \"package.json\"))`. `createRequire` does **not** honor `NODE_PATH`, so the integration test's `monkeypatch.setenv(\"NODE_PATH\", NODE_MODULES)` has no effect. When someone opts in by setting `SHIPWRIGHT_PLAYWRIGHT_NODE_MODULES`, the test does not skip and does not pass — the capture script reports \"playwright not resolvable from …\" and the hard-gate AC test fails. The opt-in wiring for the only real-Chromium test of the hard acceptance criterion is broken.\n  Suggestion: In `screenshot_capture.mjs`, fall back to a plain `import(\"playwright\")` (which does honor `NODE_PATH`) or `createRequire(import.meta.url)` when the project-relative resolution fails; or have the test create a `package.json` + `node_modules` symlink inside the temp project.\n\n- **Category: bug**\n  **Severity: medium**\n  File: plugins/shipwright-test/scripts/lib/screenshot_check.py:118-128 (`run_screenshot_check`, jobs building)\n  Finding: Screenshot filenames are derived only from `Path(mockup).stem`. Two `screen-routes.json` entries pointing at mockups with the same stem (e.g. `screens/01-dashboard.html` and `old/01-dashboard.html`, or `a/01-dashboard.html` and `b/01-dashboard.html`) silently overwrite each other's screenshots in `approved/`/`built/`, so one screen is compared against the other's pair — wrong pass/fail with no error.\n  Suggestion: Make the output name unique per entry (e.g. include the route or an index in the filename), or error when a duplicate stem is detected.\n\n- **Category: edge-case**\n  **Severity: medium**\n  File: plugins/shipwright-test/scripts/lib/screenshot_capture.mjs:47-48\n  Finding: `page.addStyleTag` is injected *after* `networkidle` but before screenshot — fine — however `caret-color`/animation suppression  […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: plugins/shipwright-test/scripts/lib/screenshot_check.py:137\n- Finding: Capture failures can pass using stale screenshots. Output paths are reused across runs, and existing PNG pairs are compared even when `_capture` reports failure. After one passing run, stopping the app or returning HTTP 500 can therefore still produce `status: \"pass\"` and exit 0.\n- Suggestion: Use a fresh output directory for each run and require successful capture of every expected screenshot. Any capture failure must produce a blocking `error`.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-test/scripts/lib/png_compare.py:156\n- Finding: A blank built screen passes for sparse approved layouts. For example, a white mockup with a small centered form occupying fewer than 96 grid cells differs from a completely blank white screen in less than the allowed 15%. The blank check only checks the approved image, so this visibly wrong screen is accepted.\n- Suggestion: Reject blank built screenshots explicitly and calibrate content-loss detection for sparse screens. Add a planted blank-screen test using a light, sparse approved form.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-test/scripts/lib/screenshot_check.py:131\n- Finding: Package coverage is enforced only when the omitted screen’s uploaded mockup still exists. If a package screen is absent from both `screen-routes.json` and `uploads/`, it is silently excluded, allowing the remaining screens to pass despite incomplete package coverage.\n- Suggestion: Require every screen-map entry to have a route mapping regardless of upload existence. Report missing approved files separately as blocking errors.\n\nOverall assessment: ship-with-fixes. The blocking workflow and separation tests are present, but stale captures and sparse layouts can let incorrect builds pass.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T01:40:19.420566+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents; the orchestrator runs the spec review (model=opus) in 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T01:40:20.089918+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents, so the internal arm did not run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T01:40:20.342818+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents, so the internal arm did not run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

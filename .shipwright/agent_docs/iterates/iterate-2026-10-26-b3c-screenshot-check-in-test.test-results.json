@@ -1,0 +1,103 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
+    "date": "2026-10-26",
+    "unit": {
+      "status": "passed",
+      "passed": 23795,
+      "total": 23898
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest plugins/shipwright-test/tests/test_png_compare.py plugins/shipwright-test/tests/test_screenshot_check.py plugins/shipwright-test/tests/test_screenshot_check_capture.py plugins/shipwright-test/tests/test_screenshot_check_prose.py -q",
+      "exit_code": 0,
+      "tests_run": 55,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3c\\.shipwright\\runs\\iterate-2026-10-26-b3c-screenshot-check-in-test\\surface_verification.log",
+      "timestamp": "2026-10-26T01:52:34.899Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "planted wrong screen (blank page / other screen) is separated from the right one with metric and tolerance recorded",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check.py::test_planted_wrong_screen_is_separated_from_the_right_one, plugins/shipwright-test/tests/test_png_compare.py::test_wrong_screens_fail, plugins/shipwright-test/tests/test_png_compare.py::test_small_deviations_stay_inside_the_tolerance PASSED; plugins/shipwright-test/tests/test_screenshot_check_playwright.py::test_real_browser_separates_planted_wrong_screen_from_right_one PASSED against real Chromium (opt-in env, otherwise skipped with a reason)"
+        },
+        {
+          "behavior": "a project without a Brief package gets applies:false, nothing is captured, the structural step is untouched",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check.py::test_project_without_a_package_is_untouched, plugins/shipwright-test/tests/test_screenshot_check_prose.py::test_existing_fidelity_step_stays_non_blocking, ::test_only_brief_package_projects_are_blocked PASSED"
+        },
+        {
+          "behavior": "PNG decode: every filter type and colour type, corrupt/truncated/interlaced/oversized/size-mismatched files are errors",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_png_compare.py::test_every_filter_and_color_type_decodes_the_same, ::test_unreadable_inputs_are_errors_not_exceptions, ::test_size_mismatch_is_an_error, ::test_interlaced_and_oversized_png_are_refused, ::test_a_corrupt_chunk_is_an_error PASSED"
+        },
+        {
+          "behavior": "blank approved mockup is an error; blank built screen is a fail even for a sparse mockup",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_png_compare.py::test_a_blank_approved_mockup_is_an_error_not_a_pass, plugins/shipwright-test/tests/test_screenshot_check.py::test_a_blank_built_screen_fails_even_for_a_sparse_approved_page PASSED"
+        },
+        {
+          "behavior": "missing/stale/failed captures never pass: stale pictures cleared, missing pair, missing base url, per-screen capture error, unique picture names",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check.py::test_stale_pictures_from_a_previous_run_never_pass_a_failed_capture, ::test_same_named_mockups_get_their_own_pictures, ::test_missing_built_screenshot_is_an_error_that_blocks, ::test_capture_needs_a_base_url, ::test_capture_failure_is_reported_per_screen PASSED"
+        },
+        {
+          "behavior": "route/mockup resolution: screen-map NN prefix then same name, dynamic routes need sample_route, unmapped package screens are errors",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check.py::test_approved_mockup_is_found_via_screen_map_then_by_same_name, ::test_dynamic_route_needs_a_sample_route, ::test_a_package_screen_missing_from_screen_routes_is_an_error, ::test_a_package_screen_with_neither_route_nor_upload_is_an_error PASSED"
+        },
+        {
+          "behavior": "Playwright hand-off: argv, jobs file, error reporting, missing node, timeout; CLI exit codes 0/1/2",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check_capture.py (6 tests), plugins/shipwright-test/tests/test_screenshot_check.py::test_cli_exit_codes_mirror_status PASSED"
+        },
+        {
+          "behavior": "unattended-agent prose pinned: every outcome has STOP/continue, never waive/edit/approve, documented metric equals code constants",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check_prose.py (5 tests), plugins/shipwright-test/tests/test_skill_references_link.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
+    "commit": "13bc59dadca6f7654a25c0f65540d3972ddf2eae",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

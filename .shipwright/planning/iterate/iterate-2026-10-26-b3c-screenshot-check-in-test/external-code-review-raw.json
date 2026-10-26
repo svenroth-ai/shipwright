@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: bug**\n  **Severity: high**\n  File: plugins/shipwright-test/scripts/lib/screenshot_capture.mjs:26-29 (and tests/test_screenshot_check_playwright.py:60)\n  Finding: Playwright is resolved exclusively via `createRequire(join(project, \"package.json\"))`. `createRequire` does **not** honor `NODE_PATH`, so the integration test's `monkeypatch.setenv(\"NODE_PATH\", NODE_MODULES)` has no effect. When someone opts in by setting `SHIPWRIGHT_PLAYWRIGHT_NODE_MODULES`, the test does not skip and does not pass \u2014 the capture script reports \"playwright not resolvable from \u2026\" and the hard-gate AC test fails. The opt-in wiring for the only real-Chromium test of the hard acceptance criterion is broken.\n  Suggestion: In `screenshot_capture.mjs`, fall back to a plain `import(\"playwright\")` (which does honor `NODE_PATH`) or `createRequire(import.meta.url)` when the project-relative resolution fails; or have the test create a `package.json` + `node_modules` symlink inside the temp project.\n\n- **Category: bug**\n  **Severity: medium**\n  File: plugins/shipwright-test/scripts/lib/screenshot_check.py:118-128 (`run_screenshot_check`, jobs building)\n  Finding: Screenshot filenames are derived only from `Path(mockup).stem`. Two `screen-routes.json` entries pointing at mockups with the same stem (e.g. `screens/01-dashboard.html` and `old/01-dashboard.html`, or `a/01-dashboard.html` and `b/01-dashboard.html`) silently overwrite each other's screenshots in `approved/`/`built/`, so one screen is compared against the other's pair \u2014 wrong pass/fail with no error.\n  Suggestion: Make the output name unique per entry (e.g. include the route or an index in the filename), or error when a duplicate stem is detected.\n\n- **Category: edge-case**\n  **Severity: medium**\n  File: plugins/shipwright-test/scripts/lib/screenshot_capture.mjs:47-48\n  Finding: `page.addStyleTag` is injected *after* `networkidle` but before screenshot \u2014 fine \u2014 however `caret-color`/animation suppression cannot help with elements that appear via JS after `load`; more concretely, mockups opened via `file://` that reference remote fonts/CSS will block on network but fonts may still swap in after screenshot (no `document.fonts.ready` wait), causing luminance noise. Not the tolerance-level calibration the docstring assumes (\"the right built screen scored 0.02\") when mockup and built app use different webfonts.\n  Suggestion: Await `page.evaluate(() => document.fonts.ready)` (with a timeout catch) before the screenshot.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: plugins/shipwright-test/scripts/lib/png_compare.py:40-49 (`_chunks`)\n  Finding: Chunk CRCs are never verified. A corrupted-but-decodable PNG (bit-flip in IDAT is caught by zlib, but a corrupted IHDR/PLTE-less path) can silently produce garbage luminance. Given the check is a blocking gate, a CRC check is cheap insurance.\n  Suggestion: Verify `zlib.crc32(kind + body)` against the trailing CRC and raise `PngError` on mismatch.\n\n- **Category: spec**\n  **Severity: low**\n  File: plugins/shipwright-test/scripts/lib/design_fidelity_check.py (not modified)\n  Finding: The spec says to extend `design_fidelity_check.py` (beside which the new check sits); the diff implements the new check as a fully separate `screenshot_check.py` and leaves `design_fidelity_check.py` untouched. The tests explicitly pin that the old step is unchanged, so the intent (non-fidelity behaviour preserved, no package \u21d2 today's behaviour) is met \u2014 but if \"extend\" meant wiring the blocking result through the fidelity script's reporting path, that's not done; results recording is delegated to the prose step (agent writes `screenshot_check` into `shipwright_test_results.json`), so nothing in code enforces the recording.\n  Suggestion: If the recording must be guaranteed, add a code path (or test) that the `screenshot_check` key is written; otherwise document this as intentional.\n\n- **Category: test**\n  **Severity: low**\n  File: plugins/shipwright-test/tests/test_screenshot_check_capture.py:16-24 (`fake_run`)\n  Finding: `fake_run` stashes the command on the function object (`run.cmd = cmd`), and the assertion `run.cmd[-4:] == [\"--width\", \"1280\", \"--height\", \"800\"]` re-reads the same closure \u2014 this works, but `run` in `test_successful_capture_returns_none_and_passes_viewport` shadows nothing problematic. No defect here; the tests do genuinely assert the command line and jobs file. (Noting only that `run` is also the name of the test module's helper convention in the sibling file \u2014 no actual bug.)\n\n## Positive notes\n\nThe unit-level planted-wrong-screen test is real: distinct pass/fail screens, per-screen `diff_ratio` ordering asserted, exit codes exercised end-to-end, error paths (missing node, timeout, unreadable output, missing pair, dynamic route, missing package screen) all covered. The `capture=False` seam and prose-pinning tests are sound. `Path(mockup).name` in `_approved_for` also neutralizes path traversal from `screen-map.json`.\n\nOverall: the core logic is solid and well-tested, but the real-Chromium integration test \u2014 the one backing the hard acceptance gate \u2014 is wired incorrectly (`NODE_PATH` vs `createRequire`) and the duplicate-stem overwrite can produce a wrong verdict on a blocking gate.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: plugins/shipwright-test/scripts/lib/screenshot_check.py:137\n- Finding: Capture failures can pass using stale screenshots. Output paths are reused across runs, and existing PNG pairs are compared even when `_capture` reports failure. After one passing run, stopping the app or returning HTTP 500 can therefore still produce `status: \"pass\"` and exit 0.\n- Suggestion: Use a fresh output directory for each run and require successful capture of every expected screenshot. Any capture failure must produce a blocking `error`.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-test/scripts/lib/png_compare.py:156\n- Finding: A blank built screen passes for sparse approved layouts. For example, a white mockup with a small centered form occupying fewer than 96 grid cells differs from a completely blank white screen in less than the allowed 15%. The blank check only checks the approved image, so this visibly wrong screen is accepted.\n- Suggestion: Reject blank built screenshots explicitly and calibrate content-loss detection for sparse screens. Add a planted blank-screen test using a light, sparse approved form.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-test/scripts/lib/screenshot_check.py:131\n- Finding: Package coverage is enforced only when the omitted screen\u2019s uploaded mockup still exists. If a package screen is absent from both `screen-routes.json` and `uploads/`, it is silently excluded, allowing the remaining screens to pass despite incomplete package coverage.\n- Suggestion: Require every screen-map entry to have a route mapping regardless of upload existence. Report missing approved files separately as blocking errors.\n\nOverall assessment: ship-with-fixes. The blocking workflow and separation tests are present, but stale captures and sparse layouts can let incorrect builds pass.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
+    "at": "2026-10-26T01:38:00.499269+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

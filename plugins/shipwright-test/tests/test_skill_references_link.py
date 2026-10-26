@@ -44,6 +44,7 @@ EXPECTED_STEP_REFERENCES = {
     "step-3.5-e2e-verification.md",
     "step-3.6-ui-consistency.md",
     "step-3.7-design-fidelity.md",
+    "step-3.7b-screenshot-check.md",
     "step-3.8-performance-budget.md",
     "step-3.9-stop-dev-server.md",
     "step-3.95-boundary-coverage.md",
