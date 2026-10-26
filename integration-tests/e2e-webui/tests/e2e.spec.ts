@@ -221,6 +221,7 @@ async function follow(page: Page, base: string, projectId: string, projectPath: 
     if (state.status === "complete" || state.status === "failed") return state.status;
     for (const done of await ui.answerGates(page, gateState)) {
       report.gate(done);
+      if (/exemption|safety dialog/i.test(done)) report.escalation(done);
       await report.step(`Gate answered: ${done}`, page);
     }
     const terminal = await page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => "");
