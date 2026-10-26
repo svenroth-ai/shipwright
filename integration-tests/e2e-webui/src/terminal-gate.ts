@@ -5,7 +5,8 @@
 import type { Page } from "@playwright/test";
 
 const OPTION_ONE = /[❯>]\s*1\.\s*(\S[^\n]*)/;
-const FOOTER = /Enter to select/;
+// A menu has the footer; the final page of a multi-question form ("Ready to submit your answers?") has none.
+const FOOTER = /Enter to select|Ready to submit your answers/;
 /** After one Enter, stale scrollback must not trigger a second one for this long. */
 export const REANSWER_AFTER_MS = 15_000;
 

@@ -24,6 +24,8 @@ test("terminal menu: the highlighted first option with its footer, recorded, nev
   expect(needsTerminalAnswer(commit, 990_000, 1_000_000)).toBe(false);
   expect(needsTerminalAnswer(approve.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
   expect(needsTerminalAnswer(["1. Not highlighted", "Enter to select"].join("\n"), 0, 1_000_000)).toBe(false);
+  const submit = ["Review your answers", "Ready to submit your answers?", "❯ 1. Submit answers", "2. Cancel"].join("\n");
+  expect(readTerminalMenu(submit)?.option).toBe("Submit answers");
 });
 
 // @covers FR-01.04
