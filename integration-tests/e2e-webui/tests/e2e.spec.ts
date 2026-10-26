@@ -144,6 +144,7 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
     // 4. Follow the phases, answer gates, until complete, failed, idle or out of budget.
     const taskId = await waitForTask(page, base, projectId);
     if (taskId) await page.goto(`${base}/tasks/${taskId}`);
+    await ui.startTaskSession(page);
     await report.step("Task page after launch", page);
     status = await follow(page, base, projectPath, deadline, cfg.maxMinutes, report);
 

@@ -50,6 +50,17 @@ export async function launchPipeline(page: Page): Promise<void> {
   await page.getByTestId("new-issue-launch-btn").click();
 }
 
+/**
+ * The modal only creates the task (state "draft"). The session starts with the green Launch button on the task
+ * page, so click it and wait until it is gone, which means the terminal launch was accepted.
+ */
+export async function startTaskSession(page: Page): Promise<void> {
+  const cta = page.getByTestId("cta-launch-in-terminal");
+  await cta.waitFor({ state: "visible", timeout: 30_000 });
+  await cta.click();
+  await cta.waitFor({ state: "hidden", timeout: 60_000 });
+}
+
 export async function findTaskId(request: APIRequestContext, base: string, projectId: string): Promise<string | null> {
   const res = await request.get(`${base}/api/external/tasks`);
   const body = (await res.json()) as { tasks?: { taskId: string; projectId?: string }[] };
