@@ -123,29 +123,89 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py",
+          "line": 127,
+          "finding": "comment and message say 'own upload' but the code checks any upload of the package",
+          "suggestion": "reword to 'any upload of the package'",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "maintainability",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": 29,
+          "finding": "fr-coverage STOP rule stated twice in one paragraph",
+          "suggestion": "merge the two clauses",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "plugins/shipwright-design/tests/test_apply_brief_package.py",
+          "line": 180,
+          "finding": "a few upload-mode.md sentences are not pinned (SKILL.md pins the agent-facing contract)",
+          "suggestion": "pin only if upload-mode.md is an independent contract",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-25T17:54:16.381040+00:00",
-      "disposition": "the campaign orchestrator instructed this runner not to spawn the review cascade; the orchestrator runs spec/code/doubt reviewers itself (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T00:49:09.515953+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d6600a683fb34d31e9b6a7031684e2bd2373df65"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-design/skills/design/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: fixture-like run reaches a green --gate all — the boundary gate flags an uncommitted project-relative brief/ (and root CONTEXT.md); acceptance tests exclude boundary and the harness project is not a git repo. Verify in B7 on a real git repo; decide commit-the-package vs exempt brief_dir.",
+          "suggestion": "tracked as follow-up / B7 verification item",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: operator choice (b) on a rejected preview survives a resume — nothing stores the decision or the queued feedback; a re-dispatched agent may ask preview-approval again (general gate-answer carrier, not new)",
+          "suggestion": "tracked as follow-up / B7 verification item",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: Non-UI remedy is fully specified — STOP report does not give the exact entry format (- FR-ID — ADR-NNN)",
+          "suggestion": "tracked as follow-up / B7 verification item",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-25T17:54:16.547916+00:00",
-      "disposition": "the campaign orchestrator instructed this runner not to spawn the review cascade; the orchestrator runs spec/code/doubt reviewers itself (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T00:49:09.644446+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d6600a683fb34d31e9b6a7031684e2bd2373df65"
     },
     "external_code": {
       "review_type": "external_code",
@@ -229,16 +289,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-25T17:54:16.252225+00:00",
-      "disposition": "the campaign orchestrator instructed this runner not to spawn the review cascade; the orchestrator runs spec/code/doubt reviewers itself (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T00:49:09.368687+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d6600a683fb34d31e9b6a7031684e2bd2373df65"
     },
     "plan_internal": {
       "review_type": "plan_internal",
