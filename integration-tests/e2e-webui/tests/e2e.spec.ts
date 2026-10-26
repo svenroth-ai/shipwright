@@ -204,7 +204,7 @@ async function follow(page: Page, base: string, projectId: string, projectPath: 
   const idle = new IdleWatch(IDLE_MINUTES * 60_000);
   let lastPhases = "";
   let boardShot = false;
-  const gateState: ui.GateState = { launchPending: false };
+  const gateState: ui.GateState = { launchPending: false, terminalApprovalMs: 0 };
   while (Date.now() < deadline) {
     const state = readRunState(projectPath);
     const phases = phaseSignature(state);

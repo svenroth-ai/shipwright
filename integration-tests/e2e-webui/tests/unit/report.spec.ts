@@ -7,12 +7,22 @@ import { runChatScript, type ChatMap, type Send } from "../../src/chat.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { IdleWatch } from "../../src/idle.js";
 import { Report } from "../../src/report.js";
+import { needsTerminalApproval } from "../../src/terminal-gate.js";
 
 const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const fixtures = path.join(repo, "integration-tests", "fixtures");
 const expected = fs.readFileSync(path.join(fixtures, "social-engagement-expected-result.md"), "utf8");
 const template = fs.readFileSync(path.resolve(import.meta.dirname, "..", "..", "report-template.md"), "utf8");
 const chatMap = JSON.parse(fs.readFileSync(path.join(fixtures, "social-engagement", "chat-map.json"), "utf8")) as ChatMap;
+
+// @covers FR-01.04
+test("terminal approval: only the design menu with its footer, and never twice in a minute", () => {
+  const menu = "Do you approve the five design screens?\n❯ 1. Approve screens\n2. Request changes\nEnter to select";
+  expect(needsTerminalApproval(menu, 0, 1_000_000)).toBe(true);
+  expect(needsTerminalApproval(menu, 990_000, 1_000_000)).toBe(false);
+  expect(needsTerminalApproval(menu.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
+  expect(needsTerminalApproval("1. Something else\nEnter to select", 0, 1_000_000)).toBe(false);
+});
 
 // @covers FR-01.04
 test("the committed checklist has hard and soft items with the ids the spec records", () => {
