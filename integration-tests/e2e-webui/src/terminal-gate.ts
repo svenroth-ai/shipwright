@@ -3,7 +3,8 @@
 // preselected "Approve screens" option; so does the spec.
 import type { Page } from "@playwright/test";
 
-const MENU = /1\.\s*Approve screens/;
+// The agent words the question itself ("Approve screens", "Approve mockups", ...), so match on the first option.
+const MENU = /1\.\s*Approve\b/i;
 const FOOTER = /Enter to select/;
 /** After one Enter, stale scrollback must not trigger a second one for this long. */
 export const REANSWER_AFTER_MS = 60_000;

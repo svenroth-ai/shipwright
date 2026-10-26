@@ -22,6 +22,7 @@ test("terminal approval: only the design menu with its footer, and never twice i
   expect(needsTerminalApproval(menu, 990_000, 1_000_000)).toBe(false);
   expect(needsTerminalApproval(menu.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
   expect(needsTerminalApproval("1. Something else\nEnter to select", 0, 1_000_000)).toBe(false);
+  expect(needsTerminalApproval("❯ 1. Approve mockups\n2. I have feedback\nEnter to select", 0, 1_000_000)).toBe(true);
 });
 
 // @covers FR-01.04
