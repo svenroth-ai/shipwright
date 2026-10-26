@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T04:05:33.864588+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security / edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Credential cleanup relies on `finally`, signal handlers, and process-exit handlers. A hard kill (SIGKILL, terminal closed, power loss, CI runner timeout) leaves the copied `.credentials.json` in the temp HOME under the workdir indefinitely, and nothing scrubs stale temp HOMEs on the next run.",
+          "suggestion": "On startup, scan the workdir for leftover temp HOMEs from prior runs and delete any `.claude/.credentials.json` found (or the whole stale temp dir) before creating a new one. Also set restrictive file permissions on the copy where the OS supports it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "SHIPWRIGHT_E2E_MAX_MINUTES` is described as the overall limit, but the run includes building the WebUI server and client before the agent session starts. If the budget starts at spec launch, a slow build could consume most of it; if it starts after build, that's unspecified and the idle-abort/timeout interplay is undefined during the build (no \"terminal output change\" yet).",
+          "suggestion": "State explicitly whether the budget covers the build, and give the build its own (generous) timeout with a distinct report entry so a hung build isn't misreported as an agent idle abort.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The idle abort requires detecting \"a pending prompt the spec cannot answer,\" but the plan's progress signal is \"run config and file activity\" — none of these reliably surface a permission prompt or waiting-for-input state unless you also poll the WebUI's API/UI state.",
+          "suggestion": "Add an explicit UI/API check for pending-prompt state (the test-id-driven approach you already have) as a third progress/abort input, so a prompt-wait isn't confused with genuine idle work (e.g., a long tool run).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The answer key is placed beside the package to avoid changing its hash. If the fixture package's expected layout is a directory whose contents are validated, a sibling file inside that directory tree could still trip validation, or conversely the dry harness may not expect it.",
+          "suggestion": "Confirm the package validator's file rules cover (or at least tolerate) the sibling `expected-result.md` before committing; add a structure-rule pytest that pins its location.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Env-file resolution: `../autorune2e/.env` relative to repo root is documented, but the plan doesn't cover malformed lines (missing `=`, whitespace, CRLF on Windows) or a `.env` that exists but lacks the required keys — that should behave the same as \"unset\" (refuse with a clear message naming the missing key and both sources checked).",
+          "suggestion": "Specify parse behavior (trim, skip blank/`#`, ignore malformed lines with a warning) and make the refusal message list every missing key and the env-file path actually consulted. Also note: the spec text shows the example workdir path mangled (`C:_Developmentutorune2e`) — confirm the real path with the operator rather than shipping the corrupted string into docs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "\"Screenshots through the chat box, each beside its mockup\" — mockups live in the package; the report writer needs to resolve package-relative asset paths into the report output. If the report is written outside the repo (e2e-report under the workdir), relative links to mockups in the checkout will break when the operator opens it.",
+          "suggestion": "Copy the referenced mockups into `e2e-report/` alongside the screenshots and link relatively within the report bundle.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "USERPROFILE`/`HOME` redirection on Windows: some Node child processes and Claude Code resolve the home dir via `os.homedir()`, which on Windows can consult both. The plan sets both — good — but the stack starter's child processes use \"fixed argv\" with no shell; ensure `cwd` and env are also pinned for the server so it doesn't inherit the operator's shell environment (e.g., stray `CLAUDE_CONFIG_DIR` overriding the temp HOME).",
+          "suggestion": "Explicitly sanitize/override home-related env vars (`CLAUDE_CONFIG_DIR`, `USERPROFILE`, `HOME`, `APPDATA` if applicable) in the spawned env, and add a unit test asserting the sanitized env map.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The change explicitly requires reading BRIEF B7 and D1/D8/D9, but the plan does not establish that its provisioning, selectors, stack startup or expected results match those sections. Repository inspection was blocked by the execution policy, so I could not verify them independently.",
+          "suggestion": "Check those sections before implementation and map their concrete requirements to the spec and acceptance checklist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The proposed idle detector uses run config and file activity. That misses terminal output changes and pending prompts, while unrelated file writes could keep a stalled run alive. It does not implement the specified idle condition.",
+          "suggestion": "Track phase, task state and terminal output changes, plus whether an unanswered prompt is pending. On the specified 20-minute condition, capture a screenshot, flush the report and stop the stack. Enforce the overall budget separately, including startup.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "Credential cleanup is promised through several hooks without a defined shutdown order. An asynchronous process-exit hook cannot reliably delete credentials, and screenshots or report failures must not prevent deletion.",
+          "suggestion": "Use one idempotent shutdown path for success, failure and handled interruption: stop child processes, attempt report completion, and remove the copied credential in an unconditional cleanup block. Have signal handlers invoke that path; use only synchronous cleanup as an exit fallback. Test failure during startup and report writing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Several explicit deliverables and configuration details are absent: the committed acceptance checklist, names-only `.env.example`, nested `.gitignore`, workdir documentation, and exact default env-file resolution. “Outside the repo” alone does not establish the required behavior.",
+          "suggestion": "Enumerate these artifacts and specify resolution from the checkout root to `../autorune2e/.env`. Preserve process-environment precedence, validate required values before starting, and test both workdir modes and provenance reporting.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes the existing fixture is complete because B3b created it, although this change explicitly asks to complete the social engagement fixture. Preserving its hash is not evidence that it satisfies B7.",
+          "suggestion": "Validate its contents against B7 first. If additions are needed, resolve the “new files only” constraint explicitly and rerun package validation and the dry harness against the final package.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "A report written in `finally` does not ensure screenshots exist for every step or that evidence survives an interrupted run. The plan also leaves temporary-project isolation and child-process teardown unspecified.",
+          "suggestion": "Create a unique run directory, record each step and screenshot as it completes, and preserve partial evidence. Start and stop only processes owned by that run, with bounded readiness checks and teardown that also handles startup failure.  The tooling-only approach is appropriate and should have limited impact on existing functionality. It needs the specific lifecycle, idle-detection and deliverable gaps above resolved before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-26T04:05:34.015892+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: security / edge-case — Severity: medium**\nFinding: Credential cleanup relies on `finally`, signal handlers, and process-exit handlers. A hard kill (SIGKILL, terminal closed, power loss, CI runner timeout) leaves the copied `.credentials.json` in the temp HOME under the workdir indefinitely, and nothing scrubs stale temp HOMEs on the next run.\nSuggestion: On startup, scan the workdir for leftover temp HOMEs from prior runs and delete any `.claude/.credentials.json` found (or the whole stale temp dir) before creating a new one. Also set restrictive file permissions on the copy where the OS supports it.\n\n**Category: edge-case — Severity: medium**\nFinding: `SHIPWRIGHT_E2E_MAX_MINUTES` is described as the overall limit, but the run includes building the WebUI server and client before the agent session starts. If the budget starts at spec launch, a slow build could consume most of it; if it starts after build, that's unspecified and the idle-abort/timeout interplay is undefined during the build (no \"terminal output change\" yet).\nSuggestion: State explicitly whether the budget covers the build, and give the build its own (generous) timeout with a distinct report entry so a hung build isn't misreported as an agent idle abort.\n\n**Category: approach — Severity: medium**\nFinding: The idle abort requires detecting \"a pending prompt the spec cannot answer,\" but the plan's progress signal is \"run config and file activity\" — none of these reliably surface a permission prompt or waiting-for-input state unless you also poll the WebUI's API/UI state.\nSuggestion: Add an explicit UI/API check for pending-prompt state (the test-id-driven approach you already have) as a third progress/abort input, so a prompt-wait isn't confused with genuine idle work (e.g., a long tool run).\n\n**Category: risk — Severity: low**\nFinding: The answer key is placed *beside* the package to avoid changing its hash. If the fixture package's expected layout is a directory wh […truncated]\n\n[openai] 1. **Category: dependency · Severity: high**  \n   **Finding:** The change explicitly requires reading BRIEF B7 and D1/D8/D9, but the plan does not establish that its provisioning, selectors, stack startup or expected results match those sections. Repository inspection was blocked by the execution policy, so I could not verify them independently.  \n   **Suggestion:** Check those sections before implementation and map their concrete requirements to the spec and acceptance checklist.\n\n2. **Category: edge-case · Severity: high**  \n   **Finding:** The proposed idle detector uses run config and file activity. That misses terminal output changes and pending prompts, while unrelated file writes could keep a stalled run alive. It does not implement the specified idle condition.  \n   **Suggestion:** Track phase, task state and terminal output changes, plus whether an unanswered prompt is pending. On the specified 20-minute condition, capture a screenshot, flush the report and stop the stack. Enforce the overall budget separately, including startup.\n\n3. **Category: security · Severity: high**  \n   **Finding:** Credential cleanup is promised through several hooks without a defined shutdown order. An asynchronous process-exit hook cannot reliably delete credentials, and screenshots or report failures must not prevent deletion.  \n   **Suggestion:** Use one idempotent shutdown path for success, failure and handled interruption: stop child processes, attempt report completion, and remove the copied credential in an unconditional cleanup block. Have signal handlers invoke that path; use only synchronous cleanup as an exit fallback. Test failure during startup and report writing.\n\n4. **Category: dependency · Severity: medium**  \n   **Finding:** Several explicit deliverables and configuration details are absent: the committed acceptance checklist, names-only `.env.example`, nested `.gitignore`, workdir documentation, and exact default env-file resolution. “Outside the rep […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/playwright.config.ts",
+          "line": 7,
+          "finding": "no real deadline (timeout 0, no action timeout); fixed: test.setTimeout from the budget, action and navigation timeouts, bounded finally",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "integration-tests/e2e-webui/src/stack.ts",
+          "line": 122,
+          "finding": "only the server pid was killed; agent children and a re-written credentials copy could survive; fixed: whole process tree killed before the wipe, second wipe after stop",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/auth.ts",
+          "line": 63,
+          "finding": "copy kept the source mtime so the stale scrub could delete a live copy; fixed with utimes",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/driver.ts",
+          "line": 67,
+          "finding": "isVisible ignores its timeout so the confirm click could be missed; fixed with waitFor, approval recorded after the click",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "integration-tests/e2e-webui/src/stack.ts",
+          "line": 42,
+          "finding": "whole environment passed to the agent; fixed with an allowlist and an explicit NODE_ subset without NODE_AUTH_TOKEN",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/stack.ts",
+          "line": 305,
+          "finding": "orphan agent after the server died on its own, pty process groups, unguarded second wipe, teardown tail longer than the margin: documented follow-ups",
+          "suggestion": "follow-up",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-26T05:14:43.089628+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a2328799432411172ef5222f1741c7361fd2d2ff"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency and ordering",
+          "file": "integration-tests/e2e-webui/playwright.config.ts",
+          "line": null,
+          "finding": "Claim under doubt: a stuck run always ends and always writes a report — timeout 0 and no action timeout meant one hung click blocked forever; fixed with a real test timeout, action and navigation timeouts and a bounded finally; the re-review confirmed the finally cannot hang.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "integration-tests/e2e-webui/src/provision.ts",
+          "line": null,
+          "finding": "Claim under doubt: the temp HOME isolates the agent and a real pipeline can finish — no git identity in the temp HOME and the whole environment leaked; fixed with a gitconfig and an environment allowlist.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": "integration-tests/e2e-webui/README.md",
+          "line": null,
+          "finding": "Claim under doubt: the building agent cannot read the answer key — with bypassPermissions it can reach the repo via SHIPWRIGHT_MONOREPO_PATH; the README now says not handed to the agent; a hard barrier is a follow-up.",
+          "suggestion": "follow-up (accepted, documented)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "integration-tests/e2e-webui/src/auth.ts",
+          "line": null,
+          "finding": "Claim under doubt: a copied login cannot harm the operator login — refresh token rotation may log the operator out; the README prefers CLAUDE_CODE_OAUTH_TOKEN and states the risk.",
+          "suggestion": "documented",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-26T05:14:43.240398+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a2328799432411172ef5222f1741c7361fd2d2ff"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/shutdown.ts:29-33 (with tests/e2e.spec.ts finally block)",
+          "line": null,
+          "finding": "On SIGINT/SIGTERM, the signal handler calls `shutdown.run()` and then `process.exit(...)`. `process.exit` fires the `exit` hook but does not unwind the test's `try/finally`, so `report.write(status)` in the `finally` block never runs. An interrupted run deletes the copied login (good) but leaves no report, contradicting the README/spec promise that the report is produced on failure, abort and interruption.",
+          "suggestion": "Register the report write as a shutdown step (a sync `() => report.write(lastStatus)` added before the login-removal steps), or have the signal handler set a flag and let the normal finally path complete instead of calling `process.exit` directly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/auth.ts:53-66 (scrubStaleLogins) and src/env.ts:97 (default workdir)",
+          "line": null,
+          "finding": "When `SHIPWRIGHT_E2E_WORKDIR` is unset, the workdir defaults to the shared `os.tmpdir()/shipwright-e2e`. `scrubStaleLogins` then deletes `.credentials.json` from every `run-/home/.claude` under that shared directory — including the live login of a concurrently running second instance. A scrub during another operator's active run kills their authentication mid-run.",
+          "suggestion": "Only scrub run folders older than the current one (compare timestamps / skip the newest, or skip folders whose mtime is within the last N hours), or scope the default workdir per-run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts:182 (`const deadline = Date.now() + maxMinutes  60_000`)",
+          "line": null,
+          "finding": "The spec says `SHIPWRIGHT_E2E_MAX_MINUTES` is the overall limit, but the budget clock starts only after the WebUI build, project creation and pipeline launch (the report note even says \"the budget starts after this step\"). A slow build eats unaccounted wall-clock. The README documents this deviation, but it is a deviation from \"overall limit\".",
+          "suggestion": "Capture the start time at test start and compute the deadline from that, or state the deviation is accepted in the spec record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts:196-206 (`follow`)",
+          "line": null,
+          "finding": "The spec defines idle abort as no progress and \"a pending prompt the spec cannot answer\". The implementation aborts on no-progress alone and merely records whether a prompt was found in the inbox; it will idle-abort on e.g. a genuinely hung agent with no prompt. This is a broader abort condition than specified.",
+          "suggestion": "Acceptable as a conservative interpretation, but record it explicitly in the escalation text (it partially does) or require the prompt signal before aborting when the inbox is reachable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/chat.ts:66-68 (H11)",
+          "line": null,
+          "finding": "e.answer!.pane !== undefined` treats `pane: null` as satisfying H11 (\"every chat answer carries a reply and a pane\"). An app returning `{\"reply\":\"x\",\"pane\":null}` passes the hard item. JSON `null` deserializes to `null`, not `undefined`.",
+          "suggestion": "Check `e.answer!.pane != null` (or validate pane is an object) so a null pane fails H11.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/report.spec.ts:44-45",
+          "line": null,
+          "finding": "The checklist-id test asserts the exact hard id list H01–H11, which is good, but the chat tests only cover H06–H11 through `runChatScript`; H01–H05 have no unit-level coverage of their failure paths (they are exercised only in the operator run). Given the fake-app harness already exists, `checkProjectFiles` could be unit-tested the same way (e.g. mockups mismatch → H03 fail) — currently a wrong `checkProjectFiles` would only be caught by the operator.",
+          "suggestion": "Add a unit test for `checkProjectFiles` against a synthetic project directory, mirroring the `fakeApp()` pattern.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/report.ts:57-60",
+          "line": null,
+          "finding": "render` replaces `{{KEY}}` only for keys matching `[A-Z_]+`; a template key with digits or the literal text of a fill value containing `{{...}}`-shaped content is left as-is silently. Not currently reachable with the committed template (the Python structural test guards drift), so this is informational only.  No security defects found: no token or credential content reaches the report, screenshots or logs; the login copy is chmod 600 and removed on all non-SIGKILL paths; the `.claude.json` key-tail is removed at shutdown and its residual risk is documented in the README.  Overall assessment: the change is a faithful, well-tested implementation of B7 with one real operational defect (no report on signal interruption) and one concurrency hazard in the stale-login scrub; ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": 175,
+          "finding": "The overall budget starts only inside `follow()`. Builds, project creation and task discovery run before it; preview startup, chat checks and screenshots run afterward. Several `fetch()` calls also have no timeout. A run can therefore substantially exceed `SHIPWRIGHT_E2E_MAX_MINUTES` or hang indefinitely.",
+          "suggestion": "Establish one deadline at run start and enforce it across setup, builds, polling and app verification. Bound network requests and child processes by the remaining time.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/shutdown.ts",
+          "line": 31,
+          "finding": "On SIGINT, SIGTERM or SIGBREAK, the handler immediately calls `process.exit()` after cleanup. This bypasses the test’s `finally`, which contains the only `report.write()` call. An interrupted run leaves screenshots without the required report.",
+          "suggestion": "Register synchronous report writing in the shutdown sequence, recording an interrupted status before exiting.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/src/chat.ts",
+          "line": 51,
+          "finding": "H07 passes for any nonempty answer to “show thread 1” unless it contains “no thread.” For example, an app returning “Unknown command” for thread 1 and the expected error for thread 99 passes, although it cannot show the requested thread.",
+          "suggestion": "Verify that the successful response identifies thread 1 and carries its expected pane content. Add a negative test with an unrelated nonempty response.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/src/chat.ts",
+          "line": 60,
+          "finding": "H09 treats any occurrence of “posted” as successful posting, including “Thread could not be posted.” It also accepts any thread-2 reply containing “not,” even if that reply reports that the undrafted thread was posted. These checks can approve broken state transitions.",
+          "suggestion": "Assert the resulting thread states through the pane or a subsequent read, including that thread 2 remains unposted. Test refusal and misleading success-text cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/src/progress.ts",
+          "line": 90,
+          "finding": "H04 compares only file counts. Five unrelated HTML files pass even when an approved mockup has no corresponding screen, contrary to the checklist’s requirement for a screen for every mockup.",
+          "suggestion": "Use the fixture’s screen map to verify coverage of each required screen individually, including the chat-only pane states.  Ship-with-fixes: the runner has substantial supporting infrastructure, but overall timeout enforcement, interruption reporting and several hard acceptance checks need correction before operator acceptance.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-26T04:05:34.445463+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: integration-tests/e2e-webui/src/shutdown.ts:29-33 (with tests/e2e.spec.ts finally block)\n  Finding: On SIGINT/SIGTERM, the signal handler calls `shutdown.run()` and then `process.exit(...)`. `process.exit` fires the `exit` hook but does **not** unwind the test's `try/finally`, so `report.write(status)` in the `finally` block never runs. An interrupted run deletes the copied login (good) but leaves **no report**, contradicting the README/spec promise that the report is produced on failure, abort *and* interruption.\n  Suggestion: Register the report write as a shutdown step (a sync `() => report.write(lastStatus)` added before the login-removal steps), or have the signal handler set a flag and let the normal finally path complete instead of calling `process.exit` directly.\n\n- Category: bug\n  Severity: medium\n  File: integration-tests/e2e-webui/src/auth.ts:53-66 (scrubStaleLogins) and src/env.ts:97 (default workdir)\n  Finding: When `SHIPWRIGHT_E2E_WORKDIR` is unset, the workdir defaults to the *shared* `os.tmpdir()/shipwright-e2e`. `scrubStaleLogins` then deletes `.credentials.json` from **every** `run-*/home/.claude` under that shared directory — including the live login of a concurrently running second instance. A scrub during another operator's active run kills their authentication mid-run.\n  Suggestion: Only scrub run folders older than the current one (compare timestamps / skip the newest, or skip folders whose mtime is within the last N hours), or scope the default workdir per-run.\n\n- Category: spec\n  Severity: low\n  File: integration-tests/e2e-webui/tests/e2e.spec.ts:182 (`const deadline = Date.now() + maxMinutes * 60_000`)\n  Finding: The spec says `SHIPWRIGHT_E2E_MAX_MINUTES` is the *overall* limit, but the budget clock starts only after the WebUI build, project creation and pipeline launch (the report note even says \"the budget starts after this step\"). A slow build eats unaccounted wall-clock. […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: integration-tests/e2e-webui/tests/e2e.spec.ts:175\n- Finding: The overall budget starts only inside `follow()`. Builds, project creation and task discovery run before it; preview startup, chat checks and screenshots run afterward. Several `fetch()` calls also have no timeout. A run can therefore substantially exceed `SHIPWRIGHT_E2E_MAX_MINUTES` or hang indefinitely.\n- Suggestion: Establish one deadline at run start and enforce it across setup, builds, polling and app verification. Bound network requests and child processes by the remaining time.\n\n- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/shutdown.ts:31\n- Finding: On SIGINT, SIGTERM or SIGBREAK, the handler immediately calls `process.exit()` after cleanup. This bypasses the test’s `finally`, which contains the only `report.write()` call. An interrupted run leaves screenshots without the required report.\n- Suggestion: Register synchronous report writing in the shutdown sequence, recording an interrupted status before exiting.\n\n- Category: test\n- Severity: medium\n- File: integration-tests/e2e-webui/src/chat.ts:51\n- Finding: H07 passes for any nonempty answer to “show thread 1” unless it contains “no thread.” For example, an app returning “Unknown command” for thread 1 and the expected error for thread 99 passes, although it cannot show the requested thread.\n- Suggestion: Verify that the successful response identifies thread 1 and carries its expected pane content. Add a negative test with an unrelated nonempty response.\n\n- Category: test\n- Severity: medium\n- File: integration-tests/e2e-webui/src/chat.ts:60\n- Finding: H09 treats any occurrence of “posted” as successful posting, including “Thread could not be posted.” It also accepts any thread-2 reply containing “not,” even if that reply reports that the undrafted thread was posted. These checks can approve broken state transitions.\n- Suggestion: Assert the resulting thread states th […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T05:14:42.947443+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a2328799432411172ef5222f1741c7361fd2d2ff"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T04:05:34.182690+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T04:05:34.306723+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

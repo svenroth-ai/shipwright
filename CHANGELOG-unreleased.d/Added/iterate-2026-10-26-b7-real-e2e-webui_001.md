@@ -1,0 +1,1 @@
+Operator-started end-to-end spec project (integration-tests/e2e-webui) that drives the WebUI with a real agent from the social engagement Brief package, with an answer-key checklist and a screenshot report; CI checks the package and the project's structure

@@ -201,3 +201,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Skip reason, gate pass record and re-dispatch fencing for driven runs](iterate-2026-10-25-gate-honesty-followups-skip-reason-pass-record-and-redispatch-fencing.md)
 - [A skip that clears the last open task completes a blocked driven run](iterate-2026-10-25-run-completion-after-skips-skip-completes-a-blocked-run.md)
 - [Blocking screenshot check beside the non-blocking fidelity step](iterate-2026-10-26-b3c-screenshot-check-in-test-screenshot-check.md)
+- [Operator-started real end-to-end run through the WebUI](iterate-2026-10-26-b7-real-e2e-webui-operator-run.md)

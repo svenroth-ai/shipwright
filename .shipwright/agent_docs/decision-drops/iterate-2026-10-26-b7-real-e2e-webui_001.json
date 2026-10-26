@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
+  "date": "2026-10-26",
+  "section": "Iterate - feature: operator-started real end-to-end run through the WebUI",
+  "title": "Operator-run Playwright spec project beside a hashed package",
+  "context": "No test shows whether a Brief package becomes a working chat-first app when a person drives it through the WebUI; a real run costs tokens and varies, so it cannot gate CI.",
+  "decision": "A Node/Playwright project at integration-tests/e2e-webui drives a second WebUI instance and writes a screenshot report; CI checks only package validation, the dry harness and structure rules. The answer key sits beside the package.",
+  "consequences": "The operator keeps the WebUI test ids current; npm run typecheck and test:unit are its only guards. The first real run is operator acceptance. Openai architecture reject overridden (scope fixed by the brief).",
+  "rationale": "A screenshot report from a real run is the only evidence a package works end to end; a key inside the package would change its hash and let the builder read it.",
+  "rejected": "Manual procedure only (no repeatable report); doing nothing (question stays open); answer key inside the package.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-26-b7-real-e2e-webui-operator-run.md"
+}
