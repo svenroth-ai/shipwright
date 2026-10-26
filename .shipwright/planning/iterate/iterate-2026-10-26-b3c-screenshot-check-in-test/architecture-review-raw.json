@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a blocking screenshot check should exist, but only because the comparison target is the approved mockup image, which the existing text-based structural step cannot see; that same fact makes option 2 not viable, so option 1 is the smallest thing that could do the job at all.\n\n2. **The smallest thing that would do.** One capture-and-compare script extending the existing `design_fidelity_check.py` path (Option 1 as scoped), active only for Brief-package projects, reusing the Playwright session the Test phase already needs to boot the app \u2014 no new service, no new data store, one metric and one hardcoded tolerance.\n\n3. **What it costs to keep.** Three permanent artifacts (comparison module, capture script, check script) plus the ongoing obligation to keep the layout metric honest across every future design change \u2014 every layout-tolerant difference (font rendering, viewport, animation timing) becomes a gate-tuning decision, and flakiness in an unattended run means a human has to notice a blocked run and diagnose whether the app or the tolerance is wrong.\n\n4. **What it forecloses.** Modest: future changes to how mockups are approved must keep them screenshot-comparable. If mockup format ever changes (e.g., to abstract tokens), the comparison module is rewritten. Nothing structural is foreclosed.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: medium\n- Finding: A layout metric plus tolerance is the part with unbounded maintenance cost \u2014 it will be tuned per-project and per-platform, and a wrong tolerance fails silently (passes wrong screens) or loudly (blocks right ones).\n- Suggestion: Ship with a deliberately coarse metric and a fixed tolerance, and document that tuning the tolerance is a deliberate act requiring a recorded decision \u2014 do not let it become a per-project knob.\n\n- Category: ownership\n- Severity: low\n- Finding: In an unattended run, a flaky or misconfigured screenshot gate produces a blocked pipeline with no human watching; the gate's health depends on someone noticing.\n- Suggestion: Have the check record metric, tolerance, and both screenshots as artifacts on failure so the diagnosis cost of a blocked run is close to zero.\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option 2 (make the structural step blocking) would be smaller, but it compares source text, not the rendered screen, and the approved artifact is a mockup image \u2014 it cannot satisfy \"separates a planted wrong screen from a right one.\" Option 3 (leave it to human review) removes the only automated proof in an unattended run. Neither is smaller *and* sufficient; note for the reconciler that option 2 was the nearest miss.\n- Suggestion: none \u2014 keep option 1, scoped to Brief-package projects as specified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes:** a rendered-screen check belongs in the existing Test phase because source comparison cannot establish that an unattended build displays the approved screens.\n\n2. **Smallest thing:** choose option 1, scoped to Brief-package projects, using the existing Test workflow and Playwright to capture the approved mockups and corresponding built routes, compare them, and record the metric and tolerance. The planted-wrong-screen test establishes that this check detects the failure it exists to prevent.\n\n3. **What it costs to keep:** maintaining capture compatibility, route-to-mockup correspondence, and meaningful tolerances as the application changes. Design changes must keep their approved references current.\n\n4. **What it forecloses:** intentional visual departures from approved mockups will require updating those references before Test can pass; switching rendering environments may require recalibrating tolerances.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
+    "at": "2026-10-26T01:29:07.975007+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

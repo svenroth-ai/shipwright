@@ -11,6 +11,7 @@ Test results determine pipeline continuation:
 | **E2E tests** | **Warning only** (non-blocking) | triage item per failing spec file (`test-warning:e2e:{file}`) | E2E can be flaky; log failures but continue |
 | **Consistency** | **Warning only** (non-blocking) | triage item per inconsistent category (`test-warning:consistency:{category}`) | Cross-page cosmetic issues don't gate deployment |
 | **Design fidelity** | **Warning only** (non-blocking) | triage item per diverging screen (`test-warning:fidelity:{screen}`) | Fidelity divergence != broken functionality |
+| **Screenshot check** | **BLOCKING** when a Brief package was applied (else skipped) | none: `fail`/`error` stop the phase (step-3.7b) | The built screen is not the approved one |
 | **Performance** | **Warn (default)** / **Block (opt-in via profile or test_config)** | triage item per failed metric (`perf:{metric}:{page}`) | Discipline gate: `warn` ships honest signal without breaking flow; `block` once project has calibrated budgets |
 
 **A failure that does not stop the run still leaves a tracked follow-up.** A

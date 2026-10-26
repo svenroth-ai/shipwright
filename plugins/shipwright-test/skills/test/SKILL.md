@@ -26,6 +26,7 @@ Profile-aware test execution across all test layers.
 | Step 3.5: E2E Results Verification | [step-3.5-e2e-verification](references/step-3.5-e2e-verification.md) |
 | Step 3.6: Cross-Page UI Consistency Check | [step-3.6-ui-consistency](references/step-3.6-ui-consistency.md) |
 | Step 3.7: Design Fidelity Verification | [step-3.7-design-fidelity](references/step-3.7-design-fidelity.md) |
+| Step 3.7b: Screenshot Check (BLOCKING, Brief package only) | [step-3.7b-screenshot-check](references/step-3.7b-screenshot-check.md) |
 | Step 3.8: Performance Budget Check | [step-3.8-performance-budget](references/step-3.8-performance-budget.md) |
 | Step 3.9: Stop Dev Server (always — finally-block) | [step-3.9-stop-dev-server](references/step-3.9-stop-dev-server.md) |
 | Step 3.95: Boundary Coverage Report | [step-3.95-boundary-coverage](references/step-3.95-boundary-coverage.md) |
@@ -64,6 +65,7 @@ Test layers:
   3.  Playwright E2E (if UI project + DEV URL available)
   3.6 Cross-page consistency (if .shipwright/designs/visual-guidelines.md exists)
   3.7 Design fidelity (if .shipwright/designs/screen-routes.json exists)
+  3.7b Screenshot check, BLOCKING (only if Design applied a Brief package)
   3.8 Performance budget (if profile has testing.performance.enabled)
   3.9 Stop dev server (always, finally-block — runs even if 3.7 / 3.8 failed)
   4.  Security scan → out-of-band; see /shipwright-security (not auto-invoked)
@@ -204,6 +206,15 @@ against `design-fidelity-report.json` into Resolved / Regression / Persistent
 Failure / Unchecked. Deep-reviews flagged screens against 5 dimensions, max
 3 retries each.
 Full body: see [step-3.7-design-fidelity](references/step-3.7-design-fidelity.md).
+
+## Step 3.7b: Screenshot Check — BLOCKING (Brief-package projects only)
+
+Runs only when `.shipwright/designs/brief-package-applied.json` exists; any other
+project skips it and keeps Step 3.7's non-blocking behaviour. Screenshots every
+built screen and its approved mockup, compares them (metric + tolerance recorded).
+`fail` or `error` = STOP and report; never waive, never edit a mockup (D9: a Test
+gate, not a design-approval gate).
+Full body: see [step-3.7b-screenshot-check](references/step-3.7b-screenshot-check.md).
 
 ## Step 3.8: Performance Budget Check (if applicable)
 
