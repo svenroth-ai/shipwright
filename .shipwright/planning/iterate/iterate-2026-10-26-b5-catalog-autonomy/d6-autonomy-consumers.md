@@ -1,7 +1,7 @@
 # D6 autonomy consumer list (B5)
 
 Source: `git grep -nE "autonomy|autonomous" -- plugins shared` (tracked files, tests and *.jsonl excluded).
-276 matching lines in 84 files. Rule: `unattended` behaves at least as `autonomous` at every site keyed on `autonomous`;
+278 matching lines in 85 files. Rule: `unattended` behaves at least as `autonomous` at every site keyed on `autonomous`;
 a site keyed on human presence (the phase-gate override) deliberately keeps refusing it.
 
 | file | hits | disposition |
@@ -10,15 +10,16 @@ a site keyed on human presence (the phase-gate override) deliberately keeps refu
 | `plugins/shipwright-adopt/skills/adopt/references/step-b5-route-discovery.md` | 1 | REVIEWED: no behavior keyed on the autonomy value |
 | `plugins/shipwright-build/agents/section-builder.md` | 4 | CHANGED: unattended behaves as autonomous |
 | `plugins/shipwright-build/agents/section_builder_contract.schema.json` | 1 | REVIEWED: no behavior keyed on the autonomy value |
-| `plugins/shipwright-build/skills/build/SKILL.md` | 3 | CHANGED: orchestrated mode line |
+| `plugins/shipwright-build/skills/build/SKILL.md` | 3 | CHANGED: orchestrated mode line, Autonomous Section Loop |
 | `plugins/shipwright-build/skills/build/references/autonomous-loop.md` | 4 | CHANGED: unattended = sequential, fan-out needs allow_parallel_builders |
-| `plugins/shipwright-build/skills/build/references/code-review-interview.md` | 1 | REVIEWED: no behavior keyed on the autonomy value |
+| `plugins/shipwright-build/skills/build/references/code-review-interview.md` | 2 | CHANGED: heading names unattended |
+| `plugins/shipwright-build/skills/build/references/code-review-protocol.md` | 1 | CHANGED: heading names unattended |
 | `plugins/shipwright-build/skills/build/references/code-review.md` | 3 | CHANGED: autonomous-or-unattended |
-| `plugins/shipwright-build/skills/build/references/first-actions.md` | 3 | REVIEWED: no behavior keyed on the autonomy value |
+| `plugins/shipwright-build/skills/build/references/first-actions.md` | 3 | VERIFIED: gate discipline, hard-stop regardless of autonomy |
 | `plugins/shipwright-build/skills/build/references/migration-safety.md` | 3 | CHANGED: unattended named (3 sites) |
-| `plugins/shipwright-build/skills/build/references/requirement-writeback.md` | 1 | REVIEWED: no behavior keyed on the autonomy value |
+| `plugins/shipwright-build/skills/build/references/requirement-writeback.md` | 1 | VERIFIED: one shared command for guided and autonomous paths; no autonomy branch |
 | `plugins/shipwright-changelog/skills/changelog/SKILL.md` | 2 | CHANGED: Steps 4, 5, 9 (net -1 line; discipline block in references/first-actions.md) |
-| `plugins/shipwright-changelog/skills/changelog/references/first-actions.md` | 2 | REVIEWED: no behavior keyed on the autonomy value |
+| `plugins/shipwright-changelog/skills/changelog/references/first-actions.md` | 2 | NEW: gate-discipline block (changelog now cataloged) |
 | `plugins/shipwright-deploy/skills/deploy/SKILL.md` | 1 | CHANGED: hard-stop regardless, unattended included |
 | `plugins/shipwright-iterate/agents/sub-iterate-runner.md` | 2 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
 | `plugins/shipwright-iterate/agents/sub_iterate_runner_contract.schema.json` | 1 | UNRELATED: iterate / campaign 'autonomous' loop machinery, not run_config.autonomy |
@@ -103,12 +104,14 @@ plugins/shipwright-build/agents/section-builder.md:65:If `success == false` (mis
 plugins/shipwright-build/agents/section_builder_contract.schema.json:5:  "description": "JSON schema for the result returned by section-builder subagent. Used by the autonomous section loop to verify subagent output.",
 plugins/shipwright-build/skills/build/SKILL.md:13:> **Autonomous orchestrated mode:** When invoked by `/shipwright-run` in autonomous or unattended mode,
 plugins/shipwright-build/skills/build/SKILL.md:32:| Autonomous Section Loop | [autonomous-loop](references/autonomous-loop.md) |
-plugins/shipwright-build/skills/build/SKILL.md:287:When invoked with `--autonomous`, build all pending sections sequentially. Full procedure: [autonomous-loop](references/autonomous-loop.md). When NOT autonomous: skip this section, proceed to Step 12.
+plugins/shipwright-build/skills/build/SKILL.md:287:When invoked with `--autonomous` (or run `autonomy: unattended`), build all pending sections sequentially. Full procedure: [autonomous-loop](references/autonomous-loop.md). When NOT autonomous: skip this section, proceed to Step 12.
 plugins/shipwright-build/skills/build/references/autonomous-loop.md:3:When invoked with `--autonomous` flag (or when `/shipwright-run` dispatches in `autonomy: autonomous` or `unattended` mode), build all pending sections sequentially without manual gates.
 plugins/shipwright-build/skills/build/references/autonomous-loop.md:7:**Flag:** `/shipwright-build --autonomous` or `/shipwright-build --from 02 --autonomous`
 plugins/shipwright-build/skills/build/references/autonomous-loop.md:23:uv run "{shared_root}/scripts/lib/autonomous_loop.py" init \
 plugins/shipwright-build/skills/build/references/autonomous-loop.md:70:**When NOT using `--autonomous`:** skip this section entirely, proceed to Kern Step 12 (manual next-section prompt).
+plugins/shipwright-build/skills/build/references/code-review-interview.md:3:## Autonomous Mode (also `autonomy: unattended`)
 plugins/shipwright-build/skills/build/references/code-review-interview.md:7:"auto-fixed (autonomous mode)".
+plugins/shipwright-build/skills/build/references/code-review-protocol.md:52:### Autonomous mode (also `autonomy: unattended`)
 plugins/shipwright-build/skills/build/references/code-review.md:168:**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
 plugins/shipwright-build/skills/build/references/code-review.md:173:3. Log fix in decision log with context "auto-fixed (autonomous mode)"
 plugins/shipwright-build/skills/build/references/code-review.md:291:   autonomous/guided handling rule as the internal subagent findings.
@@ -237,19 +240,19 @@ shared/config/gate_catalog.json:322:      "default_answer": "Log the manual step
 shared/config/gate_catalog.json:325:      "summary": "A post-apply manual step matches the applied migration. Build already degrades this in autonomous mode."
 shared/config/gate_catalog.json:358:      "default_answer": "Auto-accept and fix every finding, logging each as 'auto-fixed (autonomous mode)' — mirrors build's existing autonomous behaviour.",
 shared/config/gate_catalog.json:361:      "summary": "Step 6b guided-mode per-finding triage. Already fully suppressed (auto-accept) in build's autonomous mode."
-shared/config/gate_catalog.json:406:      "summary": "Step 4: confirm the suggested release version. Already auto-accepted in changelog's autonomous mode."
-shared/config/gate_catalog.json:415:      "summary": "Step 5: preview and confirm the generated entry. Already skipped in changelog's autonomous mode."
-shared/config/gate_catalog.json:478:      "summary": "A destructive migration was flagged (any target, DEV or PROD). Constitution ASK-FIRST 'destructive SQL — always confirm, even in autonomous mode'."
-shared/config/gate_catalog.json:505:      "summary": "The canonical PROD deploy confirmation (after the backup clone). Constitution ASK-FIRST 'PROD deployments — always confirm + backup, regardless of autonomy level'. The strongest gate."
+shared/config/gate_catalog.json:415:      "summary": "Step 4: confirm the suggested release version. Already auto-accepted in changelog's autonomous mode."
+shared/config/gate_catalog.json:424:      "summary": "Step 5: preview and confirm the generated entry. Already skipped in changelog's autonomous mode."
+shared/config/gate_catalog.json:487:      "summary": "A destructive migration was flagged (any target, DEV or PROD). Constitution ASK-FIRST 'destructive SQL — always confirm, even in autonomous mode'."
+shared/config/gate_catalog.json:514:      "summary": "The canonical PROD deploy confirmation (after the backup clone). Constitution ASK-FIRST 'PROD deployments — always confirm + backup, regardless of autonomy level'. The strongest gate."
 shared/config/gate_catalog.md:13:- **`orchestrator-approve`** - Under single_session the subagent STOPS and returns a gate-pending result to the orchestrator to surface to a human; it never auto-answers. Under autonomy 'unattended' the master/CLI auto-approves ONLY a gate with constitution=false that carries a reviewed `unattended_answer` (see `unattended_policy`); every other orchestrator-approve gate escalates. A future autonomous orchestrator MAY surface-and-wait or auto-approve ONLY gates with constitution=false; a constitution=true orchestrator-approve gate (e.g. skip-test-layer, >3 failed fixes, a missing secret) always reaches a human.
 shared/config/gate_catalog.md:14:- **`hard-stop`** - Under single_session the subagent ALWAYS stops for an explicit human decision; no autonomy setting bypasses it. Constitution-locked class (PROD deploy, destructive SQL, migration-apply failure, rollback).
 shared/config/gate_catalog.md:67:| `build.destructive-sql-confirm` | hard-stop | conditional | yes (locked) | A generated migration contains DROP/TRUNCATE/DELETE-without-WHERE. Constitution ASK-FIRST 'regardless of autonomy level' - irreversible data loss. |
 shared/config/gate_catalog.md:70:| `build.migration-post-apply-manual-step` | auto-default | conditional | no | A post-apply manual step matches the applied migration. Build already degrades this in autonomous mode. **Default:** Log the manual step as a warning, skip tests in blocks_tests_for, and flag it in the result JSON (the existing autonomous-mode degrade). |
 shared/config/gate_catalog.md:74:| `build.code-review-finding-triage` | auto-default | conditional | no | Step 6b guided-mode per-finding triage. Already fully suppressed (auto-accept) in build's autonomous mode. **Default:** Auto-accept and fix every finding, logging each as 'auto-fixed (autonomous mode)' - mirrors build's existing autonomous behaviour. |
-shared/config/gate_catalog.md:89:| `changelog.version-suggestion` | auto-default | always | no | Step 4: confirm the suggested release version. Already auto-accepted in changelog's autonomous mode. **Default:** Accept the suggested version (derived from commit types: breaking = major, feat = minor, else patch). |
-shared/config/gate_catalog.md:90:| `changelog.entry-preview` | auto-default | always | no | Step 5: preview and confirm the generated entry. Already skipped in changelog's autonomous mode. **Default:** Accept the generated changelog entry and proceed (git history and the unreleased drops remain the audit trail). |
-shared/config/gate_catalog.md:102:| `deploy.destructive-migration-confirm` | hard-stop | conditional | yes (locked) | A destructive migration was flagged (any target, DEV or PROD). Constitution ASK-FIRST 'destructive SQL - always confirm, even in autonomous mode'. |
-shared/config/gate_catalog.md:105:| `deploy.prod-deploy-confirm` | hard-stop | conditional | yes (locked) | The canonical PROD deploy confirmation (after the backup clone). Constitution ASK-FIRST 'PROD deployments - always confirm + backup, regardless of autonomy level'. The strongest gate. |
+shared/config/gate_catalog.md:90:| `changelog.version-suggestion` | auto-default | always | no | Step 4: confirm the suggested release version. Already auto-accepted in changelog's autonomous mode. **Default:** Accept the suggested version (derived from commit types: breaking = major, feat = minor, else patch). |
+shared/config/gate_catalog.md:91:| `changelog.entry-preview` | auto-default | always | no | Step 5: preview and confirm the generated entry. Already skipped in changelog's autonomous mode. **Default:** Accept the generated changelog entry and proceed (git history and the unreleased drops remain the audit trail). |
+shared/config/gate_catalog.md:103:| `deploy.destructive-migration-confirm` | hard-stop | conditional | yes (locked) | A destructive migration was flagged (any target, DEV or PROD). Constitution ASK-FIRST 'destructive SQL - always confirm, even in autonomous mode'. |
+shared/config/gate_catalog.md:106:| `deploy.prod-deploy-confirm` | hard-stop | conditional | yes (locked) | The canonical PROD deploy confirmation (after the backup clone). Constitution ASK-FIRST 'PROD deployments - always confirm + backup, regardless of autonomy level'. The strongest gate. |
 shared/constitution.md:62:- Diagnose test failures before skipping — attempt autonomous fix (e.g., restart services, seed data, fix config), escalate to user if fix fails after 2 attempts
 shared/constitution.md:73:- PROD deployments (always confirm + backup, regardless of autonomy level)
 shared/constitution.md:81:  `autonomous` run can override (`unattended`, or no autonomy set, cannot), and a
@@ -359,7 +362,7 @@ shared/scripts/tools/resolve_gate_policy.py:39:    read_run_config_autonomy,
 shared/scripts/tools/resolve_gate_policy.py:59:    p.add_argument("--autonomy", help="run autonomy (default: run_config.autonomy); "
 shared/scripts/tools/resolve_gate_policy.py:70:def _resolved_rows(catalog: dict, mode: str, phase: str | None, autonomy: str | None) -> list[dict]:
 shared/scripts/tools/resolve_gate_policy.py:75:        r = resolve_gate_policy(gid, mode=mode, catalog=catalog, autonomy=autonomy)
-shared/scripts/tools/resolve_gate_policy.py:125:    autonomy = args.autonomy or read_run_config_autonomy(args.project_root)
+shared/scripts/tools/resolve_gate_policy.py:125:    autonomy = args.autonomy if args.autonomy is not None else read_run_config_autonomy(args.project_root)
 shared/scripts/tools/resolve_gate_policy.py:129:            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog, autonomy=autonomy)
 shared/scripts/tools/resolve_gate_policy.py:152:    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase, autonomy)}, indent=2))
 shared/scripts/tools/review_unavailable_note.py:10:``--file-triage`` (autonomous runs) also files ONE triage card per run asking
