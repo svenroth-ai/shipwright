@@ -7,12 +7,38 @@ import { runChatScript, type ChatMap, type Send } from "../../src/chat.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { IdleWatch } from "../../src/idle.js";
 import { Report } from "../../src/report.js";
+import { isDangerousOperationPrompt, needsTerminalAnswer, readTerminalMenu, wantsExemption } from "../../src/terminal-gate.js";
 
 const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const fixtures = path.join(repo, "integration-tests", "fixtures");
 const expected = fs.readFileSync(path.join(fixtures, "social-engagement-expected-result.md"), "utf8");
 const template = fs.readFileSync(path.resolve(import.meta.dirname, "..", "..", "report-template.md"), "utf8");
 const chatMap = JSON.parse(fs.readFileSync(path.join(fixtures, "social-engagement", "chat-map.json"), "utf8")) as ChatMap;
+
+// @covers FR-01.04
+test("terminal menu: the highlighted first option with its footer, recorded, never twice in 15 seconds", () => {
+  const approve = ["Do you approve the mockups?", "❯ 1. Approve mockups", "2. I have feedback", "Enter to select"].join("\n");
+  const commit = ["How should I handle the failing check?", "❯ 1. Commit earlier output first", "2. Leave it", "Enter to select"].join("\n");
+  expect(needsTerminalAnswer(approve, 0, 1_000_000)).toBe(true);
+  expect(readTerminalMenu(commit)).toEqual({ question: "How should I handle the failing check?", option: "Commit earlier output first" });
+  expect(needsTerminalAnswer(commit, 990_000, 1_000_000)).toBe(false);
+  expect(needsTerminalAnswer(approve.replace("Enter to select", ""), 0, 1_000_000)).toBe(false);
+  const scrolled = ["you whether to complete over it.", "2. Stop the run", "Enter to select"].join("\n");
+  expect(needsTerminalAnswer(scrolled, 0, 1_000_000)).toBe(true);
+  expect(readTerminalMenu(scrolled)?.option).toContain("scrolled out of view");
+  expect(needsTerminalAnswer("no menu here", 0, 1_000_000)).toBe(false);
+  const firstIsExemption = ["❯ 1. Complete with exemption", "2. Stop the run", "Enter to select"].join("\n");
+  expect(wantsExemption(firstIsExemption)).toBe(false);
+  const danger = ["Dangerous rm operation on possibly-empty variable path:", "Do you want to proceed?", "❯ 1. Yes", "2. No"].join("\n");
+  expect(isDangerousOperationPrompt(danger)).toBe(true);
+  expect(isDangerousOperationPrompt(danger.replace("Dangerous rm", "Plain rm"))).toBe(false);
+  expect(needsTerminalAnswer(danger, 0, 1_000_000)).toBe(false);
+  const exemption = ["2. Complete with exemption", "3. Stop the run", "Enter to select · Esc to cancel"].join("\n");
+  expect(wantsExemption(exemption)).toBe(true);
+  expect(wantsExemption(exemption.replace("Complete with exemption", "Something"))).toBe(false);
+  const submit = ["Review your answers", "Ready to submit your answers?", "❯ 1. Submit answers", "2. Cancel"].join("\n");
+  expect(readTerminalMenu(submit)?.option).toBe("Submit answers");
+});
 
 // @covers FR-01.04
 test("the committed checklist has hard and soft items with the ids the spec records", () => {
