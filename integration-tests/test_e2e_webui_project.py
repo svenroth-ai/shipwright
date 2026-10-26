@@ -38,6 +38,19 @@ def test_package_validates_and_hash_matches_the_recorded_one():
 
 
 @pytest.mark.covers("FR-01.04")
+def test_package_brief_md_passes_the_project_phase_content_check():
+    """The first real run stopped in the project phase: 42 empty dimensions, one unparsed glossary line."""
+    sys.path.insert(0, str(_REPO / "shared" / "scripts"))
+    try:
+        from tools import brief_project_mode as bpm  # noqa: PLC0415
+    finally:
+        sys.path.remove(str(_REPO / "shared" / "scripts"))
+    text = (FIXTURE / "brief.md").read_text(encoding="utf-8")
+    assert bpm.check_capabilities(*bpm.parse_brief_md(text)) == []
+    assert bpm.glossary_unparsed(text) == []
+
+
+@pytest.mark.covers("FR-01.04")
 def test_package_passes_the_dry_harness(tmp_path, monkeypatch):
     monkeypatch.setenv("SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL", "1")
     project = h.prepare_scratch_project(tmp_path / "proj", FIXTURE)

@@ -146,7 +146,7 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
     if (taskId) await page.goto(`${base}/tasks/${taskId}`);
     await ui.startTaskSession(page);
     await report.step("Task page after launch", page);
-    status = await follow(page, base, projectPath, deadline, cfg.maxMinutes, report);
+    status = await follow(page, base, projectId, projectPath, deadline, cfg.maxMinutes, report);
 
     // 5. Hard file checks, then the built app (only when the run completed).
     checkProjectFiles(projectPath, fixtureDir, checklist);
@@ -200,9 +200,10 @@ async function waitForTask(page: Page, base: string, projectId: string): Promise
   return null;
 }
 
-async function follow(page: Page, base: string, projectPath: string, deadline: number, maxMinutes: number, report: Report): Promise<string> {
+async function follow(page: Page, base: string, projectId: string, projectPath: string, deadline: number, maxMinutes: number, report: Report): Promise<string> {
   const idle = new IdleWatch(IDLE_MINUTES * 60_000);
   let lastPhases = "";
+  let boardShot = false;
   const gateState: ui.GateState = { launchPending: false };
   while (Date.now() < deadline) {
     const state = readRunState(projectPath);
@@ -210,6 +211,12 @@ async function follow(page: Page, base: string, projectPath: string, deadline: n
     if (phases !== lastPhases) {
       lastPhases = phases;
       await report.step(`Phase state: ${phases}`, page);
+      if (!boardShot && state.status === "in_progress") {
+        boardShot = true;
+        const tab = await ui.openBoardTab(page, base, projectId);
+        await report.step("Task board with the running pipeline", tab);
+        await tab.close();
+      }
     }
     if (state.status === "complete" || state.status === "failed") return state.status;
     for (const done of await ui.answerGates(page, gateState)) {

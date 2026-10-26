@@ -36,6 +36,13 @@ export async function openBoard(page: Page, base: string, projectId: string): Pr
   await page.getByTestId("task-board-page").waitFor({ timeout: 30_000 });
 }
 
+/** A second tab on the task board, so a screenshot of the pipeline there does not disturb the task page. */
+export async function openBoardTab(page: Page, base: string, projectId: string): Promise<Page> {
+  const tab = await page.context().newPage();
+  await openBoard(tab, base, projectId);
+  return tab;
+}
+
 /** Start a "New pipeline" task from the board; the description hands over the package directory. */
 export async function startPipeline(page: Page, title: string, description: string): Promise<void> {
   await page.getByTestId("create-menu-caret").click();
