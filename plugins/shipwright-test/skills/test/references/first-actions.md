@@ -75,9 +75,7 @@ Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from th
   - Print: `"Running in standalone mode — pipeline state will not be updated."`
   - If `requires_out_of_sequence_warning` is `true`, a driven run is LIVE at
     `active_phases`. Warn that running `/shipwright-test` out-of-band may collide with it,
-    and **ask the user before continuing**. (The `test` phase has no cataloged gate id yet
-    — it is a tracked `pending_phases` follow-up in `shared/config/gate_catalog.json` — so
-    ask interactively rather than resolving a gate policy.)
+    and **ask the user before continuing** (gate `test.out-of-sequence-continue`).
 - **`error`** (exit code 2) — you were dispatched but the token does not resolve (stale,
   terminal, wrong phase, or an unreadable config). **STOP.** Do NOT continue as
   standalone. This phase is where that mistake bites hardest: a driven run whose results
@@ -110,3 +108,17 @@ Based on profile:
 |---------|------------|-----|-------------------|
 | `supabase-nextjs` | `npx vitest run` | Playwright | `http://localhost:3000` |
 | (future) | configurable | configurable | configurable |
+
+## Single-Session Gate Discipline
+
+Under `mode: "single_session"` the phase's interactive gates follow a per-gate policy
+(`unattended` autonomy behaves at least as `autonomous`). Resolve before you stop:
+
+```bash
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py" \
+  --phase test --list --project-root .
+```
+
+`auto-default` -> proceed with the `default_answer`; `orchestrator-approve` / `hard-stop`
+-> STOP and return a gate-pending result; `interactive` -> behave as documented. Full
+contract: `shared/prompts/single-session-gate-discipline.md`.

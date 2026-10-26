@@ -3,22 +3,23 @@
   "description": "Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. The mechanism is INERT (every gate resolves to 'interactive') for any config that is not an explicit single_session run — a standalone or adopted project is unaffected. The sibling gate_catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) — edit here, then regenerate.",
   "policies": {
     "auto-default": "Under single_session the subagent proceeds with the documented default_answer and does NOT call AskUserQuestion / end the turn.",
-    "orchestrator-approve": "Under single_session the subagent STOPS and returns a gate-pending result to the orchestrator to surface to a human; it never auto-answers. A future autonomous orchestrator MAY surface-and-wait or auto-approve ONLY gates with constitution=false; a constitution=true orchestrator-approve gate (e.g. skip-test-layer, >3 failed fixes, a missing secret) always reaches a human.",
+    "orchestrator-approve": "Under single_session the subagent STOPS and returns a gate-pending result to the orchestrator to surface to a human; it never auto-answers. Under autonomy 'unattended' the master/CLI auto-approves ONLY a gate with constitution=false that carries a reviewed `unattended_answer` (see `unattended_policy`); every other orchestrator-approve gate escalates. A future autonomous orchestrator MAY surface-and-wait or auto-approve ONLY gates with constitution=false; a constitution=true orchestrator-approve gate (e.g. skip-test-layer, >3 failed fixes, a missing secret) always reaches a human.",
     "hard-stop": "Under single_session the subagent ALWAYS stops for an explicit human decision; no autonomy setting bypasses it. Constitution-locked class (PROD deploy, destructive SQL, migration-apply failure, rollback)."
   },
   "constitution_lock": "INVARIANT for SS3+: a gate with constitution=true is NEVER auto-approvable by any autonomy level, regardless of whether its policy is orchestrator-approve or hard-stop. constitution=true is the real lock signal; policy only distinguishes 'surface to the orchestrator' (orchestrator-approve) from 'a human must decide here, full stop' (hard-stop).",
+  "unattended_policy": "autonomy 'unattended' is opt-in per gate. A gate may carry `unattended_answer` (a reviewed, non-empty string) only if it is orchestrator-approve, constitution=false and not denylisted (gate_unattended.UNATTENDED_DENYLIST, pinned by a test); validate_catalog rejects it anywhere else. The resolver only REPORTS the answer (should_stop stays true): the master/CLI applies it after its own hash and FR-coverage checks. Initial allowlist: design.preview-approval, design.review-loop-finalize, design.upload-screen-mapping.",
   "covered_phases": [
     "project",
     "design",
     "plan",
     "build",
+    "test",
+    "changelog",
     "deploy"
   ],
   "pending_phases": {
-    "note": "test / changelog / security phase gates are a deliberate SS2 follow-up (not silently dropped). This catalog is additive — extend `gates` to cover them. The sub-iterate spec scoped SS2 to project/design/plan/build/deploy.",
+    "note": "security phase gates are a deliberate follow-up (not silently dropped). This catalog is additive — extend `gates` to cover them.",
     "phases": [
-      "test",
-      "changelog",
       "security"
     ]
   },
@@ -145,6 +146,7 @@
       "phase": "design",
       "policy": "orchestrator-approve",
       "default_answer": null,
+      "unattended_answer": "Approve (only with a valid hash-verified Brief package and a passing FR-coverage self-check).",
       "constitution": false,
       "fires": "always",
       "summary": "Step 3.5: first pixels-seen checkpoint (3 preview screens). SENSITIVE: a human must eyeball the visual direction — never auto-approved."
@@ -163,6 +165,7 @@
       "phase": "design",
       "policy": "orchestrator-approve",
       "default_answer": null,
+      "unattended_answer": "Approve (only with a valid hash-verified Brief package and a passing FR-coverage self-check).",
       "constitution": false,
       "fires": "always",
       "summary": "Step 8.5: all-screens sign-off + phase exit. SENSITIVE: the design phase's human approval gate — subagent runs the automated FR-Coverage self-check, then stops for a human."
@@ -181,6 +184,7 @@
       "phase": "design",
       "policy": "orchestrator-approve",
       "default_answer": null,
+      "unattended_answer": "Approve (only with a valid hash-verified Brief package).",
       "constitution": false,
       "fires": "never",
       "summary": "Upload-integration mode only (--upload). Mapping uploaded artifacts to screens is human intent; not reached in a fresh pipeline run. In a Brief-package run screen-map.json answers it: no orchestrator stop."
@@ -355,6 +359,69 @@
       "constitution": false,
       "fires": "conditional",
       "summary": "Step 6b guided-mode per-finding triage. Already fully suppressed (auto-accept) in build's autonomous mode."
+    },
+    {
+      "id": "test.out-of-sequence-continue",
+      "phase": "test",
+      "policy": "orchestrator-approve",
+      "default_answer": null,
+      "constitution": false,
+      "fires": "never",
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-test during a driven run; the orchestrator owns sequencing."
+    },
+    {
+      "id": "test.dev-server-port",
+      "phase": "test",
+      "policy": "orchestrator-approve",
+      "default_answer": null,
+      "constitution": false,
+      "fires": "conditional",
+      "summary": "Prerequisite self-healing cannot derive the dev-server port/URL for smoke or E2E. Cannot be invented; return control for a port rather than skip the layer."
+    },
+    {
+      "id": "test.prerequisite-source-missing",
+      "phase": "test",
+      "policy": "orchestrator-approve",
+      "default_answer": null,
+      "constitution": false,
+      "fires": "conditional",
+      "summary": "Prerequisite self-healing (test data, screen routes, E2E plan) cannot auto-generate an artifact because there is no source data to derive it from. Return control rather than skip the layer."
+    },
+    {
+      "id": "test.fix-attempts-exhausted",
+      "phase": "test",
+      "policy": "orchestrator-approve",
+      "default_answer": null,
+      "constitution": true,
+      "fires": "conditional",
+      "summary": "Smoke / E2E / design-fidelity still failing after 2 failed fix attempts on the same root cause, or groups parked. Constitution ASK-FIRST + NEVER 'loop >3 debugging attempts without escalating'; also covers 'skipping test layers' (a layer is never silently dropped)."
+    },
+    {
+      "id": "changelog.out-of-sequence-continue",
+      "phase": "changelog",
+      "policy": "orchestrator-approve",
+      "default_answer": null,
+      "constitution": false,
+      "fires": "never",
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-changelog during a driven run; the orchestrator owns sequencing."
+    },
+    {
+      "id": "changelog.version-suggestion",
+      "phase": "changelog",
+      "policy": "auto-default",
+      "default_answer": "Accept the suggested version (derived from commit types: breaking = major, feat = minor, else patch).",
+      "constitution": false,
+      "fires": "always",
+      "summary": "Step 4: confirm the suggested release version. Already auto-accepted in changelog's autonomous mode."
+    },
+    {
+      "id": "changelog.entry-preview",
+      "phase": "changelog",
+      "policy": "auto-default",
+      "default_answer": "Accept the generated changelog entry and proceed (git history and the unreleased drops remain the audit trail).",
+      "constitution": false,
+      "fires": "always",
+      "summary": "Step 5: preview and confirm the generated entry. Already skipped in changelog's autonomous mode."
     },
     {
       "id": "deploy.out-of-sequence-continue",

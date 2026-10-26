@@ -9,7 +9,7 @@ for historical callers, and holds the test-patched names
 on its module namespace so ``mocker.patch("orchestrator.X")`` works.
 
 CLI:
-    uv run orchestrator.py write-config --scope <scope> --profile <profile> --autonomy <level>
+    uv run orchestrator.py write-config --scope <scope> --profile <profile> --autonomy <guided|autonomous|unattended>
     uv run orchestrator.py get-next-step --project-root <path>
     uv run orchestrator.py update-step --project-root <path> --step <step> --status <status>
 """

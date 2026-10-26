@@ -1,7 +1,7 @@
 # Single-Session Gate Discipline
 
 **Applies to:** every phase-runner subagent (project / design / plan / build /
-deploy) running under the **single-session pipeline**
+test / changelog / deploy) running under the **single-session pipeline**
 (`shipwright_run_config.json` `mode: "single_session"`, Campaign 2026-07-07).
 
 **Inert outside a driven run.** For a standalone / adopted / mode-less config,
@@ -31,6 +31,15 @@ Mode precedence: `--mode` > `$SHIPWRIGHT_RUN_MODE` > `run_config.mode` >
 | `auto-default` | Do **not** call `AskUserQuestion`; do **not** end the turn. Proceed with the printed `default_answer`. |
 | `orchestrator-approve` | **Still STOP.** End the turn and return a gate-pending result to the orchestrator to surface to a human — never auto-answer. |
 | `hard-stop` | **Still STOP.** An explicit human decision is required regardless of autonomy: PROD deploy, destructive SQL, migration-apply failure, rollback (`shared/constitution.md` ASK FIRST / NEVER). |
+
+## Autonomy `unattended`
+
+Under `autonomy: unattended` the resolver adds `unattended_answer` to a gate's
+result. You (the phase-runner) **still STOP** on every `orchestrator-approve` gate:
+only the master/CLI applies that answer, after its own package-hash and
+FR-coverage checks. A gate with no `unattended_answer` (including every
+constitution-locked, `hard-stop` and denylisted gate) escalates. `unattended`
+behaves at least as `autonomous` everywhere else.
 
 ## Non-negotiables
 

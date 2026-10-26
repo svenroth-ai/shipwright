@@ -1,0 +1,105 @@
+{
+  "run_id": "iterate-2026-10-26-b5-catalog-autonomy",
+  "artifact_sync": {
+    "ref": "HEAD~1..HEAD"
+  },
+  "decision": {
+    "section": "Iterate - feature: gate catalog unattended answers and autonomy plumbing",
+    "title": "Opt-in unattended_answer per gate; unattended behaves as autonomous",
+    "context": "A Brief-package run needs to finish with nobody present, but the catalog could not say which stops may be answered automatically, autonomy knew only guided and autonomous, and test and changelog had no cataloged gates.",
+    "decision": "Optional reviewed unattended_answer on exactly three design gates; validate_catalog rejects it on denylisted, locked, hard-stop and non-orchestrator-approve gates (lib/gate_unattended.py, denylist pinned by test). The resolver only reports it under unattended; the master applies it. test and changelog join COVERED_PHASES. Every autonomy consumer treats unattended as autonomous.",
+    "consequences": "Adding an auto-approvable gate needs an explicit catalog line plus the pin test change. The phase-gate override still refuses unattended (no human). Application of the answer (hash and FR-coverage checks, flag off) lands in campaign U3.",
+    "rationale": "The catalog is already the reviewed SSoT with a validator; one optional key plus one rule is the smallest change that keeps locked gates unreachable.",
+    "rejected": "A second catalog file (second source of policy); hard-coding the three gates in the master (unvalidated); resolver unblocking the gate itself (bypasses the master checks).",
+    "architecture_impact": "none"
+  },
+  "changelog": [
+    {
+      "category": "Added",
+      "bullet": "Gate catalog: autonomy unattended with reviewed per-gate answers (three design approvals), denylist and validator rules, test and changelog gates, and unattended accepted wherever autonomous is"
+    }
+  ],
+  "iterate_entry": {
+    "type": "feature",
+    "complexity": "small",
+    "prior_source": "history",
+    "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B5",
+    "spec": null,
+    "tests_passed": true,
+    "adr": "iterate-2026-10-26-b5-catalog-autonomy",
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "exactly design.preview-approval, design.review-loop-finalize and design.upload-screen-mapping carry an unattended_answer",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_shipped_allowlist_is_exactly_the_three_design_gates PASSED"
+        },
+        {
+          "behavior": "denylist pinned by id (11 ids + out-of-sequence-continue / prereqs-missing families) and every id exists in the catalog",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_denylist_is_pinned_and_every_id_exists_in_the_catalog PASSED"
+        },
+        {
+          "behavior": "validate_catalog rejects unattended_answer on denylisted, constitution-locked, hard-stop, auto-default and blank/non-string entries",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_validator_rejects_an_ineligible_unattended_answer PASSED (9 params)"
+        },
+        {
+          "behavior": "resolver reports the answer only under autonomy unattended, never changes should_stop, fails closed on an unvalidated ineligible gate, inert outside a run",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_resolver_reports_the_answer_only_under_unattended PASSED; ::test_resolver_fails_closed_on_an_unvalidated_ineligible_answer PASSED"
+        },
+        {
+          "behavior": "unreadable, absent or non-string run_config autonomy never reads as unattended; CLI --autonomy overrides run_config",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_unattended.py::test_unreadable_or_absent_autonomy_never_reads_as_unattended PASSED; shared/scripts/tools/tests/test_resolve_gate_policy.py::test_autonomy_defaults_to_run_config PASSED"
+        },
+        {
+          "behavior": "write-config accepts guided/autonomous/unattended, rejects a typo; schema enum names unattended and supervised",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_autonomy_unattended.py PASSED (5 tests)"
+        },
+        {
+          "behavior": "test and changelog phases cataloged (COVERED_PHASES tuple and JSON together), each phase skill carries its gate-discipline block, gate_catalog.md in sync",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_gate_discipline_present.py PASSED; test_gate_catalog.py PASSED; test_gate_catalog_doc_sync.py PASSED"
+        },
+        {
+          "behavior": "D6 prose consumers (run/build/test/changelog/deploy prompts, constitution tables, guide) read unattended as autonomous",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "prompt text read by an agent; live proof is campaign unit B7's real end-to-end run"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    },
+    "exemptions": {
+      "count": 0,
+      "items": []
+    },
+    "risk_flags": [
+      "touches_rls"
+    ]
+  },
+  "finalize": {
+    "reason": "iterate: gate catalog unattended answers and autonomy plumbing",
+    "event_extras": {
+      "intent": "feature",
+      "description": "Gate catalog unattended answers and autonomy plumbing",
+      "summary": "A run can now be set to unattended: only three reviewed design approvals may be answered automatically, everything risky still stops for a person.",
+      "spec_impact": "none",
+      "spec_impact_justification": "Opt-in vocabulary and catalog rows; existing guided and autonomous behavior is unchanged and the design auto-approval FR change lands in U3.",
+      "spec_impact_reason_code": "tooling-only",
+      "change_type": "tooling",
+      "none_reason": "Gate catalog, validator, resolver, CLI choice, schema enum and prompt wording in plugins/shared tooling",
+      "campaign": "brief-driven-run-b-intake-design-e2e",
+      "sub_iterate_id": "B5"
+    }
+  }
+}

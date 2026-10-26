@@ -38,7 +38,7 @@ This will permanently delete data. Confirm before proceeding.
 ```
 
 The agent MUST ask the user for explicit confirmation via AskUserQuestion
-regardless of autonomy level.
+regardless of autonomy level (`unattended` included).
 
 ### 3. Migration File Conventions
 
@@ -73,7 +73,7 @@ supabase/migrations/_rollback/
 - PROD: Profile's `migrations.dry_run_cmd` → user review → `migrations.apply_cmd`
 - DEV: Verify-only (`migrations.list_cmd`) — migrations already applied during Build/Iterate
 
-**Migration apply is a serialized critical section.** In autonomous mode with parallel section-builders, only one agent at a time may create/apply migrations. See section-builder agent docs for serialization protocol.
+**Migration apply is a serialized critical section.** In autonomous / unattended mode with parallel section-builders, only one agent at a time may create/apply migrations. See section-builder agent docs for serialization protocol.
 
 ### 5. Post-Migration Manual Steps
 
@@ -86,4 +86,4 @@ After applying migrations:
 3. Note which test areas are blocked (`blocks_tests_for`) until the manual step is completed
 4. Wait for user confirmation before running tests that depend on the manually activated feature
 
-In autonomous subagent mode: log the manual step as a warning, skip tests matching `blocks_tests_for` keywords, and flag in result JSON.
+In autonomous / unattended subagent mode: log the manual step as a warning, skip tests matching `blocks_tests_for` keywords, and flag in result JSON.

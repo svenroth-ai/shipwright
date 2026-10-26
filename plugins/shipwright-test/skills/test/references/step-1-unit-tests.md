@@ -13,7 +13,7 @@ not `npm test`).
 
 **Expected output:** Test results with pass/fail counts.
 
-**Autonomous mode** (check `autonomy` in `shipwright_run_config.json`):
+**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
 If tests fail, automatically apply --fix behavior (structured debugging,
 up to 3 retries) without requiring the explicit --fix flag.
 

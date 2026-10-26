@@ -72,7 +72,7 @@ Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-i
 
 ### Single-Session Gate Discipline
 
-Under single-session pipeline mode (`run_config.mode == "single_session"`), interactive gates follow a per-gate policy — resolve via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase deploy --list`. PROD / destructive-migration / rollback gates stay **hard-stop** (explicit human confirmation, always, regardless of autonomy). Full contract: `shared/prompts/single-session-gate-discipline.md`.
+Under single-session pipeline mode (`run_config.mode == "single_session"`), interactive gates follow a per-gate policy — resolve via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase deploy --list`. PROD / destructive-migration / rollback gates stay **hard-stop** (explicit human confirmation, always, regardless of autonomy, `unattended` included). Full contract: `shared/prompts/single-session-gate-discipline.md`.
 
 ### B3. Validate Environment
 

@@ -99,7 +99,7 @@ The inference engine determines:
 |---------|-------------|
 | **Scope** | New project (no CLAUDE.md) → Full App; existing CLAUDE.md → Extension. For ongoing changes, use `/shipwright-iterate`. |
 | **Profile** | "Supabase" + "Next.js" → `supabase-nextjs`; no match → ask user |
-| **Autonomy** | Default: `guided` (phases stop at gates for you); user can choose `autonomous` |
+| **Autonomy** | Default: `guided` (phases stop at gates for you); user can choose `autonomous` or `unattended` (approved Brief package only) |
 
 ---
 
@@ -113,9 +113,10 @@ INFERRED SETTINGS
 ================================================================================
 Scope:      {Full Application | Extension}
 Profile:    {supabase-nextjs | custom}
-Autonomy:   {guided | autonomous}
+Autonomy:   {guided | autonomous | unattended}
               Guided:     Phases ask before destructive actions.
               Autonomous: Phases run hands-off (Deploy still asks).
+              Unattended: Autonomous, and no human to ask: gates escalate.
 Deploy to:  {Jelastic DEV | none}
 
 Accept or modify:
@@ -131,6 +132,10 @@ AskUserQuestion:
     - "Change autonomy"
     - "Skip deploy"
 ```
+
+**Preflight rule (master-side):** when `remaining_questions` and `env_questions` are both
+empty (every Brief-package run), do not ask "Settings look correct?": print the card and go
+to Step 4. The approved, hash-verified package is the confirmation; `unattended` has no one to ask.
 
 There is no execution-mode question: `single_session` is the sole pipeline mode.
 
@@ -373,5 +378,5 @@ orphaned worker can race this resume.
 - [single-session-loop.md](references/single-session-loop.md) — the orchestrator loop (Step 5), gates, splits, resume, observability
 - [inference-rules.md](references/inference-rules.md) — Scope + profile inference
 - [brief-intake.md](references/brief-intake.md) — WebUI-wizard brief → profile/env, ask only what's missing (K2c)
-- [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous behavior (within phases)
+- [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous vs unattended behavior (within phases)
 - [scope-flows.md](references/scope-flows.md) — Full App and Extension flows

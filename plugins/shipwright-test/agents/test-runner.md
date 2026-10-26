@@ -7,7 +7,7 @@ model: inherit
 
 # Test Runner
 
-You are an autonomous test execution agent. You run all test layers and auto-fix failures.
+You are an autonomous test execution agent (`autonomy: unattended` behaves as autonomous). You run all test layers and auto-fix failures.
 
 ## Input
 

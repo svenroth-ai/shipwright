@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"unattended_answer on exactly the three allowlisted gates; validator rejects it on denylisted, locked, hard-stop and non-orchestrator-approve gates; resolver reports it only under unattended; test/changelog cataloged with COVERED_PHASES tuple and JSON together; gate_catalog.md regenerated; D6 consumer list produced with a disposition per file."},
+{"name":"Error Handling","verdict":"pass","note":"unattended_answer_for fails closed on an unvalidated ineligible gate; read_run_config_autonomy returns None on missing, corrupt or non-string values so nothing silently becomes unattended."},
+{"name":"Security Basics","verdict":"pass","note":"No gate gains an auto-approve path: should_stop is unchanged, constitution and hard-stop gates cannot carry an answer, override refusal for unattended in phase_gate is untouched."},
+{"name":"Test Quality","verdict":"pass","note":"Allowlist and denylist pinned literally by id in the test; validator parametrized over each ineligible shape; CLI tests via main() and the orchestrator CLI via subprocess."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra dict lookup per resolved gate."},
+{"name":"Naming & Structure","verdict":"pass","note":"New logic in gate_unattended.py keeps gate_policy.py under 300 lines; gate_catalog_render.py gets a 2-line note; grandfathered changelog and deploy SKILL.md edits are net-zero or smaller."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer gate_catalog.json vs consumers validate_catalog, renderer and resolver CLI exercised together by the catalog, doc-sync and CLI tests; run_config autonomy writer (CLI) vs schema enum covered by test_autonomy_unattended."}
+]}

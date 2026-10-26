@@ -34,5 +34,6 @@ Scan the user description for technology keywords:
 |-------|------|----------|
 | `guided` | Guided (default) | Ask at key decisions: scope confirm, split review, deploy confirm |
 | `autonomous` | Autonomous | Proceed without asking. Exceptions: PROD deploy, destructive DB operations |
+| `unattended` | Unattended | Autonomous with no human: unlisted gates escalate. Never inferred; Brief package only |
 
 **Default:** `guided` — safer, user stays in control.

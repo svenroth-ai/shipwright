@@ -1,6 +1,6 @@
 # Code Review Interview
 
-## Autonomous Mode
+## Autonomous Mode (also `autonomy: unattended`)
 
 Skip this interview entirely. All findings are auto-accepted and fixed
 immediately. Each fix is logged in the decision log with context

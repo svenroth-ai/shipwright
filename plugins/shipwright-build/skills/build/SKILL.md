@@ -10,7 +10,7 @@ compatibility: Requires uv (Python 3.11+), git repository required
 TDD implementation with code review, Conventional Commits, and feature branch workflow.
 Enhanced fork of deep-implement with decision logging, session handoff, and migration safety.
 
-> **Autonomous orchestrated mode:** When invoked by `/shipwright-run` in autonomous mode,
+> **Autonomous orchestrated mode:** When invoked by `/shipwright-run` in autonomous or unattended mode,
 > sections are delegated to the `section-builder` subagent (see `agents/section-builder.md`).
 > Each subagent gets a fresh context window and runs the full TDD cycle independently.
 > This skill is still used directly in guided mode and for standalone invocations.
@@ -284,7 +284,7 @@ Do NOT pass `--canon-marker` here — a mid-build handoff is not a canon closure
 
 ## Autonomous Section Loop
 
-When invoked with `--autonomous`, build all pending sections sequentially. Full procedure: [autonomous-loop](references/autonomous-loop.md). When NOT autonomous: skip this section, proceed to Step 12.
+When invoked with `--autonomous` (or run `autonomy: unattended`), build all pending sections sequentially. Full procedure: [autonomous-loop](references/autonomous-loop.md). When NOT autonomous: skip this section, proceed to Step 12.
 
 ---
 

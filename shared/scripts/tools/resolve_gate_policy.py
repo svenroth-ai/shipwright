@@ -36,6 +36,7 @@ from lib.gate_policy import (  # noqa: E402
     GateCatalogError,
     effective_mode,
     load_catalog,
+    read_run_config_autonomy,
     render_catalog_markdown,
     resolve_gate_policy,
 )
@@ -55,6 +56,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="print shared/config/gate_catalog.md")
     p.add_argument("--phase", choices=COVERED_PHASES, help="filter --list to one phase")
     p.add_argument("--mode", help="explicit run mode (highest precedence)")
+    p.add_argument("--autonomy", help="run autonomy (default: run_config.autonomy); "
+                   "'unattended' adds the gate's reviewed unattended_answer, if any")
     p.add_argument("--project-root", default=".", help="root holding shipwright_run_config.json")
     p.add_argument(
         "--output",
@@ -64,12 +67,12 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def _resolved_rows(catalog: dict, mode: str, phase: str | None) -> list[dict]:
+def _resolved_rows(catalog: dict, mode: str, phase: str | None, autonomy: str | None) -> list[dict]:
     rows: list[dict] = []
     for gid, g in catalog["gates"].items():
         if phase and g["phase"] != phase:
             continue
-        r = resolve_gate_policy(gid, mode=mode, catalog=catalog)
+        r = resolve_gate_policy(gid, mode=mode, catalog=catalog, autonomy=autonomy)
         rows.append(
             {
                 "gate_id": gid,
@@ -78,6 +81,7 @@ def _resolved_rows(catalog: dict, mode: str, phase: str | None) -> list[dict]:
                 "effective_policy": r["effective_policy"],
                 "should_stop": r["should_stop"],
                 "default_answer": r["default_answer"],
+                "unattended_answer": r["unattended_answer"],
                 "constitution": g["constitution"],
                 "fires": g["fires"],
                 "summary": g["summary"],
@@ -118,9 +122,11 @@ def main(argv: list[str] | None = None) -> int:
         project_root=args.project_root,
     )
 
+    autonomy = args.autonomy if args.autonomy is not None else read_run_config_autonomy(args.project_root)
+
     if args.gate:
         try:
-            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog)
+            result = resolve_gate_policy(args.gate, mode=mode, catalog=catalog, autonomy=autonomy)
         except KeyError:
             # LLM-facing SAFE fallback: an unknown gate must not crash a phase
             # subagent into a retry loop. Resolve to `interactive` (ask the
@@ -143,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     # --list (optionally --phase)
-    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase)}, indent=2))
+    print(json.dumps({"mode": mode, "gates": _resolved_rows(catalog, mode, args.phase, autonomy)}, indent=2))
     return 0
 
 

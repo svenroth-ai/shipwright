@@ -110,3 +110,23 @@ def test_render_doc_output_writes_utf8_lf_file(capsys, tmp_path):
 def test_requires_an_action(capsys):
     with pytest.raises(SystemExit):
         main([])
+
+
+@pytest.mark.covers("FR-01.01")
+def test_autonomy_unattended_adds_the_reviewed_answer_without_unblocking(capsys):
+    argv = ["--gate", "design.preview-approval", "--mode", "single_session"]
+    rc, out, _ = _run(capsys, argv + ["--autonomy", "unattended"])
+    data = json.loads(out)
+    assert rc == 0 and data["unattended_answer"] and data["should_stop"] is True
+    _, out, _ = _run(capsys, argv)
+    assert json.loads(out)["unattended_answer"] is None
+
+
+@pytest.mark.covers("FR-01.01")
+def test_autonomy_defaults_to_run_config(capsys, tmp_path):
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"mode": "single_session", "autonomy": "unattended"}), encoding="utf-8")
+    _, out, _ = _run(capsys, ["--gate", "design.review-loop-finalize", "--project-root", str(tmp_path)])
+    assert json.loads(out)["unattended_answer"]
+    _, out, _ = _run(capsys, ["--gate", "build.migration-apply-fail", "--project-root", str(tmp_path)])
+    assert json.loads(out)["unattended_answer"] is None
