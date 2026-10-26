@@ -64,6 +64,18 @@ def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str)
     return GateResult(True, f"{len(screen_targets)} nav target(s) match the chrome definition")
 
 
+def chip_nav_class_violations(html: str) -> list[str]:
+    """Chat-first chips (class ``chip`` / ``chip-*``) are chat shortcuts, never navigation: an element that
+    is a chip AND carries ``nav-item`` / ``topnav-link`` would be counted as chrome by gate #5 and by the
+    build. One rule, over parsed class tokens (no regex over the text); empty list = fine."""
+    bad = []
+    for attrs in parse_tags(html):
+        classes = attrs.get("class", "").split()
+        if any(c == "chip" or c.startswith("chip-") for c in classes) and {"nav-item", "topnav-link"} & set(classes):
+            bad.append(" ".join(classes))
+    return bad
+
+
 # --------------------------------------------------------------------------- #
 # #6 — standalone HTML
 # --------------------------------------------------------------------------- #

@@ -12,10 +12,12 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - Auth screens → Layout C (Centered Card)
    - Dashboard/admin/list/detail/settings → Layout A (Sidebar + Content)
    - Public/marketing pages → Layout B (Top Navigation)
+   - Chat-first app (`ux_shape: chat-first`, see [chat-first.md](chat-first.md)) → Layout D (Chat + Pane): no shared chrome, no `nav-item` / `topnav-link`; chat shortcuts are `chip` elements.
    - Always include the shared Button Styles block.
 4. **Shared Chrome** — Read `.shipwright/designs/chrome-definition.md` (generated in Step 3.7). Copy the resolved HTML blocks **verbatim**:
    - **Layout A screens:** Copy the **Resolved Sidebar Block** into `<aside class="sidebar">`. Copy the **Resolved Topbar Block** into `<header class="topbar">`. Change ONLY which `.nav-item` has `class="nav-item active"` to match the current screen.
    - **Layout B screens:** Copy the **Resolved Top-Nav Block** into `<header class="topnav">`. Change ONLY which `.topnav-link` has `class="topnav-link active"` to match the current screen.
+   - **Layout D screens:** no chrome block (skip this step); there is no nav markup.
    - **Layout C screens:** Copy only the app name and logo SVG from the chrome definition into `.auth-logo`.
    - Do NOT improvise nav items, icons, labels, or user info. The `chrome-definition.md` is authoritative.
 5. **Components** — Fill the layout's **content area** with component snippets from [snippets-components.md](snippets-components.md):

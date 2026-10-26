@@ -488,6 +488,54 @@ Use for: Login, signup, password reset, email verification, onboarding steps.
 
 ---
 
+## Layout D: Chat + Pane (chat-first)
+
+For `ux_shape: chat-first` apps (profile `chat-first-json`, `ui_host` `served-pane`): a chat on the left, a pane on the right that shows the state the last chat command produced. There is NO sidebar, topbar or top navigation, so no `nav-item` / `topnav-link` anywhere. Chat shortcuts are **chips**: class `chip` (or `chip-*`), never `nav-item` / `topnav-link` (the chrome gate refuses it). Pane tabs use class `pane-tab` with `role="tab"`. Use only this layout for screens of a chat-first app; the page shell and CSS variables are the same as for the other layouts.
+
+### HTML
+
+```html
+<body>
+  <div class="chat-app">
+    <section class="chat" aria-label="Chat">
+      <div class="chat-log">
+        <div class="msg msg-user">{{USER_MESSAGE}}</div>
+        <div class="msg msg-app">{{APP_REPLY}}</div>
+      </div>
+      <div class="chip-row">
+        <button class="chip" type="button">{{SUGGESTED_COMMAND}}</button>
+      </div>
+      <form class="chat-input"><input type="text" placeholder="{{PLACEHOLDER}}" aria-label="Message"><button class="btn btn-primary" type="button">Send</button></form>
+    </section>
+    <section class="pane" aria-label="Pane">
+      <div class="pane-tabs" role="tablist"><button class="pane-tab active" role="tab" type="button">{{TAB}}</button></div>
+      <div class="pane-body">{{PANE_STATE}}</div>
+    </section>
+  </div>
+</body>
+```
+
+### CSS
+
+```css
+.chat-app { display: grid; grid-template-columns: minmax(280px, 2fr) 3fr; height: 100vh; }
+.chat { display: flex; flex-direction: column; border-right: 1px solid var(--color-border); background: var(--color-surface); }
+.chat-log { flex: 1; overflow-y: auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.msg { max-width: 85%; padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); }
+.msg-user { align-self: flex-end; background: var(--color-primary); color: var(--color-on-primary); }
+.msg-app { align-self: flex-start; background: var(--color-bg); border: 1px solid var(--color-border); }
+.chip-row { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-4); }
+.chip { border: 1px solid var(--color-border); border-radius: 999px; padding: 4px 12px; background: var(--color-bg); cursor: pointer; }
+.chat-input { display: flex; gap: var(--space-2); padding: var(--space-4); border-top: 1px solid var(--color-border); }
+.chat-input input { flex: 1; }
+.pane { display: flex; flex-direction: column; overflow: hidden; }
+.pane-tabs { display: flex; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); }
+.pane-tab { border: 0; background: none; padding: 6px 12px; cursor: pointer; }
+.pane-tab.active { border-bottom: 2px solid var(--color-primary); font-weight: 600; }
+.pane-body { flex: 1; overflow-y: auto; padding: var(--space-4); }
+@media (max-width: 768px) { .chat-app { grid-template-columns: 1fr; height: auto; } }
+```
+
 ## Shared: Button Styles
 
 Used across all layouts. Include in every screen.

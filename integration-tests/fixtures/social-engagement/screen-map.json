@@ -1,0 +1,40 @@
+{
+  "screens": [
+    {
+      "id": "board-new",
+      "mockup": "01-board-new.html",
+      "requirements": [
+        "fetch-new-matches",
+        "view-the-board"
+      ]
+    },
+    {
+      "id": "thread-detail",
+      "mockup": "02-thread-detail.html",
+      "requirements": [
+        "show-a-thread"
+      ]
+    },
+    {
+      "id": "reply-draft",
+      "mockup": "03-reply-draft.html",
+      "requirements": [
+        "draft-a-reply"
+      ]
+    },
+    {
+      "id": "thread-posted",
+      "mockup": "04-thread-posted.html",
+      "requirements": [
+        "mark-a-thread-as-posted"
+      ]
+    },
+    {
+      "id": "keywords",
+      "mockup": "05-keywords.html",
+      "requirements": [
+        "set-keywords"
+      ]
+    }
+  ]
+}

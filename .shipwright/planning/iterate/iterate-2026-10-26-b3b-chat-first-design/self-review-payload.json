@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Layout D snippet, step-4 line, chat-first reference, ui_host reported, chat-map checked, pane-state screen per chat-only capability, generated flow mockups, chip rule in design_gate_html; fixture package passes the dry harness and every design gate (boundary included in a real git repo)."},
+{"name":"Error Handling","verdict":"pass","note":"Every chat-map defect is a named bad_chat_map issue (exit 1, nothing written); unreadable chat-map is an issue, not a traceback; chat-first.md lists the action for every tool and gate outcome."},
+{"name":"Security Basics","verdict":"pass","note":"Package text is html.escape'd in generated flows; flow file names come from slugify; no hrefs or external refs are generated; no regex over user text (class tokens via the HTML parser, timing test)."},
+{"name":"Test Quality","verdict":"pass","note":"Plugin, shared and integration tests run the real tool and gates; negatives assert nothing was written; load-bearing prose sentences are pinned; fixture covered in a real git repo."},
+{"name":"Performance Basics","verdict":"pass","note":"Small files, one pass; hostile-markup timing test for the chip rule."},
+{"name":"Naming & Structure","verdict":"pass","note":"New module brief_chat_plan.py under 300 lines; check-design-gates.py stays at 300; SKILL.md unchanged in length (294); ADR-045 respected (tools.* only, no lib import)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"chat-map.json producer (package) and consumers (tool, verifier) round-tripped with BOM, CRLF, non-ASCII and empty values probed; flows written by the tool are read by the registry scan and the flows/standalone/chrome gates."}]}

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "profile": "chat-first-json",
+  "deploy_target": "none",
+  "autonomy": "guided",
+  "ui_host": "served-pane",
+  "ux_shape": "chat-first",
+  "source_class": "synthetic",
+  "scope": "scope.md",
+  "design_system": "visual-guidelines.md",
+  "brief_dir": "brief",
+  "env_preflight": [],
+  "allow_parallel_builders": false,
+  "approved_by": "fixture:social-engagement",
+  "approved_at": "2026-10-26T00:00:00Z",
+  "package_sha256": "0dc9a16a3832c50a0fb3542c61ff90987e92846089e76e9345db78805098ce5d"
+}
