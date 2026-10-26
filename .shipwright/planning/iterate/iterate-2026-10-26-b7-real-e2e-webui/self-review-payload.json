@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Spec project, checklist (beside the package), report template, no-defaults refusal, optional workdir, env file with source record, auth copy with guaranteed delete, idle abort and CI checks all present; no ci.yml edit."},
+{"name":"Error Handling","verdict":"pass","note":"Refusal messages name the missing input; report and login cleanup run on every exit path via one idempotent Shutdown; screenshot failure is noted, not thrown."},
+{"name":"Security Basics","verdict":"pass","note":"No token or credential content reaches the report; fixed argv for every child process; child env stripped of CLAUDE_CONFIG_DIR; stale copies scrubbed; key tail removed at shutdown; exposure documented."},
+{"name":"Test Quality","verdict":"pass","note":"15 browser-free Playwright unit checks (config, auth, provisioning, shutdown, scrub, child env, report, idle, chat checks, file checks) plus 7 pytest checks including a negative case per hard check family."},
+{"name":"Performance Basics","verdict":"pass","note":"Polling every 15 s, file walk bounded to 5000 files."},
+{"name":"Naming & Structure","verdict":"pass","note":"Every .ts file well under 300 lines (pinned by pytest); modules split by concern."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: fixture package and chat-map/screen-map; consumer: this project. Real probes: verify_package against the recorded hash, the dry harness, and chat checks against a faithful and a broken fake app. The real WebUI and agent boundary is operator acceptance."}
+]}

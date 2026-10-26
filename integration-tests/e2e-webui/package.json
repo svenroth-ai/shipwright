@@ -1,0 +1,17 @@
+{
+  "name": "shipwright-e2e-webui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Operator-started real end-to-end run: Brief package -> chat-first app through the WebUI (not a CI gate)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:unit": "playwright test --project=unit",
+    "e2e": "playwright test --project=e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

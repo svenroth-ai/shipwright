@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
+  "risk_recheck": {
+    "changed_file_count": 24,
+    "diff_loc": 1619,
+    "risk_flags": [
+      "touches_auth",
+      "touches_billing",
+      "touches_build",
+      "touches_io_boundary"
+    ],
+    "diff_risk_flags": [
+      "touches_build",
+      "touches_io_boundary"
+    ],
+    "complexity_floor": "small",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

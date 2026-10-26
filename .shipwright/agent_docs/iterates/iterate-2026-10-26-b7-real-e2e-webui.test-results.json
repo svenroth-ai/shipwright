@@ -1,0 +1,117 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
+    "date": "2026-10-26",
+    "unit": {
+      "status": "passed",
+      "passed": 626,
+      "total": 626
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "package validates against its recorded hash and the answer key stays outside the hashed package",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_webui_project.py::test_package_validates_and_hash_matches_the_recorded_one PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "package passes A1's dry harness",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_webui_project.py::test_package_passes_the_dry_harness PASSED"
+        },
+        {
+          "behavior": "checklist has hard and soft items with unique ids the spec records",
+          "disposition": "tested",
+          "evidence": "test_e2e_webui_project.py::test_checklist_has_hard_and_soft_items_with_unique_ids PASSED; unit: the committed checklist has hard and soft items PASSED"
+        },
+        {
+          "behavior": "no defaults for permission mode, webui dir and budget; refusal names the missing input",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: refuses to start without each required input PASSED; test_operator_inputs_have_no_defaults_and_children_use_fixed_argv PASSED"
+        },
+        {
+          "behavior": "env file read only for unset variables, real environment wins, source recorded",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: the real environment wins over the env file PASSED"
+        },
+        {
+          "behavior": "copied login is deleted, stale copies scrubbed without touching a live run, one idempotent shutdown",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: copied login removed; shutdown runs every step once; stale login copies scrubbed PASSED"
+        },
+        {
+          "behavior": "temp HOME gets real plugins, permission mode and folder trust; child env points every home location at it",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: provisioning writes ...; child env points every home-like location PASSED"
+        },
+        {
+          "behavior": "report renders from the template, links screenshots, survives a failing screenshot; idle watch",
+          "disposition": "tested",
+          "evidence": "unit report.spec.ts: report and idle watch tests PASSED"
+        },
+        {
+          "behavior": "hard chat checks and project file checks pass a faithful app/project and fail a broken one",
+          "disposition": "tested",
+          "evidence": "unit report.spec.ts: chat hard checks...; project file checks... PASSED"
+        },
+        {
+          "behavior": "every .ts file stays within 300 lines; fixed argv; .gitignore and .env.example names only",
+          "disposition": "tested",
+          "evidence": "test_e2e_webui_project.py structure tests PASSED"
+        },
+        {
+          "behavior": "a real agent run through the WebUI turns the package into a working app",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a real model session and the WebUI; this is the operator acceptance run outside the campaign"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "web",
+      "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test -c integration-tests/e2e-webui/playwright.config.ts integration-tests/e2e-webui/tests/unit",
+      "exit_code": 0,
+      "tests_run": 15,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B7\\.shipwright\\runs\\iterate-2026-10-26-b7-real-e2e-webui\\surface_verification.log",
+      "timestamp": "2026-10-26T04:20:55.859Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
+    "commit": "1cc45006b5cf11e79297b9893d267273dadf8ea7",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

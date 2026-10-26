@@ -1,0 +1,125 @@
+{
+  "run_id": "iterate-2026-10-26-b7-real-e2e-webui",
+  "artifact_sync": {
+    "ref": "HEAD~1..HEAD"
+  },
+  "decision": {
+    "section": "Iterate - feature: operator-started real end-to-end run through the WebUI",
+    "title": "Operator-run Playwright spec project beside a hashed package",
+    "context": "No test shows whether a Brief package becomes a working chat-first app when a person drives it through the WebUI; a real run costs tokens and varies, so it cannot gate CI.",
+    "decision": "A Node/Playwright project at integration-tests/e2e-webui drives a second WebUI instance and writes a screenshot report; CI checks only package validation, the dry harness and structure rules. The answer key sits beside the package.",
+    "consequences": "The operator keeps the WebUI test ids current; npm run typecheck and test:unit are its only guards. The first real run is operator acceptance. Openai architecture reject overridden (scope fixed by the brief).",
+    "rationale": "A screenshot report from a real run is the only evidence a package works end to end; a key inside the package would change its hash and let the builder read it.",
+    "rejected": "Manual procedure only (no repeatable report); doing nothing (question stays open); answer key inside the package.",
+    "architecture_impact": "none",
+    "spec_ref": ".shipwright/planning/adr/iterate-2026-10-26-b7-real-e2e-webui-operator-run.md"
+  },
+  "changelog": [
+    {
+      "category": "Added",
+      "bullet": "Operator-started end-to-end spec project (integration-tests/e2e-webui) that drives the WebUI with a real agent from the social engagement Brief package, with an answer-key checklist and a screenshot report; CI checks the package and the project's structure"
+    }
+  ],
+  "iterate_entry": {
+    "type": "feature",
+    "complexity": "medium",
+    "prior_source": "keyword",
+    "branch": "iterate/campaign-brief-driven-run-b-intake-design-e2e--B7",
+    "spec": null,
+    "tests_passed": true,
+    "adr": "iterate-2026-10-26-b7-real-e2e-webui",
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "package validates against its recorded hash and the answer key stays outside the hashed package",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_webui_project.py::test_package_validates_and_hash_matches_the_recorded_one PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "package passes A1's dry harness",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_webui_project.py::test_package_passes_the_dry_harness PASSED"
+        },
+        {
+          "behavior": "checklist has hard and soft items with unique ids the spec records",
+          "disposition": "tested",
+          "evidence": "test_e2e_webui_project.py::test_checklist_has_hard_and_soft_items_with_unique_ids PASSED; unit: the committed checklist has hard and soft items PASSED"
+        },
+        {
+          "behavior": "no defaults for permission mode, webui dir and budget; refusal names the missing input",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: refuses to start without each required input PASSED; test_operator_inputs_have_no_defaults_and_children_use_fixed_argv PASSED"
+        },
+        {
+          "behavior": "env file read only for unset variables, real environment wins, source recorded",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: the real environment wins over the env file PASSED"
+        },
+        {
+          "behavior": "copied login is deleted, stale copies scrubbed without touching a live run, one idempotent shutdown",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: copied login removed; shutdown runs every step once; stale login copies scrubbed PASSED"
+        },
+        {
+          "behavior": "temp HOME gets real plugins, permission mode and folder trust; child env points every home location at it",
+          "disposition": "tested",
+          "evidence": "unit config.spec.ts: provisioning writes ...; child env points every home-like location PASSED"
+        },
+        {
+          "behavior": "report renders from the template, links screenshots, survives a failing screenshot; idle watch",
+          "disposition": "tested",
+          "evidence": "unit report.spec.ts: report and idle watch tests PASSED"
+        },
+        {
+          "behavior": "hard chat checks and project file checks pass a faithful app/project and fail a broken one",
+          "disposition": "tested",
+          "evidence": "unit report.spec.ts: chat hard checks...; project file checks... PASSED"
+        },
+        {
+          "behavior": "every .ts file stays within 300 lines; fixed argv; .gitignore and .env.example names only",
+          "disposition": "tested",
+          "evidence": "test_e2e_webui_project.py structure tests PASSED"
+        },
+        {
+          "behavior": "a real agent run through the WebUI turns the package into a working app",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a real model session and the WebUI; this is the operator acceptance run outside the campaign"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    },
+    "exemptions": {
+      "count": 0,
+      "items": []
+    },
+    "risk_flags": [
+      "touches_auth",
+      "touches_billing",
+      "touches_build",
+      "touches_io_boundary"
+    ]
+  },
+  "finalize": {
+    "reason": "iterate: operator-started real end-to-end run through the WebUI",
+    "event_extras": {
+      "intent": "feature",
+      "description": "Operator-started real end-to-end run through the WebUI",
+      "summary": "An operator can now run one real agent session from the social engagement package through the WebUI and get a screenshot report with a hard and soft checklist.",
+      "spec_impact": "none",
+      "spec_impact_justification": "New operator tooling and fixtures only; no shipped behavior of any phase changes.",
+      "spec_impact_reason_code": "tooling-only",
+      "change_type": "tooling",
+      "none_reason": "New test tooling project and answer key under integration-tests; no plugin or shared behavior touched",
+      "campaign": "brief-driven-run-b-intake-design-e2e",
+      "sub_iterate_id": "B7"
+    }
+  }
+}
