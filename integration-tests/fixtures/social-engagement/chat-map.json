@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "capabilities": [
+    {
+      "id": "fetch-matches",
+      "command": "fetch new matches",
+      "requirements": [
+        "fetch-new-matches"
+      ],
+      "screen": "board-new"
+    },
+    {
+      "id": "show-thread",
+      "command": "show thread N",
+      "requirements": [
+        "show-a-thread"
+      ],
+      "screen": "thread-detail"
+    },
+    {
+      "id": "draft-reply",
+      "command": "draft a reply for thread N",
+      "requirements": [
+        "draft-a-reply"
+      ],
+      "screen": "reply-draft"
+    },
+    {
+      "id": "mark-posted",
+      "command": "mark thread N as posted",
+      "requirements": [
+        "mark-a-thread-as-posted"
+      ],
+      "screen": "thread-posted"
+    },
+    {
+      "id": "set-keywords",
+      "command": "set keywords: a, b, c",
+      "requirements": [
+        "set-keywords"
+      ],
+      "screen": "keywords"
+    }
+  ],
+  "golden_paths": [
+    {
+      "id": "triage-a-thread",
+      "title": "Triage a thread from match to posted",
+      "steps": [
+        {
+          "say": "fetch new matches",
+          "screen": "board-new"
+        },
+        {
+          "say": "show thread 1",
+          "screen": "thread-detail"
+        },
+        {
+          "say": "draft a reply for thread 1",
+          "screen": "reply-draft"
+        },
+        {
+          "say": "mark thread 1 as posted",
+          "screen": "thread-posted"
+        }
+      ]
+    },
+    {
+      "id": "tune-the-keywords",
+      "title": "Narrow the matches with keywords",
+      "steps": [
+        {
+          "say": "set keywords: onboarding, pricing, integrations",
+          "screen": "keywords"
+        },
+        {
+          "say": "fetch new matches",
+          "screen": "board-new"
+        }
+      ]
+    }
+  ]
+}

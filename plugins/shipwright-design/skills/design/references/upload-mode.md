@@ -1,5 +1,7 @@
 # Upload Mode
 
+**Chat-first Brief package** (`ux_shape: chat-first` in the tool result): after the tool read [chat-first.md](chat-first.md); it adds flows, a Layout D design and its own STOP table.
+
 **Brief package run:** skip the generic steps 1-7 below and go straight to the Brief section; generate NO screen at all in Brief mode; do not hand-edit `design-manifest.md`.
 
 When `.shipwright/designs/uploads/` contains files, or the run records a Brief package (see the last section; it needs no files beforehand):

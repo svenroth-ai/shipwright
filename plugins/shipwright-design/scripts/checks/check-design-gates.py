@@ -68,6 +68,7 @@ for _p in (_SHARED_LIB, _SHARED_SCRIPTS):
         sys.path.append(str(_p))
 
 from design_gate_extras import (  # noqa: E402
+    chip_nav_class_violations,
     chrome_nav_targets_consistent,
     flows_present_for_multi_screen_app,
     iteration_touched_flagged_screens,
@@ -140,14 +141,14 @@ def flows_gate(designs_dir: Path) -> dict:
 
 
 def chrome_gate(designs_dir: Path) -> dict:
-    """FR-01.04 #5. A missing ``chrome-definition.md`` is a pass ONLY when no
-    screen actually shows nav markup — a project with genuinely no shared
-    chrome (all auth/Layout-C screens) has nothing to define. A screen using
-    nav markup with no definition to draw it from is exactly the "shared
-    chrome from one definition" violation this criterion names (external
-    code review, iterate-2026-09-11-e1-checks-plan-design)."""
+    """FR-01.04 #5. No chrome-definition.md passes ONLY when no screen shows nav markup. A chat chip that is
+    also ``nav-item``/``topnav-link`` is a violation either way (B3b)."""
     chrome_path = designs_dir / "chrome-definition.md"
     inventory = scan_designs_dir(designs_dir)
+    chips = [f"{s['file']}: chip used as navigation ({c})" for s in inventory["screens"]
+             for c in chip_nav_class_violations(_read(designs_dir / s["file"]))]
+    if chips:
+        return _gate("chrome", False, f"{len(chips)} chip(s) carry nav-item/topnav-link", chips)
     if not chrome_path.exists():
         screens_with_nav = [
             s["file"] for s in inventory["screens"]
