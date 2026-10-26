@@ -23,15 +23,21 @@ def _skip_reason(block: dict) -> str:
     return ""
 
 
-def _screenshot_tolerance() -> float | None:
-    """The screenshot check's tolerance constant, loaded by file path (ADR-045); None when the test plugin is not beside this one."""
+#: The screenshot check's standard tolerance. A parity test pins it to ``png_compare.TOLERANCE`` in the monorepo; the validator uses
+#: it whenever that module cannot be found (the installed plugin cache has no sibling test plugin at this relative path).
+SCREENSHOT_TOLERANCE = 0.15
+
+
+def _screenshot_tolerance() -> float:
+    """``png_compare.TOLERANCE`` when the test plugin sits beside this one (loaded by file path, ADR-045), else the literal; never raises."""
     path = Path(__file__).resolve().parents[3] / "shipwright-test" / "scripts" / "lib" / "png_compare.py"
-    if not path.is_file():
-        return None
-    spec = importlib.util.spec_from_file_location("screenshot_png_compare_tolerance", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.TOLERANCE
+    try:
+        spec = importlib.util.spec_from_file_location("screenshot_png_compare_tolerance", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return float(module.TOLERANCE)
+    except Exception:  # noqa: BLE001 - a missing or broken sibling must fall back, never crash the validator
+        return SCREENSHOT_TOLERANCE
 
 
 def _screenshot_check_issue(project_root: Path, results: dict) -> str:
@@ -46,7 +52,7 @@ def _screenshot_check_issue(project_root: Path, results: dict) -> str:
         return f"Screenshot check did not pass (status={block.get('status')!r}); built screens do not match the approved mockups. STOP and report."
     if block.get("captured") is not True:
         return "Screenshot check result was not made from fresh screenshots (captured is not true)."
-    if expected is not None and block.get("tolerance") != expected:
+    if block.get("tolerance") != expected:
         return f"Screenshot check ran with tolerance {block.get('tolerance')!r}, not the standard {expected}."
     return ""
 

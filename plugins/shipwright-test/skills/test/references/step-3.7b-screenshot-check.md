@@ -19,7 +19,7 @@ package's `screen-map.json`) and the built route in the same Chromium at 1280x80
 (`.shipwright/designs/screens/NN-id.html`, review-loop edits included), else the approved upload; the result names the file
 (`compared_with`). A dynamic route (`/items/[id]`) needs a `sample_route` key: switch that entry to the nested form.
 You MAY add `sample_route` or missing route entries to `screen-routes.json`: that is test wiring, not a mockup.
-A package screen that is a modal or lives inside another page may be absent from `screen-routes.json` only if Design skipped it too. Every screen of the
+A package screen with no route of its own (a modal, an in-page state) is an `error`: STOP and report it (an exemption is a follow-up, not a rule today). Every screen of the
 package's `screen-map.json` must appear in `screen-routes.json` (a package screen that was never built is an `error`),
 and an approved mockup that renders blank is an `error`. Only the first viewport (1280x800, the fold) is compared;
 the viewport is recorded in the result. Run it only when the marker file exists (the tool also checks).

@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
-  "date": "2026-10-26T02:16:05.722127Z",
+  "date": "2026-10-26T02:31:39.342823Z",
   "event_at": "2026-10-26T01:49:37.097874+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -65,7 +65,7 @@
       {
         "behavior": "test-phase validator blocks a Brief-package project without a passing, captured, standard-tolerance screenshot_check; projects without a package are unaffected",
         "disposition": "tested",
-        "evidence": "plugins/shipwright-run/tests/test_phase_validators_screenshot.py::test_project_without_a_package_is_unaffected, ::test_package_without_a_result_blocks, ::test_package_with_a_passing_fresh_result_is_valid, ::test_package_with_anything_but_a_real_pass_blocks PASSED"
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_screenshot.py::test_project_without_a_package_is_unaffected, ::test_package_without_a_result_blocks, ::test_package_with_a_passing_fresh_result_is_valid, ::test_package_with_anything_but_a_real_pass_blocks, ::test_the_tolerance_is_found_beside_the_run_plugin_and_the_literal_has_parity, ::test_without_the_sibling_plugin_the_literal_is_used_and_nothing_crashes PASSED"
       }
     ],
     "counts": {
@@ -85,7 +85,7 @@
     "exit_code": 0,
     "tests_run": 61,
     "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3c\\.shipwright\\runs\\iterate-2026-10-26-b3c-screenshot-check-in-test\\surface_verification.log",
-    "timestamp": "2026-10-26T02:15:48.559Z"
+    "timestamp": "2026-10-26T02:31:29.556Z"
   },
   "declared_removals": [],
   "exemptions": {

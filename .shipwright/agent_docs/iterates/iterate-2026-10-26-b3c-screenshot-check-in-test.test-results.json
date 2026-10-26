@@ -29,7 +29,7 @@
       "exit_code": 0,
       "tests_run": 61,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-brief-driven-run-b-intake-design-e2e--B3c\\.shipwright\\runs\\iterate-2026-10-26-b3c-screenshot-check-in-test\\surface_verification.log",
-      "timestamp": "2026-10-26T02:15:48.559Z"
+      "timestamp": "2026-10-26T02:31:29.556Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -87,7 +87,7 @@
         {
           "behavior": "test-phase validator blocks a Brief-package project without a passing, captured, standard-tolerance screenshot_check; projects without a package are unaffected",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_phase_validators_screenshot.py::test_project_without_a_package_is_unaffected, ::test_package_without_a_result_blocks, ::test_package_with_a_passing_fresh_result_is_valid, ::test_package_with_anything_but_a_real_pass_blocks PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_phase_validators_screenshot.py::test_project_without_a_package_is_unaffected, ::test_package_without_a_result_blocks, ::test_package_with_a_passing_fresh_result_is_valid, ::test_package_with_anything_but_a_real_pass_blocks, ::test_the_tolerance_is_found_beside_the_run_plugin_and_the_literal_has_parity, ::test_without_the_sibling_plugin_the_literal_is_used_and_nothing_crashes PASSED"
         }
       ],
       "counts": {
@@ -110,7 +110,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-10-26-b3c-screenshot-check-in-test",
-    "commit": "c13316bd31f834a03972def33473f7f1dd844bcd",
+    "commit": "3944d3b2db72bf2539b2dadc744e227754c10ff8",
     "dirty": true,
     "base": null,
     "release": null

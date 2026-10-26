@@ -39,3 +39,4 @@ is a recorded decision in the end-to-end procedure); record metric, tolerance an
 
 ## Follow-ups (deferred, not built)
 Login/auth screens; a per-run screenshot output dir; PNG decoder speed; hue/wording differences; Playwright provisioning in CI.
+Package screens with no route of their own (modal, in-page) are an error today: an exemption code is a follow-up. Other follow-ups: Playwright config.js globbing, the route-parser duplicate with design_fidelity_check, wording nits.

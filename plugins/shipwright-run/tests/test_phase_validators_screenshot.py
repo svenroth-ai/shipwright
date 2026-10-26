@@ -1,5 +1,6 @@
 """Test phase: the screenshot check is BLOCKING exactly when Design applied a Brief package (campaign B3c)."""
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -38,8 +39,22 @@ def _run(root: Path, block) -> tuple[bool, str]:
     return valid, _messages(issues)
 
 
-def test_the_tolerance_constant_is_found_beside_the_run_plugin():
-    assert _TOLERANCE == 0.15
+def test_the_tolerance_is_found_beside_the_run_plugin_and_the_literal_has_parity():
+    path = Path(__file__).resolve().parents[2] / "shipwright-test" / "scripts" / "lib" / "png_compare.py"
+    spec = importlib.util.spec_from_file_location("png_compare_parity", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert _TOLERANCE == module.TOLERANCE == late.SCREENSHOT_TOLERANCE == 0.15
+
+
+def test_without_the_sibling_plugin_the_literal_is_used_and_nothing_crashes(tmp_path, monkeypatch):
+    monkeypatch.setattr(late.importlib.util, "spec_from_file_location", lambda *a, **k: None)  # sibling unloadable
+    assert late._screenshot_tolerance() == late.SCREENSHOT_TOLERANCE
+    monkeypatch.undo()
+    monkeypatch.setattr(late, "_run_canon_checks", lambda *_a, **_k: None)
+    monkeypatch.setattr(late, "_screenshot_tolerance", lambda: late.SCREENSHOT_TOLERANCE)
+    _package(tmp_path)
+    assert _run(tmp_path, _block(tolerance=0.9))[0] is False  # the tolerance rule stays ON
 
 
 def test_project_without_a_package_is_unaffected(tmp_path):
@@ -66,13 +81,6 @@ def test_package_with_anything_but_a_real_pass_blocks(tmp_path, bad):
     _package(tmp_path)
     valid, msg = _run(tmp_path, bad)
     assert not valid and "creenshot" in msg
-
-
-def test_a_missing_test_plugin_skips_only_the_tolerance_comparison(tmp_path, monkeypatch):
-    monkeypatch.setattr(late, "_screenshot_tolerance", lambda: None)
-    _package(tmp_path)
-    assert _run(tmp_path, _block(tolerance=0.9)) == (True, "")
-    assert _run(tmp_path, _block(status="fail"))[0] is False
 
 
 def test_corrupt_results_still_report_before_the_screenshot_rule(tmp_path):
