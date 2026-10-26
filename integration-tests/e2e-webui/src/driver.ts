@@ -131,9 +131,16 @@ export async function answerGates(page: Page, state: GateState): Promise<string[
 
 /** Opens the app through the project's preview button (a new tab); returns that tab. */
 export async function openPreview(page: Page): Promise<Page> {
-  page.on("dialog", (d) => void d.dismiss().catch(() => undefined));
+  // The button reports a failed preview start with an alert; keep its text instead of waiting for a tab that never opens.
+  const alerted = new Promise<never>((_, reject) =>
+    page.once("dialog", (d) => {
+      const message = d.message();
+      void d.dismiss().catch(() => undefined);
+      reject(new Error(`The preview button reported: ${message}`));
+    }));
+  alerted.catch(() => undefined);
   const [popup] = await Promise.all([
-    page.context().waitForEvent("page", { timeout: 120_000 }),
+    Promise.race([page.context().waitForEvent("page", { timeout: 120_000 }), alerted]),
     page.getByTestId("preview-button").click(),
   ]);
   await popup.waitForLoadState("domcontentloaded");
