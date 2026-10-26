@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-design/scripts/checks/apply-brief-package.py (~line 100, `main`)\n  Finding: `except Exception as exc` only handles `BriefRefused`; any other error (malformed `screen-map.json` raising `JSONDecodeError`, missing `brief.json`, `extract_fr_names` import failure) propagates as a traceback with empty stdout. Every test helper and the documented contract (`print(json.dumps(out))`) assume JSON on stdout, so callers crash on `json.loads(\"\")`.\n  Suggestion: Catch decode/OS errors and emit `{\"ok\": false, \"issues\": [...]}` with exit 1 (or a dedicated exit code) so the JSON contract holds on all failure paths.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-design/scripts/checks/apply-brief-package.py (`_plan`)\n  Finding: The same mockup can be mapped by two screen-map entries (e.g. one mockup serving two screens). Both get distinct `screens/NN-*.html` copies with different Linked-FR sets while the uploads copy is written twice with no error \u2014 and FR-coverage then credits both copies. Nothing in `_plan` flags a repeated `mockup` (only a repeated screen `id` is checked).\n  Suggestion: Track seen mockup names like `seen` ids and raise a `bad_screen_map_entry` issue on a duplicate mockup reference.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-design/scripts/checks/apply-brief-package.py (`apply`)\n  Finding: A `screen-map.json` with `\"screens\": []` (or the key absent) produces zero issues and exits 0, writing an empty manifest with no screens. Per the spec a mapping must answer the gate question; an empty/missing map should be a package content issue, not a silent success.\n  Suggestion: Append an issue when the plan is empty (e.g. \"screen-map.json lists no screens\").\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-design/scripts/lib/screen_registry.py (`inject_requirements`, `_REQ_COMMENT_RE`)\n  Finding: `[^>]*` cannot match an existing Requirements comment whose content contains `>` (e.g. `<!-- Requirements: FR-01.01 (see > spec) -->`), so the old comment survives and a second one is injected \u2014 the \"older comment is replaced\" guarantee breaks and the design-gate parse may see both.\n  Suggestion: Use a non-greedy comment matcher such as `rb\"<!--\\s*Requirements:.*?-->\"` with `re.DOTALL`.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-design/tests/test_apply_brief_package.py (`test_a_requirement_without_an_fr_row_stops_everything`)\n  Finding: `assert out[\"issues\"][0][\"message\"]` assumes the missing-FR issue is the first issue; on this fixture that happens to hold only because the entry has no other problems. It's brittle but currently correct; a weak assertion, not a defect in behavior.\n  Suggestion: Check any issue mentions `\"share-note\"` rather than index 0.\n\nEverything else checks out against the spec: mockups stay byte-identical in `uploads/`, Linked-FR ids come solely from Project-minted `spec.md` rows (no hand-picked ids anywhere), all-checks-before-first-write is enforced (tampered-refused and partial-rerun tests verify nothing is written on refusal), path-like mockup names and ambiguous slugs are refused, and both happy-path and error-path gates are covered in the tests. The pinned fixture hash was updated consistently with the fixture change.\n\nOverall: sound implementation with good test discipline; the non-JSON error path and duplicate-mockup gap are worth fixing but are not blockers.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/checks/apply-brief-package.py:127\n- Finding: Existing visual guidelines are silently retained even when they differ from the package\u2019s `design_system` file. The tool reports success while Design uses different guidelines from the approved package, contradicting the documented refusal of differing existing files.\n- Suggestion: Compare existing guidelines against the package during preflight and return `exists_differs` before writing any screens or uploads.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/lib/screen_registry.py:72\n- Finding: `count=1` removes only the first existing Requirements comment. A mockup containing multiple such comments retains stale FR links alongside the injected, producer-minted links, violating the function\u2019s promise of one authoritative comment and potentially producing incorrect FR coverage.\n- Suggestion: Remove all existing Requirements comments before inserting the resolved mapping. Add a test with two old comments and assert that only the supplied FR IDs remain.\n\nOverall assessment: **ship-with-fixes**. These are localized defects; execution was blocked by the environment policy, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+    "at": "2026-10-25T17:50:21.490528+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

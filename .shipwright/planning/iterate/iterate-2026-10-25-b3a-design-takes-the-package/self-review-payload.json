@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Mockups byte-identical in uploads/, screens/ copies carry minted FR ids, screen-map answers the mapping question, registry/FR-coverage/flows/standalone/chrome/tokens gates pass on fixture 1 and the plugin's own packages; no FR id or ADR number hand-picked."},
+{"name":"Error Handling","verdict":"pass","note":"Refused package exits 3 with a closed code; content problems exit 1 as JSON; unreadable or malformed files are JSON issues, not tracebacks; all checks precede the first write."},
+{"name":"Security Basics","verdict":"pass","note":"Hash and approval re-verified through brief_dir_intake before any read; mockup names must be plain file names; screen ids are slugified; ambiguous slugs and duplicate mockups refused; no existing file overwritten. Known limit: read-after-verify TOCTOU deferred to U3."},
+{"name":"Test Quality","verdict":"pass","note":"16 plugin tests plus one integration test run the real tool and the real gate script as subprocesses; negative paths assert nothing was written."},
+{"name":"Performance Basics","verdict":"pass","note":"Small files, one pass."},
+{"name":"Naming & Structure","verdict":"pass","note":"Script 140 lines, helper in the design plugin's own lib (testable without the shared tools import), ADR-045 loaders by file path; no capped file grew."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer (Project spec.md FR rows, package screen-map) and consumers (screen_registry parser, check-design-gates, FR-coverage verifier) round-tripped; CRLF page, nested > in an old comment and partial re-run probed."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips, sleeps or network."}]}

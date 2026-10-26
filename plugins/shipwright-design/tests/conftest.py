@@ -73,3 +73,11 @@ from profile_test_isolation import isolate_user_profiles_dir  # noqa: E402,F401
 
 if _added:  # leave sys.path as found: shared/scripts holds a `tools` package that would shadow a plugin's
     _sys.path.remove(_isolation_dir)
+
+
+@pytest.fixture
+def project(tmp_path):
+    """A project whose run_config records a two-screen Brief package and whose spec.md minted its FRs."""
+    from .brief_package_helpers import PAGE_A, PAGE_B, TWO, make_project
+
+    return make_project(tmp_path, TWO, {"01-notes.html": PAGE_A, "02-editor.html": PAGE_B})

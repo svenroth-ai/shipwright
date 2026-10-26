@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+  "date": "2026-10-25",
+  "section": "Iterate \u2014 feature: Design takes the Brief package (B3a)",
+  "title": "Design copies package mockups to screens/ and links FRs by slug",
+  "context": "A Brief package ships approved mockups and screen-map.json; Design must reach registry, FR-coverage and flow gates without hand-typed FR ids or a human mapping step.",
+  "decision": "New apply-brief-package.py re-verifies the package hash, keeps mockups byte-identical in uploads/, writes screens/NN-id.html with a Requirements comment resolved from capability slugs against Project-minted spec.md rows; all checks precede any write and a differing file is never overwritten.",
+  "consequences": "Mapping comes from screen-map.json; bad slugs stop the run. Accepted: Windows case-insensitive names; foreign material in screens/uploads/flows can satisfy fr-coverage (the tool lists it as foreign_existing for the agent to report). Package-change recovery is deferred (follow-up U-series): the tool refuses. Attributed extras beyond the touch set: verifiers/brief_design_checks.py + wiring, brief_mode_checks.verified_package, tools/brief_design_plan.py, fixture-1 headings + re-pinned hash.",
+  "rationale": "A script is repeatable and testable where prose depends on agent discipline; it reuses the B2 verifier by file path (ADR-045) and the registry helper rather than a second hash or comment format.",
+  "rejected": "Prose-only upload-mode steps (cannot guarantee byte identity or minted ids); folding placement into screen_registry/setup script (second responsibility in a checker; architecture reviewer called this low severity).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

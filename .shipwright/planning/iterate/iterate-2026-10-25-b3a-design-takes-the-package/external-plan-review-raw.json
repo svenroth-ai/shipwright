@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: approach \u2014 Severity: high**\n  **Finding:** Hash-verification vs. id-minting circularity. The plan re-verifies the package hash via `brief_dir_intake.verify_run_config`, but the Linked-FR comments are injected only \"after Project minted the ids.\" If Project's minting touches files inside the package directory the hash covers (e.g., spec.md), the hash Design verifies will differ from the hash the Brief producer recorded \u2014 either the gate fails or, worse, someone \"fixes\" it by updating the pinned hash to post-mint state, silently weakening the guarantee. The plan doesn't state what the hash is computed over and when it's pinned relative to minting.\n  **Suggestion:** State explicitly that the package hash is pinned after all producers mint their ids (or that minting writes only to files outside the hashed set), and assert that in the integration test.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** The injected comment format `<!-- Requirements: FR-xx.yy -->` is written by hand in the plan but must match whatever the existing FR-coverage/registry gate parsers expect (the BRIEF presumably fixes the exact syntax, including separator for multiple FRs). A mismatch fails the gates in the integration test \u2014 or passes in the plugin's own minimal fixtures but not against the real gate, since the plugin tests use their own packages rather than the gate code.\n  **Suggestion:** Extract the comment emission into one shared helper (or reuse the gate's own parser for a round-trip check) so format drift is impossible; add one test that runs the real gates on a plugin-fixture package, not just fixture 1.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** \"A differing existing file is never overwritten\" \u2014 but there's no policy for *matching* pre-existing screens from an earlier run when the package changed (renumbered mockups, changed NN ordering). The tool will either fail mid-apply or leave a half-updated screens/ tree, and with snapshot isolation (U3) explicitly deferred there's no rollback.\n  **Suggestion:** Do all validation (including per-file conflict detection) before any write \u2014 the plan claims this, so make conflict detection part of the pre-write validation list explicitly, and document that a failed run leaves uploads/ and screens/ untouched.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** Loading `screen_registry.inject_requirements` and `grill_trace_fr_coverage.slugify` by file path couples Design to Project/B2 module internals (function signatures, slug algorithm). If B2's slugify changes, capability-slug \u2192 FR resolution silently breaks or, worse, resolves to the wrong FR id.\n  **Suggestion:** Have the integration test assert a known slug\u2192FR mapping so drift is caught; consider having the package itself carry the slug\u2192FR resolution rather than recomputing slugs at apply time.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** \"A1 fixture 1 gets Colours/Typography/Spacing headings and its pinned hash is updated\" \u2014 a fixture change used by other gates. If other sub-iterates also pin fixture 1's hash, this is an untracked cross-change dependency.\n  **Suggestion:** Confirm the fixture's pinned hash lives in one place (or grep for other references) before bumping.\n\n- **Category: security \u2014 Severity: low**\n  **Finding:** Copying package HTML files into screens/ as gate-consumed artifacts \u2014 the mockup content is attacker-controlled if the Brief package can come from an untrusted source. Given the hash verification this is largely mitigated; no action needed beyond noting the trust model (hash pinning is the boundary).\n\n**Overall assessment:** The approach is sound in structure \u2014 copy-then-inject, validate-before-write, producers mint ids \u2014 but the hash/minting ordering needs to be pinned down explicitly, and the comment-format coupling to the gate parsers needs a shared helper or round-trip test. Both are addressable without changing the design.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency | Severity: high**  \n   **Finding:** The plan describes copying screens and resolving FRs, but does not explain how Design answers the upload-screen-mapping gate or produces the registry and flow information required by B3a. Injecting requirement comments and regenerating the manifest may not satisfy those gates.  \n   **Suggestion:** Explicitly connect `screen-map.json` to the mapping gate and identify how registry entries and flow references are created or updated. Make the integration test exercise the actual gates against the resulting Design workspace.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** Resolving capability slugs through FR names assumes the mapping is unambiguous. Duplicate names, slug collisions, missing capabilities, or a capability associated with multiple minted FRs could produce incorrect coverage despite syntactically valid comments.  \n   **Suggestion:** Validate the mapping against the minted specification before writing. Reject missing or ambiguous matches, preserve all explicitly associated FRs, and test collision and multi-FR cases.\n\n3. **Category: security | Severity: medium**  \n   **Finding:** Package-derived mockup paths and screen identifiers become filesystem paths. Hash verification establishes package integrity but does not establish that those paths are safe.  \n   **Suggestion:** Confirm that intake validation rejects absolute paths, traversal, and symlink escapes; otherwise add those checks here. Validate output identifiers and detect destination collisions before copying.\n\n4. **Category: risk | Severity: medium**  \n   **Finding:** \u201cAll validation before any write\u201d does not prevent a partial application if copying or manifest generation fails midway. The overwrite prohibition also needs to cover existing `visual-guidelines.md` and `design-manifest.md`, whose updates could otherwise replace existing Design work.  \n   **Suggestion:** Preflight every destination, define conflict behavior for generated documents, and make retries recover safely from partial runs. Test an interrupted application and a rerun with identical inputs.\n\nThe approach is broadly sound, particularly preserving original uploads and using producer-minted FR IDs. Before implementation, make the gate integration, mapping validation, and filesystem conflict behavior explicit.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+    "at": "2026-10-25T17:43:25.296404+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

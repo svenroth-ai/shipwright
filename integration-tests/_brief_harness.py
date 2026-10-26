@@ -66,7 +66,9 @@ def build_fixture_1(dest: Path, *, crlf: bool = False) -> Path:
     put("brief.md", "# Notes\n\n## capture-note\nA user can add a note with a title and a body.\n\n"
                     "## list-notes\nA user sees all notes, newest first.\n")
     put("scope.md", "# Scope\n\nIn: capture-note, list-notes. Out: sharing, accounts.\n")
-    put("visual-guidelines.md", "# Visual guidelines\n\nPlain, high contrast, one accent colour.\n")
+    put("visual-guidelines.md", "# Visual guidelines\n\nPlain, high contrast, one accent colour.\n\n"
+                                "## Colours\n- Background #ffffff, text #111111, accent #0b5fff\n\n"
+                                "## Typography\n- System sans-serif, 16px body\n\n## Spacing\n- 4px base unit\n")
     put("mockups/01-notes.html", "<!doctype html>\n<html><body><h1>Notes</h1></body></html>\n")
     put("screen-map.json", json.dumps({"screens": [{"id": "notes", "mockup": "01-notes.html",
                                                     "requirements": ["capture-note", "list-notes"]}]}, indent=2) + "\n")

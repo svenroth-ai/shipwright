@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Something must exist here \u2014 a human mapping step violates the no-hand-typed-FR-id constraint \u2014 but the smallest thing is option 3, not a new script.\n\n2. **The smallest thing that would do.** Extend the existing `screen_registry.py`/`design_gate_extras.py` helpers and call the placement logic from the existing setup script. That adds zero new entry points: the design phase already has a setup path and gate machinery that every future change already reasons about; this change becomes one more step in a place future changes visit anyway.\n\n3. **What it costs to keep.** Placement logic inside the registry helpers means the registry tool now has two responsibilities (verify-and-copy vs. its checking role), and its tests carry the ingestion path forever. That cost is real but small, and strictly smaller than keeping a separate script discoverable, invoked, and documented.\n\n4. **What it forecloses.** Option 1 (a new script in the plugin) adds a second permanent entry point for ingesting packages; anyone changing package format or registry layout later must find and update both the script and the gates. Option 2 (prose, agent copies by hand) is not viable given the byte-identity and no-hand-typed-ids constraints, and it makes correctness depend on an agent's discipline every single time rather than once.\n\n5. **Findings**\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option 1 creates a new standing entry point (a script to invoke, keep correct, and keep discoverable) for a task that is a natural extension of the setup path the design phase already runs.\n- Suggestion: Take option 3 \u2014 placement logic as helpers on the existing registry/gate code, invoked from the existing setup script. Reject option 2 explicitly: it trades a one-time automation cost for a per-run correctness risk that the constraints (byte-identical, minted ids) are specifically guarding against.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014a small placement script is proportionate to the required repeatable transformation; I would choose option 1.\n\n2. **Smallest thing that would do:** One script invoked during existing Design setup: verify the package hash, preserve originals in `uploads/`, resolve capability slugs against Project-minted FR ids, and produce annotated screen copies plus the existing registry\u2019s manifest. Leave validation in the existing gates.\n\n3. **What it costs to keep:** Maintain compatibility with the Brief package, Project\u2019s FR mapping, and the registry manifest format. This belongs to the Design plugin\u2019s maintenance responsibility.\n\n4. **What it forecloses:** None identified. Keeping placement separate from validation lets either evolve independently.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+    "at": "2026-10-25T17:44:52.211408+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

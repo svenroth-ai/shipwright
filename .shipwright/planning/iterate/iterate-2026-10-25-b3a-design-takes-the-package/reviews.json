@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-25-b3a-design-takes-the-package",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T17:54:15.812174+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Hash-verification vs. id-minting circularity. The plan re-verifies the package hash via `brief_dir_intake.verify_run_config`, but the Linked-FR comments are injected only \"after Project minted the ids.\" If Project's minting touches files inside the package directory the hash covers (e.g., spec.md), the hash Design verifies will differ from the hash the Brief producer recorded — either the gate fails or, worse, someone \"fixes\" it by updating the pinned hash to post-mint state, silently weakening the guarantee. The plan doesn't state what the hash is computed over and when it's pinned relative to minting.",
+          "suggestion": "State explicitly that the package hash is pinned after all producers mint their ids (or that minting writes only to files outside the hashed set), and assert that in the integration test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The injected comment format `<!-- Requirements: FR-xx.yy -->` is written by hand in the plan but must match whatever the existing FR-coverage/registry gate parsers expect (the BRIEF presumably fixes the exact syntax, including separator for multiple FRs). A mismatch fails the gates in the integration test — or passes in the plugin's own minimal fixtures but not against the real gate, since the plugin tests use their own packages rather than the gate code.",
+          "suggestion": "Extract the comment emission into one shared helper (or reuse the gate's own parser for a round-trip check) so format drift is impossible; add one test that runs the real gates on a plugin-fixture package, not just fixture 1.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"A differing existing file is never overwritten\" — but there's no policy for matching pre-existing screens from an earlier run when the package changed (renumbered mockups, changed NN ordering). The tool will either fail mid-apply or leave a half-updated screens/ tree, and with snapshot isolation (U3) explicitly deferred there's no rollback.",
+          "suggestion": "Do all validation (including per-file conflict detection) before any write — the plan claims this, so make conflict detection part of the pre-write validation list explicitly, and document that a failed run leaves uploads/ and screens/ untouched.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Loading `screen_registry.inject_requirements` and `grill_trace_fr_coverage.slugify` by file path couples Design to Project/B2 module internals (function signatures, slug algorithm). If B2's slugify changes, capability-slug → FR resolution silently breaks or, worse, resolves to the wrong FR id.",
+          "suggestion": "Have the integration test assert a known slug→FR mapping so drift is caught; consider having the package itself carry the slug→FR resolution rather than recomputing slugs at apply time.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "\"A1 fixture 1 gets Colours/Typography/Spacing headings and its pinned hash is updated\" — a fixture change used by other gates. If other sub-iterates also pin fixture 1's hash, this is an untracked cross-change dependency.",
+          "suggestion": "Confirm the fixture's pinned hash lives in one place (or grep for other references) before bumping.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Copying package HTML files into screens/ as gate-consumed artifacts — the mockup content is attacker-controlled if the Brief package can come from an untrusted source. Given the hash verification this is largely mitigated; no action needed beyond noting the trust model (hash pinning is the boundary).  Overall assessment: The approach is sound in structure — copy-then-inject, validate-before-write, producers mint ids — but the hash/minting ordering needs to be pinned down explicitly, and the comment-format coupling to the gate parsers needs a shared helper or round-trip test. Both are addressable without changing the design.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan describes copying screens and resolving FRs, but does not explain how Design answers the upload-screen-mapping gate or produces the registry and flow information required by B3a. Injecting requirement comments and regenerating the manifest may not satisfy those gates.",
+          "suggestion": "Explicitly connect `screen-map.json` to the mapping gate and identify how registry entries and flow references are created or updated. Make the integration test exercise the actual gates against the resulting Design workspace.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Resolving capability slugs through FR names assumes the mapping is unambiguous. Duplicate names, slug collisions, missing capabilities, or a capability associated with multiple minted FRs could produce incorrect coverage despite syntactically valid comments.",
+          "suggestion": "Validate the mapping against the minted specification before writing. Reject missing or ambiguous matches, preserve all explicitly associated FRs, and test collision and multi-FR cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "Package-derived mockup paths and screen identifiers become filesystem paths. Hash verification establishes package integrity but does not establish that those paths are safe.",
+          "suggestion": "Confirm that intake validation rejects absolute paths, traversal, and symlink escapes; otherwise add those checks here. Validate output identifiers and detect destination collisions before copying.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "“All validation before any write” does not prevent a partial application if copying or manifest generation fails midway. The overwrite prohibition also needs to cover existing `visual-guidelines.md` and `design-manifest.md`, whose updates could otherwise replace existing Design work.",
+          "suggestion": "Preflight every destination, define conflict behavior for generated documents, and make retries recover safely from partial runs. Test an interrupted application and a rerun with identical inputs.  The approach is broadly sound, particularly preserving original uploads and using producer-minted FR IDs. Before implementation, make the gate integration, mapping validation, and filesystem conflict behavior explicit.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-25T17:54:15.942833+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: approach — Severity: high**\n  **Finding:** Hash-verification vs. id-minting circularity. The plan re-verifies the package hash via `brief_dir_intake.verify_run_config`, but the Linked-FR comments are injected only \"after Project minted the ids.\" If Project's minting touches files inside the package directory the hash covers (e.g., spec.md), the hash Design verifies will differ from the hash the Brief producer recorded — either the gate fails or, worse, someone \"fixes\" it by updating the pinned hash to post-mint state, silently weakening the guarantee. The plan doesn't state what the hash is computed over and when it's pinned relative to minting.\n  **Suggestion:** State explicitly that the package hash is pinned after all producers mint their ids (or that minting writes only to files outside the hashed set), and assert that in the integration test.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The injected comment format `<!-- Requirements: FR-xx.yy -->` is written by hand in the plan but must match whatever the existing FR-coverage/registry gate parsers expect (the BRIEF presumably fixes the exact syntax, including separator for multiple FRs). A mismatch fails the gates in the integration test — or passes in the plugin's own minimal fixtures but not against the real gate, since the plugin tests use their own packages rather than the gate code.\n  **Suggestion:** Extract the comment emission into one shared helper (or reuse the gate's own parser for a round-trip check) so format drift is impossible; add one test that runs the real gates on a plugin-fixture package, not just fixture 1.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"A differing existing file is never overwritten\" — but there's no policy for *matching* pre-existing screens from an earlier run when the package changed (renumbered mockups, changed NN ordering). The tool will either fail mid-apply or leave a half-updated screens/ tree, a […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** The plan describes copying screens and resolving FRs, but does not explain how Design answers the upload-screen-mapping gate or produces the registry and flow information required by B3a. Injecting requirement comments and regenerating the manifest may not satisfy those gates.  \n   **Suggestion:** Explicitly connect `screen-map.json` to the mapping gate and identify how registry entries and flow references are created or updated. Make the integration test exercise the actual gates against the resulting Design workspace.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** Resolving capability slugs through FR names assumes the mapping is unambiguous. Duplicate names, slug collisions, missing capabilities, or a capability associated with multiple minted FRs could produce incorrect coverage despite syntactically valid comments.  \n   **Suggestion:** Validate the mapping against the minted specification before writing. Reject missing or ambiguous matches, preserve all explicitly associated FRs, and test collision and multi-FR cases.\n\n3. **Category: security | Severity: medium**  \n   **Finding:** Package-derived mockup paths and screen identifiers become filesystem paths. Hash verification establishes package integrity but does not establish that those paths are safe.  \n   **Suggestion:** Confirm that intake validation rejects absolute paths, traversal, and symlink escapes; otherwise add those checks here. Validate output identifiers and detect destination collisions before copying.\n\n4. **Category: risk | Severity: medium**  \n   **Finding:** “All validation before any write” does not prevent a partial application if copying or manifest generation fails midway. The overwrite prohibition also needs to cover existing `visual-guidelines.md` and `design-manifest.md`, whose updates could otherwise replace existing Design work.  \n   **Suggestion:** Preflight every destination, define conflic […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py",
+          "line": 127,
+          "finding": "comment and message say 'own upload' but the code checks any upload of the package",
+          "suggestion": "reword to 'any upload of the package'",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "maintainability",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": 29,
+          "finding": "fr-coverage STOP rule stated twice in one paragraph",
+          "suggestion": "merge the two clauses",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "plugins/shipwright-design/tests/test_apply_brief_package.py",
+          "line": 180,
+          "finding": "a few upload-mode.md sentences are not pinned (SKILL.md pins the agent-facing contract)",
+          "suggestion": "pin only if upload-mode.md is an independent contract",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-26T00:49:09.515953+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d6600a683fb34d31e9b6a7031684e2bd2373df65"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-design/skills/design/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: fixture-like run reaches a green --gate all — the boundary gate flags an uncommitted project-relative brief/ (and root CONTEXT.md); acceptance tests exclude boundary and the harness project is not a git repo. Verify in B7 on a real git repo; decide commit-the-package vs exempt brief_dir.",
+          "suggestion": "tracked as follow-up / B7 verification item",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: operator choice (b) on a rejected preview survives a resume — nothing stores the decision or the queued feedback; a re-dispatched agent may ask preview-approval again (general gate-answer carrier, not new)",
+          "suggestion": "tracked as follow-up / B7 verification item",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: Non-UI remedy is fully specified — STOP report does not give the exact entry format (- FR-ID — ADR-NNN)",
+          "suggestion": "tracked as follow-up / B7 verification item",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-26T00:49:09.644446+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d6600a683fb34d31e9b6a7031684e2bd2373df65"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py (~line 100, `main`)",
+          "line": null,
+          "finding": "except Exception as exc` only handles `BriefRefused`; any other error (malformed `screen-map.json` raising `JSONDecodeError`, missing `brief.json`, `extract_fr_names` import failure) propagates as a traceback with empty stdout. Every test helper and the documented contract (`print(json.dumps(out))`) assume JSON on stdout, so callers crash on `json.loads(\"\")`.",
+          "suggestion": "Catch decode/OS errors and emit `{\"ok\": false, \"issues\": [...]}` with exit 1 (or a dedicated exit code) so the JSON contract holds on all failure paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py (`_plan`)",
+          "line": null,
+          "finding": "The same mockup can be mapped by two screen-map entries (e.g. one mockup serving two screens). Both get distinct `screens/NN-.html` copies with different Linked-FR sets while the uploads copy is written twice with no error — and FR-coverage then credits both copies. Nothing in `_plan` flags a repeated `mockup` (only a repeated screen `id` is checked).",
+          "suggestion": "Track seen mockup names like `seen` ids and raise a `bad_screen_map_entry` issue on a duplicate mockup reference.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py (`apply`)",
+          "line": null,
+          "finding": "A `screen-map.json` with `\"screens\": []` (or the key absent) produces zero issues and exits 0, writing an empty manifest with no screens. Per the spec a mapping must answer the gate question; an empty/missing map should be a package content issue, not a silent success.",
+          "suggestion": "Append an issue when the plan is empty (e.g. \"screen-map.json lists no screens\").",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-design/scripts/lib/screen_registry.py (`inject_requirements`, `_REQ_COMMENT_RE`)",
+          "line": null,
+          "finding": "[^>]` cannot match an existing Requirements comment whose content contains `>` (e.g. `<!-- Requirements: FR-01.01 (see > spec) -->`), so the old comment survives and a second one is injected — the \"older comment is replaced\" guarantee breaks and the design-gate parse may see both.",
+          "suggestion": "Use a non-greedy comment matcher such as `rb\"<!--\\sRequirements:.?-->\"` with `re.DOTALL`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-design/tests/test_apply_brief_package.py (`test_a_requirement_without_an_fr_row_stops_everything`)",
+          "line": null,
+          "finding": "assert out[\"issues\"][0][\"message\"]` assumes the missing-FR issue is the first issue; on this fixture that happens to hold only because the entry has no other problems. It's brittle but currently correct; a weak assertion, not a defect in behavior.",
+          "suggestion": "Check any issue mentions `\"share-note\"` rather than index 0.  Everything else checks out against the spec: mockups stay byte-identical in `uploads/`, Linked-FR ids come solely from Project-minted `spec.md` rows (no hand-picked ids anywhere), all-checks-before-first-write is enforced (tampered-refused and partial-rerun tests verify nothing is written on refusal), path-like mockup names and ambiguous slugs are refused, and both happy-path and error-path gates are covered in the tests. The pinned fixture hash was updated consistently with the fixture change.  Overall: sound implementation with good test discipline; the non-JSON error path and duplicate-mockup gap are worth fixing but are not blockers.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-design/scripts/checks/apply-brief-package.py",
+          "line": 127,
+          "finding": "Existing visual guidelines are silently retained even when they differ from the package’s `design_system` file. The tool reports success while Design uses different guidelines from the approved package, contradicting the documented refusal of differing existing files.",
+          "suggestion": "Compare existing guidelines against the package during preflight and return `exists_differs` before writing any screens or uploads.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-design/scripts/lib/screen_registry.py",
+          "line": 72,
+          "finding": "count=1` removes only the first existing Requirements comment. A mockup containing multiple such comments retains stale FR links alongside the injected, producer-minted links, violating the function’s promise of one authoritative comment and potentially producing incorrect FR coverage.",
+          "suggestion": "Remove all existing Requirements comments before inserting the resolved mapping. Add a test with two old comments and assert that only the supplied FR IDs remain.  Overall assessment: ship-with-fixes. These are localized defects; execution was blocked by the environment policy, so this assessment is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-25T17:54:16.110181+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-design/scripts/checks/apply-brief-package.py (~line 100, `main`)\n  Finding: `except Exception as exc` only handles `BriefRefused`; any other error (malformed `screen-map.json` raising `JSONDecodeError`, missing `brief.json`, `extract_fr_names` import failure) propagates as a traceback with empty stdout. Every test helper and the documented contract (`print(json.dumps(out))`) assume JSON on stdout, so callers crash on `json.loads(\"\")`.\n  Suggestion: Catch decode/OS errors and emit `{\"ok\": false, \"issues\": [...]}` with exit 1 (or a dedicated exit code) so the JSON contract holds on all failure paths.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-design/scripts/checks/apply-brief-package.py (`_plan`)\n  Finding: The same mockup can be mapped by two screen-map entries (e.g. one mockup serving two screens). Both get distinct `screens/NN-*.html` copies with different Linked-FR sets while the uploads copy is written twice with no error — and FR-coverage then credits both copies. Nothing in `_plan` flags a repeated `mockup` (only a repeated screen `id` is checked).\n  Suggestion: Track seen mockup names like `seen` ids and raise a `bad_screen_map_entry` issue on a duplicate mockup reference.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-design/scripts/checks/apply-brief-package.py (`apply`)\n  Finding: A `screen-map.json` with `\"screens\": []` (or the key absent) produces zero issues and exits 0, writing an empty manifest with no screens. Per the spec a mapping must answer the gate question; an empty/missing map should be a package content issue, not a silent success.\n  Suggestion: Append an issue when the plan is empty (e.g. \"screen-map.json lists no screens\").\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-design/scripts/lib/screen_registry.py (`inject_requirements`, `_REQ_COMMENT_RE`)\n  Finding: `[^>]*` cannot match an existing R […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/checks/apply-brief-package.py:127\n- Finding: Existing visual guidelines are silently retained even when they differ from the package’s `design_system` file. The tool reports success while Design uses different guidelines from the approved package, contradicting the documented refusal of differing existing files.\n- Suggestion: Compare existing guidelines against the package during preflight and return `exists_differs` before writing any screens or uploads.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/lib/screen_registry.py:72\n- Finding: `count=1` removes only the first existing Requirements comment. A mockup containing multiple such comments retains stale FR links alongside the injected, producer-minted links, violating the function’s promise of one authoritative comment and potentially producing incorrect FR coverage.\n- Suggestion: Remove all existing Requirements comments before inserting the resolved mapping. Add a test with two old comments and assert that only the supplied FR IDs remain.\n\nOverall assessment: **ship-with-fixes**. These are localized defects; execution was blocked by the environment policy, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-26T00:49:09.368687+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d6600a683fb34d31e9b6a7031684e2bd2373df65"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T17:54:16.706848+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents, so the internal arm did not run; the orchestrator has no internal-arm spawn site",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-25T17:54:16.860871+00:00",
+      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents, so the internal arm did not run; the orchestrator has no internal-arm spawn site",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

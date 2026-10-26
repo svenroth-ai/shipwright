@@ -11,7 +11,7 @@ import pytest
 
 import _brief_harness as h
 
-PINNED_FIXTURE_1_SHA256 = "0a5a534ac2d264dcb780a5a91ab79255bda620d5db3779c85e8c1b1a0e87a87e"
+PINNED_FIXTURE_1_SHA256 = "97fdf27e20f7095589c9013faab3dfeac92091fd53adf398148a7447ec5cf8fc"
 
 
 @pytest.mark.covers("FR-01.01")
