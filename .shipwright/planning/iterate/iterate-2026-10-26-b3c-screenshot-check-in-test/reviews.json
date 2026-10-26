@@ -150,29 +150,116 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_late.py",
+          "line": 143,
+          "finding": "blocking existed only in prose; fixed in round 1 (validator requires screenshot_check pass, captured, standard tolerance when a package is applied)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": 438,
+          "finding": "--no-capture could pass from stale pictures; fixed in round 1 (captured recorded and required)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": 368,
+          "finding": "fixed 300 s capture timeout; fixed in round 1 (scaled with jobs)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_late.py",
+          "line": 28,
+          "finding": "tolerance rule dead on installed plugin cache; fixed in round 2 (pinned literal fallback plus parity test)",
+          "suggestion": "done",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_capture.mjs",
+          "line": 244,
+          "finding": "no login or storageState for auth-protected screens",
+          "suggestion": "follow-up (documented limit)",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T01:40:19.650817+00:00",
-      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents; the orchestrator runs the code review (model=opus) in 3f-bis",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T02:33:50.753438+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "551ad0ed3ad5b889ee64f207bbf1fc82c9903301"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary and contract",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": null,
+          "finding": "Claim under doubt: screenshot_check reads the screen-routes.json that Design writes — Design writes a flat dict; the check read only the nested form and errored on every normal package run. Fixed in round 1 (both shapes accepted, test with the Design-format file); re-review confirmed.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_late.py",
+          "line": null,
+          "finding": "Claim under doubt: the check is blocking — was prose-only; now enforced by the test-phase validator when brief-package-applied.json exists; classic projects unaffected; tolerance falls back to a pinned literal on installed copies (round 2).",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": null,
+          "finding": "Claim under doubt: uploads is what the build was told to build and Playwright is found — now compares with the screens copy Design left (compared_with recorded) and searches service dirs holding playwright.config.ts.",
+          "suggestion": "done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-test/skills/test/references/step-3.7b-screenshot-check.md",
+          "line": null,
+          "finding": "Claim under doubt: every error has a remedy — modal or route-less package screens are an error and STOP; exemption code is a documented follow-up.",
+          "suggestion": "follow-up (edge)",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-26T01:40:19.878067+00:00",
-      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents; the orchestrator runs the doubt review (model=opus) in 3f-bis",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T02:33:50.907978+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "551ad0ed3ad5b889ee64f207bbf1fc82c9903301"
     },
     "external_code": {
       "review_type": "external_code",
@@ -274,16 +361,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-26T01:40:19.420566+00:00",
-      "disposition": "the campaign orchestrator instructed this runner not to spawn reviewer subagents; the orchestrator runs the spec review (model=opus) in 3f-bis",
-      "recorded_by": "none",
+      "completed_at": "2026-10-26T02:33:50.598062+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "551ad0ed3ad5b889ee64f207bbf1fc82c9903301"
     },
     "plan_internal": {
       "review_type": "plan_internal",
