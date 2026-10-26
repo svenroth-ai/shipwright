@@ -102,7 +102,7 @@ def apply(project_root: Path) -> dict:
         missing = applied_file_issues(bdir, designs, screen_map)
         if missing:
             return {"ok": False, "issues": missing}
-        by_slug = fr_ids_by_slug(root)  # the STOP on an unmapped FR must survive a resume
+        by_slug = fr_ids_by_slug(root)  # the report of an unmapped FR must survive a resume
         return {"ok": True, "already_applied": True, "package_sha256": applied,
                 "unmapped_frs": _unmapped(by_slug, plan_screens(bdir, screen_map, by_slug)[0])}
     if applied is not None:

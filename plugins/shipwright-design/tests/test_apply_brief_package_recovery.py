@@ -107,6 +107,6 @@ def test_a_first_apply_lists_material_the_package_did_not_place(project, tool, c
 def test_a_minted_fr_that_no_screen_maps_is_listed_as_unmapped(tmp_path, tool, capsys):  # noqa: F811
     root = make_project(tmp_path, [{"id": "notes", "mockup": "01.html", "requirements": ["capture-note"]}], {"01.html": PAGE_A})
     code, out = main_json(tool, capsys, root)
-    assert code == 0 and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"]  # informational: the agent stops and reports
+    assert code == 0 and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"]  # informational: the agent reports it and continues to the gates
     code, out = main_json(tool, capsys, root)  # a resume
     assert code == 0 and out["already_applied"] is True and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"]
