@@ -37,6 +37,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from scripts.audit._group_f_adr_sections import adr_sections
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,
     SOURCE_PREVENTIVE_RERUN,
@@ -62,12 +63,6 @@ _ADR_BLOAT_LINE_CAP = 60
 _CLAUDE_MD_LINE_CAP = 200
 _CLAUDE_MD_ITERATE_REF_CAP = 5
 
-# Match the compact-format ADR header `### ADR-NNN: Title`. The verbose
-# old format (`## ADR-NNN | date | ...`) is also detected — only the
-# compact form has clean line-counted bodies (ADR-bloat detection
-# specifically targets the compact form per the plan).
-_ADR_HEADER_RE = re.compile(r"^### ADR-(\d+):\s*.+$", re.MULTILINE)
-
 # Match "Iterate X.Y (ADR-NN)" / "Iterate B0" / similar inline annotations.
 _ITERATE_REF_RE = re.compile(r"Iterate [0-9A-Z][0-9A-Z.]*(?:\s*\(?ADR-[0-9]+\)?)?")
 
@@ -81,8 +76,8 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
     """Return ``(status, severity, detail, evidence)`` for ADR-bloat.
 
     Reads ``.shipwright/agent_docs/decision_log.md``, locates each
-    compact-format ADR section, counts the lines between consecutive
-    `### ADR-N` headers, and flags ADRs whose body exceeds
+    compact-format ADR section, counts the lines from each `### ADR-N:`
+    header to the next level 1-3 heading (or end of file), and flags ADRs whose body exceeds
     ``_ADR_BLOAT_LINE_CAP`` AND that don't carry a
     ``- **Details:** [...](...)`` link to a long-form ADR spec file.
     """
@@ -95,21 +90,7 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
         return "skip", "LOW", f"decision_log.md unreadable: {exc}", []
 
     lines = content.splitlines()
-    # Walk the line list once, building (adr_id, body_lines) per section.
-    sections: list[tuple[str, list[str]]] = []
-    current_id: str | None = None
-    current_body: list[str] = []
-    for line in lines:
-        m = _ADR_HEADER_RE.match(line)
-        if m:
-            if current_id is not None:
-                sections.append((current_id, current_body))
-            current_id = f"ADR-{m.group(1)}"
-            current_body = []
-        elif current_id is not None:
-            current_body.append(line)
-    if current_id is not None:
-        sections.append((current_id, current_body))
+    sections = adr_sections(lines)
 
     bloated: list[tuple[str, int]] = []
     for adr_id, body in sections:

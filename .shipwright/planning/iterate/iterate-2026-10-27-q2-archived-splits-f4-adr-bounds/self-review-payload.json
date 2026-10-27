@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Q2 now merges split_<NN>_sections (current sections win); F4 closes an ADR at any level 1-3 heading that is not an ADR header. Matches issues 930 and 931."},
+{"name":"Error Handling","verdict":"pass","note":"Non-list archive values and non-split keys are ignored; malformed JSON path unchanged."},
+{"name":"Security Basics","verdict":"pass","note":"Read-only parsing; no new input surface."},
+{"name":"Test Quality","verdict":"pass","note":"8 regression tests, outcome-based; 2 were red before the fix, 2 pin unchanged behaviour (still-fails, sub-headings stay inside ADR)."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra pass over top-level config keys."},
+{"name":"Naming & Structure","verdict":"pass","note":"New tests in new files to avoid growing over-cap files; module regex constants named per surrounding style."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Reads shipwright_build_config.json written by archive_split.py (key split_<NN>_sections, list of {name,status}); verified against archive_split.py source."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No skips added."}
+]}
