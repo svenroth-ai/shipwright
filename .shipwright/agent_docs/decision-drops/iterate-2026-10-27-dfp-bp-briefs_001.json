@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-27-dfp-bp-briefs",
+  "date": "2026-10-27",
+  "section": "Iterate — change: land the deterministic-first and baseline-protection briefs",
+  "title": "Deterministic-first programme, changelog pilot and baseline-protection briefs on main",
+  "context": "Three reviewed campaign briefs existed only untracked in the main checkout, so no campaign worktree could read them (programme brief §2.3).",
+  "decision": "Commit the programme brief (rev 4), the changelog pilot brief (rev 4) and the baseline-protection brief (rev 3) unchanged under .shipwright/planning/campaigns/. No code, spec or gate changes.",
+  "consequences": "The baseline-protection campaign can start from main; the programme and pilot wait for it. The design decisions and review logs live in the briefs themselves.",
+  "rationale": "Planning documents reach main through an iterate so the commit carries a work_completed event and a Run-ID footer.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
