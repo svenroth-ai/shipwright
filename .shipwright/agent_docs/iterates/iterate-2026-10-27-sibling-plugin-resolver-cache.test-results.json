@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-27-sibling-plugin-resolver-cache",
+    "date": "2026-10-27",
+    "unit": {
+      "status": "passed",
+      "passed": 23920,
+      "total": 23920
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_sibling_plugin.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 9,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\sibling-plugin-resolver-cache\\.shipwright\\runs\\iterate-2026-10-27-sibling-plugin-resolver-cache\\surface_verification.log",
+      "timestamp": "2026-10-27T18:43:26.281Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "find_sibling_plugin resolves repo layout and plugin-cache layout, newest installed version, skips non-plugin dirs, orphaned and partly reaped versions, ranks a release above its pre-release",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_sibling_plugin.py (9 tests) PASSED"
+        },
+        {
+          "behavior": "finalize_security_compliance finds the newest compliance plugin in the cache and launches it; falls back to the repo guess when the shared resolver is absent",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_finalize_security_compliance_cache_layout.py::test_finds_the_newest_compliance_plugin_in_the_plugin_cache, ::test_run_update_compliance_launches_the_cached_compliance_plugin, ::test_falls_back_to_the_repo_guess_when_the_shared_resolver_is_absent PASSED"
+        },
+        {
+          "behavior": "orchestrator _COMPLIANCE_SCRIPT is found in the cache and the import survives an absent resolver",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_compliance_script_cache_layout.py::test_compliance_script_is_found_in_the_plugin_cache, ::test_import_survives_an_absent_shared_resolver PASSED"
+        },
+        {
+          "behavior": "grade sibling_bridge resolves compliance and adopt in cache and repo and degrades without the resolver",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-grade/tests/test_sibling_bridge.py (3 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-27-sibling-plugin-resolver-cache",
+    "commit": "39bce37b91381bfb022977428d8d4040f1a10a76",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
