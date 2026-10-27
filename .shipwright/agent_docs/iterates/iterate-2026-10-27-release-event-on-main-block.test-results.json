@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-27-release-event-on-main-block",
+    "date": "2026-10-27",
+    "unit": {
+      "status": "passed",
+      "passed": 23927,
+      "total": 23927
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-changelog --extra dev pytest plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 7,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-27-release-event-on-main-block/surface_verification.json",
+      "timestamp": "2026-10-27T21:12:17.683Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "PR-flow block commits only shipwright_events.jsonl (unrelated dirty file stays out) and pushes the branch",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py::test_pr_flow_commits_only_the_events_file_and_pushes_the_branch PASSED"
+        },
+        {
+          "behavior": "PR-flow block works for a first release with an untracked events file",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py::test_pr_flow_handles_a_first_release_with_an_untracked_events_file PASSED"
+        },
+        {
+          "behavior": "on-main block commits the event but pushes nothing (origin/main unchanged)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py::test_on_main_block_commits_but_pushes_nothing PASSED"
+        },
+        {
+          "behavior": "a failing record_event stops both blocks before commit, staging and push",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py::test_a_failing_record_event_stops_before_commit_and_push[pr-flow] and [on-main] PASSED"
+        },
+        {
+          "behavior": "record_event recording nothing (dedup, exit 0) does not stop the chain: PR flow retries the lost push, on-main block succeeds",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py::test_pr_flow_retries_the_push_when_record_event_records_nothing and ::test_on_main_block_succeeds_when_record_event_records_nothing PASSED; mutation against the unguarded commit fails both"
+        },
+        {
+          "behavior": "SKILL.md Step 7 order and block count: record before commit before push before merge, two record_event blocks, one git push origin HEAD, on-main before the tag push",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py (3 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-27-release-event-on-main-block",
+    "commit": "065d2c607842c2cf691dfd0dbcd6b05595c23a1f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

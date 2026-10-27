@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-27-release-event-on-main-block",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:00:28.832469+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:03:44.733305+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 346,
+          "finding": "The diff removes the `git diff --quiet HEAD -- shipwright_events.jsonl ||` guard. record_event.py can exit 0 without writing (append_event_idempotent dedups phase_completed and returns skipped), so `git commit` fails with nothing to commit (exit 1) and `git push origin HEAD` never runs; after a partial run (event committed, push failed) every re-run stops at the commit and never retries the push. The same applies to the on-main block.",
+          "suggestion": "Keep && fail-fast but make the commit conditional: `... && git add shipwright_events.jsonl && { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m \"...\" -- shipwright_events.jsonl; } && git push origin HEAD`; same group in the on-main block.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py",
+          "line": 57,
+          "finding": "The stub record_event always appends, so the recorded-nothing exit-0 path and the push-retry after a partial run are never exercised; a block that fails on a no-op passes the whole suite.",
+          "suggestion": "Add a STUB_NOOP mode (exit 0, no write) and tests over both blocks asserting exit 0, HEAD unchanged and, for the PR flow, remote branch equal to HEAD; add a re-run test where the first push did not land.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py",
+          "line": 171,
+          "finding": "In the on-main parametrisation of the failing-record_event test the remote assertion proves nothing (no push in that block) and the test checks out release/v1.2.3, so it does not run on main.",
+          "suggestion": "Stay on main for the on-main case and assert no staged change and remote main unchanged, or drop the remote assertion for that case.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 347,
+          "finding": "`git add shipwright_events.jsonl` fails when a target project gitignores the events file; the old guard silently skipped the commit there.",
+          "suggestion": "Document that the file must be tracked, or skip add/commit when `git check-ignore -q` matches, still pushing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_skill_event_blocks_behaviour.py",
+          "line": 24,
+          "finding": "On Windows shutil.which('bash') can resolve to the WSL launcher in System32 where the stub uv shebang and C:/ paths fail; loud failure, confusing cause.",
+          "suggestion": "Prefer Git-for-Windows bash or skip when the resolved path is under System32.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-27T21:02:41.624547+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:03:44.618745+00:00",
+      "disposition": "small prose+test diff; doubt pass is conditional (no migration/concurrency/cross-plugin/irreversible op); code-reviewer findings (guarded commit, no-op retry, on-main test) were fixed and mutation-checked",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:03:44.733305+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:01:10.180063+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:03:44.733305+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T21:03:44.733305+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
