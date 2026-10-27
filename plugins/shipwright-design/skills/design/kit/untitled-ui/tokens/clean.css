@@ -1,0 +1,61 @@
+/* Token set: Untitled UI x Clean & Modern. Only values; the kit decides structure. Font: load it in the page <head>. */
+:root {
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-lg: 18px;
+  --font-size-h1: 24px;
+  --font-size-h2: 20px;
+  --font-size-h3: 16px;
+  --font-weight-heading: 600;
+
+  /* Colors */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-muted: #394659;
+  --color-primary: #2563eb;
+  --color-primary-soft: #dbeafe;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-ring: #dbeafe;
+  --color-on-primary: #ffffff;
+  --color-secondary: #64748b;
+  --color-border: #e2e8f0;
+  --color-hover: #f1f5f9;
+  --color-success: #047857;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --color-table-header: #f8fafc;
+
+  /* Shape */
+  --radius: 6px;
+  --radius-lg: 8px;
+  --card-border: 1px solid #e2e8f0;
+  --card-shadow: 0 2px 4px rgba(16,24,40,0.05), 0 14px 28px -18px rgba(16,24,40,0.20);
+  --card-shadow-hover: 0 4px 8px -2px rgba(16,24,40,0.10), 0 20px 36px -16px rgba(16,24,40,0.24);
+  --sidebar-width: 260px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Status and overlay */
+  --color-info: #2563eb;
+  --color-info-bg: #eff6ff;
+  --color-success-bg: #ecfdf5;
+  --color-warning-bg: #fef3c7;
+  --color-error-bg: #fef2f2;
+  --color-overlay: rgba(16, 24, 40, 0.4);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+
+  /* Controls and focus (inputs need 3:1 against the surface) */
+  --color-border-strong: #7f8ea3;
+  --color-focus: #2563eb;
+}

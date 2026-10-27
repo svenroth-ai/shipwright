@@ -1,0 +1,105 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-27-untitled-ui-kit",
+    "date": "2026-10-27",
+    "unit": {
+      "status": "passed",
+      "passed": 182,
+      "total": 182
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "web",
+      "runner": "node C:/01_Development/shipwright/.worktrees/e2e-launch-fix/integration-tests/e2e-webui/kit_check_tmp.mjs C:/01_Development/shipwright/.worktrees/untitled-ui-kit/plugins/shipwright-design/skills/design/kit/untitled-ui/examples C:/01_Development/autorune2e/kit-preview-v7",
+      "exit_code": 0,
+      "tests_run": 16,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\untitled-ui-kit\\.shipwright\\runs\\iterate-2026-10-27-untitled-ui-kit\\surface_verification.log",
+      "timestamp": "2026-10-27T22:45:47.012Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "kit.css holds no colour or font-size literal; colours, fonts, radii and shadows come from tokens",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_kit_uses_tokens_only PASSED; ::test_kit_has_no_literal_font_sizes PASSED"
+        },
+        {
+          "behavior": "every token the kit uses, and every token the contract names, is defined by each token set (warm, clean, bold, svenroth)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_every_token_the_kit_uses_is_defined_by_each_token_set PASSED (4); ::test_every_token_named_in_the_contract_is_defined_by_each_token_set PASSED (4); ::test_token_contract_names_every_token_the_kit_uses PASSED"
+        },
+        {
+          "behavior": "WCAG contrast: muted 7:1 on bg, surface, table-header, hover, primary-soft and border; text 4.5:1; border-strong and focus 3:1; status text on its background",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_token_sets_meet_wcag_aa_contrast PASSED (4 sets)"
+        },
+        {
+          "behavior": "colour tokens are solid hex (only the overlay may be rgba); base font >= 16px, small >= 14px, heading sizes do not shrink",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_colour_tokens_are_solid_hex_so_the_look_stays_under_control PASSED; ::test_type_sizes_are_readable PASSED; ::test_heading_sizes_do_not_shrink_as_the_level_rises PASSED"
+        },
+        {
+          "behavior": "build_kit_examples --check passes on the committed tree, fails on a changed or orphaned example, write mode rebuilds, a token set without a font entry is refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_builder_check_passes_on_the_committed_tree_and_fails_on_a_changed_example PASSED; ::test_builder_write_mode_restores_examples_and_check_reports_orphans PASSED; ::test_builder_refuses_a_token_set_without_a_font_entry PASSED; ::test_committed_examples_match_what_the_kit_builds PASSED"
+        },
+        {
+          "behavior": "fragments use only classes kit.css defines, the gallery or board shows every component class, and the kit covers every class of the old component snippets",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_fragments_use_only_classes_the_kit_defines PASSED; ::test_gallery_shows_every_component_class_of_the_kit PASSED; ::test_kit_covers_every_class_of_the_component_snippets PASSED"
+        },
+        {
+          "behavior": "the 12 built example pages load in a real browser at 375 and 1280 px with no page error, no console error, no horizontal overflow on the board, and every form control named",
+          "disposition": "tested",
+          "evidence": "F0.5 web surface run: node Playwright check over examples/*.html, 16 passed (surface_verification.json)",
+          "category": "integration"
+        },
+        {
+          "behavior": "the look and feel (shadows, readability of inactive text, completeness against the Untitled UI list) is acceptable",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "operator approved the rendered examples (screenshots kit-preview-v5/v6/v7) in the iterate conversation"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

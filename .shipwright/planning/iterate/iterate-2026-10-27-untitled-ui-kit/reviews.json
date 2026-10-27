@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-27-untitled-ui-kit",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T22:12:51.336924+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T22:29:47.110575+00:00",
+      "disposition": "small iterate: no plan/architecture review below medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py",
+          "line": 44,
+          "finding": "build_kit_examples.py was only run in a subprocess, so diff coverage of the new Python would be ~0% and fail the merge gate.",
+          "suggestion": "Test the script in-process (importlib), both --check and write modes. FIXED: main(argv, kit) and targets(kit) are parameterised; three in-process tests added.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/tools/build_kit_examples.py",
+          "line": 16,
+          "finding": "Token sets built from the FONTS dict, not tokens/*.css; --check ignored orphan examples.",
+          "suggestion": "FIXED: targets from tokens/*.css, KeyError without FONTS entry, --check reports orphans.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/gallery.html",
+          "line": 142,
+          "finding": "Bare page-btn buttons render with the browser default look.",
+          "suggestion": "FIXED: btn btn-ghost btn-sm page-btn.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/gallery.html",
+          "line": 134,
+          "finding": "Invalid ARIA: role=tree without treeitems; aria-selected on a plain div.",
+          "suggestion": "FIXED: plain nested list; .command-item.active.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/board.html",
+          "line": 40,
+          "finding": "Active/selected states only visual (tabs, segmented, nav link).",
+          "suggestion": "FIXED: role=tablist/tab+aria-selected, aria-pressed, aria-current=page in both fragments.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py",
+          "line": 49,
+          "finding": "Class check counted words from CSS comments; contract test matched substrings.",
+          "suggestion": "FIXED: comments stripped; backticked names matched.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py",
+          "line": 76,
+          "finding": "Contrast pairs missed featured-icon and code block.",
+          "suggestion": "FIXED: primary on primary-soft 3.0, text on table-header 4.5.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css",
+          "line": 630,
+          "finding": "Input focus ring contradicted the primary-ring halo.",
+          "suggestion": "FIXED: halo removed; primary-ring and secondary marked optional in the contract.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/gallery.html",
+          "line": 176,
+          "finding": "Fixed toast covered the gallery; no-op inline style on modal.",
+          "suggestion": "FIXED: toast in a positioned wrapper, inline style removed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/tokens-contract.md",
+          "line": 4,
+          "finding": "Docs list only some token sets; descending size rule untrue and untested.",
+          "suggestion": "FIXED: all four sets named; rule restated h3<=h2<=h1 with a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css",
+          "line": 6,
+          "finding": "Base block indentation, .page-btn placement, dead var() fallbacks.",
+          "suggestion": "Not changed (cosmetic).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/scripts/tools/build_kit_examples.py",
+          "line": 41,
+          "finding": "Lambda with noqa.",
+          "suggestion": "FIXED: _read function.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-27T22:26:07.913834+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "922ef7e7f278d297d5a2716cbe11e4ab03b84696"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-design/skills/design/references/step-4-generate-screens.md:10",
+          "line": null,
+          "finding": "The design agent can find the kit files the docs tell it to paste",
+          "suggestion": "One stated anchor. ADDRESSED: docs now state kit paths are relative to ${CLAUDE_PLUGIN_ROOT}/skills/design/.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-design/skills/design/references/untitled-ui-components.md:23-25",
+          "line": null,
+          "finding": "Project tokens render the kit and meet contrast",
+          "suggestion": "Paste a full shipped set first, overrides after; say project values are not checked; fix Variable Reference ranges. ADDRESSED in untitled-ui-components.md and snippets-variables.md.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/detect_frontend_changes.py:31",
+          "line": null,
+          "finding": "CSS/HTML under plugins/ is harmless to the frontend-change detector",
+          "suggestion": "Decide Browser Verify. ADDRESSED: the built examples were rendered in headless Chromium and inspected as the verified surface; a detector exclusion for kit/ is left as a follow-up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py:180",
+          "line": null,
+          "finding": "Kit dir holds only kit sources",
+          "suggestion": "Remove stray dir, comment the ignore. ADDRESSED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs promise vs code",
+          "file": "plugins/shipwright-design/skills/design/references/iteration-mode.md:25",
+          "line": null,
+          "finding": "Repointed docs are consistent",
+          "suggestion": "Kit branch in iteration-mode; stale wording in design-flavors, snippets-variables, SKILL.md. ADDRESSED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/examples/",
+          "line": null,
+          "finding": "Committing generated examples is harmless",
+          "suggestion": "Mark as generated. ADDRESSED: .gitattributes linguist-generated; examples stay committed so they open without a build.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-27T22:29:46.983645+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "922ef7e7f278d297d5a2716cbe11e4ab03b84696"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T22:29:47.507202+00:00",
+      "disposition": "small iterate with no risk flags; external review is medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T22:22:16.872511+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "922ef7e7f278d297d5a2716cbe11e4ab03b84696"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T22:29:47.253728+00:00",
+      "disposition": "small iterate: no plan/architecture review below medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T22:29:47.383934+00:00",
+      "disposition": "small iterate: no plan/architecture review below medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

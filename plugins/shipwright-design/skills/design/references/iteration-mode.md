@@ -7,7 +7,7 @@ When invoked with a specific HTML file (e.g. `@.shipwright/designs/screens/02-da
 1. Read the HTML file
 2. Ask: "What would you like to change?"
 3. If the change affects shared chrome (nav, header, footer, branding) → follow [Chrome Change Propagation](#chrome-change-propagation) instead
-4. Apply changes using the snippet assembly approach where applicable
+4. Apply changes using the snippet assembly approach where applicable (flavor `untitled-ui`: edit with kit classes and keep the page's token set; do not rebuild from snippets)
 5. Re-read `.shipwright/designs/chrome-definition.md` and verify the chrome blocks are still copied verbatim (with correct active state)
 6. Regenerate the file
 7. Update design-manifest.md if needed
@@ -22,7 +22,7 @@ When invoked with a feedback file (e.g. `@.shipwright/designs/design-feedback-ro
 2. For each screen with status **CHANGES** or **REJECTED**:
    - Read the current HTML file
    - Apply the requested changes from the feedback text
-   - Regenerate the screen using snippet assembly
+   - Regenerate the screen using snippet assembly (flavor `untitled-ui`: with the kit classes and the page's existing token set)
 3. Identify and apply global changes to all affected screens
 4. Update design-manifest.md (status → `revised-rN`)
 5. Regenerate index.html

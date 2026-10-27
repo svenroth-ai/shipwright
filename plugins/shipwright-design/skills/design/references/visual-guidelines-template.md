@@ -68,6 +68,28 @@ Write `.shipwright/designs/visual-guidelines.md` based on interview answers and 
 - **Navigation:** {sidebar/topnav, active state style}
 - **Forms:** {label position, validation style}
 - **Tables:** {header style, row hover, pagination}
+
+## Kit Tokens (flavor `untitled-ui`)
+
+Values for every token in `kit/untitled-ui/tokens-contract.md`, as solid hex (no rgba; only the overlay may be
+transparent). A guideline that fills this block maps 1:1 onto a `tokens/*.css` file; nothing else restyles the kit.
+
+| Token | Value | Rule |
+|-------|-------|------|
+| `--color-bg` / `--color-surface` / `--color-table-header` | {hex} / {hex} / {hex} | |
+| `--color-text` / `--color-muted` | {hex} / {hex} | muted 7:1 on bg, surface, hover, primary-soft, border |
+| `--color-primary` / `-hover` / `-soft` / `-ring` / `--color-on-primary` | {hex} ×5 | on-primary 4.5:1 on primary; soft and ring solid |
+| `--color-secondary` / `--color-hover` / `--color-border` | {hex} ×3 | |
+| `--color-border-strong` / `--color-focus` | {hex} / {hex} | 3:1 on surface and bg |
+| `--color-success` / `-warning` / `-error` / `-info` and each `-bg` | {hex} ×8 | text 4.5:1 on its bg |
+| `--color-overlay` | {rgba} | page dim layer |
+| `--font-family` / `--font-mono` | {stack} | |
+| `--font-size-base` / `-sm` / `-lg` / `-h3` / `-h2` / `-h1` | {px} ×6 | base ≥ 16, sm ≥ 14 |
+| `--font-weight-heading` | {weight} | |
+| `--radius` / `--radius-lg` | {px} / {px} | |
+| `--card-border` / `--card-shadow` / `--card-shadow-hover` | {css} ×3 | soft, layered shadow |
+| `--shadow-sm` / `--shadow-lg` | {css} / {css} | |
+| `--space-1` … `--space-6` | 4, 8, 12, 16, 24, 32 px | keep unless justified |
 ```
 
 **Sources for values:**

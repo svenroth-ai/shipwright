@@ -13,8 +13,8 @@ Every snippet in `snippets-layout.md` and `snippets-components.md` uses these va
 | Variable | Purpose |
 |----------|---------|
 | `--font-family` | Primary font stack |
-| `--font-size-base` | Body text (14-16px) |
-| `--font-size-sm` | Small text (13-14px) |
+| `--font-size-base` | Body text (14-16px; flavor `untitled-ui` needs at least 16px) |
+| `--font-size-sm` | Small text (13-14px; flavor `untitled-ui` needs at least 14px) |
 | `--font-size-lg` | Subheadings (18px) |
 | `--font-size-h1` | Page title (24-28px) |
 | `--font-size-h2` | Section title (20-22px) |
@@ -26,7 +26,7 @@ Every snippet in `snippets-layout.md` and `snippets-components.md` uses these va
 | `--color-muted` | Secondary/hint text |
 | `--color-primary` | Accent color |
 | `--color-primary-hover` | Accent hover |
-| `--color-primary-ring` | Focus ring (primary at ~10% opacity) |
+| `--color-primary-ring` | Soft ring behind a focused input (solid colour in the kit; snippets may still use a tint) |
 | `--color-on-primary` | Text on primary bg |
 | `--color-secondary` | Secondary accent |
 | `--color-border` | Borders and dividers |
@@ -42,134 +42,28 @@ Every snippet in `snippets-layout.md` and `snippets-components.md` uses these va
 | `--card-shadow-hover` | Card shadow on hover |
 | `--sidebar-width` | Sidebar width (Layout A only) |
 
----
+**Additional tokens the Untitled UI kit needs** (full meaning and contrast rules: [tokens-contract.md](../kit/untitled-ui/tokens-contract.md)):
 
-## Untitled UI x Warm & Premium
-
-```css
-:root {
-  /* Typography */
-  --font-family: 'Libre Baskerville', 'Georgia', serif;
-  --font-size-base: 15px;
-  --font-size-sm: 13px;
-  --font-size-lg: 18px;
-  --font-size-h1: 26px;
-  --font-size-h2: 21px;
-  --font-size-h3: 17px;
-  --font-weight-heading: 700;
-
-  /* Colors */
-  --color-bg: #f5f0eb;
-  --color-surface: #ffffff;
-  --color-text: #1a1a1a;
-  --color-muted: #6b5e54;
-  --color-primary: #5c4033;
-  --color-primary-hover: #4a3328;
-  --color-primary-ring: rgba(92, 64, 51, 0.12);
-  --color-on-primary: #ffffff;
-  --color-secondary: #8b7355;
-  --color-border: #e8e0d8;
-  --color-hover: rgba(92, 64, 51, 0.04);
-  --color-success: #2d6a4f;
-  --color-warning: #b45309;
-  --color-error: #c1121f;
-  --color-table-header: #faf8f5;
-
-  /* Shape */
-  --radius: 8px;
-  --radius-lg: 12px;
-  --card-border: none;
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.12);
-  --sidebar-width: 260px;
-}
-```
+| Variable | Purpose |
+|----------|---------|
+| `--font-mono` | Code and keys |
+| `--color-primary-soft` | Solid light selection colour (not a tint of primary) |
+| `--color-border-strong` | Edge of inputs and controls (3:1 on the surface) |
+| `--color-focus` | Focus ring colour (3:1) |
+| `--color-info` | Info state text and icon |
+| `--color-{info,success,warning,error}-bg` | Light solid fill for alerts, badges, toasts |
+| `--color-overlay` | Dim layer behind modal and drawer |
+| `--space-1` … `--space-6` | 4px grid: 4, 8, 12, 16, 24, 32 |
+| `--shadow-sm` / `--shadow-lg` | Inputs / popovers, modals, drawers |
 
 ---
 
-## Untitled UI x Clean & Modern
+## Untitled UI x Warm / Clean / Bold
 
-```css
-:root {
-  /* Typography */
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-size-base: 14px;
-  --font-size-sm: 13px;
-  --font-size-lg: 18px;
-  --font-size-h1: 24px;
-  --font-size-h2: 20px;
-  --font-size-h3: 16px;
-  --font-weight-heading: 600;
-
-  /* Colors */
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-ring: rgba(37, 99, 235, 0.1);
-  --color-on-primary: #ffffff;
-  --color-secondary: #64748b;
-  --color-border: #e2e8f0;
-  --color-hover: #f8fafc;
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-error: #dc2626;
-  --color-table-header: #f8fafc;
-
-  /* Shape */
-  --radius: 6px;
-  --radius-lg: 8px;
-  --card-border: 1px solid #e2e8f0;
-  --card-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
-  --sidebar-width: 260px;
-}
-```
-
----
-
-## Untitled UI x Bold & Energetic
-
-```css
-:root {
-  /* Typography */
-  --font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  --font-size-base: 14px;
-  --font-size-sm: 13px;
-  --font-size-lg: 18px;
-  --font-size-h1: 26px;
-  --font-size-h2: 21px;
-  --font-size-h3: 17px;
-  --font-weight-heading: 700;
-
-  /* Colors */
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-text: #09090b;
-  --color-muted: #71717a;
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
-  --color-primary-ring: rgba(124, 58, 237, 0.12);
-  --color-on-primary: #ffffff;
-  --color-secondary: #f97316;
-  --color-border: #e4e4e7;
-  --color-hover: #f4f4f5;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-table-header: #fafafa;
-
-  /* Shape */
-  --radius: 8px;
-  --radius-lg: 12px;
-  --card-border: none;
-  --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
-  --sidebar-width: 260px;
-}
-```
+All three untitled-ui looks live in the kit as real token sets, not as blocks here: `../kit/untitled-ui/tokens/warm.css`,
+`clean.css`, `bold.css` and `svenroth.css`. Paste the one that matches into the `:root` of the page together with
+`../kit/untitled-ui/kit.css` (see [untitled-ui-components.md](untitled-ui-components.md)). They are contrast-tested; a
+copy here would drift. Token meanings and rules: [tokens-contract.md](../kit/untitled-ui/tokens-contract.md).
 
 ---
 
@@ -312,16 +206,18 @@ When the user uploads their own design guidelines, map their tokens to the snipp
 
 | If user provides... | Derive... |
 |---------------------|-----------|
-| Primary color | `--color-primary-hover` (darken 10%), `--color-primary-ring` (primary at 12% opacity), `--color-hover` (primary at 4% opacity) |
-| Background color | `--color-surface` (lighter or white), `--color-table-header` (between bg and surface) |
+| Primary color | `--color-primary-hover` (darken 10%), `--color-primary-ring` and `--color-primary-soft` (a chosen light solid colour, never a transparent tint), `--color-hover` (a chosen light solid colour) |
+| Background color | `--color-surface` (lighter or white), `--color-table-header` (a light solid colour next to bg and surface) |
 | Font family | All `--font-size-*` keep defaults, `--font-weight-heading` from user or default 600 |
 | Border color | `--card-border` (`1px solid {border}`), if no border specified use shadow-only |
 | Border radius | `--radius` (default), `--radius-lg` (radius + 4px) |
 
 4. **Always provide** success/warning/error colors — use defaults if not in user's guidelines:
-   - Success: `#059669`
-   - Warning: `#d97706`
-   - Error: `#dc2626`
+   - Success: `#047857`
+   - Warning: `#b45309`
+   - Error: `#b91c1c`
+
+   (These pass 4.5:1 on white; the lighter Tailwind defaults do not.) For flavor `untitled-ui` also supply every kit token in [tokens-contract.md](../kit/untitled-ui/tokens-contract.md).
 
 5. **Write the `:root` block** following the same structure as the preset blocks above
 
