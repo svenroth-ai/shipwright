@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-27-release-event-on-main-block",
+  "date": "2026-10-27",
+  "section": "Iterate — change: changelog event blocks split and tested",
+  "title": "The on-main changelog event block never pushes, and both blocks are run by tests",
+  "context": "PR #890 records the release changelog event before the merge, but with one block that ends in git push origin HEAD and tells the reader to delete that line on main, where it would push main without the tag. The tests only compared text positions.",
+  "decision": "Step 7 now has a PR-flow block (record, add, commit only if something is staged, push) and a separate on-main block with no push, chained with &&. A new test extracts the fenced blocks and runs them against a temp clone with a bare remote.",
+  "consequences": "A failing record_event stops the release before commit and push, a recorded-nothing run (dedup, exit 0) still pushes, and the on-main block cannot push main untagged. The test needs bash and uv-free stubs, and hard-fails in CI when bash is missing.",
+  "rationale": "Step 7 is autonomous release automation that pushes to origin, so the commands themselves are executed in a test instead of only pinning their order in the text.",
+  "rejected": "Keeping one block and asking the reader to drop the push line by hand; keeping the unconditional git commit (it fails on a dedup no-op and blocks the push retry).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
