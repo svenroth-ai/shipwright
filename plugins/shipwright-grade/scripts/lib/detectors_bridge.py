@@ -46,10 +46,11 @@ def _adopt_lib_dir() -> Path | None:
     if override:
         cand = Path(override) / "scripts" / "lib"
         return cand if cand.is_dir() else None
-    # plugins/shipwright-grade/scripts/lib/detectors_bridge.py -> plugins/
-    plugins_dir = Path(__file__).resolve().parents[3]
-    cand = plugins_dir / "shipwright-adopt" / "scripts" / "lib"
-    return cand if cand.is_dir() else None
+    from sibling_bridge import find_plugin  # bare import (ADR-045)
+
+    adopt = find_plugin("shipwright-adopt", require="scripts/lib")
+    cand = adopt / "scripts" / "lib" if adopt is not None else None
+    return cand if cand is not None and cand.is_dir() else None
 
 
 def _load_detectors() -> dict[str, Any]:

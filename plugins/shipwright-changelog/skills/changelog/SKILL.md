@@ -341,11 +341,12 @@ gh pr create \
 > [release-workflow.md](references/release-workflow.md); full conventions live
 > in `/shipwright-iterate` B1a.
 
-**Record changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). Needs `{PR_URL}`; with no PR (on main) use `--detail "v{version} — tagged on main"` and run it before `git push --tags origin main`. `{shared_root}` = `{plugin_root}/../../shared`.
+**Record changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). Needs `{PR_URL}`. `{shared_root}` = `{plugin_root}/../../shared`. Chained with `&&`: a failing step stops the release before anything is pushed.
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — {PR_URL}"
-git diff --quiet HEAD -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl
-git push origin HEAD
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — {PR_URL}" \
+&& git add shipwright_events.jsonl \
+&& { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl; } \
+&& git push origin HEAD
 ```
 
 **Autonomous / unattended mode:** After creating the PR, merge it immediately:
@@ -355,7 +356,12 @@ gh pr merge --merge --delete-branch
 
 **Guided mode:** PR stays open for manual review and merge.
 
-If already on main: skip PR, just push tag.
+**If already on main:** skip the PR and record the event with the block below — it commits but never pushes (main is pushed once, with the tag, by the next block; the tag stays on the release commit, not on the event commit).
+```bash
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — tagged on main" \
+&& git add shipwright_events.jsonl \
+&& { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl; }
+```
 
 **Push tags and updated main to remote:**
 ```bash

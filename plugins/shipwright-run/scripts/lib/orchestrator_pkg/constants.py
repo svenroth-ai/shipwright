@@ -82,15 +82,34 @@ MODE_REQUIRED_MESSAGE = (
     + _MIGRATION_STEPS
 )
 
-# Compliance plugin location (sibling plugin)
+# Compliance plugin location (sibling plugin): ``plugins/shipwright-compliance``
+# in the repo, the newest ``<cache>/shipwright/shipwright-compliance/<version>``
+# in the installed plugin cache. The shared resolver is loaded by path (ADR-045);
+# the same loader block lives in ``shipwright-security`` finalize_security_compliance.py
+# and ``shipwright-grade`` sibling_bridge.py — keep the three in step.
 _THIS_PLUGIN = Path(__file__).resolve().parents[3]
-_COMPLIANCE_SCRIPT = (
-    _THIS_PLUGIN.parent
-    / "shipwright-compliance"
-    / "scripts"
-    / "tools"
-    / "update_compliance.py"
-)
+
+
+def _find_compliance_script() -> Path:
+    import importlib.util
+
+    resolver = _SHARED_SCRIPTS / "lib" / "sibling_plugin.py"
+    plugin = None
+    try:
+        spec = importlib.util.spec_from_file_location("_shipwright_sibling_plugin", resolver)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        plugin = module.find_sibling_plugin(
+            Path(__file__), "shipwright-compliance", require="scripts/tools/update_compliance.py",
+        )
+    except Exception:  # noqa: BLE001 - runs at import time; a path probe must never take the orchestrator down
+        sys.modules.pop("_shipwright_sibling_plugin", None)
+    plugin = plugin or _THIS_PLUGIN.parent / "shipwright-compliance"
+    return plugin / "scripts" / "tools" / "update_compliance.py"
+
+
+_COMPLIANCE_SCRIPT = _find_compliance_script()
 
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
 

@@ -1,0 +1,10 @@
+{"items":[
+{"name":"1. Spec Compliance","verdict":"pass","note":"SKILL.md Step 7 now has a PR-flow block (record, add, commit, push, chained with &&) and a separate on-main block that commits but never pushes; the tag-stays-on-release-commit note is added."},
+{"name":"2. Error Handling","verdict":"pass","note":"Both blocks chain with && so a failing record_event stops before commit and push; git add covers the first-release untracked events file. Pinned by the failing-record_event test."},
+{"name":"3. Security Basics","verdict":"pass","note":"No secrets or user input; the test runs extracted blocks only against a temp repo with a stub tool and an isolated GIT_CONFIG_GLOBAL."},
+{"name":"4. Test Quality","verdict":"pass","note":"Behavioural tests execute the real fenced blocks against a clone plus bare remote and assert git outcomes (touched files, pushed refs, unchanged HEAD on failure); the static order pins were adapted, not weakened."},
+{"name":"5. Performance Basics","verdict":"n/a","note":"Prose change plus a 2s test module."},
+{"name":"6. Naming & Structure","verdict":"pass","note":"New test file test_skill_event_blocks_behaviour.py beside the existing static pin file; both well under 300 LOC; no baseline file touched."},
+{"name":"7. Affected Boundaries","verdict":"n/a","note":"No serialized format changed; the events file is only appended by the unchanged record_event tool."},
+{"name":"8. Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings; the bash-missing skip hard-fails under CI per the silent-skip rule."}
+]}

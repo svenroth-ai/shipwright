@@ -24,21 +24,20 @@ def test_event_is_recorded_and_committed_before_merge():
     step = _step_7()
     create = step.index("gh pr create")
     record = step.index("scripts/tools/record_event.py")
-    guard = step.index("git diff --quiet HEAD -- shipwright_events.jsonl ||")
     commit = step.index("record changelog event for v")
     push = step.index("git push origin HEAD")
     merge = step.index("gh pr merge")
-    assert create < record < guard < commit < push < merge
+    assert create < record < commit < push < merge
 
 
 @pytest.mark.covers("FR-01.09/AC01")
-def test_event_is_recorded_once():
-    assert _step_7().count("scripts/tools/record_event.py") == 1
+def test_event_is_recorded_once_per_flow():
+    # One block for the PR flow, one for the on-main flow; never both run.
+    assert _step_7().count("scripts/tools/record_event.py") == 2
 
 
 @pytest.mark.covers("FR-01.09/AC01")
-def test_on_main_case_records_before_tag_push():
+def test_on_main_case_records_before_tag_push_without_its_own_push():
     step = _step_7()
-    assert "tagged on main" in step
     assert step.index("tagged on main") < step.index("git push --tags origin main")
-    assert "before `git push --tags origin main`" in step
+    assert step.count("git push origin HEAD") == 1

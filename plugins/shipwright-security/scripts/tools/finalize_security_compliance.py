@@ -37,6 +37,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import subprocess
@@ -89,17 +90,40 @@ def _generator_error_detail(proc: subprocess.CompletedProcess) -> str:
     return (proc.stderr or "")[:300]
 
 
+def _find_compliance_plugin(anchor: Path) -> Path:
+    """Root of the compliance plugin, for the repo AND the installed plugin cache.
+
+    Repo: ``plugins/shipwright-compliance``. Cache: the newest
+    ``<cache>/shipwright/shipwright-compliance/<version>``. The shared resolver
+    is loaded by path (ADR-045: no ``lib`` import from a plugin script; the same
+    loader block lives in ``shipwright-run`` ``orchestrator_pkg/constants.py`` and
+    ``shipwright-grade`` ``sibling_bridge.py`` — keep the three in step); if it
+    cannot be loaded the repo-layout guess is returned, so the caller's
+    ``missing: <path>`` error still names a concrete place.
+    """
+    plugin = anchor.resolve().parents[2]  # plugins/shipwright-security | <cache>/…/<version>
+    resolver = plugin.parent.parent / "shared" / "scripts" / "lib" / "sibling_plugin.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_shipwright_sibling_plugin", resolver)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        found = module.find_sibling_plugin(
+            anchor, "shipwright-compliance", require="scripts/tools/update_compliance.py",
+        )
+    except Exception:  # noqa: BLE001 - a path probe must degrade to the repo guess, never raise
+        sys.modules.pop("_shipwright_sibling_plugin", None)
+        found = None
+    return found or plugin.parent / "shipwright-compliance"
+
+
 def _run_update_compliance(project_root: Path) -> dict:
     """Invoke ``update_compliance.py --phase security`` and return its JSON.
 
     Test seam — monkeypatched in unit tests to simulate no-diff /
     diff-producing runs without depending on the real renderer.
     """
-    # Resolve the compliance plugin script relative to this file: we live
-    # at plugins/shipwright-security/scripts/tools/, the compliance plugin
-    # is at plugins/shipwright-compliance/scripts/tools/.
-    this_plugin = Path(__file__).resolve().parents[2]  # plugins/shipwright-security
-    compliance_plugin = this_plugin.parent / "shipwright-compliance"
+    compliance_plugin = _find_compliance_plugin(Path(__file__))
     script = compliance_plugin / "scripts" / "tools" / "update_compliance.py"
     if not script.exists():
         return {"updated_reports": [], "error": f"missing: {script}"}

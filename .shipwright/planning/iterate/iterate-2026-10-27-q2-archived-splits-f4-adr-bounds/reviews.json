@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-27-q2-archived-splits-f4-adr-bounds",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:28:51.945510+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:32:50.650350+00:00",
+      "disposition": "small complexity: no migrations/async/cross-plugin imports (doubt), external code review and plan reviews are medium+ phases; spec+code cascade ran at opus",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_f.py",
+          "line": 114,
+          "finding": "_SECTION_END_RE is applied without tracking fenced code blocks; a '# comment' inside a fence in an ADR body closes the ADR and a bloated ADR can PASS F4.",
+          "suggestion": "Track in_fence state and apply the heading regexes only outside fences; add a regression test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_f.py",
+          "line": 88,
+          "finding": "_check_f4 docstring still says lines between consecutive ADR headers.",
+          "suggestion": "Update docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/quality_checks.py",
+          "line": 184,
+          "finding": "Returns {} before reading archives when sections is absent or not a list; data.items() assumes a dict.",
+          "suggestion": "Treat non-list sections as [] and still merge archives; guard non-dict data; add test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/quality_checks.py",
+          "line": 10,
+          "finding": "Module docstring and Q2_REMEDIATION still describe only build_config.sections.",
+          "suggestion": "Mention archived split_<prefix>_sections; keep Q2_NAME stable.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/quality_checks.py",
+          "line": 172,
+          "finding": "Another hand-rolled copy of the split_*_sections key rule; non-blocking, pre-existing duplication.",
+          "suggestion": "Optional predicate next to archived_sections_key() in build_split.py.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-27T17:31:33.547830+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:32:50.650350+00:00",
+      "disposition": "small complexity: no migrations/async/cross-plugin imports (doubt), external code review and plan reviews are medium+ phases; spec+code cascade ran at opus",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:32:50.650350+00:00",
+      "disposition": "small complexity: no migrations/async/cross-plugin imports (doubt), external code review and plan reviews are medium+ phases; spec+code cascade ran at opus",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:30:33.617023+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:32:50.650350+00:00",
+      "disposition": "small complexity: no migrations/async/cross-plugin imports (doubt), external code review and plan reviews are medium+ phases; spec+code cascade ran at opus",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-27T17:32:50.650350+00:00",
+      "disposition": "small complexity: no migrations/async/cross-plugin imports (doubt), external code review and plan reviews are medium+ phases; spec+code cascade ran at opus",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

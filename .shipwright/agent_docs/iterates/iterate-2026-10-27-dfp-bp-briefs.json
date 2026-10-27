@@ -1,0 +1,22 @@
+{
+  "run_id": "iterate-2026-10-27-dfp-bp-briefs",
+  "date": "2026-10-27T07:38:24.945142Z",
+  "event_at": "2026-10-26T04:09:46.423692+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "history",
+  "branch": "iterate/dfp-bp-briefs",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-27-dfp-bp-briefs",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

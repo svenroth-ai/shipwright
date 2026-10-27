@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Issue 932: security finalize now resolves the compliance plugin in repo and plugin cache (newest installed version); same class fixed in shipwright-run constants and the two shipwright-grade bridges."},
+{"name":"Error Handling","verdict":"pass","note":"Resolver failures fall back to the legacy repo-layout path, so the existing 'missing: <path>' error still fires; missing sibling returns None."},
+{"name":"Security Basics","verdict":"pass","note":"Path resolution only; loads a sibling file shipped in the same plugin install tree; no network, no user input."},
+{"name":"Test Quality","verdict":"pass","note":"Fake cache trees built in tmp_path exercise the real code from a cache-shaped location; repo layout still pinned."},
+{"name":"Performance Basics","verdict":"pass","note":"One directory listing per resolution."},
+{"name":"Naming & Structure","verdict":"pass","note":"New files for new tests; shared resolver stdlib-only and loaded by path per ADR-045."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Plugin install layout (<cache>/shipwright/<plugin>/<version>/, shared/ beside plugins) verified against the real local cache listing."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No skips added."}]}

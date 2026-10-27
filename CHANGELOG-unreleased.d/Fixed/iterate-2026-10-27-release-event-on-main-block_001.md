@@ -1,0 +1,1 @@
+The release skill's changelog-event step has its own block for a release made directly on main that commits the event but never pushes main without its tag, and a re-run after a lost push now pushes instead of stopping at 'nothing to commit'; the command blocks are executed by tests.

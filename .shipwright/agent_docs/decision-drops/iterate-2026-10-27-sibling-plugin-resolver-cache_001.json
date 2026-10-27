@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-27-sibling-plugin-resolver-cache",
+  "date": "2026-10-27",
+  "section": "Iterate — bug: sibling plugin lookup in the plugin cache",
+  "title": "Sibling plugins are resolved for the repo AND the plugin cache layout",
+  "context": "GitHub #932: finalize_security_compliance looked for the compliance plugin at <security plugin>.parent/shipwright-compliance, which only holds in the repo; in the cache plugins live at <cache>/shipwright/<plugin>/<version>, so the compliance refresh after a security scan never ran.",
+  "decision": "New stdlib-only shared/scripts/lib/sibling_plugin.py finds the sibling in the repo or as the newest usable cached version (release above pre-release, orphaned and partly reaped versions skipped). Callers load it by path (ADR-045) and fall back to the old guess: security finalize, run constants, grade sibling_bridge.",
+  "consequences": "Compliance refresh after a security scan and the orchestrator's compliance update now work from the installed plugin cache. The by-path loader block exists in three plugins and must be kept in step.",
+  "rationale": "Plugins cannot import the shared lib normally (ADR-045 namespace collision), and the plugin cache has a fixed layout the helper can rely on.",
+  "rejected": "Matching the caller's own version (plugins version independently); importing the resolver via lib (ADR-045).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

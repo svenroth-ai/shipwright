@@ -10,13 +10,16 @@ captured" and "did build finish every planned section" gates.
 - **Q2** (Tier-1, FAIL): every section the plan phase produced (captured
   in ``shipwright_plan_snapshot.json`` or derived from the planning
   directory) also appears in ``shipwright_build_config.json.sections``
-  with a completed status. SKIPs when no snapshot nor planning tree
+  — or in an archived ``split_<prefix>_sections`` list that
+  ``archive_split.py`` moved a finished split to — with a completed
+  status. SKIPs when no snapshot nor planning tree
   exists (fresh project, pre-build-start, plan § 7 R14).
 """
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -51,7 +54,8 @@ Q1_REMEDIATION = (
 )
 Q2_REMEDIATION = (
     "Complete missing sections via /shipwright-build, then update "
-    "shipwright_build_config.json.sections[*].status=complete."
+    "shipwright_build_config.json.sections[*].status=complete "
+    "(or the entry under split_<prefix>_sections for an archived split)."
 )
 
 # Plan § 3 thresholds for Q1 — tuned for "single sentence per field" not
@@ -168,6 +172,9 @@ def _read_plan_section_names(project_root: Path) -> list[str] | None:
     return sorted(collected)
 
 
+_ARCHIVED_SPLIT_KEY_RE = re.compile(r"^split_.+_sections$")
+
+
 def _read_build_section_status(project_root: Path) -> dict[str, str] | None:
     cfg = project_root / "shipwright_build_config.json"
     if not cfg.exists():
@@ -176,17 +183,28 @@ def _read_build_section_status(project_root: Path) -> dict[str, str] | None:
         data = json.loads(cfg.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
+    if not isinstance(data, dict):
+        return None
     sections = data.get("sections")
     if not isinstance(sections, list):
-        return {}
+        sections = []
+    # ``archive_split.py`` moves a finished split's entries to
+    # ``split_<prefix>_sections`` and clears ``sections``, so those entries
+    # count too. Archives go first so the current ``sections`` win on a
+    # name clash.
+    archived = [
+        v for k, v in sorted(data.items())
+        if _ARCHIVED_SPLIT_KEY_RE.match(k) and isinstance(v, list)
+    ]
     result: dict[str, str] = {}
-    for entry in sections:
-        if not isinstance(entry, dict):
-            continue
-        name = entry.get("name")
-        status = entry.get("status")
-        if isinstance(name, str) and name:
-            result[name] = str(status or "").strip().lower()
+    for entries in (*archived, sections):
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name")
+            status = entry.get("status")
+            if isinstance(name, str) and name:
+                result[name] = str(status or "").strip().lower()
     return result
 
 
