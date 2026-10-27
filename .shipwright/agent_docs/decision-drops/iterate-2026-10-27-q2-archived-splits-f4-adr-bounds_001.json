@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-27-q2-archived-splits-f4-adr-bounds",
+  "date": "2026-10-27",
+  "section": "Iterate — bug: Q2 archived splits and F4 ADR bounds",
+  "title": "Q2 reads archived split sections; F4 bounds an ADR at the next heading",
+  "context": "GitHub #930/#931: after archive_split.py Q2 reported a finished split's sections as missing, and F4 counted any block after an ADR (## sections, DR-NNN blocks) as that ADR's body.",
+  "decision": "Q2 merges every split_<prefix>_sections list (current sections win on a name clash). F4 closes an ADR at any level 1-3 heading that is not an ADR header, ignoring heading-like lines inside code fences.",
+  "consequences": "No false Q2 FAIL in multi-split projects; short ADRs are no longer reported as bloat. F4 now ignores trailing non-ADR blocks, so ADR size is measured by the ADR's own lines.",
+  "rationale": "Both defects were read-side: the writers (archive_split.py, decision-log layout) are correct and already shared by other readers.",
+  "rejected": "Changing archive_split.py to keep entries in sections[] (breaks the per-split reset the build skill relies on).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

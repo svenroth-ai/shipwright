@@ -1,0 +1,89 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-27-q2-archived-splits-f4-adr-bounds",
+    "date": "2026-10-27",
+    "unit": {
+      "status": "passed",
+      "passed": 23902,
+      "total": 23902
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_quality_checks_archived_splits.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 7,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\q2-archived-splits-f4-adr-bounds\\.shipwright\\runs\\iterate-2026-10-27-q2-archived-splits-f4-adr-bounds\\surface_verification.log",
+      "timestamp": "2026-10-27T17:44:41.278Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Q2 counts sections archived under split_<prefix>_sections (numeric and non-numeric prefixes)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_quality_checks_archived_splits.py::test_q2_passes_when_a_finished_split_is_archived, ::test_q2_counts_archive_with_non_numeric_split_prefix PASSED"
+        },
+        {
+          "behavior": "Q2 current sections win on a name clash; incomplete archived section still FAILs; non-split keys and non-list archives ignored",
+          "disposition": "tested",
+          "evidence": "test_quality_checks_archived_splits.py::test_q2_current_sections_win_on_name_clash, ::test_q2_still_fails_on_incomplete_archived_section, ::test_q2_ignores_non_split_keys_and_malformed_archives PASSED"
+        },
+        {
+          "behavior": "Q2 tolerates a missing sections key and a non-object build config",
+          "disposition": "tested",
+          "evidence": "test_quality_checks_archived_splits.py::test_q2_counts_archives_when_sections_key_is_missing, ::test_q2_does_not_crash_on_non_object_build_config PASSED"
+        },
+        {
+          "behavior": "F4 ends an ADR at a ## section or non-ADR ### block (mid-file and at EOF)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_f4_adr_bounds.py::test_section_after_adr_is_not_part_of_the_adr, ::test_non_adr_h3_block_at_end_of_file_is_not_part_of_the_last_adr PASSED"
+        },
+        {
+          "behavior": "F4 still flags a genuinely bloated ADR; #### sub-headings and # lines inside code fences stay in the ADR",
+          "disposition": "tested",
+          "evidence": "test_audit_f4_adr_bounds.py::test_genuinely_bloated_adr_still_fails, ::test_subheadings_below_h3_stay_inside_the_adr, ::test_hash_comments_inside_a_code_fence_do_not_end_the_adr PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-27-q2-archived-splits-f4-adr-bounds",
+    "commit": "38a9bd4f2e48ee3b3e6751563619b5ad6b2a1ab0",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
