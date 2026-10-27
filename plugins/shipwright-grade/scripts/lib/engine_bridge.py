@@ -51,10 +51,10 @@ def _compliance_root() -> Path | None:
     if override:
         cand = Path(override)
         return cand if (cand / "scripts" / "lib" / "control_grade.py").is_file() else None
-    # plugins/shipwright-grade/scripts/lib/engine_bridge.py -> plugins/
-    plugins_dir = Path(__file__).resolve().parents[3]
-    cand = plugins_dir / "shipwright-compliance"
-    if (cand / "scripts" / "lib" / "control_grade.py").is_file():
+    from sibling_bridge import find_plugin  # bare import (ADR-045)
+
+    cand = find_plugin("shipwright-compliance", require="scripts/lib/control_grade.py")
+    if cand is not None and (cand / "scripts" / "lib" / "control_grade.py").is_file():
         return cand
     return None
 

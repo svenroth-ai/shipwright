@@ -1,0 +1,1 @@
+The compliance refresh after a security scan, and the orchestrator's compliance update, now find the compliance plugin when Shipwright is installed from the plugin cache instead of reporting its script as missing (#932).
