@@ -211,18 +211,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "completed",
+      "status": "not_run",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-28T12:32:25.822880+00:00",
-      "disposition": null,
+      "completed_at": "2026-10-28T14:05:16.640566+00:00",
+      "disposition": "Stage-1 REJECTED at 3f-bis: (1) BRIEF L75/L109: REPLAY labels per PR not per hit; no wrong/correct per hit, so the 3-wrong-per-100 test cannot be made at stop 1. (2) BRIEF L75: proposed N and verifier/context-run timings are not reproducible; no fanout code committed though REPLAY.md claims every number is recomputable. (3) REPLAY.md says PRs #937..#840, data says #937..#831. Delivery stopped; PR #940 left open.",
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "79878eaef38ece5563d38cdf9e0589f469d91721"
+      "reason_code": "stage-1-rejected"
     },
     "plan_internal": {
       "review_type": "plan_internal",
