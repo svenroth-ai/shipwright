@@ -60,15 +60,28 @@
     },
     "code": {
       "review_type": "code",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "three low prose items, fixed after doubt review",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-10-28T23:11:01.986338+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "9e7dd1b559da16bcd32cdf52020c0d1ec09a08fb"
     },
     "doubt": {
       "review_type": "doubt",
@@ -173,15 +186,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "pending",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-10-28T23:06:46.379532+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5e30d72ceadd69b66ac4534d7bef9c8f7dfb3b09"
     },
     "plan_internal": {
       "review_type": "plan_internal",
