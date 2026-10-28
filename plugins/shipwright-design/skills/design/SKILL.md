@@ -146,7 +146,7 @@ See [step-2-screen-type-detection.md](references/step-2-screen-type-detection.md
 ## Step 2.5: Brand Extraction
 
 If the user has an existing website, auto-extract design tokens before asking design questions.
-See [step-2-5-brand-extraction.md](references/step-2-5-brand-extraction.md) for the WebFetch flow and token-extraction procedure.
+See [step-2-5-brand-extraction.md](references/step-2-5-brand-extraction.md) for the WebFetch flow and token-extraction procedure. If the user keeps a Design System on claude.ai, offer it as the brand source instead: [brand-from-design-system.md](references/brand-from-design-system.md) (list, read `tokens.json`, map to the kit contract, check contrast with `scripts/tools/check_brand_tokens.py`, fix and report).
 
 ---
 

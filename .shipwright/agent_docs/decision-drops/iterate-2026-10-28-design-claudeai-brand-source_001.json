@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-design-claudeai-brand-source",
+  "date": "2026-10-28",
+  "section": "Iterate - feature: brand from a claude.ai Design System for the design phase",
+  "title": "A brand comes from the user's claude.ai Design System, not from a token file in the plugin",
+  "context": "The operator keeps their brand (svenroth.ai) in a Design System on claude.ai and wanted the design phase to use it. A brand-specific token set in the plugin would impose one person's brand on every user of the framework.",
+  "decision": "Design Step 2.5 and Step 3 offer a claude.ai Design System as brand source. brand-from-design-system.md lists the artifacts, reads tokens.json, maps it to the kit contract and lays the result over warm, clean or bold. scripts/tools/check_brand_tokens.py checks the contract rules (the same pairs the tests use) and prints the nearest passing colour for each weak pair; Claude applies the fixes and tells the user what changed.",
+  "consequences": "The Design System stays the single source of truth and nothing brand-specific ships in the plugin. Brand colours that fail the readability rules are corrected and reported, never silently kept. The mapping itself remains Claude's judgement; only the check and the fixes are deterministic.",
+  "rationale": "Names in a Design System do not match the contract one to one, so the mapping needs judgement, while the contrast arithmetic is exact and belongs in a tested tool that the shipped sets share.",
+  "rejected": "A shipped svenroth token set (imposes one brand, one more set to build and test); a default token set (changes the skill's behaviour for everyone); prose-only contrast checks (can miss pairs and cannot be tested).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

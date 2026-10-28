@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-design-claudeai-brand-source",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:30:57.224817+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:30:57.351271+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py",
+          "line": 48,
+          "finding": "parse_colours only matched 6-digit hex; #fff, 8-digit hex, rgb(), hsl(), var() and non-px font sizes were silently skipped, so an override could fall back to the base value and report OK for a colour that was never checked.",
+          "suggestion": "Report every colour or size value that is not readable; expand 3-digit hex.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/references/brand-from-design-system.md",
+          "line": 22,
+          "finding": "Step 5 'apply the darkest suggestion, run again until exit 0' does not converge for a dark on-primary (yellow brand) or a dark theme; lines without a hint were not covered.",
+          "suggestion": "Say 'most contrasting', cap the re-runs, and give an exit: change the other side of the pair or ask the user.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py",
+          "line": 220,
+          "finding": "The suggestion test kept the last suggestion per token, not the darkest, and never showed that applying them makes check() return [].",
+          "suggestion": "Group per token, keep the darkest, assert check(fixed) == [].",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py",
+          "line": 83,
+          "finding": "A missing --font-size-base / --font-size-sm passed silently in --tokens mode while a missing colour was reported.",
+          "suggestion": "Report missing font sizes.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py",
+          "line": 105,
+          "finding": "Dead inner conditional in the final print; docstring did not document exit 2.",
+          "suggestion": "Simplify the print and document exit 2.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py",
+          "line": 90,
+          "finding": "--base accepted any string; a typo gave 'not found' instead of the valid names.",
+          "suggestion": "Use argparse choices.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py",
+          "line": 79,
+          "finding": "A darkened primary could end up darker than primary-hover; no rule checked the order.",
+          "suggestion": "Check primary-hover is darker than primary and note it in step 5.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T08:35:10.407873+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:35:10.547965+00:00",
+      "disposition": "closed by reason_code diff-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:30:57.771318+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:32:08.661410+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:30:57.493826+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T08:30:57.624025+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

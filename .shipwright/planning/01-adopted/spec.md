@@ -316,6 +316,11 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC12] Given the design phase runs, when it produces its output, then what it
   produces are review mockups, not production code — the build phase writes the
   real thing, so a mockup is never mistaken for the shipped implementation.
+- (E) [AC13] Given the operator keeps their brand in a Design System on claude.ai, when
+  the look and feel is chosen, then the brand's colours, fonts and shapes are taken
+  from it rather than guessed, and any colour pair that would be too hard to read
+  is corrected and reported, so the mockups carry the brand without breaking the
+  readability rules.
 
 <a id="fr-0105"></a>
 ### FR-01.05 — /shipwright-build
