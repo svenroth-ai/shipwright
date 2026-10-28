@@ -12,7 +12,8 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - Auth screens → Layout C (Centered Card)
    - Dashboard/admin/list/detail/settings → Layout A (Sidebar + Content)
    - Public/marketing pages → Layout B (Top Navigation)
-   - Chat-first app (`ux_shape: chat-first`, see [chat-first.md](chat-first.md)) → Layout D (Chat + Pane): no shared chrome, no `nav-item` / `topnav-link`; chat shortcuts are `chip` elements.
+   - Skill-backed app (`ui_host: served-board`) → the board layout of the kit (Layout A or B, `kit/untitled-ui/fragments/board.html`), never a chat layout
+   - Legacy chat-first app (`ux_shape: chat-first`, retired for skill-backed apps, see [chat-first.md](chat-first.md)) → Layout D (Chat + Pane): no shared chrome, no `nav-item` / `topnav-link`; chat shortcuts are `chip` elements.
    - Always include the shared Button Styles block.
 4. **Shared Chrome** — Read `.shipwright/designs/chrome-definition.md` (generated in Step 3.7). Copy the resolved HTML blocks **verbatim**:
    - **Layout A screens:** Copy the **Resolved Sidebar Block** into `<aside class="sidebar">`. Copy the **Resolved Topbar Block** into `<header class="topbar">`. Change ONLY which `.nav-item` has `class="nav-item active"` to match the current screen.

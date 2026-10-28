@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No new standing mechanism is needed \u2014 Option B (prose-only) is the right move, possibly borrowing only C's profile refusal; D's generator and E's removal are both overreach.\n\n2. **The smallest thing that would do.** Option B: update the design agent's instructions to recompose screens from the kit + package tokens, and mark chat-first as legacy in the docs. If enforcement matters, add only the single gate from C \u2014 the apply tool refusing chat-first for the skill-backed profile \u2014 and skip the byte-equality screen tracker entirely.\n\n3. **What it costs to keep.** B costs a doc section to keep truthful. The C gate (if taken) is one branch in an existing tool. Everything else in C, and all of D, is permanent machinery: byte-equal detection will break on harmless formatting drift and needs ongoing interpretation; a mockup\u2192kit generator must track both the kit and every package token scheme forever.\n\n4. **What it forecloses.** E (removing chat-first entirely) forecloses any future non-skill-backed package class that wants the chat+pane layout, to solve a problem prose already solves. D locks composition into one generator's output style, making future kit changes expensive.\n\n**Findings**\n\n- Category: simpler-alternative\n- Severity: high\n- Finding: Option D's generator is a standing mechanism whose cost (kept correct against kit evolution, every package, every future design change) far exceeds the problem \u2014 making generated screens match the kit instead of the mockups.\n- Suggestion: Take B. The design agent already composes screens; telling it what to compose from is prompt content, not machinery.\n\n- Category: proportionality\n- Severity: medium\n- Finding: The byte-equality \"uncomposed screens\" signal in C is a fragile heuristic dressed as a guarantee \u2014 it will false-positive on trivial diffs and false-negative on screens that differ cosmetically but are still generic, and it must be reasoned about on every resume path.\n- Suggestion: Drop the byte-equal check. If resume-completeness matters, a checklist in prose (\"compose screens X, Y, Z\") does the same job with nothing to maintain.\n\n- Category: forecloses\n- Severity: medium\n- Finding: Option E removes a working, already-shipped layout mode (schema value, verifier, fixtures) to serve a preference for one app class \u2014 removal is a large diff to buy correctness that prose gets for free.\n- Suggestion: Mark chat-first legacy in docs (B) or gate it per-profile (the one good piece of C); do not delete it in this unit.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Choose option B: this design-behavior problem does not yet justify a new persistent composition signal or enforcement gate.\n\n2. **Smallest thing that would do:** Update the existing Design instructions to compose screens from the shipped kit using package tokens, treat mockups as references, and exclude chat-first for the skill-backed profile.\n\n3. **What it costs to keep:** Maintaining those instructions alongside the kit and supported app profiles. Option C additionally creates a composition-status contract that future Design and resume changes must preserve.\n\n4. **What it forecloses:** None identified for B; C ties resume decisions to whether screen bytes have changed, constraining future composition workflows.\n\n5. **Findings**\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: Option C adds lasting status and enforcement machinery without evidence that instruction-driven composition is insufficient. The stated problem is the agent\u2019s design choice; no recurring resume failure is established.\nSuggestion: Implement B first. Add a deterministic signal only if observed failures demonstrate that the existing Design workflow cannot reliably complete composition.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-28-e3-design-composes-from-kit",
+    "at": "2026-10-28T22:50:57.443838+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "reject"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=reject"
+  }
+}

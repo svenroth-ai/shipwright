@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-e3-design-composes-from-kit",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T22:59:44.618513+00:00",
+      "disposition": "7 items walked: spec compliance, errors, security, tests, perf, naming, boundaries; prose-only change with no serialized-format boundary",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The proposed tests do not demonstrate the changed behavior. Pinned prose and a manually composed screen passing existing gates can both succeed while Design still copies approved mockups unchanged.",
+          "suggestion": "Add a focused workflow regression using a Brief-package mockup that lacks the kit styling. Verify the resulting screen preserves its content while applying kit components and package tokens. A deterministic detector is unnecessary for this test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Already carries the kit” is undefined. A mockup might import `kit.css` while retaining generic markup, hardcoded styles, or outdated package tokens; the skip rule could preserve the original defect.",
+          "suggestion": "Define the exemption in the reference: the screen must already use the relevant kit components and current package tokens. Cover both a genuinely compliant screen that remains unchanged and a partially styled screen that requires composition.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "“Board layout, no chat layout” and marking shared references legacy could affect modes beyond Brief-package mode. A categorical layout instruction could also discard chat functionality present in the approved content.",
+          "suggestion": "Explicitly scope these instructions to Brief-package, skill-backed applications. Clarify that composition preserves approved functionality and content, and check that other modes retain their existing reference routing.  The prose-only approach is a reasonable, proportionate first change, with no evident need for a new tool signal or detector. It needs clearer applicability and behavioral verification before approval; campaign scope compliance remains unverified without the brief.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-10-28T22:59:44.239388+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] - **Category: approach** — **Severity: low** — Prose-only is a reasonable, low-risk choice given the E-series context and the earlier \"reject/revise\" reviews that already pushed toward it. Deferring a deterministic detector is fine. No change needed; just confirming the decision is sound.\n\n- **Category: edge-case** — **Severity: medium** — \"A screen that already carries the kit is never recomposed\" is stated in prose only, with no test pinning it. This is the one behavioral rule in the change that can silently regress, and prose tests typically assert instruction text, not behavior. Suggestion: include a test case with an already-kit-carrying screen run through the apply tool, asserting no recomposition — otherwise the \"never recomposed\" guarantee is untested and the acceptance criterion \"behaviour … is tested\" is arguably unmet.\n\n- **Category: risk** — **Severity: medium** — Making the red boundary gate a \"real STOP\" (SKILL.md step B, E1 fold-in) changes runtime behavior for *all* runs, not just Brief-package mode. If the pipeline previously treated a red gate as a warning-or-continue, non-Brief-package flows could start halting on boundary regressions that were previously tolerated. Suggestion: verify and state explicitly whether the STOP applies universally or only in Brief-package mode; if universal, confirm the campaign's scope_frs (FR-01.04, FR-01.01) actually cover that behavior change, since the criteria say \"touches no FR outside scope_frs.\"\n\n- **Category: risk** — **Severity: low** — Renaming \"approved mockups\" → \"approved design screens\" in `phase_validators_late.py` wording could break any golden/pinned-string tests elsewhere that still assert the old wording (docs, snapshots, other validators). Suggestion: grep for \"approved mockups\" across tests and docs in the same diff; update stale assertions alongside the wording change rather than letting CI go red.\n\n- **Category: dependency** — **Severity: low** — Marking chat-first.md and the Layout […truncated]\n\n[openai] I could not inspect the campaign brief or repository because local command execution was blocked by policy. This review is based on the supplied mini-plan.\n\n1. **Category: risk | Severity: medium**\n   **Finding:** The proposed tests do not demonstrate the changed behavior. Pinned prose and a manually composed screen passing existing gates can both succeed while Design still copies approved mockups unchanged.\n   **Suggestion:** Add a focused workflow regression using a Brief-package mockup that lacks the kit styling. Verify the resulting screen preserves its content while applying kit components and package tokens. A deterministic detector is unnecessary for this test.\n\n2. **Category: edge-case | Severity: medium**\n   **Finding:** “Already carries the kit” is undefined. A mockup might import `kit.css` while retaining generic markup, hardcoded styles, or outdated package tokens; the skip rule could preserve the original defect.\n   **Suggestion:** Define the exemption in the reference: the screen must already use the relevant kit components and current package tokens. Cover both a genuinely compliant screen that remains unchanged and a partially styled screen that requires composition.\n\n3. **Category: approach | Severity: medium**\n   **Finding:** “Board layout, no chat layout” and marking shared references legacy could affect modes beyond Brief-package mode. A categorical layout instruction could also discard chat functionality present in the approved content.\n   **Suggestion:** Explicitly scope these instructions to Brief-package, skill-backed applications. Clarify that composition preserves approved functionality and content, and check that other modes retain their existing reference routing.\n\nThe prose-only approach is a reasonable, proportionate first change, with no evident need for a new tool signal or detector. It needs clearer applicability and behavioral verification before approval; campaign scope compliance remains unverified without the brief.\n […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug / test",
+          "file": "plugins/shipwright-run/tests/test_phase_validators_screenshot.py` (new test at end)",
+          "line": null,
+          "finding": "The new test calls `late._screenshot_check_issue(...)` but the diff adds no import of `late` into this test module; the visible context shows only `validate_phase(...)` used by the existing tests. If the module's existing imports don't already bind `late`, this test raises `NameError` at collection/run time — and if they do, the finding is void, but the diff gives no evidence either way.",
+          "suggestion": "Verify the module imports the `phase_validators_late` module (e.g. `from plugins.shipwright_run.scripts.lib import phase_validators_late as late`); add the import explicitly if missing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-design/tests/test_brief_compose_prose.py`, `test_the_kit_example_satisfies_the_carries_the_kit_definition",
+          "line": null,
+          "finding": "The `carries()` predicate hardcodes `kit_css[200:600].strip() in html` and `class=\"topnav` — it validates an arbitrary byte-slice of the shipped CSS, not the documented definition (kit CSS inline, `:root` token block, kit component classes, no colour/font/size literal). Any edit to `kit.css` lines 200–600 (whitespace-only edits included) silently breaks or voids the test, and the negative cases don't exercise the definition's real clauses (e.g. a screen pasting kit CSS but with its own hex literals would count as \"carrying the kit\" here).",
+          "suggestion": "Assert on stable markers (e.g. the first rule selector and a distinctive component class) rather than a byte slice, and add a negative case for \"kit CSS inline but own colour literals\" if the intent is to pin the definition.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-design/tests/test_brief_compose_prose.py`, `test_a_screen_composed_from_the_kit_passes_the_standalone_gate",
+          "line": null,
+          "finding": "The \"composed screen passes the standalone gate\" test uses the shipped kit example itself as the package mockup, so the applied screen is a byte-copy of an already-standalone page. It cannot fail unless `apply-brief-package.py` itself breaks; it does not exercise any composition behaviour. Weak, though the architecture decision explicitly scoped tests to \"checking instructions, not agent output\", so this is a pinning test at best.",
+          "suggestion": "Either accept it as a regression pin with a comment saying so, or drop the misleading name.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug (doc/markdown structure)",
+          "file": "plugins/shipwright-design/skills/design/references/brief-compose.md`, Procedure section",
+          "line": null,
+          "finding": "The \"A crash mid-compose...\" paragraph sits between numbered steps 5 and 6 with no blank-line separation, so in rendered markdown step 6 (\"Run `check-design-gates.py --gate all`\") detaches from the list and the crash note reads as part of step 5's \"compose it and re-run the gates\" (which itself is confusing: gates run in step 6, so \"re-run the gates\" from step 5 has no defined meaning yet).",
+          "suggestion": "Move the crash note to the Limits section (or after step 6) and reword step 5's recovery as \"compose it before continuing to step 6\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-design/skills/design/SKILL.md`, brief-package bullet",
+          "line": null,
+          "finding": "The routing says a red `standalone`/`chrome` gate is a package defect only when \"caused by package content rather than by a screen you composed\" — but the applied screen is the package content until it's composed, so an agent hitting a red `standalone` gate before/during composition (e.g. a mockup with relative assets, which is the cited package defect) can't disambiguate: composing the screen would fix the relative-asset problem, yet upload-mode.md still lists \"a mockup with relative assets\" as package CONTENT → STOP. The two rules now conflict for that exact case.",
+          "suggestion": "State explicitly that relative-asset mockups remain a package STOP even though composition could technically inline them (or say composition must not repair package defects by fetching/inlining external assets).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "plugins/shipwright-design/tests/test_apply_brief_package.py",
+          "line": null,
+          "finding": "The updated assertions pin exact phrasing (\"on the COMPOSED screens (compose first)\"), which is fine, but note the SKILL.md assertion `\"APPLIED screens\" not in skill` in `test_brief_compose_prose.py` will fail if any other section of SKILL.md legitimately retains \"APPLIED screens\" wording in future — a broad whole-file negative assertion on a 300-line file is fragile. Low risk today.",
+          "suggestion": "Scope the negative assertion to the brief-package section if it grows.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "plugins/shipwright-design/skills/design/references/brief-compose.md",
+          "line": 3,
+          "finding": "The new “carries the kit” definition treats any screen with its own colour, font, or size literal as an uncomposed mockup and instructs the agent to rewrite it. A previously composed screen with such an adjustment from the review loop will therefore lose approved edits on resume, contradicting the requirement that review-loop edits survive.",
+          "suggestion": "Distinguish incomplete initial composition from subsequent review edits. Preserve previously composed screens on resume even when review feedback introduced custom styling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": 3,
+          "finding": "Every Brief screen must now satisfy the kit composition rules, while legacy chat-first packages with other profiles still require Layout D. The diff explicitly states that Layout D is not part of the kit, yet the composition self-check requires every screen to use kit components. These supported legacy packages receive incompatible instructions, potentially replacing their required layout or repeatedly failing the self-check.",
+          "suggestion": "Explicitly exempt supported legacy chat-first screens from the universal kit composition requirement, or define a compatible kit-based Layout D and its self-check criteria.  Overall assessment: ship-with-fixes. The prose-only approach matches the architecture decision, but its resume and legacy-package instructions need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T23:01:55.512231+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug / test\n- Severity: medium\n- File: `plugins/shipwright-run/tests/test_phase_validators_screenshot.py` (new test at end)\n- Finding: The new test calls `late._screenshot_check_issue(...)` but the diff adds no import of `late` into this test module; the visible context shows only `validate_phase(...)` used by the existing tests. If the module's existing imports don't already bind `late`, this test raises `NameError` at collection/run time — and if they do, the finding is void, but the diff gives no evidence either way.\n- Suggestion: Verify the module imports the `phase_validators_late` module (e.g. `from plugins.shipwright_run.scripts.lib import phase_validators_late as late`); add the import explicitly if missing.\n\n- Category: test\n- Severity: medium\n- File: `plugins/shipwright-design/tests/test_brief_compose_prose.py`, `test_the_kit_example_satisfies_the_carries_the_kit_definition`\n- Finding: The `carries()` predicate hardcodes `kit_css[200:600].strip() in html` and `class=\"topnav` — it validates an arbitrary byte-slice of the shipped CSS, not the documented definition (kit CSS inline, `:root` token block, kit component classes, *no colour/font/size literal*). Any edit to `kit.css` lines 200–600 (whitespace-only edits included) silently breaks or voids the test, and the negative cases don't exercise the definition's real clauses (e.g. a screen pasting kit CSS but with its own hex literals would count as \"carrying the kit\" here).\n- Suggestion: Assert on stable markers (e.g. the first rule selector and a distinctive component class) rather than a byte slice, and add a negative case for \"kit CSS inline but own colour literals\" if the intent is to pin the definition.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-design/tests/test_brief_compose_prose.py`, `test_a_screen_composed_from_the_kit_passes_the_standalone_gate`\n- Finding: The \"composed screen passes the standalone gate\" test uses the shipped kit example itse […truncated]\n\n[openai] Review limited to the supplied diff: execution policy blocked repository reads and tests, so I could not inspect the referenced campaign brief.\n\n- Category: regression\n- Severity: medium\n- File: plugins/shipwright-design/skills/design/references/brief-compose.md:3\n- Finding: The new “carries the kit” definition treats any screen with its own colour, font, or size literal as an uncomposed mockup and instructs the agent to rewrite it. A previously composed screen with such an adjustment from the review loop will therefore lose approved edits on resume, contradicting the requirement that review-loop edits survive.\n- Suggestion: Distinguish incomplete initial composition from subsequent review edits. Preserve previously composed screens on resume even when review feedback introduced custom styling.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/skills/design/references/upload-mode.md:3\n- Finding: Every Brief screen must now satisfy the kit composition rules, while legacy chat-first packages with other profiles still require Layout D. The diff explicitly states that Layout D is not part of the kit, yet the composition self-check requires every screen to use kit components. These supported legacy packages receive incompatible instructions, potentially replacing their required layout or repeatedly failing the self-check.\n- Suggestion: Explicitly exempt supported legacy chat-first screens from the universal kit composition requirement, or define a compatible kit-based Layout D and its self-check criteria.\n\nOverall assessment: ship-with-fixes. The prose-only approach matches the architecture decision, but its resume and legacy-package instructions need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T22:59:44.365888+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T22:59:44.492303+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

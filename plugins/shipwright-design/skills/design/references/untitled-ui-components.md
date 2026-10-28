@@ -45,7 +45,7 @@ Kit paths in these docs (`kit/untitled-ui/...`) are relative to the design skill
 | Loading | `skeleton` `skeleton-line` `skeleton-title` · `spinner` · `error-summary` |
 | Misc | `avatar` `avatar-sm` `avatar-group` · `section-header` `section-title` · `divider` · `detail-layout` `detail-*` |
 
-The gallery (`examples/gallery-*.html`) shows every one of them. Layout D (chat + pane) is not part of the kit.
+The gallery (`examples/gallery-*.html`) shows every one of them. Layout D (chat + pane) is not part of the kit and is retired for skill-backed apps.
 
 ## Coverage of the Untitled UI component list
 

@@ -169,10 +169,10 @@ def test_skill_routes_a_recorded_brief_package_before_a_new_design_session():
     assert "Any non-zero exit (1 or 3) = STOP" in section
     assert "`@file` -> Iterate on Existing" in section and "otherwise -> [Upload Mode]" in section
     assert "Generate NO screen" in section and "skip Step 2.5, Step 3 and Step 6.5" in section
-    assert "`design.preview-approval` still fires on the APPLIED screens" in section  # D5/D9: the human gate stays
+    assert "`design.preview-approval` still fires, on the COMPOSED screens (compose first)" in section  # D5/D9: the human gate stays
     assert "is informational: report it in your summary" in section and "(also on `already_applied`)" in section
-    assert "continue to the gates" in section and "or a rejected preview of the applied screens (the operator decides)" in section
-    assert "`unmapped_frs`" in section and "`tokens`/`standalone`/`chrome` gate caused by package content" in section
+    assert "continue to the gates" in section and "or a rejected preview of the composed screens (the operator decides)" in section
+    assert "`unmapped_frs`" in section and "`standalone`/`chrome` gate caused by package content rather than by a screen you composed" in section
     assert "foreign_existing" in section and "kept_existing_differs" in section and "never silently continue" in section
     assert "a red `fr-coverage` gate (never write a `## Non-UI FRs` entry or an ADR, never generate a screen)" in section
     assert "Step 6a, 8, 8.5, 9 as normal" in section and "STOP and report to the operator" in section
