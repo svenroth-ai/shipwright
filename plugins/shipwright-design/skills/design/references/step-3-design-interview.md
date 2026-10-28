@@ -18,7 +18,7 @@ AskUserQuestion:
    - **A) Warm & Premium** — Earth tones, beige/cream backgrounds, elegant feel (think: luxury brands, boutique)
    - **B) Clean & Modern** — Whites, subtle grays, one accent color (think: Stripe, Linear)
    - **C) Bold & Energetic** — Vibrant colors, strong contrasts (think: Vercel, Figma)
-   - **D) I have specific brand guidelines** → upload to `.shipwright/designs/uploads/`
+   - **D) I have specific brand guidelines** → a Design System on claude.ai (see [brand-from-design-system.md](brand-from-design-system.md); list theirs and let them pick) or an upload to `.shipwright/designs/uploads/`
    If brand tokens were extracted in Step 2.5, present them here as suggestion and let the user confirm or override.
    See [design-system-patterns.md](design-system-patterns.md) → "Character Palettes" for full token sets.
 3. **Layout**: "Sidebar navigation or top navigation bar?"

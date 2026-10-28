@@ -1,0 +1,26 @@
+{
+  "section": "iterate-2026-10-28-design-claudeai-brand-source",
+  "review": [
+    {"severity": "medium", "category": "correctness", "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py", "line": 48,
+     "finding": "parse_colours only matched 6-digit hex; #fff, 8-digit hex, rgb(), hsl(), var() and non-px font sizes were silently skipped, so an override could fall back to the base value and report OK for a colour that was never checked.",
+     "suggestion": "Report every colour or size value that is not readable; expand 3-digit hex."},
+    {"severity": "medium", "category": "correctness", "file": "plugins/shipwright-design/skills/design/references/brand-from-design-system.md", "line": 22,
+     "finding": "Step 5 'apply the darkest suggestion, run again until exit 0' does not converge for a dark on-primary (yellow brand) or a dark theme; lines without a hint were not covered.",
+     "suggestion": "Say 'most contrasting', cap the re-runs, and give an exit: change the other side of the pair or ask the user."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py", "line": 220,
+     "finding": "The suggestion test kept the last suggestion per token, not the darkest, and never showed that applying them makes check() return [].",
+     "suggestion": "Group per token, keep the darkest, assert check(fixed) == []."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py", "line": 83,
+     "finding": "A missing --font-size-base / --font-size-sm passed silently in --tokens mode while a missing colour was reported.",
+     "suggestion": "Report missing font sizes."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py", "line": 105,
+     "finding": "Dead inner conditional in the final print; docstring did not document exit 2.",
+     "suggestion": "Simplify the print and document exit 2."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py", "line": 90,
+     "finding": "--base accepted any string; a typo gave 'not found' instead of the valid names.",
+     "suggestion": "Use argparse choices."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-design/scripts/tools/check_brand_tokens.py", "line": 79,
+     "finding": "A darkened primary could end up darker than primary-hover; no rule checked the order.",
+     "suggestion": "Check primary-hover is darker than primary and note it in step 5."}
+  ]
+}

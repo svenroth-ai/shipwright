@@ -24,7 +24,7 @@ Kit paths in these docs (`kit/untitled-ui/...`) are relative to the design skill
 1. Page shell from [snippets-layout.md](snippets-layout.md) (or copy a built example).
 2. `:root` block: paste a complete shipped token set first, then put the project's overrides after it, so every token stays defined. Start from `tokens/warm.css`, `tokens/clean.css` or `tokens/bold.css`, or map brand tokens
    to the names in the **Variable Reference** of [snippets-variables.md](snippets-variables.md). The kit also needs
-   `--space-1` to `--space-6`, `--color-primary-soft`, `--color-border-strong`, `--color-focus`, `--color-info`, `--color-{info,success,warning,error}-bg`, `--color-overlay`, `--shadow-sm`, `--shadow-lg`. Colour tokens are solid hex (no transparent tints). The shipped token sets are contrast-tested; a project's own overrides are not checked, so keep to the rules in [tokens-contract.md](../kit/untitled-ui/tokens-contract.md).
+   `--space-1` to `--space-6`, `--color-primary-soft`, `--color-border-strong`, `--color-focus`, `--color-info`, `--color-{info,success,warning,error}-bg`, `--color-overlay`, `--shadow-sm`, `--shadow-lg`. A brand kept in a claude.ai Design System is mapped, checked and corrected per [brand-from-design-system.md](brand-from-design-system.md), then laid over a shipped set. Colour tokens are solid hex (no transparent tints). The shipped token sets are contrast-tested; a project's own overrides are not checked by the tests, so run `scripts/tools/check_brand_tokens.py --base <set> --overrides <file>` and keep to the rules in [tokens-contract.md](../kit/untitled-ui/tokens-contract.md).
 3. Paste `kit.css` once into the page `<style>`.
 4. Body: layout, then components, with the class names below.
 

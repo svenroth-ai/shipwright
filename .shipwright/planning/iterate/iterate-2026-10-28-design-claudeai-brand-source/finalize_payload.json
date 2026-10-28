@@ -1,0 +1,117 @@
+{
+  "run_id": "iterate-2026-10-28-design-claudeai-brand-source",
+  "artifact_sync": {
+    "ref": "HEAD~1..HEAD"
+  },
+  "decision": {
+    "section": "Iterate - feature: brand from a claude.ai Design System for the design phase",
+    "title": "A brand comes from the user's claude.ai Design System, not from a token file in the plugin",
+    "context": "The operator keeps their brand (svenroth.ai) in a Design System on claude.ai and wanted the design phase to use it. A brand-specific token set in the plugin would impose one person's brand on every user of the framework.",
+    "decision": "Design Step 2.5 and Step 3 offer a claude.ai Design System as brand source. brand-from-design-system.md lists the artifacts, reads tokens.json, maps it to the kit contract and lays the result over warm, clean or bold. scripts/tools/check_brand_tokens.py checks the contract rules (the same pairs the tests use) and prints the nearest passing colour for each weak pair; Claude applies the fixes and tells the user what changed.",
+    "consequences": "The Design System stays the single source of truth and nothing brand-specific ships in the plugin. Brand colours that fail the readability rules are corrected and reported, never silently kept. The mapping itself remains Claude's judgement; only the check and the fixes are deterministic.",
+    "rationale": "Names in a Design System do not match the contract one to one, so the mapping needs judgement, while the contrast arithmetic is exact and belongs in a tested tool that the shipped sets share.",
+    "rejected": "A shipped svenroth token set (imposes one brand, one more set to build and test); a default token set (changes the skill's behaviour for everyone); prose-only contrast checks (can miss pairs and cannot be tested).",
+    "architecture_impact": "none"
+  },
+  "changelog": [
+    {
+      "category": "Added",
+      "bullet": "Design: take the brand from a Design System on claude.ai (Step 2.5 and the Step 3 brand question); the colours are mapped to the Untitled UI kit contract, checked for readability and corrected where they fail"
+    },
+    {
+      "category": "Added",
+      "bullet": "Design: check_brand_tokens.py checks a brand override against the kit's contrast, solid-hex and font-size rules and suggests the nearest passing colour for each weak pair"
+    },
+    {
+      "category": "Changed",
+      "bullet": "Spec: FR-01.04 gains AC13, the look and feel can come from the operator's Design System on claude.ai"
+    }
+  ],
+  "iterate_entry": {
+    "type": "feature",
+    "complexity": "small",
+    "prior_source": "history",
+    "branch": "iterate/design-claudeai-brand-source",
+    "spec": null,
+    "tests_passed": true,
+    "adr": "iterate-2026-10-28-design-claudeai-brand-source",
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "weak brand colours laid over a shipped set are flagged with a nearest passing colour, and applying the most contrasting suggestions brings every contract rule to green",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_brand_checker_flags_weak_brand_colours_and_the_suggestions_bring_it_to_green PASSED"
+        },
+        {
+          "behavior": "a value the checker cannot read (rgb(), 8-digit hex, non-px size) is reported, a 3-digit hex is read as the colour it means, so an override is never skipped and green on the base",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_brand_checker_reports_values_it_cannot_read_instead_of_passing_on_the_base PASSED"
+        },
+        {
+          "behavior": "CLI exit codes: 0 when every rule holds, 1 with failures and suggestions, 2 for a missing file, usage error without arguments; also run in-process for diff coverage",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_brand_checker_cli_exit_codes PASSED; ::test_brand_checker_main_in_process_covers_base_overrides_and_full_set PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a missing token, a missing or too small font size and a primary-hover that is not darker than primary are reported",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_brand_checker_reports_a_token_the_brand_set_leaves_out PASSED; ::test_brand_checker_flags_font_sizes_below_the_minimum PASSED; ::test_brand_checker_requires_primary_hover_darker_and_font_sizes_present PASSED"
+        },
+        {
+          "behavior": "the shipped sets warm, clean and bold still meet every contrast rule, now evaluated by the same checker",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_token_sets_meet_wcag_aa_contrast PASSED (3 sets)"
+        },
+        {
+          "behavior": "the claude.ai Design System route is reachable from SKILL.md, Step 2.5, the Step 3 question and the kit doc, and the checker the procedure names exists",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_brand_from_design_system_is_offered_where_the_look_is_chosen PASSED"
+        },
+        {
+          "behavior": "Claude lists the user's Design System artifacts, reads tokens.json and maps it to the contract following the procedure",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "depends on the live claude.ai Artifact service and on Claude's own mapping judgement; the deterministic half (contract check and fixes) is tested above"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-design pytest plugins/shipwright-design/tests/test_untitled_ui_kit.py -k brand -q",
+      "exit_code": 0,
+      "tests_run": 8,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\design-claudeai-brand-source\\.shipwright\\runs\\iterate-2026-10-28-design-claudeai-brand-source\\surface_verification.log",
+      "timestamp": "2026-10-28T08:35:28.560Z"
+    },
+    "exemptions": {
+      "count": 0,
+      "items": []
+    },
+    "risk_flags": []
+  },
+  "finalize": {
+    "reason": "iterate: brand from a claude.ai Design System for the design phase",
+    "event_extras": {
+      "intent": "feature",
+      "description": "Brand from a claude.ai Design System for the design phase",
+      "summary": "The design phase can now take the brand from the operator's Design System on claude.ai, map it to the Untitled UI kit tokens, check readability and fix weak colours, without shipping any brand in the plugin.",
+      "spec_impact": "modify",
+      "spec_impact_justification": "FR-01.04 gains AC13: the look and feel can be taken from the operator's claude.ai Design System.",
+      "affected_frs": [
+        "FR-01.04"
+      ]
+    }
+  }
+}
