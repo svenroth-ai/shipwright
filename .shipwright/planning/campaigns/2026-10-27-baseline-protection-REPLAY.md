@@ -8,7 +8,7 @@ This report measures; nothing gates. Nothing in `ci.yml`, `verify_local.py`, `de
 
 ## 0. Headline in plain language
 
-- If BP held every PR whose diff touches an existing requirement, with no approved scope, **39 of the last 100 PRs (39 %) would have waited for you.** Half of the iterates (25 of 50) and 13 of 30 campaign-unit PRs. Docs, dependency-bot, manual and release PRs were never held (0 of 18).
+- If BP held every PR whose diff touches an existing requirement, with no approved scope, **39 of the last 100 PRs (39 %) would have waited for you** (counted from T-spec, T-test and static attribution, the git leg that ran over all 100 PRs; T-code ran on a 20-PR sample only, see section 2). Half of the iterates (25 of 50) and 13 of 30 campaign-unit PRs. Docs, dependency-bot, manual and release PRs were never held (0 of 18).
 - In **27 of those 39** the author had themselves recorded the same requirement as affected (`affected_frs`). Those holds are friction, not surprises: they stop only because a single iterate has an empty approved scope. **12 PRs (12 %) touched a requirement the author never named**; those are the interesting ones, and the ones you are asked to re-label (section 9).
 - If the approved scope were exactly what the author declared, the hold rate would be **12 %**, not 39 %. That is the real size of "unplanned change"; the rest is the cost of requiring an approval.
 - **Production code is where the blind spot is.** Of the functions any test executes, only **48 %** (1875 of 3928, in the files of `shared` that all 17 test roots measure) are executed by a test that is bound to a requirement. A seeded change to such a line is noticed (5 of 5 probes, by T-code only); a change to a line executed only by unbound tests is not (0 of 4); a change in a `SKILL.md` is not (0 of 5).
@@ -45,11 +45,13 @@ This report measures; nothing gates. Nothing in `ci.yml`, `verify_local.py`, `de
 | PRs whose evidence was incomplete (would be held fail-closed) | 0 |
 | FRs per touching PR | 32 PRs touch 1 FR; 5 touch 2-3; **2 touch 18** (see below) |
 
+**Scope of every held count in sections 0 to 3 and 10:** the git leg, that is T-spec + T-test + static attribution, over all 100 PRs. T-code ran on 20 PRs only (`code.prs`). In that sample the git leg holds 10 of 20; T-code would also hold #915 (a layer-promotion PR the git leg passes: it changed `evaluate_fr`, which FR-01.10 tests execute), so 11 of 20, and it adds seven FRs to #899 (already held). The 100-PR figures therefore understate the full derived set by whatever T-code would add outside the sample.
+
 The two 18-FR PRs (#860, #873) both change `shared/tests/conftest.py`, which is attributed scope-wide to every test below it. They are the "shared helper" case the brief expects; section 5 proposes treating them as broad. They stay held either way: each also has a real FR-bound test edit, so they add 2 to the 39 held. Taken out of the population the rate would be 37 of 98 (38 %) instead of 39 of 100 (39 %).
 
 "Declared only" (18): documentation, planning and tool PRs whose author lists a requirement they relate to without any bound test or spec text changing. A derived set cannot see these by design; they are not misses of the guarantee in section 0 of the brief.
 
-## 3. Hold rate per PR class (empty approved scope)
+## 3. Hold rate per PR class (empty approved scope; git leg, see section 2)
 
 | Class | PRs | Held | Rate |
 |---|---|---|---|
@@ -62,7 +64,7 @@ The two 18-FR PRs (#860, #873) both change `shared/tests/conftest.py`, which is 
 | release | 1 | 0 | 0 % |
 | revert | 0 | - | - |
 
-Class is derived from the branch and title (`replay_baseline_lock.py` via `pr_class`). **Release and layer-promotion** (decision S10 of the brief): the one layer-promotion PR that was held (#886) edited an FR-01.10 test; the other (#915) touched nothing derived. The one release PR (#875) touched nothing. No revert occurred in the window, so that class is unmeasured. Campaign units have no `scope_frs` yet (the field does not exist in any historical brief), so their rate here equals the empty-scope rate; with a correct `scope_frs` it would fall toward the 12 % of section 0.
+Class is derived from the branch and title (`replay_baseline_lock.py` via `pr_class`). **Release and layer-promotion** (decision S10 of the brief): the one layer-promotion PR that was held (#886) edited an FR-01.10 test; the other (#915) touched nothing in the git leg, but T-code attributes its changed function `evaluate_fr` to FR-01.10 (section 5), so **with T-code layer promotion is 2 of 2 held**. The one release PR (#875) touched nothing. No revert occurred in the window, so that class is unmeasured. Campaign units have no `scope_frs` yet (the field does not exist in any historical brief), so their rate here equals the empty-scope rate; with a correct `scope_frs` it would fall toward the 12 % of section 0.
 
 ## 4. Which source notices what
 
@@ -172,11 +174,11 @@ Not proposed: FR-01.09 (changelog; only BL6's guide/glossary text, which are not
 ## 11. Decisions for you (plain language)
 
 1. **N (broad threshold):** how many requirements one shared function may reach before a change to it is only *listed* rather than *held*. Proposal 5 (section 5). Smaller means more holds on shared plumbing; larger means shared plumbing is waved through.
-2. **Rule per PR class:** release, layer promotion, revert, manual. Measured: 0 of 18 docs/bot/manual/release PRs were held; the layer-promotion PR that was held changed a bound test. Proposal: apply the same rule to layer promotion, exempt release PRs that contain no code or test change, and decide revert when one appears.
+2. **Rule per PR class:** release, layer promotion, revert, manual. Measured on the git leg: 0 of 18 docs/bot/manual/release PRs were held, and 1 of 2 layer-promotion PRs (it changed a bound test); with T-code the second one (#915) is held too, so 2 of 2 (it changed a function that FR-01.10 tests run). Proposal: apply the same rule to layer promotion, exempt release PRs that contain no code or test change, and decide revert when one appears.
 3. **BP's own `scope_frs`:** section 10.
 4. **The P3.8 supersession** (an edited test body under an unchanged AC becomes a hold for out-of-scope FRs only): unchanged by this unit; the replay shows T-test is the largest source of hits that are not conftest scope-wide (36 hits, 15 of them undeclared), so the supersession is what makes BP bite.
 5. **Whether BP proceeds.** Facts for the decision: the guarantee covers 12 % of PRs as real unplanned change plus 27 % as approval friction; production code is covered only where a bound test runs it (48 % of executed functions, 2 of 20 sampled PRs saw any T-code hit); prose, shell and config are not covered at all. If you judge 39 % friction too high before `scope_frs` exists, the choice is to start with T-spec + T-test only (the shadow window will tell) rather than T-code, which costs BL2 (a large unit) for a signal that fired in 2 of 20 PRs.
-6. **Thresholds for stop 2:** the hold-rate and friction-rate numbers above are the baseline to set them against (hold 39 %, of which friction 27 %).
+6. **Thresholds for stop 2:** the hold-rate and friction-rate numbers above are the baseline to set them against (hold 39 % on the git leg, of which friction 27 %).
 
 ## 12. Deviations from the brief and disclosed limits
 
@@ -196,4 +198,4 @@ Not proposed: FR-01.09 (changelog; only BL6's guide/glossary text, which are not
 
 ## 13. What the library is, for the units that follow
 
-`shared/scripts/tools/verifiers/_baseline_touch_{git,spec,binding,static,coverage,core}.py` derive the touched set from a merge-base diff (three-dot; no merge base is an error), fail closed on any unreadable or unparsable file, and expose `touched_set` and `evaluate_hold(touched, scope, n)`. `_baseline_touch_replay_{stats,code}.py`, `_baseline_label_hits.py`, `_baseline_measure.py`, `replay_baseline_lock.py` and `measure_baseline.py` are the measurement tooling. `_baseline_touch_static.py` and `_baseline_touch_coverage.py` are replay-grade prototypes that BL2 owns and may replace. The 66 L1 tests are analogues of the brief's S1-S8 and S17 cases, not the L2 seeded regressions the owning units must still deliver. If you stop BP at stop 1, the replay modules can be removed without touching the core derivation.
+`shared/scripts/tools/verifiers/_baseline_touch_{git,spec,binding,static,coverage,core}.py` derive the touched set from a merge-base diff (three-dot; no merge base is an error), fail closed on any unreadable or unparsable file, and expose `touched_set` and `evaluate_hold(touched, scope, n)`. `_baseline_touch_replay_{stats,code}.py`, `_baseline_label_hits.py`, `_baseline_measure.py`, `replay_baseline_lock.py` and `measure_baseline.py` are the measurement tooling. `_baseline_touch_static.py` and `_baseline_touch_coverage.py` are replay-grade prototypes that BL2 owns and may replace. The 66 L1 tests (`pytest --collect-only` on `test_baseline_touch.py` 31, `test_baseline_label.py` 16, `test_baseline_replay.py` 13, `test_baseline_touch_coverage.py` 6; a grep for `def test_` finds 71 lines because five of them sit inside fixture strings) are analogues of the brief's S1-S8 and S17 cases, not the L2 seeded regressions the owning units must still deliver. If you stop BP at stop 1, the replay modules can be removed without touching the core derivation.
