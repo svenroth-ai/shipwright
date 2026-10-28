@@ -120,6 +120,7 @@ def derive_tests_block(project_root: Path | str, run_id: str) -> dict | None:
     skipped = 0
     saw_count = False
     saw_skipped = False
+    unexplained_gap = False
     e2e_total = 0
 
     for name in _COUNTED_LAYERS:
@@ -147,6 +148,11 @@ def derive_tests_block(project_root: Path | str, run_id: str) -> dict | None:
         if layer_skipped is not None:
             saw_skipped = True
             skipped += layer_skipped
+        elif layer_passed < layer_total:
+            # A gap this layer does not explain: summing only the OTHER layers'
+            # skips would turn the charitable "host-gated skips" reading of
+            # the whole gap into a false "N failed" (D4, test-evidence).
+            unexplained_gap = True
         if name == "e2e":
             e2e_total = layer_total
 
@@ -154,7 +160,7 @@ def derive_tests_block(project_root: Path | str, run_id: str) -> dict | None:
         return None
 
     block: dict = {"passed": passed, "total": total}
-    if saw_skipped:
+    if saw_skipped and not unexplained_gap:
         block["skipped"] = skipped
     block["e2e_run"] = e2e_total > 0
 

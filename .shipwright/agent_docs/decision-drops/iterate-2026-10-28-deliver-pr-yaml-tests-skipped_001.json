@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-deliver-pr-yaml-tests-skipped",
+  "date": "2026-10-28",
+  "section": "Iterate - bug: deliver_pr without PyYAML, skipped in event tests",
+  "title": "Keep deliver_pr importable without PyYAML; carry the skipped count into events",
+  "context": "F11 runs deliver_pr.py in consumer projects under a bare uv run. lib.automerge_readiness imported yaml at module level for one function, so importing its POSTED_STATUS_CONTEXTS constant crashed delivery. Separately the F7 template and F5 layer shape never recorded skipped tests, so events failed passed+skipped==total.",
+  "decision": "Import yaml locally inside workflow_report (module stays stdlib-only at load, ADR-045 safe). Guard with a test importing every documented F-phase script with yaml blocked. Add --tests-skipped to F7 and skipped to the F5 layer shape; the finalize fold omits tests.skipped when a layer has an unexplained gap.",
+  "consequences": "Delivery works in any consumer project. Events from layers reporting skipped satisfy the consumer ratchet. record_event.py is unchanged, so legacy passed<total events stay valid.",
+  "rationale": "A lazy import removes the dependency at its source; a --with pyyaml workaround would need repeating at every call site. Rejecting passed<total in record_event would break the documented host-gated-skips reading of existing events.",
+  "rejected": "uv run --with pyyaml in the F11 command (workaround, per call site); moving POSTED_STATUS_CONTEXTS to a new module (needless churn); making record_event reject passed<total without skipped.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

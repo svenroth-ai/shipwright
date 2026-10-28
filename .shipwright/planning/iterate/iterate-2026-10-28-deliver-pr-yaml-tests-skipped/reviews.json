@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-deliver-pr-yaml-tests-skipped",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:12:42.869849+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:12:43.040688+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+          "line": null,
+          "finding": "Parametrized probe only failed when returncode != 0 AND yaml in stderr; runpy.run_path with a module name absent from sys.modules breaks module-level dataclass under future annotations, so scripts could die for unrelated reasons and hide a later yaml import.",
+          "suggestion": "Load via spec_from_file_location with sys.modules registration, assert returncode == 0. FIXED (all 22 scripts return 0).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+          "line": null,
+          "finding": "test_probe_really_blocks_yaml coupled to ci_gate_scan keeping a module-level yaml import.",
+          "suggestion": "tmp_path throwaway. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+          "line": null,
+          "finding": "text=True uses locale encoding; PYTHONPATH and PYTHONSAFEPATH inherited.",
+          "suggestion": "utf-8/replace and scrubbed env. FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+          "line": null,
+          "finding": "Discovery covers only F*.md; other iterate refs (campaign-*.md) not covered; only yaml is blocked.",
+          "suggestion": "Non-blocking follow-up: widen discovery; block all non-stdlib modules. DEFERRED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_iterate_refs_carry_skipped_count.py",
+          "line": null,
+          "finding": "next() without default raises bare StopIteration.",
+          "suggestion": "Default None plus assert message. FIXED.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T19:23:07.053123+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "iterate_tests_block.py",
+          "line": null,
+          "finding": "Claim under doubt: Partial adoption of per-layer skipped turns a charitable PASS into a false FAIL. — Partial adoption of per-layer skipped turns a charitable PASS into a false FAIL.",
+          "suggestion": "FIXED: fold omits tests.skipped when any layer has passed<total and no skipped; F5 note says so; 2 tests added.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": "F5.md",
+          "line": null,
+          "finding": "Claim under doubt: Note overstated which layers are summed; design_fidelity is not counted. — Note overstated which layers are summed; design_fidelity is not counted.",
+          "suggestion": "FIXED: design_fidelity row reverted, counted layers named.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": "test_iterate_scripts_need_no_yaml.py",
+          "line": null,
+          "finding": "Claim under doubt: Discovery narrow (F*.md, hyphen-blind). — Discovery narrow (F*.md, hyphen-blind).",
+          "suggestion": "FIXED: all references plus SKILL.md, hyphens allowed (57 scripts import clean). Still yaml-only by design; other third-party deps left to a follow-up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "required_checks_drift.py",
+          "line": null,
+          "finding": "Claim under doubt: No-workflows repos no longer hit ImportError without PyYAML; stale comment in test_automerge_check_names.py. — No-workflows repos no longer hit ImportError without PyYAML; stale comment in test_automerge_check_names.py.",
+          "suggestion": "ACCEPTED as more correct; comment FIXED.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T19:27:07.263337+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:23:22.413045+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:13:46.266709+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:12:43.199069+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:12:43.356736+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

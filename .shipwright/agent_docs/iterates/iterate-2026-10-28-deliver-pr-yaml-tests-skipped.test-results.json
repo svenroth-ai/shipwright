@@ -1,0 +1,90 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-28-deliver-pr-yaml-tests-skipped",
+    "date": "2026-10-28",
+    "unit": {
+      "status": "passed",
+      "passed": 24027,
+      "skipped": 103,
+      "total": 24130
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_iterate_scripts_need_no_yaml.py shared/tests/test_iterate_refs_carry_skipped_count.py shared/tests/test_iterate_tests_block.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 82,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\deliver-pr-yaml-tests-skipped\\.shipwright\\runs\\iterate-2026-10-28-deliver-pr-yaml-tests-skipped\\surface_verification.log",
+      "timestamp": "2026-10-28T19:35:38.880Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "deliver_pr.py and every F-phase script documented in the iterate references import with PyYAML unavailable",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_scripts_need_no_yaml.py (55 tests, every script documented in the iterate skill) PASSED; fails on pre-fix automerge_readiness.py"
+        },
+        {
+          "behavior": "workflow_report still parses workflows with the local yaml import",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_automerge_readiness.py PASSED"
+        },
+        {
+          "behavior": "F7 record_event template passes --tests-skipped and the F5 layer shape documents skipped",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_refs_carry_skipped_count.py (2 tests) PASSED"
+        },
+        {
+          "behavior": "finalize fold sums layer skipped into event tests.skipped",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_tests_block.py PASSED in F0"
+        },
+        {
+          "behavior": "fold omits tests.skipped when a layer has an unexplained passed<total gap and keeps it otherwise",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_tests_block.py::TestDerive (2 new tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-28-deliver-pr-yaml-tests-skipped",
+    "commit": "8b3ba79ac59c418d05350bd992af1f64a1ced747",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

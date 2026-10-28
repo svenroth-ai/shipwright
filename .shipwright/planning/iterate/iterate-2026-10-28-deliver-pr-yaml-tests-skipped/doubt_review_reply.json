@@ -1,0 +1,39 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "file": "iterate_tests_block.py",
+   "claim_under_doubt": "Partial adoption of per-layer skipped turns a charitable PASS into a false FAIL.",
+   "disproof_attempt": "Partial adoption of per-layer skipped turns a charitable PASS into a false FAIL.",
+   "what_would_resolve_it": "FIXED: fold omits tests.skipped when any layer has passed<total and no skipped; F5 note says so; 2 tests added."
+  },
+  {
+   "severity": "low",
+   "lens": "contract",
+   "file": "F5.md",
+   "claim_under_doubt": "Note overstated which layers are summed; design_fidelity is not counted.",
+   "disproof_attempt": "Note overstated which layers are summed; design_fidelity is not counted.",
+   "what_would_resolve_it": "FIXED: design_fidelity row reverted, counted layers named."
+  },
+  {
+   "severity": "low",
+   "lens": "contract",
+   "file": "test_iterate_scripts_need_no_yaml.py",
+   "claim_under_doubt": "Discovery narrow (F*.md, hyphen-blind).",
+   "disproof_attempt": "Discovery narrow (F*.md, hyphen-blind).",
+   "what_would_resolve_it": "FIXED: all references plus SKILL.md, hyphens allowed (57 scripts import clean). Still yaml-only by design; other third-party deps left to a follow-up."
+  },
+  {
+   "severity": "low",
+   "lens": "blast radius",
+   "file": "required_checks_drift.py",
+   "claim_under_doubt": "No-workflows repos no longer hit ImportError without PyYAML; stale comment in test_automerge_check_names.py.",
+   "disproof_attempt": "No-workflows repos no longer hit ImportError without PyYAML; stale comment in test_automerge_check_names.py.",
+   "what_would_resolve_it": "ACCEPTED as more correct; comment FIXED."
+  }
+ ],
+ "summary": "1 medium + 3 low doubts, all addressed in the diff or accepted with reason."
+}

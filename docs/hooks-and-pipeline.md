@@ -643,6 +643,10 @@ until the PR is
 the PR is closed, or the poll times out while pending (keep watching, not "done").
 A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass.
 
+`deliver_pr.py` runs in the *consumer* project under a bare `uv run`, so its import chain must not need PyYAML: 
+`lib.automerge_readiness` imports `yaml` locally inside `workflow_report` (the only function that parses YAML), and 
+`shared/tests/test_iterate_scripts_need_no_yaml.py` imports every `{shared_root}/scripts/*.py` the F-phase references run with `yaml` blocked.
+
 **"Diagnose, fix, re-push" is not always the remedy — the PR-review gate can
 repeat itself (trg-ac24ec5b).** PR #690 pushed ten times over ~7h40m, blocked by
 the Tier-3 `PR Review` gate every time; nine of twelve verdicts restated one

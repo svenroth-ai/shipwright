@@ -6,7 +6,10 @@ the adopter must require the *exact* GitHub check names or branch protection
 waits forever. This module derives them from **deployed** workflow files
 (matrix-expanded), rather than guessing.
 
-Self-contained on purpose: this module imports only stdlib + PyYAML and holds
+Self-contained on purpose: this module imports only stdlib at module level (PyYAML is imported lazily
+inside ``workflow_report``, the one function that parses YAML — so importing
+the constants, e.g. ``POSTED_STATUS_CONTEXTS`` from ``deliver_pr.py`` in a
+consumer project without PyYAML, never needs it) and holds
 its own ``KNOWN_WORKFLOWS`` list (relative paths under `.github/workflows/`),
 so the adopt scaffolder can load it via ``spec_from_file_location`` without the
 ``lib`` package-name collision (ADR-045). ``KNOWN_WORKFLOWS`` is drift-pinned to
@@ -19,8 +22,6 @@ from __future__ import annotations
 import itertools
 import re
 from pathlib import Path
-
-import yaml
 
 # Template + deployed-doc paths.
 AUTOMERGE_SETUP_TEMPLATE_PATH = "shared/templates/AUTOMERGE_SETUP.md.template"
@@ -164,6 +165,8 @@ def workflow_report(project_root: Path, workflow_rel: str) -> dict | None:
     ``checks`` are unconditional names; ``conditional`` holds name/if pairs.
     ``pr_trigger`` is the `pull_request` filter mapping (None when bare).
     """
+    import yaml  # noqa: PLC0415  (lazy: keep the module importable without PyYAML)
+
     path = Path(project_root) / ".github" / "workflows" / workflow_rel
     if not path.exists():
         return None

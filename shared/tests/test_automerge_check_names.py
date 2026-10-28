@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("yaml")  # automerge_readiness imports PyYAML at module load
+pytest.importorskip("yaml")  # workflow_report imports PyYAML lazily; these tests call it
 
 from lib import automerge_readiness as ar  # noqa: E402
 
