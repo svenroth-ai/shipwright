@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T13:53:46.001885+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan references the brief but omits the required overlap check against open units in campaigns U and e2e-run-findings. This is a start condition, and the proposed file list alone does not establish that BL0 may proceed.",
+          "suggestion": "Before implementation, verify the exact permitted touch set and inspect both campaigns’ open units for overlapping files. Escalate any overlap and explicitly stop after the BL0 report for operator stop 1.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "“Squash first-parent as merge base” assumes a merge strategy that may not hold across the last 100 PRs. Using the wrong base or head can attribute unrelated changes to a PR or omit its changes, corrupting touched sets and hold rates.",
+          "suggestion": "Define how base and head commits are resolved for each supported merge strategy. Record immutable SHAs per PR, verify the resulting diff corresponds to that PR, and mark unsupported or unavailable histories as incomplete.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Restricted test tiers make the coverage replay potentially incomplete. An existing test outside those tiers can exercise changed code without appearing in the coverage contexts. Disclosing the restriction alone does not make aggregate hold rates or the proposed fan-out threshold reliable.",
+          "suggestion": "Record collected and executed tests, missing contexts, and run failures for each sampled PR. Treat unavailable coverage as incomplete under the stated fail-closed rule, report incomplete cases separately, and qualify threshold recommendations by the observed coverage limits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Replaying saved JSON can reproduce statistics without reproducing how the evidence was obtained. The plan does not specify a frozen PR cohort, sampling seed, historical scope metadata, or coverage execution configuration. Those omissions can change the sample, labels, and results between runs.",
+          "suggestion": "Store an evidence manifest containing PR IDs, base/head SHAs, resolved scope values and their sources, tool versions, commands, tier selection, sampling seed, and probe outcomes. Distinguish recomputing the report from rerunning evidence collection.  The library-first approach and exclusion of live gates are sound, but the replay needs explicit provenance and completeness rules before its results can support operator stop 1. I could not inspect the binding brief because workspace access was blocked, so brief-specific compliance remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T12:25:49.309097+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review: BL0 — Touched-set library and replay\n\n**Category: approach**\n**Severity: medium**\nThe mini-plan decomposes the library into 8 modules (`_baseline_touch_{git,spec,binding,static,coverage,core,replay_stats,replay_code}.py`) before any of them has proven they need separation. The `replay_code` module appears to have exactly one caller (`replay_baseline_lock.py`), and `replay_stats` is plausibly a single-use wrapper around aggregation. Start with 2-3 modules (git/diff reading, digests+scope rule, replay driver) and split only when a boundary earns itself. If the campaign's later units genuinely consume pieces separately, that's the justification to name in the plan — say so explicitly.\n\n**Category: approach**\n**Severity: medium**\n\"T-spec: normative digest per FR, markers/order ignored\" is the highest-risk design decision in the whole unit and gets one clause. Whitespace/comment-insensitivity is easy; the hard question is what counts as *normative* — does rewording an FR invalidate its baseline digest? This determines the false-hold rate for every PR class the operator will see at stop 1. The plan should state the digest normalization rules concretely (or point to where the brief pins them) and include at least one L1 test where a semantically equivalent FR reformat does *not* break the digest, and one where a real edit does.\n\n**Category: edge-case**\n**Severity: high**\nThe replay assumes \"squash first-parent as merge base\" for the last 100 merged PRs. Real repos of any age have squash merges, merge commits, rebased merges, and PRs whose merge-base commit is no longer buildable (deps removed since). The plan needs: (a) how it detects and counts non-squash merges in the 100, (b) what happens when a merge base can't run the suite (skip + disclose in the report, or fail — currently unhandled, and \"fail-closed on incomplete\" only seems to apply to the scope rule, not the replay). Skipped PRs silently shrinking the sample below 100 would poison the base […truncated]\n\n[openai] 1. **Category: dependency · Severity: high**  \n   **Finding:** The plan references the brief but omits the required overlap check against open units in campaigns U and e2e-run-findings. This is a start condition, and the proposed file list alone does not establish that BL0 may proceed.  \n   **Suggestion:** Before implementation, verify the exact permitted touch set and inspect both campaigns’ open units for overlapping files. Escalate any overlap and explicitly stop after the BL0 report for operator stop 1.\n\n2. **Category: approach · Severity: high**  \n   **Finding:** “Squash first-parent as merge base” assumes a merge strategy that may not hold across the last 100 PRs. Using the wrong base or head can attribute unrelated changes to a PR or omit its changes, corrupting touched sets and hold rates.  \n   **Suggestion:** Define how base and head commits are resolved for each supported merge strategy. Record immutable SHAs per PR, verify the resulting diff corresponds to that PR, and mark unsupported or unavailable histories as incomplete.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** Restricted test tiers make the coverage replay potentially incomplete. An existing test outside those tiers can exercise changed code without appearing in the coverage contexts. Disclosing the restriction alone does not make aggregate hold rates or the proposed fan-out threshold reliable.  \n   **Suggestion:** Record collected and executed tests, missing contexts, and run failures for each sampled PR. Treat unavailable coverage as incomplete under the stated fail-closed rule, report incomplete cases separately, and qualify threshold recommendations by the observed coverage limits.\n\n4. **Category: approach · Severity: medium**  \n   **Finding:** Replaying saved JSON can reproduce statistics without reproducing how the evidence was obtained. The plan does not specify a frozen PR cohort, sampling seed, historical scope metadata, or coverage execution configuration. Th […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_baseline_label_all.py",
+          "line": 28,
+          "finding": "Latent mismatch: a removed module-level line executed by a bound test lands in targets['<module>'] but _changed_functions never returns it, so such a T-code hit would be labelled wrong. No committed number is affected (no '<module>' key in any fan_out or code map).",
+          "suggestion": "Log as known limit (REPLAY.md section 12); fix in a later unit if it matters.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T19:50:07.757673+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "e5437a10aadc9cb4f6956f52a0e47dc231bbd46f"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:50:07.887262+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "e5437a10aadc9cb4f6956f52a0e47dc231bbd46f"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "(whole diff) — Finding: The REPLAY report is an explicit acceptance criterion (\"REPLAY report committed with all stop-1 inputs listed in brief section 5 item 1\", including \"BP's own scope_frs proposal\"), and the unit owns writing it. This diff contains only the library, the replay tooling and tests — no report artifact, and no code anywhere computes a `scope_frs` proposal. The campaig […truncated]",
+          "line": null,
+          "finding": "Add the report-generation (or at minimum the committed REPLAY report and a function that derives the scope_frs proposal from the replay JSON) to this unit before stop 1, or state explicitly in the report where the proposal is produced.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_baseline_touch_replay_code.py — `select_prs` (loop `out.append(r); if len(out) == k: break`) — Finding: `select_prs(records, 0)` returns ALL records, not none. The break is only checked after an append, so `k=0` never matches. Concretely, `replay_baseline_lock.py --probes-only` without an explicit `--probes` value passes the default `0` into `rerun_prob […truncated]",
+          "line": null,
+          "finding": "Guard at the top of `select_prs`: `if k <= 0: return []`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_baseline_touch_binding.py — `test_touched` fresh/moved logic — Finding: A test that is MOVED (renamed/relocated, identical digest) AND re-tagged (`covers` changed) is not matched as moved (bindings differ), so the base copy fires as \"deleted\" with its base FRs — but the head copy's new binding is never hit, because fresh (non-moved) head tests are never […truncated]",
+          "line": null,
+          "finding": "When a gone test has an identical digest to a fresh one but different bindings, treat it as edited (hit the union of base and head bindings) rather than falling through to delete-only.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_baseline_touch_git.py — `read()` — Finding: `git show <sha>:<path>` also succeeds when `<path>` names a directory in the tree, returning the tree listing; the function would then treat a tree listing as file content (rc == 0 short-circuits before the `cat-file -e` disambiguation). A diff touching `foo.py` while a `foo.py/` directory exists at that side  […truncated]",
+          "line": null,
+          "finding": "On rc == 0, verify the object is a blob (e.g. `cat-file -t`), or use `git cat-file blob:<sha>:<path>` which fails for non-blob paths.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/replay_baseline_lock.py — `replay_one` — Finding: `GitRev(repo, f\"{oid}^\", oid)` assumes every merged PR is a squash (first parent = merge base). For PRs merged with a merge commit (or rebase-merge where the head commit has two parents), `merge-base(oid^, oid)` is the parent for squash but for a true merge commit the first parent is main, so the diff is the whole  […truncated]",
+          "line": null,
+          "finding": "Detect non-squash merges (e.g. `git rev-list --parents -1` showing two parents with the second parent being the PR head) and mark those records with an error/skip rather than measuring them against the wrong base.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_baseline_touch.py — `test_broad_changes_are_listed_not_held` — Finding: The broad/fan-out path is only tested by manually poking `t.code`/`t.fan_out` on a `TouchedSet`, so the test validates `evaluate_hold` in isolation but never exercises the real pipeline that populates `fan_out` with the broad rule in mind (the coverage tests in test_baseline_touch_c […truncated]",
+          "line": null,
+          "finding": "Add one coverage-based test that builds a touched set via `touched_set(rev, ctx)` with a function reaching >n FRs and asserts `evaluate_hold(t, n=1)` lists it as broad.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_baseline_replay.py — `test_cli_summarises_and_resummarises_from_json` — Finding: The CLI test only asserts exit code 0 and that \"hold_rate\" appears in stdout; it never inspects `out.json`'s summary contents, so a summarise that emitted wrong numbers (wrong denominators, wrong per-class rates) would pass. The pure `summarise` is tested directly, but the  […truncated]",
+          "line": null,
+          "finding": "Load `out.json` after the first run and assert a couple of concrete summary values (e.g. `prs_ok`, `hold_rate`, `sample` list).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/replay_baseline_lock.py:106 — `payload` construction",
+          "line": null,
+          "finding": "The diff contains no committed REPLAY report or replay results demonstrating the required 100 PRs and 20 T-code samples. The script alone does not satisfy the acceptance criteria or supply the required stop-1 inputs, including proposed N, probe results, operator labels/sample, and BP’s `scope_frs` proposal.",
+          "suggestion": "Run the required replay and probes, commit the reproducible results and REPLAY report, and document the halt for operator stop 1.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_baseline_touch_static.py:143 — added-file exclusion",
+          "line": null,
+          "finding": "Every added file is skipped, including a new `conftest.py` that changes existing tests through an autouse fixture, hook, or `pytest_plugins`. T-test finds no test functions in that file, and T-code also skips added files, so such a change can produce an empty touched set despite changing existing FR-bound tests.",
+          "suggestion": "Process added `conftest.py` files and attribute scope-wide behavior to existing tests in their directory scope. Add a regression test introducing an autouse fixture beside an existing bound test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_baseline_touch_binding.py:12 — runtime bindings deferred",
+          "line": null,
+          "finding": "The implementation explicitly defers the manifest’s runtime test bindings, although its own description identifies them as a required binding source. Static function tags cannot conservatively replace those bindings: a test whose FR binding exists only in the manifest receives no FR here, so both test edits and code executed by that test can go undetected.",
+          "suggestion": "Union base-manifest bindings with AST bindings, normalizing parameterized runtime IDs to the appropriate test identity. Test manifest-only bindings for both T-test and T-code attribution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/replay_baseline_lock.py:59 — `gh pr list` invocation",
+          "line": null,
+          "finding": "Filtering `gh pr list` to merged PRs and applying `--limit` does not explicitly select by merge time. PRs created earlier but merged recently can be omitted, so this does not reproducibly measure the specified last 100 merged PRs.",
+          "suggestion": "Retrieve PRs ordered by merge time before applying the limit, and preserve the selected metadata as replay input. Test selection with PR creation/number order differing from merge order.  Overall assessment: ship-with-fixes. The library has useful behavioral tests, but attribution gaps can silently miss baseline changes, and the required replay deliverable is absent from this diff. The binding brief could not be inspected because local command execution was blocked, so additional brief-specific compliance remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T13:53:46.128739+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec — Severity: high\n  File: (whole diff) — Finding: The REPLAY report is an explicit acceptance criterion (\"REPLAY report committed with all stop-1 inputs listed in brief section 5 item 1\", including \"BP's own scope_frs proposal\"), and the unit owns writing it. This diff contains only the library, the replay tooling and tests — no report artifact, and no code anywhere computes a `scope_frs` proposal. The campaign is supposed to halt after this unit for operator stop 1, which consumes exactly those inputs.\n  Suggestion: Add the report-generation (or at minimum the committed REPLAY report and a function that derives the scope_frs proposal from the replay JSON) to this unit before stop 1, or state explicitly in the report where the proposal is produced.\n\n- Category: bug — Severity: medium\n  File: shared/scripts/tools/verifiers/_baseline_touch_replay_code.py — `select_prs` (loop `out.append(r); if len(out) == k: break`) — Finding: `select_prs(records, 0)` returns ALL records, not none. The break is only checked after an append, so `k=0` never matches. Concretely, `replay_baseline_lock.py --probes-only` without an explicit `--probes` value passes the default `0` into `rerun_probes`, which then probes every PR in the JSON instead of none — inconsistent with `replay_code`, where `probes=0` correctly means \"no probes\" (`if n < probes`).\n  Suggestion: Guard at the top of `select_prs`: `if k <= 0: return []`.\n\n- Category: edge-case — Severity: medium\n  File: shared/scripts/tools/verifiers/_baseline_touch_binding.py — `test_touched` fresh/moved logic — Finding: A test that is MOVED (renamed/relocated, identical digest) AND re-tagged (`covers` changed) is not matched as moved (bindings differ), so the base copy fires as \"deleted\" with its base FRs — but the head copy's new binding is never hit, because fresh (non-moved) head tests are never attributed. So an FR newly bound by a moved test is silently missed by T-test. Since `covers` is de […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: shared/scripts/tools/replay_baseline_lock.py:106 — `payload` construction\n- Finding: The diff contains no committed REPLAY report or replay results demonstrating the required 100 PRs and 20 T-code samples. The script alone does not satisfy the acceptance criteria or supply the required stop-1 inputs, including proposed N, probe results, operator labels/sample, and BP’s `scope_frs` proposal.\n- Suggestion: Run the required replay and probes, commit the reproducible results and REPLAY report, and document the halt for operator stop 1.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/tools/verifiers/_baseline_touch_static.py:143 — added-file exclusion\n- Finding: Every added file is skipped, including a new `conftest.py` that changes existing tests through an autouse fixture, hook, or `pytest_plugins`. T-test finds no test functions in that file, and T-code also skips added files, so such a change can produce an empty touched set despite changing existing FR-bound tests.\n- Suggestion: Process added `conftest.py` files and attribute scope-wide behavior to existing tests in their directory scope. Add a regression test introducing an autouse fixture beside an existing bound test.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/verifiers/_baseline_touch_binding.py:12 — runtime bindings deferred\n- Finding: The implementation explicitly defers the manifest’s runtime test bindings, although its own description identifies them as a required binding source. Static function tags cannot conservatively replace those bindings: a test whose FR binding exists only in the manifest receives no FR here, so both test edits and code executed by that test can go undetected.\n- Suggestion: Union base-manifest bindings with AST bindings, normalizing parameterized runtime IDs to the appropriate test identity. Test manifest-only bindings for both T-test and T-code attribution.\n\n- Category: bug\n- Severity: medium\n- File […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T19:50:07.622393+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "e5437a10aadc9cb4f6956f52a0e47dc231bbd46f"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T12:25:49.467486+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T12:25:49.624413+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
