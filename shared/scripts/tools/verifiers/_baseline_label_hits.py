@@ -256,8 +256,8 @@ def _code_hits(repo: Path, data: dict, workdir: Path | None) -> list[dict]:
     from ._baseline_touch_coverage import load_contexts, merge_contexts
 
     out = []
-    if workdir is None:
-        return out
+    if workdir is None:  # no context databases: keep the code hits an earlier run stored, never drop them
+        return [{"pr": e["pr"], **h} for e in (data.get("code") or {}).get("prs", []) for h in e.get("hits", [])]
     cache: dict[tuple[str, str], bool] = {}
     for entry in (data.get("code") or {}).get("prs", []):
         if not entry.get("code"):
@@ -265,6 +265,8 @@ def _code_hits(repo: Path, data: dict, workdir: Path | None) -> list[dict]:
         rec = next(r for r in data["records"] if r["pr"] == entry["pr"])
         rev = GitRev(repo, f"{rec['merge']}^", rec["merge"])
         dbs = sorted(Path(workdir).glob(f"cov-{entry['pr']}-*")) or sorted((Path(workdir) / "codeleg").glob(f"cov-{entry['pr']}-*"))
+        if not dbs:  # silently labelling against no contexts would call every code hit wrong
+            raise FileNotFoundError(f"no context databases cov-{entry['pr']}-* under {workdir}")
         ctx = merge_contexts([load_contexts(db, repo) for db in dbs])  # every tier ran from the repo root: no prefix
 
         def bound(tid: str, fr: str, rev=rev, cache=cache) -> bool:
@@ -279,5 +281,5 @@ def _code_hits(repo: Path, data: dict, workdir: Path | None) -> list[dict]:
         for fr, funcs in sorted(entry["code"].items()):
             ok, why = label_code_hit(rev, fr, funcs, ctx, bound)
             out.append({"pr": entry["pr"], "fr": fr, "source": "code", "label": _label(ok, fr, rec["declared"]), "reason": why})
-            entry.setdefault("hits", []).append(out[-1])
+        entry["hits"] = [{k: v for k, v in h.items() if k != "pr"} for h in out if h["pr"] == entry["pr"]]  # replace, never append
     return out

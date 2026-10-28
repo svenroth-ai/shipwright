@@ -20,6 +20,7 @@ from pathlib import Path
 
 from ._baseline_touch_binding import index_tests
 from ._baseline_touch_coverage import _spans
+from ._baseline_touch_git import is_test_path
 
 __all__ = ["fanout_changed", "fanout_executed", "verifier_wallclock", "time_root", "discover_roots"]
 
@@ -41,13 +42,18 @@ def _over(sizes: list[int], n: int) -> int:
 def fanout_changed(code_prs: list[dict]) -> dict:
     """FRs per changed function, from the T-code leg's per-PR ``fan_out`` (function -> FRs).
 
-    ``changed_unattributed`` counts the changed functions no measured FR-bound test executes
-    (the ``unattributed`` notes), so the zero bucket is not silently dropped.
+    ``changed_unattributed`` counts the changed FUNCTIONS no measured FR-bound test executes (function-level
+    ``unattributed`` notes); ``changed_files_no_coverage`` counts the FILE-level "no coverage at base" notes
+    (a different unit: whole files the measured tiers never ran), split into production and test files.
     """
     sizes = [len(frs) for pr in code_prs for frs in (pr.get("fan_out") or {}).values()]
-    unattributed = sum(1 for pr in code_prs for note in pr.get("unattributed", []) if "executed by no FR-bound test" in note)
+    notes = [note for pr in code_prs for note in pr.get("unattributed", [])]
+    unattributed = sum(1 for note in notes if "executed by no FR-bound test" in note)
+    no_cov = [note.split(": ", 1)[0] for note in notes if "no coverage at base" in note]
+    tests = sum(1 for path in no_cov if is_test_path(path))
     return {"definition": "FRs reached per changed function (brief section 3, BL0)", "prs": len(code_prs),
             "changed_functions_attributed": len(sizes), "changed_unattributed": unattributed,
+            "changed_files_no_coverage": {"total": len(no_cov), "production": len(no_cov) - tests, "test_files": tests},
             "histogram": dict(sorted(Counter(sizes).items())), **_stats(sizes),
             "over_n": {str(n): _over(sizes, n) for n in (1, 2, 5, 8)}}
 

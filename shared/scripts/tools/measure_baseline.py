@@ -68,6 +68,8 @@ def cmd_fanout(args, repo: Path, out: Path) -> None:
 
     data = load(out)
     merge(out, "fanout_changed", fanout_changed((data.get("code") or {}).get("prs", [])))
+    if args.changed_only:
+        return
     dbs = sorted(p for p in Path(args.workdir).glob("cov-*") if "-plain" not in p.name and "." not in p.name and p.is_file() and p.stat().st_size)
     parts = [load_contexts(db, repo, "") for db in dbs]
     merge(out, "fanout_executed", {**fanout_executed(merge_contexts(parts), repo), "databases": [p.name for p in dbs]})
@@ -96,10 +98,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--plain", nargs="*")
     ap.add_argument("--count", type=int, default=5)
+    ap.add_argument("--changed-only", action="store_true", help="fanout: only the per-changed-function figure (needs no databases)")
     args = ap.parse_args(argv)
     repo = Path(args.repo).resolve()
     out = Path(args.out) if args.out else repo / DEFAULT_OUT
-    if args.command in ("roots", "fanout") and not args.workdir:
+    if args.command in ("roots", "fanout") and not args.workdir and not args.changed_only:
         ap.error(f"{args.command} needs --workdir")
     {"roots": cmd_roots, "fanout": cmd_fanout, "verifier": cmd_verifier, "label": cmd_label}[args.command](args, repo, out)
     return 0

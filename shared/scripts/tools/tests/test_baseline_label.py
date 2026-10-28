@@ -176,3 +176,41 @@ def test_cli_merges_results_into_the_replay_json(tmp_path, monkeypatch):
     assert measure["verifier"]["runs"][0]["pr"] == 1 and [r["contexts"] for r in measure["roots"]["runs"]] == [True, False]
     with pytest.raises(SystemExit):
         measure_baseline.main(["fanout", "--repo", str(tmp_path), "--out", str(out)])
+
+
+def _code_leg_repo(tmp_path):
+    prod = "def price():\n    return 1\n"
+    root = make_repo(tmp_path, {**FILES, "pkg/prod.py": prod})
+    commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"pkg/prod.py": prod.replace("return 1", "return 11")}, "change")
+    rec = {"pr": 7, "merge": head, "declared": [], "sources": {}, "evidence": {"test": {}, "static": {}}}
+    data = {"records": [rec], "code": {"prs": [{"pr": 7, "code": {"FR-01.09": ["pkg/prod.py::price"]}, "tiers": []}]}}
+    return root, data
+
+
+def test_label_is_idempotent_for_code_hits_with_and_without_a_workdir(tmp_path, monkeypatch):
+    import verifiers._baseline_touch_coverage as cov
+
+    root, data = _code_leg_repo(tmp_path)
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / "cov-7-0").write_bytes(b"")
+    monkeypatch.setattr(cov, "load_contexts", lambda db, repo, prefix="": {"pkg/prod.py": {2: {"pkg/tests/test_a.py::test_price"}}})
+    for _ in range(2):
+        L.label_all(root, data, work)
+    assert len(data["code"]["prs"][0]["hits"]) == 1 and data["measure"]["hit_labels"]["by_source"]["code"] == {"correct-undetermined": 1}
+    L.label_all(root, data, None)  # a rerun without databases keeps the stored code hits
+    assert data["measure"]["hit_labels"]["by_source"]["code"] == {"correct-undetermined": 1} and len(data["code"]["prs"][0]["hits"]) == 1
+
+
+def test_code_labels_fail_loudly_without_databases(tmp_path):
+    root, data = _code_leg_repo(tmp_path)
+    (tmp_path / "empty").mkdir()
+    with pytest.raises(FileNotFoundError):
+        L.label_all(root, data, tmp_path / "empty")
+
+
+def test_fanout_changed_separates_function_notes_from_file_notes():
+    prs = [{"fan_out": {}, "unattributed": ["a.py: no coverage at base (x)", "pkg/tests/test_b.py: no coverage at base (x)", "c.py::f: executed by no FR-bound test"]}]
+    out = M.fanout_changed(prs)
+    assert out["changed_unattributed"] == 1 and out["changed_files_no_coverage"] == {"total": 2, "production": 1, "test_files": 1}
