@@ -1,0 +1,65 @@
+{
+  "run_id": "iterate-2026-10-28-e1-boundary-gate-uncommitted-output",
+  "date": "2026-10-28T17:41:49.281616Z",
+  "event_at": "2026-10-28T17:33:24.455581+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-e2e-run-findings--E1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-28-e1-boundary-gate-uncommitted-output",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "earlier-phase uncommitted output does not trip the boundary gate",
+        "disposition": "tested",
+        "evidence": "test_check_design_gates.py::test_uncommitted_output_of_an_earlier_phase_does_not_trip_the_boundary PASSED"
+      },
+      {
+        "behavior": "change made this session outside allowed paths still fails",
+        "disposition": "tested",
+        "evidence": "test_check_design_gates.py::test_a_change_this_session_makes_outside_the_allowed_paths_still_fails PASSED"
+      },
+      {
+        "behavior": "edit/restore/delete of an earlier phase's dirty file still fails",
+        "disposition": "tested",
+        "evidence": "test_check_design_gates.py::test_editing_an_earlier_phases_dirty_file_this_session_still_fails + restore + deletion tests PASSED"
+      },
+      {
+        "behavior": "missing/corrupt baseline is strict; resume keeps baseline; odd file names",
+        "disposition": "tested",
+        "evidence": "test_check_design_gates.py::test_a_corrupt_baseline_falls_back_to_strict_not_a_traceback + resume + space/non-ascii tests PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-design --extra dev pytest plugins/shipwright-design/tests/test_check_design_gates.py -q",
+    "exit_code": 0,
+    "tests_run": 13,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-e2e-run-findings--E1\\.shipwright\\runs\\iterate-2026-10-28-e1-boundary-gate-uncommitted-output\\surface_verification.log",
+    "timestamp": "2026-10-28T17:32:25.506Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_build",
+    "touches_ci_supplychain"
+  ]
+}

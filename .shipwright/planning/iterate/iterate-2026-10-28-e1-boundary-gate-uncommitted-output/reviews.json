@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-e1-boundary-gate-uncommitted-output",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T17:32:11.832741+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reducibility / approach",
+          "file": null,
+          "line": null,
+          "finding": "Fingerprinting every dirty path in the working tree is more machinery than the problem needs. The failing case is specifically \"uncommitted output of the previous phase\", which lives in a known prefix (`.shipwright/designs/`), and the baseline is written by the same tool that later reads it within one session. A whole-tree sha256 snapshot system (write/load/diff module, cache-layout test updates, corruption handling) is being added to solve \"ignore dirty paths under the design output prefix.\"",
+          "suggestion": "Have `boundary_gate` simply filter `git_dirty_paths` to exclude paths under the session's allowed design-output prefix (or, at most, compare against the path list recorded at session start — no content hashing needed since gate semantics are per-path, not per-content). One small function plus a test, no new shared module, no cache-layout test churn. If per-content fingerprints are genuinely required by the brief's FR wording, say so in the plan; otherwise this is over-production.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The baseline file itself (`.shipwright/designs/.boundary-baseline.json`) is a new dirty path created after the gate's reference point. Depending on when `git_dirty_paths` is sampled relative to baseline write and whether the file is gitignored, the gate will either flag its own baseline or silently need to special-case it. The plan doesn't mention excluding it.",
+          "suggestion": "Either gitignore the baseline file and confirm `git_dirty_paths` ignores ignored files, or explicitly exclude the baseline path in `session_changes`. Add a test for this case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The accepted resume risk is bigger than \"same as phase_write_boundary\": a fingerprint scheme makes it worse than a prefix scheme. With prefix filtering, pre-resume edits under `.shipwright/designs/` are still under the allowed prefix and thus still ignored — the failure mode disappears entirely. With fingerprints, pre-resume edits to design files are indistinguishable from pre-baseline state only if the content matches; edits to other files (legitimately new dirty files the user created between sessions) are correctly flagged, but edits to design files diverging from baseline would be flagged while identical-content files wouldn't — behavior depends on content coincidence.",
+          "suggestion": "Another argument for prefix filtering; if keeping fingerprints, document the resume behavior precisely and add a test for the resume path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "No handling for a corrupt, unreadable, or schema-mismatched baseline (e.g., older format after a plugin update). Falling back to \"no baseline = strict\" silently is probably fine, but it should be stated and tested so a corrupt file doesn't crash the gate.",
+          "suggestion": "Explicitly specify the fallback: corrupt/unparseable baseline → strict mode + warning to stderr, not a traceback. One test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The baseline stores sha256 fingerprints of every dirty file in the repo, which is a weak content oracle for files outside the design prefix (confirming whether a file's content matches a known candidate). Low practical risk since it's local and inside the repo, but if you drop fingerprints per the first finding, this vanishes too.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step ordering depends on `setup-design-session.py` and the gate being updated in the same unit (otherwise sessions created before the gate change have no baseline and get strict mode). Plan implies same-diff; confirm both ship together and note strict-mode fallback as the compatibility bridge for existing sessions.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Filtering only current dirty paths misses a baseline-dirty file that the design phase restores to HEAD: it becomes clean and disappears from `git_dirty_paths`, despite changing during the session.",
+          "suggestion": "Compare the union of baseline and current dirty paths against their baseline states. Add a regression test for restoring an out-of-boundary file to HEAD.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Content hashes alone do not capture all Git changes. An already-dirty file can retain identical working-tree bytes while its staged content or executable bit changes. Deleted files also require an explicit state rather than an ordinary content hash.",
+          "suggestion": "Define the fingerprint’s supported states explicitly, including absence, file type/mode, and index state where the boundary covers staged changes. Test deletion and staged changes with unchanged working-tree content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The fallback is specified only for a missing baseline. Truncated JSON, unsupported baseline versions, or fingerprint read failures could crash the gate or accidentally suppress violations, depending on implementation.",
+          "suggestion": "Treat invalid or unreadable baseline data as strict checking with a clear diagnostic. Never treat two failed fingerprint reads as an unchanged file; add focused failure-path tests.  The baseline approach is appropriate for separating inherited changes from session changes, and the accepted resume behavior is clearly disclosed. Address the comparison and failure-handling gaps before implementation is considered ready; brief compliance remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T17:31:35.915880+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: reducibility / approach — Severity: medium**\n  **Finding:** Fingerprinting every dirty path in the working tree is more machinery than the problem needs. The failing case is specifically \"uncommitted output of *the previous phase*\", which lives in a known prefix (`.shipwright/designs/`), and the baseline is written by the same tool that later reads it within one session. A whole-tree sha256 snapshot system (write/load/diff module, cache-layout test updates, corruption handling) is being added to solve \"ignore dirty paths under the design output prefix.\"\n  **Suggestion:** Have `boundary_gate` simply filter `git_dirty_paths` to exclude paths under the session's allowed design-output prefix (or, at most, compare against the path list recorded at session start — no content hashing needed since gate semantics are per-path, not per-content). One small function plus a test, no new shared module, no cache-layout test churn. If per-content fingerprints are genuinely required by the brief's FR wording, say so in the plan; otherwise this is over-production.\n\n- **Category: edge-case — Severity: high**\n  **Finding:** The baseline file itself (`.shipwright/designs/.boundary-baseline.json`) is a new dirty path created *after* the gate's reference point. Depending on when `git_dirty_paths` is sampled relative to baseline write and whether the file is gitignored, the gate will either flag its own baseline or silently need to special-case it. The plan doesn't mention excluding it.\n  **Suggestion:** Either gitignore the baseline file and confirm `git_dirty_paths` ignores ignored files, or explicitly exclude the baseline path in `session_changes`. Add a test for this case.\n\n- **Category: risk — Severity: medium**\n  **Finding:** The accepted resume risk is bigger than \"same as phase_write_boundary\": a fingerprint scheme makes it *worse* than a prefix scheme. With prefix filtering, pre-resume edits under `.shipwright/designs/` are still under the a […truncated]\n\n[openai] Repository access was blocked by execution policy, so I could not read the required brief or verify the existing implementation. This review is based on the supplied mini-plan.\n\n1. **Category: edge-case · Severity: high**  \n   **Finding:** Filtering only current dirty paths misses a baseline-dirty file that the design phase restores to HEAD: it becomes clean and disappears from `git_dirty_paths`, despite changing during the session.  \n   **Suggestion:** Compare the union of baseline and current dirty paths against their baseline states. Add a regression test for restoring an out-of-boundary file to HEAD.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** Content hashes alone do not capture all Git changes. An already-dirty file can retain identical working-tree bytes while its staged content or executable bit changes. Deleted files also require an explicit state rather than an ordinary content hash.  \n   **Suggestion:** Define the fingerprint’s supported states explicitly, including absence, file type/mode, and index state where the boundary covers staged changes. Test deletion and staged changes with unchanged working-tree content.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** The fallback is specified only for a missing baseline. Truncated JSON, unsupported baseline versions, or fingerprint read failures could crash the gate or accidentally suppress violations, depending on implementation.  \n   **Suggestion:** Treat invalid or unreadable baseline data as strict checking with a clear diagnostic. Never treat two failed fingerprint reads as an unchanged file; add focused failure-path tests.\n\nThe baseline approach is appropriate for separating inherited changes from session changes, and the accepted resume behavior is clearly disclosed. Address the comparison and failure-handling gaps before implementation is considered ready; brief compliance remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "bloat crossings: test file and check-design-gates.py over 300 lines - FIXED (tests moved to test_boundary_baseline.py, docstring shrunk)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "worktree-side rename ORIG_PATH parsing (entry[1]) - FIXED",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "unborn-HEAD resume laundering - FIXED (keep when head equal incl. None)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "submodule gap documented; in-process tests added; docstring placement and _head readability fixed",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T17:36:08.182021+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c2732e176205fadf5969627464dea7acfba3e1a5"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: setup-design-session.py has no live caller - FIXED: SKILL step B runs boundary_baseline.py CLI — see doubt-reviewer report; fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: SKILL prose told agent to ignore red gate without baseline - FIXED: not_written/skipped = real STOP — see doubt-reviewer report; fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: baseline wiped with designs/ - FIXED: moved to .shipwright/design-boundary-baseline.json (gitignored) — see doubt-reviewer report; fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: gitignore, subdir root, nested repo - addressed/documented — see doubt-reviewer report; fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T17:41:39.465953+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ea17deb870373e2ec338be1e237da93547e41ecf"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py:55–56",
+          "line": null,
+          "finding": "Git’s C-quoted paths are treated as literal filesystem paths. For an already-dirty file such as `src/my file.py` or a non-ASCII filename, fingerprinting can return `<deleted>` both at setup and after an edit because the quoted path does not exist. The boundary gate then exempts the file even when this session changes its contents. The comment acknowledges this limitation, but it defeats the new gate’s core behavior.",
+          "suggestion": "Obtain paths using NUL-delimited Git output (`--porcelain -z`) and parse rename records correctly before fingerprinting. Add a test that edits an already-dirty filename containing spaces or non-ASCII characters and asserts the boundary fails.  Overall assessment: ship-with-fixes. The ordinary-path tests exercise meaningful behavior, but quoted filenames create a concrete enforcement gap. Local command execution was blocked, so I could not read the referenced campaign brief or run the checks; this review is based on the supplied specification and diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T17:31:36.315916+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n1. **Category: bug — Severity: medium**\n   `plugins/shipwright-design/scripts/lib/boundary_baseline.py` (`_git_dirty_paths`, ~line 30): the shared `phase_write_boundary.py` is loaded only from `Path(__file__).resolve().parents[4] / \"shared\" / \"scripts\" / \"lib\" / phase_write_boundary.py`. In the plugin-cache/installed layout that path does not exist — the diff itself (test_setup_design_profiles.py) shows the shared lib module is copied into the plugin's own `scripts/lib/`, not served from a repo root. In an installed deployment the load raises `FileNotFoundError` (an `OSError`), which `setup-design-session.py` swallows as `not_written`, so the gate silently stays strict and finding F1 persists exactly where it hurts. Suggestion: fall back to the sibling copy (`Path(__file__).with_name(\"phase_write_boundary.py\")`) when the repo-root path is missing, mirroring how `planning_discovery.py` is resolved.\n\n2. **Category: security — Severity: medium**\n   `boundary_baseline.py` (`write_baseline` / `session_changes`): the baseline file lives under `.shipwright/designs/`, a prefix the gated agent itself is allowed to write, and carries no authenticity anchor (the salt is stored inside the same forgeable file). An agent that writes out-of-bounds files can simply author a valid-looking baseline with its own salt and fingerprints and the gate will exempt the violations. Suggestion: at minimum, gate `session_changes` on a property the agent cannot cheaply produce (e.g. salt stored outside the allowed prefixes, or recorded in run_config), or document the circumvention as accepted residual risk the way phase_write_boundary's limits are documented.\n\n3. **Category: edge-case — Severity: low**\n   `session_changes`: a baseline-dirty file the session edits and then restores to the exact baseline content is judged unchanged, even though bytes moved during the session. The docstring frames the contract as \"content moved\", so this is a known gap rather than a crash —  […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/lib/boundary_baseline.py:55–56\n- Finding: Git’s C-quoted paths are treated as literal filesystem paths. For an already-dirty file such as `src/my file.py` or a non-ASCII filename, fingerprinting can return `<deleted>` both at setup and after an edit because the quoted path does not exist. The boundary gate then exempts the file even when this session changes its contents. The comment acknowledges this limitation, but it defeats the new gate’s core behavior.\n- Suggestion: Obtain paths using NUL-delimited Git output (`--porcelain -z`) and parse rename records correctly before fingerprinting. Add a test that edits an already-dirty filename containing spaces or non-ASCII characters and asserts the boundary fails.\n\nOverall assessment: **ship-with-fixes**. The ordinary-path tests exercise meaningful behavior, but quoted filenames create a concrete enforcement gap. Local command execution was blocked, so I could not read the referenced campaign brief or run the checks; this review is based on the supplied specification and diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T17:31:43.396751+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c2aaab68701281b3ad414e6afe0f4908f0633b2e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T17:31:36.034418+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T17:31:36.178434+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
