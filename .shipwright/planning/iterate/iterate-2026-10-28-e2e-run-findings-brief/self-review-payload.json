@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Exactly the campaign brief and its findings report added under .shipwright/planning/campaigns/; scope_frs written per the operator and BP requirements; nothing else."},
+{"name":"Error Handling","verdict":"n/a","note":"No code."},
+{"name":"Security Basics","verdict":"pass","note":"Planning prose only; no secrets, credentials or customer data."},
+{"name":"Test Quality","verdict":"n/a","note":"No tests added or edited."},
+{"name":"Performance Basics","verdict":"n/a","note":"No code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Dated campaign-brief naming as the existing briefs in .shipwright/planning/campaigns/."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No boundary touched; documents are read by campaign runners and BP only."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No test files in the diff."}
+]}
