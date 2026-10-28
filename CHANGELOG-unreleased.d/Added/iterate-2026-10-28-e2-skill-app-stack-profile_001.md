@@ -1,0 +1,1 @@
+feat(profiles): bundled stack profile skill-companion-app for skill-backed apps (skill/plugin front door, served HTML board plus Python backend, JSON data folder, no deploy); no schema keys added until a reader exists

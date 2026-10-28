@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-e2-skill-app-stack-profile",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T20:25:07.125164+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds `host`, `delivery`, `companion`, and `data_folder` to the profile but explicitly states nothing reads them and the schema is deliberately not updated. Instead they're smuggled under a `_skill_companion` \"comment-key convention.\" This means the profile file contains data with zero consumers, and the tests in `test_skill_companion_app_profile.py` will assert values that no production code path ever resolves or uses. This is speculative data — the classic \"add it when the first reader arrives\" principle is being violated by writing the data now anyway, just in a disguised shape.",
+          "suggestion": "Either (a) omit the `_skill_companion` block entirely and land only what the acceptance criteria actually exercise (dev_server, scaffold folders, registries), adding the companion keys in E3 when a reader exists; or (b) if the operator decision requires the keys to exist now, put them at top-level as the architecture reviews discussed rather than inventing a private nesting convention — the comment-key approach creates a second, undocumented way to extend profiles that future readers won't know about.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"The profile validates against the unchanged schema\" is asserted but unverified. If `stack_profile.schema.json` sets `additionalProperties: false` (or restricts properties within objects), the `_skill_companion` key will fail validation at CI, blocking the campaign. The plan's own claim that no schema-mutation tests are needed rests on this assumption.",
+          "suggestion": "Check the schema's `additionalProperties` policy before writing the file; if it's `false`, the whole approach needs to change (which is itself evidence the keys don't belong yet).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 bundles \"keep `chat-first-json` bundled; retiring the chat-first design path is E3\" — but the unit-level STOP 1 says the campaign loop ends after this merge and the profile decision goes to the operator. If E3 may never run, deferring the chat-first retirement leaves two competing profile conventions shipped with no scheduled cleanup.",
+          "suggestion": "Note in the result.json / hand-off report that `chat-first-json` retirement is dangling pending the operator's STOP 1 decision, so it isn't lost if the campaign halts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "dev_server` on `127.0.0.1:3901` — the port choice is asserted but nothing in the plan checks for collision with other profiles' dev_server ports or with the E2E harness. If a second skill-backed profile later picks a port, nothing prevents drift.",
+          "suggestion": "A trivial uniqueness assertion in the profile tests (iterate all `shared/profiles/.json`, assert dev_server ports are unique) covers this cheaply.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Tests claim to exercise the dev_server block \"via the real `dev_server._get_services`\" — reaching into a private function couples the test to an internal. If that's the existing test convention in this repo, fine; if it's new, prefer the public entry point.",
+          "suggestion": "Use the public resolution path if one exists; keep `_get_services` only if it's already the established pattern in `shared/tests`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan correctly notes `update-marketplace.sh` and `check_plugin_cache_sync.py --strict` must run before the next unit, but doesn't say whether this unit itself adds any skill files that those scripts would sync. If it does (the `plugins/shipwright-test/tests/...` file implies plugin-side changes), the cache sync check belongs in this unit's checklist, not deferred.",
+          "suggestion": "Run both scripts as part of this unit's verification if any plugin skill content changes here.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No security concerns of substance. The dev_server binding to `127.0.0.1` (not `0.0.0.0`) is correct for a local skill companion; no injection or exposure surface introduced. The `--admin --squash --match-head-commit` merge flow is an operator-approved process decision, not a product security issue.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The test list does not explicitly cover how consumers handle `deploy: null`. Registry coverage alone may miss a deploy path that dereferences the value or falls back to a default deployment target.",
+          "suggestion": "Add a consumer-level test confirming that this profile skips deployment cleanly and that CI/CodeQL generation still behaves as intended.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Tests asserting `host`/`delivery`/`companion` values inside `_skill_companion` establish metadata presence, but cannot demonstrate those behaviors: the plan explicitly states that nothing reads these fields. This matters when deciding whether FR-01.03 and FR-01.08 can leave scope.",
+          "suggestion": "Distinguish metadata assertions from behavioral acceptance tests. In `result.json`, tie each removal recommendation to the requirement’s actual acceptance evidence; keep requirements open where runtime behavior remains unimplemented. Deferring schema expansion is otherwise reasonable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits the required plugin synchronization checks and the explicit post-merge STOP 1 handoff. The proposed plugin-side test change makes the synchronization requirement applicable.",
+          "suggestion": "Add `scripts/update-marketplace.sh`, `check_plugin_cache_sync.py --strict`, and the post-merge operator handoff to the completion checklist. Do not advance to E3 automatically.  The additive profile and deferred schema expansion are a sound, proportionate approach. Clarify behavioral evidence and cover null deployment handling before implementation is considered complete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T20:25:07.253491+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: approach — Severity: high**\n  **Finding:** The plan adds `host`, `delivery`, `companion`, and `data_folder` to the profile but explicitly states nothing reads them and the schema is deliberately not updated. Instead they're smuggled under a `_skill_companion` \"comment-key convention.\" This means the profile file contains data with zero consumers, and the tests in `test_skill_companion_app_profile.py` will assert values that no production code path ever resolves or uses. This is speculative data — the classic \"add it when the first reader arrives\" principle is being violated by writing the data now anyway, just in a disguised shape.\n  **Suggestion:** Either (a) omit the `_skill_companion` block entirely and land only what the acceptance criteria actually exercise (dev_server, scaffold folders, registries), adding the companion keys in E3 when a reader exists; or (b) if the operator decision requires the keys to exist now, put them at top-level as the architecture reviews discussed rather than inventing a private nesting convention — the comment-key approach creates a second, undocumented way to extend profiles that future readers won't know about.\n\n- **Category: risk — Severity: medium**\n  **Finding:** \"The profile validates against the unchanged schema\" is asserted but unverified. If `stack_profile.schema.json` sets `additionalProperties: false` (or restricts properties within objects), the `_skill_companion` key will fail validation at CI, blocking the campaign. The plan's own claim that no schema-mutation tests are needed rests on this assumption.\n  **Suggestion:** Check the schema's `additionalProperties` policy before writing the file; if it's `false`, the whole approach needs to change (which is itself evidence the keys don't belong yet).\n\n- **Category: risk — Severity: medium**\n  **Finding:** Step 1 bundles \"keep `chat-first-json` bundled; retiring the chat-first design path is E3\" — but the unit-level STOP 1 says […truncated]\n\n[openai] Repository access was blocked by policy, so I could not verify the referenced brief or existing consumers. This review is based on the supplied specification and mini-plan.\n\n1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The test list does not explicitly cover how consumers handle `deploy: null`. Registry coverage alone may miss a deploy path that dereferences the value or falls back to a default deployment target.  \n   **Suggestion:** Add a consumer-level test confirming that this profile skips deployment cleanly and that CI/CodeQL generation still behaves as intended.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Tests asserting `host`/`delivery`/`companion` values inside `_skill_companion` establish metadata presence, but cannot demonstrate those behaviors: the plan explicitly states that nothing reads these fields. This matters when deciding whether FR-01.03 and FR-01.08 can leave scope.  \n   **Suggestion:** Distinguish metadata assertions from behavioral acceptance tests. In `result.json`, tie each removal recommendation to the requirement’s actual acceptance evidence; keep requirements open where runtime behavior remains unimplemented. Deferring schema expansion is otherwise reasonable.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan omits the required plugin synchronization checks and the explicit post-merge STOP 1 handoff. The proposed plugin-side test change makes the synchronization requirement applicable.  \n   **Suggestion:** Add `scripts/update-marketplace.sh`, `check_plugin_cache_sync.py --strict`, and the post-merge operator handoff to the completion checklist. Do not advance to E3 automatically.\n\nThe additive profile and deferred schema expansion are a sound, proportionate approach. Clarify behavioral evidence and cover null deployment handling before implementation is considered complete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T20:25:07.393385+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T20:25:07.534916+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

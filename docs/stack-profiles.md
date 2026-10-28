@@ -2,8 +2,8 @@
 
 A **stack profile** is a small JSON file that tells Shipwright how your technology stack
 works: which commands run the tests, which services make up the dev server, which
-environment variables are needed, which budgets apply. Shipwright ships four
-(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`). If none of them fits your
+environment variables are needed, which budgets apply. Shipwright ships five
+(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`, `skill-companion-app`). If none of them fits your
 stack, you can write your own and every phase uses it.
 
 Two names are special and are not files: `generic` means "no stack file, use the
@@ -19,7 +19,7 @@ the search never falls through to a lower place if the winning file is broken.
 |---|---|---|
 | 1 | `<your project>/.shipwright/profiles/<name>.json` | A stack description for this project. Commit it. |
 | 2 | `~/.shipwright/profiles/<name>.json` | A stack description you reuse across projects on this machine. |
-| 3 | the bundled `profiles/` folder of the Shipwright install | The three built-in profiles. |
+| 3 | the bundled `profiles/` folder of the Shipwright install | The built-in profiles. |
 
 To see what is available and where each one comes from:
 
@@ -80,6 +80,55 @@ is ignored (keys starting with `_` are comments). The ones that change behaviour
 `schema_version` (optional whole number, 1 when missing) says which profile format the
 file was written for. `version` is a free-text note about your own profile and is not
 `schema_version`.
+
+## Skill-backed apps (`skill-companion-app`)
+
+A skill-backed app is a Claude **skill, better a plugin**, that runs in the Claude desktop app
+or in the terminal. The chat is the Claude app itself, so the app has no chat interface of its
+own. Its **companion** is a served HTML board plus a Python backend with a JSON data folder; the
+skill is the front door that starts and stops the companion. The bundled `skill-companion-app`
+profile models the social-engagement skill and replaces `chat-first-json` for this app class
+(`chat-first-json` stays bundled so existing apps keep resolving).
+
+The bundled profile records four concepts as a **convention**, under the comment key
+`_skill_companion` (keys starting with `_` are comments). They are **not** schema keys and no
+phase reads them:
+
+| Concept | Values | Meaning |
+|---|---|---|
+| `host` | `desktop-app`, `terminal` (a list) | where the skill runs |
+| `delivery` | `skill` or `plugin` | how the app reaches the user; a plugin can bundle several skills, the manifest and the companion |
+| `companion` | `ui`, `backend`, `bind`, `lifecycle` | the served board (`dir`, served by the backend), the Python entry point, the loopback address, and `lifecycle.owner: skill` with when it starts and stops and the health path |
+| `data_folder` | `location`, `default`, `override_env`, `contents` | the JSON data lives in a folder the user owns, **outside the plugin install**: a plugin update replaces its own folder, so data inside it would be lost |
+
+**Decision (unit E2, architecture review).** The four concepts were deliberately **not** added
+to `stack_profile.schema.json`: nothing reads them, and a typed key with no reader widens the
+frozen keyword set for no function. Whoever first adds a reader promotes them to real top-level
+keys in that same unit, with the schema entries and the tests, and does not delete the bundled
+profile. The working facts the phases do use (`dev_server`, `testing`, `folder_structure`,
+`deploy`) are ordinary schema fields.
+
+**Guidance for the companion backend (descriptive, nothing enforces it).** It is a local web
+server with a write API, so: bind `127.0.0.1` only; check the `Host` header and require a
+per-start token or same-origin on write endpoints (a web page can otherwise reach a loopback
+server); keep a pidfile or idle timeout so a backend left behind by a crashed session is found and
+stopped; handle "port already in use". Adopt scores a profile by its declared dependencies, and
+this profile declares the same ones as `chat-first-json`, so adopt cannot tell them apart and
+prefers `chat-first-json` by name: a skill-backed app chooses `skill-companion-app` explicitly.
+
+What each phase does with a plugin-shaped app today (recorded by unit E2 of campaign
+`e2e-run-findings`; nothing branches on the four concepts):
+
+| Phase | Behaviour |
+|---|---|
+| Build / scaffolding | scaffolds the profile's `folder_structure` (plugin manifest, `skills/`, `backend/`, `board/`, tests), not a node project |
+| Plan | reads no key specific to this class: nothing changes |
+| Test | `testing.unit` is `uv run pytest`, `testing.e2e` is Playwright against the board; unit and e2e layers need a `command`, as for any custom profile |
+| Preview / Browser Verify | start only the `dev_server` block (the same backend the skill starts, port 3911, `/api/health`, with a throw-away `--data-dir`; the real companion binds 3901, so a dev run never attaches to it); never the `npm run dev` fallback |
+| Deploy | none: `deploy: null`, run config `deploy_target: none`, no CI or CodeQL template; the plugin is installed, not deployed. A plugin-shaped deploy target (marketplace publish) does not exist and is not part of this unit |
+
+A Brief package for this class names `profile: skill-companion-app` and sets `ux_shape: classic`
+(the brief vocabulary `classic`, `chat-first` is unchanged here; `skill-companion` is the profile's own value).
 
 ## What a Shipwright update can change
 

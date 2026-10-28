@@ -1,0 +1,76 @@
+{
+  "run_id": "iterate-2026-10-28-e2-skill-app-stack-profile",
+  "date": "2026-10-28T20:25:45.735271Z",
+  "event_at": "2026-10-28T20:25:29.565898+00:00",
+  "type": "feature",
+  "complexity": "large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-e2e-run-findings--E2-a1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-28-e2-skill-app-stack-profile",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "profile resolves as bundled and validates against the unchanged schema",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_skill_companion_app_profile.py::test_resolves_as_bundled_and_passes_the_schema PASSED"
+      },
+      {
+        "behavior": "host/delivery/companion/data_folder carried as comment key, not top-level",
+        "disposition": "tested",
+        "evidence": "test_the_four_concepts_are_not_top_level_keys_until_a_reader_exists PASSED"
+      },
+      {
+        "behavior": "preview/Browser Verify start exactly the declared dev_server block on 3911, not npm fallback",
+        "disposition": "tested",
+        "evidence": "test_preview_and_browser_verify_start_exactly_the_declared_block PASSED"
+      },
+      {
+        "behavior": "deploy null, no CI/CodeQL template",
+        "disposition": "tested",
+        "evidence": "test_deploy_phase_has_nothing_to_deploy_and_no_ci_template PASSED"
+      },
+      {
+        "behavior": "scaffold folders are the plugin shape with dev tooling files",
+        "disposition": "tested",
+        "evidence": "test_build_scaffold_folders_are_the_plugin_shape PASSED"
+      },
+      {
+        "behavior": "test runner unit=pytest, e2e=playwright",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_skill_companion.py PASSED"
+      },
+      {
+        "behavior": "chat-first-json still bundled; profile listing includes new profile",
+        "disposition": "tested",
+        "evidence": "test_chat_first_json_is_kept_for_existing_apps + test_non_profile_files_never_listed PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_skill_companion_app_profile.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 8,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-28-e2-skill-app-stack-profile/surface_verification.json",
+    "timestamp": "2026-10-28T20:06:02.114Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

@@ -1,0 +1,100 @@
+{
+  "name": "skill-companion-app",
+  "description": "Skill-backed app: a Claude skill (or plugin) is the front door and the chat is the Claude app itself. A served HTML board plus a Python backend are its companion, started and stopped by the skill; data lives as JSON files in a folder the skill owns. Modelled on the social-engagement skill. No deployment: the plugin is the delivery.",
+  "version": "0.1.0",
+  "ux_shape": "skill-companion",
+  "ui_host": "served-board",
+  "_skill_companion": {
+    "_comment": "Descriptive convention only (docs/stack-profiles.md, Skill-backed apps): host, delivery, companion and data_folder are NOT schema keys and no phase reads them. The unit that first reads them promotes them to real keys together with their schema entries and tests.",
+    "host": [
+      "desktop-app",
+      "terminal"
+    ],
+    "delivery": "plugin",
+    "companion": {
+      "ui": {
+        "kind": "served-html-board",
+        "dir": "board/",
+        "served_by": "backend"
+      },
+      "backend": {
+        "kind": "python",
+        "entry": "backend/server.py"
+      },
+      "bind": {
+        "host": "127.0.0.1",
+        "port": 3901
+      },
+      "lifecycle": {
+        "owner": "skill",
+        "start": "on demand, when the skill opens the board",
+        "stop": "when the skill ends the round or the user asks to stop",
+        "health_path": "/api/health"
+      }
+    },
+    "data_folder": {
+      "location": "user-owned folder outside the plugin install (a plugin update replaces its own folder)",
+      "default": "~/.<app-name>",
+      "override_env": "<APP_NAME>_HOME",
+      "contents": "JSON files only; no external service"
+    }
+  },
+  "stack": {
+    "_comment": "Versions are security-relevant MINIMUMS, not exact pins - resolve and install the latest version satisfying each range when scaffolding.",
+    "runtime": {
+      "python": "3.11+"
+    },
+    "frontend": {
+      "vanilla-js": "ES2022"
+    },
+    "backend": {},
+    "_comment_backend": "Empty on purpose, as in chat-first-json: adopt scores a profile by the dependency names it declares here."
+  },
+  "dev_server": {
+    "command": "uv run python backend/server.py --host 127.0.0.1 --port 3911 --data-dir .dev-data",
+    "host": "127.0.0.1",
+    "scheme": "http",
+    "port": 3911,
+    "ready_path": "/api/health",
+    "ready_timeout_seconds": 60
+  },
+  "testing": {
+    "unit": {
+      "framework": "pytest",
+      "command": "uv run pytest"
+    },
+    "e2e": {
+      "framework": "@playwright/test",
+      "version": "^1.59.1",
+      "command": "npx playwright test"
+    }
+  },
+  "linting": {
+    "tool": "ruff",
+    "command": "uv run ruff check"
+  },
+  "deploy": null,
+  "package_manager": "uv",
+  "rules": [
+    "tests",
+    "config"
+  ],
+  "folder_structure": {
+    ".claude-plugin/": "Plugin manifest (plugin.json); present when delivery is 'plugin'",
+    "skills/": "The skill(s): skills/<name>/SKILL.md is the front door and starts/stops the companion",
+    "backend/": "Python backend (backend/server.py serves the board and the JSON API, GET /api/health)",
+    "board/": "The served board (HTML, CSS, vanilla JS) composed from the design kit",
+    "tests/": "pytest unit tests for the backend and the skill scripts",
+    "e2e/": "Playwright specs run against the served board (*.spec.ts)",
+    ".dev-data/": "Throw-away JSON data for development and tests (git-ignored); real data lives in the data folder",
+    "pyproject.toml": "uv project file: pytest and ruff as dev dependencies, so 'uv run pytest' works in a fresh checkout",
+    "package.json": "Dev tooling only (@playwright/test); the app itself is not a node project",
+    "playwright.config.ts": "Playwright config: baseURL http://127.0.0.1:3911, webServer = the dev_server command, reuseExistingServer false"
+  },
+  "required_env_vars": {
+    "build": [],
+    "deploy": [],
+    "plugin": []
+  },
+  "notes": "Phase behaviour (recorded by campaign e2e-run-findings unit E2; see docs/stack-profiles.md): Build scaffolds the folder_structure above, not a node project. Test runs pytest then Playwright against the dev_server block. Preview and Browser Verify start only the dev_server block (the same backend the skill starts in real use, with a throw-away data dir). Deploy: there is no deploy step (deploy: null, deploy_target none); the plugin is installed, not deployed. The companion binds 3901 in real use; the dev_server block (preview, Browser Verify, Playwright) uses 3911 with a throw-away --data-dir, so a development run can never attach to the user's running companion and its real data. Playwright must use reuseExistingServer false. backend/server.py must accept --host, --port and --data-dir, use --data-dir before <APP_NAME>_HOME and the default folder, and refuse to start rather than fall back silently when --data-dir is unusable. Harden the loopback API: check the Host header, send no permissive CORS, require Content-Type application/json or a per-session token on state-changing routes. The host is 127.0.0.1 everywhere so Node's localhost-to-::1 resolution cannot cause a false failure. The skill-companion facts (host, delivery, companion, data_folder) sit under the comment key _skill_companion: no schema key and no phase reads them yet."
+}
