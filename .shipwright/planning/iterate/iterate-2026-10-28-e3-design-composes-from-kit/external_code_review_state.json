@@ -1,0 +1,21 @@
+{
+  "status": "completed",
+  "timestamp": "2026-10-28T23:01:55.512231+00:00",
+  "provider": "openrouter",
+  "findings_count": 8,
+  "self_review_fallback_ran": false,
+  "reason": null,
+  "review_mode": "code",
+  "marker_schema": 4,
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  },
+  "contradiction_resolution": null
+}

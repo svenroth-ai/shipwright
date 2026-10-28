@@ -8,9 +8,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-28T22:59:44.618513+00:00",
-      "disposition": "7 items walked: spec compliance, errors, security, tests, perf, naming, boundaries; prose-only change with no serialized-format boundary",
-      "recorded_by": "none",
+      "completed_at": "2026-10-28T23:19:31.696544+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
       "parse_status": null,
       "raw_excerpt": null
     },
