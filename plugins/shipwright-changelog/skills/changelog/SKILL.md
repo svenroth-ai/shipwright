@@ -131,14 +131,13 @@ Categories:
 
 ## Step 3: Determine Version Bump
 
-**Goal:** Suggest next version based on commit types.
+**Goal:** Propose the next version from the commit types.
 
-Rules:
-- `BREAKING CHANGE` in any commit → **major** bump
-- Any `feat` → **minor** bump
-- Only `fix`, `refactor`, `docs`, etc. → **patch** bump
-
-If no previous tag exists: suggest `v0.1.0`.
+Do NOT compute the bump yourself. Use `suggested_version` and `version_reason`
+from the setup script (Run Setup Script, above) verbatim; it comes from
+`git_utils.suggest_version_bump`, which applies FR-01.09 AC04 (a breaking change
+raises the first number, or the second before 1.0; a `feat` the second; anything
+else the third; no previous tag → `0.1.0`). The tag is `v{suggested_version}`.
 
 **Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.version-suggestion`):
 Accept the suggested version automatically. No prompt.
@@ -146,7 +145,7 @@ Accept the suggested version automatically. No prompt.
 **Guided mode** (default):
 Present suggestion to user:
 ```
-Suggested version: v{X.Y.Z} (based on: {reason})
+Suggested version: v{suggested_version} (based on: {version_reason})
 Accept or enter custom version:
 ```
 

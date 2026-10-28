@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-changelog-ac04-version-bump",
+  "date": "2026-10-28",
+  "section": "Iterate — bug: changelog version bump follows AC04",
+  "title": "Changelog version bump comes from suggest_version_bump, not the model",
+  "context": "SKILL.md Step 3 told the model to compute the bump itself (BREAKING CHANGE -> major), contradicting FR-01.09 AC04 (a break before 1.0 raises the second number); the skill never called suggest_version_bump.",
+  "decision": "setup-changelog.py returns suggested_version and version_reason from suggest_version_bump; Step 3 tells the model to use them verbatim; AC04-bound tests cover 0.x and >=1.0 breaks; ledger row 4 points at the wired code.",
+  "consequences": "A breaking change on 0.x now proposes 0.(x+1).0 instead of 1.0.0. The setup JSON gains two additive fields.",
+  "rationale": "A deterministic function already encoded AC04; making the skill consume it removes the judgement step that drifted.",
+  "rejected": "Leaving the prompt rule and fixing its wording: still relies on the model applying the rule.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
