@@ -123,51 +123,175 @@
     },
     "code": {
       "review_type": "code",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "hardening wording in docs differed slightly from step-7 (fixed afterwards)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "fixed port 3911 shared by all projects of this class (wording narrowed afterwards)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-10-28T20:53:08.504338+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f4c308ee344f4e18c6e196ff004f6c0f67edbd48"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "dev_server works in a fresh worktree",
+          "suggestion": "create --data-dir if missing",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "docs match the profile",
+          "suggestion": "guide.md count; 3901 as bundled default",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "reuseExistingServer true is safe",
+          "suggestion": "narrow wording",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "brief guidance complete",
+          "suggestion": "name ui_host",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "uv run works on scaffold",
+          "suggestion": "no build-system, pythonpath",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "registry gaps documented",
+          "suggestion": "ci_workflow comment",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-10-28T20:53:08.618401+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f4c308ee344f4e18c6e196ff004f6c0f67edbd48"
     },
     "external_code": {
       "review_type": "external_code",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": null,
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-test/tests/test_test_runner_skill_companion.py:16-17",
+          "line": null,
+          "finding": "The runner test asserts `unit == \"uv run pytest\"` and `e2e == \"npx playwright test\"`, but these are the exact same values as `chat-first-json`, and likely the runner's defaults for any unknown/pytest-shaped profile. If the runner ignored the profile entirely and fell back to generic defaults, the test would still pass — there is no negative control.",
+          "suggestion": "Add a distinguishing control, e.g. assert the runner returns the command from the profile's `testing` block (mutate the profile in a tmp copy and check the output follows it), or at least assert a profile whose testing commands differ produces different output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_skill_companion_app_profile.py` (whole file)",
+          "line": null,
+          "finding": "The unit's scope_frs include FR-01.03, but no test in the diff carries a `covers(\"FR-01.03\")` marker, and the spec says E2 must \"report whether FR-01.03 … can come off scope_frs\". If FR-01.03 is the dev-server declaration, the `_get_services` test covers the behaviour but tags it only FR-01.12, so the AC \"the behaviour in the brief's row holds and is tested\" is only partially satisfied for FR-01.03.",
+          "suggestion": "Confirm what FR-01.03 is; if it's the dev-server/dev_url declaration, add the marker (and a `dev_url`/ready-path assertion if that's the FR) to the appropriate test, or document in the unit report why FR-01.03 needs no test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/profiles/skill-companion-app.json",
+          "line": 5,
+          "finding": "ux_shape: \"skill-companion\"` introduces a value outside the documented brief vocabulary (`classic`, `chat-first`). If `stack_profile.schema.json` or any consumer enumerates `ux_shape` values, the profile would fail validation or fall through to a default path; the diff does not show the schema, so this is unverified. The resolution test would catch a hard enum, but not a consumer that switches on known values and silently defaults for unknown ones (e.g. the scaffolding skill, Browser Verify, Brief packaging).",
+          "suggestion": "Confirm no consumer switches on `ux_shape` with a closed set; if the scaffolding skill code (not just its reference doc) branches on `ux_shape`, add the new value there in this unit rather than leaving it to be discovered later.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_skill_companion_app_profile.py:73-76",
+          "line": null,
+          "finding": "test_preview_and_browser_verify_start_exactly_the_declared_block` calls the private `dev_server._get_services(_NAME, tmp_path)`, which only validates the services list; it does not verify that the command actually starts (e.g. that `uv`/`backend/server.py` path is resolvable) — but that is arguably out of scope for a profile-only unit, so this is a note, not a blocker.  Notes on things that are correct: the operator resolution (bundled profile, comment-key convention, no schema keys, `chat-first-json` kept) is implemented exactly as decided; port separation (3901 real companion vs 3911 dev, vs 3900 chat-first) is declared and pinned by tests; the `reuseExistingServer: false` instruction in the scaffolding reference is the right call for a backend with real user data; no security issues are introduced (the security guidance is documentation only, and it is sound).  Overall: the work matches the operator resolution and the core profile is well-pinned by real consumers; the gaps are the unmarked FR-01.03 coverage and one test that cannot distinguish a correct runner from a defaulting one. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-28T20:30:02.032420+00:00",
       "disposition": null,
-      "recorded_by": null,
-      "parse_status": null,
-      "raw_excerpt": null
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: test\n  - Severity: medium\n  - File: `plugins/shipwright-test/tests/test_test_runner_skill_companion.py:16-17`\n  - Finding: The runner test asserts `unit == \"uv run pytest\"` and `e2e == \"npx playwright test\"`, but these are the exact same values as `chat-first-json`, and likely the runner's defaults for any unknown/pytest-shaped profile. If the runner ignored the profile entirely and fell back to generic defaults, the test would still pass — there is no negative control.\n  - Suggestion: Add a distinguishing control, e.g. assert the runner returns the command *from the profile's `testing` block* (mutate the profile in a tmp copy and check the output follows it), or at least assert a profile whose testing commands differ produces different output.\n\n- Category: spec\n  - Severity: medium\n  - File: `shared/tests/test_skill_companion_app_profile.py` (whole file)\n  - Finding: The unit's scope_frs include FR-01.03, but no test in the diff carries a `covers(\"FR-01.03\")` marker, and the spec says E2 must \"report whether FR-01.03 … can come off scope_frs\". If FR-01.03 is the dev-server declaration, the `_get_services` test covers the behaviour but tags it only FR-01.12, so the AC \"the behaviour in the brief's row holds and is tested\" is only partially satisfied for FR-01.03.\n  - Suggestion: Confirm what FR-01.03 is; if it's the dev-server/dev_url declaration, add the marker (and a `dev_url`/ready-path assertion if that's the FR) to the appropriate test, or document in the unit report why FR-01.03 needs no test.\n\n- Category: edge-case\n  - Severity: low\n  - File: `shared/profiles/skill-companion-app.json:5`\n  - Finding: `ux_shape: \"skill-companion\"` introduces a value outside the documented brief vocabulary (`classic`, `chat-first`). If `stack_profile.schema.json` or any consumer enumerates `ux_shape` values, the profile would fail validation or fall through to a default path; the diff does not show the schema, so this is unverified. The res […truncated]\n\n[openai] No concrete defects found in the supplied diff. It follows the operator’s Variant 2 decision: bundles the profile, keeps the four concepts under `_skill_companion`, leaves the schema unchanged, and updates docs and scaffolding guidance.\n\nThe tests validate profile resolution, command selection, dev-server configuration, and CI/deploy mappings. They do not demonstrate an actual scaffold or server run. Repository access was blocked, so I could not read the campaign brief, inspect surrounding consumers, or run checks; full acceptance-criteria compliance remains unverified.\n\nOverall assessment: ship-as-is based on the supplied diff, subject to those verification limits.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
     },
     "spec": {
       "review_type": "spec",
-      "status": "pending",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-10-28T20:29:57.910131+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "655b712e2be6a70edf83206768ff754fcb4b1f44"
     },
     "plan_internal": {
       "review_type": "plan_internal",
