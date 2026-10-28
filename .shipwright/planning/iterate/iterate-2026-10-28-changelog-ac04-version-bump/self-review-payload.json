@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Setup output carries suggest_version_bump result; SKILL Step 3 uses it verbatim; AC04-bound tests; ledger row 4 repointed. Nothing else in the skill touched."},
+{"name":"Error Handling","verdict":"pass","note":"No commits -> suggested_version/version_reason are null; first release handled by suggest_version_bump (0.1.0)."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs, no shell-out beyond existing git calls."},
+{"name":"Test Quality","verdict":"pass","note":"Tests run the real setup script in a temp git repo (0.x break -> 0.(x+1).0, >=1.0 break -> major) plus a Step 3 wiring pin."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra in-memory parse of already-fetched commits."},
+{"name":"Naming & Structure","verdict":"pass","note":"Follows existing setup-changelog.py and test file conventions; files well under 300 LOC."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"Setup JSON gains two fields consumed only by the skill prose; additive, no serialized-format round trip."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff clean; no skips added."}
+]}

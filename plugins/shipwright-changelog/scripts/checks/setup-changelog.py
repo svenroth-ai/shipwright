@@ -11,8 +11,14 @@ Output (JSON):
         "commits_since_tag": 15,
         "branch": "main",
         "has_unreleased": true,
-        "previous_tag_has_release": true | false | null
+        "previous_tag_has_release": true | false | null,
+        "suggested_version": "0.2.0" | null,
+        "version_reason": "new feature(s)" | null
     }
+
+``suggested_version`` / ``version_reason`` are ``git_utils.suggest_version_bump``'s
+proposal (FR-01.09 AC04: a break raises the first number, or the second before
+1.0). ``null`` when there is nothing unreleased. The skill uses it verbatim.
 
 ``previous_tag_has_release`` is a tri-state ADVISORY, never a gate: whether the
 immediately preceding tag has a GitHub Release. ``null`` means not checkable
@@ -31,7 +37,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.git_utils import get_commits_since, get_current_branch, get_last_tag
+from lib.git_utils import (
+    get_commits_since, get_current_branch, get_last_tag, parse_all_commits, suggest_version_bump,
+)
 
 # parents[0]=checks, [1]=scripts, [2]=shipwright-changelog, [3]=plugins, [4]=repo_root.
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
@@ -78,6 +86,9 @@ def main() -> int:
     last_tag = get_last_tag()
     commits = get_commits_since(last_tag)
     branch = get_current_branch()
+    suggested, reason = (
+        suggest_version_bump(parse_all_commits(commits), last_tag) if commits else (None, None)
+    )
 
     result = {
         "success": True,
@@ -86,6 +97,8 @@ def main() -> int:
         "branch": branch,
         "has_unreleased": len(commits) > 0,
         "previous_tag_has_release": _check_previous_release(Path.cwd(), last_tag),
+        "suggested_version": suggested,
+        "version_reason": reason,
         "message": f"{len(commits)} commits since {last_tag or 'beginning'}",
     }
 
