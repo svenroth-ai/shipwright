@@ -61,7 +61,7 @@ This is a single command for all of FR-01.04's mechanisable criteria:
 | `chrome` | Every screen's nav targets match `chrome-definition.md`'s (screens with no nav markup — auth/Layout-C — are exempt) |
 | `standalone` | No screen references an external `src`/`href` outside the one allowed Google Fonts CDN |
 | `uploads` | No supplied (git-committed) upload was modified after being supplied |
-| `boundary` | This session's own changes touch only `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`, or `CHANGELOG-unreleased.d/` |
+| `boundary` | This session's own changes touch only `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`, or `CHANGELOG-unreleased.d/`. Output an earlier phase left uncommitted (recorded when the session starts, `.shipwright/design-boundary-baseline.json`) is not this session's change while its content is unchanged: do not ask the operator to commit it first. Without a recorded baseline the gate is strict |
 
 Fix whatever a failing gate names, then re-run before proceeding to Spec Backflow.
 

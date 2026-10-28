@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: reducibility / approach \u2014 Severity: medium**\n  **Finding:** Fingerprinting every dirty path in the working tree is more machinery than the problem needs. The failing case is specifically \"uncommitted output of *the previous phase*\", which lives in a known prefix (`.shipwright/designs/`), and the baseline is written by the same tool that later reads it within one session. A whole-tree sha256 snapshot system (write/load/diff module, cache-layout test updates, corruption handling) is being added to solve \"ignore dirty paths under the design output prefix.\"\n  **Suggestion:** Have `boundary_gate` simply filter `git_dirty_paths` to exclude paths under the session's allowed design-output prefix (or, at most, compare against the path list recorded at session start \u2014 no content hashing needed since gate semantics are per-path, not per-content). One small function plus a test, no new shared module, no cache-layout test churn. If per-content fingerprints are genuinely required by the brief's FR wording, say so in the plan; otherwise this is over-production.\n\n- **Category: edge-case \u2014 Severity: high**\n  **Finding:** The baseline file itself (`.shipwright/designs/.boundary-baseline.json`) is a new dirty path created *after* the gate's reference point. Depending on when `git_dirty_paths` is sampled relative to baseline write and whether the file is gitignored, the gate will either flag its own baseline or silently need to special-case it. The plan doesn't mention excluding it.\n  **Suggestion:** Either gitignore the baseline file and confirm `git_dirty_paths` ignores ignored files, or explicitly exclude the baseline path in `session_changes`. Add a test for this case.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** The accepted resume risk is bigger than \"same as phase_write_boundary\": a fingerprint scheme makes it *worse* than a prefix scheme. With prefix filtering, pre-resume edits under `.shipwright/designs/` are still under the allowed prefix and thus still ignored \u2014 the failure mode disappears entirely. With fingerprints, pre-resume edits to design files are indistinguishable from pre-baseline state only if the content matches; edits to *other* files (legitimately new dirty files the user created between sessions) are correctly flagged, but edits to design files diverging from baseline would be flagged while identical-content files wouldn't \u2014 behavior depends on content coincidence.\n  **Suggestion:** Another argument for prefix filtering; if keeping fingerprints, document the resume behavior precisely and add a test for the resume path.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** No handling for a corrupt, unreadable, or schema-mismatched baseline (e.g., older format after a plugin update). Falling back to \"no baseline = strict\" silently is probably fine, but it should be stated and tested so a corrupt file doesn't crash the gate.\n  **Suggestion:** Explicitly specify the fallback: corrupt/unparseable baseline \u2192 strict mode + warning to stderr, not a traceback. One test.\n\n- **Category: security \u2014 Severity: low**\n  **Finding:** The baseline stores sha256 fingerprints of *every dirty file in the repo*, which is a weak content oracle for files outside the design prefix (confirming whether a file's content matches a known candidate). Low practical risk since it's local and inside the repo, but if you drop fingerprints per the first finding, this vanishes too.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** Step ordering depends on `setup-design-session.py` and the gate being updated in the same unit (otherwise sessions created before the gate change have no baseline and get strict mode). Plan implies same-diff; confirm both ship together and note strict-mode fallback as the compatibility bridge for existing sessions.\n\n## Overall assessment\n\nThe problem and the strict-mode fallback are correctly identified, but the fingerprint-baseline design is heavier and subtly worse-behaved (self-referential baseline file, resume edge cases) than simple prefix filtering, which solves F1 directly. Revise to the simpler approach \u2014 or justify fingerprints per the FR \u2014 and handle the baseline-file-exclusion edge case before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository access was blocked by execution policy, so I could not read the required brief or verify the existing implementation. This review is based on the supplied mini-plan.\n\n1. **Category: edge-case \u00b7 Severity: high**  \n   **Finding:** Filtering only current dirty paths misses a baseline-dirty file that the design phase restores to HEAD: it becomes clean and disappears from `git_dirty_paths`, despite changing during the session.  \n   **Suggestion:** Compare the union of baseline and current dirty paths against their baseline states. Add a regression test for restoring an out-of-boundary file to HEAD.\n\n2. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** Content hashes alone do not capture all Git changes. An already-dirty file can retain identical working-tree bytes while its staged content or executable bit changes. Deleted files also require an explicit state rather than an ordinary content hash.  \n   **Suggestion:** Define the fingerprint\u2019s supported states explicitly, including absence, file type/mode, and index state where the boundary covers staged changes. Test deletion and staged changes with unchanged working-tree content.\n\n3. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** The fallback is specified only for a missing baseline. Truncated JSON, unsupported baseline versions, or fingerprint read failures could crash the gate or accidentally suppress violations, depending on implementation.  \n   **Suggestion:** Treat invalid or unreadable baseline data as strict checking with a clear diagnostic. Never treat two failed fingerprint reads as an unchanged file; add focused failure-path tests.\n\nThe baseline approach is appropriate for separating inherited changes from session changes, and the accepted resume behavior is clearly disclosed. Address the comparison and failure-handling gaps before implementation is considered ready; brief compliance remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-28-e1-boundary-gate-uncommitted-output",
+    "at": "2026-10-28T17:26:06.905727+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

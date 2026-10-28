@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-design/scripts/lib/boundary_baseline.py:55\u201356\n- Finding: Git\u2019s C-quoted paths are treated as literal filesystem paths. For an already-dirty file such as `src/my file.py` or a non-ASCII filename, fingerprinting can return `<deleted>` both at setup and after an edit because the quoted path does not exist. The boundary gate then exempts the file even when this session changes its contents. The comment acknowledges this limitation, but it defeats the new gate\u2019s core behavior.\n- Suggestion: Obtain paths using NUL-delimited Git output (`--porcelain -z`) and parse rename records correctly before fingerprinting. Add a test that edits an already-dirty filename containing spaces or non-ASCII characters and asserts the boundary fails.\n\nOverall assessment: **ship-with-fixes**. The ordinary-path tests exercise meaningful behavior, but quoted filenames create a concrete enforcement gap. Local command execution was blocked, so I could not read the referenced campaign brief or run the checks; this review is based on the supplied specification and diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n1. **Category: bug \u2014 Severity: medium**\n   `plugins/shipwright-design/scripts/lib/boundary_baseline.py` (`_git_dirty_paths`, ~line 30): the shared `phase_write_boundary.py` is loaded only from `Path(__file__).resolve().parents[4] / \"shared\" / \"scripts\" / \"lib\" / phase_write_boundary.py`. In the plugin-cache/installed layout that path does not exist \u2014 the diff itself (test_setup_design_profiles.py) shows the shared lib module is copied into the plugin's own `scripts/lib/`, not served from a repo root. In an installed deployment the load raises `FileNotFoundError` (an `OSError`), which `setup-design-session.py` swallows as `not_written`, so the gate silently stays strict and finding F1 persists exactly where it hurts. Suggestion: fall back to the sibling copy (`Path(__file__).with_name(\"phase_write_boundary.py\")`) when the repo-root path is missing, mirroring how `planning_discovery.py` is resolved.\n\n2. **Category: security \u2014 Severity: medium**\n   `boundary_baseline.py` (`write_baseline` / `session_changes`): the baseline file lives under `.shipwright/designs/`, a prefix the gated agent itself is allowed to write, and carries no authenticity anchor (the salt is stored inside the same forgeable file). An agent that writes out-of-bounds files can simply author a valid-looking baseline with its own salt and fingerprints and the gate will exempt the violations. Suggestion: at minimum, gate `session_changes` on a property the agent cannot cheaply produce (e.g. salt stored outside the allowed prefixes, or recorded in run_config), or document the circumvention as accepted residual risk the way phase_write_boundary's limits are documented.\n\n3. **Category: edge-case \u2014 Severity: low**\n   `session_changes`: a baseline-dirty file the session edits and then restores to the exact baseline content is judged unchanged, even though bytes moved during the session. The docstring frames the contract as \"content moved\", so this is a known gap rather than a crash \u2014 but it is not stated in the docs row, which says \"whose content moved since\". Either document it or compare against HEAD content too for baseline paths.\n\n4. **Category: edge-case \u2014 Severity: low**\n   `write_baseline`: a repo with no commits yields `head = None`; any existing baseline also has `head = None` and is therefore \"kept\" even if it was written long ago against a different working tree. In a never-committed project, a stale baseline survives every resume. Consider refusing to \"keep\" when `head is None`, or recording a tree fingerprint as well.\n\nTest quality: the tests are genuinely behavioral (each manipulates the working tree and asserts the gate's verdict and the specific path reported), and they cover happy path, corruption fallback, deletion semantics, restore-to-HEAD, and the resume-laundering case \u2014 good. The plugin-cache-layout gap in finding 1 is invisible to them because the tests run from the repo checkout where `parents[4]` resolves.\n\nOverall assessment: the change implements the FR and is well tested in-repo, but it silently degrades in the installed plugin-cache layout and leaves the baseline forgeable by the very agent the gate polices \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-28-e1-boundary-gate-uncommitted-output",
+    "at": "2026-10-28T17:29:11.507478+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
