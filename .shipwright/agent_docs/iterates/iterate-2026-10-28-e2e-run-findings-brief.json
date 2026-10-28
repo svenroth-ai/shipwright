@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-10-28-e2e-run-findings-brief",
+  "date": "2026-10-28T11:59:10.340705Z",
+  "event_at": "2026-10-28T07:44:42.104386+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "keyword",
+  "branch": "iterate/e2e-run-findings-brief",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-28-e2e-run-findings-brief",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

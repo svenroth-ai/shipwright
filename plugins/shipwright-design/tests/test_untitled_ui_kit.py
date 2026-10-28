@@ -15,6 +15,7 @@ PLUGIN = Path(__file__).resolve().parent.parent
 DESIGN = PLUGIN / "skills" / "design"
 KIT = DESIGN / "kit" / "untitled-ui"
 BUILD = PLUGIN / "scripts" / "tools" / "build_kit_examples.py"
+CHECK = PLUGIN / "scripts" / "tools" / "check_brand_tokens.py"
 TOKEN_SETS = sorted((KIT / "tokens").glob("*.css"))
 
 
@@ -72,39 +73,11 @@ def test_kit_covers_every_class_of_the_component_snippets() -> None:
     assert _classes(snippet_css) - _classes(_css()) == set()
 
 
-def _luminance(hex_colour: str) -> float:
-    h = hex_colour.lstrip("#")
-    channels = [int(h[i : i + 2], 16) / 255 for i in (0, 2, 4)]
-    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
-    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
-
-
-def _contrast(a: str, b: str) -> float:
-    hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
-    return (hi + 0.05) / (lo + 0.05)
-
-
-# (foreground, background, minimum): 7.0 for secondary text (readable, WCAG AAA), 4.5 for other text (AA), 3.0 for controls and focus
-CONTRAST_PAIRS = [
-    ("text", "bg", 4.5), ("text", "surface", 4.5), ("muted", "bg", 7.0), ("muted", "surface", 7.0),
-    ("muted", "table-header", 7.0), ("on-primary", "primary", 4.5), ("on-primary", "primary-hover", 4.5),
-    ("primary", "surface", 4.5), ("primary", "bg", 4.5), ("on-primary", "error", 4.5),
-    ("success", "success-bg", 4.5), ("warning", "warning-bg", 4.5), ("error", "error-bg", 4.5), ("info", "info-bg", 4.5),
-    ("success", "surface", 4.5), ("warning", "surface", 4.5), ("error", "surface", 4.5),
-    ("muted", "hover", 7.0), ("text", "hover", 4.5), ("muted", "primary-soft", 7.0), ("text", "primary-soft", 4.5), ("muted", "border", 7.0), ("text", "border", 4.5), ("border-strong", "surface", 3.0), ("border-strong", "bg", 3.0), ("focus", "surface", 3.0), ("focus", "bg", 3.0), ("info", "surface", 4.5), ("primary", "primary-soft", 3.0), ("text", "table-header", 4.5),
-]
-
-
 @pytest.mark.covers("FR-01.04")
 @pytest.mark.parametrize("tokens", TOKEN_SETS, ids=lambda p: p.stem)
 def test_token_sets_meet_wcag_aa_contrast(tokens: Path) -> None:
-    colours = dict(re.findall(r"--color-([\w-]+):\s*(#[0-9a-fA-F]{6})\b", tokens.read_text(encoding="utf-8")))
-    failures = [
-        f"{fg} {colours[fg]} on {bg} {colours[bg]}: {_contrast(colours[fg], colours[bg]):.2f} < {need}"
-        for fg, bg, need in CONTRAST_PAIRS
-        if _contrast(colours[fg], colours[bg]) < need
-    ]
-    assert failures == []
+    css = tokens.read_text(encoding="utf-8")
+    assert _checker().check_css(css) == []
 
 
 @pytest.mark.covers("FR-01.04")
@@ -182,6 +155,13 @@ def test_heading_sizes_do_not_shrink_as_the_level_rises(tokens: Path) -> None:
     assert sizes["h3"] <= sizes["h2"] <= sizes["h1"]
 
 
+def _checker():
+    spec = importlib.util.spec_from_file_location("check_brand_tokens", CHECK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _builder():
     spec = importlib.util.spec_from_file_location("build_kit_examples", BUILD)
     module = importlib.util.module_from_spec(spec)
@@ -225,3 +205,94 @@ def test_builder_refuses_a_token_set_without_a_font_entry(tmp_path: Path) -> Non
     (kit / "tokens" / "new.css").write_text(":root {}", encoding="utf-8")
     with pytest.raises(KeyError, match="new"):
         builder.targets(kit)
+
+
+# A brand taken from a claude.ai Design System: its raw colours are laid over a shipped set, then checked and corrected.
+RAW_BRAND = ":root { --color-primary: #128a76; --color-muted: #6c6a64; --color-border-strong: #cdc7ba; }"
+
+
+@pytest.mark.covers("FR-01.04/AC13")
+def test_brand_checker_flags_weak_brand_colours_and_the_suggestions_bring_it_to_green() -> None:
+    mod = _checker()
+    css = (KIT / "tokens" / "warm.css").read_text(encoding="utf-8") + RAW_BRAND
+    failures = mod.check_css(css)
+    assert any(f.startswith("muted ") for f in failures) and any(f.startswith("border-strong ") for f in failures)
+    best: dict[str, str] = {}
+    for token, value in re.findall(r"try --color-([\w-]+): (#[0-9a-f]{6})", " ".join(failures)):
+        if token not in best or mod.luminance(value) < mod.luminance(best[token]):
+            best[token] = value  # the doc's rule on a light theme: the most contrasting (darkest) suggestion
+    assert mod.check({**mod.parse_colours(css), **best}) == []
+
+
+@pytest.mark.covers("FR-01.04/AC13")
+def test_brand_checker_cli_exit_codes(tmp_path: Path) -> None:
+    brand = tmp_path / "brand.css"
+    brand.write_text(RAW_BRAND, encoding="utf-8")
+    run = lambda *a: subprocess.run([sys.executable, str(CHECK), *a], capture_output=True, text=True, check=False)  # noqa: E731
+    assert run("--base", "warm").returncode == 0
+    weak = run("--base", "warm", "--overrides", str(brand))
+    assert weak.returncode == 1 and "try --color-" in weak.stdout
+    assert run("--base", "warm", "--overrides", str(tmp_path / "absent.css")).returncode == 2
+
+
+@pytest.mark.covers("FR-01.04")
+def test_brand_checker_reports_a_token_the_brand_set_leaves_out() -> None:
+    mod = _checker()
+    colours = mod.parse_colours((KIT / "tokens" / "clean.css").read_text(encoding="utf-8"))
+    del colours["focus"]
+    assert mod.check(colours) == ["missing --color-focus"]
+
+
+@pytest.mark.covers("FR-01.04/AC13")
+def test_brand_from_design_system_is_offered_where_the_look_is_chosen() -> None:
+    """The claude.ai Design System route is reachable from Step 2.5, the Step 3 question and the kit doc, and its checker exists."""
+    refs = DESIGN / "references"
+    for doc in (DESIGN / "SKILL.md", refs / "step-2-5-brand-extraction.md", refs / "step-3-design-interview.md", refs / "untitled-ui-components.md"):
+        assert "brand-from-design-system.md" in doc.read_text(encoding="utf-8"), doc.name
+    text = (refs / "brand-from-design-system.md").read_text(encoding="utf-8")
+    assert "check_brand_tokens.py" in text and CHECK.is_file()
+
+
+@pytest.mark.covers("FR-01.04")
+def test_brand_checker_main_in_process_covers_base_overrides_and_full_set(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The CLI entry runs in-process too, so diff coverage sees it (a subprocess run is invisible to it)."""
+    mod = _checker()
+    brand = tmp_path / "brand.css"
+    brand.write_text(RAW_BRAND, encoding="utf-8")
+    assert mod.main(["--base", "clean"]) == 0
+    assert "OK" in capsys.readouterr().out
+    assert mod.main(["--tokens", str(KIT / "tokens" / "bold.css")]) == 0
+    assert mod.main(["--base", "warm", "--overrides", str(brand)]) == 1
+    assert "try --color-" in capsys.readouterr().out
+    assert mod.main(["--base", "warm", "--overrides", str(tmp_path / "absent.css")]) == 2
+    with pytest.raises(SystemExit):
+        mod.main([])
+
+
+@pytest.mark.covers("FR-01.04")
+def test_brand_checker_flags_font_sizes_below_the_minimum() -> None:
+    mod = _checker()
+    css = (KIT / "tokens" / "clean.css").read_text(encoding="utf-8") + ":root { --font-size-base: 14px; }"
+    failures = mod.check(mod.parse_colours(css), mod.parse_sizes(css))
+    assert len(failures) == 1 and "font sizes below the minimum" in failures[0]
+
+
+@pytest.mark.covers("FR-01.04")
+def test_brand_checker_reports_values_it_cannot_read_instead_of_passing_on_the_base() -> None:
+    """An override the checker skipped would leave the base value in force and report green for a colour nobody checked."""
+    mod = _checker()
+    base = (KIT / "tokens" / "warm.css").read_text(encoding="utf-8")
+    failures = mod.check_css(base + ":root { --color-muted: rgb(150, 150, 150); --font-size-base: 1rem; }")
+    assert any("--color-muted" in f and "not a solid hex" in f for f in failures)
+    assert any("--font-size-base" in f and "not a px size" in f for f in failures)
+    shorthand = mod.check_css(base + ":root { --color-muted: #999; }")
+    assert any(f.startswith("muted #999999") for f in shorthand), "a 3-digit hex is read as the colour it means"
+
+
+@pytest.mark.covers("FR-01.04")
+def test_brand_checker_requires_primary_hover_darker_and_font_sizes_present() -> None:
+    mod = _checker()
+    colours = mod.parse_colours((KIT / "tokens" / "clean.css").read_text(encoding="utf-8"))
+    for hover in (colours["primary"], "#93c5fd"):  # the same colour, and a lighter one: neither is a darker hover
+        assert any(f.startswith("primary-hover") and "darker" in f for f in mod.check({**colours, "primary-hover": hover}))
+    assert mod.check(mod.parse_colours((KIT / "tokens" / "clean.css").read_text(encoding="utf-8")), {}) == ["missing --font-size-base", "missing --font-size-sm"]

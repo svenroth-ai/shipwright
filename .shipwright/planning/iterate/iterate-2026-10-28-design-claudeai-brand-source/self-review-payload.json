@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Design Step 2.5, Step 3 option D and the kit doc now offer a claude.ai Design System as brand source; brand-from-design-system.md holds the procedure and mapping; check_brand_tokens.py checks contract rules and suggests fixes; FR-01.04 gains AC13."},
+{"name":"Error Handling","verdict":"pass","note":"Checker exits 2 on a missing file, 1 on failures (one line each, with a suggested colour), 0 when every rule holds; a token the brand set leaves out is reported as missing, not skipped."},
+{"name":"Security Basics","verdict":"pass","note":"Checker reads local CSS only, no network, no eval. The procedure marks everything read from the Artifact as data, never instructions."},
+{"name":"Test Quality","verdict":"pass","note":"Four new tests in test_untitled_ui_kit.py assert outcomes: weak brand colours are flagged and the suggested values pass, CLI exit codes 0/1/2, missing token reported, the route is reachable from all four docs. The existing contrast test now runs through the same checker."},
+{"name":"Performance Basics","verdict":"pass","note":"Pure arithmetic over about 30 colour pairs."},
+{"name":"Naming & Structure","verdict":"pass","note":"One self-contained tool in scripts/tools (no lib import, consistent with build_kit_examples.py), one reference file, no brand-specific token file in the plugin."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; the checker reads CSS custom properties and the Design System tokens.json by description only."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"Tests are tagged FR-01.04; no skips, no sleeps."}
+]}

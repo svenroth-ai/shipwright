@@ -4,7 +4,9 @@
 
 **Trigger:** If the user has an existing website (mentioned in project interview, requirements, or `shipwright_project_config.json`).
 
-**Skip if:** No existing website is known. Proceed directly to Step 3.
+**Brand source on claude.ai:** if the Artifact tool is available, first ask whether the user keeps a Design System on claude.ai (e.g. their own brand) and offer to use it. If yes, follow [brand-from-design-system.md](brand-from-design-system.md) instead of the WebFetch flow below; its result carries into Step 3 the same way.
+
+**Skip if:** No existing website and no Design System are known. Proceed directly to Step 3.
 
 ```
 1. WebFetch the URL

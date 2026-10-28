@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-e2e-run-findings-brief",
+  "date": "2026-10-28",
+  "section": "Iterate - change: land the e2e-run-findings campaign brief",
+  "title": "The e2e-run-findings campaign brief and its report live on main",
+  "context": "The follow-up campaign to the first operator end-to-end run needs a brief BP can read: BP reads scope_frs from main, not from a worktree.",
+  "decision": "The campaign brief (units E1-E8, operator stops, scope_frs campaign-wide and per unit) and the findings report it builds on are committed under .shipwright/planning/campaigns/.",
+  "consequences": "BP can read scope_frs from main before the first unit runs; the campaign can start once the operator confirms the list and the admin-merge policy.",
+  "rationale": "A brief that exists only in a checkout cannot be read by BP or by a campaign runner started from a worktree.",
+  "rejected": "Committing by hand outside an iterate (planning docs go through an iterate).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
