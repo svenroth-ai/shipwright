@@ -211,7 +211,7 @@ def test_builder_refuses_a_token_set_without_a_font_entry(tmp_path: Path) -> Non
 RAW_BRAND = ":root { --color-primary: #128a76; --color-muted: #6c6a64; --color-border-strong: #cdc7ba; }"
 
 
-@pytest.mark.covers("FR-01.04")
+@pytest.mark.covers("FR-01.04/AC13")
 def test_brand_checker_flags_weak_brand_colours_and_the_suggestions_bring_it_to_green() -> None:
     mod = _checker()
     css = (KIT / "tokens" / "warm.css").read_text(encoding="utf-8") + RAW_BRAND
@@ -224,7 +224,7 @@ def test_brand_checker_flags_weak_brand_colours_and_the_suggestions_bring_it_to_
     assert mod.check({**mod.parse_colours(css), **best}) == []
 
 
-@pytest.mark.covers("FR-01.04")
+@pytest.mark.covers("FR-01.04/AC13")
 def test_brand_checker_cli_exit_codes(tmp_path: Path) -> None:
     brand = tmp_path / "brand.css"
     brand.write_text(RAW_BRAND, encoding="utf-8")
@@ -243,7 +243,7 @@ def test_brand_checker_reports_a_token_the_brand_set_leaves_out() -> None:
     assert mod.check(colours) == ["missing --color-focus"]
 
 
-@pytest.mark.covers("FR-01.04")
+@pytest.mark.covers("FR-01.04/AC13")
 def test_brand_from_design_system_is_offered_where_the_look_is_chosen() -> None:
     """The claude.ai Design System route is reachable from Step 2.5, the Step 3 question and the kit doc, and its checker exists."""
     refs = DESIGN / "references"
