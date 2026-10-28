@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Round 7 at e5437a10a: PASS. Rounds 1-6 REJECTed on report/data contradictions, all fixed and re-verified (last: the T-code '#899 adds seven FRs' sentence). All brief section 5 item 1 inputs present, ~45 figures match REPLAY.json, no gate files changed."}

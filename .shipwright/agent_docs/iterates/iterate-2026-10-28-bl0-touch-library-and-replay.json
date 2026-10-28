@@ -1,0 +1,104 @@
+{
+  "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+  "date": "2026-10-28T19:39:07.880458Z",
+  "event_at": "2026-10-28T13:58:58.317926+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-baseline-protection--BL0",
+  "spec": ".shipwright/planning/iterate/campaigns/baseline-protection/sub-iterates/BL0-touch-library-and-replay.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-28-bl0-touch-library-and-replay",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "T-spec: normative FR text change touches the FR, reformat/AC reorder does not",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "T-test: edited/deleted/re-tagged FR-bound test touches its FRs; pure move is listed as moved",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Static attribution: conftest, fixture chains, helper modules, module-level effects reach FR-bound tests",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Unreadable or unparsable input fails closed (incomplete), never silently empty",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "T-code from per-test coverage contexts: attribution, fan-out, unattributed, incomplete",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch_coverage.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Replay CLI: PR selection, merge-base replay, stats, JSON output, probes",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Per-hit labels: a test hit is wrong when the cited test is unbound or unchanged; a static hit needs a bound test that reaches the changed names; a spec hit needs normative text to differ; a code hit needs a bound test executing the changed function",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 23 tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Measurements: fan-out per changed function and per executed function, verifier wall-clock, per-root context-run cost; results merged into the replay JSON",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 23 tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Re-running the label command is idempotent for code hits (no duplicates with a workdir, none dropped without one) and fails loudly when the context databases are missing",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 23 tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "T-code attributes an inserted line to its enclosing base function and a line in a new nested function to the nearest enclosing function that exists at base, else notes it unattributed",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Static attribution reads parenthesised multi-line imports through the ast; name-status is parsed NUL-separated; nearest-rank percentiles; code wrong-rate normalised by the code sample",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Replay code leg, probes, fan-out and label CLIs run in-process: scrubbed environment, workdir guard, probe commit stages only the seeded file, root databases kept apart from per-PR databases",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Labels use untruncated evidence, pair a test renamed with a docstring edit and a re-tag, and ignore docstring-only edits",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "held_with_scope_eq_declared and touched_all_declared_prs summary metrics; rederive refreshes the git leg and keeps the code leg inputs",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (97 passed across the five baseline files)"
+      },
+      {
+        "behavior": "Blank and comment-only changed lines are skipped and module-level code is noted separately from functions; a renamed file is followed when labelling; a renamed test pairs only with a base twin that is gone; FR ids match as whole ids; rederive drops stale labels, reports ok-to-error records and re-attributes the code leg from its databases",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (97 passed across the five baseline files)"
+      }
+    ],
+    "counts": {
+      "testable": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

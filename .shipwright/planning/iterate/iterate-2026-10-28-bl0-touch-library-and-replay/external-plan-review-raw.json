@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review: BL0 \u2014 Touched-set library and replay\n\n**Category: approach**\n**Severity: medium**\nThe mini-plan decomposes the library into 8 modules (`_baseline_touch_{git,spec,binding,static,coverage,core,replay_stats,replay_code}.py`) before any of them has proven they need separation. The `replay_code` module appears to have exactly one caller (`replay_baseline_lock.py`), and `replay_stats` is plausibly a single-use wrapper around aggregation. Start with 2-3 modules (git/diff reading, digests+scope rule, replay driver) and split only when a boundary earns itself. If the campaign's later units genuinely consume pieces separately, that's the justification to name in the plan \u2014 say so explicitly.\n\n**Category: approach**\n**Severity: medium**\n\"T-spec: normative digest per FR, markers/order ignored\" is the highest-risk design decision in the whole unit and gets one clause. Whitespace/comment-insensitivity is easy; the hard question is what counts as *normative* \u2014 does rewording an FR invalidate its baseline digest? This determines the false-hold rate for every PR class the operator will see at stop 1. The plan should state the digest normalization rules concretely (or point to where the brief pins them) and include at least one L1 test where a semantically equivalent FR reformat does *not* break the digest, and one where a real edit does.\n\n**Category: edge-case**\n**Severity: high**\nThe replay assumes \"squash first-parent as merge base\" for the last 100 merged PRs. Real repos of any age have squash merges, merge commits, rebased merges, and PRs whose merge-base commit is no longer buildable (deps removed since). The plan needs: (a) how it detects and counts non-squash merges in the 100, (b) what happens when a merge base can't run the suite (skip + disclose in the report, or fail \u2014 currently unhandled, and \"fail-closed on incomplete\" only seems to apply to the scope rule, not the replay). Skipped PRs silently shrinking the sample below 100 would poison the base rates stop 1 depends on.\n\n**Category: edge-case**\n**Severity: medium**\n`--code-sample 20` \"runs context runs at merge bases\" \u2014 the coverage-context runs need the *historical* dependency and environment state to be meaningful. Running today's tree at an old merge base mixes eras. The plan mentions \"a restricted tier set\" for cost, but doesn't say how it guards against coverage data that is *wrong for that commit* (e.g., an FR that didn't exist yet, tests that were added later). At minimum: record per-PR whether base-run coverage was fully obtainable, and mark those fan-out numbers provisional in the report.\n\n**Category: dependency**\n**Severity: medium**\nThe replay depends on `gh` for merged-PR listing and on historical `fr_impact` -> `affected_frs` mapping existing in old PR bodies/labels. If any of the last 100 PRs predate the `fr_impact` convention (likely, given this is a *baseline-protection* campaign \u2014 the convention may be new), the \"historical fr_impact -> none\" classification is wrong-by-default, not merely incomplete. State the cutoff date and how pre-convention PRs are classed; the operator can't re-label what the report doesn't surface.\n\n**Category: risk**\n**Severity: low**\nAcceptance says \"T-code over 20\" as a fan-out gate but the plan defers the proposed N to the report. Make sure the replay JSON carries enough per-PR detail (touched files, matched tests, per-FR T-code) that the operator can audit *why* fan-out came out as it did, not just the aggregate \u2014 otherwise stop 1 is reviewing a number, not a claim.\n\n**Category: security**\n**Severity: low**\n`gh` invocation and git command construction \u2014 if any PR title, branch name, or file path from the API is passed into a shell command, that's injection. Use argument lists, not string interpolation. Low practical risk on a single repo, but it's the one security surface in this unit.\n\n**Category: edge-case**\n**Severity: low**\n\"moved = same digest+bindings\" for tests: a renamed test file or moved fixture directory with no content change should not count as a hold violation, but \"moved\" detection keyed on digest+bindings may miss a *copy* (original kept, duplicate added). Confirm the scope rule treats pure additions as out-of-baseline (pass, not hold) \u2014 plan doesn't say.\n\n---\n\n**Overall:** The approach is sound in shape and the acceptance criteria are unusually well-specified, but three things need pinning down before build: the merge-base/replayability failure handling, the pre-convention `fr_impact` classification, and concrete T-spec digest normalization rules. None require redesign \u2014 they're decisions the plan currently leaves implicit that stop 1 will depend on.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency \u00b7 Severity: high**  \n   **Finding:** The plan references the brief but omits the required overlap check against open units in campaigns U and e2e-run-findings. This is a start condition, and the proposed file list alone does not establish that BL0 may proceed.  \n   **Suggestion:** Before implementation, verify the exact permitted touch set and inspect both campaigns\u2019 open units for overlapping files. Escalate any overlap and explicitly stop after the BL0 report for operator stop 1.\n\n2. **Category: approach \u00b7 Severity: high**  \n   **Finding:** \u201cSquash first-parent as merge base\u201d assumes a merge strategy that may not hold across the last 100 PRs. Using the wrong base or head can attribute unrelated changes to a PR or omit its changes, corrupting touched sets and hold rates.  \n   **Suggestion:** Define how base and head commits are resolved for each supported merge strategy. Record immutable SHAs per PR, verify the resulting diff corresponds to that PR, and mark unsupported or unavailable histories as incomplete.\n\n3. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** Restricted test tiers make the coverage replay potentially incomplete. An existing test outside those tiers can exercise changed code without appearing in the coverage contexts. Disclosing the restriction alone does not make aggregate hold rates or the proposed fan-out threshold reliable.  \n   **Suggestion:** Record collected and executed tests, missing contexts, and run failures for each sampled PR. Treat unavailable coverage as incomplete under the stated fail-closed rule, report incomplete cases separately, and qualify threshold recommendations by the observed coverage limits.\n\n4. **Category: approach \u00b7 Severity: medium**  \n   **Finding:** Replaying saved JSON can reproduce statistics without reproducing how the evidence was obtained. The plan does not specify a frozen PR cohort, sampling seed, historical scope metadata, or coverage execution configuration. Those omissions can change the sample, labels, and results between runs.  \n   **Suggestion:** Store an evidence manifest containing PR IDs, base/head SHAs, resolved scope values and their sources, tool versions, commands, tier selection, sampling seed, and probe outcomes. Distinguish recomputing the report from rerunning evidence collection.\n\nThe library-first approach and exclusion of live gates are sound, but the replay needs explicit provenance and completeness rules before its results can support operator stop 1. I could not inspect the binding brief because workspace access was blocked, so brief-specific compliance remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+    "at": "2026-10-28T12:23:04.208881+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

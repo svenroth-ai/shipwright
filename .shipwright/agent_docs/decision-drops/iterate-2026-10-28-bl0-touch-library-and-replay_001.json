@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+  "date": "2026-10-28",
+  "section": "Iterate — feature: baseline touched-set library and replay",
+  "title": "Baseline touched-set: measure first",
+  "context": "BP needs measured base rates before any gate; nothing compares a diff with an approved scope today.",
+  "decision": "Build the touched-set library and a manual replay CLI, run them over 100 PRs, report, and stop for the operator.",
+  "consequences": "39 of 100 PRs held under an empty scope; operator decides N, class rules and scope_frs at stop 1.",
+  "rationale": "Precedent ADR-266: measure false holds on real history before anything blocks.",
+  "rejected": "Extend keystone/test-tag gates with a report; do nothing and design from the brief alone.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-28-bl0-touch-library-and-replay-baseline-touched-set.md"
+}
