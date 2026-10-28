@@ -85,15 +85,55 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: skill-companion-app with chat-first is composed as a board — apply tool still writes chat flow pages from raw mockups",
+          "suggestion": "treat as package defect: STOP (fixed in 038568da4)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: only untouched copies are recomposed — comparison by eye can miss edits",
+          "suggestion": "exact diff command (fixed 038568da4, refined c27bcc272)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: token step stays inside boundary — scratch override file location",
+          "suggestion": "path under .shipwright/designs (fixed 038568da4)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every path ends composed — @file branch skips compose",
+          "suggestion": "compose first (fixed 038568da4, scope in c27bcc272)",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-10-28T23:17:52.457146+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "038568da4215e6464a5b84fd50c272786d971890"
     },
     "external_code": {
       "review_type": "external_code",
