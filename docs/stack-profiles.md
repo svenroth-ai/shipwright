@@ -110,8 +110,7 @@ profile. The working facts the phases do use (`dev_server`, `testing`, `folder_s
 
 **Guidance for the companion backend (descriptive, nothing enforces it).** It is a local web
 server with a write API, so: bind `127.0.0.1` only; check the `Host` header and require a
-per-start token (or a same-origin `Origin` check plus `application/json`) on write endpoints (a web page can otherwise reach a loopback
-server); keep a pidfile or idle timeout so a backend left behind by a crashed session is found and
+on state-changing routes a same-origin `Origin` check plus `application/json` or a per-session token, and no permissive CORS (a web page can otherwise reach a loopback server); keep a pidfile or idle timeout so a backend left behind by a crashed session is found and
 stopped; handle "port already in use". Adopt scores a profile by its declared dependencies, and
 this profile declares the same ones as `chat-first-json`, so adopt cannot tell them apart and
 prefers `chat-first-json` by name: a skill-backed app chooses `skill-companion-app` explicitly.
@@ -127,7 +126,7 @@ What each phase does with a plugin-shaped app today (recorded by unit E2 of camp
 | Preview / Browser Verify | start only the `dev_server` block (the same backend the skill starts, port 3911, `/api/health`, with a throw-away `--data-dir`; the real companion binds 3901, so a dev run never attaches to it); never the `npm run dev` fallback |
 | Deploy | none: `deploy: null`, run config `deploy_target: none`, no CI or CodeQL template; the plugin is installed, not deployed. A plugin-shaped deploy target (marketplace publish) does not exist and is not part of this unit |
 
-A Brief package for this class names `profile: skill-companion-app` and sets `ux_shape: classic`
+A Brief package for this class names `profile: skill-companion-app` and sets `ux_shape: classic` and `ui_host: served-board`
 (the brief vocabulary `classic`, `chat-first` is unchanged here; `skill-companion` is the profile's own value).
 
 ## What a Shipwright update can change

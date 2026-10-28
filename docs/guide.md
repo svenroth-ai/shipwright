@@ -1372,7 +1372,7 @@ the surface stays signal-first.
 
 ## 5. Stack Profiles
 
-A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. The three built-in profiles are stored in the Shipwright install (`shared/profiles/`); your own profiles live in `<project>/.shipwright/profiles/` or `~/.shipwright/profiles/` (see below).
+A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. The built-in profiles are stored in the Shipwright install (`shared/profiles/`); your own profiles live in `<project>/.shipwright/profiles/` or `~/.shipwright/profiles/` (see below).
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
