@@ -58,7 +58,7 @@ def test_setup_breaking_change_from_1_0_raises_first_number(tmp_path: Path):
 def test_setup_main_in_process_reports_suggestion(tmp_path: Path, monkeypatch, capsys):
     spec = importlib.util.spec_from_file_location("setup_changelog_ac04", _SETUP)
     module = importlib.util.module_from_spec(spec)
-    sys.modules["setup_changelog_ac04"] = module
+    monkeypatch.setitem(sys.modules, "setup_changelog_ac04", module)
     spec.loader.exec_module(module)
     _repo(tmp_path, "v0.2.0", "feat!: drop the old flag")
     monkeypatch.chdir(tmp_path)
