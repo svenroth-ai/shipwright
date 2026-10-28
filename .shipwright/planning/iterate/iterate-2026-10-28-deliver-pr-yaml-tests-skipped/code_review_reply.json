@@ -1,0 +1,41 @@
+{
+ "section": "iterate-2026-10-28-deliver-pr-yaml-tests-skipped",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+   "finding": "Parametrized probe only failed when returncode != 0 AND yaml in stderr; runpy.run_path with a module name absent from sys.modules breaks module-level dataclass under future annotations, so scripts could die for unrelated reasons and hide a later yaml import.",
+   "suggestion": "Load via spec_from_file_location with sys.modules registration, assert returncode == 0. FIXED (all 22 scripts return 0)."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+   "finding": "test_probe_really_blocks_yaml coupled to ci_gate_scan keeping a module-level yaml import.",
+   "suggestion": "tmp_path throwaway. FIXED."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+   "finding": "text=True uses locale encoding; PYTHONPATH and PYTHONSAFEPATH inherited.",
+   "suggestion": "utf-8/replace and scrubbed env. FIXED."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_iterate_scripts_need_no_yaml.py",
+   "finding": "Discovery covers only F*.md; other iterate refs (campaign-*.md) not covered; only yaml is blocked.",
+   "suggestion": "Non-blocking follow-up: widen discovery; block all non-stdlib modules. DEFERRED."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/tests/test_iterate_refs_carry_skipped_count.py",
+   "finding": "next() without default raises bare StopIteration.",
+   "suggestion": "Default None plus assert message. FIXED."
+  }
+ ],
+ "verdict": "PASS"
+}

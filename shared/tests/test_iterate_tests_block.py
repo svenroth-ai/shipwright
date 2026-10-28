@@ -97,6 +97,25 @@ class TestDerive:
         ))
         assert "skipped" not in itb.derive_tests_block(tmp_path, RUN)
 
+    @pytest.mark.covers("FR-01.11")
+    def test_skipped_omitted_when_one_layer_leaves_a_gap_unexplained(self, tmp_path: Path):
+        """Mixed layers: unit reports its skips, integration has passed < total
+        and no ``skipped``. Summing only unit's skips would read integration's
+        gap as 5 failures; omitting keeps the charitable whole-gap reading."""
+        _write_results(tmp_path, _results(
+            unit={"status": "passed", "passed": 97, "total": 100, "skipped": 3},
+            integration={"status": "passed", "passed": 45, "total": 50},
+        ))
+        assert "skipped" not in itb.derive_tests_block(tmp_path, RUN)
+
+    @pytest.mark.covers("FR-01.11")
+    def test_a_layer_without_a_gap_needs_no_skipped(self, tmp_path: Path):
+        _write_results(tmp_path, _results(
+            unit={"status": "passed", "passed": 97, "total": 100, "skipped": 3},
+            integration={"status": "passed", "passed": 50, "total": 50},
+        ))
+        assert itb.derive_tests_block(tmp_path, RUN)["skipped"] == 3
+
 
 # ---------------------------------------------------------------------------
 # Staleness guard — trg-81fbf8ed / project_derived_snapshots_stale_ledger
