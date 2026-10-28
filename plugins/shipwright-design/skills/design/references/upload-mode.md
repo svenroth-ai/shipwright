@@ -1,10 +1,10 @@
 # Upload Mode
 
-**Compose, then gate** (not for a legacy chat-first package of a profile other than `skill-companion-app`, which follows chat-first.md): every screen that is still the plain mockup copy is recomposed from the kit and the package tokens per [brief-compose.md](brief-compose.md) (uploads and approved guidelines stay untouched). **Legacy chat-first Brief package** (`ux_shape: chat-first`, retired for skill-backed apps): after the tool read [chat-first.md](chat-first.md); it adds flows, a Layout D design and its own STOP table.
+**Compose, then gate** (not for a legacy chat-first package of a profile other than `skill-companion-app`, which follows chat-first.md): every screen that is still the plain mockup copy is recomposed from the kit and the package tokens per [brief-compose.md](brief-compose.md) (uploads and approved guidelines stay untouched). **Legacy chat-first Brief package** (`ux_shape: chat-first`, retired for skill-backed apps): after the tool, read [chat-first.md](chat-first.md); it adds flows, a Layout D design and its own STOP table.
 
 **Brief package run:** skip the generic steps 1-7 below and go straight to the Brief section; generate NO screen from scratch in Brief mode (the mapped screens are composed per brief-compose.md); do not hand-edit `design-manifest.md`.
 
-When `.shipwright/designs/uploads/` contains files, or the run records a Brief package (see the last section; it needs no files beforehand):
+When `.shipwright/designs/uploads/` contains files, (a Brief package run skips these generic steps; see the last section):
 
 1. Scan directory for images (PNG, JPG), HTML files, and markdown files
 2. **Check for visual guidelines:** If a `.md` file contains "Visual Guidelines" or design tokens (colors, typography, spacing), treat it as the project's design foundation
@@ -42,7 +42,7 @@ no package: STOP, never repair it by hand). **Any non-zero exit (1 or 3) means S
   `design-manifest.md` (on every non-no-op apply) (every screen listed with its Linked FRs).
 
 An existing upload that differs from the package is never overwritten (`exists_differs`, exit 1: restore it); an existing `visual-guidelines.md` is left as it is (listed in `kept_existing_differs` when it differs from the package: a warning, not a refusal), and an existing screen is kept only when it still links the FR ids minted for it AND at least one upload of the package exists (a reset); otherwise the tool stops (`pre_existing_screen`, exit 1, nothing written: move that screen away, delete nothing else, apply again), so "tool ok" means "gate green". A foreign screen that carries exactly the minted ids during a reset is still kept (an accepted hole: the gate does not prove the screens came from the tool). After exit 0, continue with the normal Design
-flow: generate the flows between the screens (the flows gate needs one for two or more screens),
+compose the screens (brief-compose.md) and show the preview, then generate the flows between the screens (the flows gate needs one for two or more screens),
 the chrome definition if any screen uses nav markup, and run
 `check-design-gates.py --gate all`. The mapping is automatic; the preview and review-loop gates
 keep their own policy.

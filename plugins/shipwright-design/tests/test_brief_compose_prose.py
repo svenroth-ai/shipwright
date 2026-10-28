@@ -85,3 +85,19 @@ def test_every_touched_reference_links_resolve_and_step_order_is_compose_preview
     assert compose.index("2. **Per screen") < compose.index("4. **Self-check") < compose.index("5. **Preview.**") < compose.index("7. **Gates.**")
     assert "Brief package:** generate no new preview screens" in (REFS / "step-3-5-design-preview.md").read_text(encoding="utf-8")
     assert "run profile is not `skill-companion-app`" in (REFS / "chat-first.md").read_text(encoding="utf-8")
+
+
+@pytest.mark.covers("FR-01.04")
+def test_doubt_review_rules_are_pinned():
+    compose = (REFS / "brief-compose.md").read_text(encoding="utf-8")
+    for sentence in (
+        "that is a package defect",
+        "git diff --no-index --ignore-cr-at-eol",
+        "`brief_chat_first_applied`",
+        "write that scratch file under `.shipwright/designs/`",
+        "also when the run was started with an `@file` argument",
+        "STOP at once as a package defect",
+    ):
+        assert sentence in compose, sentence
+    assert "after composing per brief-compose.md" in (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    assert "wins over the legacy rule" in (REFS / "step-4-generate-screens.md").read_text(encoding="utf-8")

@@ -127,7 +127,7 @@ What each phase does with a plugin-shaped app today (recorded by unit E2 of camp
 | Deploy | none: `deploy: null`, run config `deploy_target: none`, no CI or CodeQL template; the plugin is installed, not deployed. A plugin-shaped deploy target (marketplace publish) does not exist and is not part of this unit |
 
 A Brief package for this class names `profile: skill-companion-app` and sets `ux_shape: classic` and `ui_host: served-board`
-(the brief vocabulary `classic`, `chat-first` is unchanged here; `skill-companion` is the profile's own value). Design composes this class's screens from the Untitled UI kit and the package's tokens and never builds a chat layout; the chat-first layout is retired for this class (an older chat-first package of another profile keeps working; this profile is always composed as a board).
+(the brief vocabulary `classic`, `chat-first` is unchanged here; `skill-companion` is the profile's own value). Design composes this class's screens from the Untitled UI kit and the package's tokens and never builds a chat layout; the chat-first layout is retired for this class (an older chat-first package of another profile keeps working; this profile is always composed as a board, and a package of this profile that says `chat-first` is a defect to re-approve as `classic`).
 
 ## What a Shipwright update can change
 
