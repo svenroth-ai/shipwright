@@ -1,8 +1,8 @@
 # Chat-first design (`ux_shape: chat-first`) -- LEGACY
 
-**Retired for the skill-backed app class.** There the chat is the Claude app and the companion is a served HTML board (profile `skill-companion-app`, `ux_shape: classic`, `ui_host: served-board`; the brief vocabulary has no `skill-companion` shape, the profile's own value is informational, and a package for this class says `classic`): its Design composes from the kit ([brief-compose.md](brief-compose.md)) and never builds a chat layout. The rest of this file applies only to an older package that still declares `chat-first` with another profile.
+**Retired for the skill-backed app class.** There the chat is the Claude app and the companion is a served HTML board (profile `skill-companion-app`, `ux_shape: classic`, `ui_host: served-board`; the brief vocabulary has no `skill-companion` shape, the profile's own value is informational, and a package for this class says `classic`): its Design composes from the kit ([brief-compose.md](brief-compose.md)) and never builds a chat layout. A package with that profile is composed as a board even if its `ux_shape` says `chat-first`. The rest of this file applies only to an older package that still declares `chat-first` with another profile.
 
-Read this after `apply-brief-package.py` exited 0 and its result says `"ux_shape": "chat-first"` (the field is also present on `already_applied`). A classic package (`"ux_shape": "classic"`) never reads this file.
+Read this after `apply-brief-package.py` exited 0 and its result says `"ux_shape": "chat-first"` and the run profile is not `skill-companion-app` (the field is also present on `already_applied`). A classic package (`"ux_shape": "classic"`) never reads this file.
 
 ## What a chat-first design is
 

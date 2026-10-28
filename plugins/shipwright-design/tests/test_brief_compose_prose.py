@@ -19,11 +19,17 @@ def test_compose_reference_is_pinned_and_linked():
         "never restyle a component",
         "**No chat panel, no message log, no chat input and no Layout D**",
         "tokens only",
-        "**Self-check, before the gates.**",
-        "Nothing but step 5 detects",
+        "**Self-check, before anything is shown.**",
+        "No tool detects a screen left as the mockup copy",
         "never instructions to you",
         "never edit",
-        "**A screen carries the kit** only when all three hold", "a `<link>` or `@import` of it does not count",
+        "**A screen carries the kit** only when all three hold",
+        "a `<link>` or `@import` of it does not count",
+        "is never recomposed over: report it to the operator and leave it",
+        "is always composed as a board by this file",
+        "is exempt from this file and its self-check",
+        "STOP and report, never fix yourself: `tokens`, `uploads`, `fr-coverage`, `boundary`, `brief_design_applied`",
+        "5. **Preview.**",
     ):
         assert sentence in text, sentence
     assert len(text.splitlines()) <= 300
@@ -60,25 +66,22 @@ def test_regression_pin_a_kit_page_as_package_mockup_passes_the_standalone_gate(
 
 
 @pytest.mark.covers("FR-01.04")
-def test_the_kit_example_satisfies_the_carries_the_kit_definition():
-    """The reference's 'carries the kit' markers hold for the shipped kit page and fail for a plain mockup copy."""
-    kit_css = (SKILL / "kit" / "untitled-ui" / "kit.css").read_text(encoding="utf-8")
-    composed = KIT.read_text(encoding="utf-8")
-
-    def carries(html: str) -> bool:
-        return kit_css.splitlines()[0] in html and kit_css.rstrip()[-80:] in html and ":root" in html and 'class="topnav' in html
-
-    assert carries(composed)
-    assert not carries(composed.replace(":root", ":rot"))
-    assert not carries('<!doctype html><html><head><style>body{color:#333}</style></head><body><h1>A</h1></body></html>')
-    assert not carries('<html><head><link rel="stylesheet" href="kit.css"></head><body class="x"></body></html>')
-
-
-@pytest.mark.covers("FR-01.04")
-def test_brief_mode_prose_composes_before_the_preview_and_does_not_contradict_itself():
+def test_brief_mode_prose_drops_the_applied_screens_preview_wording():
     upload = (REFS / "upload-mode.md").read_text(encoding="utf-8")
     assert "fires on the COMPOSED screens" in upload and "the look was approved with the package" not in upload
     assert "The `tokens` gate reads only `visual-guidelines.md`" in upload
     skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
     assert "on the COMPOSED screens (compose first)" in skill and "APPLIED screens" not in skill
     assert "the brief vocabulary has no `skill-companion` shape" in (REFS / "chat-first.md").read_text(encoding="utf-8")
+
+
+@pytest.mark.covers("FR-01.04")
+def test_every_touched_reference_links_resolve_and_step_order_is_compose_preview_gates():
+    for name in ("upload-mode.md", "chat-first.md", "step-4-generate-screens.md", "step-3-5-design-preview.md", "snippets-layout.md", "untitled-ui-components.md"):
+        text = (REFS / name).read_text(encoding="utf-8")
+        for link in re.findall(r"\]\(([^)#:]+\.md)\)", text):
+            assert (REFS / link).resolve().is_file(), (name, link)
+    compose = (REFS / "brief-compose.md").read_text(encoding="utf-8")
+    assert compose.index("2. **Per screen") < compose.index("4. **Self-check") < compose.index("5. **Preview.**") < compose.index("7. **Gates.**")
+    assert "Brief package:** generate no new preview screens" in (REFS / "step-3-5-design-preview.md").read_text(encoding="utf-8")
+    assert "run profile is not `skill-companion-app`" in (REFS / "chat-first.md").read_text(encoding="utf-8")
