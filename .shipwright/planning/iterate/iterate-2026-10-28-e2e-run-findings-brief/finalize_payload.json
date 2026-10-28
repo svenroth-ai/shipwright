@@ -1,0 +1,53 @@
+{
+  "run_id": "iterate-2026-10-28-e2e-run-findings-brief",
+  "artifact_sync": {
+    "ref": "HEAD~1..HEAD"
+  },
+  "decision": {
+    "section": "Iterate - change: land the e2e-run-findings campaign brief",
+    "title": "The e2e-run-findings campaign brief and its report live on main",
+    "context": "The follow-up campaign to the first operator end-to-end run needs a brief BP can read: BP reads scope_frs from main, not from a worktree.",
+    "decision": "The campaign brief (units E1-E8, operator stops, scope_frs campaign-wide and per unit) and the findings report it builds on are committed under .shipwright/planning/campaigns/.",
+    "consequences": "BP can read scope_frs from main before the first unit runs; the campaign can start once the operator confirms the list and the admin-merge policy.",
+    "rationale": "A brief that exists only in a checkout cannot be read by BP or by a campaign runner started from a worktree.",
+    "rejected": "Committing by hand outside an iterate (planning docs go through an iterate).",
+    "architecture_impact": "none"
+  },
+  "changelog": [
+    {
+      "category": "Added",
+      "bullet": "Campaign brief for the e2e-run-findings follow-up (skill-backed app profile, kit-composed design, harness for the new app class, second end-to-end run) with the existing FRs it changes listed as scope_frs, plus the findings report it builds on"
+    }
+  ],
+  "iterate_entry": {
+    "type": "change",
+    "complexity": "trivial",
+    "prior_source": "keyword",
+    "branch": "iterate/e2e-run-findings-brief",
+    "spec": null,
+    "tests_passed": true,
+    "adr": "iterate-2026-10-28-e2e-run-findings-brief",
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    },
+    "exemptions": {
+      "count": 0,
+      "items": []
+    },
+    "risk_flags": []
+  },
+  "finalize": {
+    "reason": "iterate: land the e2e-run-findings campaign brief",
+    "event_extras": {
+      "intent": "change",
+      "description": "land the e2e-run-findings campaign brief and report",
+      "summary": "A planning brief for the next campaign, and the report it builds on, are added to the repository so BP and campaign runners can read them; nothing in the product changes.",
+      "spec_impact": "none",
+      "spec_impact_justification": "Adds two planning markdown documents; no code, spec or behaviour changes.",
+      "spec_impact_reason_code": "docs-only",
+      "change_type": "docs",
+      "none_reason": "Planning brief and report only (markdown under .shipwright/planning/campaigns/)."
+    }
+  }
+}
