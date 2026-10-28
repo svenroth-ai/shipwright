@@ -66,7 +66,7 @@ Shipwright is for engineers, BAs, architects, and tech leads who work with Claud
 
 ### Discipline Layer — the Harness around AI Coding
 
-Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The four stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
+Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The five stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`, `skill-companion-app`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
 
@@ -1376,7 +1376,7 @@ A **stack profile** is a JSON file that defines everything about your technology
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
-Four profiles ship out-of-the-box:
+Five profiles ship out-of-the-box:
 
 | Profile | Layout | When to use |
 |---------|--------|-------------|

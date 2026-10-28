@@ -178,6 +178,7 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 | `vite-hono` | Vite + React (frontend) · Hono (backend) · multi-service dev server · Vitest · Playwright | — |
 | `python-plugin-monorepo` | Python `uv` workspace · pytest · ruff · no web server | — |
 | `chat-first-json` | Chat + served pane · FastAPI · local JSON data · pytest · Playwright | — (no deploy) |
+| `skill-companion-app` | Claude skill/plugin + served HTML board · Python backend · local JSON data folder · pytest · Playwright | — (no deploy) |
 
 **Custom profiles.** Drop a new JSON file into your project's `.shipwright/profiles/` (or `~/.shipwright/profiles/`) to define your own stack: versions, folder layout, deploy target, test strategy, linting, CI, and architecture rules. Shipwright picks it up automatically and `/shipwright-run` can infer it from your project description.
 
