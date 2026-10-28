@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-e1-boundary-gate-uncommitted-output",
+  "date": "2026-10-28",
+  "section": "Iterate - change: design boundary gate baseline",
+  "title": "Design boundary gate judges the session, not the whole dirty tree",
+  "context": "The project phase leaves its output uncommitted, so the FR-01.04 #11 boundary gate flagged it and Design asked to commit earlier output first in every brief run (finding F1).",
+  "decision": "setup-design-session.py records the dirty set (salted content hashes, HEAD) in .shipwright/design-boundary-baseline.json; the gate reports only paths new or changed since, strict without a baseline.",
+  "consequences": "Earlier-phase output no longer trips the gate or prompts the agent; the baseline is self-attested inside the allowed prefix; the plan gate keeps whole-tree semantics.",
+  "rationale": "Only option that keeps the rule strict without the agent committing another phase's work; arch review: GLM revise (commit first), openai approve, internal approve.",
+  "rejected": "Agent commits earlier output (breaks nothing-commits-before-build); widen allowed prefixes (weakens the rule); do nothing.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

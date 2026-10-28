@@ -33,6 +33,9 @@ it an undocumented gap. A baseline-snapshot mechanism (git stash, or a
 captured path manifest at session start, mirroring
 ``record_requirement_impact.py --snapshot-baseline``) would close it, but is
 out of scope for this bounded enforcement pass.
+
+The design gate layers a session-start baseline over this evidence
+(``shipwright-design`` ``lib/boundary_baseline.py``); the plan gate does not.
 """
 
 from __future__ import annotations
