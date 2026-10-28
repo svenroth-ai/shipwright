@@ -246,3 +246,85 @@ def test_rederive_refreshes_the_git_leg_and_keeps_the_code_leg_inputs(tmp_path, 
     assert rec["sources"] == {} and rec["held"] is False and rec["code_files"] == ["shared/scripts/prod.py"]
     assert data["summary"]["held"] == 0 and data["sample"] == []
     capsys.readouterr()
+
+
+def test_blank_and_comment_lines_are_skipped_and_module_level_code_gets_its_own_note(tmp_path):
+    root = make_repo(tmp_path, {**BASE, "shared/scripts/prod.py": "def outer():\n    return 1\n"})
+    pad = commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"shared/scripts/prod.py": "# header\n\nVALUE = 1\n\n\ndef outer():\n    return 1\n"}, "module level")
+    rev = GitRev(root, pad, head)
+    touch = code_touched(rev, rev.changed(), {"shared/scripts/prod.py": {2: {BOUND}}})
+    assert touch.touched == {} and touch.unattributed == ["shared/scripts/prod.py::<module>: module-level code added (no function to attribute it to)"]
+    head2 = commit(root, {"shared/scripts/prod.py": "# header\n\nVALUE = 1\n\n\n# only a comment\ndef outer():\n    return 1\n"}, "comment")
+    quiet = GitRev(root, head, head2)
+    assert code_touched(quiet, quiet.changed(), {"shared/scripts/prod.py": {2: {BOUND}}}).unattributed == []
+    counted = M.fanout_changed([{"fan_out": {}, "unattributed": touch.unattributed + ["shared/scripts/prod.py::outer: function executed by no FR-bound test"]}])
+    assert (counted["changed_module_level"], counted["changed_unattributed"]) == (1, 1)
+
+
+def test_a_renamed_production_file_is_followed_to_its_new_path_when_labelling(tmp_path):
+    body = "def price():\n    return 1\n\n\ndef other():\n    return 2\n"
+    root = make_repo(tmp_path, {**BASE, "shared/scripts/prod.py": body})
+    pad = commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"shared/scripts/prod.py": None, "shared/scripts/prod_renamed.py": body.replace("return 1", "return 1\n    x = 3")}, "rename and insert")
+    rev = GitRev(root, pad, head)
+    assert LA._changed_functions(rev, "shared/scripts/prod.py") == {"price": (1, 2)}
+    ctx = {"shared/scripts/prod.py": {2: {BOUND}}}
+    assert LA.label_code_hit(rev, "FR-01.09", ["shared/scripts/prod.py::price"], ctx, lambda tid, fr: tid == BOUND)[0]
+
+
+def test_a_renamed_test_pairs_only_with_a_base_twin_that_is_gone_and_fr_ids_match_whole(tmp_path):
+    from verifiers import _baseline_label_hits as H
+
+    assert H.fr_in("FR-01.1", "covers(FR-01.1/AC01)") and not H.fr_in("FR-01.1", "covers(FR-01.10)") and not H.fr_in("FR-01.1", "XFR-01.1")
+    added = TESTS + '\n\n@pytest.mark.covers("FR-01.09")\ndef test_brand_new():\n    assert True\n'
+    root = make_repo(tmp_path, BASE)
+    pad = commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"shared/scripts/tests/test_prod.py": added}, "add a test with the same body as two kept ones")
+    ok, why = H.label_test_hit(GitRev(root, pad, head), "FR-01.09", [BOUND.replace("test_price", "test_brand_new")])
+    assert not ok and "did not exist at base" in why  # its twins are still at head: it is new, not a rename
+
+
+def test_static_reasons_say_they_cite_the_first_supporting_item_only(tmp_path):
+    from verifiers import _baseline_label_hits as H
+
+    conf = "import pytest\n\n\n@pytest.fixture(autouse=True)\ndef env():\n    return 1\n"
+    consumer = 'import pytest\n\n\n@pytest.mark.covers("FR-01.09")\ndef test_u():\n    assert True\n'
+    root = make_repo(tmp_path, {SPEC: SPEC_TEXT, "pkg/tests/test_u.py": consumer})
+    pad = commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"pkg/tests/conftest.py": conf}, "add conftest")
+    ok, why = H.label_static_hit(GitRev(root, pad, head), "FR-01.09", ["pkg/tests/conftest.py (fixture/helper) -> pkg/tests/test_u.py"])
+    assert ok and why.startswith("e.g. ") and "first supporting item only" in why
+
+
+def test_a_code_entry_without_a_record_names_the_pr(tmp_path):
+    root, head = _repo(tmp_path)
+    data = {"records": [], "code": {"prs": [{"pr": 77, "code": {"FR-01.09": ["shared/scripts/prod.py::price"]}}]}}
+    with pytest.raises(KeyError, match="77"):
+        LA.label_all(root, data, tmp_path)
+
+
+def test_pr_contexts_reads_the_codeleg_directory_and_refuses_an_empty_one(tmp_path, monkeypatch):
+    (tmp_path / "codeleg").mkdir()
+    with pytest.raises(FileNotFoundError):
+        rc.pr_contexts(tmp_path, tmp_path, 5)
+    (tmp_path / "codeleg" / "cov-5-0").write_bytes(b"x")
+    monkeypatch.setattr(rc, "load_contexts", lambda db, repo, prefix="": CONTEXTS)
+    assert rc.pr_contexts(tmp_path, tmp_path, 5) == CONTEXTS
+
+
+def test_rederive_drops_stale_labels_reports_new_errors_and_reattributes_the_code_leg(tmp_path, monkeypatch, capsys):
+    root, head = _repo(tmp_path)
+    good = {"pr": 1, "title": "feat", "branch": "iterate/x", "merge": head, "labels": [], "class": "iterate"}
+    bad = {"pr": 2, "title": "feat", "branch": "iterate/y", "merge": "0" * 40, "labels": [], "class": "iterate"}
+    code_entry = {"pr": 1, "code": {}, "fan_out": {}, "unattributed": ["stale"], "sources": {}}
+    out = tmp_path / "replay.json"
+    out.write_text(json.dumps({"records": [good, bad], "summary": {}, "sample": [], "measure": {"hit_labels": {"hits": 1}},
+                               "code": {"prs": [code_entry]}}), encoding="utf-8")
+    monkeypatch.setattr(rc, "pr_contexts", lambda repo, workdir, pr: CONTEXTS)
+    assert measure_baseline.main(["rederive", "--repo", str(root), "--out", str(out), "--workdir", str(tmp_path)]) == 0
+    err = capsys.readouterr().err
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert "hit_labels" not in data["measure"] and "run `measure_baseline.py label`" in err
+    assert "turned ok -> error: [2]" in err
+    assert data["code"]["prs"][0]["unattributed"] != ["stale"]

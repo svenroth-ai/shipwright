@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import measure_baseline  # noqa: E402
 from _baseline_repo import SPEC, SPEC_TEXT, commit, make_repo  # noqa: E402
 from verifiers import _baseline_label_all as LA  # noqa: E402
+from verifiers import _baseline_touch_replay_code as RC  # noqa: E402
 from verifiers import _baseline_label_hits as L  # noqa: E402
 from verifiers import _baseline_measure as M  # noqa: E402
 from verifiers._baseline_touch_git import GitRev  # noqa: E402
@@ -218,7 +219,9 @@ def test_label_is_idempotent_for_code_hits_with_and_without_a_workdir(tmp_path, 
     work = tmp_path / "work"
     work.mkdir()
     (work / "cov-7-0").write_bytes(b"")
-    monkeypatch.setattr(cov, "load_contexts", lambda db, repo, prefix="": {"pkg/prod.py": {2: {"pkg/tests/test_a.py::test_price"}}})
+    fake = lambda db, repo, prefix="": {"pkg/prod.py": {2: {"pkg/tests/test_a.py::test_price"}}}  # noqa: E731
+    monkeypatch.setattr(cov, "load_contexts", fake)
+    monkeypatch.setattr(RC, "load_contexts", fake)
     for _ in range(2):
         LA.label_all(root, data, work)
     assert len(data["code"]["prs"][0]["hits"]) == 1 and data["measure"]["hit_labels"]["by_source"]["code"] == {"correct-undetermined": 1}

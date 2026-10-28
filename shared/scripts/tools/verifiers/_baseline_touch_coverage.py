@@ -23,7 +23,7 @@ from ._baseline_touch_binding import index_tests
 from ._baseline_touch_git import GitRev, is_test_path
 from ._tag_binding_py import _FUNC, parse
 
-__all__ = ["CodeTouch", "context_to_test", "load_contexts", "merge_contexts", "code_touched"]
+__all__ = ["CodeTouch", "context_to_test", "load_contexts", "merge_contexts", "code_touched", "enclosing_base_function", "meaningful_lines"]
 
 _CTX = re.compile(r"^(?P<path>[^:|]+\.py)::(?P<name>[^|\[]+)")
 
@@ -106,6 +106,27 @@ def _enclosing(spans, line: int):
     return min(inside, key=lambda s: s[2] - s[1]) if inside else None  # innermost
 
 
+def enclosing_base_function(b_spans, h_spans, line: int):
+    """Where an ADDED head line belongs: ``("base", span)`` for the nearest enclosing function that also exists at
+    base (an insertion changes it), ``("new", name)`` when only functions new in the PR enclose it (nothing ran it at
+    base), ``("module", None)`` outside every function."""
+    inside = sorted((sp for sp in h_spans if sp[1] <= line <= sp[2]), key=lambda sp: sp[2] - sp[1])  # innermost first
+    if not inside:
+        return "module", None
+    base_names = {sp[0]: sp for sp in b_spans}
+    span = next((base_names[sp[0]] for sp in inside if sp[0] in base_names), None)
+    return ("base", span) if span else ("new", inside[0][0])
+
+
+def meaningful_lines(removed: list[int], added: list[int], base_text: str, head_text: str) -> tuple[list[int], list[int]]:
+    """Drop blank and comment-only lines: a changed blank or comment line changes no behaviour."""
+    def keep(lines, text):
+        src = text.splitlines()
+        return [ln for ln in lines if not (0 < ln <= len(src) and (not src[ln - 1].strip() or src[ln - 1].lstrip().startswith("#")))]
+
+    return keep(removed, base_text), keep(added, head_text)
+
+
 def code_touched(rev: GitRev, changes: list[tuple[str, str, str]],
                  contexts: dict[str, dict[int, set[str]]]) -> CodeTouch:
     """Attribute every changed production line to FRs through the base-run contexts."""
@@ -137,25 +158,24 @@ def code_touched(rev: GitRev, changes: list[tuple[str, str, str]],
             out.incomplete.append(f"{old}: unreadable source - baseline evidence incomplete")
             continue
         b_spans, h_spans = _spans(base_text), _spans(head_text)
+        removed, added = meaningful_lines(removed, added, base_text, head_text)
         targets: dict[str, set[int]] = {}
         for ln in removed:
             span = _enclosing(b_spans, ln)
             targets.setdefault(span[0] if span else "<module>", set()).add(ln)
-        base_names = {sp[0]: sp for sp in b_spans}
         for ln in added:
-            inside = sorted((sp for sp in h_spans if sp[1] <= ln <= sp[2]), key=lambda sp: sp[2] - sp[1])  # innermost first
-            if not inside:
-                targets.setdefault("<module>", set())
+            kind, where = enclosing_base_function(b_spans, h_spans, ln)
+            if kind == "module":
+                note = f"{old}::<module>: module-level code added (no function to attribute it to)"
+            elif kind == "new":
+                note = f"{old}::{where}: new code in a function that does not exist at base"
+            else:
+                targets.setdefault(where[0], set()).update(range(where[1], where[2] + 1))
                 continue
-            base_span = next((base_names[sp[0]] for sp in inside if sp[0] in base_names), None)  # nearest enclosing that exists at base
-            if base_span is None:  # only new functions enclose this line: nothing ran it at base
-                note = f"{old}::{inside[0][0]}: new code in a function that does not exist at base"
-                if note not in out.unattributed:
-                    out.unattributed.append(note)
-                continue
-            targets.setdefault(base_span[0], set()).update(range(base_span[1], base_span[2] + 1))
+            if note not in out.unattributed:
+                out.unattributed.append(note)
         for func, lns in targets.items():
-            tests = set().union(*(lines.get(ln, set()) for ln in lns)) if lns else set()
+            tests = set().union(*(lines.get(ln, set()) for ln in lns))
             key = f"{old}::{func}"
             frs = {fr for t in tests for fr in frs_of(t)}
             if frs:
@@ -163,5 +183,6 @@ def code_touched(rev: GitRev, changes: list[tuple[str, str, str]],
                 for fr in frs:
                     out.touched.setdefault(fr, set()).add(key)
             else:
-                out.unattributed.append(f"{key}: executed by no FR-bound test")
+                what = "module-level code" if func == "<module>" else "function"
+                out.unattributed.append(f"{key}: {what} executed by no FR-bound test")
     return out

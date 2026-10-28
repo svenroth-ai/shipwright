@@ -152,6 +152,25 @@ def probe(wt: Path, base: str, contexts: dict, variant: int = 0) -> list[dict]:
     return out
 
 
+def pr_contexts(repo: Path, workdir: Path, pr: int) -> dict:
+    """The merged base-run contexts of one PR's tier databases (``cov-<pr>-*`` in ``workdir`` or ``workdir/codeleg``)."""
+    dbs = sorted(Path(workdir).glob(f"cov-{pr}-*")) or sorted((Path(workdir) / "codeleg").glob(f"cov-{pr}-*"))
+    if not dbs:  # silently using no contexts would call every code hit wrong / every changed function unattributed
+        raise FileNotFoundError(f"no context databases cov-{pr}-* under {workdir}")
+    return merge_contexts([load_contexts(db, repo) for db in dbs])  # every tier ran from the repo root: no prefix
+
+
+def reattribute(repo: Path, data: dict, workdir: Path) -> None:
+    """Recompute each stored T-code entry (code, fan_out, unattributed, sources) from its databases with the CURRENT
+    attribution code; no test is run again."""
+    by_pr = {r["pr"]: r for r in data["records"]}
+    for entry in (data.get("code") or {}).get("prs", []):
+        rec = by_pr[entry["pr"]]
+        t = touched_set(GitRev(repo, f"{rec['merge']}^", rec["merge"]), pr_contexts(repo, workdir, entry["pr"]))
+        entry.update({"code": {fr: sorted(v) for fr, v in t.code.items()}, "fan_out": {k: sorted(v) for k, v in t.fan_out.items()},
+                      "unattributed": t.unattributed, "sources": {fr: sorted(s) for fr, s in t.sources().items()}})
+
+
 def rerun_probes(repo: Path, records: list[dict], k: int, workdir: Path, tiers=DEFAULT_TIERS) -> list[dict]:
     """Probes only, over context databases an earlier ``replay_code`` left in ``workdir``."""
     guard_workdir(repo, workdir)

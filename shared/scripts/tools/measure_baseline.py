@@ -6,7 +6,7 @@
     measure_baseline.py verifier --repo . --workdir W [--count 5]   # verify_iterate_finalization.py wall-clock
     measure_baseline.py label    --repo . [--workdir W]      # per-hit labels (see _baseline_label_hits.py)
     measure_baseline.py summary  --out replay.json           # recompute the summary block from the stored records
-    measure_baseline.py rederive --repo .                    # re-run the git leg with the current library, keep the code leg
+    measure_baseline.py rederive --repo . [--workdir W]      # re-run the git leg with the current library; with --workdir also re-attribute the T-code entries from their databases
 
 Every subcommand reads and updates ``--out`` (default: the committed REPLAY.json) under ``measure.*``
 (``label`` also writes ``records[].hits``), so each number in REPLAY.md can be cited to a key here.
@@ -79,6 +79,7 @@ def cmd_rederive(args, repo: Path, out: Path) -> None:
     from verifiers._baseline_touch_replay_stats import sample_for_operator, summarise
 
     data = load(out)
+    before_ok = {r["pr"] for r in data["records"] if not r.get("error")}
     events = replay._events_by_run(Path(args.events) if args.events else repo / "shipwright_events.jsonl")
     for rec in data["records"]:
         pr = {"number": rec["pr"], "title": rec["title"], "headRefName": rec["branch"], "mergedAt": rec.get("merged_at"),
@@ -89,6 +90,14 @@ def cmd_rederive(args, repo: Path, out: Path) -> None:
         rec.update(fresh)
     data["summary"] = summarise(data["records"])
     data["sample"] = [r["pr"] for r in sample_for_operator(data["records"])]
+    if data.get("measure", {}).pop("hit_labels", None) is not None:  # labels describe the OLD records: they must be rebuilt
+        print("rederive: measure.hit_labels dropped; run `measure_baseline.py label` to rebuild the labels", file=sys.stderr)
+    broke = sorted(r["pr"] for r in data["records"] if r.get("error") and r["pr"] in before_ok)
+    print(f"rederive: records that turned ok -> error: {broke or 'none'}", file=sys.stderr)
+    if args.workdir:  # re-attribute the T-code entries from their databases (no test is run again)
+        from verifiers._baseline_touch_replay_code import reattribute
+
+        reattribute(repo, data, Path(args.workdir))
     save(out, data)
 
 

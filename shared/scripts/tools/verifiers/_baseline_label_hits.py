@@ -21,10 +21,15 @@ import re
 from ._baseline_touch_git import GitRev
 from ._baseline_touch_spec import SPEC_PATH_RE
 
-__all__ = ["label_test_hit", "label_static_hit", "label_spec_hit"]
+__all__ = ["label_test_hit", "label_static_hit", "label_spec_hit", "fr_in"]
 
 _FR = re.compile(r"FR-\d+\.\d+")
 _EVIDENCE = re.compile(r"^(.*?) \((?:fixture/helper|module-level statement changed)\)(?: -> (.*))?$")
+
+
+def fr_in(fr: str, text: str) -> bool:
+    """``fr`` as a whole id in ``text`` (FR-01.1 is not inside FR-01.10)."""
+    return re.search(rf"(?<![A-Za-z0-9]){re.escape(fr)}(?!\d)", text) is not None
 
 
 def _tree(text: str | None):
@@ -90,17 +95,18 @@ def label_test_hit(rev: GitRev, fr: str, test_ids: list[str]) -> tuple[bool, str
         old_t, new_t = _tree(rev.read(path, "base")), _tree(rev.read(path, "head"))
         base_nodes = _test_nodes(old_t) if old_t else {}
         old = base_nodes.get(qual)
-        new = _test_nodes(new_t).get(qual) if new_t else None
+        head_nodes = _test_nodes(new_t) if new_t else {}
+        new = head_nodes.get(qual)
         if old is None and new is not None:  # renamed or moved within the file: same body under another name
-            twin = next((v for v in base_nodes.values() if v[2] == new[2]), None)
+            twin = next((v for k, v in base_nodes.items() if v[2] == new[2] and k not in head_nodes), None)  # the base name must be gone
             if twin is not None:
-                if twin[1] != new[1] and fr in twin[1] + new[1]:
+                if twin[1] != new[1] and fr_in(fr, twin[1] + new[1]):
                     return True, f"{tid}: renamed and re-tagged (binding text changed); {fr} is in one of the two bindings"
                 why.append(f"{tid}: a pure rename, same binding")
                 continue
         if old is None and new is None:
             why.append(f"{tid}: not found on either side")
-        elif not any(fr in x[1] for x in (old, new) if x):
+        elif not any(fr_in(fr, x[1]) for x in (old, new) if x):
             why.append(f"{tid}: not bound to {fr} by its covers text")
         elif old is None:
             why.append(f"{tid}: did not exist at base")
@@ -157,18 +163,18 @@ def label_static_hit(rev: GitRev, fr: str, items: list[str]) -> tuple[bool, str]
         if y_t is None:
             why.append(f"{item}: consumer unreadable")
             continue
-        bound = {q: n for q, n in _test_nodes(y_t).items() if fr in n[1]}
+        bound = {q: n for q, n in _test_nodes(y_t).items() if fr_in(fr, n[1])}
         if not bound:
             why.append(f"{y}: no test bound to {fr}")
             continue
         if new_t is None or old_t is None:  # a conftest/helper that appeared or vanished reaches its whole directory
-            return True, f"{x} {'deleted' if new_t is None else 'added'}; {y} has {len(bound)} test(s) bound to {fr}"
+            return True, f"e.g. {x} {'deleted' if new_t is None else 'added'}; {y} has {len(bound)} test(s) bound to {fr} (first supporting item only)"
         a, b = _top(old_t), _top(new_t)
         changed = {n for n in set(a) | set(b) if a.get(n) != b.get(n)}
         if x == y:  # test module: only non-test statements count, the tests themselves are T-test
             changed = {n for n in changed if not n.startswith("test")}
         if _effects(old_t, new_t) or _wide(new_t, changed) or _wide(old_t, changed):
-            return True, f"{x}: module-level/scope-wide change reaches {len(bound)} test(s) bound to {fr}"
+            return True, f"e.g. {x}: module-level/scope-wide change reaches {len(bound)} test(s) bound to {fr} (first supporting item only)"
         used = set().union(*(_names(ast.parse(ast.unparse(_node_of(y_t, q)))) for q in bound))
         helpers = set(a) | set(b) | set(_top(y_t))  # a bound test may reach the changed name through a helper of the consumer module too
         for _ in range(8):  # follow helper -> helper references to a fixpoint
@@ -177,7 +183,7 @@ def label_static_hit(rev: GitRev, fr: str, items: list[str]) -> tuple[bool, str]
                 break
             used = grown
         if changed & used:
-            return True, f"{x}: changed {sorted(changed & used)[:3]} used by a test bound to {fr} in {y}"
+            return True, f"e.g. {x}: changed {sorted(changed & used)[:3]} used by a test bound to {fr} in {y} (first supporting item only)"
         why.append(f"{item}: changed names {sorted(changed)[:3]} not used by tests bound to {fr}")
     return False, "; ".join(why) or "no evidence cited"
 

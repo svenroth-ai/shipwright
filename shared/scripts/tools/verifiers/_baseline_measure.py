@@ -53,11 +53,12 @@ def fanout_changed(code_prs: list[dict]) -> dict:
     """
     sizes = [len(frs) for pr in code_prs for frs in (pr.get("fan_out") or {}).values()]
     notes = [note for pr in code_prs for note in pr.get("unattributed", [])]
-    unattributed = sum(1 for note in notes if "executed by no FR-bound test" in note)
+    module_level = sum(1 for note in notes if "::<module>:" in note)  # added or removed code outside any function
+    unattributed = sum(1 for note in notes if "executed by no FR-bound test" in note and "::<module>:" not in note)
     no_cov = [note.split(": ", 1)[0] for note in notes if "no coverage at base" in note]
     tests = sum(1 for path in no_cov if is_test_path(path))
     return {"definition": "FRs reached per changed function (brief section 3, BL0)", "prs": len(code_prs),
-            "changed_functions_attributed": len(sizes), "changed_unattributed": unattributed,
+            "changed_functions_attributed": len(sizes), "changed_unattributed": unattributed, "changed_module_level": module_level,
             "changed_files_no_coverage": {"total": len(no_cov), "production": len(no_cov) - tests, "test_files": tests},
             "histogram": dict(sorted(Counter(sizes).items())), **_stats(sizes),
             "over_n": {str(n): _over(sizes, n) for n in (1, 2, 5, 8)}}

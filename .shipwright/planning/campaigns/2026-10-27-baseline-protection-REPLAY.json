@@ -199,8 +199,9 @@
      }
     ],
     "unattributed": [
-     "plugins/shipwright-changelog/scripts/checks/setup-changelog.py::<module>: executed by no FR-bound test",
-     "plugins/shipwright-changelog/scripts/checks/setup-changelog.py::main: executed by no FR-bound test"
+     "plugins/shipwright-changelog/scripts/checks/setup-changelog.py::<module>: module-level code added (no function to attribute it to)",
+     "plugins/shipwright-changelog/scripts/checks/setup-changelog.py::<module>: module-level code executed by no FR-bound test",
+     "plugins/shipwright-changelog/scripts/checks/setup-changelog.py::main: function executed by no FR-bound test"
     ]
    },
    {
@@ -347,14 +348,14 @@
     "unattributed": [
      "plugins/shipwright-run/scripts/lib/orchestrator.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/lib/gate_catalog_render.py::render_catalog_doc: executed by no FR-bound test",
-     "shared/scripts/lib/gate_policy.py::<module>: executed by no FR-bound test",
-     "shared/scripts/lib/gate_policy.py::resolve_gate_policy: executed by no FR-bound test",
-     "shared/scripts/lib/gate_policy.py::validate_catalog: executed by no FR-bound test",
-     "shared/scripts/tools/resolve_gate_policy.py::_resolved_rows: executed by no FR-bound test",
-     "shared/scripts/tools/resolve_gate_policy.py::main: executed by no FR-bound test",
-     "shared/scripts/tools/resolve_gate_policy.py::_build_parser: executed by no FR-bound test",
-     "shared/scripts/tools/tests/test_resolve_gate_policy.py: no coverage at base (not measured or never executed)"
+     "shared/scripts/lib/gate_catalog_render.py::render_catalog_doc: function executed by no FR-bound test",
+     "shared/scripts/lib/gate_policy.py::<module>: module-level code added (no function to attribute it to)",
+     "shared/scripts/lib/gate_policy.py::<module>: module-level code executed by no FR-bound test",
+     "shared/scripts/lib/gate_policy.py::resolve_gate_policy: function executed by no FR-bound test",
+     "shared/scripts/lib/gate_policy.py::validate_catalog: function executed by no FR-bound test",
+     "shared/scripts/tools/resolve_gate_policy.py::_resolved_rows: function executed by no FR-bound test",
+     "shared/scripts/tools/resolve_gate_policy.py::main: function executed by no FR-bound test",
+     "shared/scripts/tools/resolve_gate_policy.py::_build_parser: function executed by no FR-bound test"
     ]
    },
    {
@@ -508,10 +509,7 @@
      }
     ],
     "unattributed": [
-     "integration-tests/_brief_harness.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_brief_harness.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-design/scripts/lib/screen_registry.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-design/tests/conftest.py: no coverage at base (not measured or never executed)",
      "shared/scripts/tools/verifiers/brief_mode_checks.py: no coverage at base (not measured or never executed)",
      "shared/scripts/tools/verifiers/design_checks.py: no coverage at base (not measured or never executed)"
     ]
@@ -567,13 +565,9 @@
      }
     ],
     "unattributed": [
-     "plugins/shipwright-adopt/tests/test_profile_matcher_chat_first.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-test/scripts/lib/playwright_runner.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-test/tests/test_playwright_runner.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/browser_verify.py::run_browser_verify: executed by no FR-bound test",
-     "shared/scripts/browser_verify.py::<module>: executed by no FR-bound test",
-     "shared/scripts/tests/test_browser_verify.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_chat_first_json_profile.py: no coverage at base (not measured or never executed)"
+     "shared/scripts/browser_verify.py::<module>: module-level code added (no function to attribute it to)",
+     "shared/scripts/browser_verify.py::run_browser_verify: function executed by no FR-bound test"
     ]
    },
    {
@@ -676,8 +670,7 @@
     ],
     "unattributed": [
      "plugins/shipwright-test/scripts/lib/test_runner.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/lib/ci_workflow.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_profile_resolver.py: no coverage at base (not measured or never executed)"
+     "shared/scripts/lib/ci_workflow.py: no coverage at base (not measured or never executed)"
     ]
    },
    {
@@ -751,9 +744,6 @@
      "plugins/shipwright-run/scripts/lib/phase_validators_canon.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/phase_validators_split.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/single_session/loop_state.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_phase_validators_canon.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_phase_validators_late.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_phase_validators_split.py: no coverage at base (not measured or never executed)",
      "shared/scripts/tools/verifiers/build_checks.py: no coverage at base (not measured or never executed)"
     ]
    },
@@ -816,9 +806,7 @@
       "tier": "plugins/shipwright-changelog/tests"
      }
     ],
-    "unattributed": [
-     "shared/scripts/tools/tests/test_promote_required_layers_advisory.py: no coverage at base (not measured or never executed)"
-    ]
+    "unattributed": []
    },
    {
     "class": "iterate",
@@ -831,6 +819,7 @@
     "pr": 912,
     "sources": {
      "FR-01.11": [
+      "static",
       "test"
      ]
     },
@@ -865,7 +854,6 @@
      }
     ],
     "unattributed": [
-     "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py: no coverage at base (not measured or never executed)",
      "shared/scripts/lib/iterate_stop_guard.py: no coverage at base (not measured or never executed)",
      "shared/scripts/lib/iterate_stop_guard_background.py: no coverage at base (not measured or never executed)"
     ]
@@ -929,7 +917,6 @@
      }
     ],
     "unattributed": [
-     "integration-tests/test_driven_run_real_gate_e2e.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/hooks/master_stop_check.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/orchestrator_pkg/events.py: no coverage at base (not measured or never executed)",
@@ -943,11 +930,8 @@
      "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/phase_task_planning.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/phase_task_recovery.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_phase_task_lifecycle.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_phase_validators_split.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_loop.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/tools/record_event.py::build_event: executed by no FR-bound test",
-     "shared/scripts/tools/record_event.py::parse_args: executed by no FR-bound test"
+     "shared/scripts/tools/record_event.py::build_event: function executed by no FR-bound test",
+     "shared/scripts/tools/record_event.py::parse_args: function executed by no FR-bound test"
     ]
    },
    {
@@ -1001,26 +985,10 @@
      }
     ],
     "unattributed": [
-     "integration-tests/test_cross_surface_backcompat.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_handoff_reads_real_loop_state.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_phase_invocation_mode_integration.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_single_session_capstone.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_single_session_pipeline.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_single_session_resume_integration.py: no coverage at base (not measured or never executed)",
-     "integration-tests/test_single_session_sole_mode.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/orchestrator_pkg/router.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/phase_validators_canon.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_lifecycle_cli.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_artifact_guard.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_cli.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_gate_hardening.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_gate_override.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_gate_seam.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_loop.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_phase_started.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_single_session_resume.py: no coverage at base (not measured or never executed)",
      "shared/scripts/tools/verifiers/build_checks.py: no coverage at base (not measured or never executed)"
     ]
    },
@@ -1084,10 +1052,8 @@
      "plugins/shipwright-adopt/scripts/lib/profile_matcher.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-adopt/scripts/tools/analyze_codebase.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-adopt/tests/contract_repos.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-project/scripts/checks/write-project-config.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-project/scripts/write_run_config.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-project/tests/test_write_run_config.py: no coverage at base (not measured or never executed)",
      "shared/scripts/lib/ci_workflow.py: no coverage at base (not measured or never executed)",
      "shared/scripts/lib/codeql_workflow.py: no coverage at base (not measured or never executed)",
      "shared/scripts/lib/workflow_scaffold_helper.py: no coverage at base (not measured or never executed)"
@@ -1193,14 +1159,14 @@
      }
     ],
     "unattributed": [
-     "integration-tests/test_multi_session_removal_residue.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-run/scripts/lib/phase_validators.py: no coverage at base (not measured or never executed)",
      "shared/scripts/lib/design_gate_extras.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/lib/gate_policy.py::<module>: executed by no FR-bound test",
-     "shared/scripts/lib/gate_policy.py::_ascii: executed by no FR-bound test",
-     "shared/scripts/lib/gate_policy.py::_cell: executed by no FR-bound test",
-     "shared/scripts/lib/gate_policy.py::render_catalog_markdown: executed by no FR-bound test"
+     "shared/scripts/lib/gate_policy.py::<module>: module-level code added (no function to attribute it to)",
+     "shared/scripts/lib/gate_policy.py::<module>: module-level code executed by no FR-bound test",
+     "shared/scripts/lib/gate_policy.py::_ascii: function executed by no FR-bound test",
+     "shared/scripts/lib/gate_policy.py::_cell: function executed by no FR-bound test",
+     "shared/scripts/lib/gate_policy.py::render_catalog_markdown: function executed by no FR-bound test"
     ]
    },
    {
@@ -1344,34 +1310,69 @@
     ],
     "pr": 899,
     "sources": {
+     "FR-01.01": [
+      "static"
+     ],
+     "FR-01.02": [
+      "static"
+     ],
+     "FR-01.03": [
+      "static"
+     ],
      "FR-01.06": [
       "code",
       "static",
       "test"
      ],
+     "FR-01.07": [
+      "static"
+     ],
+     "FR-01.08": [
+      "static"
+     ],
      "FR-01.09": [
-      "code"
+      "code",
+      "static"
      ],
      "FR-01.10": [
-      "code"
+      "code",
+      "static"
      ],
      "FR-01.11": [
-      "code"
+      "code",
+      "static"
      ],
      "FR-01.12": [
+      "static",
       "test"
      ],
      "FR-01.13": [
-      "code"
+      "code",
+      "static"
      ],
      "FR-01.14": [
-      "code"
+      "code",
+      "static"
+     ],
+     "FR-01.15": [
+      "static"
+     ],
+     "FR-01.16": [
+      "static"
+     ],
+     "FR-01.17": [
+      "static"
+     ],
+     "FR-01.19": [
+      "static"
      ],
      "FR-01.20": [
-      "code"
+      "code",
+      "static"
      ],
      "FR-01.21": [
-      "code"
+      "code",
+      "static"
      ]
     },
     "tiers": [
@@ -1405,38 +1406,24 @@
      }
     ],
     "unattributed": [
-     "integration-tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-adopt/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-design/scripts/checks/setup-design-session.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-design/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-project/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-test/scripts/lib/performance_check.py: no coverage at base (not measured or never executed)",
      "plugins/shipwright-test/scripts/lib/test_runner.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-test/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-test/tests/test_test_runner.py: no coverage at base (not measured or never executed)",
      "shared/scripts/dev_server/cli.py: no coverage at base (not measured or never executed)",
      "shared/scripts/dev_server/multiservice.py: no coverage at base (not measured or never executed)",
      "shared/scripts/dev_server/profile_config.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/profile_resolver.py::<module>: executed by no FR-bound test",
-     "shared/scripts/profile_test_isolation.py::<module>: executed by no FR-bound test",
-     "shared/scripts/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/tests/test_validate_env.py: no coverage at base (not measured or never executed)",
+     "shared/scripts/profile_resolver.py::_reject_constant: new code in a function that does not exist at base",
+     "shared/scripts/profile_resolver.py::_contained: new code in a function that does not exist at base",
+     "shared/scripts/profile_resolver.py::dangling: new code in a function that does not exist at base",
+     "shared/scripts/profile_test_isolation.py::<module>: module-level code added (no function to attribute it to)",
      "shared/scripts/tools/resolve_profile.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/tools/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/validate_env.py::validate: executed by no FR-bound test",
-     "shared/scripts/validate_env.py::main: executed by no FR-bound test",
-     "shared/scripts/validate_env.py::<module>: executed by no FR-bound test",
-     "shared/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "shared/tests/profile_test_fixtures.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_dev_server_no_web_server.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_dev_server_path_anchors.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_profile_resolver.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_profile_resolver_boundary.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_profile_resolver_files.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_resolve_profile_cli.py: no coverage at base (not measured or never executed)",
-     "shared/tests/test_stack_profile_schema.py: no coverage at base (not measured or never executed)"
+     "shared/scripts/validate_env.py::<module>: module-level code added (no function to attribute it to)",
+     "shared/scripts/validate_env.py::_resolve: new code in a function that does not exist at base",
+     "shared/scripts/validate_env.py::_error: new code in a function that does not exist at base",
+     "shared/scripts/validate_env.py::_skipped: new code in a function that does not exist at base",
+     "shared/scripts/validate_env.py::validate: function executed by no FR-bound test",
+     "shared/scripts/validate_env.py::main: function executed by no FR-bound test"
     ]
    },
    {
@@ -1451,7 +1438,65 @@
     ],
     "fan_out": {},
     "pr": 897,
-    "sources": {},
+    "sources": {
+     "FR-01.01": [
+      "static"
+     ],
+     "FR-01.02": [
+      "static"
+     ],
+     "FR-01.03": [
+      "static"
+     ],
+     "FR-01.04": [
+      "static"
+     ],
+     "FR-01.06": [
+      "static"
+     ],
+     "FR-01.07": [
+      "static"
+     ],
+     "FR-01.08": [
+      "static"
+     ],
+     "FR-01.09": [
+      "static"
+     ],
+     "FR-01.10": [
+      "static"
+     ],
+     "FR-01.11": [
+      "static"
+     ],
+     "FR-01.12": [
+      "static"
+     ],
+     "FR-01.13": [
+      "static"
+     ],
+     "FR-01.14": [
+      "static"
+     ],
+     "FR-01.15": [
+      "static"
+     ],
+     "FR-01.16": [
+      "static"
+     ],
+     "FR-01.17": [
+      "static"
+     ],
+     "FR-01.19": [
+      "static"
+     ],
+     "FR-01.20": [
+      "static"
+     ],
+     "FR-01.21": [
+      "static"
+     ]
+    },
     "tiers": [
      {
       "db_bytes": 749568,
@@ -1482,17 +1527,7 @@
       "tier": "plugins/shipwright-changelog/tests"
      }
     ],
-    "unattributed": [
-     "integration-tests/conftest.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-adopt/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-design/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-project/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-run/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "plugins/shipwright-test/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "shared/scripts/tools/tests/conftest.py: no coverage at base (not measured or never executed)",
-     "shared/tests/conftest.py: no coverage at base (not measured or never executed)"
-    ]
+    "unattributed": []
    }
   ],
   "tiers": [
@@ -1518,11 +1553,12 @@
   "fanout_changed": {
    "changed_files_no_coverage": {
     "production": 80,
-    "test_files": 65,
-    "total": 145
+    "test_files": 0,
+    "total": 80
    },
    "changed_functions_attributed": 10,
-   "changed_unattributed": 22,
+   "changed_module_level": 9,
+   "changed_unattributed": 15,
    "definition": "FRs reached per changed function (brief section 3, BL0)",
    "histogram": {
     "1": 9,
@@ -1569,16 +1605,16 @@
    "histogram": {
     "0": 2053,
     "1": 1457,
+    "10": 4,
+    "14": 6,
     "2": 228,
+    "20": 1,
     "3": 101,
     "4": 63,
     "5": 1,
     "6": 12,
     "7": 1,
-    "8": 1,
-    "10": 4,
-    "14": 6,
-    "20": 1
+    "8": 1
    },
    "max": 20,
    "median": 1,
@@ -1724,35 +1760,35 @@
      "fr": "FR-01.01",
      "label": "correct-undetermined",
      "pr": 922,
-     "reason": "integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integration-tests/test_brief_harness.py",
+     "reason": "e.g. integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integration-tests/test_brief_harness.py (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.11",
      "label": "correct-undetermined",
      "pr": 873,
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.04",
      "label": "correct-undetermined",
      "pr": 897,
-     "reason": "plugins/shipwright-design/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.04",
+     "reason": "e.g. plugins/shipwright-design/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.04 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.06",
      "label": "correct-undetermined",
      "pr": 860,
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.02",
      "label": "correct-undetermined",
      "pr": 897,
-     "reason": "plugins/shipwright-project/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.02",
+     "reason": "e.g. plugins/shipwright-project/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.02 (first supporting item only)",
      "source": "static"
     },
     {
@@ -2395,13 +2431,13 @@
     {
      "fr": "FR-01.01",
      "label": "correct-undetermined",
-     "reason": "integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integration-tests/test_brief_harness.py",
+     "reason": "e.g. integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integration-tests/test_brief_harness.py (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.04",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-design/tests/conftest.py: changed ['project'] used by a test bound to FR-01.04 in plugins/shipwright-design/tests/test_check_design_gates.py",
+     "reason": "e.g. plugins/shipwright-design/tests/conftest.py: changed ['project'] used by a test bound to FR-01.04 in plugins/shipwright-design/tests/test_check_design_gates.py (first supporting item only)",
      "source": "static"
     }
    ],
@@ -2570,7 +2606,7 @@
     {
      "fr": "FR-01.06",
      "label": "correct-undetermined",
-     "reason": "shared/tests/test_stack_profile_schema.py: changed ['_mutations'] used by a test bound to FR-01.06 in shared/tests/test_stack_profile_schema.py",
+     "reason": "e.g. shared/tests/test_stack_profile_schema.py: changed ['_mutations'] used by a test bound to FR-01.06 in shared/tests/test_stack_profile_schema.py (first supporting item only)",
      "source": "static"
     }
    ],
@@ -2750,7 +2786,7 @@
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py: changed ['RESUME'] used by a test bound to FR-01.11 in plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py",
+     "reason": "e.g. plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py: changed ['RESUME'] used by a test bound to FR-01.11 in plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -2865,7 +2901,7 @@
     {
      "fr": "FR-01.01",
      "label": "correct-benign",
-     "reason": "integration-tests/test_driven_run_real_gate_e2e.py: changed ['_retry_until_terminal'] used by a test bound to FR-01.01 in integration-tests/test_driven_run_real_gate_e2e.py",
+     "reason": "e.g. integration-tests/test_driven_run_real_gate_e2e.py: changed ['_retry_until_terminal'] used by a test bound to FR-01.01 in integration-tests/test_driven_run_real_gate_e2e.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -2918,7 +2954,7 @@
     {
      "fr": "FR-01.06",
      "label": "correct-undetermined",
-     "reason": "integration-tests/test_stack_profile_resolution_e2e.py: changed ['_env'] used by a test bound to FR-01.06 in integration-tests/test_stack_profile_resolution_e2e.py",
+     "reason": "e.g. integration-tests/test_stack_profile_resolution_e2e.py: changed ['_env'] used by a test bound to FR-01.06 in integration-tests/test_stack_profile_resolution_e2e.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -2974,7 +3010,7 @@
     {
      "fr": "FR-01.01",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.01",
+     "reason": "e.g. plugins/shipwright-run/tests/test_single_session_gate_hardening.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.01 (first supporting item only)",
      "source": "static"
     },
     {
@@ -3071,7 +3107,7 @@
     {
      "fr": "FR-01.06",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-project/tests/test_profile_name_check.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.06",
+     "reason": "e.g. plugins/shipwright-project/tests/test_profile_name_check.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.06 (first supporting item only)",
      "source": "static"
     },
     {
@@ -3377,25 +3413,25 @@
     {
      "fr": "FR-01.01",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.02",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.03",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.06",
      "label": "correct-benign",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06 (first supporting item only)",
      "source": "static"
     },
     {
@@ -3407,37 +3443,37 @@
     {
      "fr": "FR-01.07",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.08",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.09",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.10",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.11",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.12",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12 (first supporting item only)",
      "source": "static"
     },
     {
@@ -3449,49 +3485,49 @@
     {
      "fr": "FR-01.13",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.13",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.13 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.14",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.15",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.16",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.17",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.19",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.20",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.21",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21 (first supporting item only)",
      "source": "static"
     }
    ],
@@ -3691,115 +3727,115 @@
     {
      "fr": "FR-01.01",
      "label": "correct-undetermined",
-     "reason": "plugins/shipwright-run/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.01",
+     "reason": "e.g. plugins/shipwright-run/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.01 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.02",
      "label": "correct-undetermined",
-     "reason": "plugins/shipwright-project/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.02",
+     "reason": "e.g. plugins/shipwright-project/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.02 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.03",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.04",
      "label": "correct-undetermined",
-     "reason": "plugins/shipwright-design/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.04",
+     "reason": "e.g. plugins/shipwright-design/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.04 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.06",
      "label": "correct-undetermined",
-     "reason": "plugins/shipwright-test/tests/conftest.py: module-level/scope-wide change reaches 28 test(s) bound to FR-01.06",
+     "reason": "e.g. plugins/shipwright-test/tests/conftest.py: module-level/scope-wide change reaches 28 test(s) bound to FR-01.06 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.07",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.08",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.09",
      "label": "correct-undetermined",
-     "reason": "shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.09",
+     "reason": "e.g. shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.09 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.10",
      "label": "correct-undetermined",
-     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.10",
+     "reason": "e.g. integration-tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.10 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.11",
      "label": "correct-undetermined",
-     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.11",
+     "reason": "e.g. integration-tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.12",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.13",
      "label": "correct-undetermined",
-     "reason": "plugins/shipwright-adopt/tests/conftest.py: module-level/scope-wide change reaches 6 test(s) bound to FR-01.13",
+     "reason": "e.g. plugins/shipwright-adopt/tests/conftest.py: module-level/scope-wide change reaches 6 test(s) bound to FR-01.13 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.14",
      "label": "correct-undetermined",
-     "reason": "shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.14",
+     "reason": "e.g. shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.14 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.15",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.16",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.17",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.19",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.20",
      "label": "correct-undetermined",
-     "reason": "shared/scripts/tests/conftest.py: module-level/scope-wide change reaches 14 test(s) bound to FR-01.20",
+     "reason": "e.g. shared/scripts/tests/conftest.py: module-level/scope-wide change reaches 14 test(s) bound to FR-01.20 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.21",
      "label": "correct-undetermined",
-     "reason": "shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.21",
+     "reason": "e.g. shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.21 (first supporting item only)",
      "source": "static"
     }
    ],
@@ -4127,7 +4163,7 @@
     {
      "fr": "FR-01.17",
      "label": "correct-undetermined",
-     "reason": "shared/tests/_pr_review_workflows.py: changed ['STAGE1_STAGE2', 'TEMPLATES'] used by a test bound to FR-01.17 in shared/tests/test_pr_review_fail_closed.py",
+     "reason": "e.g. shared/tests/_pr_review_workflows.py: changed ['STAGE1_STAGE2', 'TEMPLATES'] used by a test bound to FR-01.17 in shared/tests/test_pr_review_fail_closed.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -4192,7 +4228,7 @@
     {
      "fr": "FR-01.10",
      "label": "correct-undetermined",
-     "reason": "shared/scripts/tools/tests/test_promote_required_layers.py: changed ['_SPEC_RELPATH', '_write_project'] used by a test bound to FR-01.10 in shared/scripts/tools/tests/test_promote_required_layers.py",
+     "reason": "e.g. shared/scripts/tools/tests/test_promote_required_layers.py: changed ['_SPEC_RELPATH', '_write_project'] used by a test bound to FR-01.10 in shared/scripts/tools/tests/test_promote_required_layers.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -4383,7 +4419,7 @@
     {
      "fr": "FR-01.14",
      "label": "correct-benign",
-     "reason": "shared/tests/test_github_triage_artifact_fallback.py: module-level/scope-wide change reaches 18 test(s) bound to FR-01.14",
+     "reason": "e.g. shared/tests/test_github_triage_artifact_fallback.py: module-level/scope-wide change reaches 18 test(s) bound to FR-01.14 (first supporting item only)",
      "source": "static"
     },
     {
@@ -4431,7 +4467,7 @@
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-iterate/tests/_stop_guard_helpers.py: module-level/scope-wide change reaches 14 test(s) bound to FR-01.11",
+     "reason": "e.g. plugins/shipwright-iterate/tests/_stop_guard_helpers.py: module-level/scope-wide change reaches 14 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     }
    ],
@@ -4526,7 +4562,7 @@
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "shared/tests/_cascade_trigger_fixtures.py: changed ['write_run'] used by a test bound to FR-01.11 in shared/tests/test_cascade_trigger.py",
+     "reason": "e.g. shared/tests/_cascade_trigger_fixtures.py: changed ['write_run'] used by a test bound to FR-01.11 in shared/tests/test_cascade_trigger.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -4653,67 +4689,67 @@
     {
      "fr": "FR-01.01",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.02",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.03",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.06",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.07",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.08",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.09",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.10",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.11",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.12",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.13",
      "label": "correct-benign",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.13",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.13 (first supporting item only)",
      "source": "static"
     },
     {
@@ -4725,43 +4761,43 @@
     {
      "fr": "FR-01.14",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.15",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.16",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.17",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.19",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.20",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.21",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21 (first supporting item only)",
      "source": "static"
     }
    ],
@@ -4944,13 +4980,13 @@
     {
      "fr": "FR-01.10",
      "label": "correct-undetermined",
-     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.10",
+     "reason": "e.g. integration-tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.10 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.11",
      "label": "correct-undetermined",
-     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.11",
+     "reason": "e.g. integration-tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     },
     {
@@ -5078,7 +5114,7 @@
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "shared/tests/test_tag_binding_followup.py: module-level/scope-wide change reaches 17 test(s) bound to FR-01.11",
+     "reason": "e.g. shared/tests/test_tag_binding_followup.py: module-level/scope-wide change reaches 17 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     }
    ],
@@ -5126,7 +5162,7 @@
     {
      "fr": "FR-01.10",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-compliance/tests/test_git_commit_command.py: changed ['_has_commit'] used by a test bound to FR-01.10 in plugins/shipwright-compliance/tests/test_git_commit_command.py",
+     "reason": "e.g. plugins/shipwright-compliance/tests/test_git_commit_command.py: changed ['_has_commit'] used by a test bound to FR-01.10 in plugins/shipwright-compliance/tests/test_git_commit_command.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -5186,7 +5222,7 @@
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "shared/tests/test_finalization_claims_scenario.py: changed ['EXPECTED_SKIPS', 'Gate', 'assert_only'] used by a test bound to FR-01.11 in shared/tests/test_finalization_claims_scenario.py",
+     "reason": "e.g. shared/tests/test_finalization_claims_scenario.py: changed ['EXPECTED_SKIPS', 'Gate', 'assert_only'] used by a test bound to FR-01.11 in shared/tests/test_finalization_claims_scenario.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -5314,55 +5350,55 @@
     {
      "fr": "FR-01.01",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.02",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.03",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.06",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.07",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.08",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.09",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.10",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11 (first supporting item only)",
      "source": "static"
     },
     {
@@ -5374,55 +5410,55 @@
     {
      "fr": "FR-01.12",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.13",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.13",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.13 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.14",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.15",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.16",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.17",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.19",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.20",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20 (first supporting item only)",
      "source": "static"
     },
     {
      "fr": "FR-01.21",
      "label": "correct-undetermined",
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21",
+     "reason": "e.g. shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21 (first supporting item only)",
      "source": "static"
     }
    ],
@@ -5845,7 +5881,7 @@
     {
      "fr": "FR-01.10",
      "label": "correct-benign",
-     "reason": "plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py: changed ['_manifest'] used by a test bound to FR-01.10 in plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py",
+     "reason": "e.g. plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py: changed ['_manifest'] used by a test bound to FR-01.10 in plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py (first supporting item only)",
      "source": "static"
     },
     {
@@ -6137,7 +6173,7 @@
     {
      "fr": "FR-01.11",
      "label": "correct-benign",
-     "reason": "shared/tests/_review_cli_harness.py: changed ['RUNNER_REASON_CODES'] used by a test bound to FR-01.11 in shared/tests/test_campaign_cascade_record_roundtrip.py",
+     "reason": "e.g. shared/tests/_review_cli_harness.py: changed ['RUNNER_REASON_CODES'] used by a test bound to FR-01.11 in shared/tests/test_campaign_cascade_record_roundtrip.py (first supporting item only)",
      "source": "static"
     },
     {

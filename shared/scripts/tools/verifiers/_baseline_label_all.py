@@ -7,7 +7,7 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
-from ._baseline_label_hits import _test_nodes, _tree, label_spec_hit, label_static_hit, label_test_hit
+from ._baseline_label_hits import _test_nodes, _tree, fr_in, label_spec_hit, label_static_hit, label_test_hit
 from ._baseline_touch_core import touched_set
 from ._baseline_touch_git import GitRev
 
@@ -16,17 +16,24 @@ __all__ = ["label_all", "label_code_hit"]
 
 def _changed_functions(rev: GitRev, path: str) -> dict[str, tuple[int, int]]:
     """Functions of ``path`` (by name, with their BASE span) that the diff changes: a removed or replaced base
-    line, or an ADDED head line inside a function that also exists at base (a pure insertion changes it too)."""
-    from ._baseline_touch_coverage import _spans
+    line, or an ADDED head line inside a function that also exists at base (a pure insertion changes it too).
+    Follows a rename to the new path, as ``code_touched`` does."""
+    from ._baseline_touch_coverage import _enclosing, _spans, enclosing_base_function, meaningful_lines
 
-    removed, added = rev.line_changes(path, path)
-    base = {sym: (a, b) for sym, a, b in _spans(rev.read(path, "base") or "")}
-    head = _spans(rev.read(path, "head") or "")
-    changed = {sym for sym, (a, b) in base.items() if any(a <= ln <= b for ln in removed)}
+    new = next((n for _s, o, n in rev.changed() if o == path), path)
+    base_text, head_text = rev.read(path, "base") or "", rev.read(new, "head") or ""
+    removed, added = meaningful_lines(*rev.line_changes(path, new), base_text, head_text)
+    b_spans, h_spans = _spans(base_text), _spans(head_text)
+    out: dict[str, tuple[int, int]] = {}
+    for ln in removed:
+        sp = _enclosing(b_spans, ln)
+        if sp:
+            out[sp[0]] = (sp[1], sp[2])
     for ln in added:
-        inside = sorted((sp for sp in head if sp[1] <= ln <= sp[2]), key=lambda sp: sp[2] - sp[1])
-        changed |= {next((sp[0] for sp in inside if sp[0] in base), "")} - {""}
-    return {sym: base[sym] for sym in changed}
+        kind, sp = enclosing_base_function(b_spans, h_spans, ln)
+        if kind == "base":
+            out[sp[0]] = (sp[1], sp[2])
+    return out
 
 
 def label_code_hit(rev: GitRev, fr: str, funcs: list[str], contexts: dict, tid_to_fr) -> tuple[bool, str]:
@@ -86,7 +93,7 @@ def label_all(repo: Path, data: dict, workdir: Path | None, seed: int = 20261028
 
 
 def _code_hits(repo: Path, data: dict, workdir: Path | None) -> list[dict]:
-    from ._baseline_touch_coverage import load_contexts, merge_contexts
+    from ._baseline_touch_replay_code import pr_contexts
 
     out = []
     if workdir is None:  # no context databases: keep the code hits an earlier run stored, never drop them
@@ -95,12 +102,11 @@ def _code_hits(repo: Path, data: dict, workdir: Path | None) -> list[dict]:
     for entry in (data.get("code") or {}).get("prs", []):
         if not entry.get("code"):
             continue
-        rec = next(r for r in data["records"] if r["pr"] == entry["pr"])
+        rec = next((r for r in data["records"] if r["pr"] == entry["pr"]), None)
+        if rec is None:
+            raise KeyError(f"code entry for PR #{entry['pr']} has no record")
         rev = GitRev(repo, f"{rec['merge']}^", rec["merge"])
-        dbs = sorted(Path(workdir).glob(f"cov-{entry['pr']}-*")) or sorted((Path(workdir) / "codeleg").glob(f"cov-{entry['pr']}-*"))
-        if not dbs:  # silently labelling against no contexts would call every code hit wrong
-            raise FileNotFoundError(f"no context databases cov-{entry['pr']}-* under {workdir}")
-        ctx = merge_contexts([load_contexts(db, repo) for db in dbs])  # every tier ran from the repo root: no prefix
+        ctx = pr_contexts(repo, Path(workdir), entry["pr"])
 
         def bound(tid: str, fr: str, rev=rev, cache=cache) -> bool:
             path, _, qual = tid.partition("::")
@@ -108,7 +114,7 @@ def _code_hits(repo: Path, data: dict, workdir: Path | None) -> list[dict]:
             if key not in cache:
                 tree = _tree(rev.read(path, "base"))
                 node = _test_nodes(tree).get(qual) if tree else None
-                cache[key] = bool(node and fr in node[1])
+                cache[key] = bool(node and fr_in(fr, node[1]))
             return cache[key]
 
         for fr, funcs in sorted(entry["code"].items()):
