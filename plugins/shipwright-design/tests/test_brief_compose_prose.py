@@ -97,6 +97,8 @@ def test_doubt_review_rules_are_pinned():
         "write that scratch file under `.shipwright/designs/`",
         "also when the run was started with an `@file` argument",
         "STOP at once as a package defect",
+        "a Requirements comment the mockup already had shown as replaced",
+        "run the full procedure below, then the `@file` iteration",
     ):
         assert sentence in compose, sentence
     assert "after composing per brief-compose.md" in (SKILL / "SKILL.md").read_text(encoding="utf-8")
