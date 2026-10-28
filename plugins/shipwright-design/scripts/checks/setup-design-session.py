@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from lib.boundary_baseline import write_baseline
 from lib.screen_registry import scan_designs_dir
 
 # Stack-profile resolution (project > user > bundled). Appended, then removed again:
@@ -138,6 +139,12 @@ def main() -> int:
     (designs_dir / "flows").mkdir(parents=True, exist_ok=True)
     (designs_dir / "uploads").mkdir(parents=True, exist_ok=True)
 
+    # FR-01.04 #11: what an earlier phase left uncommitted is not this session's change.
+    try:
+        boundary_baseline = "written" if write_baseline(project_root) else "kept"
+    except OSError:  # the gate then stays strict; never fail the session over it
+        boundary_baseline = "not_written"
+
     existing = scan_designs_dir(designs_dir)
 
     result = {
@@ -149,6 +156,7 @@ def main() -> int:
         "specs_found": specs,
         "existing_designs": existing,
         "mode": mode,
+        "boundary_baseline": boundary_baseline,
         "message": f"Design session ({mode}): {len(specs)} specs, {len(existing['screens'])} screens, {len(existing['uploads'])} uploads",
     }
 

@@ -33,7 +33,6 @@ import json
 import sys
 from pathlib import Path
 
-
 def _load_own_lib_module(name: str):
     """Load ``scripts/lib/<name>.py`` directly by file path, WITHOUT binding
     ``sys.modules['lib']`` to this plugin's own ``lib`` package.
@@ -58,6 +57,7 @@ def _load_own_lib_module(name: str):
 
 
 scan_designs_dir = _load_own_lib_module("screen_registry").scan_designs_dir
+session_changes = _load_own_lib_module("boundary_baseline").session_changes
 
 # parents[0]=checks, [1]=scripts, [2]=shipwright-design, [3]=plugins, [4]=repo root.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -221,8 +221,8 @@ def iteration_gate(project_root: Path, designs_dir: Path, round_path: Path | Non
 
 
 def boundary_gate(project_root: Path) -> dict:
-    """FR-01.04 #11."""
-    changed = git_dirty_paths(project_root)
+    """FR-01.04 #11 - this session's changes only (see lib/boundary_baseline.py)."""
+    changed = session_changes(project_root)
     violations = find_boundary_violations(changed, list(DESIGN_ALLOWED_PREFIXES))
     if violations:
         return _gate(
