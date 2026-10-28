@@ -1,0 +1,59 @@
+{
+  "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+  "date": "2026-10-28T13:59:15.271363Z",
+  "event_at": "2026-10-28T13:58:58.317926+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-baseline-protection--BL0",
+  "spec": ".shipwright/planning/iterate/campaigns/baseline-protection/sub-iterates/BL0-touch-library-and-replay.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-28-bl0-touch-library-and-replay",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "T-spec: normative FR text change touches the FR, reformat/AC reorder does not",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+      },
+      {
+        "behavior": "T-test: edited/deleted/re-tagged FR-bound test touches its FRs; pure move is listed as moved",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+      },
+      {
+        "behavior": "Static attribution: conftest, fixture chains, helper modules, module-level effects reach FR-bound tests",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+      },
+      {
+        "behavior": "Unreadable or unparsable input fails closed (incomplete), never silently empty",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+      },
+      {
+        "behavior": "T-code from per-test coverage contexts: attribution, fan-out, unattributed, incomplete",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_touch_coverage.py: all tests PASSED (50 passed across the three files)"
+      },
+      {
+        "behavior": "Replay CLI: PR selection, merge-base replay, stats, JSON output, probes",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_baseline_replay.py: all tests PASSED (50 passed across the three files)"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

@@ -1,0 +1,81 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+    "date": "2026-10-28",
+    "unit": {
+      "status": "passed",
+      "passed": 1396,
+      "total": 1396
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "T-spec: normative FR text change touches the FR, reformat/AC reorder does not",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+        },
+        {
+          "behavior": "T-test: edited/deleted/re-tagged FR-bound test touches its FRs; pure move is listed as moved",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+        },
+        {
+          "behavior": "Static attribution: conftest, fixture chains, helper modules, module-level effects reach FR-bound tests",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+        },
+        {
+          "behavior": "Unreadable or unparsable input fails closed (incomplete), never silently empty",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (50 passed across the three files)"
+        },
+        {
+          "behavior": "T-code from per-test coverage contexts: attribution, fan-out, unattributed, incomplete",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch_coverage.py: all tests PASSED (50 passed across the three files)"
+        },
+        {
+          "behavior": "Replay CLI: PR selection, merge-base replay, stats, JSON output, probes",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_replay.py: all tests PASSED (50 passed across the three files)"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
+    "commit": "79878eaef38ece5563d38cdf9e0589f469d91721",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

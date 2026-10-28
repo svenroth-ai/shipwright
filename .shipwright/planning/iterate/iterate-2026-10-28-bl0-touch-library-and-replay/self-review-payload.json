@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Library, replay CLI, REPLAY report with every stop-1 input; deviations (own T-spec reader, deferred runtime ids) disclosed."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable git/manifest/test files and a missing merge base fail closed; a broken PR is reported, not fatal."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets; replay env scrubs token variables and workdir must be outside the repo; probes use a throwaway worktree."},
+{"name":"Test Quality","verdict":"pass","note":"50 in-process tests on real git and a real coverage database, asserting outcomes, including fail-closed producers."},
+{"name":"Performance Basics","verdict":"pass","note":"Replay of 100 PRs takes minutes; per-file reads are cached; noted batching as follow-up."},
+{"name":"Naming & Structure","verdict":"pass","note":"All new files under 300 lines, sibling _baseline_touch_* modules, ruff clean."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Consumes coverage DB (round-trip probed with a real CoverageData file) and git output; no serialized format changed."}]}
