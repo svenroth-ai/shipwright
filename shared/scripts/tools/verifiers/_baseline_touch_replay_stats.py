@@ -72,6 +72,9 @@ def summarise(records: list[dict]) -> dict:
         "derived_only_prs": sum(1 for r in ok if r["sources"] and not set(r["sources"]) & set(r["declared"])),
         "declared_only_prs": sum(1 for r in ok if r["declared"] and not r["sources"]),
         "agree_prs": sum(1 for r in ok if r["sources"] and set(r["sources"]) & set(r["declared"])),
+        # scope = exactly what the author declared: a PR is still held when it touches ANY FR it did not declare
+        "held_with_scope_eq_declared": sum(1 for r in ok if set(r["sources"]) - set(r["declared"])),
+        "touched_all_declared_prs": sum(1 for r in ok if r["sources"] and not set(r["sources"]) - set(r["declared"])),
         "frs_per_touching_pr": sorted(len(r["sources"]) for r in touched_nonempty),
         "incomplete_prs": [r["pr"] for r in ok if r["incomplete"]],
         "moved_prs": sum(1 for r in ok if r["moved"]),

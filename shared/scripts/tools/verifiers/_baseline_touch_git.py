@@ -60,15 +60,19 @@ class GitRev:
     def changed(self) -> list[tuple[str, str, str]]:
         """``(status, old path, new path)`` per changed file; renames are detected, so a
         moved test file reads as one rename and not as a deletion plus an addition."""
-        rc, out = self.git("diff", "--no-ext-diff", "--no-color", "--name-status", "-M", self.base, self.head)
+        rc, out = self.git("diff", "--no-ext-diff", "--no-color", "--name-status", "-z", "-M", self.base, self.head)
         if rc != 0:
             raise RuntimeError(f"git diff {self.base}..{self.head} failed in {self.root}")
-        rows = []
-        for line in out.splitlines():
-            cols = line.split("\t")
-            status = cols[0][:1]
-            old, new = (cols[1], cols[-1]) if len(cols) > 2 else (cols[1], cols[1])
+        cols = out.split("\0")  # NUL-separated: a path with a tab or newline cannot split a record
+        rows, i = [], 0
+        while i < len(cols) and cols[i]:
+            status = cols[i][:1]
+            width = 3 if status in "RC" else 2
+            if i + width > len(cols):
+                raise RuntimeError(f"git diff --name-status -z output truncated in {self.root}")
+            old, new = cols[i + 1], cols[i + width - 1]
             rows.append((status, old, new))
+            i += width
         return rows
 
     @lru_cache(maxsize=None)  # noqa: B019 - one GitRev lives for one comparison

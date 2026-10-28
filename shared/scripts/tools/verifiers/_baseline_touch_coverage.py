@@ -141,13 +141,18 @@ def code_touched(rev: GitRev, changes: list[tuple[str, str, str]],
         for ln in removed:
             span = _enclosing(b_spans, ln)
             targets.setdefault(span[0] if span else "<module>", set()).add(ln)
+        base_names = {sp[0]: sp for sp in b_spans}
         for ln in added:
-            span = _enclosing(h_spans, ln)
-            base_span = next((s for s in b_spans if span and s[0] == span[0]), None)
-            if base_span is None:
-                if span is None:
-                    targets.setdefault("<module>", set())
-                continue  # a brand-new function executes nowhere at base
+            inside = sorted((sp for sp in h_spans if sp[1] <= ln <= sp[2]), key=lambda sp: sp[2] - sp[1])  # innermost first
+            if not inside:
+                targets.setdefault("<module>", set())
+                continue
+            base_span = next((base_names[sp[0]] for sp in inside if sp[0] in base_names), None)  # nearest enclosing that exists at base
+            if base_span is None:  # only new functions enclose this line: nothing ran it at base
+                note = f"{old}::{inside[0][0]}: new code in a function that does not exist at base"
+                if note not in out.unattributed:
+                    out.unattributed.append(note)
+                continue
             targets.setdefault(base_span[0], set()).update(range(base_span[1], base_span[2] + 1))
         for func, lns in targets.items():
             tests = set().union(*(lines.get(ln, set()) for ln in lns)) if lns else set()

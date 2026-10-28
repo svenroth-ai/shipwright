@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import measure_baseline  # noqa: E402
 from _baseline_repo import SPEC, SPEC_TEXT, commit, make_repo  # noqa: E402
+from verifiers import _baseline_label_all as LA  # noqa: E402
 from verifiers import _baseline_label_hits as L  # noqa: E402
 from verifiers import _baseline_measure as M  # noqa: E402
 from verifiers._baseline_touch_git import GitRev  # noqa: E402
@@ -106,21 +107,19 @@ def test_code_hit_needs_a_bound_test_executing_the_changed_function(tmp_path):
     rev = GitRev(root, base, head)
     ctx = {"pkg/prod.py": {2: {"pkg/tests/test_a.py::test_price"}, 6: {"pkg/tests/test_a.py::test_other"}}}
     bound = lambda tid, fr: fr == "FR-01.09" and tid.endswith("test_price")  # noqa: E731
-    assert L.label_code_hit(rev, "FR-01.09", ["pkg/prod.py::price"], ctx, bound)[0]
-    assert not L.label_code_hit(rev, "FR-01.09", ["pkg/prod.py::other"], ctx, bound)[0]  # not the changed function
-    assert not L.label_code_hit(rev, "FR-01.10", ["pkg/prod.py::price"], ctx, bound)[0]
+    assert LA.label_code_hit(rev, "FR-01.09", ["pkg/prod.py::price"], ctx, bound)[0]
+    assert not LA.label_code_hit(rev, "FR-01.09", ["pkg/prod.py::other"], ctx, bound)[0]  # not the changed function
+    assert not LA.label_code_hit(rev, "FR-01.10", ["pkg/prod.py::price"], ctx, bound)[0]
 
 
 def test_label_all_counts_wrong_per_100_prs_and_samples(tmp_path):
     root = make_repo(tmp_path, FILES)
-    base = commit(root, {"README.md": "x"}, "pad")
+    commit(root, {"README.md": "x"}, "pad")
     head = commit(root, {"pkg/tests/test_a.py": TEST_A.replace("== 1.0", "== 1.01")}, "change")
     rec = {"pr": 1, "merge": head, "declared": ["FR-01.09"], "sources": {"FR-01.09": ["test"], "FR-01.10": ["test"]},
            "evidence": {"test": {"FR-01.09": ["pkg/tests/test_a.py::test_price"], "FR-01.10": ["pkg/tests/test_a.py::test_other"]}, "static": {}}}
-    subprocess.run(["git", "-C", str(root), "tag", "-f", "m", head], check=True, capture_output=True)
-    assert base  # the squash first parent is `head^`
     data = {"records": [rec]}
-    L.label_all(root, data, None)
+    LA.label_all(root, data, None)
     labels = {h["fr"]: h["label"] for h in data["records"][0]["hits"]}
     assert labels == {"FR-01.09": "correct-benign", "FR-01.10": "wrong"}
     block = data["measure"]["hit_labels"]
@@ -144,23 +143,47 @@ def test_fanout_executed_reads_bindings_from_the_test_files(tmp_path):
     assert (out["functions_in_measured_files"], out["functions_executed_by_any_test"], out["max"], out["histogram"]) == (2, 1, 2, {2: 1})
 
 
-def test_verifier_and_root_timing_run_the_named_commands(tmp_path, monkeypatch):
-    calls = []
-
+def _fake_run(calls):
     def fake_run(cmd, **kw):
         calls.append(cmd)
         if "pytest" in cmd:
             Path(kw["env"]["COVERAGE_FILE"]).write_bytes(b"db")
         return subprocess.CompletedProcess(cmd, 0, stdout="== 3 passed in 0.1s ==\n", stderr="")
 
-    monkeypatch.setattr(M.subprocess, "run", fake_run)
+    return fake_run
+
+
+def test_verifier_wallclock_runs_the_current_verifier_on_the_newest_iterate_commits(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(M.subprocess, "run", _fake_run(calls))
     recs = [{"pr": n, "run_id": f"iterate-{n}", "merge": f"sha{n}", "class": "iterate"} for n in range(1, 8)] + [{"pr": 9, "class": "docs"}]
-    out = M.verifier_wallclock(tmp_path, recs, 5)
-    assert [r["pr"] for r in out["runs"]] == [7, 6, 5, 4, 3] and calls[0][-2:] == ["--commit", "sha7"]
-    assert M.verifier_wallclock(tmp_path, recs, 1, tmp_path / "wt")["tree"].startswith("detached") and "worktree" in calls[-3]
-    timed = M.time_root(tmp_path, "pkg/tests", tmp_path / "w", contexts=True, env={})
-    assert timed["summary"] == "3 passed in 0.1s" and "--cov-context=test" in calls[-1] and timed["db_bytes"] == 2
-    assert "--cov-context=test" not in (M.time_root(tmp_path, "pkg/tests", tmp_path / "w", contexts=False, env={}) and calls[-1])
+    out = M.verifier_wallclock(tmp_path / "repo", recs, 5)
+    assert [r["pr"] for r in out["runs"]] == [7, 6, 5, 4, 3]
+    assert calls[0][-2:] == ["--commit", "sha7"]
+
+
+def test_verifier_wallclock_checks_each_commit_out_into_a_scratch_worktree(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(M.subprocess, "run", _fake_run(calls))
+    recs = [{"pr": 1, "run_id": "iterate-1", "merge": "sha1", "class": "iterate"}]
+    out = M.verifier_wallclock(tmp_path / "repo", recs, 1, tmp_path / "wt")
+    assert out["tree"].startswith("detached")
+    assert ["worktree", "add"] == calls[0][3:5] and ["worktree", "remove"] == calls[-1][3:5]
+    with pytest.raises(ValueError):  # scratch space inside the repository is refused
+        M.verifier_wallclock(tmp_path / "repo", recs, 1, tmp_path / "repo" / "wt")
+
+
+def test_root_timing_toggles_the_context_flag_and_keeps_databases_in_their_own_directory(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(M.subprocess, "run", _fake_run(calls))
+    with_ctx = M.time_root(tmp_path, "pkg/tests", tmp_path / "w", contexts=True, env={})
+    assert with_ctx["summary"] == "3 passed in 0.1s" and "--cov-context=test" in calls[-1] and with_ctx["db_bytes"] == 2
+    assert (tmp_path / "w" / "roots" / with_ctx["db"]).is_file()
+    M.time_root(tmp_path, "pkg/tests", tmp_path / "w", contexts=False, env={})
+    assert "--cov-context=test" not in calls[-1]
+
+
+def test_discover_roots_lists_the_fixed_roots_then_the_plugins(tmp_path):
     (tmp_path / "plugins" / "p" / "tests").mkdir(parents=True)
     (tmp_path / "shared" / "tests").mkdir(parents=True)
     assert M.discover_roots(tmp_path) == ["shared/tests", "plugins/p/tests"]
@@ -197,9 +220,9 @@ def test_label_is_idempotent_for_code_hits_with_and_without_a_workdir(tmp_path, 
     (work / "cov-7-0").write_bytes(b"")
     monkeypatch.setattr(cov, "load_contexts", lambda db, repo, prefix="": {"pkg/prod.py": {2: {"pkg/tests/test_a.py::test_price"}}})
     for _ in range(2):
-        L.label_all(root, data, work)
+        LA.label_all(root, data, work)
     assert len(data["code"]["prs"][0]["hits"]) == 1 and data["measure"]["hit_labels"]["by_source"]["code"] == {"correct-undetermined": 1}
-    L.label_all(root, data, None)  # a rerun without databases keeps the stored code hits
+    LA.label_all(root, data, None)  # a rerun without databases keeps the stored code hits
     assert data["measure"]["hit_labels"]["by_source"]["code"] == {"correct-undetermined": 1} and len(data["code"]["prs"][0]["hits"]) == 1
 
 
@@ -207,10 +230,54 @@ def test_code_labels_fail_loudly_without_databases(tmp_path):
     root, data = _code_leg_repo(tmp_path)
     (tmp_path / "empty").mkdir()
     with pytest.raises(FileNotFoundError):
-        L.label_all(root, data, tmp_path / "empty")
+        LA.label_all(root, data, tmp_path / "empty")
 
 
 def test_fanout_changed_separates_function_notes_from_file_notes():
     prs = [{"fan_out": {}, "unattributed": ["a.py: no coverage at base (x)", "pkg/tests/test_b.py: no coverage at base (x)", "c.py::f: executed by no FR-bound test"]}]
     out = M.fanout_changed(prs)
     assert out["changed_unattributed"] == 1 and out["changed_files_no_coverage"] == {"total": 2, "production": 1, "test_files": 1}
+
+
+def test_module_level_evidence_form_is_labelled_like_the_other_static_forms(tmp_path):
+    item = "pkg/tests/test_u.py (module-level statement changed)"
+    skipped = USER.replace("import pytest\n", 'import pytest\n\npytest.skip("x", allow_module_level=True)\n', 1)
+    assert L.label_static_hit(_rev(tmp_path / "a", {"pkg/tests/test_u.py": skipped}), "FR-01.09", [item])[0]
+    assert not L.label_static_hit(_rev(tmp_path / "b", {"pkg/tests/test_a.py": TEST_A + "\n"}), "FR-01.09", [item])[0]
+    ok, why = L.label_static_hit(_rev(tmp_path / "c", {"README.md": "y"}), "FR-01.09", ["not an evidence line"])
+    assert not ok and "unknown form" in why
+
+
+def test_a_renamed_and_retagged_test_is_a_test_hit_but_a_pure_rename_is_not(tmp_path):
+    retag = TEST_A.replace('covers("FR-01.09/AC01")', 'covers("FR-01.10")').replace("test_price", "test_price2")
+    rev = _rev(tmp_path / "a", {"pkg/tests/test_a.py": retag})
+    assert L.label_test_hit(rev, "FR-01.09", ["pkg/tests/test_a.py::test_price2"])[0]
+    pure = _rev(tmp_path / "b", {"pkg/tests/test_a.py": TEST_A.replace("test_price", "test_price2")})
+    ok, why = L.label_test_hit(pure, "FR-01.09", ["pkg/tests/test_a.py::test_price2"])
+    assert not ok and "pure rename" in why
+
+
+def test_a_changed_name_reached_through_a_helper_of_the_consumer_module_counts(tmp_path):
+    helper = "CONST = 1\n"
+    consumer = ('import pytest\nfrom pkg.tests.helper import CONST\n\n\ndef _h():\n    return CONST\n\n\n'
+                '@pytest.mark.covers("FR-01.09")\ndef test_c():\n    assert _h() == 1\n')
+    files = {SPEC: SPEC_TEXT, "pkg/tests/helper.py": helper, "pkg/tests/test_c.py": consumer}
+    root = make_repo(tmp_path, files)
+    pad = commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"pkg/tests/helper.py": "CONST = 2\n"}, "change")
+    ok, why = L.label_static_hit(GitRev(root, pad, head), "FR-01.09", ["pkg/tests/helper.py (fixture/helper) -> pkg/tests/test_c.py"])
+    assert ok and "CONST" in why
+
+
+def test_a_docstring_only_edit_is_not_a_test_change_but_a_docstring_plus_retag_rename_is(tmp_path):
+    documented = TEST_A.replace("def test_price():\n", 'def test_price():\n    """Docs."""\n')
+    base = {"pkg/tests/test_a.py": documented}
+    root = make_repo(tmp_path / "a", {SPEC: SPEC_TEXT, **base})
+    pad = commit(root, {"README.md": "x"}, "pad")
+    head = commit(root, {"pkg/tests/test_a.py": documented.replace("Docs.", "Other docs.")}, "doc edit")
+    assert not L.label_test_hit(GitRev(root, pad, head), "FR-01.09", ["pkg/tests/test_a.py::test_price"])[0]
+    root2 = make_repo(tmp_path / "b", {SPEC: SPEC_TEXT, **base})
+    pad2 = commit(root2, {"README.md": "x"}, "pad")
+    renamed = documented.replace("Docs.", "New docs.").replace('covers("FR-01.09/AC01")', 'covers("FR-01.10")').replace("test_price", "test_price2")
+    head2 = commit(root2, {"pkg/tests/test_a.py": renamed}, "rename and retag")
+    assert L.label_test_hit(GitRev(root2, pad2, head2), "FR-01.09", ["pkg/tests/test_a.py::test_price2"])[0]

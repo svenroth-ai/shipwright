@@ -57,6 +57,7 @@ def touched_set(rev: GitRev, contexts: dict | None = None, require_code: bool = 
     result = TouchedSet(existing=existing_frs(rev))
     result.spec, result.new_frs = spec_touched(rev, changed_paths)
     result.new_frs |= result.spec - result.existing
+    result.new_frs -= result.existing
     result.spec &= result.existing
     tests = test_touched(rev, changes)
     result.test, result.moved = tests.touched, tests.moved

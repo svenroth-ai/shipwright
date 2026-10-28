@@ -1538,7 +1538,7 @@
     "8": 0
    },
    "p90": 1,
-   "p95": 1,
+   "p95": 8,
    "prs": 20
   },
   "fanout_executed": {
@@ -1564,21 +1564,21 @@
    "definition": "FRs per function executed by any test, files measured at one revision",
    "files_measured": 695,
    "functions_executed_by_any_test": 3928,
-   "functions_in_measured_files": 4055,
+   "functions_in_measured_files": 4054,
    "functions_with_fr_bound_test": 1875,
    "histogram": {
     "0": 2053,
     "1": 1457,
-    "10": 4,
-    "14": 6,
     "2": 228,
-    "20": 1,
     "3": 101,
     "4": 63,
     "5": 1,
     "6": 12,
     "7": 1,
-    "8": 1
+    "8": 1,
+    "10": 4,
+    "14": 6,
+    "20": 1
    },
    "max": 20,
    "median": 1,
@@ -1636,19 +1636,19 @@
      "correct-benign": 5
     },
     "static": {
-     "correct-benign": 13,
-     "correct-undetermined": 42,
-     "wrong": 1
+     "correct-benign": 16,
+     "correct-undetermined": 77
     },
     "test": {
-     "correct-benign": 21,
+     "correct-benign": 22,
      "correct-undetermined": 15
     }
    },
-   "hits": 106,
+   "code_sample_prs": 20,
+   "hits": 144,
    "limit_per_source_per_100_prs": 3,
    "prs": 100,
-   "rule": "wrong = the source attributed an FR the raw PR content does not support (see module docstring)",
+   "rule": "mechanical consistency check: wrong = the evidence, re-derived untruncated at the merge commit, does not support the hit. It is not the brief's semantic 'wrong'; the 3-per-100 bar can only be judged from the operator's re-label of the sample",
    "sample": [
     {
      "fr": "FR-01.21",
@@ -1728,39 +1728,32 @@
      "source": "static"
     },
     {
-     "fr": "FR-01.19",
+     "fr": "FR-01.11",
      "label": "correct-undetermined",
      "pr": 873,
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
      "source": "static"
     },
     {
-     "fr": "FR-01.01",
+     "fr": "FR-01.04",
      "label": "correct-undetermined",
-     "pr": 873,
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "pr": 897,
+     "reason": "plugins/shipwright-design/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.04",
      "source": "static"
     },
     {
-     "fr": "FR-01.03",
-     "label": "correct-undetermined",
-     "pr": 860,
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
-     "source": "static"
-    },
-    {
-     "fr": "FR-01.20",
+     "fr": "FR-01.06",
      "label": "correct-undetermined",
      "pr": 860,
-     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
      "source": "static"
     },
     {
-     "fr": "FR-01.01",
-     "label": "correct-benign",
-     "pr": 904,
-     "reason": "plugins/shipwright-run/tests/test_phase_validators_late.py::test_deploy_phase_returns_the_canon_verdict: bound to FR-01.01 and changed",
-     "source": "test"
+     "fr": "FR-01.02",
+     "label": "correct-undetermined",
+     "pr": 897,
+     "reason": "plugins/shipwright-project/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.02",
+     "source": "static"
     },
     {
      "fr": "FR-01.12",
@@ -1774,6 +1767,13 @@
      "label": "correct-benign",
      "pr": 935,
      "reason": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py::test_event_is_recorded_and_committed_before_merge: bound to FR-01.09 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "pr": 904,
+     "reason": "plugins/shipwright-run/tests/test_phase_validators_late.py::test_deploy_phase_returns_the_canon_verdict: bound to FR-01.01 and changed",
      "source": "test"
     },
     {
@@ -1795,7 +1795,7 @@
    "wrong_per_100_prs": {
     "code": 0.0,
     "spec": 0.0,
-    "static": 1.0,
+    "static": 0.0,
     "test": 0.0
    }
   },
@@ -2900,7 +2900,8 @@
     "static": {
      "FR-01.06": [
       "integration-tests/test_stack_profile_resolution_e2e.py (fixture/helper) -> same module",
-      "shared/tests/stack_profile_py_rules.py (fixture/helper) -> shared/tests/test_stack_profile_py_guard.py"
+      "shared/tests/stack_profile_py_rules.py (fixture/helper) -> shared/tests/test_stack_profile_py_guard.py",
+      "shared/tests/test_stack_profile_py_guard.py (module-level statement changed)"
      ]
     },
     "test": {
@@ -2953,9 +2954,9 @@
    "evidence": {
     "static": {
      "FR-01.01": [
-      "integration-tests/test_cross_surface_backcompat.py (fixture/helper) -> same module",
-      "plugins/shipwright-run/tests/test_single_session_gate_override.py (fixture/helper) -> same module",
-      "plugins/shipwright-run/tests/test_single_session_gate_seam.py (fixture/helper) -> same module"
+      "plugins/shipwright-run/tests/test_single_session_gate_hardening.py (module-level statement changed)",
+      "plugins/shipwright-run/tests/test_single_session_gate_override.py (module-level statement changed)",
+      "plugins/shipwright-run/tests/test_single_session_gate_seam.py (module-level statement changed)"
      ]
     },
     "test": {
@@ -2973,7 +2974,7 @@
     {
      "fr": "FR-01.01",
      "label": "correct-benign",
-     "reason": "integration-tests/test_cross_surface_backcompat.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.01",
+     "reason": "plugins/shipwright-run/tests/test_single_session_gate_hardening.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.01",
      "source": "static"
     },
     {
@@ -3050,9 +3051,9 @@
    "evidence": {
     "static": {
      "FR-01.06": [
-      "plugins/shipwright-project/tests/test_profile_name_check.py (fixture/helper) -> same module",
+      "plugins/shipwright-project/tests/test_profile_name_check.py (module-level statement changed)",
       "shared/tests/test_stack_profile_prose_commands.py (fixture/helper) -> same module",
-      "shared/tests/test_stack_profile_prose_guard.py (fixture/helper) -> same module"
+      "shared/tests/test_stack_profile_prose_guard.py (module-level statement changed)"
      ]
     },
     "test": {
@@ -3276,10 +3277,84 @@
    "declared_from": "affected_frs",
    "evidence": {
     "static": {
+     "FR-01.01": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_c3_cross_phase_verdict.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_c3_same_phase_window.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_canon_marker_write_contract.py"
+     ],
+     "FR-01.02": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_drift_parsers.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_fr_authoring_refs.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_project_gate_extras.py"
+     ],
+     "FR-01.03": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_architecture_internal_review_contract_prose.py"
+     ],
      "FR-01.06": [
-      "shared/tests/profile_test_fixtures.py (fixture/helper) -> shared/tests/test_profile_resolver.py",
-      "shared/tests/profile_test_fixtures.py (fixture/helper) -> shared/tests/test_profile_resolver_files.py",
-      "shared/tests/profile_test_fixtures.py (fixture/helper) -> shared/tests/test_resolve_profile_cli.py"
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_known_failures.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_known_failures_audit_parity.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_profile_gitignore_commit.py"
+     ],
+     "FR-01.07": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_accepted_risks_register.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_security_scan_card.py"
+     ],
+     "FR-01.08": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/tools/test_validate_deploy_profile.py"
+     ],
+     "FR-01.09": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_aggregate_changelog.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_aggregate_decisions.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_changelog_aggregation.py"
+     ],
+     "FR-01.10": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_stamp_test_results.py"
+     ],
+     "FR-01.11": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_architecture_internal_review_contract_prose.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_audit_e2e_integration.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_campaign_cascade_record_roundtrip.py"
+     ],
+     "FR-01.12": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_dev_server_multiservice.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_dev_server_no_web_server.py",
+      "shared/tests/test_dev_server_no_web_server.py (module-level statement changed)"
+     ],
+     "FR-01.13": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_automerge_readiness.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_ci_workflow_convention.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_external_review_gateway_cli.py"
+     ],
+     "FR-01.14": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_drift_triage_emit.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_github_api_artifact.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_github_pr_api_superseded_cancel.py"
+     ],
+     "FR-01.15": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_contract_gate_git.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_contract_skeleton.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_contract_skeleton_weak_pins.py"
+     ],
+     "FR-01.16": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_requirement_elicitation_discovery.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_requirement_elicitation_refs.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_requirement_elicitation_rigor.py"
+     ],
+     "FR-01.17": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_check_required_checks_cli.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_ci_reruns_the_full_verification_on_pr.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_ci_yml_execution_evidence_step_shape.py"
+     ],
+     "FR-01.19": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_main_attribution_workflows.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_main_health_attribution.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_main_health_diagnosis.py"
+     ],
+     "FR-01.20": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_context_cost_core_phase_labels.py"
+     ],
+     "FR-01.21": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_plugin_root.py"
      ]
     },
     "test": {
@@ -3300,9 +3375,27 @@
    "held": true,
    "hits": [
     {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.02",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.03",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "source": "static"
+    },
+    {
      "fr": "FR-01.06",
      "label": "correct-benign",
-     "reason": "shared/tests/profile_test_fixtures.py: module-level/scope-wide change reaches 21 test(s) bound to FR-01.06",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
      "source": "static"
     },
     {
@@ -3312,10 +3405,94 @@
      "source": "test"
     },
     {
+     "fr": "FR-01.07",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.08",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.09",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "source": "static"
+    },
+    {
      "fr": "FR-01.12",
      "label": "correct-undetermined",
      "reason": "shared/tests/test_dev_server_no_web_server.py::test_cmd_start_reports_no_dev_server_instead_of_crashing: bound to FR-01.12 and changed",
      "source": "test"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.13",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.14",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.15",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.16",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.19",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.20",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.21",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21",
+     "source": "static"
     }
    ],
    "incomplete": [],
@@ -3327,12 +3504,61 @@
    "pr": 899,
    "run_id": "iterate-2026-10-24-s2-python-loaders",
    "sources": {
+    "FR-01.01": [
+     "static"
+    ],
+    "FR-01.02": [
+     "static"
+    ],
+    "FR-01.03": [
+     "static"
+    ],
     "FR-01.06": [
      "static",
      "test"
     ],
+    "FR-01.07": [
+     "static"
+    ],
+    "FR-01.08": [
+     "static"
+    ],
+    "FR-01.09": [
+     "static"
+    ],
+    "FR-01.10": [
+     "static"
+    ],
+    "FR-01.11": [
+     "static"
+    ],
     "FR-01.12": [
+     "static",
      "test"
+    ],
+    "FR-01.13": [
+     "static"
+    ],
+    "FR-01.14": [
+     "static"
+    ],
+    "FR-01.15": [
+     "static"
+    ],
+    "FR-01.16": [
+     "static"
+    ],
+    "FR-01.17": [
+     "static"
+    ],
+    "FR-01.19": [
+     "static"
+    ],
+    "FR-01.20": [
+     "static"
+    ],
+    "FR-01.21": [
+     "static"
     ]
    },
    "title": "feat(profiles): Python loaders use the stack-profile resolver, no silent fallback (campaign S2)"
@@ -3366,12 +3592,217 @@
    "declared": [],
    "declared_from": "none",
    "evidence": {
-    "static": {},
+    "static": {
+     "FR-01.01": [
+      "plugins/shipwright-run/tests/conftest.py (fixture/helper) -> plugins/shipwright-run/tests/test_deploy_target_none.py",
+      "plugins/shipwright-run/tests/conftest.py (fixture/helper) -> plugins/shipwright-run/tests/test_master_stop_check.py",
+      "plugins/shipwright-run/tests/conftest.py (fixture/helper) -> plugins/shipwright-run/tests/test_non_drivable_config_guard.py"
+     ],
+     "FR-01.02": [
+      "plugins/shipwright-project/tests/conftest.py (fixture/helper) -> plugins/shipwright-project/tests/test_assumptions_first_block.py",
+      "plugins/shipwright-run/tests/conftest.py (fixture/helper) -> plugins/shipwright-run/tests/test_phase_validators_project.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_drift_parsers.py"
+     ],
+     "FR-01.03": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_architecture_internal_review_contract_prose.py"
+     ],
+     "FR-01.04": [
+      "plugins/shipwright-design/tests/conftest.py (fixture/helper) -> plugins/shipwright-design/tests/test_check_design_gates.py",
+      "plugins/shipwright-design/tests/conftest.py (fixture/helper) -> plugins/shipwright-design/tests/test_requirement_writeback_gate.py",
+      "plugins/shipwright-design/tests/conftest.py (fixture/helper) -> plugins/shipwright-design/tests/test_screen_registry.py"
+     ],
+     "FR-01.06": [
+      "plugins/shipwright-test/tests/conftest.py (fixture/helper) -> plugins/shipwright-test/tests/test_boundary_coverage_report.py",
+      "plugins/shipwright-test/tests/conftest.py (fixture/helper) -> plugins/shipwright-test/tests/test_journey_coverage.py",
+      "plugins/shipwright-test/tests/conftest.py (fixture/helper) -> plugins/shipwright-test/tests/test_journey_plan.py"
+     ],
+     "FR-01.07": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_accepted_risks_register.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_security_scan_card.py"
+     ],
+     "FR-01.08": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/tools/test_validate_deploy_profile.py"
+     ],
+     "FR-01.09": [
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_sync_release_manifests_git.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_sync_release_manifests_marketplace.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_aggregate_changelog.py"
+     ],
+     "FR-01.10": [
+      "integration-tests/conftest.py (fixture/helper) -> integration-tests/test_adopt_evidence_stamp_e2e.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_promote_required_layers.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_promote_required_layers_advisory.py"
+     ],
+     "FR-01.11": [
+      "integration-tests/conftest.py (fixture/helper) -> integration-tests/test_campaign_architecture_reject_halt_integration.py",
+      "integration-tests/conftest.py (fixture/helper) -> integration-tests/test_campaign_risk_recheck_integration.py",
+      "integration-tests/conftest.py (fixture/helper) -> integration-tests/test_events_log_parity.py"
+     ],
+     "FR-01.12": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_dev_server_multiservice.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_dev_server_no_web_server.py"
+     ],
+     "FR-01.13": [
+      "plugins/shipwright-adopt/tests/conftest.py (fixture/helper) -> plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py",
+      "plugins/shipwright-adopt/tests/conftest.py (fixture/helper) -> plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py",
+      "plugins/shipwright-adopt/tests/conftest.py (fixture/helper) -> plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py"
+     ],
+     "FR-01.14": [
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_suite_race_cli.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_suite_race_triage.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_drift_triage_emit.py"
+     ],
+     "FR-01.15": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_contract_gate_git.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_contract_skeleton.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_contract_skeleton_weak_pins.py"
+     ],
+     "FR-01.16": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_requirement_elicitation_discovery.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_requirement_elicitation_refs.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_requirement_elicitation_rigor.py"
+     ],
+     "FR-01.17": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_check_required_checks_cli.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_ci_reruns_the_full_verification_on_pr.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_ci_yml_execution_evidence_step_shape.py"
+     ],
+     "FR-01.19": [
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_main_attribution_workflows.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_main_health_attribution.py",
+      "shared/tests/conftest.py (fixture/helper) -> shared/tests/test_main_health_diagnosis.py"
+     ],
+     "FR-01.20": [
+      "shared/scripts/tests/conftest.py (fixture/helper) -> shared/scripts/tests/test_context_pressure.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_context_cost_readiness.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_context_cost_statusline.py"
+     ],
+     "FR-01.21": [
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_build_codex_plugin.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_codex_hooks_sync.py",
+      "shared/scripts/tools/tests/conftest.py (fixture/helper) -> shared/scripts/tools/tests/test_verify_codex_plugin_bundle.py"
+     ]
+    },
     "test": {}
    },
    "files": 54,
-   "held": false,
-   "hits": [],
+   "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-run/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.01",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.02",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-project/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.02",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.03",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.04",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-design/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.04",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-test/tests/conftest.py: module-level/scope-wide change reaches 28 test(s) bound to FR-01.06",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.07",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.08",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.09",
+     "label": "correct-undetermined",
+     "reason": "shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.09",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.10",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.11",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-adopt/tests/conftest.py: module-level/scope-wide change reaches 6 test(s) bound to FR-01.13",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.14",
+     "label": "correct-undetermined",
+     "reason": "shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.14",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.15",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.16",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.19",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.20",
+     "label": "correct-undetermined",
+     "reason": "shared/scripts/tests/conftest.py: module-level/scope-wide change reaches 14 test(s) bound to FR-01.20",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.21",
+     "label": "correct-undetermined",
+     "reason": "shared/scripts/tools/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.21",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "2e71e28f6f594a5fde7359e0a3986ab9ef4d632e",
@@ -3380,7 +3811,65 @@
    "new_frs": [],
    "pr": 897,
    "run_id": "iterate-2026-10-24-s1-resolver-core",
-   "sources": {},
+   "sources": {
+    "FR-01.01": [
+     "static"
+    ],
+    "FR-01.02": [
+     "static"
+    ],
+    "FR-01.03": [
+     "static"
+    ],
+    "FR-01.04": [
+     "static"
+    ],
+    "FR-01.06": [
+     "static"
+    ],
+    "FR-01.07": [
+     "static"
+    ],
+    "FR-01.08": [
+     "static"
+    ],
+    "FR-01.09": [
+     "static"
+    ],
+    "FR-01.10": [
+     "static"
+    ],
+    "FR-01.11": [
+     "static"
+    ],
+    "FR-01.12": [
+     "static"
+    ],
+    "FR-01.13": [
+     "static"
+    ],
+    "FR-01.14": [
+     "static"
+    ],
+    "FR-01.15": [
+     "static"
+    ],
+    "FR-01.16": [
+     "static"
+    ],
+    "FR-01.17": [
+     "static"
+    ],
+    "FR-01.19": [
+     "static"
+    ],
+    "FR-01.20": [
+     "static"
+    ],
+    "FR-01.21": [
+     "static"
+    ]
+   },
    "title": "feat(profiles): stack-profile resolver, schema and CLI (campaign S1)"
   },
   {
@@ -3607,13 +4096,10 @@
    "declared_from": "none",
    "evidence": {
     "static": {
-     "FR-01.13": [
-      "plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py (fixture/helper) -> same module",
-      "shared/tests/test_automerge_readiness.py (fixture/helper) -> same module"
-     ],
      "FR-01.17": [
       "shared/tests/_pr_review_workflows.py (fixture/helper) -> shared/tests/test_pr_review_fail_closed.py",
-      "shared/tests/_pr_review_workflows.py (fixture/helper) -> shared/tests/test_pr_review_fork_trust.py"
+      "shared/tests/_pr_review_workflows.py (fixture/helper) -> shared/tests/test_pr_review_fork_trust.py",
+      "shared/tests/test_pr_review_fail_closed.py (module-level statement changed)"
      ]
     },
     "test": {
@@ -3632,12 +4118,6 @@
    "files": 46,
    "held": true,
    "hits": [
-    {
-     "fr": "FR-01.13",
-     "label": "correct-undetermined",
-     "reason": "plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.13",
-     "source": "static"
-    },
     {
      "fr": "FR-01.13",
      "label": "correct-undetermined",
@@ -3680,7 +4160,6 @@
    "run_id": "iterate-2026-10-10-adopt-drop-claude-review",
    "sources": {
     "FR-01.13": [
-     "static",
      "test"
     ],
     "FR-01.17": [
@@ -3884,7 +4363,11 @@
    ],
    "declared_from": "affected_frs",
    "evidence": {
-    "static": {},
+    "static": {
+     "FR-01.14": [
+      "shared/tests/test_github_triage_artifact_fallback.py (module-level statement changed)"
+     ]
+    },
     "test": {
      "FR-01.14": [
       "shared/tests/test_github_triage.py::test_import_findings_auto_resolves_fixed_alert",
@@ -3897,6 +4380,12 @@
    "files": 27,
    "held": true,
    "hits": [
+    {
+     "fr": "FR-01.14",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_github_triage_artifact_fallback.py: module-level/scope-wide change reaches 18 test(s) bound to FR-01.14",
+     "source": "static"
+    },
     {
      "fr": "FR-01.14",
      "label": "correct-benign",
@@ -3914,6 +4403,7 @@
    "run_id": "iterate-2026-10-10-security-triage-reraise",
    "sources": {
     "FR-01.14": [
+     "static",
      "test"
     ]
    },
@@ -4568,7 +5058,12 @@
    ],
    "declared_from": "affected_frs",
    "evidence": {
-    "static": {},
+    "static": {
+     "FR-01.11": [
+      "shared/tests/test_tag_binding_followup.py (module-level statement changed)",
+      "shared/tests/test_tag_binding_followup_review.py (module-level statement changed)"
+     ]
+    },
     "test": {}
    },
    "files": 29,
@@ -4579,6 +5074,12 @@
      "label": "correct-benign",
      "reason": ".shipwright/planning/01-adopted/spec.md: 3 line(s) added/changed, 2 removed in FR-01.11 text",
      "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_tag_binding_followup.py: module-level/scope-wide change reaches 17 test(s) bound to FR-01.11",
+     "source": "static"
     }
    ],
    "incomplete": [],
@@ -4591,7 +5092,8 @@
    "run_id": "iterate-2026-10-09-tag-gate-collector-gaps",
    "sources": {
     "FR-01.11": [
-     "spec"
+     "spec",
+     "static"
     ]
    },
    "title": "fix(compliance): collector and gate share one TS lexer; trees scanned without git archive"
@@ -4660,7 +5162,7 @@
    "evidence": {
     "static": {
      "FR-01.11": [
-      "shared/tests/test_finalization_claims_scenario.py (fixture/helper) -> same module"
+      "shared/tests/test_finalization_claims_scenario.py (module-level statement changed)"
      ]
     },
     "test": {
@@ -5623,16 +6125,26 @@
       "shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_record_review_pass_cli_floor.py"
      ]
     },
-    "test": {}
+    "test": {
+     "FR-01.11": [
+      "shared/tests/test_review_record_floor.py::test_trivial_is_enforced_but_has_no_floor"
+     ]
+    }
    },
    "files": 56,
    "held": true,
    "hits": [
     {
      "fr": "FR-01.11",
-     "label": "wrong",
-     "reason": "shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_campaign_cascade_record_roundtrip.py: changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11; shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_codex_review_cascade_distinctness_fixture.py: changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11; shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_record_review_pass_cli_floor.py: changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/_review_cli_harness.py: changed ['RUNNER_REASON_CODES'] used by a test bound to FR-01.11 in shared/tests/test_campaign_cascade_record_roundtrip.py",
      "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_review_record_floor.py::test_trivial_is_enforced_but_has_no_floor: renamed and re-tagged (binding text changed); FR-01.11 is in one of the two bindings",
+     "source": "test"
     }
    ],
    "incomplete": [],
@@ -5645,7 +6157,8 @@
    "run_id": "iterate-2026-10-08-u3-review-record-trivial",
    "sources": {
     "FR-01.11": [
-     "static"
+     "static",
+     "test"
     ]
    },
    "title": "feat(finalization): review record and test ledger are enforced at every complexity"
@@ -5863,26 +6376,26 @@
   }
  ],
  "sample": [
-  919,
-  922,
+  935,
+  918,
+  921,
   843,
   869,
-  921,
-  910,
+  919,
+  909,
   860,
   874,
   840,
   871,
   848,
   882,
-  905,
-  847,
-  879
+  904,
+  847
  ],
  "summary": {
   "agree_prs": 27,
   "declared_only_prs": 18,
-  "derived_only_prs": 12,
+  "derived_only_prs": 13,
   "errors": [],
   "frs_per_touching_pr": [
    1,
@@ -5920,31 +6433,33 @@
    2,
    2,
    2,
-   2,
    3,
    18,
-   18
+   18,
+   18,
+   19
   ],
-  "held": 39,
+  "held": 40,
+  "held_with_scope_eq_declared": 17,
   "hits_by_source": {
    "spec": {
     "also_declared": 5,
     "hits": 5
    },
    "static": {
-    "also_declared": 14,
-    "hits": 56
+    "also_declared": 16,
+    "hits": 93
    },
    "test": {
-    "also_declared": 21,
-    "hits": 36
+    "also_declared": 22,
+    "hits": 37
    }
   },
   "hold_by_class": {
    "campaign-unit": {
-    "held": 13,
+    "held": 14,
     "prs": 30,
-    "rate": 0.433
+    "rate": 0.467
    },
    "dependency-bot": {
     "held": 0,
@@ -5977,13 +6492,14 @@
     "rate": 0.0
    }
   },
-  "hold_rate": 0.39,
+  "hold_rate": 0.4,
   "incomplete_prs": [],
   "moved_prs": 4,
   "prs": 100,
   "prs_ok": 100,
-  "touched_nonempty": 39,
-  "touched_nonempty_rate": 0.39,
+  "touched_all_declared_prs": 23,
+  "touched_nonempty": 40,
+  "touched_nonempty_rate": 0.4,
   "with_declared_any": 45,
   "with_fr_impact": 0
  }

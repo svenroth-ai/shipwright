@@ -12,6 +12,7 @@ and the report can cite it. Nothing here gates anything.
 
 from __future__ import annotations
 
+import math
 import statistics
 import subprocess
 import time
@@ -19,6 +20,7 @@ from collections import Counter
 from pathlib import Path
 
 from ._baseline_touch_binding import index_tests
+from ._baseline_proc import guard_workdir
 from ._baseline_touch_coverage import _spans
 from ._baseline_touch_git import is_test_path
 
@@ -31,8 +33,11 @@ def _stats(sizes: list[int]) -> dict:
     nz = sorted(s for s in sizes if s)
     if not nz:
         return {"nonzero": 0, "median": None, "p90": None, "p95": None, "max": None}
-    return {"nonzero": len(nz), "median": statistics.median(nz), "p90": nz[max(int(len(nz) * 0.9) - 1, 0)],
-            "p95": nz[max(int(len(nz) * 0.95) - 1, 0)], "max": nz[-1]}
+
+    def rank(q: float) -> int:  # nearest-rank percentile: the smallest value with at least q of the data at or below it
+        return nz[max(math.ceil(len(nz) * q) - 1, 0)]
+
+    return {"nonzero": len(nz), "median": statistics.median(nz), "p90": rank(0.9), "p95": rank(0.95), "max": nz[-1]}
 
 
 def _over(sizes: list[int], n: int) -> int:
@@ -97,6 +102,8 @@ def verifier_wallclock(repo: str | Path, records: list[dict], count: int = 5, wo
     at that commit); the checkout is not timed. Without it the working tree of ``repo`` is verified, which
     makes later-aggregated artifacts read as missing (non-zero ``rc``) - the seconds are comparable either way.
     """
+    if workdir:
+        guard_workdir(repo, workdir)
     picked = [r for r in sorted(records, key=lambda r: -r["pr"]) if r.get("run_id") and r.get("merge") and r.get("class") in ("iterate", "campaign-unit")][:count]
     script = str(Path(repo) / "shared" / "scripts" / "tools" / "verify_iterate_finalization.py")
     runs = []
@@ -127,7 +134,7 @@ def discover_roots(repo: str | Path) -> list[str]:
 
 def time_root(repo: str | Path, root: str, workdir: str | Path, *, contexts: bool, env: dict, target: str = "shared") -> dict:
     """One pytest process over one root, ``--cov-context=test`` on or off; returns time, outcome and database size."""
-    db = Path(workdir) / f"cov-{root.replace('/', '_')}{'' if contexts else '-plain'}"
+    db = Path(workdir) / "roots" / f"cov-{root.replace('/', '_')}{'' if contexts else '-plain'}"  # own subdirectory: per-PR databases never mix in
     db.parent.mkdir(parents=True, exist_ok=True)
     cmd = [*_PYTEST, root, "-q", "-p", "no:cacheprovider", "-m", "not slow and not cross_plugin", f"--cov={target}",
            "--cov-config=pyproject.toml", "--cov-report=", *(["--cov-context=test"] if contexts else [])]

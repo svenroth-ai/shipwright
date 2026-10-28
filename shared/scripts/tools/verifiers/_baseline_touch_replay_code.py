@@ -11,7 +11,6 @@ changes into the base tree to see WHICH source notices them (the mutation probe)
 from __future__ import annotations
 
 import ast
-import os
 import re
 import shutil
 import subprocess
@@ -21,6 +20,7 @@ from pathlib import Path
 from ._baseline_touch_binding import index_tests
 from ._baseline_touch_core import touched_set
 from ._baseline_touch_coverage import load_contexts, merge_contexts
+from ._baseline_proc import clean_env, guard_workdir
 from ._baseline_touch_git import GitRev, is_test_path
 
 __all__ = ["DEFAULT_TIERS", "select_prs", "replay_code"]
@@ -67,7 +67,7 @@ def _run_tier(wt: Path, root: str, target: str, db: Path, env: dict) -> dict:
 def _commit(wt: Path, rel: str, text: str, message: str) -> str:
     (wt / rel).write_text(text, encoding="utf-8", newline="")
     cfg = ["-c", "user.email=probe@example.com", "-c", "user.name=probe", "-c", "commit.gpgsign=false"]
-    subprocess.run(["git", "-C", str(wt), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(wt), "add", "--", rel], check=True, capture_output=True)  # only the seeded file
     subprocess.run(["git", "-C", str(wt), *cfg, "commit", "-q", "--no-verify", "-m", message], check=True, capture_output=True)
     return subprocess.run(["git", "-C", str(wt), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
 
@@ -154,7 +154,7 @@ def probe(wt: Path, base: str, contexts: dict, variant: int = 0) -> list[dict]:
 
 def rerun_probes(repo: Path, records: list[dict], k: int, workdir: Path, tiers=DEFAULT_TIERS) -> list[dict]:
     """Probes only, over context databases an earlier ``replay_code`` left in ``workdir``."""
-    _guard_workdir(repo, workdir)
+    guard_workdir(repo, workdir)
     results = []
     for n, rec in enumerate(select_prs(records, k, tiers)):
         wt = workdir / f"probe{rec['pr']}"
@@ -172,17 +172,11 @@ def rerun_probes(repo: Path, records: list[dict], k: int, workdir: Path, tiers=D
     return results
 
 
-def _guard_workdir(repo: Path, workdir: Path) -> None:
-    if Path(repo).resolve() == Path(workdir).resolve() or Path(repo).resolve() in Path(workdir).resolve().parents:
-        raise ValueError("workdir must be outside the repository")
-
-
 def replay_code(repo: Path, records: list[dict], k: int, workdir: Path, probes: int,
                 tiers=DEFAULT_TIERS) -> dict:
-    _guard_workdir(repo, workdir)
+    guard_workdir(repo, workdir)
     workdir.mkdir(parents=True, exist_ok=True)
-    env = {k2: v for k2, v in os.environ.items() if not re.search(r"TOKEN|SECRET|KEY|PASSWORD|^CI$|^GITHUB_", k2, re.I)}
-    env["UV_PROJECT_ENVIRONMENT"] = str(workdir / "venv")
+    env = clean_env(workdir / "venv")
     for r in records:  # a PR "has code files" when its merge changed Python in a measured target
         if not r.get("error") and "code_files" not in r:
             rev = GitRev(repo, f"{r['merge']}^", r["merge"])

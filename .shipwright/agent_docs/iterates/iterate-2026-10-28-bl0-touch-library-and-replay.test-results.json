@@ -4,8 +4,8 @@
     "date": "2026-10-28",
     "unit": {
       "status": "passed",
-      "passed": 1412,
-      "total": 1412
+      "passed": 1438,
+      "total": 1438
     },
     "integration": {
       "status": "not_run"
@@ -29,52 +29,77 @@
         {
           "behavior": "T-spec: normative FR text change touches the FR, reformat/AC reorder does not",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "T-test: edited/deleted/re-tagged FR-bound test touches its FRs; pure move is listed as moved",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "Static attribution: conftest, fixture chains, helper modules, module-level effects reach FR-bound tests",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "Unreadable or unparsable input fails closed (incomplete), never silently empty",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch.py: all tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "T-code from per-test coverage contexts: attribution, fan-out, unattributed, incomplete",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_touch_coverage.py: all tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_touch_coverage.py: all tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "Replay CLI: PR selection, merge-base replay, stats, JSON output, probes",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_replay.py: all tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_replay.py: all tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "Per-hit labels: a test hit is wrong when the cited test is unbound or unchanged; a static hit needs a bound test that reaches the changed names; a spec hit needs normative text to differ; a code hit needs a bound test executing the changed function",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 16 tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 23 tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "Measurements: fan-out per changed function and per executed function, verifier wall-clock, per-root context-run cost; results merged into the replay JSON",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 16 tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 23 tests PASSED (90 passed across the five baseline files)"
         },
         {
           "behavior": "Re-running the label command is idempotent for code hits (no duplicates with a workdir, none dropped without one) and fails loudly when the context databases are missing",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 16 tests PASSED (66 passed across the four baseline files)"
+          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all 23 tests PASSED (90 passed across the five baseline files)"
+        },
+        {
+          "behavior": "T-code attributes an inserted line to its enclosing base function and a line in a new nested function to the nearest enclosing function that exists at base, else notes it unattributed",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (90 passed across the five baseline files)"
+        },
+        {
+          "behavior": "Static attribution reads parenthesised multi-line imports through the ast; name-status is parsed NUL-separated; nearest-rank percentiles; code wrong-rate normalised by the code sample",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (90 passed across the five baseline files)"
+        },
+        {
+          "behavior": "Replay code leg, probes, fan-out and label CLIs run in-process: scrubbed environment, workdir guard, probe commit stages only the seeded file, root databases kept apart from per-PR databases",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (90 passed across the five baseline files)"
+        },
+        {
+          "behavior": "Labels use untruncated evidence, pair a test renamed with a docstring edit and a re-tag, and ignore docstring-only edits",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_label.py: all tests PASSED (90 passed across the five baseline files)"
+        },
+        {
+          "behavior": "held_with_scope_eq_declared and touched_all_declared_prs summary metrics; rederive refreshes the git leg and keeps the code leg inputs",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_replay_code.py: all tests PASSED (90 passed across the five baseline files)"
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
+        "testable": 14,
+        "tested": 14,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -88,7 +113,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-10-28-bl0-touch-library-and-replay",
-    "commit": "8817fda51c66265f2b084fcc10adbe37460998c0",
+    "commit": "794e2c163b6566e17fd0c361392371c0d9e9bdc4",
     "dirty": true,
     "base": null,
     "release": null

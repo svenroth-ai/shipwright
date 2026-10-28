@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import ast
 import hashlib
-import re
 from pathlib import PurePosixPath
 
 from ._baseline_touch_binding import index_tests
@@ -117,8 +116,14 @@ def _tests_using(text: str, names: set[str], existing: set[str] | None = None) -
 
 
 def _imports_module(text: str, stem: str) -> bool:
-    s = re.escape(stem)
-    return bool(re.search(rf"^\s*(from\s+[\w.]*\b{s}\b\s+import|import\s+[\w., ]*\b{s}\b|from\s+[\w.]+\s+import\s+[^\n]*\b{s}\b)", text, re.M))
+    """True when a module imports ``stem`` as a dotted component or as an imported name (any statement form)."""
+    tree = parse(text)
+    for node in ast.walk(tree) if tree is not None else ():
+        if isinstance(node, ast.Import) and any(stem in a.name.split(".") for a in node.names):
+            return True
+        if isinstance(node, ast.ImportFrom) and (stem in (node.module or "").split(".") or any(a.name == stem for a in node.names)):
+            return True
+    return False
 
 
 def _all_frs(text: str) -> set[str]:
