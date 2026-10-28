@@ -62,14 +62,14 @@ def test_describes_the_host_the_delivery_and_the_companion():
 
 
 @pytest.mark.covers("FR-01.06")
-def test_the_four_concepts_are_not_top_level_keys_until_a_reader_exists():
+def test_the_four_concepts_are_not_top_level_keys_until_a_reader_exists(tmp_path):
     # Operator decision (architecture review, E2): nothing reads host/delivery/companion/data_folder,
     # so they are not schema keys and not top-level profile keys. The unit that adds a reader promotes them.
     d = _data()
     for key in ("host", "delivery", "companion", "data_folder"):
         assert key not in d and key in _sc()
     # the resolver keeps comment keys, so the convention survives loading
-    assert "_skill_companion" in pr.resolve_profile(_NAME, REPO).data
+    assert "_skill_companion" in pr.resolve_profile(_NAME, tmp_path).data
 
 
 @pytest.mark.covers("FR-01.12/AC01")

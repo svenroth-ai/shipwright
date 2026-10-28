@@ -110,7 +110,7 @@ profile. The working facts the phases do use (`dev_server`, `testing`, `folder_s
 
 **Guidance for the companion backend (descriptive, nothing enforces it).** It is a local web
 server with a write API, so: bind `127.0.0.1` only; check the `Host` header and require a
-per-start token or same-origin on write endpoints (a web page can otherwise reach a loopback
+per-start token (or a same-origin `Origin` check plus `application/json`) on write endpoints (a web page can otherwise reach a loopback
 server); keep a pidfile or idle timeout so a backend left behind by a crashed session is found and
 stopped; handle "port already in use". Adopt scores a profile by its declared dependencies, and
 this profile declares the same ones as `chat-first-json`, so adopt cannot tell them apart and
