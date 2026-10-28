@@ -1,0 +1,92 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-28-changelog-ac04-version-bump",
+    "date": "2026-10-28",
+    "unit": {
+      "status": "passed",
+      "passed": 108,
+      "total": 108
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 8,
+      "total": 8
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "setup output carries suggested_version: breaking change on 0.x -> 0.(x+1).0",
+          "disposition": "tested",
+          "evidence": "test_setup_changelog_version_suggestion.py::test_setup_breaking_change_before_1_0_raises_second_number PASSED"
+        },
+        {
+          "behavior": "setup output: breaking change on >=1.0 -> next major",
+          "disposition": "tested",
+          "evidence": "test_setup_changelog_version_suggestion.py::test_setup_breaking_change_from_1_0_raises_first_number PASSED"
+        },
+        {
+          "behavior": "setup main() reports suggestion in-process",
+          "disposition": "tested",
+          "evidence": "test_setup_changelog_version_suggestion.py::test_setup_main_in_process_reports_suggestion PASSED"
+        },
+        {
+          "behavior": "SKILL Step 3 uses the suggestion, no self-computed major rule",
+          "disposition": "tested",
+          "evidence": "test_setup_changelog_version_suggestion.py::test_skill_step_3_uses_the_suggestion_not_its_own_rule PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-changelog pytest plugins/shipwright-changelog/tests/test_setup_changelog_version_suggestion.py -q",
+      "exit_code": 0,
+      "tests_run": 4,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\changelog-ac04-version-bump\\.shipwright\\runs\\iterate-2026-10-28-changelog-ac04-version-bump\\surface_verification.log",
+      "timestamp": "2026-10-28T07:44:06.955Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-28-changelog-ac04-version-bump",
+    "commit": "14d194cc0222f68217c29e71ec10a27dfd66cd47",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

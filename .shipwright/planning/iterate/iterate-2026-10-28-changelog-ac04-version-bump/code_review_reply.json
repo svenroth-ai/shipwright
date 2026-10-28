@@ -1,0 +1,7 @@
+{"section":"iterate-2026-10-28-changelog-ac04-version-bump","review":[
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/tests/test_setup_changelog_version_suggestion.py","line":21,"finding":"Test repo inherits operator git config (gpgsign); only user.name/email overridden.","suggestion":"Isolate git config like test_skill_event_blocks_behaviour.py or pass -c commit.gpgsign=false -c tag.gpgsign=false."},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/scripts/checks/setup-changelog.py","line":89,"finding":"New main() lines only run in a subprocess, invisible to diff coverage.","suggestion":"Add an in-process test calling main()."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-changelog/skills/changelog/SKILL.md","line":140,"finding":"Re-derive snippet is redundant (same baseline) and crashes on non-semver --since.","suggestion":"Delete the snippet and the re-derive sentence."},
+{"severity":"low","category":"readability","file":"plugins/shipwright-changelog/skills/changelog/SKILL.md","line":155,"finding":"Guided prompt template still uses v{X.Y.Z}/{reason}.","suggestion":"Use v{suggested_version} (based on: {version_reason})."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-changelog/tests/test_setup_changelog_version_suggestion.py","line":157,"finding":"Negative drift regex too narrow.","suggestion":"Case-insensitive broader pattern and assert verbatim/suggest_version_bump reference."}
+]}

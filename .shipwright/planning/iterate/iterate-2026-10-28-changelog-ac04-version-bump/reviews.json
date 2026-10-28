@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-changelog-ac04-version-bump",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:40:02.258074+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:43:08.359325+00:00",
+      "disposition": "small, no risk flags, diff under 100 lines; no non-trivial touches for doubt-reviewer; external review not required below medium",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_setup_changelog_version_suggestion.py",
+          "line": 21,
+          "finding": "Test repo inherits operator git config (gpgsign); only user.name/email overridden.",
+          "suggestion": "Isolate git config like test_skill_event_blocks_behaviour.py or pass -c commit.gpgsign=false -c tag.gpgsign=false.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/checks/setup-changelog.py",
+          "line": 89,
+          "finding": "New main() lines only run in a subprocess, invisible to diff coverage.",
+          "suggestion": "Add an in-process test calling main().",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 140,
+          "finding": "Re-derive snippet is redundant (same baseline) and crashes on non-semver --since.",
+          "suggestion": "Delete the snippet and the re-derive sentence.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 155,
+          "finding": "Guided prompt template still uses v{X.Y.Z}/{reason}.",
+          "suggestion": "Use v{suggested_version} (based on: {version_reason}).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_setup_changelog_version_suggestion.py",
+          "line": 157,
+          "finding": "Negative drift regex too narrow.",
+          "suggestion": "Case-insensitive broader pattern and assert verbatim/suggest_version_bump reference.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-28T07:42:27.122286+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:43:08.359325+00:00",
+      "disposition": "small, no risk flags, diff under 100 lines; no non-trivial touches for doubt-reviewer; external review not required below medium",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:43:08.359325+00:00",
+      "disposition": "small, no risk flags, diff under 100 lines; no non-trivial touches for doubt-reviewer; external review not required below medium",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:40:57.227800+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:43:08.359325+00:00",
+      "disposition": "small, no risk flags, diff under 100 lines; no non-trivial touches for doubt-reviewer; external review not required below medium",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-28T07:43:08.359325+00:00",
+      "disposition": "small, no risk flags, diff under 100 lines; no non-trivial touches for doubt-reviewer; external review not required below medium",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
