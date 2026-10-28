@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "- **Category: approach** \u2014 **Severity: low** \u2014 Prose-only is a reasonable, low-risk choice given the E-series context and the earlier \"reject/revise\" reviews that already pushed toward it. Deferring a deterministic detector is fine. No change needed; just confirming the decision is sound.\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 \"A screen that already carries the kit is never recomposed\" is stated in prose only, with no test pinning it. This is the one behavioral rule in the change that can silently regress, and prose tests typically assert instruction text, not behavior. Suggestion: include a test case with an already-kit-carrying screen run through the apply tool, asserting no recomposition \u2014 otherwise the \"never recomposed\" guarantee is untested and the acceptance criterion \"behaviour \u2026 is tested\" is arguably unmet.\n\n- **Category: risk** \u2014 **Severity: medium** \u2014 Making the red boundary gate a \"real STOP\" (SKILL.md step B, E1 fold-in) changes runtime behavior for *all* runs, not just Brief-package mode. If the pipeline previously treated a red gate as a warning-or-continue, non-Brief-package flows could start halting on boundary regressions that were previously tolerated. Suggestion: verify and state explicitly whether the STOP applies universally or only in Brief-package mode; if universal, confirm the campaign's scope_frs (FR-01.04, FR-01.01) actually cover that behavior change, since the criteria say \"touches no FR outside scope_frs.\"\n\n- **Category: risk** \u2014 **Severity: low** \u2014 Renaming \"approved mockups\" \u2192 \"approved design screens\" in `phase_validators_late.py` wording could break any golden/pinned-string tests elsewhere that still assert the old wording (docs, snapshots, other validators). Suggestion: grep for \"approved mockups\" across tests and docs in the same diff; update stale assertions alongside the wording change rather than letting CI go red.\n\n- **Category: dependency** \u2014 **Severity: low** \u2014 Marking chat-first.md and the Layout D snippet \"legacy for skill-backed apps\" splits the guidance: two entry points now lead to different layouts depending on app type. If SKILL.md doesn't give a crisp rule for \"skill-backed vs not,\" agents may pick the legacy path. Suggestion: include in SKILL.md (or brief-compose.md) a one-line decision rule for which path applies, and pin it in the prose tests.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 Item 2 depends on E1 (\"E1 fold-in\") having landed. If E3 merges before E1, the step-B STOP instruction references behavior that doesn't exist yet. Suggestion: confirm merge order or make the E1 reference conditional/soft until E1 lands.\n\n- **Category: security** \u2014 **Severity: low** \u2014 No new code paths, no auth, no untrusted input handling. No security concerns beyond confirming the `--admin --squash` merge instruction is only used per operator approval, which the plan already documents.\n\n**Overall:** The prose-only approach is the right-sized fix and the plan is disciplined about scope and process gates; the main gaps are behavioral test coverage for the \"never recomposed\" rule and clarifying the blast radius of the step-B STOP.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "I could not inspect the campaign brief or repository because local command execution was blocked by policy. This review is based on the supplied mini-plan.\n\n1. **Category: risk | Severity: medium**\n   **Finding:** The proposed tests do not demonstrate the changed behavior. Pinned prose and a manually composed screen passing existing gates can both succeed while Design still copies approved mockups unchanged.\n   **Suggestion:** Add a focused workflow regression using a Brief-package mockup that lacks the kit styling. Verify the resulting screen preserves its content while applying kit components and package tokens. A deterministic detector is unnecessary for this test.\n\n2. **Category: edge-case | Severity: medium**\n   **Finding:** \u201cAlready carries the kit\u201d is undefined. A mockup might import `kit.css` while retaining generic markup, hardcoded styles, or outdated package tokens; the skip rule could preserve the original defect.\n   **Suggestion:** Define the exemption in the reference: the screen must already use the relevant kit components and current package tokens. Cover both a genuinely compliant screen that remains unchanged and a partially styled screen that requires composition.\n\n3. **Category: approach | Severity: medium**\n   **Finding:** \u201cBoard layout, no chat layout\u201d and marking shared references legacy could affect modes beyond Brief-package mode. A categorical layout instruction could also discard chat functionality present in the approved content.\n   **Suggestion:** Explicitly scope these instructions to Brief-package, skill-backed applications. Clarify that composition preserves approved functionality and content, and check that other modes retain their existing reference routing.\n\nThe prose-only approach is a reasonable, proportionate first change, with no evident need for a new tool signal or detector. It needs clearer applicability and behavioral verification before approval; campaign scope compliance remains unverified without the brief.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-28-e3-design-composes-from-kit",
+    "at": "2026-10-28T22:54:57.822359+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

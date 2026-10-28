@@ -1,5 +1,7 @@
 # Step 3.5 — Design Preview
 
+**Brief package:** generate no new preview screens; show the composed screens and, on a rejection, follow the Brief rule in [upload-mode.md](upload-mode.md) (no CSS edits).
+
 **Goal:** Validate the chosen palette and style on a small sample before generating all screens.
 
 **After** the screen list is confirmed in Step 3, generate exactly 3 preview screens:

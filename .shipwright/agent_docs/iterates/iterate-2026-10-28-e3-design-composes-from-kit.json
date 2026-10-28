@@ -1,0 +1,65 @@
+{
+  "run_id": "iterate-2026-10-28-e3-design-composes-from-kit",
+  "date": "2026-10-28T23:02:12.266564Z",
+  "event_at": "2026-10-28T23:01:55.931885+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-e2e-run-findings--E3-a1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-28-e3-design-composes-from-kit",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "brief-compose.md pins the compose rules (kit, tokens, no chat layout, self-check, definition of carries-the-kit)",
+        "disposition": "tested",
+        "evidence": "test_brief_compose_prose.py PASSED"
+      },
+      {
+        "behavior": "Brief-mode prose composes before preview and does not contradict itself; boundary STOP wording",
+        "disposition": "tested",
+        "evidence": "test_brief_compose_prose.py + test_apply_brief_package.py PASSED"
+      },
+      {
+        "behavior": "run phase screenshot gate names approved design screens",
+        "disposition": "tested",
+        "evidence": "test_phase_validators_screenshot.py PASSED"
+      },
+      {
+        "behavior": "Design agent actually composes screens from the kit",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "agent behaviour, no deterministic check; named follow-up detector if runs show prose insufficient"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-10-28T22:59:58.213Z",
+    "attempts": 0,
+    "justification": "Instruction prose, docs and one validator message wording; no startable surface (design skill instructions are read by an agent)",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

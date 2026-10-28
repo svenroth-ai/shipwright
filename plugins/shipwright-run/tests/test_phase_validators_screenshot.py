@@ -87,3 +87,11 @@ def test_corrupt_results_still_report_before_the_screenshot_rule(tmp_path):
     _package(tmp_path)
     (tmp_path / "shipwright_test_results.json").write_text(json.dumps({"mode": "standalone"}), encoding="utf-8")
     assert validate_phase("test", tmp_path)[0] is False
+
+
+@pytest.mark.covers("FR-01.01")
+def test_failed_screenshot_check_names_the_design_screens_not_the_mockups(tmp_path, monkeypatch):
+    (tmp_path / ".shipwright" / "designs").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "designs" / "brief-package-applied.json").write_text("{}", encoding="utf-8")
+    msg = late._screenshot_check_issue(tmp_path, {"screenshot_check": {"applies": True, "status": "fail"}})
+    assert "approved design screens" in msg and "approved mockups" not in msg

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-e3-design-composes-from-kit",
+  "date": "2026-10-29",
+  "section": "Iterate — change: Design composes Brief-package screens from the kit",
+  "title": "Brief-package Design recomposes from the kit, prose only (Option B)",
+  "context": "In Brief-package mode Design adopted mockups unchanged and built a chat layout for skill-backed apps. Attempt 0 architecture review: openai reject, glm revise, both naming prose-only as the smaller alternative.",
+  "decision": "Option B: instructions only. brief-compose.md tells Design to recompose each mockup copy from the Untitled UI kit and package tokens, no chat layout for the skill-backed class; chat-first marked retired for it; run-gate wording says approved design screens; docs updated.",
+  "consequences": "No tool check detects a screen left as the mockup copy; only the instruction self-check does. Existing packages and apply-brief-package.py are unchanged. A detector may follow if a later run shows prose is insufficient.",
+  "rationale": "Both external reviewers converged and the internal architecture reviewer approved. Nothing shows prose is insufficient, and byte-equality detection is fragile.",
+  "rejected": "uncomposed_screens signal in the apply tool (fragile, unevidenced); chat_first_retired refusal (could strand packages); a kit generator; removing chat-first everywhere.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}
