@@ -115,54 +115,61 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 5,
       "findings": [
         {
-          "severity": "high",
-          "category": "architecture",
-          "file": null,
-          "line": null,
-          "finding": "bloat crossings: test file and check-design-gates.py over 300 lines - FIXED (tests moved to test_boundary_baseline.py, docstring shrunk)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
           "severity": "medium",
           "category": "correctness",
-          "file": null,
-          "line": null,
-          "finding": "worktree-side rename ORIG_PATH parsing (entry[1]) - FIXED",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": null,
-          "line": null,
-          "finding": "unborn-HEAD resume laundering - FIXED (keep when head equal incl. None)",
-          "suggestion": null,
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 37,
+          "finding": "Fails open when --project-root is a subdirectory of the git repo: git status paths are relative to the top level but fingerprint() opens project_root/rel_path, so already-dirty files hash as <deleted> at setup and at the gate. Documented limit (--project-root must be the git top level); SKILL passes $(pwd). Follow-up, not core path.",
+          "suggestion": "Resolve top level via rev-parse --show-toplevel, or refuse when show-prefix is non-empty.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": null,
-          "line": null,
-          "finding": "submodule gap documented; in-process tests added; docstring placement and _head readability fixed",
-          "suggestion": null,
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 59,
+          "finding": "p.replace('\\\\','/') unnecessary for -z output; alters a POSIX filename containing a backslash.",
+          "suggestion": "Remove.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 115,
+          "finding": "Baseline keyed to HEAD only; later same-commit operator edits are re-reported (strict direction), undocumented.",
+          "suggestion": "Document.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/tests/test_boundary_baseline.py",
+          "line": 145,
+          "finding": "Non-ASCII file edit path untested.",
+          "suggestion": "Edit and assert reported.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/scripts/checks/check-design-gates.py",
+          "line": 36,
+          "finding": "Removed a blank line (cosmetic churn).",
+          "suggestion": "Restore or note.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-28T17:36:08.182021+00:00",
+      "completed_at": "2026-10-28T17:56:13.410149+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "c2732e176205fadf5969627464dea7acfba3e1a5"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -170,51 +177,49 @@
       "findings_count": 4,
       "findings": [
         {
-          "severity": "high",
-          "category": null,
-          "file": null,
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
           "line": null,
-          "finding": "Claim under doubt: setup-design-session.py has no live caller - FIXED: SKILL step B runs boundary_baseline.py CLI — see doubt-reviewer report; fixed",
-          "suggestion": null,
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "high",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: SKILL prose told agent to ignore red gate without baseline - FIXED: not_written/skipped = real STOP — see doubt-reviewer report; fixed",
-          "suggestion": null,
+          "finding": "Claim under doubt: a resume cannot launder the session's own writes into the baseline — On a HEAD change between two baseline calls (an unrelated commit mid-session, then step B re-run) a fresh baseline snapshots the session's own out-of-boundary write as already dirty. Needs a commit mid-session plus a resume; no test covers it.",
+          "suggestion": "Accepted/deferred: requires a mid-session commit, which the pipeline does not do before build; fails only for an operator-driven commit. Follow-up card: carry the old baseline forward on HEAD change.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": null,
-          "file": null,
+          "category": "contract",
+          "file": "plugins/shipwright-design/skills/design/SKILL.md",
           "line": null,
-          "finding": "Claim under doubt: baseline wiped with designs/ - FIXED: moved to .shipwright/design-boundary-baseline.json (gitignored) — see doubt-reviewer report; fixed",
-          "suggestion": null,
+          "finding": "Claim under doubt: the agent stays strict about this session's own writes — SKILL.md says not to ask 'commit earlier output first?' but does not say a red gate after written/kept is a real STOP.",
+          "suggestion": "Accepted: one-sentence prose fix, folded into E3 (which edits design SKILL.md and check-design-gates) to avoid invalidating this pin.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": null,
+          "category": "coupling",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: gitignore, subdir root, nested repo - addressed/documented — see doubt-reviewer report; fixed",
-          "suggestion": null,
+          "finding": "Claim under doubt: Baseline survives into a later design run at the same HEAD; project output rewritten since is re-reported (strict direction, F1 may recur on same-directory re-runs). — Baseline survives into a later design run at the same HEAD; project output rewritten since is re-reported (strict direction, F1 may recur on same-directory re-runs).",
+          "suggestion": "Known; follow-up (key baseline to run id); E8 uses a fresh directory.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Brief integration test still excludes boundary from failures; scratch project is not a git repo. — Brief integration test still excludes boundary from failures; scratch project is not a git repo.",
+          "suggestion": "Follow-up, E6 harness covers the brief flow.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-10-28T17:41:39.465953+00:00",
+      "completed_at": "2026-10-28T17:56:27.715528+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "ea17deb870373e2ec338be1e237da93547e41ecf"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -248,14 +253,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-28T17:31:43.396751+00:00",
+      "completed_at": "2026-10-28T17:56:13.273837+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "c2aaab68701281b3ad414e6afe0f4908f0633b2e"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
