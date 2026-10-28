@@ -22,6 +22,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts (for lib.events_log)
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.events_log import resolve_events_path  # noqa: E402
 
 from verifiers._baseline_proc import clean_env  # noqa: E402
 from verifiers._baseline_measure import discover_roots, fanout_changed, fanout_executed, time_root, verifier_wallclock  # noqa: E402
@@ -80,7 +85,7 @@ def cmd_rederive(args, repo: Path, out: Path) -> None:
 
     data = load(out)
     before_ok = {r["pr"] for r in data["records"] if not r.get("error")}
-    events = replay._events_by_run(Path(args.events) if args.events else repo / "shipwright_events.jsonl")
+    events = replay._events_by_run(Path(args.events) if args.events else resolve_events_path(repo))
     for rec in data["records"]:
         pr = {"number": rec["pr"], "title": rec["title"], "headRefName": rec["branch"], "mergedAt": rec.get("merged_at"),
               "mergeCommit": {"oid": rec["merge"]}, "labels": [{"name": n} for n in rec.get("labels", [])]}

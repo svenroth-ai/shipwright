@@ -23,6 +23,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts (for lib.events_log)
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.events_log import resolve_events_path  # noqa: E402
 
 from verifiers._baseline_touch_core import evaluate_hold, touched_set  # noqa: E402
 from verifiers._baseline_touch_git import GitRev  # noqa: E402
@@ -105,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.from_json:
         records = json.loads(Path(args.from_json).read_text(encoding="utf-8"))["records"]
     else:
-        events = _events_by_run(Path(args.events) if args.events else repo / "shipwright_events.jsonl")
+        events = _events_by_run(Path(args.events) if args.events else resolve_events_path(repo))
         records = [replay_one(repo, pr, events) for pr in load_prs(repo, args.limit, args.prs_json)]
     payload = {"records": records, "summary": summarise(records), "sample": [r["pr"] for r in sample_for_operator(records)]}
     if args.probes_only:
