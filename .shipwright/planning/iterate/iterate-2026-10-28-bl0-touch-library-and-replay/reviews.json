@@ -69,29 +69,41 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_baseline_label_all.py",
+          "line": 28,
+          "finding": "Latent mismatch: a removed module-level line executed by a bound test lands in targets['<module>'] but _changed_functions never returns it, so such a T-code hit would be labelled wrong. No committed number is affected (no '<module>' key in any fan_out or code map).",
+          "suggestion": "Log as known limit (REPLAY.md section 12); fix in a later unit if it matters.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-28T13:53:46.271050+00:00",
-      "disposition": "Stage 2 round 2 REJECTed on one high (module-level statements) which was then fixed and covered by tests; round cap reached, so the fixed code is delegated to 3f-bis for re-review",
-      "recorded_by": "none",
+      "completed_at": "2026-10-28T19:50:07.757673+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "reviewed_commit": "e5437a10aadc9cb4f6956f52a0e47dc231bbd46f"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-28T13:53:46.434488+00:00",
-      "disposition": "Stage 3 runs only behind a Stage 2 pass; Stage 2 round cap reached with fixes unreviewed, delegated with the cascade",
-      "recorded_by": "none",
+      "completed_at": "2026-10-28T19:50:07.887262+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "reviewed_commit": "e5437a10aadc9cb4f6956f52a0e47dc231bbd46f"
     },
     "external_code": {
       "review_type": "external_code",
@@ -211,16 +223,17 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-28T14:05:16.640566+00:00",
-      "disposition": "Stage-1 REJECTED at 3f-bis: (1) BRIEF L75/L109: REPLAY labels per PR not per hit; no wrong/correct per hit, so the 3-wrong-per-100 test cannot be made at stop 1. (2) BRIEF L75: proposed N and verifier/context-run timings are not reproducible; no fanout code committed though REPLAY.md claims every number is recomputable. (3) REPLAY.md says PRs #937..#840, data says #937..#831. Delivery stopped; PR #940 left open.",
+      "completed_at": "2026-10-28T19:50:07.622393+00:00",
+      "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "stage-1-rejected"
+      "model_tier": "opus",
+      "reviewed_commit": "e5437a10aadc9cb4f6956f52a0e47dc231bbd46f"
     },
     "plan_internal": {
       "review_type": "plan_internal",
