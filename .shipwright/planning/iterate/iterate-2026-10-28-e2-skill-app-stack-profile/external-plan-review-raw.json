@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: approach \u2014 Severity: high**\n  **Finding:** The plan adds `host`, `delivery`, `companion`, and `data_folder` to the profile but explicitly states nothing reads them and the schema is deliberately not updated. Instead they're smuggled under a `_skill_companion` \"comment-key convention.\" This means the profile file contains data with zero consumers, and the tests in `test_skill_companion_app_profile.py` will assert values that no production code path ever resolves or uses. This is speculative data \u2014 the classic \"add it when the first reader arrives\" principle is being violated by writing the data now anyway, just in a disguised shape.\n  **Suggestion:** Either (a) omit the `_skill_companion` block entirely and land only what the acceptance criteria actually exercise (dev_server, scaffold folders, registries), adding the companion keys in E3 when a reader exists; or (b) if the operator decision requires the keys to exist now, put them at top-level as the architecture reviews discussed rather than inventing a private nesting convention \u2014 the comment-key approach creates a second, undocumented way to extend profiles that future readers won't know about.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** \"The profile validates against the unchanged schema\" is asserted but unverified. If `stack_profile.schema.json` sets `additionalProperties: false` (or restricts properties within objects), the `_skill_companion` key will fail validation at CI, blocking the campaign. The plan's own claim that no schema-mutation tests are needed rests on this assumption.\n  **Suggestion:** Check the schema's `additionalProperties` policy before writing the file; if it's `false`, the whole approach needs to change (which is itself evidence the keys don't belong yet).\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** Step 1 bundles \"keep `chat-first-json` bundled; retiring the chat-first design path is E3\" \u2014 but the unit-level STOP 1 says the campaign loop ends after this merge and the profile decision goes to the operator. If E3 may never run, deferring the chat-first retirement leaves two competing profile conventions shipped with no scheduled cleanup.\n  **Suggestion:** Note in the result.json / hand-off report that `chat-first-json` retirement is dangling pending the operator's STOP 1 decision, so it isn't lost if the campaign halts.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** `dev_server` on `127.0.0.1:3901` \u2014 the port choice is asserted but nothing in the plan checks for collision with other profiles' dev_server ports or with the E2E harness. If a second skill-backed profile later picks a port, nothing prevents drift.\n  **Suggestion:** A trivial uniqueness assertion in the profile tests (iterate all `shared/profiles/*.json`, assert dev_server ports are unique) covers this cheaply.\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** Tests claim to exercise the dev_server block \"via the real `dev_server._get_services`\" \u2014 reaching into a private function couples the test to an internal. If that's the existing test convention in this repo, fine; if it's new, prefer the public entry point.\n  **Suggestion:** Use the public resolution path if one exists; keep `_get_services` only if it's already the established pattern in `shared/tests`.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** The plan correctly notes `update-marketplace.sh` and `check_plugin_cache_sync.py --strict` must run before the next unit, but doesn't say whether this unit itself adds any skill files that those scripts would sync. If it does (the `plugins/shipwright-test/tests/...` file implies plugin-side changes), the cache sync check belongs in *this* unit's checklist, not deferred.\n  **Suggestion:** Run both scripts as part of this unit's verification if any plugin skill content changes here.\n\n- **Category: security \u2014 Severity: low**\n  **Finding:** No security concerns of substance. The dev_server binding to `127.0.0.1` (not `0.0.0.0`) is correct for a local skill companion; no injection or exposure surface introduced. The `--admin --squash --match-head-commit` merge flow is an operator-approved process decision, not a product security issue.\n\n## Overall Assessment\n\nThe core scaffold/registry/test work is sound and proportionate, but the `_skill_companion` comment-key convention is the wrong call: it ships unread, schema-orphaned data in a bespoke shape that both architecture reviews pushed back on. Strip the companion keys until the first reader exists (or make them top-level per one of the reviews), verify `additionalProperties` before writing the file, and this is ready.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository access was blocked by policy, so I could not verify the referenced brief or existing consumers. This review is based on the supplied specification and mini-plan.\n\n1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The test list does not explicitly cover how consumers handle `deploy: null`. Registry coverage alone may miss a deploy path that dereferences the value or falls back to a default deployment target.  \n   **Suggestion:** Add a consumer-level test confirming that this profile skips deployment cleanly and that CI/CodeQL generation still behaves as intended.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Tests asserting `host`/`delivery`/`companion` values inside `_skill_companion` establish metadata presence, but cannot demonstrate those behaviors: the plan explicitly states that nothing reads these fields. This matters when deciding whether FR-01.03 and FR-01.08 can leave scope.  \n   **Suggestion:** Distinguish metadata assertions from behavioral acceptance tests. In `result.json`, tie each removal recommendation to the requirement\u2019s actual acceptance evidence; keep requirements open where runtime behavior remains unimplemented. Deferring schema expansion is otherwise reasonable.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan omits the required plugin synchronization checks and the explicit post-merge STOP 1 handoff. The proposed plugin-side test change makes the synchronization requirement applicable.  \n   **Suggestion:** Add `scripts/update-marketplace.sh`, `check_plugin_cache_sync.py --strict`, and the post-merge operator handoff to the completion checklist. Do not advance to E3 automatically.\n\nThe additive profile and deferred schema expansion are a sound, proportionate approach. Clarify behavioral evidence and cover null deployment handling before implementation is considered complete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-28-e2-skill-app-stack-profile",
+    "at": "2026-10-28T20:03:18.892966+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

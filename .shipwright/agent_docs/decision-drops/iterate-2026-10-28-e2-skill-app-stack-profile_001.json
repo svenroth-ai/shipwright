@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-e2-skill-app-stack-profile",
+  "date": "2026-10-28",
+  "section": "Iterate — feature: bundled stack profile for skill-backed apps",
+  "title": "Bundled profile skill-companion-app, no new schema keys",
+  "context": "Shipwright had no profile for the skill-backed app class (Claude app = chat, app = skill/plugin, companion = served HTML board + Python backend + JSON data folder); chat-first-json describes the wrong product.",
+  "decision": "Ship bundled profile skill-companion-app (deploy null, deploy_target none skips the phase: no plugin-shaped deploy target exists). Keys host/delivery/companion/data_folder were DELIBERATELY NOT added to the schema; they sit under the comment key _skill_companion and in docs.",
+  "consequences": "Nothing reads host/delivery/companion/data_folder. A future iterate adds them to the schema only in the unit that introduces their reader, with tests, and must not delete the bundled profile. Dev server uses port 3911, real companion 3901.",
+  "rationale": "Architecture review: openai reject (project-level profile only), glm revise (hold the unread keys); the operator chose glm's trim. Re-run on the trimmed plan: glm approve, openai reject on the same bundling point, internal reviewer approve.",
+  "rejected": "Typed schema keys with no reader; editing chat-first-json in place; a project-level profile only (openai option C); enum enforcement before any reader exists.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-28-e2-skill-app-stack-profile-skill-companion-app-profile.md"
+}

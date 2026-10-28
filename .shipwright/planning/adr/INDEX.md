@@ -203,3 +203,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Blocking screenshot check beside the non-blocking fidelity step](iterate-2026-10-26-b3c-screenshot-check-in-test-screenshot-check.md)
 - [Operator-started real end-to-end run through the WebUI](iterate-2026-10-26-b7-real-e2e-webui-operator-run.md)
 - [Baseline touched-set: measure first, as a library plus a replay](iterate-2026-10-28-bl0-touch-library-and-replay-baseline-touched-set.md)
+- [Bundled stack profile for skill-backed apps, without schema keys](iterate-2026-10-28-e2-skill-app-stack-profile-skill-companion-app-profile.md)

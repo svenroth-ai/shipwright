@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** Yes \u2014 a new bundled profile file is the right move; Option A is close to the smallest thing that would do.\n\n2. **The smallest thing that would do** \u2014 A single new bundled JSON profile, `skill-companion-app`, containing only the keys existing loaders actually read (`dev_server` block, `deploy: null`, etc.), plus a short prose section in docs/stack-profiles.md. The `_skill_companion` comment key is acceptable as a placeholder convention, but keep it to one key and one sentence of doc: its whole point is that it has no machinery behind it. That is Option A as written.\n\n3. **What it costs to keep** \u2014 One more file in the bundled profile set, plus a documented convention that four concepts live in a comment key until a reader exists. The convention is the real obligation: future contributors must know that `_skill_companion` is load-bearing-but-unread, and the unit that first reads it must remember to add schema keys in the same change. That obligation is cheap but easy to lose; the brief already points E2's successor at it.\n\n4. **What it forecloses** \u2014 None identified. Option B (editing `chat-first-json` in place) would foreclose clean rollback for existing apps; A avoids that. A2 adds unread typed schema keys, which creates a frozen keyword set that constrains whatever reader eventually lands; A correctly defers that. D (enums + enforcement) is premature machinery: it buys validation for values nothing consumes yet, and makes every future profile edit negotiate an enum \u2014 reject D until the reader exists. C (project-level profile only) is genuinely smaller, but it pushes the profile into the operator's repo where the next end-to-end run can't see it and the bundled-profile docs can't describe the target shape \u2014 the campaign's purpose is to establish the profile as first-class, so C defeats the point. E is not serious: the wrong-shaped product keeps being tested.\n\n5. **Findings** \u2014 mostly none of substance. One low-severity note:\n\n- Category: ownership\n- Severity: low\n- Finding: The `_skill_companion` comment-key convention has no reader and no test; it survives only if a human remembers the rule \"first reader adds the schema keys in the same change.\"\n- Suggestion: Since E2 already reports on FR-01.03/FR-01.08 scope, also have it emit (in docs or the campaign log) a one-line TODO naming the unit expected to first read `_skill_companion`, so the convention has a visible owner rather than a doc sentence.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** A profile is warranted, but choose C: keep it in the operator\u2019s project until broader reuse justifies bundling it.\n\n2. **Smallest thing that would do:** A project-level `skill-companion-app` profile using the existing `dev_server` and `deploy: null` support, with companion assumptions documented locally and no schema changes.\n\n3. **What it costs to keep:** The operator maintains one profile and its documentation. Bundling it would additionally make the project responsible for explaining and maintaining a fifth supported stack and its currently unread metadata convention.\n\n4. **What it forecloses:** Bundling now makes later changes to the companion model harder because other projects may adopt its documented conventions.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: A fifth bundled profile creates a shared support commitment for a need demonstrated by one operator\u2019s next app. The brief establishes the need for a distinct profile, but not for distributing it to every project.\nSuggestion: Choose C. Validate the project-level profile in the next end-to-end run, preserve `chat-first-json`, and consider bundling when another concrete consumer needs the same model.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-28-e2-skill-app-stack-profile",
+    "at": "2026-10-28T20:03:44.168085+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "reject"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": true,
+    "comparable": true,
+    "requires_resolution": true,
+    "reason": "reviewers contradict each other: glm=approve, openai=reject"
+  }
+}

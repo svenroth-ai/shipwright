@@ -66,7 +66,7 @@ Shipwright is for engineers, BAs, architects, and tech leads who work with Claud
 
 ### Discipline Layer — the Harness around AI Coding
 
-Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The four stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
+Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The five stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`, `skill-companion-app`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
 
@@ -1372,17 +1372,18 @@ the surface stays signal-first.
 
 ## 5. Stack Profiles
 
-A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. The three built-in profiles are stored in the Shipwright install (`shared/profiles/`); your own profiles live in `<project>/.shipwright/profiles/` or `~/.shipwright/profiles/` (see below).
+A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. The built-in profiles are stored in the Shipwright install (`shared/profiles/`); your own profiles live in `<project>/.shipwright/profiles/` or `~/.shipwright/profiles/` (see below).
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
-Four profiles ship out-of-the-box:
+Five profiles ship out-of-the-box:
 
 | Profile | Layout | When to use |
 |---------|--------|-------------|
 | `supabase-nextjs` (default) | Single-service Next.js + Supabase | Standard SaaS: Next.js full-stack with Supabase as backend |
 | `vite-hono` | Multi-service: Vite (frontend) + Hono (backend) | Split frontend/backend with a separate API server (or any project that wants the Vite dev-experience) |
 | `chat-first-json` | Chat on one side, a served pane on the other; Python (FastAPI) + local JSON files; pytest + Playwright; no deploy | Chat-first apps whose data is local JSON (`ux_shape: chat-first`); declares its own dev server (port 3900, `/api/health`) so preview, smoke test and Browser Verify need no npm default |
+| `skill-companion-app` | A Claude skill/plugin (desktop app or terminal) with a served HTML board and Python backend as companion, JSON data in a user-owned folder; pytest + Playwright; no deploy | Skill-backed apps; replaces `chat-first-json` for this class; declares its own dev server (port 3911, `/api/health`); see `docs/stack-profiles.md` |
 | `python-plugin-monorepo` | Python `uv` workspace, no web server | Libraries, frameworks, or CLI / plugin monorepos with no deployable frontend (pytest + ruff, no dev server, no deploy target) |
 
 **Your own profile.** If none of them fits, write one. Shipwright looks for `<name>.json` in `<project>/.shipwright/profiles/` (commit it, so every checkout and iterate worktree sees it), then `~/.shipwright/profiles/` (all your projects), then the built-in ones; the first file found wins, and a broken file is an error, never a silent fallback to another stack. The `/shipwright-project` interview offers custom profiles next to the built-in ones, `/shipwright-adopt --profile <name>` selects one, and results report where the profile came from (`project`, `user` or `bundled`). A profile with the name of a built-in one replaces it and triggers a prominent warning. Locations, how to start from a copy, minimum fields, `schema_version`, and the trust note: [docs/stack-profiles.md](stack-profiles.md).
