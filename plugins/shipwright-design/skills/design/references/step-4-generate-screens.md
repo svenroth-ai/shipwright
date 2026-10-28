@@ -7,7 +7,7 @@
 For each confirmed screen, **assemble from pre-built snippets** rather than writing from scratch:
 
 1. **Page Shell** — Start with the Page Shell from [snippets-layout.md](snippets-layout.md). Replace `{{FONT_FAMILY}}` with the selected font.
-2. **CSS Variables** — Copy the matching `:root` block from [snippets-variables.md](snippets-variables.md) based on the flavor × character chosen in Step 3. If brand extraction was done (Step 2.5), override specific variables with extracted values.
+2. **CSS Variables** — Flavor `untitled-ui`: use the kit (kit paths are relative to the design skill folder, `${CLAUDE_PLUGIN_ROOT}/skills/design/`, never to the project or to `references/`.) Paste `kit/untitled-ui/kit.css` once into `<style>` and the token set (`kit/untitled-ui/tokens/warm.css`, `clean.css` or `bold.css`, or the project's own tokens per [tokens-contract.md](../kit/untitled-ui/tokens-contract.md)) into `:root`; never restyle a component. Other flavors: copy the matching `:root` block from [snippets-variables.md](snippets-variables.md) based on the flavor × character chosen in Step 3. If brand extraction was done (Step 2.5), override specific variables with extracted values.
 3. **Layout** — Pick the appropriate layout snippet from [snippets-layout.md](snippets-layout.md):
    - Auth screens → Layout C (Centered Card)
    - Dashboard/admin/list/detail/settings → Layout A (Sidebar + Content)
@@ -20,7 +20,7 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - **Layout D screens:** no chrome block (skip this step); there is no nav markup.
    - **Layout C screens:** Copy only the app name and logo SVG from the chrome definition into `.auth-logo`.
    - Do NOT improvise nav items, icons, labels, or user info. The `chrome-definition.md` is authoritative.
-5. **Components** — Fill the layout's **content area** with component snippets from [snippets-components.md](snippets-components.md):
+5. **Components** — Fill the layout's **content area** with components. Flavor `untitled-ui`: the kit's classes, shown in `kit/untitled-ui/examples/gallery-*.html`. Other flavors: snippets from [snippets-components.md](snippets-components.md):
    - Tables, card grids, forms, stats rows, modals, tabs, badges, etc.
    - Pick components that match the screen type and FRs.
 6. **Customize** — Replace remaining `{{PLACEHOLDERS}}` in the **content area only** (page title, subtitle, action labels, component data):
@@ -42,7 +42,7 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
 
 For understanding design intent and making good composition decisions, consult:
 - [design-system-patterns.md](design-system-patterns.md) — Layout patterns, component patterns, color system, character palettes
-- [untitled-ui-components.md](untitled-ui-components.md) — Untitled UI component reference (flavor: `untitled-ui`)
+- [untitled-ui-components.md](untitled-ui-components.md) — Untitled UI kit (flavor: `untitled-ui`): compose screens from `kit/untitled-ui/kit.css` and a token set; do not restyle components
 - [material-design-components.md](material-design-components.md) — Material Design 3 component reference (flavor: `material-design`)
 
 ## HTML Requirements

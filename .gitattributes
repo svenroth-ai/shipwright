@@ -42,3 +42,6 @@ shipwright_events.jsonl merge=union
 # Git hook scripts run under bash: a CRLF checkout (core.autocrlf) would turn the
 # fail-open guarantee of scripts/hooks/pre-commit into a syntax-error block.
 scripts/hooks/* text eol=lf
+
+# Built by plugins/shipwright-design/scripts/tools/build_kit_examples.py; review the kit and token sources instead.
+plugins/shipwright-design/skills/design/kit/untitled-ui/examples/*.html linguist-generated=true

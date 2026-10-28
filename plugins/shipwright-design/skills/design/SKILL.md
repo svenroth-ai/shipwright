@@ -173,7 +173,7 @@ See [step-3-7-chrome-definition.md](references/step-3-7-chrome-definition.md) fo
 
 ## Step 4: Generate Screens
 
-Create standalone HTML mockups using the snippet assembly system.
+Create standalone HTML mockups. Flavor `untitled-ui`: compose from the kit (`kit/untitled-ui/kit.css` + a token set); other flavors: the snippet assembly system.
 See [step-4-generate-screens.md](references/step-4-generate-screens.md) for the 8-step assembly process, design-context references, and HTML requirements.
 
 ---
@@ -269,7 +269,7 @@ See [upload-mode.md](references/upload-mode.md) for the `.shipwright/designs/upl
 - [step-3-design-interview.md](references/step-3-design-interview.md) — Question list + palette derivation
 - [step-3-5-design-preview.md](references/step-3-5-design-preview.md) — 3-screen preview validation
 - [step-3-7-chrome-definition.md](references/step-3-7-chrome-definition.md) — Resolved chrome blocks
-- [step-4-generate-screens.md](references/step-4-generate-screens.md) — Snippet assembly process
+- [step-4-generate-screens.md](references/step-4-generate-screens.md) — Screen assembly (kit for `untitled-ui`, snippets otherwise)
 - [step-6-design-manifest.md](references/step-6-design-manifest.md) — Manifest template
 - [step-6a-review-viewer.md](references/step-6a-review-viewer.md) — Review viewer template
 - [step-8-completion.md](references/step-8-completion.md) — Completion banner + screen-routes
@@ -277,10 +277,10 @@ See [upload-mode.md](references/upload-mode.md) for the `.shipwright/designs/upl
 - [iteration-mode.md](references/iteration-mode.md) — Iteration modes + chrome propagation
 - [upload-mode.md](references/upload-mode.md) — Upload integration
 
-### Snippet System (primary — use for screen generation)
+### Snippet System (use for screen generation in flavors other than `untitled-ui`, which uses the kit)
 - [snippets-layout.md](references/snippets-layout.md) — Copy-paste HTML/CSS layout blocks (Page Shell, Sidebar, Top Nav, Centered Card, Buttons)
 - [snippets-components.md](references/snippets-components.md) — Copy-paste HTML/CSS component blocks (Table, Card Grid, Form, Stats, Modal, Tabs, Badges, Empty State, Breadcrumbs, Detail, Notifications)
-- [snippets-variables.md](references/snippets-variables.md) — Complete CSS `:root` variable blocks for each flavor × character combination
+- [snippets-variables.md](references/snippets-variables.md) — `:root` variable blocks for Material Design and custom flavors; `untitled-ui` uses the kit token sets
 - [snippets-chrome.md](references/snippets-chrome.md) — Chrome definition template
 - [review-viewer-template.md](references/review-viewer-template.md) — Complete HTML template for .shipwright/designs/index.html (review viewer with feedback panel)
 - [review-loop.md](references/review-loop.md) — Step 8.5 review loop options (A/B/C) + flow diagram
@@ -288,7 +288,7 @@ See [upload-mode.md](references/upload-mode.md) for the `.shipwright/designs/upl
 ### Design Context (secondary — consult for design decisions and understanding)
 - [design-flavors.md](references/design-flavors.md) — Design system flavor architecture and selection
 - [design-system-patterns.md](references/design-system-patterns.md) — Layout patterns, component patterns, color system, character palettes
-- [untitled-ui-components.md](references/untitled-ui-components.md) — Untitled UI component reference (flavor: `untitled-ui`)
+- [untitled-ui-components.md](references/untitled-ui-components.md) — Untitled UI kit documentation (flavor: `untitled-ui`; kit in `kit/untitled-ui/`)
 - [material-design-components.md](references/material-design-components.md) — Material Design 3 component reference (flavor: `material-design`)
 - [user-flow-patterns.md](references/user-flow-patterns.md) — Standard user flow templates
 - [visual-guidelines-template.md](references/visual-guidelines-template.md) — Visual guidelines template

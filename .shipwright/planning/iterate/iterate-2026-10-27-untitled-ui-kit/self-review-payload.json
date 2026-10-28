@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Kit CSS, two token sets, fragments, generated examples, build script, token contract, ux-rules, docs and guideline template all exist; Layout D and charts are deliberately excluded and documented."},
+{"name":"Error Handling","verdict":"pass","note":"build_kit_examples.py --check exits 1 when examples are stale; a missing fragment or token set raises a clear error."},
+{"name":"Security Basics","verdict":"pass","note":"Static CSS/HTML only, no user input, no secrets, no scripts in the examples."},
+{"name":"Test Quality","verdict":"pass","note":"16 tests in test_untitled_ui_kit.py assert outcomes: tokens-only CSS, every var defined per token set, WCAG contrast pairs computed from the sets, solid hex, font-size floors, examples current, fragment classes defined, contract names all tokens."},
+{"name":"Performance Basics","verdict":"pass","note":"Examples are standalone pages of 45-57 KB; no network beyond one font link."},
+{"name":"Naming & Structure","verdict":"pass","note":"kit/untitled-ui/{kit.css,tokens,fragments,examples}; kit.css is a single 1110-line stylesheet by design (one SSOT), code files stay under 300 lines."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; examples are a build output checked by --check."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

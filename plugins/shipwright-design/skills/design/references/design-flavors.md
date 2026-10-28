@@ -41,7 +41,7 @@ Screen generation uses a **snippet-based assembly** approach for speed. Instead 
 ### Architecture
 
 ```
-snippets-variables.md     → CSS :root blocks (6 flavor × character combos)
+snippets-variables.md     → CSS :root blocks (Material Design and custom; untitled-ui uses the kit token sets)
         ↓
 snippets-layout.md        → Page Shell + Layout HTML (Sidebar / Top Nav / Centered Card)
         ↓
@@ -52,17 +52,24 @@ Assembled Screen          → .shipwright/designs/screens/NN-name.html
 
 ### How Flavors Map to Snippets
 
-Each flavor × character combination has a complete `:root` CSS variable block in [snippets-variables.md](snippets-variables.md). The same layout and component snippets work across all flavors — only the variables change.
+Each flavor × character combination has a complete `:root` CSS variable block in [snippets-variables.md](snippets-variables.md); for `untitled-ui` all three characters are the kit token sets. Flavors other than `untitled-ui` share the same layout and component snippets — only the variables change; `untitled-ui` composes components from the kit.
 
 | Flavor | Character | Variable Set |
 |--------|-----------|-------------|
-| `untitled-ui` | Warm & Premium | Inter/Libre Baskerville, earth tones, shadow cards, 8px radius |
-| `untitled-ui` | Clean & Modern | Inter, blue accent, border cards, 6px radius |
-| `untitled-ui` | Bold & Energetic | Plus Jakarta Sans, violet+orange, strong shadows, 8px radius |
+| `untitled-ui` | Warm & Premium | Kit token set `warm.css` (Libre Baskerville, earth tones, shadow cards, 8px radius) |
+| `untitled-ui` | Clean & Modern | Kit token set `clean.css` (Inter, blue accent, soft cards) |
+| `untitled-ui` | Bold & Energetic | Kit token set `bold.css` (Plus Jakarta Sans, violet, strong shadows, 8px radius) |
 | `material-design` | Warm & Premium | Roboto, warm browns, tonal elevation, 12px radius |
 | `material-design` | Clean & Modern | Roboto, M3 purple, outlined cards, 12px radius |
 | `material-design` | Bold & Energetic | Roboto, vivid violet, tonal shadows, 12px radius |
 | `custom` | (any) | Mapped from user's uploaded tokens (see guide in snippets-variables.md) |
+
+### The Untitled UI kit
+
+Flavor `untitled-ui` has a real kit: `kit/untitled-ui/kit.css` (all components, tokens only) plus one token set per
+look (`warm`, `clean`, `bold`). A screen is composed from the kit; the project's visual guidelines supply the tokens listed in
+[tokens-contract.md](../kit/untitled-ui/tokens-contract.md) and nothing else. See
+[untitled-ui-components.md](untitled-ui-components.md).
 
 ### Design Context References
 
@@ -70,12 +77,12 @@ The original flavor reference files remain as **design context** for Claude to u
 - [untitled-ui-components.md](untitled-ui-components.md) — Component patterns and design philosophy
 - [material-design-components.md](material-design-components.md) — M3 tokens, shapes, elevation
 
-These are consulted for design decisions but NOT used as HTML templates.
+`material-design-components.md` is consulted for design decisions but NOT used as an HTML template. `untitled-ui-components.md` documents the kit that IS used.
 
 ## Adding a New Flavor
 
 1. Create `references/{flavor-name}-components.md` with component patterns (design context)
-2. Add 3 variable blocks (one per character) to `references/snippets-variables.md`
+2. Add 3 variable blocks (one per character) to `references/snippets-variables.md` (or, for a flavor with its own kit, a token set per character in that kit)
 3. Add the flavor to the table above
 4. Add a choice option in SKILL.md Step 3
 5. Optionally add profile support in the stack profile you target (for a built-in flavor, the bundled profile of that name; a project or user profile of the same name replaces it, it does not merge) → `design_system.name`

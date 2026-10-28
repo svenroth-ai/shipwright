@@ -1,0 +1,179 @@
+<div class="app-topnav">
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a class="topnav-brand" href="#"><span class="logo-icon">K</span> Untitled UI kit</a>
+      <nav class="topnav-links">
+        <a class="topnav-link active" aria-current="page" href="#">Components</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="content-topnav">
+    <div class="page-header">
+      <div><h1>Components</h1><p class="page-subtitle">Every block the screens are composed from</p></div>
+      <div class="page-actions"><button class="btn btn-primary" type="button">Primary action</button></div>
+    </div>
+
+    <div class="page-body">
+      <h2>Buttons and badges</h2>
+      <div class="tag-row">
+        <button class="btn btn-primary" type="button">Primary</button>
+        <button class="btn btn-secondary" type="button">Secondary</button>
+        <button class="btn btn-ghost" type="button">Ghost</button>
+        <button class="btn btn-danger" type="button">Danger</button>
+        <button class="btn btn-secondary btn-sm" type="button">Small</button>
+        <button class="btn btn-primary btn-lg" type="button">Large</button>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-success">success</span><span class="badge badge-warning">warning</span><span class="badge badge-error">error</span><span class="badge badge-info">info</span><span class="badge badge-neutral">neutral</span>
+        <span class="tag">tag</span><span class="tag">removable <button class="tag-remove" type="button" aria-label="Remove">&times;</button></span>
+      </div>
+
+      <h2>Alerts</h2>
+      <div class="alert alert-info">Information for the user.</div>
+      <div class="alert alert-success">Saved. Nothing else to do.</div>
+      <div class="alert alert-warning">Check this before you continue.</div>
+      <div class="alert alert-error">This did not work. Try again.</div>
+
+      <h2>Stats</h2>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-header"><span class="stat-label">Threads</span></div><div class="stat-value">128</div><div class="stat-trend trend-up"><span>12% vs last week</span></div></div>
+        <div class="stat-card"><div class="stat-header"><span class="stat-label">Replies</span></div><div class="stat-value">34</div><div class="stat-trend trend-down"><span>4% vs last week</span></div></div>
+      </div>
+
+      <h2>Tabs, segmented control, progress</h2>
+      <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">One</button><button class="tab" role="tab" aria-selected="false" type="button">Two</button><button class="tab" role="tab" aria-selected="false" type="button">Three</button></div></div>
+      <div class="segmented"><button class="segmented-item active" aria-pressed="true" type="button">Day</button><button class="segmented-item" aria-pressed="false" type="button">Week</button><button class="segmented-item" aria-pressed="false" type="button">Month</button></div>
+      <div class="progress"><div class="progress-bar" style="width: 62%"></div></div>
+
+      <h2>Form</h2>
+      <div class="form-container">
+        <div class="error-summary" role="alert"><div class="error-summary-title">1 field needs attention</div><ul><li><a href="#email">Email: enter a valid email</a></li></ul></div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label" for="name">Name</label><input class="field-input" id="name" placeholder="Jane Doe" aria-describedby="name-hint"><span class="field-hint" id="name-hint">As shown to others</span></div>
+          <div class="field field-error"><label class="field-label" for="email">Email</label><input class="field-input" id="email" value="not-an-email" aria-invalid="true" aria-describedby="email-hint"><span class="field-hint" id="email-hint">Error: enter a valid email, for example name@company.com</span></div>
+          <div class="field full"><label class="field-label" for="notes">Notes</label><textarea class="field-input field-textarea" id="notes" rows="3"></textarea></div>
+        </div>
+        <label class="toggle-row"><span>Notify me</span><span class="toggle"><input class="toggle-input" type="checkbox" checked><span class="toggle-slider"></span></span></label>
+        <div class="form-actions"><button class="btn btn-secondary" type="button">Cancel</button><button class="btn btn-primary" type="button">Save</button></div>
+      </div>
+
+      <h2>Table</h2>
+      <div class="table-container">
+        <table class="data-table">
+          <thead><tr><th>Thread</th><th>Platform</th><th>Status</th><th class="num">Replies</th></tr></thead>
+          <tbody>
+            <tr><td class="cell-primary">Onboarding a new tool</td><td>Reddit</td><td><span class="badge badge-info">new</span></td><td class="num">0</td></tr>
+            <tr><td class="cell-primary">Pricing for small teams</td><td>Hacker News</td><td><span class="badge badge-warning">drafted</span></td><td class="num">1</td></tr>
+            <tr><td class="cell-primary">Integrations in use</td><td>LinkedIn</td><td><span class="badge badge-success">posted</span></td><td class="num">12</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Cards</h2>
+      <div class="card-grid">
+        <div class="card"><div class="card-body"><div class="card-meta"><span class="badge badge-info">Reddit</span></div><h3 class="card-title">A card title</h3><p class="card-desc">Short description of what the card holds.</p></div><div class="card-footer"><div class="card-author"><div class="avatar avatar-sm">AB</div><span>Anna B.</span></div><button class="btn btn-ghost btn-sm" type="button">View</button></div></div>
+        <div class="card"><div class="card-body"><h3 class="card-title">Another card</h3><p class="card-desc">Cards line up in a grid and wrap.</p></div></div>
+      </div>
+
+      <h2>Loading and error states</h2>
+      <div class="card"><div class="card-body" aria-busy="true"><div class="skeleton skeleton-title"></div><div class="skeleton-line skeleton"></div><div class="skeleton-line skeleton"></div></div></div>
+      <div><button class="btn btn-primary" type="button" aria-busy="true"><span class="spinner"></span> Fetching</button></div>
+      <div class="alert alert-error" role="alert">Could not load the board. <button class="btn btn-secondary btn-sm" type="button">Try again</button></div>
+
+      <h2>Empty state, breadcrumbs, avatars, popover</h2>
+      <div class="breadcrumbs"><a class="breadcrumb-link" href="#">Board</a><span class="breadcrumb-sep">/</span><span class="breadcrumb-current">Thread 7</span></div>
+      <div class="avatar-group"><div class="avatar avatar-sm">AB</div><div class="avatar avatar-sm">CD</div><div class="avatar avatar-sm">EF</div></div>
+      <div class="popover-anchor"><button class="btn btn-secondary" type="button">Menu</button>
+        <div class="popover"><button class="popover-item" type="button">Rename</button><button class="popover-item" type="button">Archive</button><button class="popover-item" type="button">Delete</button></div></div>
+      <div style="height: 130px"></div>
+      <div class="empty-state"><div class="empty-title">Nothing here yet</div><div class="empty-desc">Fetch new matches to fill the board.</div><button class="btn btn-primary" type="button">Fetch new matches</button></div>
+
+
+      <h2>Choice, select, slider, code</h2>
+      <div class="form-container">
+        <fieldset class="choice-group"><legend class="choice-legend">Notify me about</legend>
+          <label class="choice"><input type="checkbox" checked><span class="choice-text">New matches<small>Once a day</small></span></label>
+          <label class="choice"><input type="checkbox"><span class="choice-text">Replies to my drafts</span></label>
+        </fieldset>
+        <fieldset class="choice-group"><legend class="choice-legend">Reply tone</legend>
+          <label class="choice"><input type="radio" name="tone" checked><span class="choice-text">Helpful</span></label>
+          <label class="choice"><input type="radio" name="tone"><span class="choice-text">Short</span></label>
+        </fieldset>
+        <div class="field"><label class="field-label" for="sel">Platform</label><div class="select-wrap"><select class="select" id="sel"><option>Reddit</option><option>Hacker News</option></select></div></div>
+        <div class="field"><label class="field-label" for="ms">Keywords</label><div class="multi-select"><span class="tag">onboarding <button class="tag-remove" type="button" aria-label="Remove onboarding">&times;</button></span><input id="ms" placeholder="Add keyword"></div></div>
+        <div class="field"><label class="field-label" for="rg">Daily limit</label><input class="range" id="rg" type="range" min="0" max="100" value="40"></div>
+        <div class="field"><span class="field-label">Verification code</span><div class="code-input"><input class="code-input-box" maxlength="1" aria-label="Digit 1" value="4"><input class="code-input-box" maxlength="1" aria-label="Digit 2" value="2"><input class="code-input-box" maxlength="1" aria-label="Digit 3"><input class="code-input-box" maxlength="1" aria-label="Digit 4"></div></div>
+      </div>
+
+      <h2>Groups, icons, rating, tooltip, steps</h2>
+      <div class="tag-row">
+        <div class="btn-group"><button class="btn btn-secondary" type="button">Day</button><button class="btn btn-secondary" type="button">Week</button><button class="btn btn-secondary" type="button">Month</button></div>
+        <span class="badge-group"><span class="badge badge-info">New</span> Fetch finished</span>
+        <span class="featured-icon" aria-hidden="true">&#10003;</span><span class="featured-icon featured-icon-lg" aria-hidden="true">&#9993;</span>
+        <span class="rating" role="img" aria-label="4 of 5">&#9733;&#9733;&#9733;&#9733;<span class="rating-off">&#9733;</span></span>
+        <span class="tooltip-anchor"><button class="btn btn-secondary btn-sm" type="button" aria-describedby="tip">Hover me</button><span class="tooltip" role="tooltip" id="tip">Marks the thread as posted</span></span>
+      </div>
+      <ol class="steps"><li class="step done"><span class="step-label">Connect</span>Done</li><li class="step current" aria-current="step"><span class="step-label">Keywords</span>In progress</li><li class="step"><span class="step-label">First run</span>Not started</li></ol>
+
+      <h2>Menus, command menu, drawer</h2>
+      <div class="popover-anchor"><button class="btn btn-secondary" type="button">Actions</button>
+        <div class="popover"><div class="popover-label">Thread</div><button class="popover-item" type="button">Open draft</button><button class="popover-item" type="button">Copy link</button><hr class="popover-sep"><button class="popover-item danger" type="button">Skip thread</button></div></div>
+      <div style="height: 150px"></div>
+      <div class="command"><input class="command-input" placeholder="Type a command or search" aria-label="Command"><div class="command-group"><div class="command-group-label">Actions</div><div class="command-item active">Fetch new matches <span class="kbd">F</span></div><div class="command-item">Set keywords <span class="kbd">K</span></div></div></div>
+      <div class="drawer" style="height: 260px; box-shadow: var(--card-shadow); border: 1px solid var(--color-border)"><div class="drawer-header"><h3>Thread details</h3><button class="icon-btn" type="button" aria-label="Close">&times;</button></div><div class="drawer-body">Side panel for details and edits. In use, wrap it in <code>.drawer-overlay</code>.</div><div class="drawer-footer"><button class="btn btn-secondary" type="button">Cancel</button><button class="btn btn-primary" type="button">Save</button></div></div>
+
+      <h2>Files, calendar, tree, feed</h2>
+      <div class="dropzone"><strong>Drop a file here</strong><span class="meta-line">or choose one, up to 5 MB</span><button class="btn btn-secondary btn-sm" type="button">Choose file</button></div>
+      <div class="file-item"><div class="file-item-main"><div>keywords.json</div><div class="meta-line">2 KB</div></div><div class="progress" style="width: 120px"><div class="progress-bar" style="width: 80%"></div></div></div>
+      <div class="calendar"><div class="calendar-header"><button class="icon-btn" type="button" aria-label="Previous month">&lsaquo;</button><span>October 2026</span><button class="icon-btn" type="button" aria-label="Next month">&rsaquo;</button></div>
+        <div class="calendar-grid"><span class="calendar-weekday">Mo</span><span class="calendar-weekday">Tu</span><span class="calendar-weekday">We</span><span class="calendar-weekday">Th</span><span class="calendar-weekday">Fr</span><span class="calendar-weekday">Sa</span><span class="calendar-weekday">Su</span>
+          <button class="calendar-day outside" type="button">28</button><button class="calendar-day outside" type="button">29</button><button class="calendar-day outside" type="button">30</button><button class="calendar-day" type="button">1</button><button class="calendar-day" type="button">2</button><button class="calendar-day" type="button">3</button><button class="calendar-day" type="button">4</button>
+          <button class="calendar-day" type="button">5</button><button class="calendar-day" type="button">6</button><button class="calendar-day" type="button">7</button><button class="calendar-day" type="button">8</button><button class="calendar-day" type="button">9</button><button class="calendar-day" type="button">10</button><button class="calendar-day" type="button">11</button>
+          <button class="calendar-day" type="button">26</button><button class="calendar-day today" type="button">27</button><button class="calendar-day selected" type="button">28</button><button class="calendar-day" type="button">29</button><button class="calendar-day" type="button">30</button><button class="calendar-day" type="button">31</button><button class="calendar-day outside" type="button">1</button></div></div>
+      <ul class="tree"><li><div class="tree-item active">Reddit</div><ul><li><div class="tree-item">r/startups</div></li><li><div class="tree-item">r/saas</div></li></ul></li><li><div class="tree-item">Hacker News</div></li></ul>
+      <ul class="feed"><li class="feed-item"><div class="avatar avatar-sm">SR</div><div class="feed-item-main"><strong>You</strong> marked thread 7 as posted <div class="feed-item-time">10 minutes ago</div></div></li><li class="feed-item"><div class="avatar avatar-sm">KB</div><div class="feed-item-main"><strong>Kit</strong> fetched 3 new threads <div class="feed-item-time">today, 08:15</div></div></li></ul>
+
+      <h2>Card header, filter bar, CTA, code, footer, 404</h2>
+      <div class="card"><div class="card-header"><h3>Reply drafts</h3><button class="btn btn-secondary btn-sm" type="button">Export</button></div><div class="card-body"><p class="card-desc">A card with a header and an action.</p></div></div>
+      <div class="filter-bar"><input class="field-input" style="max-width: 240px" placeholder="Search threads" aria-label="Search threads"><div class="select-wrap"><select class="select" aria-label="Status"><option>All statuses</option><option>New</option></select></div><button class="btn btn-ghost btn-sm" type="button">Reset filters</button></div>
+      <div class="cta"><div><div class="cta-title">Ready for the first run?</div><div class="meta-line">It takes about a minute.</div></div><button class="btn btn-primary" type="button">Start</button></div>
+      <pre class="code">uv run app.py --port 3900</pre>
+      <div class="section-footer"><span>Showing 3 of 9 threads</span><div class="pagination"><button class="btn btn-ghost btn-sm page-btn" type="button">1</button><button class="btn btn-sm page-btn active" aria-current="page" type="button">2</button><button class="btn btn-ghost btn-sm page-btn" type="button">3</button></div></div>
+      <div class="empty-state"><div class="empty-code">404</div><div class="empty-title">Page not found</div><div class="empty-desc">The thread may have been removed.</div><button class="btn btn-primary" type="button">Back to the board</button></div>
+
+      <h2>Form sections, table toolbar, detail view</h2>
+      <div class="form-container">
+        <div class="form-section"><h3 class="form-section-title">Profile</h3><p class="form-section-desc">Shown next to your replies.</p>
+          <div class="form-grid form-grid-2"><div class="field"><label class="field-label" for="first">First name <span class="required">*</span></label><input class="field-input" id="first"></div><div class="field"><label class="field-label" for="last">Last name</label><input class="field-input" id="last"></div></div></div>
+        <hr class="divider">
+        <h3 class="section-title">Section title</h3>
+      </div>
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div class="table-search"><input type="text" placeholder="Search threads" class="table-search-input" aria-label="Search threads"></div>
+          <div class="table-filters"><select class="filter-select" aria-label="Status"><option>All statuses</option><option>New</option></select></div>
+          <button class="btn btn-primary btn-sm" type="button">Add thread</button>
+        </div>
+        <table class="data-table"><thead><tr><th><input type="checkbox" class="row-check" aria-label="Select all"></th><th>Thread</th><th>Status</th></tr></thead>
+          <tbody><tr><td><input type="checkbox" class="row-check" aria-label="Select row"></td><td>Onboarding for a new tool</td><td><span class="badge badge-info">new</span></td></tr></tbody></table>
+        <div class="table-footer"><span>Showing 1 of 9 threads</span></div>
+      </div>
+      <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">Details</button><button class="tab" role="tab" aria-selected="false" type="button">History</button></div><div class="tab-content"><p class="card-desc">Content of the active tab.</p></div></div>
+      <div class="detail-layout">
+        <div class="detail-main"><div class="detail-section"><h3>Thread</h3><div class="detail-fields"><div><span class="detail-label">Platform</span><span class="detail-value">Reddit</span></div><div><span class="detail-label">Author</span><span class="detail-value">u/maria_k</span></div></div></div></div>
+        <div class="detail-sidebar"><div class="detail-section"><h3>Actions</h3><div class="detail-actions"><button class="btn btn-secondary btn-sm" type="button">Open draft</button></div></div></div>
+      </div>
+      <div class="stat-card"><div class="stat-header"><span class="stat-label">Replies</span><span class="stat-icon" aria-hidden="true">&#9993;</span></div><div class="stat-value">12</div></div>
+      <div class="card"><div class="card-img" role="img" aria-label="Placeholder image" style="height: 120px"></div><div class="card-body"><p class="card-desc">Card with an image area.</p></div></div>
+
+      <h2>Modal and notifications</h2>
+      <div class="modal" role="dialog" aria-label="Skip thread"><div class="modal-header"><h3>Skip this thread?</h3><button class="icon-btn" type="button" aria-label="Close">&times;</button></div><div class="modal-body"><p>It moves to the archive. You can restore it later.</p></div><div class="modal-footer"><button class="btn btn-secondary" type="button">Cancel</button><button class="btn btn-primary" type="button">Skip</button></div></div>
+      <div class="notification-list"><div class="notif-item unread"><div class="notif-dot"></div><div class="notif-icon" aria-hidden="true">&#9993;</div><div class="notif-content"><div class="notif-text"><strong>Kit</strong> fetched <strong>3 new threads</strong></div><div class="notif-time">10 minutes ago</div></div></div></div>
+      <div class="empty-state"><div class="empty-icon" aria-hidden="true">&#9747;</div><div class="empty-title">Nothing here yet</div><div class="empty-desc">Fetch matches to fill the board.</div></div>
+      <p class="measure">A paragraph limited to a readable line length of about seventy characters, so long text never runs across the full page.</p>
+
+      <div style="position: relative; height: 72px"><div class="toast" style="position: absolute">Reply marked as posted <button class="toast-action" type="button">Undo</button></div></div>
+    </div>
+  </main>
+</div>
