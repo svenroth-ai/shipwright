@@ -1,8 +1,8 @@
 # Baseline protection (BP): REPLAY report for operator stop 1
 
 **Unit:** BL0 · **Run:** `iterate-2026-10-28-bl0-touch-library-and-replay` · **Brief:** `2026-10-27-baseline-protection-BRIEF.md` (section 5, item 1)
-**Data:** `2026-10-27-baseline-protection-REPLAY.json` (next to this file; every number below is recomputable from it). Captured against `origin/main` at the time of the run; the 100 PRs are #937 down to #840 (merged 2026-10-02 .. 2026-10-28).
-**Reproduce:** `uv run shared/scripts/tools/replay_baseline_lock.py --repo . --limit 100 --out replay.json` (derived legs, git only; add `--code-sample 20 --probes 5 --workdir <dir outside the repo>` for the context runs; `--from-json replay.json` re-summarises without git).
+**Data:** `2026-10-27-baseline-protection-REPLAY.json` (next to this file; each number below is recomputed from it or from a command listed under *Reproduce*, none is typed in by hand). Captured against `origin/main` at the time of the run; the 100 PRs are #937 down to #831 (merged 2026-10-02 .. 2026-10-28; the data holds exactly this window).
+**Reproduce:** `uv run shared/scripts/tools/replay_baseline_lock.py --repo . --limit 100 --out replay.json` (derived legs, git only; add `--code-sample 20 --probes 5 --workdir <dir outside the repo>` for the context runs; `--from-json replay.json` re-summarises without git). Measurements and labels: `uv run shared/scripts/tools/measure_baseline.py {label|fanout|verifier|roots} --repo . [--workdir <dir>]` (module docstring has the details); each writes under `measure.*` in the JSON (`label` also `records[].hits`): `measure.hit_labels`, `measure.fanout_changed`, `measure.fanout_executed`, `measure.verifier`, `measure.roots`.
 
 This report measures; nothing gates. Nothing in `ci.yml`, `verify_local.py`, `deliver_pr.py` or any gate changed. The campaign halts here.
 
@@ -11,7 +11,8 @@ This report measures; nothing gates. Nothing in `ci.yml`, `verify_local.py`, `de
 - If BP held every PR whose diff touches an existing requirement, with no approved scope, **39 of the last 100 PRs (39 %) would have waited for you.** Half of the iterates (25 of 50) and 13 of 30 campaign-unit PRs. Docs, dependency-bot, manual and release PRs were never held (0 of 18).
 - In **27 of those 39** the author had themselves recorded the same requirement as affected (`affected_frs`). Those holds are friction, not surprises: they stop only because a single iterate has an empty approved scope. **12 PRs (12 %) touched a requirement the author never named**; those are the interesting ones, and the ones you are asked to re-label (section 9).
 - If the approved scope were exactly what the author declared, the hold rate would be **12 %**, not 39 %. That is the real size of "unplanned change"; the rest is the cost of requiring an approval.
-- **Production code is where the blind spot is.** Of the functions any test executes, only **38 %** are executed by a test that is bound to a requirement. A seeded change to such a line is noticed (5 of 5 probes, by T-code only); a change to a line executed only by unbound tests is not (0 of 4); a change in a `SKILL.md` is not (0 of 5).
+- **Production code is where the blind spot is.** Of the functions any test executes, only **48 %** (1875 of 3928, in the files of `shared` that all 17 test roots measure) are executed by a test that is bound to a requirement. A seeded change to such a line is noticed (5 of 5 probes, by T-code only); a change to a line executed only by unbound tests is not (0 of 4); a change in a `SKILL.md` is not (0 of 5).
+- **Per-hit labels:** of 106 hits, 1 is `wrong` by my mechanical check (static, #840), 40 are friction (author declared the FR), 65 need your intent to separate harmful from benign (section 8). Every source is inside the brief's bar of 3 `wrong` per 100 PRs on these labels; your re-label of the sample (section 9) is what makes that real.
 - The `fr_impact` map is almost never recorded: **0 of the 100 PRs** carry one. 45 carry `affected_frs`. The declaration is too sparse to stand in for the derived set, which is the brief's premise.
 
 ## 1. Stop-1 checklist (brief section 5, item 1)
@@ -23,8 +24,8 @@ This report measures; nothing gates. Nothing in `ci.yml`, `verify_local.py`, `de
 | Hold rate per PR class | section 3 | measured |
 | T-code fan-out and proposed N | section 5 | measured; N = 5 proposed |
 | Mutation-probe results | section 6 | 14 conclusive probes |
-| Labels per hit | section 8 | provisional by rule; operator re-labels |
-| Random sample for the operator | section 9 | 15 PRs |
+| Labels per hit | section 8 | 106 hits labelled (1 wrong); 65 need your intent |
+| Random sample for the operator | section 9 | 20 hits |
 | BP's own `scope_frs` proposal | section 10 | proposed |
 | Verifier wall-clock (5 iterates), context-run cost | section 7 | measured |
 | Decisions for you | section 11 | listed |
@@ -80,9 +81,9 @@ T-spec is quiet and precise. T-test carries most of the signal. Static attributi
 
 **Result.** Only **2 of 20** PRs had a changed line executed by an FR-bound test (#915: 1 function, 1 FR; #899: 9 functions, 8 FRs). 167 changed functions across the 20 PRs were "executed by no FR-bound test" (or not measured by these four tiers). This is the brief's disclosed limit, quantified: most production changes are invisible to T-code today because most tests carry no requirement tag.
 
-**Fan-out** (FRs reached per function, all 1000 executed functions in the measured files at HEAD, two tiers, `fanout.py` logic in section 12): 619 functions are executed by no bound test (fan-out 0), 367 reach 1 FR, 2 reach 2, 5 reach 3, 4 reach 6, 2 reach 7, 1 reaches 8. Median of the non-zero ones is 1; p95 is 1; max 8. The wide ones are shared infrastructure (`atomic_write.py`, `durable_publish.py`, `profile_test_isolation.py`).
+**Fan-out, as the brief defines it** (FRs reached per *changed* function, `measure.fanout_changed`): across the 20 PRs, 10 changed functions were executed by an FR-bound test: 9 reach 1 FR and 1 reaches 8 (`isolate_user_profiles_dir` in #899, shared test plumbing). Another 22 changed functions were executed by no FR-bound test. That sample is too small to set N on its own, so I also measured a **variant, a deviation from the brief's wording** (`measure.fanout_executed`): FRs reached per *executed* function in the files of `shared` that all 17 test roots measure at HEAD (695 files, 4055 functions). 3928 are executed by some test; 2053 of those by no bound test (fan-out 0); 1875 (48 %) reach at least one FR: 1457 reach 1, 228 reach 2, 101 reach 3, 63 reach 4, then a gap (1 reaches 5), then 12 reach 6, 1 reaches 7, 1 reaches 8, 4 reach 10, 6 reach 14 and 1 reaches 20. Median of the non-zero ones is 1; p95 is 3; max 20. The wide ones are shared infrastructure (`isolate_user_profiles_dir` (20), `carry_destination_mode` (14), `replace_retrying` (14), `durable_atomic_write` (14)).
 
-**Proposal for N: 5.** A function reaching more than 5 FRs is "listed, not held". At HEAD that is 7 of 1000 executed functions (0.7 %), all shared plumbing (fan-outs 6, 6, 6, 6, 7, 7, 8); N = 2 would list 12 functions, N = 8 none. This is conditional: it rests on two tiers. With all tiers measured the fan-out only grows, so BL2 should re-measure before N is frozen (the shadow period is the check). The same threshold should apply to scope-wide static attribution (the two 18-FR conftest PRs).
+**Proposal for N: 5.** A function reaching more than 5 FRs is "listed, not held". That is 25 of 1875 FR-bound executed functions (1.3 %), all shared plumbing, and N = 5 sits in the gap of the histogram (one function at exactly 5); N = 2 would list 190 (10.1 %), N = 8 would still list 11. This is conditional: the coverage target was `shared` only (plugin `scripts` are unmeasured until BL2), so a plugin function's fan-out is not in this figure. The shadow period is the check before N is frozen. The same threshold should apply to scope-wide static attribution (the two 18-FR conftest PRs).
 
 ## 6. Mutation probes (which source notices a seeded production change)
 
@@ -98,44 +99,64 @@ So: T-code is the only source that sees a production change, and only where a bo
 
 ## 7. Costs measured
 
-- **Verifier wall-clock** (`verify_iterate_finalization.py` against five merged iterate commits): 1, 2, 2, 2, 2 seconds. Negligible next to CI.
-- **Context run vs plain run.** `shared/scripts/tools/tests`: 151 s with `--cov-context=test` vs 148 s without (+2 %); database 1.19 MB vs 0.10 MB (12x). `plugins/shipwright-changelog/tests`: 7.2 s vs 9.4 s (noise). Contexts cost almost nothing in time and about 12x in artifact size.
-- **Per-root context-run time, every root once** (while a second replay shared the machine, so upper bounds): `shared/tests` 22.0 min (17 tests failed in this environment, unrelated to BP), `integration-tests` 5.7 min, `plugins/shipwright-compliance` 3.2 min, `shared/scripts/tools/tests` ~2.5 min, `plugins/shipwright-run` 53 s, `plugins/shipwright-test` 54 s, the remaining 12 roots under 50 s each. About 41 minutes if run one after another; CI runs them in parallel jobs. `plugins/shipwright-grade` collected with 10 errors when run from the repo root.
-- **Four-tier context run per PR** (the subset used here): median 206 s.
+All numbers are in `measure.*` of the JSON and recomputed by `measure_baseline.py` (`roots`, `verifier`); the machine was shared with other work, so every time is an upper bound.
 
-## 8. Labels
+- **Verifier wall-clock** (`measure.verifier`): `verify_iterate_finalization.py` run on the five most recent merged iterate commits (#937, #936, #935, #934, #933), each in a detached worktree at its merge commit: 2.6, 2.0, 2.0, 2.0, 2.0 seconds (median 2.0, max 2.6). Negligible next to CI. The exit code was 1 in this scratch environment (two checks error there); the time covers a complete pass over all 20 checks, so it is the cost, not a verdict.
+- **Context run vs plain run, two roots** (`measure.roots`): `shared/scripts/tools/tests` 189.4 s with `--cov-context=test` vs 170.7 s without (+11 %); database 1.15 MB vs 0.09 MB (12x). `plugins/shipwright-changelog/tests`: 9.1 s vs 8.4 s (+8 %); 0.07 MB vs 0.05 MB. Contexts cost about a tenth in time on the larger root and about an order of magnitude in artifact size.
+- **Per-root context-run time, every root once** (`measure.roots`, one pytest process per root run one after another, `-m "not slow and not cross_plugin"`, coverage target `shared`): `shared/tests` 25.7 min; `integration-tests` 4.8 min; `plugins/shipwright-compliance/tests` 3.2 min; `shared/scripts/tools/tests` 3.2 min; the remaining 14 roots take under 63 s each. About 43 minutes one after another; CI runs them in parallel jobs. Two caveats from the runs: `shared/tests` had 17 failing tests in this environment (unrelated to BP), and `plugins/shipwright-grade/tests` collected with 10 errors when run from the repo root.
+- **Four-tier context run per PR** (the subset used for T-code, `code.prs[].tiers`): median 206 s.
 
-I cannot label `correct-harmful` from the diff alone; that needs your knowledge of what each PR was supposed to change. What the data allows, by a mechanical rule:
+## 8. Labels (per hit)
 
-- **correct-benign (friction), provisional:** a held PR whose touched FR the author also declared. **27 PRs.** These would be approved once and listed.
-- **needs your label:** a held PR with a touched FR the author did not declare. **12 PRs** (#921, #919, #918, #910, #908, #900, #887, #886, #869, #855, #848, #843) plus the 2 conftest PRs.
-- **wrong (the source mis-attributes):** none can be asserted without you. Upper bounds if every undeclared hit were wrong: T-spec 0, T-test 15 hits in the 12 PRs, static 8 outside the two conftest PRs. The brief's bar is "at most 3 `wrong` per 100 PRs per source"; **T-spec passes outright; T-test and static cannot be shown to pass without your labels**, and static attribution should be expected to need work (it is the least precise source).
+A **hit** is one (PR, requirement, source) the replay reported: 106 hits in all. For each hit I re-decided from the raw PR content, without the touched-set derivation (`verifiers/_baseline_label_hits.py`, `measure_baseline.py label`; result in `records[].hits[].label`, and for T-code in `code.prs[].hits`), whether the source attributed it correctly:
 
-Spot reads by me, not labels: #848 (Dependabot setup) and #843 (PR-review model switch) edit tests bound to FR-01.07 as a side effect of their change; that reads as `correct-benign`. #910 / #919 / #921 edit profile-resolver tests bound to FR-01.06, with no `affected_frs`: plausibly real unrecorded impact.
+- **T-test:** the cited test is bound to that FR by the text of its `covers` marks (function, class or module) and really changed or was deleted.
+- **T-spec:** the normative text of the FR (row description and section prose; not Basis/Layers, `(inferred)`, `[ACnn]`) really differs.
+- **Static:** the cited conftest/helper really changed (an AST difference, or the file appeared or vanished) and an FR-bound test really reaches it (a scope-wide change such as an autouse fixture, a hook, a module-level statement; or a changed name the bound test uses, followed through helper-to-helper references). A purely added import does not count.
+- **T-code:** the changed function (base lines touched by the diff) is executed, per the context database, by a test bound to the FR (binding read from the test's text at the base).
+
+A hit that fails that check is **`wrong`**. A correct hit is **`correct-benign`** where the author declared the FR (friction, provisional) and **`correct-undetermined`** where the author did not: whether it is `correct-harmful` or `correct-benign` needs your intent, not a diff.
+
+| Source | Hits | correct-benign (declared) | correct-undetermined (not declared) | wrong | wrong per 100 PRs (limit 3) |
+|---|---|---|---|---|---|
+| T-spec | 5 | 5 | 0 | 0 | 0.0 |
+| T-test | 36 | 21 | 15 | 0 | 0.0 |
+| Static attribution | 56 | 13 | 42 | 1 | 1.0 |
+| T-code (20 PRs) | 9 | 1 | 8 | 0 | 0 of 9 hits in 20 PRs |
+
+The only hit I label wrong:
+- #840 FR-01.11 (static): changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11; shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_codex_revie
+
+Reading: on these labels every source is within the brief's bar of 3 `wrong` per 100 PRs (T-spec 0, T-test 0, static 1, T-code 0 of 9 hits). Three honest limits. (1) My check is mechanical and finds a hit **wrong** only when the evidence does not support it; a hit that is technically reached but semantically irrelevant is `correct-undetermined` until you say otherwise, and the 65 undetermined hits are where your re-labelling matters. (2) The static count is dominated by two conftest PRs (#873, #860: 18 FRs each), where an autouse fixture really does reach every bound test below it; whether that is useful or noise is a `correct-benign` question for you. (3) The T-code sample is two PRs: #899's eight FRs all come from one shared isolation helper (`isolate_user_profiles_dir`), which is the fan-out case N exists for.
 
 ## 9. Random sample for you to re-label
 
-Fifteen held PRs, seeded sample (`random.Random(20261028)`, reproducible). For each: is the listed FR really affected? Label `correct-harmful` (a behaviour change you would have wanted to see), `correct-benign` (right FR, harmless), or `wrong`.
+20 hits, seeded (`random.Random(20261028)`, up to five per source, `measure.hit_labels.sample`). For each: is the listed FR really affected? Label `correct-harmful` (a behaviour change you would have wanted to see), `correct-benign` (right FR, harmless), or `wrong`. My label is in the fourth column; overwrite it.
 
-| PR | Class | Title | Sources | Author declared | Evidence |
-|---|---|---|---|---|---|
-| #919 | campaign-unit | feat(profiles): bundle a chat-first-json stack profile | FR-01.06 | - | test_non_profile_files_never_listed |
-| #922 | campaign-unit | feat(design): Design takes the Brief package (B3a) | FR-01.01, FR-01.04 | FR-01.04 | static _brief_harness.py, conftest.py |
-| #843 | iterate | feat(pr-review): switch the PR-review gate default model | FR-01.07 | - | TestFileContract.test_every_re_exported_name_resol... |
-| #869 | iterate | feat(iterate): campaign runner reviews use the resolved tier | FR-01.10, FR-01.11 | - | test_runner_spawns_internal_reviews...; static conftest.py |
-| #921 | campaign-unit | fix(test): Windows-safe npx spawn, Browser Verify URL | FR-01.06, 01.12, 01.13 | - | test_existing_fixtures_match_the_same_profile... |
-| #910 | iterate | fix(project): write the project config to the project root | FR-01.06 | - | test_write_project_config_profile_lookup_root... |
-| #860 | iterate | fix(iterate): campaign runner passes the lease token | 18 FRs | FR-01.11 | test_hook_is_registered_for_both_events; static conftest.py (scope-wide) |
-| #874 | iterate | fix(review): close the U0/U3/U4/U10 review-record follow-ups | FR-01.11 | FR-01.11 | test_a_stage_1_reject_is_not_recorded_as_completed |
-| #840 | campaign-unit | feat(finalization): review record and test ledger enforced | FR-01.11 | FR-01.11 | static _review_cli_harness.py |
-| #871 | iterate | feat(iterate): Stop hook keeps an autonomous iterate running | FR-01.11 | FR-01.11 | spec text of FR-01.11 changed |
-| #848 | iterate | chore(ci): activate Dependabot for github-actions only | FR-01.07 | - | test_deleting_the_register_cannot_silence... |
-| #882 | iterate | fix(iterate): stop guard stays silent while a reviewer runs | FR-01.11 | FR-01.11 | test_incremental_scan_resumes... |
-| #905 | campaign-unit | feat(profiles): custom stack profiles in the interview | FR-01.06 | FR-01.06 | test_missing_shared_tree_is_an_install_error...; moved test |
-| #847 | campaign-unit | fix(compliance): a logged override lets the coverage gate pass | FR-01.10 | FR-01.10 | test_inproc_legacy_section_line... |
-| #879 | iterate | fix(triage): raise one card per critical/high security finding | FR-01.14 | FR-01.14 | test_import_findings_auto_resolves_fixed_alert |
+| PR | FR | Source | My label | Evidence |
+|---|---|---|---|---|
+| #899 | FR-01.21 | code | correct-undetermined | shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 4 test(s) bound to FR |
+| #915 | FR-01.10 | code | correct-undetermined | shared/scripts/lib/layer_promotion.py::evaluate_fr changed; executed by 4 test(s) bound to FR-01.10 (e.g. shar |
+| #899 | FR-01.11 | code | correct-undetermined | shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 4 test(s) bound to FR |
+| #899 | FR-01.13 | code | correct-undetermined | shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 6 test(s) bound to FR |
+| #899 | FR-01.06 | code | correct-benign | shared/scripts/profile_model.py::user_dir changed; executed by 2 test(s) bound to FR-01.06 (e.g. shared/script |
+| #871 | FR-01.11 | spec | correct-benign | .shipwright/planning/01-adopted/spec.md: 8 line(s) added/changed, 0 removed in FR-01.11 text |
+| #845 | FR-01.11 | spec | correct-benign | .shipwright/planning/01-adopted/spec.md: 19 line(s) added/changed, 9 removed in FR-01.11 text |
+| #861 | FR-01.11 | spec | correct-benign | .shipwright/planning/01-adopted/spec.md: 7 line(s) added/changed, 0 removed in FR-01.11 text |
+| #841 | FR-01.11 | spec | correct-benign | .shipwright/planning/01-adopted/spec.md: 7 line(s) added/changed, 0 removed in FR-01.11 text |
+| #863 | FR-01.11 | spec | correct-benign | .shipwright/planning/01-adopted/spec.md: 3 line(s) added/changed, 2 removed in FR-01.11 text |
+| #922 | FR-01.01 | static | correct-undetermined | integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integrati |
+| #873 | FR-01.19 | static | correct-undetermined | shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19 |
+| #873 | FR-01.01 | static | correct-undetermined | shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01 |
+| #860 | FR-01.03 | static | correct-undetermined | shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03 |
+| #860 | FR-01.20 | static | correct-undetermined | shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20 |
+| #904 | FR-01.01 | test | correct-benign | plugins/shipwright-run/tests/test_phase_validators_late.py::test_deploy_phase_returns_the_canon_verdict: bound |
+| #921 | FR-01.12 | test | correct-undetermined | shared/tests/test_chat_first_json_profile.py::test_dev_server_is_the_declared_block_not_the_default_service: b |
+| #935 | FR-01.09 | test | correct-benign | plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py::test_event_is_recorded_and_committ |
+| #855 | FR-01.17 | test | correct-undetermined | shared/tests/test_ci_yml_execution_evidence_step_shape.py::test_artifact_step_uses_upload_artifact_action: bou |
+| #862 | FR-01.10 | test | correct-benign | plugins/shipwright-compliance/tests/test_git_commit_command.py::test_string_running_programs_share_the_depth_b |
 
-Full evidence for any PR: `2026-10-27-baseline-protection-REPLAY.json`, `records[].evidence`.
+Full evidence for any PR: `2026-10-27-baseline-protection-REPLAY.json`, `records[].evidence` and `records[].hits`. The earlier PR-level sample (15 held PRs) stays in the JSON under `sample`.
 
 ## 10. BP's own `scope_frs` (proposal)
 
@@ -154,7 +175,7 @@ Not proposed: FR-01.09 (changelog; only BL6's guide/glossary text, which are not
 2. **Rule per PR class:** release, layer promotion, revert, manual. Measured: 0 of 18 docs/bot/manual/release PRs were held; the layer-promotion PR that was held changed a bound test. Proposal: apply the same rule to layer promotion, exempt release PRs that contain no code or test change, and decide revert when one appears.
 3. **BP's own `scope_frs`:** section 10.
 4. **The P3.8 supersession** (an edited test body under an unchanged AC becomes a hold for out-of-scope FRs only): unchanged by this unit; the replay shows T-test is the largest source (36 hits) and half of its hits are undeclared, so the supersession is what makes BP bite.
-5. **Whether BP proceeds.** Facts for the decision: the guarantee covers 12 % of PRs as real unplanned change plus 27 % as approval friction; production code is covered only where a bound test runs it (38 % of executed functions, 2 of 20 sampled PRs saw any T-code hit); prose, shell and config are not covered at all. If you judge 39 % friction too high before `scope_frs` exists, the choice is to start with T-spec + T-test only (the shadow window will tell) rather than T-code, which costs BL2 (a large unit) for a signal that fired in 2 of 20 PRs.
+5. **Whether BP proceeds.** Facts for the decision: the guarantee covers 12 % of PRs as real unplanned change plus 27 % as approval friction; production code is covered only where a bound test runs it (48 % of executed functions, 2 of 20 sampled PRs saw any T-code hit); prose, shell and config are not covered at all. If you judge 39 % friction too high before `scope_frs` exists, the choice is to start with T-spec + T-test only (the shadow window will tell) rather than T-code, which costs BL2 (a large unit) for a signal that fired in 2 of 20 PRs.
 6. **Thresholds for stop 2:** the hold-rate and friction-rate numbers above are the baseline to set them against (hold 39 %, of which friction 27 %).
 
 ## 12. Deviations from the brief and disclosed limits
@@ -163,13 +184,16 @@ Not proposed: FR-01.09 (changelog; only BL6's guide/glossary text, which are not
 - **Manifest runtime ids** (parametrize instances) as a binding source are deferred. Bindings are static at function granularity, which over-approximates (every instance shares its function's FRs) and so cannot miss; it can only raise the hold rate. A changed parametrize case is still a modification.
 - **Tests under `fixtures/` directories** are excluded from test roots (they hold data repos, not tests); a Python helper under `tests/fixtures/` that tests import is not attributed. The repo-root `conftest.py` (outside any `tests/` directory) is not attributed either.
 - **Static attribution of a helper module** reaches direct importers only (a test-side helper that itself imports the changed one is not followed).
-- **Context-run scope.** Four tiers only, all run from the repo root (CI runs plugin tiers from the plugin directory). A PR whose code sits in an unmeasured tier is out of the 20-PR selection; within the selection, functions no measured tier runs are counted "unattributed". N was derived from two tiers.
+- **Context-run scope.** Four tiers only, all run from the repo root (CI runs plugin tiers from the plugin directory). A PR whose code sits in an unmeasured tier is out of the 20-PR selection; within the selection, functions no measured tier runs are counted "unattributed". N was derived from all 17 roots with coverage target `shared` (plugin `scripts` unmeasured).
 - **Shared machine.** The 20 context runs and the per-root timing ran concurrently with other work; timings are upper bounds.
 - **Squash merges.** All 100 PRs were squash commits; the merge base is the first parent. A rebase-merge would need the PR's own base.
 - **Historical declarations** come from `shipwright_events.jsonl` `work_completed` events matched by run id; PRs without an iterate event (docs, bots, manual) have "no declaration".
-- **Heuristic labels** in section 8 are provisional by rule; only your re-labelling of the sample makes them real.
+- **Labels are mechanical.** `wrong` is decided by an independent re-read of the raw PR content (section 8); `correct-benign` vs `correct-undetermined` follows from whether the author declared the FR, because `correct-harmful` needs intent. Only your re-labelling of the sample makes them final.
+- **PR window.** The first draft of this report said #937..#840; the data holds #937..#831 (the 107 numbers in that range include 7 that are not merged PRs). Corrected here and in the sample tables.
+- **Reproducing sections 5, 7 and 8.** `measure_baseline.py` recomputes the fan-out (both definitions), the verifier wall-clock, the per-root context-run cost and the labels, and writes them into the JSON; the report cites those keys. Raw coverage databases are not committed (about 12 MB for the 17 roots; `roots` regenerates them, `replay_baseline_lock.py --code-sample` regenerates the 20 T-code databases). The T-code hit labels need those databases, so they are stored in the JSON (`code.prs[].hits`) rather than recomputed from git alone. Timings differ per run; the counts do not.
+- **Verifier exit code.** The five verifier runs time a complete pass (all 20 checks) but exit 1 in this scratch environment (two checks error there), so the wall-clock is a cost, not a verdict.
 - **Environment.** `shared/tests` showed 17 failures when run (with contexts) on this machine; they are outside BL0's files and were not investigated here.
 
 ## 13. What the library is, for the units that follow
 
-`shared/scripts/tools/verifiers/_baseline_touch_{git,spec,binding,static,coverage,core}.py` derive the touched set from a merge-base diff (three-dot; no merge base is an error), fail closed on any unreadable or unparsable file, and expose `touched_set` and `evaluate_hold(touched, scope, n)`. `_baseline_touch_replay_{stats,code}.py` and `replay_baseline_lock.py` are the measurement tooling. `_baseline_touch_static.py` and `_baseline_touch_coverage.py` are replay-grade prototypes that BL2 owns and may replace. The 50 L1 tests are analogues of the brief's S1-S8 and S17 cases, not the L2 seeded regressions the owning units must still deliver. If you stop BP at stop 1, the replay modules can be removed without touching the core derivation.
+`shared/scripts/tools/verifiers/_baseline_touch_{git,spec,binding,static,coverage,core}.py` derive the touched set from a merge-base diff (three-dot; no merge base is an error), fail closed on any unreadable or unparsable file, and expose `touched_set` and `evaluate_hold(touched, scope, n)`. `_baseline_touch_replay_{stats,code}.py`, `_baseline_label_hits.py`, `_baseline_measure.py`, `replay_baseline_lock.py` and `measure_baseline.py` are the measurement tooling. `_baseline_touch_static.py` and `_baseline_touch_coverage.py` are replay-grade prototypes that BL2 owns and may replace. The 63 L1 tests are analogues of the brief's S1-S8 and S17 cases, not the L2 seeded regressions the owning units must still deliver. If you stop BP at stop 1, the replay modules can be removed without touching the core derivation.

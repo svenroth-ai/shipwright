@@ -772,6 +772,15 @@
       "FR-01.10"
      ]
     },
+    "hits": [
+     {
+      "fr": "FR-01.10",
+      "label": "correct-undetermined",
+      "pr": 915,
+      "reason": "shared/scripts/lib/layer_promotion.py::evaluate_fr changed; executed by 4 test(s) bound to FR-01.10 (e.g. shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed)",
+      "source": "code"
+     }
+    ],
     "pr": 915,
     "sources": {
      "FR-01.10": [
@@ -1284,6 +1293,64 @@
       "FR-01.13"
      ]
     },
+    "hits": [
+     {
+      "fr": "FR-01.06",
+      "label": "correct-benign",
+      "pr": 899,
+      "reason": "shared/scripts/profile_model.py::user_dir changed; executed by 2 test(s) bound to FR-01.06 (e.g. shared/scripts/tests/test_profile_resolver_boundary.py::test_resolver_importable_and_user_profiles_isolated)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.09",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 3 test(s) bound to FR-01.09 (e.g. shared/scripts/tools/tests/test_sync_release_manifests_git.py::test_verify_commit_catches_omitted_manifest_regression)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.10",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 5 test(s) bound to FR-01.10 (e.g. shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.11",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 4 test(s) bound to FR-01.11 (e.g. shared/scripts/tools/tests/test_f0_ci_parity.py::test_ci_still_runs_the_same_shared_dirs)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.13",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 6 test(s) bound to FR-01.13 (e.g. shared/scripts/tests/test_validate_env.py::TestFrameworkOrderDriftProtection.test_framework_keys_match_external_review_fallback_order)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.14",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 3 test(s) bound to FR-01.14 (e.g. shared/scripts/tools/tests/test_suite_race_cli.py::test_a_green_run_that_could_not_record_the_race_exits_three)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.20",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 26 test(s) bound to FR-01.20 (e.g. shared/scripts/tests/test_context_pressure.py::TestCLIDefaultSource.test_explicit_source_flag_switches_to_context_cost)",
+      "source": "code"
+     },
+     {
+      "fr": "FR-01.21",
+      "label": "correct-undetermined",
+      "pr": 899,
+      "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 4 test(s) bound to FR-01.21 (e.g. shared/scripts/tools/tests/test_build_codex_plugin.py::test_clean_rebuild_is_byte_identical)",
+      "source": "code"
+     }
+    ],
     "pr": 899,
     "sources": {
      "FR-01.06": [
@@ -1456,6 +1523,536 @@
    ]
   ]
  },
+ "measure": {
+  "fanout_changed": {
+   "changed_functions_attributed": 10,
+   "changed_unattributed": 22,
+   "definition": "FRs reached per changed function (brief section 3, BL0)",
+   "histogram": {
+    "1": 9,
+    "8": 1
+   },
+   "max": 8,
+   "median": 1.0,
+   "nonzero": 10,
+   "over_n": {
+    "1": 1,
+    "2": 1,
+    "5": 1,
+    "8": 0
+   },
+   "p90": 1,
+   "p95": 1,
+   "prs": 20
+  },
+  "fanout_executed": {
+   "databases": [
+    "cov-integration-tests",
+    "cov-plugins_shipwright-adopt_tests",
+    "cov-plugins_shipwright-build_tests",
+    "cov-plugins_shipwright-changelog_tests",
+    "cov-plugins_shipwright-compliance_tests",
+    "cov-plugins_shipwright-deploy_tests",
+    "cov-plugins_shipwright-design_tests",
+    "cov-plugins_shipwright-iterate_tests",
+    "cov-plugins_shipwright-plan_tests",
+    "cov-plugins_shipwright-preview_tests",
+    "cov-plugins_shipwright-project_tests",
+    "cov-plugins_shipwright-run_tests",
+    "cov-plugins_shipwright-security_tests",
+    "cov-plugins_shipwright-test_tests",
+    "cov-shared_scripts_tests",
+    "cov-shared_scripts_tools_tests",
+    "cov-shared_tests"
+   ],
+   "definition": "FRs per function executed by any test, files measured at one revision",
+   "files_measured": 695,
+   "functions_executed_by_any_test": 3928,
+   "functions_in_measured_files": 4055,
+   "functions_with_fr_bound_test": 1875,
+   "histogram": {
+    "0": 2053,
+    "1": 1457,
+    "2": 228,
+    "3": 101,
+    "4": 63,
+    "5": 1,
+    "6": 12,
+    "7": 1,
+    "8": 1,
+    "10": 4,
+    "14": 6,
+    "20": 1
+   },
+   "max": 20,
+   "median": 1,
+   "nonzero": 1875,
+   "over_n": {
+    "1": 418,
+    "2": 190,
+    "5": 25,
+    "8": 11
+   },
+   "p90": 3,
+   "p95": 3,
+   "widest": [
+    [
+     20,
+     "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir"
+    ],
+    [
+     14,
+     "shared/scripts/lib/durable_publish.py::carry_destination_mode"
+    ],
+    [
+     14,
+     "shared/scripts/lib/atomic_write.py::replace_retrying"
+    ],
+    [
+     14,
+     "shared/scripts/lib/atomic_write.py::durable_atomic_write"
+    ],
+    [
+     14,
+     "shared/scripts/lib/atomic_write.py::_retry_past_sharing_violations"
+    ],
+    [
+     14,
+     "shared/scripts/lib/atomic_write.py::_is_windows"
+    ],
+    [
+     14,
+     "shared/scripts/lib/atomic_write.py::_fsync_parent_dir"
+    ],
+    [
+     10,
+     "shared/scripts/lib/file_lock.py::_validated_timeout"
+    ]
+   ]
+  },
+  "hit_labels": {
+   "by_source": {
+    "code": {
+     "correct-benign": 1,
+     "correct-undetermined": 8
+    },
+    "spec": {
+     "correct-benign": 5
+    },
+    "static": {
+     "correct-benign": 13,
+     "correct-undetermined": 42,
+     "wrong": 1
+    },
+    "test": {
+     "correct-benign": 21,
+     "correct-undetermined": 15
+    }
+   },
+   "hits": 106,
+   "limit_per_source_per_100_prs": 3,
+   "prs": 100,
+   "rule": "wrong = the source attributed an FR the raw PR content does not support (see module docstring)",
+   "sample": [
+    {
+     "fr": "FR-01.21",
+     "label": "correct-undetermined",
+     "pr": 899,
+     "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 4 test(s) bound to FR-01.21 (e.g. shared/scripts/tools/tests/test_build_codex_plugin.py::test_clean_rebuild_is_byte_identical)",
+     "source": "code"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "pr": 915,
+     "reason": "shared/scripts/lib/layer_promotion.py::evaluate_fr changed; executed by 4 test(s) bound to FR-01.10 (e.g. shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed)",
+     "source": "code"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-undetermined",
+     "pr": 899,
+     "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 4 test(s) bound to FR-01.11 (e.g. shared/scripts/tools/tests/test_f0_ci_parity.py::test_ci_still_runs_the_same_shared_dirs)",
+     "source": "code"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "pr": 899,
+     "reason": "shared/scripts/profile_test_isolation.py::isolate_user_profiles_dir changed; executed by 6 test(s) bound to FR-01.13 (e.g. shared/scripts/tests/test_validate_env.py::TestFrameworkOrderDriftProtection.test_framework_keys_match_external_review_fallback_order)",
+     "source": "code"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-benign",
+     "pr": 899,
+     "reason": "shared/scripts/profile_model.py::user_dir changed; executed by 2 test(s) bound to FR-01.06 (e.g. shared/scripts/tests/test_profile_resolver_boundary.py::test_resolver_importable_and_user_profiles_isolated)",
+     "source": "code"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "pr": 871,
+     "reason": ".shipwright/planning/01-adopted/spec.md: 8 line(s) added/changed, 0 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "pr": 845,
+     "reason": ".shipwright/planning/01-adopted/spec.md: 19 line(s) added/changed, 9 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "pr": 861,
+     "reason": ".shipwright/planning/01-adopted/spec.md: 7 line(s) added/changed, 0 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "pr": 841,
+     "reason": ".shipwright/planning/01-adopted/spec.md: 7 line(s) added/changed, 0 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "pr": 863,
+     "reason": ".shipwright/planning/01-adopted/spec.md: 3 line(s) added/changed, 2 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "pr": 922,
+     "reason": "integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integration-tests/test_brief_harness.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.19",
+     "label": "correct-undetermined",
+     "pr": 873,
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "pr": 873,
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.03",
+     "label": "correct-undetermined",
+     "pr": 860,
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.20",
+     "label": "correct-undetermined",
+     "pr": 860,
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "pr": 904,
+     "reason": "plugins/shipwright-run/tests/test_phase_validators_late.py::test_deploy_phase_returns_the_canon_verdict: bound to FR-01.01 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "pr": 921,
+     "reason": "shared/tests/test_chat_first_json_profile.py::test_dev_server_is_the_declared_block_not_the_default_service: bound to FR-01.12 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.09",
+     "label": "correct-benign",
+     "pr": 935,
+     "reason": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py::test_event_is_recorded_and_committed_before_merge: bound to FR-01.09 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "pr": 855,
+     "reason": "shared/tests/test_ci_yml_execution_evidence_step_shape.py::test_artifact_step_uses_upload_artifact_action: bound to FR-01.17 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-benign",
+     "pr": 862,
+     "reason": "plugins/shipwright-compliance/tests/test_git_commit_command.py::test_string_running_programs_share_the_depth_bound: bound to FR-01.10 and changed",
+     "source": "test"
+    }
+   ],
+   "sample_seed": 20261028,
+   "wrong_per_100_prs": {
+    "code": 0.0,
+    "spec": 0.0,
+    "static": 1.0,
+    "test": 0.0
+   }
+  },
+  "roots": {
+   "note": "one pytest process per root, run one after another on a shared machine (upper bounds); coverage target: shared",
+   "runs": [
+    {
+     "contexts": true,
+     "db": "cov-shared_tests",
+     "db_bytes": 9158656,
+     "rc": 1,
+     "root": "shared/tests",
+     "seconds": 1544.8,
+     "summary": "17 failed, 13380 passed, 50 skipped, 26 deselected, 3 warnings in 1536.35s (0:25:36)"
+    },
+    {
+     "contexts": true,
+     "db": "cov-shared_scripts_tests",
+     "db_bytes": 532480,
+     "rc": 0,
+     "root": "shared/scripts/tests",
+     "seconds": 63.3,
+     "summary": "661 passed, 3 skipped in 29.38s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-shared_scripts_tools_tests",
+     "db_bytes": 1204224,
+     "rc": 0,
+     "root": "shared/scripts/tools/tests",
+     "seconds": 189.4,
+     "summary": "1396 passed, 23 skipped, 2 deselected, 1 warning in 188.28s (0:03:08)"
+    },
+    {
+     "contexts": false,
+     "db": "cov-shared_scripts_tools_tests-plain",
+     "db_bytes": 98304,
+     "rc": 0,
+     "root": "shared/scripts/tools/tests",
+     "seconds": 170.7,
+     "summary": "1396 passed, 23 skipped, 2 deselected, 1 warning in 169.57s (0:02:49)"
+    },
+    {
+     "contexts": true,
+     "db": "cov-integration-tests",
+     "db_bytes": 393216,
+     "rc": 0,
+     "root": "integration-tests",
+     "seconds": 289.9,
+     "summary": "620 passed, 2 skipped, 7 deselected, 2 warnings in 288.91s (0:04:48)"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-adopt_tests",
+     "db_bytes": 335872,
+     "rc": 0,
+     "root": "plugins/shipwright-adopt/tests",
+     "seconds": 38.0,
+     "summary": "734 passed, 25 deselected in 33.34s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-build_tests",
+     "db_bytes": 53248,
+     "rc": 0,
+     "root": "plugins/shipwright-build/tests",
+     "seconds": 48.9,
+     "summary": "327 passed in 47.85s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-changelog_tests",
+     "db_bytes": 69632,
+     "rc": 0,
+     "root": "plugins/shipwright-changelog/tests",
+     "seconds": 9.1,
+     "summary": "108 passed in 7.21s"
+    },
+    {
+     "contexts": false,
+     "db": "cov-plugins_shipwright-changelog_tests-plain",
+     "db_bytes": 53248,
+     "rc": 0,
+     "root": "plugins/shipwright-changelog/tests",
+     "seconds": 8.4,
+     "summary": "108 passed in 7.09s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-compliance_tests",
+     "db_bytes": 585728,
+     "rc": 0,
+     "root": "plugins/shipwright-compliance/tests",
+     "seconds": 194.4,
+     "summary": "2101 passed, 5 skipped, 3 warnings in 193.36s (0:03:13)"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-deploy_tests",
+     "db_bytes": 53248,
+     "rc": 0,
+     "root": "plugins/shipwright-deploy/tests",
+     "seconds": 30.2,
+     "summary": "178 passed in 29.18s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-design_tests",
+     "db_bytes": 147456,
+     "rc": 0,
+     "root": "plugins/shipwright-design/tests",
+     "seconds": 18.2,
+     "summary": "176 passed in 15.05s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-grade_tests",
+     "db_bytes": 0,
+     "rc": 2,
+     "root": "plugins/shipwright-grade/tests",
+     "seconds": 1.9,
+     "summary": "10 errors in 0.98s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-iterate_tests",
+     "db_bytes": 204800,
+     "rc": 0,
+     "root": "plugins/shipwright-iterate/tests",
+     "seconds": 22.4,
+     "summary": "1317 passed, 1 skipped in 21.44s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-plan_tests",
+     "db_bytes": 53248,
+     "rc": 0,
+     "root": "plugins/shipwright-plan/tests",
+     "seconds": 10.2,
+     "summary": "110 passed, 21 warnings in 8.94s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-preview_tests",
+     "db_bytes": 53248,
+     "rc": 0,
+     "root": "plugins/shipwright-preview/tests",
+     "seconds": 1.5,
+     "summary": "12 passed in 0.29s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-project_tests",
+     "db_bytes": 94208,
+     "rc": 0,
+     "root": "plugins/shipwright-project/tests",
+     "seconds": 5.3,
+     "summary": "106 passed in 3.73s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-run_tests",
+     "db_bytes": 540672,
+     "rc": 0,
+     "root": "plugins/shipwright-run/tests",
+     "seconds": 57.2,
+     "summary": "891 passed in 56.20s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-security_tests",
+     "db_bytes": 118784,
+     "rc": 0,
+     "root": "plugins/shipwright-security/tests",
+     "seconds": 15.0,
+     "summary": "1081 passed, 3 skipped, 4 deselected in 13.93s"
+    },
+    {
+     "contexts": true,
+     "db": "cov-plugins_shipwright-test_tests",
+     "db_bytes": 217088,
+     "rc": 0,
+     "root": "plugins/shipwright-test/tests",
+     "seconds": 55.0,
+     "summary": "381 passed, 2 skipped, 2 warnings in 54.08s"
+    }
+   ],
+   "total_context_seconds": 2594.7
+  },
+  "verifier": {
+   "command": "uv run verify_iterate_finalization.py --run-id R --project-root <tree at the merge commit> --commit <merge>",
+   "max_seconds": 2.6,
+   "median_seconds": 2.0,
+   "runs": [
+    {
+     "output_tail": [
+      "--------------------------------------------------------------------------------",
+      "  18 ok, 1 warning(s), 2 error(s), 10 skipped",
+      "================================================================================"
+     ],
+     "pr": 937,
+     "rc": 1,
+     "run_id": "iterate-2026-10-28-changelog-ac04-version-bump",
+     "seconds": 2.6
+    },
+    {
+     "output_tail": [
+      "--------------------------------------------------------------------------------",
+      "  18 ok, 1 warning(s), 2 error(s), 10 skipped",
+      "================================================================================"
+     ],
+     "pr": 936,
+     "rc": 1,
+     "run_id": "iterate-2026-10-27-untitled-ui-kit",
+     "seconds": 2.0
+    },
+    {
+     "output_tail": [
+      "--------------------------------------------------------------------------------",
+      "  18 ok, 1 warning(s), 2 error(s), 10 skipped",
+      "================================================================================"
+     ],
+     "pr": 935,
+     "rc": 1,
+     "run_id": "iterate-2026-10-27-release-event-on-main-block",
+     "seconds": 2.0
+    },
+    {
+     "output_tail": [
+      "--------------------------------------------------------------------------------",
+      "  18 ok, 1 warning(s), 2 error(s), 10 skipped",
+      "================================================================================"
+     ],
+     "pr": 934,
+     "rc": 1,
+     "run_id": "iterate-2026-10-27-sibling-plugin-resolver-cache",
+     "seconds": 2.0
+    },
+    {
+     "output_tail": [
+      "--------------------------------------------------------------------------------",
+      "  18 ok, 1 warning(s), 2 error(s), 10 skipped",
+      "================================================================================"
+     ],
+     "pr": 933,
+     "rc": 1,
+     "run_id": "iterate-2026-10-27-q2-archived-splits-f4-adr-bounds",
+     "seconds": 2.0
+    }
+   ],
+   "tree": "detached worktree at the merge commit"
+  }
+ },
  "meta": {
   "library_commit_base": "79878eaef38ece5563d38cdf9e0589f469d91721",
   "main_sha_at_capture": "8d597d85110f4f02aba25b35b2bf2edb3277efb8",
@@ -1476,6 +2073,7 @@
    },
    "files": 13,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "79878eaef38ece5563d38cdf9e0589f469d91721",
@@ -1500,6 +2098,7 @@
    },
    "files": 36,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "31434cdb8ade93989c60c67acfcf1813862f5968",
@@ -1530,6 +2129,14 @@
    },
    "files": 12,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.09",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-changelog/tests/test_skill_event_ships_in_release_pr.py::test_event_is_recorded_and_committed_before_merge: bound to FR-01.09 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "14d194cc0222f68217c29e71ec10a27dfd66cd47",
@@ -1560,6 +2167,7 @@
    },
    "files": 19,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "065d2c607842c2cf691dfd0dbcd6b05595c23a1f",
@@ -1585,6 +2193,7 @@
    },
    "files": 15,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "39bce37b91381bfb022977428d8d4040f1a10a76",
@@ -1607,6 +2216,7 @@
    },
    "files": 11,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "38a9bd4f2e48ee3b3e6751563619b5ad6b2a1ab0",
@@ -1629,6 +2239,7 @@
    },
    "files": 8,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "c3c1a91678bdfe7c35c5c6167b99ce33db94ae3a",
@@ -1651,6 +2262,7 @@
    },
    "files": 43,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "ec88451c32b12b756380de091ae20ad7c657307e",
@@ -1673,6 +2285,7 @@
    },
    "files": 52,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "c9a1742d57d177305ddf692da38c120c204d5e9f",
@@ -1697,6 +2310,7 @@
    },
    "files": 36,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "2cbb5f63097d1bf84f721e1578069d5edaf07cb9",
@@ -1721,6 +2335,7 @@
    },
    "files": 42,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "08ce885960d7d9fc3f0313bcf69bba99c1797412",
@@ -1745,6 +2360,7 @@
    },
    "files": 25,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "7fc60e2a32f2068470f44502029b8aac327557cd",
@@ -1779,6 +2395,20 @@
    },
    "files": 36,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/_brief_harness.py: changed ['build_fixture_1'] used by a test bound to FR-01.01 in integration-tests/test_brief_harness.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.04",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-design/tests/conftest.py: changed ['project'] used by a test bound to FR-01.04 in plugins/shipwright-design/tests/test_check_design_gates.py",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "d53a7ede9876e0fd45831e9db2dcd60673a82b34",
@@ -1820,6 +2450,26 @@
    },
    "files": 23,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-adopt/tests/test_profile_matcher_chat_first.py::test_existing_fixtures_match_the_same_profile_with_and_without_chat_first: bound to FR-01.06 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_chat_first_json_profile.py::test_dev_server_is_the_declared_block_not_the_default_service: bound to FR-01.12 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-adopt/tests/test_profile_matcher_chat_first.py::test_existing_fixtures_match_the_same_profile_with_and_without_chat_first: bound to FR-01.13 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "054d9992de7c188ec3ea85949445e113828e1896",
@@ -1855,6 +2505,7 @@
    },
    "files": 41,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "ec8091a2d471cd3a3461a199b6ea04c83b9074b3",
@@ -1881,6 +2532,14 @@
    },
    "files": 34,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_profile_resolver.py::test_non_profile_files_never_listed: bound to FR-01.06 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "fd42ae7717e8d63eb25534abc85e1171ced70061",
@@ -1911,6 +2570,14 @@
    },
    "files": 18,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_stack_profile_schema.py: changed ['_mutations'] used by a test bound to FR-01.06 in shared/tests/test_stack_profile_schema.py",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "79ceee6410c7dc8fb1ff255db14dc4a9ef6c9aee",
@@ -1945,6 +2612,14 @@
    },
    "files": 48,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-run/tests/test_phase_validators_late.py::test_skip_reason_accepts_only_non_blank_strings: bound to FR-01.01 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "3e18563ee20fb371e1b65775af93eb2f5861ebd6",
@@ -1971,6 +2646,7 @@
    },
    "files": 8,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "78c1652bc36e75bfe4a10b0f293c71b3d1944e7a",
@@ -1993,6 +2669,7 @@
    },
    "files": 11,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "eaaea4119ffea8a9fa3405d8c6f88cf17b223541",
@@ -2015,6 +2692,7 @@
    },
    "files": 13,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "85c1eb1cafc3e01aaed135b8b324441229b481d5",
@@ -2039,6 +2717,7 @@
    },
    "files": 24,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "5b6686ae50f774af6f2a723191803e34bac25ef8",
@@ -2071,6 +2750,20 @@
    },
    "files": 17,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py: changed ['RESUME'] used by a test bound to FR-01.11 in plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_background.py::test_these_results_are_not_launches: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "6625147ee9e4d2a47bc5ce604c1e528c4ac5c790",
@@ -2098,6 +2791,7 @@
    },
    "files": 9,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "080c7c1c85c310306e1114292a25de27d8eae2ef",
@@ -2124,6 +2818,14 @@
    },
    "files": 15,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-project/tests/test_profile_name_check.py::test_write_project_config_profile_lookup_root_is_above_dot_shipwright: bound to FR-01.06 and deleted",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "98ce96c97c24496071cf6f8457a18048bd7aaab1",
@@ -2163,6 +2865,20 @@
    },
    "files": 51,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "integration-tests/test_driven_run_real_gate_e2e.py: changed ['_retry_until_terminal'] used by a test bound to FR-01.01 in integration-tests/test_driven_run_real_gate_e2e.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "integration-tests/test_driven_run_real_gate_e2e.py::test_autonomous_run_fails_the_phase_at_the_cap_and_recovers_when_fixed: bound to FR-01.01 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "fa1103679454197e2bc10a282e744a2a1ab1e451",
@@ -2201,6 +2917,20 @@
    },
    "files": 17,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/test_stack_profile_resolution_e2e.py: changed ['_env'] used by a test bound to FR-01.06 in integration-tests/test_stack_profile_resolution_e2e.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_stack_profile_py_guard.py::test_resolver_modules_are_excluded_by_location_and_the_allowlist_is_the_s3_family_only: bound to FR-01.06 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "f77a4446f61ad817259a8bb4573f548e9236bdd3",
@@ -2243,6 +2973,20 @@
    },
    "files": 60,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "integration-tests/test_cross_surface_backcompat.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.01",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "integration-tests/test_cross_surface_backcompat.py::TestCrashedPhaseRecoversAndAdvances.test_crash_recover_reclaim_complete_advances: bound to FR-01.01 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "0fa5084334c2c383b1608083c535df456f6c1294",
@@ -2277,6 +3021,14 @@
    },
    "files": 43,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-run/tests/test_orchestrator_split_parity.py::test_lifecycle_fail_closed_reasons_unchanged: bound to FR-01.01 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "6884c0924449e580048ca1cb404e1e801b74a97a",
@@ -2318,6 +3070,20 @@
    },
    "files": 43,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-project/tests/test_profile_name_check.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.06",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-project/tests/test_profile_name_check.py::test_missing_shared_tree_is_an_install_error_not_a_bad_name: bound to FR-01.06 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "4d445f3e424e8717fd78385cd571522f2a7ab9bc",
@@ -2356,6 +3122,14 @@
    },
    "files": 27,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-run/tests/test_phase_validators_late.py::test_deploy_phase_returns_the_canon_verdict: bound to FR-01.01 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "f8dcdfe961d70c1a6aaa5a7dcf58791b705abcf1",
@@ -2388,6 +3162,14 @@
    },
    "files": 38,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-project/tests/test_write_run_config.py::test_main_explicit_profile_override: bound to FR-01.06 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "bbfacca9f736a203e73e8fe5a008d4e5e6a70316",
@@ -2416,6 +3198,7 @@
    },
    "files": 46,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "3684e391dadb614fa93d67b20cf81137a69b8e91",
@@ -2438,6 +3221,7 @@
    },
    "files": 28,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "59e822f3dc2e17cc4288dfe31b90ae387bb9150c",
@@ -2464,6 +3248,14 @@
    },
    "files": 35,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/test_multi_session_removal_residue.py::test_phase_task_lifecycle_still_exposes_every_mutator_the_loop_needs: bound to FR-01.01 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "cd5a854c16c020e2cc48fa6a07697fd4510e539d",
@@ -2510,6 +3302,26 @@
    },
    "files": 68,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.06",
+     "label": "correct-benign",
+     "reason": "shared/tests/profile_test_fixtures.py: module-level/scope-wide change reaches 21 test(s) bound to FR-01.06",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-benign",
+     "reason": "integration-tests/test_profile_resolver_boundary.py::test_resolver_importable_and_user_profiles_isolated: bound to FR-01.06 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_dev_server_no_web_server.py::test_cmd_start_reports_no_dev_server_instead_of_crashing: bound to FR-01.12 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "1caabdcc67cc652badcfea64cefd20b7b14312ee",
@@ -2540,6 +3352,7 @@
    },
    "files": 9,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "71d89e14b22d7b92875a055fbafdd2c661eb1d6f",
@@ -2562,6 +3375,7 @@
    },
    "files": 54,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "2e71e28f6f594a5fde7359e0a3986ab9ef4d632e",
@@ -2584,6 +3398,7 @@
    },
    "files": 17,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "6444627bb6c895fe101e81d935f98737c4bc95dd",
@@ -2606,6 +3421,7 @@
    },
    "files": 2,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "f72ef20a7469b412bad05fc0d71cc6958c218548",
@@ -2628,6 +3444,7 @@
    },
    "files": 12,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "7a4711af30c06e7150355324dfe457a9b296a1e7",
@@ -2650,6 +3467,7 @@
    },
    "files": 10,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "1611202d63fda4ef66791745b6eaf91ab8472e57",
@@ -2674,6 +3492,7 @@
    },
    "files": 10,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "35dd16d88b759816bba0d3794d8fa038b0a98ab4",
@@ -2698,6 +3517,7 @@
    },
    "files": 9,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "cd42e187b044a565fec2cf225aebcb95e7115176",
@@ -2720,6 +3540,7 @@
    },
    "files": 12,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "837dfda6337b5137d0e1c33a1155182c72ea2f78",
@@ -2742,6 +3563,7 @@
    },
    "files": 4,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -2767,6 +3589,7 @@
    },
    "files": 7,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -2812,6 +3635,32 @@
    },
    "files": 46,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.13",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess: bound to FR-01.13 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/_pr_review_workflows.py: changed ['STAGE1_STAGE2', 'TEMPLATES'] used by a test bound to FR-01.17 in shared/tests/test_pr_review_fail_closed.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_pr_review_fork_trust.py::test_stage2_posts_the_verdict_onto_the_change: bound to FR-01.17 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "4b4c85ef621cd4816aede9ca185a01ffa34dfa82",
@@ -2864,6 +3713,20 @@
    },
    "files": 16,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "shared/scripts/tools/tests/test_promote_required_layers.py: changed ['_SPEC_RELPATH', '_write_project'] used by a test bound to FR-01.10 in shared/scripts/tools/tests/test_promote_required_layers.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed: bound to FR-01.10 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "27a9e00fef3c3249f86f51a7933dd9b046c7417a",
@@ -2891,6 +3754,7 @@
    },
    "files": 1,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "07cb6e6833f3205085fb9bb1fd77c1bd8661f784",
@@ -2913,6 +3777,7 @@
    },
    "files": 13,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "2c201cf0e36d87c25512e4cf9b75e987b38a3ed8",
@@ -2940,6 +3805,7 @@
    },
    "files": 30,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "14d5cee59d5412ded7e52935b9c72e8306940515",
@@ -2968,6 +3834,14 @@
    },
    "files": 19,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-iterate/tests/test_iterate_stop_guard_scan.py::test_incremental_scan_resumes_and_survives_a_shrunk_file: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "d3c2ec8641bbc33605fe51226490346bf2589d34",
@@ -2994,6 +3868,7 @@
    },
    "files": 7,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "f7402f5a0510c211735cc8f7c1637add6999c8b4",
@@ -3025,6 +3900,14 @@
    },
    "files": 27,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.14",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_github_triage.py::test_import_findings_auto_resolves_fixed_alert: bound to FR-01.14 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "3d082d11112274d3120bff69bcd14ac85a06e2f8",
@@ -3058,6 +3941,14 @@
    },
    "files": 15,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-iterate/tests/_stop_guard_helpers.py: module-level/scope-wide change reaches 14 test(s) bound to FR-01.11",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "a1dd883cdff439f30bab0b5cd7895614a9cca8a7",
@@ -3084,6 +3975,7 @@
    },
    "files": 15,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "5accb5d8215ba9c2e206ff7df901e657548d2777",
@@ -3106,6 +3998,7 @@
    },
    "files": 401,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "fc782f611f717392e9dbe6d2a7feaa27610ec171",
@@ -3143,6 +4036,20 @@
    },
    "files": 52,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/_cascade_trigger_fixtures.py: changed ['write_run'] used by a test bound to FR-01.11 in shared/tests/test_cascade_trigger.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_campaign_step_3f_bis.py::test_a_stage_1_reject_is_not_recorded_as_completed: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "6ae44444f5b2c99ecc66b040599b1ff0d16a372f",
@@ -3256,6 +4163,122 @@
    },
    "files": 49,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.02",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.03",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.07",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.08",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.09",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-benign",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.13",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-benign",
+     "reason": "shared/scripts/tests/test_validate_env.py::TestFrameworkOrderDriftProtection.test_framework_keys_match_external_review_fallback_order: bound to FR-01.13 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.14",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.15",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.16",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.19",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.20",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.21",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "0ae5b8bbda157035d99de5acd4399226cc516745",
@@ -3336,6 +4359,7 @@
    },
    "files": 14,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "95766a98568c1b61a9ef387318c65e5df7ff01ab",
@@ -3360,6 +4384,14 @@
    },
    "files": 34,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": ".shipwright/planning/01-adopted/spec.md: 8 line(s) added/changed, 0 removed in FR-01.11 text",
+     "source": "spec"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "22e6332169538491a826ad411eec4f7b5a45691f",
@@ -3386,6 +4418,7 @@
    },
    "files": 23,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "bea31d3749a7c8a3a581e47261d0f5caf2d9e83f",
@@ -3421,6 +4454,26 @@
    },
    "files": 35,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.10",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-undetermined",
+     "reason": "integration-tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.11",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_runner_agent_tool_and_lease_token.py::test_runner_spawns_internal_reviews_with_model_opus_and_keeps_the_fallback: bound to FR-01.11 and deleted",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "c4287504cd19dcbc47267441ed73f8fe65b49701",
@@ -3453,6 +4506,7 @@
    },
    "files": 29,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "524588ba9c87d693d5733267da38b12c7d6bc512",
@@ -3475,6 +4529,7 @@
    },
    "files": 10,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "e5436a5913bfd9b2fe143eb6a50acf231c0fdf4c",
@@ -3497,6 +4552,7 @@
    },
    "files": 29,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "2d14307ddc977f5917a7e8e3192dfab9e63e0bfd",
@@ -3521,6 +4577,14 @@
    },
    "files": 29,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": ".shipwright/planning/01-adopted/spec.md: 3 line(s) added/changed, 2 removed in FR-01.11 text",
+     "source": "spec"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "d55b3986e0b17b62b9f80ddf2a5b01d022d24938",
@@ -3560,6 +4624,20 @@
    },
    "files": 35,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.10",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-compliance/tests/test_git_commit_command.py: changed ['_has_commit'] used by a test bound to FR-01.10 in plugins/shipwright-compliance/tests/test_git_commit_command.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-compliance/tests/test_git_commit_command.py::test_string_running_programs_share_the_depth_bound: bound to FR-01.10 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "1ce340f1ff71046449eced49577c6b4b64f2835f",
@@ -3600,6 +4678,26 @@
    },
    "files": 37,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": ".shipwright/planning/01-adopted/spec.md: 7 line(s) added/changed, 0 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_finalization_claims_scenario.py: changed ['EXPECTED_SKIPS', 'Gate', 'assert_only'] used by a test bound to FR-01.11 in shared/tests/test_finalization_claims_scenario.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_finalization_claims_scenario.py::test_a_compliant_run_passes_every_gate_at_every_complexity: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "d0505137c11b63c22e2291b4f75ce4a08f44c70f",
@@ -3714,6 +4812,122 @@
    },
    "files": 42,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.01",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 10 test(s) bound to FR-01.01",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.02",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.02",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.03",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.03",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.06",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 23 test(s) bound to FR-01.06",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.07",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.07",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.08",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.08",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.09",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.09",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.10",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.11",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-iterate/tests/test_iterate_worktree_gate.py::test_hook_is_registered_for_both_events: bound to FR-01.11 and changed",
+     "source": "test"
+    },
+    {
+     "fr": "FR-01.12",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 7 test(s) bound to FR-01.12",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.13",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.13",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.14",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 16 test(s) bound to FR-01.14",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.15",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.15",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.16",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 3 test(s) bound to FR-01.16",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 2 test(s) bound to FR-01.17",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.19",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 5 test(s) bound to FR-01.19",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.20",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 4 test(s) bound to FR-01.20",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.21",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/conftest.py: module-level/scope-wide change reaches 1 test(s) bound to FR-01.21",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "4dd27c8b5fc9c1f90b1d033e071df0e2f40c84ca",
@@ -3792,6 +5006,7 @@
    },
    "files": 14,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "cb27a0e6ee18af31ea8e3e7afb3d3f33882ce0f7",
@@ -3814,6 +5029,7 @@
    },
    "files": 13,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "2eb08ab286ceba42a2f6732e521d49ea7556d03d",
@@ -3836,6 +5052,7 @@
    },
    "files": 2,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "1332e6db79412d298e2416b025f3654c212a2703",
@@ -3858,6 +5075,7 @@
    },
    "files": 17,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "5eb4fe2d20acd5d60a673ce5730c6aced2fc0052",
@@ -3885,6 +5103,14 @@
    },
    "files": 8,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.17",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_ci_yml_execution_evidence_step_shape.py::test_artifact_step_uses_upload_artifact_action: bound to FR-01.17 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "a15da2f952ef91315c34d832d2b764c838b3204f",
@@ -3911,6 +5137,7 @@
    },
    "files": 1,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -3936,6 +5163,7 @@
    },
    "files": 8,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -3961,6 +5189,7 @@
    },
    "files": 1,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -3986,6 +5215,7 @@
    },
    "files": 6,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -4011,6 +5241,7 @@
    },
    "files": 4,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -4036,6 +5267,7 @@
    },
    "files": 1,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [
     "dependencies",
@@ -4065,6 +5297,14 @@
    },
    "files": 13,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.07",
+     "label": "correct-undetermined",
+     "reason": "shared/tests/test_accepted_risks_register.py::test_deleting_the_register_cannot_silence_this_repos_gate: bound to FR-01.07 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "68bb8ce998d5ddfe0682c9b42abd24a3e30bf491",
@@ -4103,6 +5343,20 @@
    },
    "files": 40,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.10",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py: changed ['_manifest'] used by a test bound to FR-01.10 in plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py",
+     "source": "static"
+    },
+    {
+     "fr": "FR-01.10",
+     "label": "correct-benign",
+     "reason": "plugins/shipwright-compliance/tests/test_rtm_coverage_hook_manifest.py::test_inproc_legacy_section_line_and_unevaluable_warn: bound to FR-01.10 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "e45426f79eb2dcf2c936def9ec5596137724bd9a",
@@ -4137,6 +5391,14 @@
    },
    "files": 44,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_iterate_latest_attribution.py::test_the_f5c_entry_carries_the_run_past_a_rewound_snapshot: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "a2f491a4ac6996678c2d340ef89864858bce3b74",
@@ -4165,6 +5427,14 @@
    },
    "files": 49,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": ".shipwright/planning/01-adopted/spec.md: 19 line(s) added/changed, 9 removed in FR-01.11 text",
+     "source": "spec"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "4518bfdd40c590d6049e3e3901e3a8f5560a4ab1",
@@ -4203,6 +5473,14 @@
    },
    "files": 37,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_review_reason_code.py::test_bare_code_synthesised_disposition_reaches_the_companion_marker: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "ca335b7903884d818263e78316a289916f001f8c",
@@ -4233,6 +5511,14 @@
    },
    "files": 19,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.07",
+     "label": "correct-undetermined",
+     "reason": "plugins/shipwright-security/tests/test_pr_review_script.py::TestFileContract.test_every_re_exported_name_resolves: bound to FR-01.07 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "b19939fd265bdc66435825943517afca828035d4",
@@ -4266,6 +5552,7 @@
    },
    "files": 32,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "8f2700352e37f3fdd023f3e3ccf77e6feb3df052",
@@ -4295,6 +5582,20 @@
    },
    "files": 47,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": ".shipwright/planning/01-adopted/spec.md: 7 line(s) added/changed, 0 removed in FR-01.11 text",
+     "source": "spec"
+    },
+    {
+     "fr": "FR-01.11",
+     "label": "correct-benign",
+     "reason": "shared/tests/test_exemption_record.py::test_absent_key_is_legacy_and_valid_but_explicit_null_is_malformed: bound to FR-01.11 and changed",
+     "source": "test"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "be69e37589b12a5ad9f726ff0be9cd054d90d942",
@@ -4330,6 +5631,14 @@
    },
    "files": 56,
    "held": true,
+   "hits": [
+    {
+     "fr": "FR-01.11",
+     "label": "wrong",
+     "reason": "shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_campaign_cascade_record_roundtrip.py: changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11; shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_codex_review_cascade_distinctness_fixture.py: changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11; shared/tests/_review_cli_harness.py (fixture/helper) -> shared/tests/test_record_review_pass_cli_floor.py: changed names ['RUNNER_REASON_CODES'] not used by tests bound to FR-01.11",
+     "source": "static"
+    }
+   ],
    "incomplete": [],
    "labels": [],
    "merge": "b79a573cfe84b126e0c098f8a358d74791e188ac",
@@ -4358,6 +5667,7 @@
    },
    "files": 25,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "b7e09d354465b409684b96fb4e9bd3b28ff66f9c",
@@ -4380,6 +5690,7 @@
    },
    "files": 15,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "c9cc72f5a1179c153d0025bc5b017d7a37d4e262",
@@ -4404,6 +5715,7 @@
    },
    "files": 38,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "b564270d5e7f3e4797dc7b5a58e195870486066a",
@@ -4426,6 +5738,7 @@
    },
    "files": 12,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "168b7fe01f77604bfc1e7623fe17874563c9df1c",
@@ -4448,6 +5761,7 @@
    },
    "files": 2,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "62ffe3df5d844302c72a534bbc457e01c53ac831",
@@ -4470,6 +5784,7 @@
    },
    "files": 22,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "c010b0ea7e3ec08d043f7810bb2844e74151256a",
@@ -4492,6 +5807,7 @@
    },
    "files": 41,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "369a26d3a7f46a47691181fed8586ee1bcb7a09a",
@@ -4514,6 +5830,7 @@
    },
    "files": 34,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "fefd4cab8f52d06137b2cb978a0100fce204a176",
@@ -4536,6 +5853,7 @@
    },
    "files": 30,
    "held": false,
+   "hits": [],
    "incomplete": [],
    "labels": [],
    "merge": "464b99c8be2495172385836cdb8fb13ccf91582b",
