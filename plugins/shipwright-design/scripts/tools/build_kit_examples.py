@@ -17,7 +17,6 @@ FONTS = {
     "warm": "Libre+Baskerville:wght@400;700",
     "clean": "Inter:wght@400;500;600;700",
     "bold": "Plus+Jakarta+Sans:wght@400;500;600;700",
-    "svenroth": "Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500",
 }
 SHELL = """<!DOCTYPE html>
 <html lang="en">

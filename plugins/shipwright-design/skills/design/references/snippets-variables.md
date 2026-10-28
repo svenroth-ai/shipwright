@@ -61,7 +61,7 @@ Every snippet in `snippets-layout.md` and `snippets-components.md` uses these va
 ## Untitled UI x Warm / Clean / Bold
 
 All three untitled-ui looks live in the kit as real token sets, not as blocks here: `../kit/untitled-ui/tokens/warm.css`,
-`clean.css`, `bold.css` and `svenroth.css`. Paste the one that matches into the `:root` of the page together with
+`clean.css` and `bold.css`. Paste the one that matches into the `:root` of the page together with
 `../kit/untitled-ui/kit.css` (see [untitled-ui-components.md](untitled-ui-components.md)). They are contrast-tested; a
 copy here would drift. Token meanings and rules: [tokens-contract.md](../kit/untitled-ui/tokens-contract.md).
 

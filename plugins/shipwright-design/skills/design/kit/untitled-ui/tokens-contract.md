@@ -1,7 +1,7 @@
 # Token contract
 
 What a brand or visual guideline must supply so the kit renders. `kit.css` reads only these names; every file in `tokens/`
-(`warm`, `clean`, `bold`, `svenroth`) is a complete example. All colours are solid hex (no rgba), except `--color-overlay`.
+(`warm`, `clean`, `bold`) is a complete example. All colours are solid hex (no rgba), except `--color-overlay`.
 
 ## Colours
 

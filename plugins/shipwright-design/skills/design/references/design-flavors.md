@@ -67,7 +67,7 @@ Each flavor × character combination has a complete `:root` CSS variable block i
 ### The Untitled UI kit
 
 Flavor `untitled-ui` has a real kit: `kit/untitled-ui/kit.css` (all components, tokens only) plus one token set per
-look (`warm`, `clean`, `bold`, `svenroth`). A screen is composed from the kit; the project's visual guidelines supply the tokens listed in
+look (`warm`, `clean`, `bold`). A screen is composed from the kit; the project's visual guidelines supply the tokens listed in
 [tokens-contract.md](../kit/untitled-ui/tokens-contract.md) and nothing else. See
 [untitled-ui-components.md](untitled-ui-components.md).
 
