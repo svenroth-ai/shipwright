@@ -1,0 +1,1 @@
+{"section":"E4","review":[{"severity":"low","category":"readability","file":"shared/tests/test_brief_intake_checks.py","line":72,"finding":"third block of the cannot-run test depends on the monkeypatch still being active; non-blocking"}],"verdict":"PASS"}

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "# Review: E4 \u2014 Package intake content check and kit-token warning\n\n## Findings\n\n- **Category: approach \u2014 Severity: medium**\n  Running `brief_project_mode.py check` in a subprocess (\"its own interpreter\") from `content_issues` inside `brief_intake_checks.py` is heavier than the problem warrants. If the content check lives in the same repo under `shared/scripts/tools/`, import or invoke it directly; spawning a per-intake interpreter adds process overhead, error-handling surface (parse exit codes / stdout), and a second code path for the same logic. Subprocess isolation is justified by ADR-045 only if there's a real namespace conflict \u2014 the plan should state what it is, or drop it.\n  **Suggestion:** Import `brief_project_mode` as a module and call the factored check function directly; keep ADR-045 isolation only if a concrete conflict exists, and document it.\n\n- **Category: approach \u2014 Severity: medium**\n  Step 1 says the check is factored into `content_issues(text)` used by `apply`, but step 2 places `content_issues` in the new `brief_intake_checks.py` running the tool as a subprocess. Two homes for the same name is confusing. Decide one owner of the logic (the tool module) and one thin consumer.\n  **Suggestion:** `brief_project_mode.py` exports the check; `brief_intake_checks.py` re-exports/wraps it only if it adds the token-warning aggregation.\n\n- **Category: risk \u2014 Severity: medium**\n  `_intake_dir` refusing `invalid_content` before mapping changes behaviour for existing callers. Any pipeline currently tolerating bad content and relying on mapping output will now fail. The plan doesn't enumerate callers or their failure handling.\n  **Suggestion:** Grep for `_intake_dir` consumers and confirm each handles the new refusal path; note in docs that this is a behaviour change, not just a warning addition.\n\n- **Category: dependency \u2014 Severity: medium**\n  `token_warnings` loads `check_brand_tokens.py` \"from where it sits next to shared\" \u2014 a cross-plugin path dependency on the design plugin's file layout. If the design plugin moves or isn't installed, what happens? The plan is silent on the missing-file case.\n  **Suggestion:** Define graceful degradation (no warnings vs. hard error) when `check_brand_tokens.py` is absent, and pin the expected location in the plan.\n\n- **Category: edge-case \u2014 Severity: low**\n  Unhandled: subprocess timeout/failure of the check tool (if kept), empty/None text, and how `warnings` propagate through `_intake_dir` result consumers that don't expect the new key.\n  **Suggestion:** Add tests for check-tool failure and empty input; verify result consumers tolerate the added `warnings` key.\n\n- **Category: edge-case \u2014 Severity: low**\n  Step 5 mutates an existing project-plugin test's fixture (\"fixture md made valid\") \u2014 making a fixture valid to satisfy the new refusal could silently weaken what that test previously covered (invalid-content tolerance).\n  **Suggestion:** Keep the old fixture as a separate negative case asserting the new refusal, rather than only editing it to pass.\n\n- **Category: over-production \u2014 Severity: low**\n  New lib module + new read-only CLI command + subprocess wrapper for what is essentially \"reuse one existing check plus one brand-token scan.\" A single function in the existing intake module calling the imported check plus `check_brand_tokens` would do.\n  **Suggestion:** Collapse `brief_intake_checks.py` into `brief_dir_intake.py` unless other call sites are planned; the standalone `check` command is only warranted if operators need it ad hoc.\n\n## Overall Assessment\n\nThe functional goal is right, but the plan wraps a reusable check in subprocess isolation and a new module without stating the concrete need, and under-specifies failure handling for the new hard refusal and the cross-plugin file load. Simplify the invocation path and define degradation behaviour before merging.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository reads were blocked by the execution policy, so this review is based on the supplied plan; I could not verify the campaign brief or existing code.\n\n1. **Category: dependency | Severity: medium**\n   **Finding:** Loading `check_brand_tokens.py` from a sibling design plugin assumes that plugin is installed and preserves the repository layout. The plan does not establish that dependency for packaged intake.\n   **Suggestion:** Verify the installed layout and resolve the checker from a trusted installation path. If unavailable, return an explicit \u201ctoken check unavailable\u201d warning without blocking otherwise valid intake. Test with the design plugin absent.\n\n2. **Category: edge-case | Severity: medium**\n   **Finding:** The subprocess content check has no defined handling for launch failures, timeouts, or malformed output. These must remain distinguishable from an invalid brief.\n   **Suggestion:** Use the current interpreter, an argument list, a bounded timeout, and structured output. Report checker execution failures separately from `invalid_content`; test both paths.\n\n3. **Category: risk | Severity: medium**\n   **Finding:** Adding `warnings` to `_intake_dir` does not establish that callers display them or that token validation failures remain nonblocking.\n   **Suggestion:** Trace the result through the actual intake caller and surface actionable warnings there. Test that missing tokens and failing contrast pairs produce visible warnings while valid content still completes mapping.\n\n4. **Category: risk | Severity: medium**\n   **Finding:** The test plan does not explicitly cover rejection before mutation or preservation of existing `apply` behavior after extracting its validation logic.\n   **Suggestion:** Add focused regression coverage proving invalid package content leaves mappings and run configuration untouched, and that `check` and `apply` agree on representative valid and invalid content. Include a valid package without a kit to establish the intended optional-kit behavior.\n\nThe approach is reasonable and proportionate, but dependency handling, failure semantics, and end-to-end warning delivery need to be explicit before implementation. Compliance with E4\u2019s exact scope remains unverified without the brief.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-29-e4-package-intake-content-check",
+    "at": "2026-10-29T00:04:59.487481+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
