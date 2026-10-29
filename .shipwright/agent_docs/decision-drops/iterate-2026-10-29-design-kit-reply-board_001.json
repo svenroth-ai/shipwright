@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-design-kit-reply-board",
+  "date": "2026-10-29",
+  "section": "Iterate — feature: design kit reply-board components",
+  "title": "Reply-board parts go into kit.css, derived from Untitled UI",
+  "context": "Judging the kit against the social-engagement-real mockups found five gaps: no post/comment tree, no master-detail layout, no count on tabs, no draft callout with copy, no mono eyebrow.",
+  "decision": "Add token-only classes to kit.css and the gallery: thread/comment-tree, master-detail with a picker below 900px, count slot, callout with copy-btn, eyebrow. Parts follow Untitled UI (tab badge, feed item, code snippet); master-detail and eyebrow are built from the kit's own tokens.",
+  "consequences": "A composed screen can now look like the real reply board without per-project CSS. The kit grows by about 45 lines; the 16px base-size floor and font reach (G6) stay open findings.",
+  "rationale": "The kit owns how components look; projects only supply tokens. A second optional file or per-project CSS would split that contract.",
+  "rejected": "Per-project CSS in each screen; a separate optional kit extension file; lowering the 16px floor.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

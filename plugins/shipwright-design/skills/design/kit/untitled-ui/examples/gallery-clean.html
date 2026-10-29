@@ -997,7 +997,7 @@
 .list-item { display: flex; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
 .list-item:last-child { border-bottom: 0; }
 .list-item:hover { background: var(--color-hover); }
-.list-item.active { background: var(--color-primary-soft); }
+.list-item.active, .list-item[aria-current]:not([aria-current="false"]) { background: var(--color-primary-soft); }
 .list-item-main { flex: 1; min-width: 0; }
 .list-item-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--color-muted); }
 .list-item-title { font-size: var(--font-size-base); font-weight: 600; color: var(--color-text); margin-top: 2px; }
@@ -1186,6 +1186,48 @@
 .empty-code { font-size: var(--font-size-h1); font-weight: var(--font-weight-heading); color: var(--color-primary); }
 
 .page-btn { min-width: 32px; min-height: 32px; }
+
+/* === Count slot (on .tab and .segmented-item; Untitled UI: tab badge) === */
+.tab .count, .segmented-item .count { display: inline-flex; align-items: center; margin-left: var(--space-2); padding: 0 var(--space-2); border-radius: 999px; font-size: var(--font-size-sm); font-weight: 500; line-height: 1.5; color: var(--color-muted); background: var(--color-hover); }
+.segmented-item .count { background: var(--color-surface); }
+.tab.active .count, .segmented-item.active .count { color: var(--color-muted); background: var(--color-primary-soft); }
+
+/* === Eyebrow (small uppercase mono label above a title) === */
+.eyebrow { font-family: var(--font-mono); font-size: var(--font-size-sm); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-muted); }
+
+/* === Post and comment tree (Untitled UI feed item: avatar, author, meta; replies nest, depth = nesting) === */
+.thread { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--color-surface); border: var(--card-border); border-radius: var(--radius-lg); box-shadow: var(--card-shadow); }
+.thread-title { margin: 0; font-size: var(--font-size-h3); font-weight: var(--font-weight-heading); color: var(--color-text); }
+.thread-body { font-size: var(--font-size-base); color: var(--color-text); overflow-wrap: anywhere; }
+.thread-meta, .comment-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--color-muted); }
+.thread-meta strong, .comment-head strong { color: var(--color-text); font-weight: 600; }
+.comment-tree { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.comment { min-width: 0; }
+.comment-body { margin-top: var(--space-1); font-size: var(--font-size-base); color: var(--color-text); overflow-wrap: anywhere; }
+.comment-tree .comment-tree { margin-top: var(--space-3); margin-left: var(--space-3); padding-left: var(--space-4); border-left: 1px solid var(--color-border); }
+@media (max-width: 640px) {
+  .comment-tree .comment-tree { margin-left: 0; padding-left: var(--space-3); }
+}
+
+/* === Draft callout with copy action (Untitled UI code snippet: copy button, copied state) === */
+.callout { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--color-primary-soft); border: 1px solid var(--color-border-strong); border-left-width: 4px; border-left-color: var(--color-primary); border-radius: var(--radius); }
+.callout-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.callout-text { margin: 0; font-size: var(--font-size-base); color: var(--color-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy-btn.copied { color: var(--color-success); background: var(--color-success-bg); border-color: var(--color-success); }
+
+/* === Master-detail (list pane stays beside one selected item; a picker replaces the pane on a narrow screen) === */
+.master-detail { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.master-pane { position: sticky; top: var(--space-4); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-2); margin: calc(-1 * var(--space-2)); }
+.app-topnav .master-pane { top: calc(57px + var(--space-4)); max-height: calc(100vh - 57px - 2 * var(--space-4)); }
+.main-area .master-pane { position: static; max-height: none; overflow: visible; padding: 0; margin: 0; }
+.master-picker { display: none; }
+.detail-pane { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+@media (max-width: 900px) {
+  .master-detail { grid-template-columns: minmax(0, 1fr); }
+  .master-pane, .app-topnav .master-pane { position: static; max-height: none; overflow: visible; padding: 0; margin: 0; }
+  .master-pane > :not(.master-picker) { display: none; }
+  .master-picker { display: block; }
+}
 </style>
 </head>
 <body>
@@ -1232,9 +1274,20 @@
         <div class="stat-card"><div class="stat-header"><span class="stat-label">Replies</span></div><div class="stat-value">34</div><div class="stat-trend trend-down"><span>4% vs last week</span></div></div>
       </div>
 
+      <h2>Thread and reply board</h2>
+      <div class="master-detail">
+        <div class="master-pane"><div class="select-wrap master-picker"><select class="select" aria-label="Thread"><option>Reddit: onboarding checklist</option><option>Hacker News: pipelines</option></select></div><div class="list"><a class="list-item active" href="#reddit" aria-current="true"><div class="list-item-main"><div class="list-item-title">Reddit: onboarding checklist</div></div></a><a class="list-item" href="#hn"><div class="list-item-main"><div class="list-item-title">Hacker News: pipelines</div></div></a></div></div>
+        <div class="detail-pane">
+          <div class="thread"><div class="eyebrow">Reddit &middot; r/webdev</div><h3 class="thread-title">How do you keep onboarding checklists current?</h3><div class="thread-meta"><div class="avatar avatar-sm">MK</div><strong>maria_k</strong><span>42 points</span><span>3 hours ago</span></div><p class="thread-body">Ours rot within a month.</p>
+            <ul class="comment-tree" role="list"><li class="comment"><div class="comment-head"><div class="avatar avatar-sm">TL</div><strong>tomlin</strong><span>12 points</span><span>2 hours ago</span></div><p class="comment-body">Generate them from the repo.</p>
+              <ul class="comment-tree" role="list"><li class="comment"><div class="comment-head"><div class="avatar avatar-sm">MK</div><strong>maria_k</strong><span>3 points</span><span>1 hour ago</span></div><p class="comment-body">Do you test the generated output?</p></li></ul></li></ul></div>
+          <div class="callout"><div class="callout-head"><span class="eyebrow">Draft reply</span><button class="btn btn-secondary btn-sm copy-btn copied" type="button">Copied</button></div><p class="callout-text">We generate ours from the repo and check them in CI.</p></div>
+        </div>
+      </div>
+
       <h2>Tabs, segmented control, progress</h2>
       <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">One</button><button class="tab" role="tab" aria-selected="false" type="button">Two</button><button class="tab" role="tab" aria-selected="false" type="button">Three</button></div></div>
-      <div class="segmented"><button class="segmented-item active" aria-pressed="true" type="button">Day</button><button class="segmented-item" aria-pressed="false" type="button">Week</button><button class="segmented-item" aria-pressed="false" type="button">Month</button></div>
+      <div class="segmented"><button class="segmented-item active" aria-pressed="true" type="button">Day <span class="count">4</span></button><button class="segmented-item" aria-pressed="false" type="button">Week <span class="count">3</span></button><button class="segmented-item" aria-pressed="false" type="button">Month</button></div>
       <div class="progress"><div class="progress-bar" style="width: 62%"></div></div>
 
       <h2>Form</h2>
@@ -1350,7 +1403,7 @@
           <tbody><tr><td><input type="checkbox" class="row-check" aria-label="Select row"></td><td>Onboarding for a new tool</td><td><span class="badge badge-info">new</span></td></tr></tbody></table>
         <div class="table-footer"><span>Showing 1 of 9 threads</span></div>
       </div>
-      <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">Details</button><button class="tab" role="tab" aria-selected="false" type="button">History</button></div><div class="tab-content"><p class="card-desc">Content of the active tab.</p></div></div>
+      <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">Details <span class="count">2</span></button><button class="tab" role="tab" aria-selected="false" type="button">History</button></div><div class="tab-content"><p class="card-desc">Content of the active tab.</p></div></div>
       <div class="detail-layout">
         <div class="detail-main"><div class="detail-section"><h3>Thread</h3><div class="detail-fields"><div><span class="detail-label">Platform</span><span class="detail-value">Reddit</span></div><div><span class="detail-label">Author</span><span class="detail-value">u/maria_k</span></div></div></div></div>
         <div class="detail-sidebar"><div class="detail-section"><h3>Actions</h3><div class="detail-actions"><button class="btn btn-secondary btn-sm" type="button">Open draft</button></div></div></div>

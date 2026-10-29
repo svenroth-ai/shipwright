@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-design-kit-reply-board",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T22:11:36.218427+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Browser rendering remains unverified even though the main acceptance criteria depend on browser layout: independent pane scrolling, the 900px picker transition, and nested comment indentation. Passing class-inventory and token tests cannot establish that these behaviors work, particularly across Layout A and Layout B with different positioning rules.",
+          "suggestion": "Before acceptance, render a representative reply board in both layouts, above and below 900px. Check independent scrolling with long content, picker visibility, deeply nested comments, long URLs, and selected count/copied states. Record a brief manual result; automated pixel comparisons are unnecessary.  The approach is sound and proportionate: extending the existing kit preserves component ownership without introducing another styling contract. The remaining prerequisite is a focused browser check of the layout behavior; no specific security issue is apparent in this styling-only scope.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T22:25:21.492877+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case** — **Severity: medium** — AC2's responsive behaviour (\"below 900px the list is replaced by a select picker\") relies on hiding `master-pane` children and showing a presentational picker, but the spec doesn't say who owns the picker's behaviour or how selection state syncs between the pane and the picker. Since the picker is documented as presentational-only, a composing agent could reasonably wire it incorrectly (or not at all), producing a detail pane that can't be changed on mobile. **Suggestion:** add one sentence to the docs/example showing the intended wiring pattern (e.g., JS listens for `change`, updates `aria-selected`/active class in the detail pane), or an explicit statement that interactivity is out of the kit's scope and must be composed by the caller.\n\n- **Category: edge-case** — **Severity: low** — Deep nesting in `comment-tree` has no documented depth cap. AC1 says \"replies nested by depth\" but the indentation below 900px \"already shrinks\" — very deep trees (6+ levels) will either overflow or collapse to unreadable indents. **Suggestion:** document a recommended max depth (Untitled UI itself caps visual indent) or an indent clamp in `kit.css` (e.g., `padding-inline` capped via `min()`).\n\n- **Category: risk** — **Severity: low** — The plan reviewer's HIGH (Layout A sticky-pane disagreement) was dismissed as \"stale — read mid-edit\" but there's no evidence in this spec beyond the assertion. If CSS, tests, and docs were concurrently edited, the same class of drift can recur on the two-layout sticky logic (`position: static` in A, sticky under 56px top nav in B). **Suggestion:** add one test asserting the exact computed `position`/`top` values for `detail-pane` under both layout contexts so drift is caught mechanically, not by re-reading files.\n\n- **Category: edge-case** — **Severity: low** — `copy-btn` `copied` state: the plan reviewer flagged the missing visually-hidden class and it was declined \"by deci […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Browser rendering remains unverified even though the main acceptance criteria depend on browser layout: independent pane scrolling, the 900px picker transition, and nested comment indentation. Passing class-inventory and token tests cannot establish that these behaviors work, particularly across Layout A and Layout B with different positioning rules.  \n   **Suggestion:** Before acceptance, render a representative reply board in both layouts, above and below 900px. Check independent scrolling with long content, picker visibility, deeply nested comments, long URLs, and selected count/copied states. Record a brief manual result; automated pixel comparisons are unnecessary.\n\nThe approach is sound and proportionate: extending the existing kit preserves component ownership without introducing another styling contract. The remaining prerequisite is a focused browser check of the layout behavior; no specific security issue is apparent in this styling-only scope.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css",
+          "line": 1151,
+          "finding": "Sticky .master-pane slid under the sticky .topnav/.topbar. FIXED: layout-scoped offsets (.app-topnav 57px, .main-area 72px).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css",
+          "line": 1151,
+          "finding": "overflow-y:auto clipped the list card shadow and focus ring. FIXED: pane padding space-2 with matching negative margin.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/gallery.html",
+          "line": 46,
+          "finding": "Picker had no chevron. FIXED: wrapped in select-wrap.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py",
+          "line": 308,
+          "finding": "Narrow-screen test slice ran to end of file; second test was redundant. FIXED: slice cut at the media block end, tests strengthened.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/references/untitled-ui-components.md",
+          "line": 46,
+          "finding": "No a11y guidance for copied state, list semantics, aria-current. FIXED in docs and gallery.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css",
+          "line": 1124,
+          "finding": "Selected count used an unchecked contrast pair. FIXED: muted on primary-soft (7:1 in CONTRAST_PAIRS).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T22:17:14.904200+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "docs say the selected item carries aria-current, kit styles only .active",
+          "suggestion": "RESOLVED: .list-item[aria-current] styled like .active, doc updated, test added.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "narrow collapse hides only .master-pane .list; picker placement undocumented",
+          "suggestion": "RESOLVED: rule is now .master-pane > :not(.master-picker), doc says master-picker goes on the select-wrap.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "72px Layout A offset is a guess",
+          "suggestion": "ACCEPTED: stated in the docs as approximate; not browser-measured.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "global .count collides",
+          "suggestion": "RESOLVED: scoped to .tab .count and .segmented-item .count; test added.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "fixture mono counts and primary eyebrow not recorded",
+          "suggestion": "RESOLVED: recorded as brand choices outside the kit in the docs.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "aria-live on the button is unreliable",
+          "suggestion": "RESOLVED: doc recommends a separate role=status region; attribute removed from the gallery.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T22:20:24.069680+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css` (`.master-pane { ... margin: calc(-1  var(--space-2)); }`)",
+          "line": null,
+          "finding": "The negative margin trick to un-clip shadows/focus rings expands the pane visually outside its grid track on both sides — 8px left of the track and 8px into the 20px gap toward `detail-pane`. In a container without padding, this can cause an 8px horizontal bleed/overflow at the viewport left edge.",
+          "suggestion": "Consider `overflow-y: auto; overflow-x: clip;` with a slightly larger padding-compensation, or add the padding to `.master-detail` itself so the pane's grid track includes the breathing room.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css` (`.master-detail { grid-template-columns: minmax(280px, 360px) ... }`)",
+          "line": null,
+          "finding": "AC2 says a \"fixed-width list pane\"; `minmax(280px, 360px)` makes it fluid within a range, so at container widths between the bounds the pane width changes. This is a partial/loose reading of the AC.",
+          "suggestion": "Either use a fixed track (e.g. `360px`) or note in the docs that \"fixed-width\" is implemented as a bounded range, so consumers know what to expect.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py:337` (`assert not re.search(r\"^\\.count\", css, re.M)`)",
+          "line": null,
+          "finding": "This test is the first visible use of `re` in the shown file section; if `import re` isn't already at the top of the file, all four new tests fail with `NameError` at collection time. Also, the pattern only rules out a bare `.count` selector at line start — a rule like `.count, .tab` or `.callout .count` would pass, so the \"scoped to the two switchers\" claim is only weakly enforced.",
+          "suggestion": "Verify the `re` import exists; strengthen the check to assert no selector list anywhere contains `.count` unscoped (e.g. search for `.count` occurrences and assert each is preceded by `.tab ` or `.segmented-item `).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py:303–310",
+          "line": null,
+          "finding": "The narrow-screen test locates the media block via an exact literal `\"@media (max-width: 900px) {\\n  .master-detail\"` — any whitespace/formatting reflow of kit.css breaks the test even when the CSS behavior is unchanged. Tests are asserting the file's byte layout, not the layout behavior.",
+          "suggestion": "Match the `@media` line with a regex tolerant of whitespace, or slice on the `@media (max-width: 900px)` token and its matching closing brace.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/gallery.html` (copy button `class=\"btn btn-secondary btn-sm copy-btn copied\"` with text \"Copied\")",
+          "line": null,
+          "finding": "The gallery shows the button only in its terminal `copied` state; there is no example of the resting `copy-btn` state next to the \"Copied\" one, so consumers can't see both states side by side, and a class-inventory test reading the gallery cannot verify the un-copied variant appears anywhere.",
+          "suggestion": "Add a second callout (or a second button) in the resting state labelled \"Copy\" so both states are demonstrated.  No security issues: the diff adds static CSS and HTML with no scripts, no inline handlers, no external assets, and no user-controlled data. No regression risk to existing classes: the only modified existing rule is `.list-item.active` (extended, not narrowed), and the new `.count` rules are scoped, so a global `.count` elsewhere in the kit (if any) is unaffected — though the docs table should arguably state that any pre-existing unscoped `.count` usage would silently not get the badge styling.  Overall: the implementation matches the six ACs, prior review/doubt findings are visibly addressed in the CSS, docs, and gallery, and the tests are narrowly real (they'd catch removal of the collapse rule, the sticky offsets, the contrast pair, and the mono eyebrow). Findings above are refinements, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css",
+          "line": 931,
+          "finding": ".list-item[aria-current]` also matches `aria-current=\"false\"`. Consumers that explicitly mark inactive links as false will now display those links as selected.",
+          "suggestion": "Use `.list-item[aria-current]:not([aria-current=\"false\"])` alongside `.list-item.active`, and cover both true and false values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-design/tests/test_untitled_ui_kit.py",
+          "line": 338,
+          "finding": "The regex contains a literal backspace character after `.count`, rather than the intended `\\b` word boundary. A global `.count { ... }` rule would therefore pass this scoping test.",
+          "suggestion": "Replace the backspace with `\\b` in the raw regex string and verify that a global `.count` rule fails the check.  Overall assessment: ship-with-fixes. The diff substantially implements the requested components, but the selection-state regression and ineffective scoping assertion should be corrected before shipping; browser rendering remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T22:22:05.629713+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: edge-case | Severity: low\n  File: `plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css` (`.master-pane { ... margin: calc(-1 * var(--space-2)); }`)\n  Finding: The negative margin trick to un-clip shadows/focus rings expands the pane visually outside its grid track on both sides — 8px left of the track and 8px into the 20px gap toward `detail-pane`. In a container without padding, this can cause an 8px horizontal bleed/overflow at the viewport left edge.\n  Suggestion: Consider `overflow-y: auto; overflow-x: clip;` with a slightly larger padding-compensation, or add the padding to `.master-detail` itself so the pane's grid track includes the breathing room.\n\n- Category: spec | Severity: low\n  File: `plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css` (`.master-detail { grid-template-columns: minmax(280px, 360px) ... }`)\n  Finding: AC2 says a \"fixed-width list pane\"; `minmax(280px, 360px)` makes it fluid within a range, so at container widths between the bounds the pane width changes. This is a partial/loose reading of the AC.\n  Suggestion: Either use a fixed track (e.g. `360px`) or note in the docs that \"fixed-width\" is implemented as a bounded range, so consumers know what to expect.\n\n- Category: test | Severity: low\n  File: `plugins/shipwright-design/tests/test_untitled_ui_kit.py:337` (`assert not re.search(r\"^\\.count\", css, re.M)`)\n  Finding: This test is the first visible use of `re` in the shown file section; if `import re` isn't already at the top of the file, all four new tests fail with `NameError` at collection time. Also, the pattern only rules out a bare `.count` selector at line start — a rule like `.count, .tab` or `.callout .count` would pass, so the \"scoped to the two switchers\" claim is only weakly enforced.\n  Suggestion: Verify the `re` import exists; strengthen the check to assert no selector list anywhere contains `.count` unscoped (e.g. search for `.count` occurrences and assert each i […truncated]\n\n[openai] - Category: regression\n- Severity: medium\n- File: `plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css:931`\n- Finding: `.list-item[aria-current]` also matches `aria-current=\"false\"`. Consumers that explicitly mark inactive links as false will now display those links as selected.\n- Suggestion: Use `.list-item[aria-current]:not([aria-current=\"false\"])` alongside `.list-item.active`, and cover both true and false values.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-design/tests/test_untitled_ui_kit.py:338`\n- Finding: The regex contains a literal backspace character after `.count`, rather than the intended `\\b` word boundary. A global `.count { ... }` rule would therefore pass this scoping test.\n- Suggestion: Replace the backspace with `\\b` in the raw regex string and verify that a global `.count` rule fails the check.\n\nOverall assessment: ship-with-fixes. The diff substantially implements the requested components, but the selection-state regression and ineffective scoping assertion should be corrected before shipping; browser rendering remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T22:14:22.752413+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T22:24:15.539658+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T22:23:33.158961+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

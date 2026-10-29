@@ -1,0 +1,95 @@
+{
+  "run_id": "iterate-2026-10-29-design-kit-reply-board",
+  "date": "2026-10-29T22:41:31.128080Z",
+  "event_at": "2026-10-29T22:26:49.761300+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/design-kit-reply-board",
+  "spec": ".shipwright/planning/iterate/2026-10-29-design-kit-reply-board.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-29-design-kit-reply-board",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 post with nested comment tree (thread, comment-tree, comment-head) is defined and shown",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_replies_nest_and_eyebrow_is_mono PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_gallery_shows_every_component_class_of_the_kit PASSED"
+      },
+      {
+        "behavior": "AC2 master-detail pane becomes a picker below 900px, hidden above",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_master_detail_collapses_to_a_picker_on_a_narrow_screen PASSED"
+      },
+      {
+        "behavior": "AC2 sticky pane clears the Layout B top nav and keeps its shadow and focus ring",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_sticky_pane_clears_the_sticky_page_headers_and_keeps_its_edge PASSED"
+      },
+      {
+        "behavior": "AC3 count slot scoped to tab and segmented-item, selected state on a contracted colour pair",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_selected_count_uses_a_contrast_pair_the_contract_checks PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_replies_nest_and_eyebrow_is_mono PASSED"
+      },
+      {
+        "behavior": "AC4 callout and copy-btn exist in kit and gallery, copied state defined",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_gallery_shows_every_component_class_of_the_kit PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_fragments_use_only_classes_the_kit_defines PASSED"
+      },
+      {
+        "behavior": "AC5 eyebrow uses the mono font token",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_replies_nest_and_eyebrow_is_mono PASSED"
+      },
+      {
+        "behavior": "AC6 no literal colours or font sizes, no undefined tokens, examples current",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_kit_uses_tokens_only PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_committed_examples_match_what_the_kit_builds PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_token_contract_names_every_token_the_kit_uses PASSED"
+      },
+      {
+        "behavior": "Browser: wide screen puts the list pane beside the thread and hides the picker; narrow screen shows the picker and no sideways overflow (all three looks)",
+        "disposition": "tested",
+        "evidence": "integration-tests/e2e-webui/tests/unit/design-kit-reply-board.spec.ts::gallery-clean/warm/bold wide + narrow PASSED (Playwright, 6 tests)"
+      },
+      {
+        "behavior": "Browser: nested reply is indented with a 1px left rule; count shows in the segmented control; eyebrow is uppercase and the mono token; callout and copied button render",
+        "disposition": "tested",
+        "evidence": "integration-tests/e2e-webui/tests/unit/design-kit-reply-board.spec.ts::gallery-clean/warm/bold nested, counts+eyebrow, callout PASSED (Playwright, 9 tests)"
+      },
+      {
+        "behavior": "Rendering of independent scroll with a long list, depth 5+ nesting and the Layout B sticky offset on a real page",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "The gallery has no long list, no deep thread and no top-nav page to exercise these; the three cases were not rendered"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "web",
+    "runner": "node integration-tests/e2e-webui/node_modules/@playwright/test/cli test --config integration-tests/e2e-webui/playwright.kit.config.ts --reporter=line integration-tests/e2e-webui/tests/unit/design-kit-reply-board.spec.ts",
+    "exit_code": 0,
+    "tests_run": 15,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-29-design-kit-reply-board/surface_verification.log",
+    "timestamp": "2026-10-29T22:41:30.764Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra"
+  ]
+}

@@ -928,7 +928,7 @@
 .list-item { display: flex; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
 .list-item:last-child { border-bottom: 0; }
 .list-item:hover { background: var(--color-hover); }
-.list-item.active { background: var(--color-primary-soft); }
+.list-item.active, .list-item[aria-current]:not([aria-current="false"]) { background: var(--color-primary-soft); }
 .list-item-main { flex: 1; min-width: 0; }
 .list-item-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--color-muted); }
 .list-item-title { font-size: var(--font-size-base); font-weight: 600; color: var(--color-text); margin-top: 2px; }
@@ -1117,3 +1117,45 @@
 .empty-code { font-size: var(--font-size-h1); font-weight: var(--font-weight-heading); color: var(--color-primary); }
 
 .page-btn { min-width: 32px; min-height: 32px; }
+
+/* === Count slot (on .tab and .segmented-item; Untitled UI: tab badge) === */
+.tab .count, .segmented-item .count { display: inline-flex; align-items: center; margin-left: var(--space-2); padding: 0 var(--space-2); border-radius: 999px; font-size: var(--font-size-sm); font-weight: 500; line-height: 1.5; color: var(--color-muted); background: var(--color-hover); }
+.segmented-item .count { background: var(--color-surface); }
+.tab.active .count, .segmented-item.active .count { color: var(--color-muted); background: var(--color-primary-soft); }
+
+/* === Eyebrow (small uppercase mono label above a title) === */
+.eyebrow { font-family: var(--font-mono); font-size: var(--font-size-sm); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-muted); }
+
+/* === Post and comment tree (Untitled UI feed item: avatar, author, meta; replies nest, depth = nesting) === */
+.thread { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--color-surface); border: var(--card-border); border-radius: var(--radius-lg); box-shadow: var(--card-shadow); }
+.thread-title { margin: 0; font-size: var(--font-size-h3); font-weight: var(--font-weight-heading); color: var(--color-text); }
+.thread-body { font-size: var(--font-size-base); color: var(--color-text); overflow-wrap: anywhere; }
+.thread-meta, .comment-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--color-muted); }
+.thread-meta strong, .comment-head strong { color: var(--color-text); font-weight: 600; }
+.comment-tree { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.comment { min-width: 0; }
+.comment-body { margin-top: var(--space-1); font-size: var(--font-size-base); color: var(--color-text); overflow-wrap: anywhere; }
+.comment-tree .comment-tree { margin-top: var(--space-3); margin-left: var(--space-3); padding-left: var(--space-4); border-left: 1px solid var(--color-border); }
+@media (max-width: 640px) {
+  .comment-tree .comment-tree { margin-left: 0; padding-left: var(--space-3); }
+}
+
+/* === Draft callout with copy action (Untitled UI code snippet: copy button, copied state) === */
+.callout { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--color-primary-soft); border: 1px solid var(--color-border-strong); border-left-width: 4px; border-left-color: var(--color-primary); border-radius: var(--radius); }
+.callout-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.callout-text { margin: 0; font-size: var(--font-size-base); color: var(--color-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy-btn.copied { color: var(--color-success); background: var(--color-success-bg); border-color: var(--color-success); }
+
+/* === Master-detail (list pane stays beside one selected item; a picker replaces the pane on a narrow screen) === */
+.master-detail { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.master-pane { position: sticky; top: var(--space-4); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-2); margin: calc(-1 * var(--space-2)); }
+.app-topnav .master-pane { top: calc(57px + var(--space-4)); max-height: calc(100vh - 57px - 2 * var(--space-4)); }
+.main-area .master-pane { position: static; max-height: none; overflow: visible; padding: 0; margin: 0; }
+.master-picker { display: none; }
+.detail-pane { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+@media (max-width: 900px) {
+  .master-detail { grid-template-columns: minmax(0, 1fr); }
+  .master-pane, .app-topnav .master-pane { position: static; max-height: none; overflow: visible; padding: 0; margin: 0; }
+  .master-pane > :not(.master-picker) { display: none; }
+  .master-picker { display: block; }
+}

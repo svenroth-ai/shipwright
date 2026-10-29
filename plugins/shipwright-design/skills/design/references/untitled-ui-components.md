@@ -36,13 +36,14 @@ Kit paths in these docs (`kit/untitled-ui/...`) are relative to the design skill
 | Buttons | `btn` + `btn-primary` `btn-secondary` `btn-ghost` `btn-danger` · `btn-sm` `btn-lg` · `icon-btn` |
 | Data | `data-table` `table-container` `table-toolbar` `pagination` · `card-grid` `card*` · `stats-row` `stat-card*` · `list` `list-item*` |
 | Input | `form-container` `form-grid` `field` `field-label` `field-input` `field-textarea` `field-hint` `field-error` (modifier on `field`) · `toggle-row` `toggle*` · `search-input` |
-| Navigation | `tabs-container` `tabs-nav` `tab` · `segmented` `segmented-item` · `breadcrumbs*` · `pagination` |
+| Navigation | `tabs-container` `tabs-nav` `tab` · `segmented` `segmented-item` · `count` (number slot inside `tab` / `segmented-item`) · `breadcrumbs*` · `pagination` |
 | Feedback | `badge` + `badge-success/warning/error/info/neutral` · `tag` `tag-remove` `tag-row` · `alert` + `alert-info/success/warning/error` · `toast` · `progress` `progress-bar` · `empty-state*` · `notification-list` `notif-*` |
 | Overlay | `modal-overlay` `modal*` · `popover-anchor` `popover` `popover-item` |
 | Choice and input extras | `choice-group` `choice-legend` `choice` (checkbox, radio) · `select-wrap` `select` · `multi-select` · `range` · `code-input` `code-input-box` · `dropzone` `file-item*` · `calendar*` |
 | Menus and panels | `popover-sep` `popover-label` `popover-item danger` · `command*` `kbd` · `drawer-overlay` `drawer*` · `tooltip-anchor` `tooltip` · `filter-bar` |
 | Structure | `steps` `step` (progress steps) · `tree` `tree-item` · `feed` `feed-item*` · `card-header` · `section-footer` · `cta` · `code` · `btn-group` · `badge-group` · `featured-icon` · `rating` · `empty-code` (404) |
 | Loading | `skeleton` `skeleton-line` `skeleton-title` · `spinner` · `error-summary` |
+| Master-detail and discussion | `master-detail` `master-pane` `master-picker` `detail-pane` (list pane beside one selected item, a `select-wrap` > `select` picker below 900px; list items are links or buttons and the selected one carries `aria-current`, which the kit styles like `active`; put `master-picker` on the `select-wrap`; every other child of `master-pane` is hidden below 900px) · `thread` `thread-title` `thread-body` `thread-meta` · `comment-tree` `comment` `comment-head` `comment-body` (replies nest a `comment-tree` inside a `comment`; give each `role="list"`, because `list-style: none` drops list semantics in VoiceOver) · `callout` `callout-head` `callout-text` `copy-btn` (used together with `btn btn-secondary btn-sm`; + `copied`; announce the swap to "Copied" through a separate `role="status"` region next to the button, not on the button itself) · `eyebrow` |
 | Misc | `avatar` `avatar-sm` `avatar-group` · `section-header` `section-title` · `divider` · `detail-layout` `detail-*` |
 
 The gallery (`examples/gallery-*.html`) shows every one of them. Layout D (chat + pane) is not part of the kit and is retired for skill-backed apps.
@@ -61,6 +62,17 @@ Deliberately not in the kit (each needs its own library or is marketing, not app
 library and colour it from tokens), carousels, rich text editors, colour, gradient and image pickers, credit cards, QR
 codes, video players, app-store and social buttons, illustrations, chat messaging, marketing website sections and
 email templates. Add one when a project needs it, together with its gallery entry.
+
+## Where the reply-board parts come from
+
+Derived from Untitled UI, token for token, never restyled: the count slot is its tab badge, `thread` / `comment-head` are
+its activity-feed item (avatar, author, meta) with replies nested instead of a timeline rail, and the copy action with its
+`copied` state follows its code snippet. Untitled UI has no inbox / master-detail layout and no uppercase mono label, so
+`master-detail` and `eyebrow` are built only from its existing tokens (card surface, `--radius-lg`, `--space-*`,
+`--font-mono`). Not checked by the kit: whether a package's `--font-family` / `--font-mono` reach the composed screen
+(the E2E harness check S04 compares the served fonts).
+
+The kit keeps the 16px base-size floor (the real reply board uses 15px); that difference is a recorded finding, not a kit change. Two more differences to the real board stay brand choices outside the kit: its counts use the mono font and its eyebrow is the primary colour. The list pane sticks below the Layout B top nav (a fixed 56px high); in Layout A (`.main-area`) the top bar has no fixed height, so there the pane scrolls with the page. The picker below 900px is presentational: a mockup that must switch items needs its own script. Anything else inside `master-pane` (a search box, a filter) is hidden below 900px too.
 
 ## Rules
 

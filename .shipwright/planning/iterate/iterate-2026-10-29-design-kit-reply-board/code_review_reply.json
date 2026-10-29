@@ -1,0 +1,8 @@
+{"section":"design-kit-reply-board","review":[
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css","line":1151,"finding":"Sticky .master-pane slid under the sticky .topnav/.topbar. FIXED: layout-scoped offsets (.app-topnav 57px, .main-area 72px).","suggestion":"fixed"},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css","line":1151,"finding":"overflow-y:auto clipped the list card shadow and focus ring. FIXED: pane padding space-2 with matching negative margin.","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-design/skills/design/kit/untitled-ui/fragments/gallery.html","line":46,"finding":"Picker had no chevron. FIXED: wrapped in select-wrap.","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-design/tests/test_untitled_ui_kit.py","line":308,"finding":"Narrow-screen test slice ran to end of file; second test was redundant. FIXED: slice cut at the media block end, tests strengthened.","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-design/skills/design/references/untitled-ui-components.md","line":46,"finding":"No a11y guidance for copied state, list semantics, aria-current. FIXED in docs and gallery.","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-design/skills/design/kit/untitled-ui/kit.css","line":1124,"finding":"Selected count used an unchecked contrast pair. FIXED: muted on primary-soft (7:1 in CONTRAST_PAIRS).","suggestion":"fixed"}
+]}
