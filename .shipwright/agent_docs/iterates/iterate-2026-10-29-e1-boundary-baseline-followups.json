@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-10-29-e1-boundary-baseline-followups",
+  "date": "2026-10-29T07:29:19.404852Z",
+  "event_at": "2026-10-29T02:43:09.980449+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/e1-boundary-baseline-followups",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-29-e1-boundary-baseline-followups/mini-plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-29-e1-boundary-baseline-followups",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "HEAD moves within a run: old entries carried forward, nothing newly dirty added",
+        "disposition": "tested",
+        "evidence": "test_boundary_baseline_inprocess.py::test_a_new_commit_carries_the_old_baseline_forward + test_a_file_first_dirtied_after_the_baseline_stays_reported_across_a_commit PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "baseline keyed to the run: another run's baseline is neither kept nor trusted",
+        "disposition": "tested",
+        "evidence": "test_boundary_baseline_inprocess.py::test_a_baseline_of_another_run_is_neither_kept_nor_trusted PASSED"
+      },
+      {
+        "behavior": "subdirectory --project-root fails closed (no baseline written, gate strict)",
+        "disposition": "tested",
+        "evidence": "test_boundary_baseline_inprocess.py::test_a_subdirectory_project_root_fails_closed PASSED"
+      },
+      {
+        "behavior": "paths reported verbatim, no backslash rewrite",
+        "disposition": "tested",
+        "evidence": "test_boundary_baseline_inprocess.py::test_a_backslash_in_a_file_name_is_reported_verbatim (skipped on Windows, covered by code removal)"
+      },
+      {
+        "behavior": "brief integration test includes the boundary gate against a real baseline",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_design_takes_package.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-design pytest tests/test_boundary_baseline.py tests/test_boundary_baseline_inprocess.py",
+    "exit_code": 0,
+    "tests_run": 29,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\e1-boundary-baseline-followups\\.shipwright\\runs\\iterate-2026-10-29-e1-boundary-baseline-followups\\surface_verification.log",
+    "timestamp": "2026-10-29T07:27:59.775Z"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_io_boundary"
+  ]
+}

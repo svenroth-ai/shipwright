@@ -1,0 +1,23 @@
+{
+  "section": "iterate-2026-10-29-e1-boundary-baseline-followups",
+  "review": [
+    {"severity": "medium", "category": "correctness", "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py", "line": 103,
+     "finding": "The 'run' key is SHIPWRIGHT_SESSION_ID (the Claude Code session id), not a pipeline run id; a restarted session at the same HEAD writes a fresh baseline and absorbs the earlier session's writes.",
+     "suggestion": "Key to a restart-stable id, or keep the old baseline when HEAD is unchanged. Disposition: accepted residual, documented in docs/hooks-and-pipeline.md (self-attested trust level)."},
+    {"severity": "medium", "category": "correctness", "file": "integration-tests/test_design_takes_package.py", "line": 61,
+     "finding": "Removing the boundary exclusion proved nothing: the scratch project was not a git repo, so the gate passed vacuously.",
+     "suggestion": "git init, leave project-phase output uncommitted, record the baseline. Disposition: FIXED."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py", "line": 154,
+     "finding": "On a same-run HEAD move newly dirty paths were added at their current fingerprint, laundering them.",
+     "suggestion": "Carry old entries forward only. Disposition: FIXED, with a test."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py", "line": 175,
+     "finding": "A monorepo subdirectory project root can never pass the boundary gate (fails closed).",
+     "suggestion": "Use git rev-parse --show-prefix. Disposition: documented; fail-closed is the requested behavior."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py", "line": 143,
+     "finding": "write_baseline returns False for both kept and not-at-root; stale docstring.",
+     "suggestion": "Docstring FIXED; return-state refactor deferred."},
+    {"severity": "low", "category": "readability", "file": "docs/hooks-and-pipeline.md", "line": 6011,
+     "finding": "Capital 'The' after a semicolon; not_written listed twice.",
+     "suggestion": "FIXED (capital)."}
+  ]
+}

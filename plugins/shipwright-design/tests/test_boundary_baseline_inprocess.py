@@ -70,17 +70,70 @@ def test_a_second_write_at_the_same_commit_keeps_the_first_baseline(bb, project)
 
 
 @pytest.mark.covers("FR-01.04/AC12")
-def test_a_new_commit_starts_a_fresh_baseline(bb, project):
+def test_a_new_commit_carries_the_old_baseline_forward(bb, project):
     _git_init(project)
     _dirty(project)
     bb.write_baseline(project)
     first = json.loads((project / bb.BASELINE_REL).read_text(encoding="utf-8"))
+    (project / "src" / "app.py").write_text("print('design edited before the commit')\n", encoding="utf-8")
     _git(project, "add", "-A")
     _git(project, "commit", "-q", "-m", "earlier output")
     assert bb.write_baseline(project) is True
     second = json.loads((project / bb.BASELINE_REL).read_text(encoding="utf-8"))
     assert second["head"] != first["head"]
-    assert second["salt"] != first["salt"]
+    assert second["salt"] == first["salt"]
+    assert second["dirty"]["src/app.py"] == first["dirty"]["src/app.py"]
+    assert "src/app.py" in bb.session_changes(project)  # the pre-commit edit is not laundered
+
+
+@pytest.mark.covers("FR-01.04/AC12")
+def test_a_file_first_dirtied_after_the_baseline_stays_reported_across_a_commit(bb, project):
+    _git_init(project)
+    bb.write_baseline(project)
+    (project / "src").mkdir(exist_ok=True)
+    (project / "src" / "late.py").write_text("x = 1\n", encoding="utf-8")
+    (project / "other.txt").write_text("o\n", encoding="utf-8")
+    _git(project, "add", "other.txt")
+    _git(project, "commit", "-q", "-m", "unrelated")
+    bb.write_baseline(project)
+    assert "src/late.py" in bb.session_changes(project)
+
+
+@pytest.mark.covers("FR-01.04/AC12")
+def test_a_baseline_of_another_run_is_neither_kept_nor_trusted(bb, project, monkeypatch):
+    _git_init(project)
+    _dirty(project)
+    monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "run-a")
+    assert bb.write_baseline(project) is True
+    first = json.loads((project / bb.BASELINE_REL).read_text(encoding="utf-8"))
+    monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "run-b")
+    assert "src/app.py" in bb.session_changes(project)  # stale baseline: strict
+    assert bb.write_baseline(project) is True  # same HEAD, other run: fresh
+    second = json.loads((project / bb.BASELINE_REL).read_text(encoding="utf-8"))
+    assert second["run"] == "run-b" and second["salt"] != first["salt"]
+    assert "src/app.py" not in bb.session_changes(project)
+
+
+@pytest.mark.covers("FR-01.04/AC12")
+def test_a_subdirectory_project_root_fails_closed(bb, project):
+    _git_init(project)
+    _dirty(project)
+    sub = project / "src"
+    assert bb.at_repo_root(project) and not bb.at_repo_root(sub)
+    assert bb.write_baseline(sub) is False
+    assert not (sub / bb.BASELINE_REL).exists()
+    # even with a baseline present, a non-root project root stays strict
+    bb.write_baseline(project)
+    assert "src/app.py" in bb.session_changes(sub)
+
+
+@pytest.mark.covers("FR-01.04/AC12")
+@pytest.mark.skipif(sys.platform == "win32", reason="a backslash cannot be a POSIX-style name on Windows")
+def test_a_backslash_in_a_file_name_is_reported_verbatim(bb, project):
+    _git_init(project)
+    name = "a\\b.txt"
+    (project / name).write_text("x\n", encoding="utf-8")
+    assert name in bb.dirty_paths(project)
 
 
 @pytest.mark.covers("FR-01.04/AC12")
