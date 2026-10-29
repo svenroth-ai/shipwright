@@ -57,8 +57,19 @@ def test_design_takes_fixture_1_and_every_gate_passes(tmp_path, monkeypatch):
     screen = next((designs / "screens").glob("01-*.html"))
     assert b"<!-- Requirements: FR-01.01, FR-01.02 -->" in screen.read_bytes()
 
+    # a real repo with the baseline recorded, so the boundary gate judges something
+    for cmd in (["init", "-q"], ["add", "-A"], ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "init"]):
+        subprocess.run(["git", "-C", str(project), *cmd], check=True, capture_output=True)
+    (project / "src").mkdir(exist_ok=True)  # project-phase output left uncommitted
+    (project / "src" / "app.py").write_text("print('earlier phase')" + chr(10), encoding="utf-8")
+    base = subprocess.run([sys.executable, str(_CHECKS.parent / "lib" / "boundary_baseline.py"),
+                           "--project-root", str(project)], capture_output=True, text=True, encoding="utf-8")
+    assert json.loads(base.stdout)["boundary_baseline"] == "written", base.stdout + base.stderr
+
     code, gates = _run("check-design-gates.py", project, "--gate", "all")
-    failed = {g["gate"]: g["problems"] for g in gates["gates"] if not g["ok"] and g["gate"] != "boundary"}
+    failed = {g["gate"]: g["problems"] for g in gates["gates"] if not g["ok"]}
     assert not failed, failed
+    boundary = next(g for g in gates["gates"] if g["gate"] == "boundary")
+    assert boundary["ok"] and "src/app.py" not in str(boundary), boundary
     assert [g["gate"] for g in gates["gates"]] == [
         "fr-coverage", "tokens", "flows", "chrome", "standalone", "uploads", "iteration", "boundary"]

@@ -8,9 +8,17 @@ own changes", so ``setup-design-session.py`` records what is already dirty
 (path -> content fingerprint) and the gate only reports a path that is new, or
 whose content differs from the recorded fingerprint.
 
-Missing or unreadable baseline = no baseline: the gate stays strict.
-Setup run again at the SAME commit (a resume) keeps the original baseline, so
-the session cannot launder its own earlier writes into it. The baseline sits
+Missing or unreadable baseline = no baseline: the gate stays strict. So does a
+baseline recorded by another run (``SHIPWRIGHT_SESSION_ID``), and so does a
+``--project-root`` that is not the repository root: git reports root-relative
+paths, so a subdirectory would fingerprint every path as missing and compare
+equal to itself (fail open).
+Setup run again at the SAME commit and run (a resume) keeps the original
+baseline, so the session cannot launder its own earlier writes into it. When
+HEAD moves within the same run (earlier output was committed), the old entries
+are carried forward unchanged under the old salt and nothing new is added, so
+neither a baseline-dirty file edited before that commit nor a file created
+after the first baseline is laundered. The baseline sits
 inside the allowed ``.shipwright/`` prefix, so it is self-attested: an agent
 that forges it can hide its own writes (accepted residual risk, same trust
 level as the rest of the in-session gates). A baseline-dirty file edited and
@@ -21,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import secrets
 import sys
 import subprocess
@@ -56,7 +65,7 @@ def dirty_paths(project_root: Path) -> list[str]:
             if i < len(fields) and fields[i]:
                 paths.append(fields[i])
             i += 1
-    return [p.replace("\\", "/") for p in paths]
+    return paths
 
 
 def fingerprint(project_root: Path, rel_path: str, salt: str = "") -> str | None:
@@ -92,6 +101,28 @@ def _head(project_root: Path) -> str | None:
     return proc.stdout.strip() or None
 
 
+def _run_id() -> str | None:
+    """The run this session belongs to; ``None`` when the host sets none."""
+    return os.environ.get("SHIPWRIGHT_SESSION_ID") or None
+
+
+def at_repo_root(project_root: Path) -> bool:
+    """True only when ``project_root`` IS the git toplevel. Anything else
+    (subdirectory, not a repo, git missing) is not trusted with a baseline."""
+    try:
+        proc = subprocess.run(["git", "-C", str(project_root), "rev-parse", "--show-toplevel"],
+                              capture_output=True, text=True, check=False)
+    except OSError:
+        return False
+    top = proc.stdout.strip()
+    if proc.returncode != 0 or not top:
+        return False
+    try:
+        return Path(top).resolve() == project_root.resolve()
+    except OSError:
+        return False
+
+
 def _read(project_root: Path) -> dict | None:
     try:
         data = json.loads((project_root / BASELINE_REL).read_text(encoding="utf-8"))
@@ -105,21 +136,29 @@ def _read(project_root: Path) -> dict | None:
 def write_baseline(project_root: Path) -> bool:
     """Record the dirty set at session start. Returns True when written.
 
-    An existing baseline taken at the SAME commit is kept: a resume or a
+    An existing baseline of the SAME run at the SAME commit is kept: a resume or a
     second setup call must not let the session launder its own earlier
-    writes into the baseline. A new commit (earlier output was committed)
-    or a missing/corrupt file starts a fresh baseline.
+    writes into the baseline. A new commit in the same run (earlier output
+    was committed) carries the old entries forward unchanged; another run or a
+    missing/corrupt file starts a fresh baseline.
     """
-    head = _head(project_root)
-    existing = _read(project_root)
-    if existing is not None and existing.get("head") == head:
+    if not at_repo_root(project_root):
         return False
-    salt = secrets.token_hex(16)
-    snap = {p: fingerprint(project_root, p, salt) for p in dirty_paths(project_root)}
+    head, run = _head(project_root), _run_id()
+    existing = _read(project_root)
+    same_run = existing is not None and existing.get("run") == run
+    if same_run and existing.get("head") == head:
+        return False
+    if same_run:  # HEAD moved: keep every old entry, add nothing (new dirt is this session's)
+        salt, snap = existing["salt"], dict(existing["dirty"])
+    else:
+        salt = secrets.token_hex(16)
+        snap = {p: fingerprint(project_root, p, salt) for p in dirty_paths(project_root)}
     target = project_root / BASELINE_REL
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps({"head": head, "salt": salt, "dirty": snap}, indent=2, sort_keys=True),
-                      encoding="utf-8")
+    target.write_text(
+        json.dumps({"head": head, "run": run, "salt": salt, "dirty": snap}, indent=2, sort_keys=True),
+        encoding="utf-8")
     return True
 
 
@@ -128,12 +167,12 @@ def session_changes(project_root: Path) -> list[str]:
     minus those whose content still equals the baseline fingerprint.
 
     A baseline-dirty file the session restored to HEAD is no longer dirty but
-    its content moved, so it is reported too. A corrupt or missing baseline
-    is strict (the dirty set unchanged).
+    its content moved, so it is reported too. A corrupt, missing, other-run or
+    non-root baseline is strict (the dirty set unchanged).
     """
     dirty = dirty_paths(project_root)
     data = _read(project_root)
-    if data is None:
+    if data is None or data.get("run") != _run_id() or not at_repo_root(project_root):
         return dirty
     baseline, salt = data["dirty"], data["salt"]
     changed = []
@@ -153,7 +192,8 @@ def main() -> int:
     parser.add_argument("--project-root", required=True)
     args = parser.parse_args()
     try:
-        state = "written" if write_baseline(Path(args.project_root).resolve()) else "kept"
+        root = Path(args.project_root).resolve()
+        state = ("written" if write_baseline(root) else "kept") if at_repo_root(root) else "not_written"
     except OSError:
         state = "not_written"
     print(json.dumps({"boundary_baseline": state}))

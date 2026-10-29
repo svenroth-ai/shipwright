@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-e1-boundary-baseline-followups",
+  "date": "2026-10-29",
+  "section": "Iterate - change: harden the design boundary baseline (E1 follow-ups)",
+  "title": "Boundary baseline: carry forward on HEAD move, key to the run, fail closed off the repo root",
+  "context": "The design phase's session-start boundary baseline (FR-01.04 #11) had five open gaps: a HEAD move started a fresh baseline that absorbed the session's own earlier writes, nothing tied a baseline to its run, a subdirectory --project-root passed silently, dirty_paths rewrote backslashes legal in POSIX names, and the brief integration test excluded the boundary gate.",
+  "decision": "On a HEAD move within the same run the old entries and salt are kept and nothing new is added; the file records SHIPWRIGHT_SESSION_ID and another run's baseline is rewritten on write and strict on read; at_repo_root() gates write, read, CLI and setup so a non-toplevel root stays strict (not_written); the backslash replace is gone; the integration test runs the gate against a real repo with a baseline.",
+  "consequences": "The run key is the Claude session id, so a restarted session at the same HEAD records a fresh baseline (accepted, self-attested trust level, documented). A single-session pipeline re-entering design after build may see a carried entry reported as changed, which fails strict. Monorepo subdirectory roots can never pass the gate.",
+  "rationale": "All defects failed toward permissive; each fix moves toward strict. Review round 1 showed that adding newly dirty paths on a HEAD move re-opened the laundering, so only old entries are carried.",
+  "rejected": "(1) Mapping a subdirectory root via git rev-parse --show-prefix - larger change, fail-closed was requested. (2) A restart-stable run id - none exists to this phase. (3) Returning a state string from write_baseline - deferred as low readability.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
