@@ -50,12 +50,19 @@ def seed_canon_project(
         split_dir.mkdir(parents=True)
         (split_dir / "spec.md").write_text(
             "# spec\n\n"
-            "| ID | Name | Priority | Description | Basis |\n"
-            "|---|---|---|---|---|\n"
-            f"| FR-{i:02d}.01 | some capability | Must | "
-            "a plain-language capability description | interview |\n",
+            "| ID | Area | Name | Priority | Description | Basis | Layers |\n"
+            "|---|---|---|---|---|---|---|\n"
+            f"| FR-{i:02d}.01 | Core | some capability | Must | "
+            "a plain-language capability description | interview | unit |\n",
             encoding="utf-8",
         )
+
+    # The interview gate needs a transcript and one trace per FR Name; a spec without them
+    # is exactly the bypass it exists to catch.
+    (root / ".shipwright" / "planning" / "shipwright_project_interview.md").write_text(
+        "# Interview\n\nturn 1: some capability is required\n", encoding="utf-8",
+    )
+    _write_grill_trace(root, requirement_key="some-capability")
 
     if not write_canon_artifacts:
         return

@@ -1,0 +1,1 @@
+The grill-trace gate no longer passes a project that skipped the interview: with no transcript and no traces it fails once requirements exist, traces need a transcript or a signed-off brief-mode pointer, and every interview requirement must have a trace.

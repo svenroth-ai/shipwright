@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 from tools.grill_trace_format import parse_trace
 from tools.verifiers.common import Severity
 from tools.verify_grill_trace_completeness import (
@@ -50,6 +51,7 @@ def _payload(**overrides) -> dict:
 def _write_trace(planning_dir: Path, payload: dict) -> Path:
     directory = planning_dir / "grill-traces"
     directory.mkdir(parents=True, exist_ok=True)
+    (planning_dir / "shipwright_project_interview.md").write_text("transcript", encoding="utf-8")
     path = directory / f"{payload['requirement_key']}.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
     return path
@@ -239,11 +241,8 @@ def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist
     assert by_name["grill_trace_coverage"].ok is True  # at least one trace exists
     assert by_name["fr_trace_coverage"].ok is False
     assert "FR-01.02" in by_name["fr_trace_coverage"].detail
-    # PR #705 Tier-3 review: the Name-cell-slug join is brittle, so a mismatch
-    # is a visible WARNING, not an ERROR that hard-blocks Step 8. The sibling
-    # grill_trace_coverage guard above (structural presence, not a fragile
-    # cross-artifact join) stays at its default ERROR severity.
-    assert by_name["fr_trace_coverage"].severity == Severity.WARNING.value
+    # Every entry channel owes one trace per requirement: an untraced FR is a hard STOP.
+    assert by_name["fr_trace_coverage"].severity == Severity.ERROR.value
     assert by_name["grill_trace_coverage"].severity == Severity.ERROR.value
 
 
@@ -292,3 +291,4 @@ def test_low_quality_trace_still_catches_a_real_completeness_gap():
     trace = parse_trace(payload)
 
     assert check_greenfield_assumed(trace).ok is False
+

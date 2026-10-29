@@ -54,11 +54,22 @@ def _seed_basic_project(root: Path) -> None:
     (root / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
     (root / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text(
         "# spec\n\n"
-        "| ID | Name | Priority | Description | Basis |\n"
-        "|---|---|---|---|---|\n"
-        "| FR-01.01 | some capability | Must | a plain-language capability "
-        "description | interview |\n"
+        "| ID | Area | Name | Priority | Description | Basis | Layers |\n"
+        "|---|---|---|---|---|---|---|\n"
+        "| FR-01.01 | Core | some capability | Must | a plain-language capability "
+        "description | interview | unit |\n"
     )
+    # The grill-trace gate owes every entry channel a transcript and one trace per FR.
+    planning = root / ".shipwright" / "planning"
+    (planning / "shipwright_project_interview.md").write_text("# Interview\n\nturn 1: required\n")
+    (planning / "grill-traces").mkdir()
+    (planning / "grill-traces" / "some-capability.json").write_text(json.dumps({
+        "requirement_key": "some-capability", "requirement_text": "A plain capability.",
+        "surface": "project", "evidence": ["turn 1"], "fit_criterion": "it works",
+        "dimensions": {d: "answered" for d in (
+            "outcome", "purpose", "boundaries", "failure", "glossary", "rationale", "out_of_scope")},
+        "glossary_delta": [], "confirmed_by": "user turn 2", "terms_used": [],
+    }))
 
 
 def _seed_canon_artifacts(root: Path, *, run_id: str = "project-20260414-x") -> None:
@@ -251,14 +262,10 @@ def test_clean_grill_trace_does_not_block_validation(tmp_path, monkeypatch):
     assert valid is True
 
 
-def test_fr_trace_coverage_mismatch_does_not_block_validation(tmp_path, monkeypatch):
-    """PR #705 Tier-3 review: the Name-cell-slug <-> requirement_key join has
-    no stable identity contract, so a mismatch must not hard-block Step 8 the
-    way a real STOP condition does — it rides the WARNING/'inform' path, not
-    the ERROR/'ask' path C1-C5 and the four closed-vocabulary STOPs use. A
-    full-canon project with one traced requirement but two FR rows (a
-    genuinely legitimate state: the FR-join heuristic just can't confirm the
-    second one) must still validate."""
+@pytest.mark.covers("FR-01.16/AC01")
+def test_fr_trace_coverage_mismatch_only_warns_in_extension_scope(tmp_path, monkeypatch):
+    """Extension scope: an FR row with no trace is inherited, never interviewed in this run, so it
+    rides the inform path (greenfield blocks: see test_grill_trace_entry_channel)."""
     _seed_basic_project(tmp_path)
     _seed_canon_artifacts(tmp_path, run_id="project-fr-join-mismatch")
     trace_dir = tmp_path / ".shipwright" / "planning" / "grill-traces"
@@ -268,19 +275,10 @@ def test_fr_trace_coverage_mismatch_does_not_block_validation(tmp_path, monkeypa
         "requirement_text": "Users can log in",
         "surface": "project",
         "evidence": ["interview transcript line 12"],
-        "dimensions": {
-            "outcome": "answered",
-            "purpose": "answered",
-            "boundaries": "answered",
-            "failure": "answered",
-            "glossary": "answered",
-            "rationale": "answered",
-            "out_of_scope": "answered",
-        },
+        "dimensions": {d: "answered" for d in (
+            "outcome", "purpose", "boundaries", "failure", "glossary", "rationale", "out_of_scope")},
         "fit_criterion": "a valid email/password pair returns a session token",
-        "glossary_delta": [],
-        "confirmed_by": "user",
-        "terms_used": [],
+        "glossary_delta": [], "confirmed_by": "user", "terms_used": [],
     }))
     # 01-auth/spec.md already exists (seeded by _seed_basic_project) — give it
     # an FR table with a second row that has no matching grill-trace.
@@ -289,7 +287,7 @@ def test_fr_trace_coverage_mismatch_does_not_block_validation(tmp_path, monkeypa
         "| ID | Area | Name | Priority | Description | Basis | Layers |\n"
         "|---|---|---|---|---|---|---|\n"
         "| FR-01.01 | Auth | User login | Must | ... | interview | unit |\n"
-        "| FR-01.02 | Auth | Password reset | Must | ... | interview | unit |\n",
+        "| FR-01.02 | Auth | Password reset | Must | ... | code | unit |\n",
     )
     monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "project-fr-join-mismatch")
     valid, issues = validate_phase("project", tmp_path)

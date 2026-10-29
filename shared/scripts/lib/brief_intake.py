@@ -226,6 +226,33 @@ def load_brief(source: Optional[Union[str, dict]]) -> Optional[dict]:
     return _parse_text_brief(path_str)
 
 
+# A space-free single token with one of these suffixes is a document someone meant as the brief, not a description.
+_DOC_SUFFIXES = {".pdf", ".doc", ".docx", ".rtf", ".odt", ".pptx", ".xlsx", ".csv", ".html", ".htm"}
+
+
+def _unreadable_file_refusal(source) -> Optional[dict]:
+    """Refusal for an explicit brief FILE that cannot be read (missing, oversized, unsupported suffix).
+
+    ``load_brief`` degrades such a source to ``None`` = the legacy interview; on the run route that
+    silently swaps a pre-delivered brief for an unanchored interview, so the CLI refuses instead."""
+    text = source.strip() if isinstance(source, str) else ""
+    if not text or text.startswith("{"):
+        return None
+    path_str = text[1:] if text.startswith("@") else text
+    suffix = Path(path_str).suffix.lower()
+    path_shaped = "\n" not in path_str and (any(c in path_str for c in "/\\") or not any(c.isspace() for c in path_str))
+    file_like = text.startswith("@") or (suffix in _BRIEF_SUFFIXES and path_shaped) or (suffix in _DOC_SUFFIXES and "\n" not in path_str)
+    unsupported = suffix not in _BRIEF_SUFFIXES  # load_brief would read a bare .pdf path as the description text
+    if not file_like or (not unsupported and load_brief(source) is not None):
+        return None
+    why = (f"unsupported suffix {suffix or '(none)'!r} (supported: {sorted(_BRIEF_SUFFIXES)})"
+           if unsupported else "not a readable file within the size limit")
+    return {"refused": True, "code": "brief_unreadable", "has_brief": False,
+            "message": f"brief file {path_str!r} cannot be used: {why}. It is NOT replaced by the interview: "
+                       "fix the file, or start the run without --brief to interview on purpose.",
+            "issues": [why]}
+
+
 def _sibling(stem: str):
     """A sibling module loaded by file path under a private name (ADR-045: never ``import lib``)."""
     name = "_shipwright_" + stem
@@ -260,6 +287,8 @@ def intake(source: Optional[Union[str, dict]], project_root: str = ".", package:
     result = _package_intake(source, project_root) if package else None
     if result is not None:
         return result
+    if package and (refusal := _unreadable_file_refusal(source)) is not None:
+        return refusal
     raw = load_brief(source)
     if raw is None:
         return _no_brief_result()
@@ -292,7 +321,7 @@ def main() -> int:
         print(json.dumps(exc.as_dict(), indent=2))
         return 3
     print(json.dumps(result, indent=2))
-    return 3 if result.get("profile_error") else 0  # a named profile that cannot be used is loud
+    return 3 if result.get("profile_error") or result.get("refused") else 0  # a named profile or brief file that cannot be used is loud
 
 
 if __name__ == "__main__":

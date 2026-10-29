@@ -53,6 +53,11 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
   A file swapped between the check and the read (TOCTOU) is therefore not caught until the next
   `verify`. A snapshot copy with `evidence/` excluded belongs to the unattended campaign (U3).
 - **Limit, stated plainly:** the hash proves the package is unchanged since the run first read it (trust on first use); it does not prove a person approved that content, because `approved_by` and the first hash come from `brief.json` itself. Real approval anchoring is the unattended campaign's job (U3).
+- **An unusable brief FILE is refused, never swapped for the interview:** on the run CLI, a `--brief`
+  value that is `@`-prefixed or has a file suffix but is missing, oversized or unsupported (not
+  `.json`/`.md`/`.txt`; a bare `.pdf`/`.docx`/... path counts too) exits 3 with
+  `{"refused": true, "code": "brief_unreadable"}`. Fix the file, or start without `--brief` to
+  interview on purpose. (`/shipwright-adopt` keeps its own degrade-to-no-brief.)
 - A one-line `--brief` value that names an existing directory (or ends in `/` with no spaces) is read as a
   package from now on, so it is refused loudly when it is not one; a description never has that shape.
 - `brief_dir_intake.py verify` also refuses a project whose run_config records a `brief_package` but no

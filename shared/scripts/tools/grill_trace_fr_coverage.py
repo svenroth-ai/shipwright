@@ -46,22 +46,39 @@ def slugify(name: str) -> str:
     return _SLUG_COLLAPSE_RE.sub("-", name.strip().lower()).strip("-")
 
 
-def extract_fr_names(spec_content: str) -> dict[str, str]:
-    """``{FR id: Name cell text}`` for every LIVE row in a spec.md's
-    Functional Requirements table — rows inside a ``## Removed
-    Requirements`` / ``### Removed Requirements`` subsection are excluded,
-    mirroring ``drift_parsers.parse_fr_table``'s own exclusion (a retired
-    FR is not something a live interview trace should have to cover)."""
+def extract_fr_rows(spec_content: str) -> dict[str, tuple[str, str]]:
+    """``{FR id: (Name, Basis)}`` for every LIVE row — rows inside a ``## Removed
+    Requirements`` / ``### Removed Requirements`` subsection are excluded, mirroring
+    ``drift_parsers.parse_fr_table``'s own exclusion (a retired FR is not something a live
+    interview trace should have to cover). Name and Basis columns come from the table's header
+    row (column orders are not stable); a table without a ``Basis`` column reads as
+    ``interview`` (strict)."""
     body = _REMOVED_REQUIREMENTS_RE.split(spec_content, maxsplit=1)[0]
-    names: dict[str, str] = {}
-    for m in _FR_ROW_RE.finditer(body):
-        fr_id, name = m.group(1).strip(), m.group(3).strip()
-        if name:
-            names[fr_id] = name
-    return names
+    rows: dict[str, tuple[str, str]] = {}
+    name_idx, basis_idx = 2, None  # the converged `| ID | Area | Name | ...` layout until a header says otherwise
+    for line in body.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if cells and cells[0].lower() == "id":
+            lowered = [c.lower() for c in cells]
+            name_idx = lowered.index("name") if "name" in lowered else 2
+            basis_idx = lowered.index("basis") if "basis" in lowered else None
+            continue
+        if cells and re.fullmatch(r"FR-[\w.]+", cells[0]) and len(cells) > name_idx and cells[name_idx]:
+            basis = cells[basis_idx].lower() if basis_idx is not None and len(cells) > basis_idx else "interview"
+            rows[cells[0]] = (cells[name_idx], basis or "interview")
+    return rows
 
 
-def check_fr_trace_coverage(spec_paths: list[Path], trace_keys: set[str]) -> CheckResult:
+def extract_fr_names(spec_content: str) -> dict[str, str]:
+    """``{FR id: Name cell text}`` for every live row (see :func:`extract_fr_rows`)."""
+    return {fr_id: name for fr_id, (name, _basis) in extract_fr_rows(spec_content).items()}
+
+
+def check_fr_trace_coverage(
+    spec_paths: list[Path], trace_keys: set[str], *, inherited_ok: bool = False,
+) -> CheckResult:
     """SKIPPED entirely before any spec.md exists (nothing to join against
     yet — the normal state during the interview itself, before Step 6)."""
     name = "fr_trace_coverage"
@@ -69,31 +86,26 @@ def check_fr_trace_coverage(spec_paths: list[Path], trace_keys: set[str]) -> Che
         return CheckResult(
             name, None, "no spec.md found yet — nothing to check", severity=Severity.SKIPPED.value,
         )
-    fr_names: dict[str, str] = {}
+    fr_rows: dict[str, tuple[str, str]] = {}
     for path in spec_paths:
-        fr_names.update(extract_fr_names(path.read_text(encoding="utf-8", errors="ignore")))
+        fr_rows.update(extract_fr_rows(path.read_text(encoding="utf-8", errors="ignore")))
+    fr_names = {fr_id: name_ for fr_id, (name_, _basis) in fr_rows.items()}
     if not fr_names:
         return CheckResult(
             name, None, "no FR rows found in any spec.md yet", severity=Severity.SKIPPED.value,
         )
-    missing = sorted(
-        f"{fr_id} (Name={name_!r} -> slug {slugify(name_)!r})"
-        for fr_id, name_ in fr_names.items()
-        if slugify(name_) not in trace_keys
-    )
+    missing_ids = [fr_id for fr_id, name_ in fr_names.items() if slugify(name_) not in trace_keys]
+    missing = sorted(f"{fr_id} (Name={fr_names[fr_id]!r} -> slug {slugify(fr_names[fr_id])!r})" for fr_id in missing_ids)
     if missing:
-        # WARNING, not the ERROR default: the join key (a Name-cell slug picked at
-        # interview time vs. an FR id minted independently at spec-generation time,
-        # PR #705 review) has no stable identity contract — a rename, a punctuation/
-        # Unicode difference, or two Names colliding on one slug all produce a false
-        # "missing" here. This check's own module docstring says it is NOT one of the
-        # four closed-vocabulary STOPs; ERROR severity made it behave like a fifth one
-        # and hard-block Step 8 for projects that did the elicitation work correctly.
-        # Stays visible (still a real signal for a genuinely skipped/partial interview)
-        # without gating completion on a brittle heuristic.
+        # ERROR: "each requirement gets a trace" is the contract for every entry channel (it was a
+        # WARNING after PR #705: the Name-slug join has no stable identity contract, so fix a false
+        # positive by aligning the FR Name / requirement_key, not by letting a gap through).
+        # Extension scope: only rows whose Basis is NOT `interview` (inherited, adopted, code-derived)
+        # never went through this run's interview, so only those stay visible-but-non-blocking.
+        blocking = [i for i in missing_ids if not inherited_ok or fr_rows[i][1].startswith("interview")]
         return CheckResult(
             name, False,
             f"FR row(s) with no matching grill-trace requirement_key: {missing}",
-            severity=Severity.WARNING.value,
+            severity=Severity.ERROR.value if blocking else Severity.WARNING.value,
         )
     return CheckResult(name, True, f"{len(fr_names)} FR row(s), every one has a matching grill-trace")

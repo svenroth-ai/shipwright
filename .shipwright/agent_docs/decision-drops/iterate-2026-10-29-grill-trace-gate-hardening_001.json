@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-grill-trace-gate-hardening",
+  "date": "2026-10-29",
+  "section": "Iterate — change: harden the grill-trace gate for every entry channel",
+  "title": "Grill-trace gate requires a recorded interview or signed-off equivalent for every entry channel",
+  "context": "The gate SKIPPED when no interview transcript existed and a missing per-FR trace was only a WARNING, so a brief or seed that bypassed the interview passed. An unsupported --brief file also fell back silently to the interview.",
+  "decision": "Past the interview (FR rows or status complete) no transcript+no traces now fails; traces need a transcript or brief-mode pointer; a pointer or brief: trace needs a recorded brief_dir and confirmed_by must not be self-attested; fr_trace_coverage is ERROR (WARNING only for non-interview rows in Extension scope); the run-CLI brief_intake refuses an unusable brief file (exit 3).",
+  "consequences": "Projects with untraced interview FRs now block until traced. human_signoff is a structural screen, not proof of a person. A requirement split into several FRs still has no trace-key identity contract (follow-up).",
+  "rationale": "Every entry channel owes the same two artifacts (transcript or pointer, and a trace per requirement); the Brief package route is the one with a verified approval.",
+  "rejected": "Keeping fr_trace_coverage as a WARNING (lets a partial interview pass); changing adopt's degrade-to-interview (adopt shares load_brief and wants it).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-29-grill-trace-gate-hardening-grill-trace-gate-hardening.md"
+}

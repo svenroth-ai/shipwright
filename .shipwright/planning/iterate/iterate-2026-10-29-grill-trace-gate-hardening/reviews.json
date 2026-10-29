@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-grill-trace-gate-hardening",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:35:54.228359+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:36:03.901779+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py",
+          "line": 90,
+          "finding": "False positive for Extension-scope and adopted projects: fr_trace_coverage is now ERROR over every live FR row, so inherited/adopted FR rows (never interviewed) hard-block update-step. No test covers an Extension or adopted project.",
+          "suggestion": "Limit the ERROR to rows of this run, or keep inherited/adopted FRs at WARNING; add a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py",
+          "line": 299,
+          "finding": "False positive on legacy 5-column FR tables: the 3rd cell is taken as Name, which is Priority in the older '| ID | Name | Priority |' layout; such a project becomes 'interview expected' and fails fr_trace_coverage on every row.",
+          "suggestion": "Find the Name column from the header row; add a 5-column test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 243,
+          "finding": "A bare document path containing a space is not refused, so load_brief turns the path into the app description (the silent swap this change should stop).",
+          "suggestion": "Treat a single-line source with a doc suffix and a path separator as file-like; add a test with a spaced directory.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 10,
+          "finding": "The new blocking check human_signoff is not documented in hooks-and-pipeline.md, grill-trace-format.md, step-8-completion.md or the module docstring.",
+          "suggestion": "Document human_signoff in all four places.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_brief_intake_edge.py",
+          "line": 538,
+          "finding": "Tests miss the main contract: no test calls main() or checks exit code 3; oversized file, bare missing path and spaced path are untested.",
+          "suggestion": "Add a main() test with monkeypatched argv; parametrise refusals.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py",
+          "line": 381,
+          "finding": "Brief-pointer detection is a substring search for 'project brief mode'; a real transcript mentioning the phrase is treated as a pointer.",
+          "suggestion": "Match the exact line brief_project_mode.apply writes.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py",
+          "line": 362,
+          "finding": "_has_brief_dir re-implements read_run_config; unguarded read_text calls can raise OSError and collapse the whole grill result into one opaque failure.",
+          "suggestion": "Reuse read_run_config; guard reads with try/except OSError.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_verify_grill_trace_completeness_integration.py",
+          "line": 756,
+          "finding": "Stray whitespace-only hunks (extra blank line after imports, trailing blank line at EOF).",
+          "suggestion": "Drop both blank-line hunks.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T07:35:54.528167+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: fr_trace_coverage at ERROR blocks only untraced requirements — The positional regex reads cell 3 as Name; an older '| ID | Name | Priority |' spec yields Name='Must' and hard-blocks update-step. Both shared fixtures had to be rewritten to 7 columns.",
+          "suggestion": "Read Names header-driven (fr_table_reader) instead of positionally.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py; plugins/shipwright-project/skills/project/references/spec-generation.md",
+          "line": null,
+          "finding": "Claim under doubt: a legitimate interview run satisfies 'one trace per FR' — Nothing ties a trace to an FR row; one requirement decomposed into N FRs leaves N-1 rows untraced, and the fastest way to clear the gate is hand-writing extra traces.",
+          "suggestion": "Carry the requirement_key into the FR row at Step 6, or keep ERROR only for 'zero FRs match'.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py",
+          "line": null,
+          "finding": "Claim under doubt: human_signoff proves a human sign-off — It rejects only a denylist of self-attesting tokens; 'user' with a transcript 'x' passes; omitting the pointer phrase skips the brief_dir requirement.",
+          "suggestion": "Narrow the claim to a structural screen.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": null,
+          "finding": "Claim under doubt: an unusable --brief file is refused on the run CLI — A Windows path with spaces ending in .pdf bypasses the refusal; a sentence ending in 'package.json' is wrongly refused as a file.",
+          "suggestion": "One shape rule for both suffix arms; tests for both.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py; grill_trace_fr_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: only bypassed interviews newly block — An adopted repo (code/observed FRs, no traces) later run through /shipwright-project newly blocks on every adopted FR.",
+          "suggestion": "Exclude non-interview Basis rows, or show the flow is unsupported.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: a spec without parseable FR rows cannot hide a partial interview — An FR table the positional regex misses yields SKIPPED 'no FR rows found' while the canonical reader counts them.",
+          "suggestion": "Use the canonical reader.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py",
+          "line": null,
+          "finding": "Claim under doubt: brief-mode sign-off passes when run_config records brief_dir — A BOM-prefixed run_config fails json.loads under utf-8 (brief_dir_intake reads utf-8-sig); spec reads lack an OSError guard.",
+          "suggestion": "Read with utf-8-sig; guard the spec read.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T07:35:54.688981+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "shared/scripts/lib/brief_intake.py` (`_unreadable_file_refusal`, the `path_shaped` line)",
+          "line": null,
+          "finding": "path_shaped = \"\\n\" not in path_str and (any(c in path_str for c in \"/\\\\\") or not any(c.isspace() ...))` — a single-line, space-containing, relative path with no `/` or `\\` (e.g. `--brief \"my notes v2.pdf\"`) is not \"file-like\", so it falls through to `load_brief`, which reads it as the app description. That is exactly the silent swap this hardening was supposed to stop; only the `@`-prefixed and separator-containing forms are covered.",
+          "suggestion": "Drop the separator/whitespace disjunction for the `_DOC_SUFFIXES` arm (or treat \"contains whitespace AND ends in a doc suffix\" as file-like too), so any space-bearing value ending in a document suffix is refused on the run route.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "shared/tests/test_brief_intake_edge.py` (`test_package_route_refuses_a_document_path_with_spaces`)",
+          "line": null,
+          "finding": "The spaced-path test uses `str(tmp_path / \"dinovo GmbH\" / \"brief.pdf\")`, which contains `/` (and on Windows `\\`), so it exercises the separator branch of `path_shaped`, not the whitespace branch. The real gap above would still pass this test — a broken implementation passes.",
+          "suggestion": "Add a case with a bare relative spaced value (`\"my notes v2.pdf\"`) and assert refusal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/brief_intake.py` (`_unreadable_file_refusal`, the `not unsupported and load_brief(source) is not None` branch)",
+          "line": null,
+          "finding": "A plain description that ends in a supported-suffix token containing a path separator (e.g. `\"migrate the db per ./schema.json\"`) is `file_like` (suffix `.json`, contains `/`, single line), `unsupported` is False, `load_brief` returns None → the run CLI refuses a legitimate prose brief with exit 3. The old contract was \"a description never has that shape\" only for directories; this widens the refusal to prose.",
+          "suggestion": "Require `@`-prefix OR (doc-suffix OR no-whitespace-token) for refusal; a multi-word value with a supported text suffix should only be refused if `load_brief` itself would have treated it as a path (i.e. reuse `load_brief`'s own path-likeness predicate rather than reinventing it).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py` (`extract_fr_rows`, `name_idx, basis_idx = 2, None` default)",
+          "line": null,
+          "finding": "A spec table with no header row (or a header whose first cell isn't literally `id`) falls back to positional column 2, so a legacy `| ID | Name | Priority |` data layout yields Name=Priority. The doubt review asked for header-driven reads; this is header-when-present with a positional fallback that can still misparse. Same for `basis or \"interview\"` silently strict-moding headerless tables in extension scope.",
+          "suggestion": "If no header is found before the first FR row, either skip the table (SKIPPED is safer than a wrong join) or require a header; add a headerless-table test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py` (`_BRIEF_POINTER_MARKER` substring test in `check_human_signoff`)",
+          "line": null,
+          "finding": "Pointer detection is a case-folded substring search over the whole transcript, so a real interview transcript that quotes or mentions the exact line \"project brief mode: no interview was held\" is treated as a brief-mode pointer and fails `human_signoff` when no `brief_dir` is recorded. This was reviewer finding #6 and the substring form remains.",
+          "suggestion": "Match the exact standalone line `brief_project_mode.apply` writes (e.g. line-anchored equality), not a substring anywhere in the file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py` (`interview_expected`) and `grill_trace_fr_coverage.py` (`extract_fr_rows` callers)",
+          "line": null,
+          "finding": "spec.read_text(...)` and the run/project-config reads are guarded for `OSError` in the config helpers but not for the spec files: a spec.md removed/locked between `glob` and `read_text` raises and collapses the entire gate into one opaque exception (reviewer finding #7, partially unfixed). Also, `_has_brief_dir`/`is_extension_scope` read `utf-8-sig` (good) but `interview_expected`'s spec reads can still raise.",
+          "suggestion": "Wrap spec reads in `try/except OSError` (treat unreadable as no-FR-rows, or surface as a named check failure).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/grill_trace_entry_channel.py` (`check_human_signoff`)",
+          "line": null,
+          "finding": "The pointer-without-`brief_dir` rule only fires when the pointer phrase is present; a brief-mode run whose transcript pointer was paraphrased/absent but whose traces carry ordinary `confirmed_by` values passes with no `brief_dir` recorded and no `brief_mode_checks` verification — the \"recorded equivalent with human sign-off\" is then unverified. The docstring concedes it's a structural screen, but this direction (false negative on the brief channel) isn't covered by any test.",
+          "suggestion": "Also require `brief_dir` when any trace's `evidence` references the brief, or document the residual gap explicitly as accepted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_grill_trace_entry_channel.py` (`test_extension_scope_inherited_fr_rows_only_warn`, `test_extension_scope_untraced_interview_row_still_blocks`)",
+          "line": null,
+          "finding": "The two extension tests write FR-01.02 with Basis `adopted`/`interview` but never test a missing Basis column (the \"reads as interview, blocks in extension\" strictness claim), and no test covers a greenfield adopted project (Basis=`code`, non-extension scope) newly blocking on every adopted FR — the doubt review's blast-radius scenario.",
+          "suggestion": "Add both cases; if adopted projects blocking is intended, assert it; if not, restrict the ERROR to interview-Basis rows regardless of scope.  Everything else (the ERROR promotion of `fr_trace_coverage`, `interview_transcript_present`, `human_signoff`, exit-3 refusal wiring, doc updates across the four locations, adopt degrade preserved via `package=False`) matches the spec, and the integration/CLI tests do assert severities and exit codes rather than just calling functions.  Overall: ship-with-fixes — the core hardening is correctly implemented and tested, but the brief-file refusal still has two real gaps (spaced relative paths, prose ending in a path token) that reproduce the exact silent-swap failure the spec targets.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/brief_intake.py",
+          "line": 245,
+          "finding": "File detection only recognizes a fixed suffix list and certain path shapes. An existing `./brief.yaml` or a bare relative `product brief.pdf` bypasses refusal and can become description text. These are unsupported brief files that the specification requires the run CLI to reject.",
+          "suggestion": "Recognize existing files independently of suffix and whitespace, and reject unsupported suffixes before parsing descriptions. Add CLI tests for both examples, asserting exit code 3.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py",
+          "line": 100,
+          "finding": "Membership in `trace_keys` permits one trace to satisfy multiple distinct requirements. For example, FR rows named `Export CSV` and `Export-CSV` both resolve to `export-csv`, so the gate passes with only one trace despite the requirement that each requirement receive a trace.",
+          "suggestion": "Carry a stable trace identifier into each FR row and validate coverage using that identifier. At minimum, detect ambiguous slug collisions and require an explicit mapping rather than accepting them silently.  Overall assessment: ship-with-fixes. The change closes the main missing-transcript bypass, but unsupported file handling and per-requirement coverage still have concrete gaps.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T07:38:18.604096+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: bug | Severity: medium**\n  **File:** `shared/scripts/lib/brief_intake.py` (`_unreadable_file_refusal`, the `path_shaped` line)\n  **Finding:** `path_shaped = \"\\n\" not in path_str and (any(c in path_str for c in \"/\\\\\") or not any(c.isspace() ...))` — a single-line, space-containing, **relative** path with no `/` or `\\` (e.g. `--brief \"my notes v2.pdf\"`) is not \"file-like\", so it falls through to `load_brief`, which reads it as the app description. That is exactly the silent swap this hardening was supposed to stop; only the `@`-prefixed and separator-containing forms are covered.\n  **Suggestion:** Drop the separator/whitespace disjunction for the `_DOC_SUFFIXES` arm (or treat \"contains whitespace AND ends in a doc suffix\" as file-like too), so any space-bearing value ending in a document suffix is refused on the run route.\n\n- **Category: test | Severity: medium**\n  **File:** `shared/tests/test_brief_intake_edge.py` (`test_package_route_refuses_a_document_path_with_spaces`)\n  **Finding:** The spaced-path test uses `str(tmp_path / \"dinovo GmbH\" / \"brief.pdf\")`, which contains `/` (and on Windows `\\`), so it exercises the *separator* branch of `path_shaped`, not the whitespace branch. The real gap above would still pass this test — a broken implementation passes.\n  **Suggestion:** Add a case with a bare relative spaced value (`\"my notes v2.pdf\"`) and assert refusal.\n\n- **Category: edge-case | Severity: medium**\n  **File:** `shared/scripts/lib/brief_intake.py` (`_unreadable_file_refusal`, the `not unsupported and load_brief(source) is not None` branch)\n  **Finding:** A plain description that *ends* in a supported-suffix token containing a path separator (e.g. `\"migrate the db per ./schema.json\"`) is `file_like` (suffix `.json`, contains `/`, single line), `unsupported` is False, `load_brief` returns None → the run CLI refuses a legitimate prose brief with exit 3. The old contract was \"a description never has that shape\" only for dir […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/brief_intake.py:245\n- Finding: File detection only recognizes a fixed suffix list and certain path shapes. An existing `./brief.yaml` or a bare relative `product brief.pdf` bypasses refusal and can become description text. These are unsupported brief files that the specification requires the run CLI to reject.\n- Suggestion: Recognize existing files independently of suffix and whitespace, and reject unsupported suffixes before parsing descriptions. Add CLI tests for both examples, asserting exit code 3.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/grill_trace_fr_coverage.py:100\n- Finding: Membership in `trace_keys` permits one trace to satisfy multiple distinct requirements. For example, FR rows named `Export CSV` and `Export-CSV` both resolve to `export-csv`, so the gate passes with only one trace despite the requirement that each requirement receive a trace.\n- Suggestion: Carry a stable trace identifier into each FR row and validate coverage using that identifier. At minimum, detect ambiguous slug collisions and require an explicit mapping rather than accepting them silently.\n\nOverall assessment: ship-with-fixes. The change closes the main missing-transcript bypass, but unsupported file handling and per-requirement coverage still have concrete gaps.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:35:54.373512+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:36:04.027943+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:36:04.160852+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

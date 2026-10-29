@@ -1,0 +1,107 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-29-grill-trace-gate-hardening",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 24248,
+      "skipped": 106,
+      "total": 24354
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 636,
+      "skipped": 0,
+      "total": 636
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "no transcript and no traces fails once requirements exist",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_grill_trace_entry_channel.py::test_bypassed_interview_fails_once_requirements_exist PASSED"
+        },
+        {
+          "behavior": "complete project without spec still fails the bypass check",
+          "disposition": "tested",
+          "evidence": "test_grill_trace_entry_channel.py::test_bypassed_interview_fails_for_a_complete_project_without_a_spec PASSED"
+        },
+        {
+          "behavior": "nothing recorded before any requirement still skips",
+          "disposition": "tested",
+          "evidence": "test_grill_trace_entry_channel.py::test_nothing_recorded_yet_still_skips_before_any_requirement_exists PASSED"
+        },
+        {
+          "behavior": "traces without transcript fail",
+          "disposition": "tested",
+          "evidence": "test_grill_trace_entry_channel.py::test_traces_without_a_transcript_fail PASSED"
+        },
+        {
+          "behavior": "brief-mode pointer / brief: trace needs recorded brief_dir; self-attested confirmed_by fails",
+          "disposition": "tested",
+          "evidence": "test_grill_trace_entry_channel.py::test_brief_mode_pointer_without_a_recorded_brief_dir_fails + test_self_attested_confirmation_fails PASSED"
+        },
+        {
+          "behavior": "untraced FR row is an ERROR; Extension scope downgrades only non-interview rows",
+          "disposition": "tested",
+          "evidence": "test_grill_trace_fr_coverage.py + test_grill_trace_entry_channel.py::test_extension_scope_* PASSED"
+        },
+        {
+          "behavior": "FR Name read from the table header (legacy 5-column)",
+          "disposition": "tested",
+          "evidence": "test_grill_trace_entry_channel.py::test_legacy_five_column_table_uses_the_name_header PASSED"
+        },
+        {
+          "behavior": "run-CLI brief_intake refuses missing/unsupported/spaced document brief file with exit 3; adopt keeps degrade",
+          "disposition": "tested",
+          "evidence": "test_brief_intake_edge.py::test_package_route_* + test_cli_exits_3_on_an_unreadable_brief_file + test_non_package_route_keeps_the_degrade_for_adopt PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory shared/tests --extra dev pytest test_verify_grill_trace_completeness.py test_verify_grill_trace_completeness_integration.py test_grill_trace_entry_channel.py -q",
+      "exit_code": 0,
+      "tests_run": 28,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\grill-trace-gate-hardening\\.shipwright\\runs\\iterate-2026-10-29-grill-trace-gate-hardening\\surface_verification.log",
+      "timestamp": "2026-10-29T07:47:30.179Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-29-grill-trace-gate-hardening",
+    "commit": "b6c4a26c54970bf0d1150fbc1eb21ca94033e6d5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

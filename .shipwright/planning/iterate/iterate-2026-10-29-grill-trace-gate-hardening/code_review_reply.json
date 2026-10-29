@@ -1,0 +1,30 @@
+{
+  "section": "iterate-2026-10-29-grill-trace-gate-hardening",
+  "note": "Transcribed from the code-reviewer's hand-back by the coordinator (finding text abridged; the SubagentStop salvage hook wrote no file). All 8 findings were addressed or dispositioned in this run.",
+  "review": [
+    {"severity": "high", "category": "correctness", "file": "shared/scripts/tools/grill_trace_fr_coverage.py", "line": 90,
+     "finding": "False positive for Extension-scope and adopted projects: fr_trace_coverage is now ERROR over every live FR row, so inherited/adopted FR rows (never interviewed) hard-block update-step. No test covers an Extension or adopted project.",
+     "suggestion": "Limit the ERROR to rows of this run, or keep inherited/adopted FRs at WARNING; add a test."},
+    {"severity": "high", "category": "correctness", "file": "shared/scripts/tools/grill_trace_entry_channel.py", "line": 299,
+     "finding": "False positive on legacy 5-column FR tables: the 3rd cell is taken as Name, which is Priority in the older '| ID | Name | Priority |' layout; such a project becomes 'interview expected' and fails fr_trace_coverage on every row.",
+     "suggestion": "Find the Name column from the header row; add a 5-column test."},
+    {"severity": "medium", "category": "correctness", "file": "shared/scripts/lib/brief_intake.py", "line": 243,
+     "finding": "A bare document path containing a space is not refused, so load_brief turns the path into the app description (the silent swap this change should stop).",
+     "suggestion": "Treat a single-line source with a doc suffix and a path separator as file-like; add a test with a spaced directory."},
+    {"severity": "medium", "category": "architecture", "file": "docs/hooks-and-pipeline.md", "line": 10,
+     "finding": "The new blocking check human_signoff is not documented in hooks-and-pipeline.md, grill-trace-format.md, step-8-completion.md or the module docstring.",
+     "suggestion": "Document human_signoff in all four places."},
+    {"severity": "medium", "category": "correctness", "file": "shared/tests/test_brief_intake_edge.py", "line": 538,
+     "finding": "Tests miss the main contract: no test calls main() or checks exit code 3; oversized file, bare missing path and spaced path are untested.",
+     "suggestion": "Add a main() test with monkeypatched argv; parametrise refusals."},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/grill_trace_entry_channel.py", "line": 381,
+     "finding": "Brief-pointer detection is a substring search for 'project brief mode'; a real transcript mentioning the phrase is treated as a pointer.",
+     "suggestion": "Match the exact line brief_project_mode.apply writes."},
+    {"severity": "low", "category": "architecture", "file": "shared/scripts/tools/grill_trace_entry_channel.py", "line": 362,
+     "finding": "_has_brief_dir re-implements read_run_config; unguarded read_text calls can raise OSError and collapse the whole grill result into one opaque failure.",
+     "suggestion": "Reuse read_run_config; guard reads with try/except OSError."},
+    {"severity": "low", "category": "readability", "file": "shared/tests/test_verify_grill_trace_completeness_integration.py", "line": 756,
+     "finding": "Stray whitespace-only hunks (extra blank line after imports, trailing blank line at EOF).",
+     "suggestion": "Drop both blank-line hunks."}
+  ]
+}
