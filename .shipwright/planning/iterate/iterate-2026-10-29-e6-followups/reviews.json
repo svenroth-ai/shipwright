@@ -114,16 +114,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-29T07:29:00.483091+00:00",
-      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
-      "recorded_by": "close-missing",
+      "completed_at": "2026-10-29T07:32:59.065651+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
