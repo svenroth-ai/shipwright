@@ -1,5 +1,7 @@
 # Baseline protection (BP): BL0b broader measurement and decision report
 
+> **Note 2026-10-29:** the operator read this report and stopped the campaign instead of choosing GO, GO-REDUCED or SHADOW-ONLY: the approach (guessing touched FRs from code) is the problem, not the choice of source. BL1 to BL6 will not run. A new campaign follows after the options were discussed with Opus. The measurements below stay valid.
+
 **Unit:** BL0b · **Run:** `iterate-2026-10-28-bl0b-broader-measurement` · **Data:** `2026-10-27-baseline-protection-BL0B.json` (next to this file; `phaseA.*` are the measurements, `eval` is the rule evaluation) · **Builds on:** `2026-10-27-baseline-protection-REPLAY.md/.json`
 **Reproduce:** `uv run --with coverage shared/scripts/tools/bl0b_head_run.py --tree <worktree at fd2aa8a60> --out <dir outside it>` (item 2), then `bl0b_analyze.py {paths|headmap|ac|packs|summary|probes|eval}`, and `bl0b_probes.py` (item 6). Every figure below is a key in the JSON.
 
