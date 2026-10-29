@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"junit_failures now reads a bounded, strict-UTF-8 report, refuses DOCTYPE/ENTITY and parses with ET.fromstring; same shape as suite_failed_only._parse. No dependency, no nosemgrep."},
+{"name":"Error Handling","verdict":"pass","note":"OSError, UnicodeDecodeError and ParseError all map to an empty failure set; oversize reads as unreadable."},
+{"name":"Security Basics","verdict":"pass","note":"Closes the XML entity-expansion door for the use-defused-xml-parse finding; no secrets or user input involved."},
+{"name":"Test Quality","verdict":"pass","note":"New test covers valid, DTD-bearing, garbled, non-UTF-8 and oversized reports against outcomes."},
+{"name":"Performance Basics","verdict":"pass","note":"One bounded file read (8 MB cap); no loops over I/O."},
+{"name":"Naming & Structure","verdict":"pass","note":"Helper _junit_root and _MAX_XML_BYTES mirror the precedent names; probes file 205 lines, test file 136."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"Consumes pytest's own JUnit file; no serialized format changed."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff reports no findings."}
+]}

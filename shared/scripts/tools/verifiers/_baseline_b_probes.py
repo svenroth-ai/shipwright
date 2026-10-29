@@ -117,12 +117,35 @@ def candidate_tests(tree: Path, probe: dict, cap: int = 8) -> dict[str, list[str
     return {root: [r for _n, r in sorted(files, key=lambda x: (not x[0], x[1]))][:cap] for root, files in found.items() if root}
 
 
+#: A report larger than this reads as unreadable (no failures recorded), never as data.
+_MAX_XML_BYTES = 8 * 1024 * 1024
+
+
+def _junit_root(xml: Path) -> ET.Element | None:
+    """The report's root, or None when absent/garbled/oversized/DTD-bearing.
+
+    A DOCTYPE is refused outright (the only door to entity expansion; pytest's JUnit file never has one), so no
+    XML-hardening dependency is needed - same shape as ``suite_failed_only._parse``.
+    """
+    try:
+        data = xml.read_bytes()
+        if len(data) > _MAX_XML_BYTES:
+            return None
+        text = data.decode("utf-8")  # strict, so the DTD check and the parser see the same characters
+        if "<!DOCTYPE" in text or "<!ENTITY" in text:
+            return None
+        return ET.fromstring(text)
+    except (OSError, UnicodeDecodeError, ET.ParseError):
+        return None
+
+
 def junit_failures(xml: Path, cwd: Path, prefix: str) -> set[str]:
     """Repo-relative ``path::name`` ids of failed or errored testcases (the longest classname prefix that is a file wins)."""
     out: set[str] = set()
-    if not xml.is_file():
+    root = _junit_root(xml)
+    if root is None:
         return out
-    for case in ET.parse(xml).getroot().iter("testcase"):
+    for case in root.iter("testcase"):
         if case.find("failure") is None and case.find("error") is None:
             continue
         parts = [p for p in case.get("classname", "").split(".") if p]
