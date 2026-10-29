@@ -1,0 +1,124 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-29-e6-followups",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 13485,
+      "skipped": 50,
+      "total": 13535
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 45,
+      "skipped": 0,
+      "total": 45
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-29-e6-followups/surface_verification.json",
+      "timestamp": "2026-10-29T00:00:00Z",
+      "justification": "Operator-run test harness; no startable surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Resume refused when the plugin tree has uncommitted changes that differ (fingerprint)",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts: run identity test PASSED"
+        },
+        {
+          "behavior": "Package hash computed from files equals recorded",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts: run identity test PASSED"
+        },
+        {
+          "behavior": "Live PID of earlier run blocks resume/use; stale lock taken over",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts: lock test PASSED"
+        },
+        {
+          "behavior": "skipStartPipeline only after recorded pipelineStarted",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts: lock test + resume test PASSED"
+        },
+        {
+          "behavior": "S05 finds scheme-less/protocol-relative hosts, ignores file names and loopback",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts: S05 test PASSED"
+        },
+        {
+          "behavior": "S08 fails with zero gates answered",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts: S08 zero-gate test PASSED"
+        },
+        {
+          "behavior": "S02 badges scoped to the open tab panel",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "runs only in a real browser against a built board; operator run"
+        },
+        {
+          "behavior": "Duplicate python tests removed, remaining fixture tests green",
+          "disposition": "tested",
+          "evidence": "pytest integration-tests/test_e2e_board_fixture.py 7 passed"
+        },
+        {
+          "behavior": "Wording 'approved design screens' in png_compare error",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test test_png_compare.py 28 passed"
+        },
+        {
+          "behavior": "WebUI server pid in run.lock blocks resume when the spec died",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts lock test PASSED"
+        },
+        {
+          "behavior": "S05 skips generated report folders and tests, still scans hooks, ignores asset file names",
+          "disposition": "tested",
+          "evidence": "board-gates-resume.spec.ts S05 tests PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

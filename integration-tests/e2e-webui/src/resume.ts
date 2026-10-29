@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const MANIFEST_NAME = "run-manifest.json";
+export const LOCK_NAME = "run.lock";
 
 export interface RunIdentity {
   fixture: string;
@@ -38,6 +39,50 @@ export function markFinished(runDir: string): void {
   const file = path.join(runDir, MANIFEST_NAME);
   const m = readJson(file);
   if (m) fs.writeFileSync(file, JSON.stringify({ ...m, finished: new Date().toISOString() }, null, 2), { mode: 0o600 });
+}
+
+/** The spec calls this after "New pipeline" was clicked: only then may a resumed run skip that click. A run-config in the folder proves nothing (the pipeline itself can write one). */
+export function markPipelineStarted(runDir: string): void {
+  const file = path.join(runDir, MANIFEST_NAME);
+  const m = readJson(file);
+  if (m) fs.writeFileSync(file, JSON.stringify({ ...m, pipelineStarted: new Date().toISOString() }, null, 2), { mode: 0o600 });
+}
+
+const alive = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM"; // exists, but not ours
+  }
+};
+
+/** Pids a lock names: the spec process and, once the WebUI is up, its server (the agent runs under it and outlives a killed spec). */
+function lockedPids(runDir: string): number[] {
+  const l = readJson(path.join(runDir, LOCK_NAME));
+  const all = [l?.pid, ...(Array.isArray(l?.pids) ? (l.pids as unknown[]) : [])].map(Number);
+  return all.filter((n) => Number.isInteger(n) && n > 0);
+}
+
+const STALE_HINT = `If no e2e process is running (a pid can be reused by an unrelated program), delete ${LOCK_NAME} in the run folder.`;
+
+/** One live run per folder: the lock names the spec process (and later the WebUI server). A lock whose processes are all gone is stale and taken over. */
+export function acquireLock(runDir: string, pid: number = process.pid): void {
+  const live = lockedPids(runDir).filter((p) => p !== pid && alive(p));
+  if (live.length > 0) throw new ResumeError(`Refusing to use ${path.basename(runDir)}: process ${live[0]} of an earlier run is still alive. Stop it first. ${STALE_HINT}`);
+  fs.writeFileSync(path.join(runDir, LOCK_NAME), JSON.stringify({ pid, pids: [] }), { mode: 0o600 });
+}
+
+/** Adds the WebUI server pid, so a hard-killed spec whose server and agent keep running still blocks a resume. */
+export function addLockPid(runDir: string, pid: number | undefined, owner: number = process.pid): void {
+  if (pid === undefined) return;
+  const file = path.join(runDir, LOCK_NAME);
+  if (Number(readJson(file)?.pid) === owner) fs.writeFileSync(file, JSON.stringify({ pid: owner, pids: [pid] }), { mode: 0o600 });
+}
+
+export function releaseLock(runDir: string, pid: number = process.pid): void {
+  const file = path.join(runDir, LOCK_NAME);
+  if (Number(readJson(file)?.pid) === pid) fs.rmSync(file, { force: true });
 }
 
 function readJson(file: string): Record<string, unknown> | null {
@@ -85,6 +130,8 @@ export function planResume(requested: string, workdir: string, current: RunIdent
   }
   const config = readJson(path.join(projectPath, "shipwright_run_config.json"));
   // A completed PIPELINE is resumable while the checks after it have not finished (a crash during preview or checks).
+  const live = lockedPids(asked).filter(alive);
+  if (live.length > 0) throw new ResumeError(`Refusing to resume: process ${live[0]} of the earlier run is still alive. ${STALE_HINT}`);
   if (earlier.finished) throw new ResumeError("Refusing to resume: the earlier run already finished all its checks; start a new run.");
   const brief = readJson(path.join(projectPath, "brief", "brief.json"));
   const packageThere = brief !== null && brief.package_sha256 === current.packageSha256;
@@ -94,11 +141,12 @@ export function planResume(requested: string, workdir: string, current: RunIdent
 
   const reused = ["temp HOME", "project folder"];
   if (packageThere) reused.push("package copy in brief/");
-  if (config) reused.push(`pipeline already started (status ${String(config.status)})`);
+  const started = config !== null && typeof earlier.pipelineStarted === "string";
+  if (started) reused.push(`pipeline already started (status ${String(config?.status)})`);
   return {
     runDir: asked, tempHome, projectPath,
     skipPackageCopy: packageThere,
-    skipStartPipeline: config !== null,
+    skipStartPipeline: started,
     reused,
     note: `Resumed from ${path.basename(asked)} (commit ${current.commit}, package ${current.packageSha256.slice(0, 12)}). Steps reused: ${reused.join(", ")}. Not reused: the WebUI instance and every check (they run again).`,
   };

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All 8 follow-ups addressed: computed package hash + plugin-change fingerprint, PID lock, pipelineStarted flag, wider S05 scan incl. scheme-less URLs, per-panel badges, S08 needs >=1 gate, duplicate python tests removed, wording. Item 7: two clear duplicates deleted and the hash re-check inside the third removed."},
+{"name":"Error Handling","verdict":"pass","note":"Fingerprint returns 'unknown' on git failure (resume already refuses unknown); packageDigest throws on non-hex output; stale lock is taken over."},
+{"name":"Security Basics","verdict":"pass","note":"Child processes use fixed argv, no shell; no secrets handled; the project under test is only read."},
+{"name":"Test Quality","verdict":"pass","note":"New unit tests assert outcomes: lock/stale lock, started flag, fingerprint changes with untracked edits, hash equals recorded, S05 hits and non-hits, S08 zero gates."},
+{"name":"Performance Basics","verdict":"n/a","note":"Operator-run harness; one git diff and one python call per run."},
+{"name":"Naming & Structure","verdict":"pass","note":"New run-identity.ts; e2e.spec.ts 262 lines, all ts under the 300 cap."},
+{"name":"Affected Boundaries","verdict":"pass","note":"uv/python hash call and git are exercised for real by the unit test; per-panel badge script is browser-only and not unit-tested (stated limit: boards without tabpanel fall back to document scope)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips added."}]}

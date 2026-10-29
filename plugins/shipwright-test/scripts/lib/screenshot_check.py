@@ -49,7 +49,7 @@ def _read_json(path: Path):
 
 
 def _approved_for(root: Path, mockup: str, screen_map: dict) -> Path | None:
-    """The approved mockup in ``uploads/`` for a screen-routes entry (NN prefix via screen-map, else same name)."""
+    """The approved design screen in ``uploads/`` for a screen-routes entry (NN prefix via screen-map, else same name)."""
     designs = root / ".shipwright" / "designs"
     name = Path(mockup).name
     m = _NN_RE.match(name)

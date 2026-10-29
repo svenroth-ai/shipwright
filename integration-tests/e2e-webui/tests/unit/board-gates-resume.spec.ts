@@ -7,8 +7,9 @@ import { httpCall } from "../../src/board-api.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { FIXTURE_NAME } from "../../src/fixture.js";
 import { checkGates, classifyGates } from "../../src/gates.js";
-import { findExternalUse, findSeed } from "../../src/project-checks.js";
-import { markFinished, planResume, ResumeError, writeManifest, type RunIdentity } from "../../src/resume.js";
+import { checkSelfContained, findExternalUse, findSeed } from "../../src/project-checks.js";
+import { acquireLock, addLockPid, LOCK_NAME, markFinished, markPipelineStarted, planResume, releaseLock, ResumeError, writeManifest, type RunIdentity } from "../../src/resume.js";
+import { packageDigest, pluginFingerprint } from "../../src/run-identity.js";
 import { openTarget } from "../../src/tour.js";
 import { startStub } from "./stub-companion.js";
 
@@ -52,6 +53,7 @@ test("resume: accepted only for the same run identity, a direct run-* child, not
     writeManifest(run, id);
     write(run, "project/brief/brief.json", JSON.stringify({ package_sha256: id.packageSha256 }));
     write(run, "project/shipwright_run_config.json", JSON.stringify({ status: "in_progress" }));
+    markPipelineStarted(run);
     const plan = planResume(run, work, id);
     expect(plan.skipPackageCopy).toBe(true);
     expect(plan.skipStartPipeline).toBe(true);
@@ -67,7 +69,7 @@ test("resume: accepted only for the same run identity, a direct run-* child, not
     expect(planResume(run, work, id).skipStartPipeline).toBe(true); // pipeline done, checks not: still resumable
     markFinished(run);
     expect(() => planResume(run, work, id)).toThrow(/already finished/);
-    writeManifest(run, id); // a fresh manifest: not finished
+    writeManifest(run, id); // a fresh manifest: not finished (and not started)
     write(run, "project/shipwright_run_config.json", JSON.stringify({ status: "failed" }));
     write(run, "project/brief/brief.json", JSON.stringify({ package_sha256: "0".repeat(64) }));
     expect(() => planResume(run, work, id)).toThrow(/not the package/);
@@ -132,5 +134,101 @@ test("review round 3: refusing options, loopback IPv6 and protocol-relative URLs
     expect((await httpCall(stub.origin)("GET", "/api/redirect")).status).toBe(302);
   } finally {
     await stub.close();
+  }
+});
+
+// @covers FR-01.06
+test("resume: a run-config alone does not skip New pipeline; a live process of the earlier run blocks resume and use", () => {
+  const work = tmp();
+  const id: RunIdentity = { fixture: FIXTURE_NAME, profile: "skill-companion-app", commit: "abc123", packageSha256: "f".repeat(64) };
+  try {
+    const run = path.join(work, "run-Lk01");
+    fs.mkdirSync(path.join(run, "home"), { recursive: true });
+    fs.mkdirSync(path.join(run, "project"), { recursive: true });
+    writeManifest(run, id);
+    write(run, "project/shipwright_run_config.json", JSON.stringify({ status: "in_progress" }));
+    expect(planResume(run, work, id).skipStartPipeline).toBe(false); // config without the recorded click
+    markPipelineStarted(run);
+    expect(planResume(run, work, id).skipStartPipeline).toBe(true);
+
+    acquireLock(run, process.pid);
+    expect(() => planResume(run, work, id)).toThrow(/still alive/); // our own pid is alive
+    expect(() => acquireLock(run, process.pid + 1)).toThrow(/still alive/);
+    releaseLock(run, process.pid + 1); // not the holder: no effect
+    expect(fs.existsSync(path.join(run, LOCK_NAME))).toBe(true);
+    releaseLock(run);
+    expect(fs.existsSync(path.join(run, LOCK_NAME))).toBe(false);
+    // The spec died (stale pid) but the WebUI server it started is alive: still blocked.
+    write(run, LOCK_NAME, JSON.stringify({ pid: 2_000_000_000, pids: [process.pid] }));
+    expect(() => planResume(run, work, id)).toThrow(/still alive/);
+    write(run, LOCK_NAME, JSON.stringify({ pid: process.pid }));
+    addLockPid(run, 2_000_000_001); // recorded next to the owner
+    expect(JSON.parse(fs.readFileSync(path.join(run, LOCK_NAME), "utf8")).pids).toEqual([2_000_000_001]);
+    fs.rmSync(path.join(run, LOCK_NAME));
+    write(run, LOCK_NAME, JSON.stringify({ pid: 2_000_000_000 })); // stale: no such process
+    expect(planResume(run, work, id).runDir).toBe(path.resolve(run));
+    acquireLock(run); // taken over
+  } finally {
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("run identity: uncommitted plugin changes change the fingerprint; the package hash is computed from the files", () => {
+  expect(pluginFingerprint(repo)).toMatch(/^[0-9a-f]{40}(\+[0-9a-f]{16})?$/);
+  const fixtureDir = path.join(repo, "integration-tests", "fixtures", FIXTURE_NAME);
+  const recorded = (JSON.parse(fs.readFileSync(path.join(fixtureDir, "brief.json"), "utf8")) as { package_sha256: string }).package_sha256;
+  expect(packageDigest(repo, fixtureDir)).toBe(recorded);
+  const probe = path.join(repo, "plugins", "e2e-identity-probe.txt");
+  const before = pluginFingerprint(repo);
+  try {
+    fs.writeFileSync(probe, "one");
+    const one = pluginFingerprint(repo);
+    fs.writeFileSync(probe, "two");
+    const two = pluginFingerprint(repo);
+    expect(new Set([before, one, two]).size).toBe(3);
+  } finally {
+    fs.rmSync(probe, { force: true });
+  }
+});
+
+// @covers FR-01.06
+test("gates (S08): a run that answered no gate fails", () => {
+  const l = list();
+  checkGates([], [], l);
+  expect(verdict(l, "S08")).toBe("fail");
+});
+
+// @covers FR-01.06
+test("S05 sees scheme-less and protocol-relative external use, not file names or loopback", () => {
+  const root = tmp();
+  try {
+    write(root, "hooks/pull.py", 'import requests\nrequests.get("api.example-svc.io/v1")\nrequests.get("localhost:3911/api")\nopen("data.json")\n');
+    write(root, "board/index.html", '<style>@import "//fonts.example-cdn.net/x.css"; a{background:url(//cdn.example-cdn.net/b.png)}</style>');
+    write(root, "backend/ok.py", 'fetch = lambda u: u\nfetch("seed.json")\nfetch("icons.svg")\nfetch("127.0.0.1:3911")\n');
+    const hits = findExternalUse(root, ["hooks/pull.py", "board/index.html", "backend/ok.py"]);
+    expect(hits.map((h) => h.split(" reaches ")[1]).sort()).toEqual(["api.example-svc.io", "cdn.example-cdn.net", "fonts.example-cdn.net"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("S05 ignores generated reports and tests, and still scans a hook at the plugin root", () => {
+  const root = tmp();
+  try {
+    write(root, "playwright-report/index.html", '<script src="https://cdn.example-cdn.net/viewer.js"></script>');
+    write(root, "tests/test_x.py", 'URL = "https://example-tests.io/x"\n');
+    write(root, "backend/server.py", "print('ok')\n");
+    write(root, "seed/matches.json", JSON.stringify(["reddit", "hackernews", "linkedin"].flatMap((p) => [1, 2, 3].map(() => ({ platform: p })))));
+    const l = list();
+    checkSelfContained(root, l);
+    expect(verdict(l, "S05")).toBe("pass");
+    write(root, "hooks/run.sh", 'curl https://leak.example-cdn.net/x\n');
+    const l2 = list();
+    checkSelfContained(root, l2);
+    expect(verdict(l2, "S05")).toBe("fail");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });
