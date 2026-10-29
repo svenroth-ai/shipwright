@@ -1,0 +1,9 @@
+{"items": [
+{"name": "1 Acceptance criteria met", "verdict": "pass", "note": "AC1-AC5 delivered; spec-reviewer PASS."},
+{"name": "2 Tests outcome-based, one happy and one error path", "verdict": "pass", "note": "Faithful in-memory companion passes, each flaw fails its own item; mockups in a real browser; S05 and S09 negative cases."},
+{"name": "3 No debug leftovers / dead code", "verdict": "pass", "note": "ruff clean; tsc clean; no stray files except the node_modules junction, which is gitignored."},
+{"name": "4 Existing behaviour unchanged", "verdict": "pass", "note": "Default fixture and its 48 existing unit specs plus 643 integration tests unchanged and green."},
+{"name": "5 Conventions (files under 300 lines, FR tags, English artifacts)", "verdict": "pass", "note": "All .ts under the cap (enforced by test_e2e_webui_project); tests tagged FR-01.06."},
+{"name": "6 Security / secrets", "verdict": "pass", "note": "Fixed argv, no shell; project treated as data; no keys; recordings replace network."},
+{"name": "7 Affected boundaries probed", "verdict": "pass", "note": "brief.md contract vs board-api-real and adapter checks pinned by test_e2e_real_fixture; stream-json shape parsed from a recorded shape only (live claude flags unverified)."}
+]}
