@@ -11,6 +11,14 @@ export function appendRecord(runDir: string, kind: RecordKind, text: string, now
   fs.appendFileSync(path.join(runDir, GATE_LOG), `${JSON.stringify({ kind, text, at: now.toISOString() })}\n`, { mode: 0o600 });
 }
 
+/**
+ * S08 evidence: what the earlier part left on disk when this run STARTED, plus what this run recorded in memory.
+ * The file is not re-read at the end: the agent under test can reach the run folder.
+ */
+export function wholeRun(earlier: { gates: string[]; escalations: string[] }, gates: string[], escalations: string[]): { gates: string[]; escalations: string[] } {
+  return { gates: [...earlier.gates, ...gates], escalations: [...earlier.escalations, ...escalations] };
+}
+
 /** Every gate and escalation of the run so far; a line that cannot be read counts as an escalation (fail closed). */
 export function loadRecords(runDir: string): { gates: string[]; escalations: string[] } {
   const out = { gates: [] as string[], escalations: [] as string[] };

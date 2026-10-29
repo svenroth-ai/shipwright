@@ -5,7 +5,7 @@
   "title": "End-to-end run builds the skill-backed board app; S01-S08 except S03 become hard checks",
   "context": "The operator e2e run built and checked a chat-first app, the wrong product for a skill-backed app whose chat is the Claude app; soft items were never evaluated and a stopped run could not resume.",
   "decision": "New board fixture (profile skill-companion-app, kit tokens declared as lines) and harness checks of the companion API, the served board and project files; S01, S02, S04-S08 hard, S03 soft; resume from an identity-checked run folder.",
-  "consequences": "Legacy chat-first fixture stays for design tests only. Playwright unit specs run by hand; CI runs the fixture and structure tests. WebUI profile card and preview are proven only by the E8 run. Follow-ups: resume identity hashing uncommitted changes and recomputing the package hash; S05 scan breadth (other folders, scheme-less hosts); dedupe of repeated fixture tests.",
+  "consequences": "Legacy chat-first fixture stays for design tests only. Playwright unit specs run by hand (local: tsc clean, 40 pass); CI runs only fixture and structure tests. Resumed run fails S08 by design. Follow-ups: resume identity hash of uncommitted changes and package hash; S05 breadth; test dedupe; skipStartPipeline from run-config presence; no liveness/PID lock; S02 badges document-wide; S08 passes with zero gates; BP: CI step for npm ci, typecheck, test:unit. WebUI parts proven only by E8.",
   "rationale": "Hard checks make the report a verdict instead of an opinion; the identity manifest keeps a resumed run from mixing commits or packages.",
   "rejected": "Keeping the chat harness with only soft items hardened; rewriting the old fixture in place; no resume.",
   "commit": "",

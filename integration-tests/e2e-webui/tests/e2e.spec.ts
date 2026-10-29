@@ -13,7 +13,7 @@ import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
 import { FIXTURE_NAME, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
-import { appendRecord, loadRecords } from "../src/gate-log.js";
+import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
 import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
 import { checkPluginShape, checkScreensComposed, checkSelfContained, checkTestsRan } from "../src/project-checks.js";
@@ -237,8 +237,9 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       checkBoardTokens(snap, declared, checklist);
       await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
     }
-    const wholeRun = loadRecords(runDir); // earlier parts of a resumed run included
-    checkGates(wholeRun.gates, wholeRun.escalations, checklist);
+    // Earlier part as loaded at start + this run's memory; gates.jsonl is not re-read (the agent can reach it).
+    const judged = wholeRun(earlierRun, report.gateList(), report.escalationList());
+    checkGates(judged.gates, judged.escalations, checklist);
     const open = checklist.hardOpen();
     status = status === "complete" && open.length === 0 ? "complete, all hard items hold" : `${status}; hard items open: ${open.map((i) => i.id).join(", ") || "none"}`;
     await report.step("Finished", page, status);

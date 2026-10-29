@@ -8,7 +8,7 @@ import { httpCall, runApiChecks, type Call } from "../../src/board-api.js";
 import { checkBoardShape, type BoardSnapshot } from "../../src/board-dom.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { FIXTURE_NAME, PLATFORMS } from "../../src/fixture.js";
-import { appendRecord, GATE_LOG, loadRecords } from "../../src/gate-log.js";
+import { appendRecord, GATE_LOG, loadRecords, wholeRun } from "../../src/gate-log.js";
 import { checkGates, classifyGates } from "../../src/gates.js";
 import { checkTestsRan } from "../../src/project-checks.js";
 import { planResume, writeManifest, type RunIdentity } from "../../src/resume.js";
@@ -143,6 +143,61 @@ test("resume refuses a link anywhere the provisioning writes: plugins/cache and 
       }
       expect(() => planResume(run, work, id), n).toThrow(/is a link/);
     }
+  } finally {
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("S06: an all-skipped suite or a runner that reports failure does not pass", () => {
+  const dir = tmp();
+  try {
+    const put = (unit: object, e2e: object) => fs.writeFileSync(path.join(dir, "shipwright_test_results.json"), JSON.stringify({ unit, e2e }));
+    const run = () => { const l = list(); checkTestsRan(dir, l); return verdict(l, "S06"); };
+    put({ passed: 0, skipped: 5, total: 5 }, { passed: 2, total: 2 });
+    expect(run()).toBe("fail");
+    put({ passed: 3, total: 3 }, { passed: 0, skipped: 2, total: 2 });
+    expect(run()).toBe("fail");
+    put({ passed: 5, total: 5, success: false }, { passed: 2, total: 2 });
+    expect(run()).toBe("fail"); // pytest "5 passed, 2 errors"
+    put({ passed: 5, total: 5 }, { passed: 2, total: 2, exit_code: 1 });
+    expect(run()).toBe("fail");
+    put({ passed: 5, total: 5, success: true, exit_code: 0 }, { passed: 2, total: 2, exit_code: 0 });
+    expect(run()).toBe("pass");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("S08 evidence is the earlier part loaded at start plus this run's memory, not a later re-read of the file", () => {
+  const run = tmp();
+  try {
+    appendRecord(run, "gate", option("Approve the design"));
+    const atStart = loadRecords(run);
+    // the agent under test tampers with the file during the run
+    fs.writeFileSync(path.join(run, GATE_LOG), "");
+    const judged = wholeRun(atStart, [option("Continue", "How to proceed?")], ["No progress for 20 minutes"]);
+    expect(judged.gates.length).toBe(2);
+    const l = list();
+    checkGates(judged.gates, judged.escalations, l);
+    expect(verdict(l, "S08")).toBe("fail");
+    expect(loadRecords(run)).toEqual({ gates: [], escalations: [] }); // the wiped file would have shown nothing
+  } finally {
+    fs.rmSync(run, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("resume refuses an unknown plugin commit", () => {
+  const work = tmp();
+  try {
+    const unknown: RunIdentity = { fixture: FIXTURE_NAME, profile: "skill-companion-app", commit: "unknown", packageSha256: "a".repeat(64) };
+    const run = path.join(work, "run-Unk1");
+    fs.mkdirSync(path.join(run, "project"), { recursive: true });
+    fs.mkdirSync(path.join(run, "home"), { recursive: true });
+    writeManifest(run, unknown);
+    expect(() => planResume(run, work, unknown)).toThrow(/commit is unknown/);
   } finally {
     fs.rmSync(work, { recursive: true, force: true });
   }

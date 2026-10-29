@@ -4,9 +4,9 @@
     "date": "2026-10-29",
     "unit": {
       "status": "passed",
-      "passed": 37,
+      "passed": 40,
       "skipped": 0,
-      "total": 37
+      "total": 40
     },
     "integration": {
       "status": "passed",
@@ -31,7 +31,7 @@
       "surface": "web",
       "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test --project=unit --config integration-tests/e2e-webui/playwright.config.ts integration-tests/e2e-webui/tests/unit",
       "exit_code": 0,
-      "tests_run": 37,
+      "tests_run": 40,
       "evidence_path": ".shipwright/runs/iterate-2026-10-29-e6-e2e-harness-skill-app/surface_verification.json",
       "timestamp": "2026-10-29T02:23:55.137Z"
     },
@@ -89,17 +89,22 @@
           "behavior": "resumed run judges S08 over persisted gates; whole-text vetoes; S02 platform mapping; S06 skips; H06 unreadable answers; links in provisioned home",
           "disposition": "tested",
           "evidence": "review-round-4.spec.ts 6 tests PASSED"
+        },
+        {
+          "behavior": "S06 all-skipped and failing runners, S08 evidence from start snapshot, unknown commit refused",
+          "disposition": "tested",
+          "evidence": "review-round-4.spec.ts 9 tests PASSED"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
+        "testable": 11,
+        "tested": 11,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 10,
-        "covered_acs": 10
+        "acs": 11,
+        "covered_acs": 11
       }
     }
   }

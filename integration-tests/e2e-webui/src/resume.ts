@@ -67,6 +67,9 @@ export function planResume(requested: string, workdir: string, current: RunIdent
 
   const earlier = readJson(path.join(asked, MANIFEST_NAME));
   if (!earlier) throw new ResumeError(`Refusing to resume: ${MANIFEST_NAME} is missing or unreadable (the earlier run did not record its identity).`);
+  if (earlier.commit === "unknown" || current.commit === "unknown") {
+    throw new ResumeError("Refusing to resume: the plugin commit is unknown (git failed), so the run cannot be tied to this checkout.");
+  }
   const differs = (["fixture", "packageSha256", "profile", "commit"] as const)
     .filter((k) => earlier[k] !== current[k])
     .map((k) => `${k}: earlier ${String(earlier[k])}, now ${current[k]}`);

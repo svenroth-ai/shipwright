@@ -147,13 +147,20 @@ export function checkSelfContained(projectPath: string, checklist: Checklist): v
   checklist.record("S05", code.length > 0 && external.length === 0 && seedOk ? "pass" : "fail", evidence.join("; "));
 }
 
-/** S06: shipwright_test_results.json records both a unit (pytest) run and an e2e (Playwright) run with at least one test. */
+/** S06: shipwright_test_results.json records a unit (pytest) and an e2e (Playwright) run that really executed and passed. */
 export function checkTestsRan(projectPath: string, checklist: Checklist): void {
-  const data = readJson(path.join(projectPath, "shipwright_test_results.json")) as Record<string, { passed?: number; total?: number; failed?: number; skipped?: number } | undefined> | undefined;
-  const count = (k: string) => ({ passed: Number(data?.[k]?.passed ?? 0), total: Number(data?.[k]?.total ?? 0), failed: Number(data?.[k]?.failed ?? 0), skipped: Number(data?.[k]?.skipped ?? 0) });
-  const unit = count("unit");
-  const e2e = count("e2e");
-  const ran = (c: { total: number }) => c.total > 0;
-  checklist.record("S06", ran(unit) && ran(e2e) && unit.passed + unit.skipped === unit.total && e2e.passed + e2e.skipped === e2e.total && unit.failed === 0 && e2e.failed === 0 ? "pass" : "fail",
-    data ? `unit (pytest) ${unit.passed}/${unit.total}; e2e (Playwright) ${e2e.passed}/${e2e.total}` : "shipwright_test_results.json is missing or unreadable");
+  type Block = { passed?: number; total?: number; failed?: number; skipped?: number; success?: boolean; exit_code?: number };
+  const data = readJson(path.join(projectPath, "shipwright_test_results.json")) as Record<string, Block | undefined> | undefined;
+  const judge = (k: string) => {
+    const b = data?.[k];
+    const passed = Number(b?.passed ?? 0), total = Number(b?.total ?? 0), failed = Number(b?.failed ?? 0), skipped = Number(b?.skipped ?? 0);
+    // Something must have passed (an all-skipped suite proves nothing), nothing failed, every test is accounted for,
+    // and a runner that says it did not succeed (pytest "5 passed, 2 errors") is believed.
+    const ok = passed > 0 && failed === 0 && passed + skipped === total && b?.success !== false && (b?.exit_code === undefined || b.exit_code === 0);
+    return { ok, text: `${passed}/${total}${skipped ? ` (${skipped} skipped)` : ""}` };
+  };
+  const unit = judge("unit");
+  const e2e = judge("e2e");
+  checklist.record("S06", unit.ok && e2e.ok ? "pass" : "fail",
+    data ? `unit (pytest) ${unit.text}${unit.ok ? "" : " NOT OK"}; e2e (Playwright) ${e2e.text}${e2e.ok ? "" : " NOT OK"}` : "shipwright_test_results.json is missing or unreadable");
 }

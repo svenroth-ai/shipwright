@@ -102,7 +102,7 @@ folder is a real `run-<id>` directory directly under the workdir (no link), it h
 has not yet finished all its checks (a pipeline that is already `complete` is still resumable after a crash in the
 preview or the checks; a run that wrote its final report is not), and the project's `brief/` is this package. A resumed run reuses the temp HOME, the project and an
 already-started pipeline (New pipeline is not clicked again), starts a fresh WebUI instance and a fresh budget, and runs
-every check again. The report names the folder and the steps reused. How the WebUI picks up the continued task is
+every check again. A resumed run records its idle, budget or crash escalations (`gates.jsonl` keeps them across parts), so S08 fails on such a run: resume is a way to continue and diagnose, and a run that needed a resume cannot end "all hard items hold" (fail-closed by design). S08 is judged on the earlier part as loaded when the resumed run starts plus the gates of the resumed part held in memory, never on a re-read of the file. Before resuming, make sure the earlier run's processes are dead: the WebUI stack and the companion on the preview port (127.0.0.1:3911); there is no liveness check. The report names the folder and the steps reused. How the WebUI picks up the continued task is
 verified only by a real run (E8).
 
 ## Before the first run of this app class

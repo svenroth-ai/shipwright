@@ -35,7 +35,7 @@ phase's own screenshot check and it needs a person's eye for the cases the metri
 - [hard] S05: No external service is called and no key is needed: nothing in the backend or board reaches beyond loopback or reads a key, and the seed holds at least nine matches, three per platform.
 - [hard] S06: The Test phase ran pytest and Playwright against the served board (both recorded in `shipwright_test_results.json` with at least one test and all passed).
 - [hard] S07: A request the companion does not know (an unknown route) answers 404 as JSON with a plain `error` text, not a page or a crash.
-- [hard] S08: The gates the spec answered were the ones a person would answer (approving the design, screens or mockups, launching the next phase, submitting answers already given), with no unexpected escalation.
+- [hard] S08: The gates the spec answered were the ones a person would answer (approving the design, screens or mockups, launching the next phase, submitting answers already given), with no unexpected escalation. A resumed run records its idle, budget or crash escalations from the earlier part, so S08 fails on it by design.
 
 ## Soft
 
