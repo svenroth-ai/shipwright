@@ -156,7 +156,7 @@ def compare_images(approved: Path, built: Path, tolerance: float = TOLERANCE) ->
     if size_a != size_b:
         return {**base, "status": "error", "error": f"screenshot sizes differ: approved {size_a}, built {size_b}"}
     if not any(occ_a):
-        return {**base, "status": "error", "error": "the approved mockup renders blank (no content): it cannot be compared"}
+        return {**base, "status": "error", "error": "the approved design screens render blank (no content): it cannot be compared"}
     if not any(occ_b):
         return {**base, "status": "fail", "diff_ratio": 1.0, "error": "the built screen renders blank (no content)"}
     differing = sum(1 for a, b, oa, ob in zip(lum_a, lum_b, occ_a, occ_b) if oa != ob or abs(a - b) > CELL_DELTA)

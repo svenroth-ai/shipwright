@@ -5,7 +5,7 @@
 // jobs.json: [{"url": "http://localhost:3000/login", "out": "<abs png path>", "steps": [{"click": "#tab-queue"}]}, ...]
 // optional "steps" bring a served page into a state before the shot: {"click": sel} | {"fill": [sel, text]} | {"wait_for": sel}.
 // Nothing is injected into the page (no style/script tag): the app's own Content-Security-Policy cannot block the capture.
-// url may be http(s):// (the built app) or file:// (an approved mockup). Every shot is the
+// url may be http(s):// (the built app) or file:// (the approved design screens). Every shot is the
 // FIXED viewport (no full-page), animations off, so both sides have the same pixel size.
 // `playwright` is resolved from the PROJECT (where playwright_setup installed it), not from here.
 // stdout: one JSON object {"ok": bool, "captured": [...], "errors": [{"out","error"}]}.

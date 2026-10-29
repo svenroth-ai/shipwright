@@ -1,0 +1,7 @@
+{"section":"e6-followups","review":[
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/src/project-checks.ts","line":151,"finding":"Wider S05 scan would also read generated playwright-report/ and test-results/ output, which may contain https links, failing every complete run.","suggestion":"Exclude generated output folders and add a unit case."},
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/src/resume.ts","line":61,"finding":"run.lock records only the spec process; if the spec is hard-killed, the WebUI server and agent keep running while the stale lock lets a resume start a second run on the same project.","suggestion":"Record the server pid in run.lock too."},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/tests/e2e.spec.ts","line":180,"finding":"markPipelineStarted runs after the report.step screenshot; a stop in between makes a resume click New pipeline again.","suggestion":"Mark right after startPipeline."},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/resume.ts","line":51,"finding":"alive() uses only the pid; a reused pid yields a misleading 'stop it first' message.","suggestion":"Name run.lock as the thing to delete."},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/project-checks.ts","line":101,"finding":"FILE_EXT lacks asset extensions such as svg, so fetch(\"icons.svg\") reads as a host.","suggestion":"Add asset extensions and a unit case."}
+]}

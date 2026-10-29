@@ -1,0 +1,93 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-29-e1-boundary-baseline-followups",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 220,
+      "skipped": 1,
+      "total": 221
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "skipped": 0,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-design pytest tests/test_boundary_baseline.py tests/test_boundary_baseline_inprocess.py",
+      "exit_code": 0,
+      "tests_run": 29,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\e1-boundary-baseline-followups\\.shipwright\\runs\\iterate-2026-10-29-e1-boundary-baseline-followups\\surface_verification.log",
+      "timestamp": "2026-10-29T07:27:59.775Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "HEAD moves within a run: old entries carried forward, nothing newly dirty added",
+          "disposition": "tested",
+          "evidence": "test_boundary_baseline_inprocess.py::test_a_new_commit_carries_the_old_baseline_forward + test_a_file_first_dirtied_after_the_baseline_stays_reported_across_a_commit PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "baseline keyed to the run: another run's baseline is neither kept nor trusted",
+          "disposition": "tested",
+          "evidence": "test_boundary_baseline_inprocess.py::test_a_baseline_of_another_run_is_neither_kept_nor_trusted PASSED"
+        },
+        {
+          "behavior": "subdirectory --project-root fails closed (no baseline written, gate strict)",
+          "disposition": "tested",
+          "evidence": "test_boundary_baseline_inprocess.py::test_a_subdirectory_project_root_fails_closed PASSED"
+        },
+        {
+          "behavior": "paths reported verbatim, no backslash rewrite",
+          "disposition": "tested",
+          "evidence": "test_boundary_baseline_inprocess.py::test_a_backslash_in_a_file_name_is_reported_verbatim (skipped on Windows, covered by code removal)"
+        },
+        {
+          "behavior": "brief integration test includes the boundary gate against a real baseline",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_design_takes_package.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-29-e1-boundary-baseline-followups",
+    "commit": "2e4e4f30c2ebdc20a019da31e9c9b7d60c0e3d68",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

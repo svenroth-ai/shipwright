@@ -17,10 +17,11 @@ import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
 import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
 import { checkPluginShape, checkScreensComposed, checkSelfContained, checkTestsRan } from "../src/project-checks.js";
-import { markFinished, planResume, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
+import { acquireLock, addLockPid, markFinished, markPipelineStarted, planResume, releaseLock, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
 import { parseTokens } from "../src/tokens.js";
 import { provisionHome } from "../src/provision.js";
 import { Report } from "../src/report.js";
+import { packageDigest, pluginFingerprint } from "../src/run-identity.js";
 import { Shutdown } from "../src/shutdown.js";
 import { BUILD_STEP_TIMEOUT_MS, startStack, checkWebuiDir } from "../src/stack.js";
 import { tourBoard } from "../src/tour.js";
@@ -44,15 +45,6 @@ function gitInit(dir: string): void {
   execFileSync("git", ["-C", dir, "config", "user.name", "e2e"], { stdio: "ignore" });
   execFileSync("git", ["-C", dir, "config", "user.email", "e2e@example.invalid"], { stdio: "ignore" });
   execFileSync("git", ["-C", dir, ...git, "commit", "-q", "--allow-empty", "-m", "baseline"], { stdio: "ignore" });
-}
-
-function gitHead(dir: string): string {
-  const git = (...args: string[]) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8" }).trim();
-  try {
-    return `${git("rev-parse", "HEAD")}${git("status", "--porcelain") ? " (working tree has uncommitted changes)" : ""}`;
-  } catch {
-    return "unknown";
-  }
 }
 
 // @covers FR-01.06
@@ -79,8 +71,8 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
   fs.mkdirSync(cfg.workdir, { recursive: true, mode: 0o700 });
   // Identity of this run: a resumed run is only accepted from a folder that recorded the same one (src/resume.ts).
   const identity: RunIdentity = {
-    fixture: FIXTURE_NAME, profile: PROFILE, commit: gitHead(repoRoot),
-    packageSha256: String((JSON.parse(fs.readFileSync(path.join(fixtureDir, "brief.json"), "utf8")) as { package_sha256?: string }).package_sha256 ?? ""),
+    fixture: FIXTURE_NAME, profile: PROFILE, commit: pluginFingerprint(repoRoot),
+    packageSha256: packageDigest(repoRoot, fixtureDir), // computed from the files, not the hash brief.json claims
   };
   let resume: ResumePlan | null = null;
   if (cfg.resumeRun) {
@@ -96,6 +88,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
   fs.mkdirSync(tempHome, { recursive: true, mode: 0o700 });
   fs.mkdirSync(projectPath, { recursive: true, mode: 0o700 });
   if (!resume) writeManifest(runDir, identity);
+  acquireLock(runDir);
 
   const checklist = new Checklist(parseChecklist(fs.readFileSync(expectedFile, "utf8")));
   const earlierRun = loadRecords(runDir);
@@ -143,6 +136,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     // The API-key approval record (last 20 characters of the key) lives in .claude.json.
     fs.rmSync(path.join(tempHome, ".claude.json"), { force: true });
   };
+  shutdown.add(() => releaseLock(runDir));
   shutdown.add(() => killServer?.());
   shutdown.add(wipe);
   shutdown.install();
@@ -165,6 +159,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     });
     stop = stack.stop;
     killServer = stack.killSync;
+    addLockPid(runDir, stack.pid);
     const base = stack.baseUrl;
     await page.goto(base);
     await report.step("WebUI built and started (second instance, temp HOME)", page,
@@ -182,6 +177,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       await report.step("Resume: the pipeline was already started, New pipeline not clicked again", null);
     } else {
       await ui.startPipeline(page, "Build the social engagement board", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
+      markPipelineStarted(runDir); // the task exists from here on: a resume must not click "New pipeline" again
       await report.step("New pipeline, package handed over", page);
       await ui.launchPipeline(page);
     }

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-e6-followups",
+  "date": "2026-10-29",
+  "section": "Iterate — change: E6 e2e harness follow-ups",
+  "title": "E2E harness resume identity, lock and stricter checks",
+  "context": "E6 code and doubt review left eight follow-ups: resume trusted a recorded hash and ignored uncommitted plugin edits, no liveness check, inferred pipeline start, narrow S05, document-wide S02, S08 passing empty, duplicate tests, old wording.",
+  "decision": "Run identity is computed (HEAD plus digest of uncommitted plugins/shared changes; package hash from the files). run.lock holds the spec and WebUI server pids. A manifest flag records the pipeline start. S05 scans all project code incl. scheme-less URLs; S02 counts badges per open panel; S08 needs at least one answered gate.",
+  "consequences": "A resume after any plugin edit is refused; a hard-killed run blocks resume until its processes end. Boards without tabpanel markup still count badges document-wide.",
+  "rationale": "Recorded values prove nothing about the files actually used.",
+  "rejected": "Hashing the whole repo (too broad: unrelated edits would refuse resume).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
