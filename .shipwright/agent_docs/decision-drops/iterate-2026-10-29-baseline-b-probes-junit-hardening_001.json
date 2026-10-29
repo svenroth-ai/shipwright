@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-baseline-b-probes-junit-hardening",
+  "date": "2026-10-29",
+  "section": "Iterate — bug: harden BL0b JUnit parse",
+  "title": "Harden junit_failures XML parse without a new dependency",
+  "context": "Semgrep use-defused-xml-parse flagged ET.parse in shared/scripts/tools/verifiers/_baseline_b_probes.py (BL0b, #946), the same finding class cleared in suite_failed_only.py on 2026-10-09.",
+  "decision": "junit_failures now reads a bounded (8 MB) strict-UTF-8 report, refuses DOCTYPE/ENTITY and parses with ET.fromstring; an unreadable, garbled or DTD-bearing report yields an empty failure set.",
+  "consequences": "A malformed report reads as no failures instead of raising. No new dependency.",
+  "rationale": "Precedent suite_failed_only._parse; shared scripts run in consumer projects without defusedxml. No suppression comment added.",
+  "rejected": "defusedxml dependency (breaks consumer envs); inline nosemgrep (ratcheted, hides the finding).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
