@@ -158,6 +158,8 @@ def main() -> int:
                                        f"approved brief profile {package_profile!r}")
         except bdi.BriefRefused as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
+            for issue in getattr(exc, "issues", []) or []:  # e.g. invalid_content: which capability, which dimension
+                print(f"  - {issue.get('capability') or '(brief)'}: {issue.get('code')}: {issue.get('message')}", file=sys.stderr)
             return 5
 
     profile = args.profile or package_profile or detect_profile(project_root)

@@ -24,7 +24,7 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
 
 - **Brief fields override derived values:** `profile`, `deploy_target` and `autonomy` come from
   `brief.json`; `remaining_questions` is empty, so nothing the package answers is re-asked.
-- **Thin visual guidelines warn, they do not block:** the result's `warnings` lists the kit tokens `visual-guidelines.md` lacks (declared as `--color-bg: #f6f7f9`, names in the design kit's `tokens-contract.md`) and declared colour pairs that miss a contrast rule. Show them to the person before the run goes on; Design fills a missing token from a shipped set.
+- **Thin visual guidelines warn, they do not block:** the result's `warnings` lists the kit tokens `visual-guidelines.md` lacks (declared as `--color-bg: #f6f7f9`, names in the design kit's `tokens-contract.md`) and declared colour pairs that miss a contrast rule. Show them to the person before the run goes on; Design fills a missing token from a shipped set. Tokens not declared are judged at the shipped `warm` set's values, so a contrast warning may name one of those. A refusal `io_error` saying the content check "did not run" is environmental (timeout, load): retry, the package is not at fault.
 - **Verified before use:** layout and hash must verify, and `brief.json` needs `approved_by` and
   `approved_at`. `approved_by: "fixture:<id>"` is accepted only with
   `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` (the acceptance is recorded in `run_config`).

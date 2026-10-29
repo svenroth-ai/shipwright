@@ -8,7 +8,7 @@
 * :func:`token_warnings` -- ADVISORY: does the package's ``visual-guidelines.md`` carry the kit's
   colour and size tokens (``--color-bg: #f6f7f9``), and do the declared pairs meet the contrast rules of
   the kit's ``tokens-contract.md``? The rules are the design plugin's ``check_brand_tokens.py``
-  (CONTRAST_PAIRS, contrast, nearest_passing), loaded from where that plugin sits next to ``shared``;
+  (its check(), parse_colours, parse_sizes, CONTRAST_PAIRS), loaded from where that plugin sits next to ``shared``;
   when it cannot be found the check says so and is skipped. A warning never blocks.
 
 Stdlib only.
@@ -35,7 +35,7 @@ def check_content(project_root: Path, brief_dir: str) -> list[dict]:
     """Content issues of ``<brief_dir>/brief.md`` (empty = fine); raises ``RuntimeError`` when the check could not run."""
     try:
         proc = subprocess.run(
-            [sys.executable, str(_TOOL), "check", "--project-root", str(project_root), "--brief-dir", brief_dir],
+            [sys.executable, str(_TOOL), "check", f"--project-root={project_root}", f"--brief-dir={brief_dir}"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             env={**os.environ, "PYTHONUTF8": "1"}, timeout=_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:

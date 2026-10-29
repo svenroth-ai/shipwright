@@ -97,7 +97,8 @@ def test_thin_brief_is_refused_at_intake_not_in_the_project_phase(tmp_path, caps
     """F6: the Project content check runs when the package is taken in; nothing is written."""
     _package(tmp_path, md=_BRIEF_MD.replace("- Purpose: keep ideas from getting lost\n", "- Purpose:\n"))
     assert _run(tmp_path, "--brief-dir", "brief") == 5
-    assert "invalid_content" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "invalid_content" in err and "Capture note: empty_dimension: dimension 'purpose' has no text" in err
     assert not (tmp_path / "shipwright_run_config.json").exists()
 
 
