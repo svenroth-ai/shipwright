@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-e4-package-intake-content-check",
+  "date": "2026-10-29",
+  "section": "Iterate — feature: Brief-package intake content check and kit-token warning (E4)",
+  "title": "Package intake runs the Project content check and an advisory kit-token check",
+  "context": "A thin brief.md was accepted at package intake and rejected only in the Project phase (F6, 42 empty dimensions, ~70 min in); visual guidelines lacking kit tokens went unnoticed until Design.",
+  "decision": "intake_dir calls lib/brief_intake_checks.py: brief_project_mode.py check (same check_capabilities as apply, own interpreter per ADR-045) refuses invalid_content; the design kit's check_brand_tokens.py yields advisory warnings, fail-open.",
+  "consequences": "A thin brief now fails at intake and needs fix plus re-approval; guidelines must declare --color-*/--font-size-* lines to be judged; the check couples shared to the sibling design plugin's kit module (found next to shared, skipped when absent).",
+  "rationale": "Reuses both existing rule sets instead of copying them; smallest option approved by GLM, OpenAI and the internal architecture reviewer.",
+  "rejected": "Documentation-only pre-check (relies on agent discipline); moving contrast code into shared (larger, touches the design plugin FR-01.04).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

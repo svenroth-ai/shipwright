@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/brief_intake_checks.py:93\n- Finding: Missing font-size tokens never generate warnings. `wanted` and `missing` contain only colour tokens, and absent sizes are silently filled from `warm.css` before validation. Guidelines containing every colour but no `--font-size-*` declarations therefore return no warnings, despite the documented colour-and-size coverage. The tests miss this case.\n- Suggestion: Check required font-size declarations before applying defaults and report missing names alongside missing colours. Add a test with complete colours and no font-size declarations.\n\nOverall assessment: ship-with-fixes. Review was limited to the supplied diff because command execution was blocked; I could not read the referenced campaign brief or run tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/brief_intake_checks.py:35-53 (`check_content`) and shared/scripts/lib/brief_dir_intake.py (~line 173)\n  Finding: `check_content` raises a bare `RuntimeError` on timeout/non-JSON output. The diff's own test (`test_a_check_that_hangs_is_an_error_distinct_from_invalid_content`) expects `BriefRefused` with code `io_error`, but the diff shows no conversion of `RuntimeError` into a `BriefRefused` in `_intake_dir` \u2014 unless pre-existing code in the not-shown part of `intake_dir`/`_intake_dir` does it, a hung or crashy tool subprocess escapes as an unhandled traceback rather than the documented \"exit 3, JSON `{\"refused\": true, ...}`\" contract that `brief-intake.md` promises for every failure. The same applies to the file-route caller in `brief_intake.py` (not in the diff).\n  Suggestion: Wrap the `checks.check_content` call in `_intake_dir` (or in `check_content` itself) and translate `RuntimeError` into `BriefRefused(\"io_error\", ...)`, matching what the test asserts; verify the test actually passes against the diff as shown.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/brief_intake_checks.py:104 (`_token_warnings`)\n  Finding: When `visual-guidelines.md` is absent, the check silently proceeds with an empty token set and reports \"declares 0 of the N kit colour tokens\", which is indistinguishable from a present-but-empty file. The test pins this behaviour (`test_missing_or_unreadable_guidelines_still_warn`), so it's intentional, but a missing mandatory package file is arguably `invalid_package` territory (layout check) rather than a token advisory \u2014 worth confirming `check_brief_dir` already refuses a missing `visual-guidelines.md`, otherwise a package that omits it entirely only gets an advisory warning.\n  Suggestion: Confirm `check_brief_dir`/layout verification rejects a missing `visual-guidelines.md`; if it doesn't, add that to the package layout check rather than relying on the warning text.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/brief_intake_checks.py:66-68 (`_kit_checker` fallback order)\n  Finding: The comment says the cache's `plugins/` mirror \"can be stale\" and the installed version wins, which the test pins \u2014 but in a plain repo checkout there is no versioned directory, so the potentially-stale mirror is the *only* option, and there is no warning when only the mirror is used. Minor, but the advisory result then judges against a possibly-out-of-date rule set with no signal to the operator.\n  Suggestion: Consider appending a note to the warnings when the kit came from the `plugins/` mirror rather than an installed version.\n\n## Non-findings (checked and sound)\n\n- Spec compliance: content check refuses as `invalid_content` (exit 3 \u2192 write_run_config exit 5), token warnings are advisory-only and never block, docs updated in the same diff (hooks-and-pipeline.md, brief-mode.md, brief-intake.md, module docstrings), and the `check` subcommand reuses `content_issues` so there is no second rule set. Acceptance criteria met.\n- `write_run_config.py` prints warnings to stderr and does not let them affect the exit path \u2014 correct.\n- Version sort in `_kit_checker` (`0.10.0` vs `0.2.1`) is numeric-aware and correct; `parts[-4]` is indeed the version segment.\n- `sys.modules` pollution from the dynamically loaded kit module is cleaned up on load failure.\n- Tests are substantive: they assert exit codes, refusal codes, issue payloads, warning content, read-only behaviour, and fail-open semantics \u2014 a broken implementation would not pass them (with the `io_error` mapping caveat above being the one test whose expectation I could not trace to diff-visible code).\n\nOverall: the implementation matches the spec and is well tested; ship after confirming/adding the `RuntimeError \u2192 BriefRefused(\"io_error\")` translation so a hung content-check subprocess cannot escape the documented refusal contract.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-29-e4-package-intake-content-check",
+    "at": "2026-10-29T00:10:00.946718+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

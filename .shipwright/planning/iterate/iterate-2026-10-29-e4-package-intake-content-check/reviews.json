@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e4-package-intake-content-check",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:09:53.624779+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Import `brief_project_mode` as a module and call the factored check function directly; keep ADR-045 isolation only if a concrete conflict exists, and document it.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "brief_project_mode.py` exports the check; `brief_intake_checks.py` re-exports/wraps it only if it adds the token-warning aggregation.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Grep for `_intake_dir` consumers and confirm each handles the new refusal path; note in docs that this is a behaviour change, not just a warning addition.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Define graceful degradation (no warnings vs. hard error) when `check_brand_tokens.py` is absent, and pin the expected location in the plan.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Add tests for check-tool failure and empty input; verify result consumers tolerate the added `warnings` key.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Keep the old fixture as a separate negative case asserting the new refusal, rather than only editing it to pass.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "over-production",
+          "file": null,
+          "line": null,
+          "finding": "Collapse `brief_intake_checks.py` into `brief_dir_intake.py` unless other call sites are planned; the standalone `check` command is only warranted if operators need it ad hoc.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Loading `check_brand_tokens.py` from a sibling design plugin assumes that plugin is installed and preserves the repository layout. The plan does not establish that dependency for packaged intake.",
+          "suggestion": "Verify the installed layout and resolve the checker from a trusted installation path. If unavailable, return an explicit “token check unavailable” warning without blocking otherwise valid intake. Test with the design plugin absent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The subprocess content check has no defined handling for launch failures, timeouts, or malformed output. These must remain distinguishable from an invalid brief.",
+          "suggestion": "Use the current interpreter, an argument list, a bounded timeout, and structured output. Report checker execution failures separately from `invalid_content`; test both paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Adding `warnings` to `_intake_dir` does not establish that callers display them or that token validation failures remain nonblocking.",
+          "suggestion": "Trace the result through the actual intake caller and surface actionable warnings there. Test that missing tokens and failing contrast pairs produce visible warnings while valid content still completes mapping.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The test plan does not explicitly cover rejection before mutation or preservation of existing `apply` behavior after extracting its validation logic.",
+          "suggestion": "Add focused regression coverage proving invalid package content leaves mappings and run configuration untouched, and that `check` and `apply` agree on representative valid and invalid content. Include a valid package without a kit to establish the intended optional-kit behavior.  The approach is reasonable and proportionate, but dependency handling, failure semantics, and end-to-end warning delivery need to be explicit before implementation. Compliance with E4’s exact scope remains unverified without the brief.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T00:09:53.158949+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review: E4 — Package intake content check and kit-token warning\n\n## Findings\n\n- **Category: approach — Severity: medium**\n  Running `brief_project_mode.py check` in a subprocess (\"its own interpreter\") from `content_issues` inside `brief_intake_checks.py` is heavier than the problem warrants. If the content check lives in the same repo under `shared/scripts/tools/`, import or invoke it directly; spawning a per-intake interpreter adds process overhead, error-handling surface (parse exit codes / stdout), and a second code path for the same logic. Subprocess isolation is justified by ADR-045 only if there's a real namespace conflict — the plan should state what it is, or drop it.\n  **Suggestion:** Import `brief_project_mode` as a module and call the factored check function directly; keep ADR-045 isolation only if a concrete conflict exists, and document it.\n\n- **Category: approach — Severity: medium**\n  Step 1 says the check is factored into `content_issues(text)` used by `apply`, but step 2 places `content_issues` in the new `brief_intake_checks.py` running the tool as a subprocess. Two homes for the same name is confusing. Decide one owner of the logic (the tool module) and one thin consumer.\n  **Suggestion:** `brief_project_mode.py` exports the check; `brief_intake_checks.py` re-exports/wraps it only if it adds the token-warning aggregation.\n\n- **Category: risk — Severity: medium**\n  `_intake_dir` refusing `invalid_content` before mapping changes behaviour for existing callers. Any pipeline currently tolerating bad content and relying on mapping output will now fail. The plan doesn't enumerate callers or their failure handling.\n  **Suggestion:** Grep for `_intake_dir` consumers and confirm each handles the new refusal path; note in docs that this is a behaviour change, not just a warning addition.\n\n- **Category: dependency — Severity: medium**\n  `token_warnings` loads `check_brand_tokens.py` \"from where it sits next to shared\" — a cross-plugin path de […truncated]\n\n[openai] Repository reads were blocked by the execution policy, so this review is based on the supplied plan; I could not verify the campaign brief or existing code.\n\n1. **Category: dependency | Severity: medium**\n   **Finding:** Loading `check_brand_tokens.py` from a sibling design plugin assumes that plugin is installed and preserves the repository layout. The plan does not establish that dependency for packaged intake.\n   **Suggestion:** Verify the installed layout and resolve the checker from a trusted installation path. If unavailable, return an explicit “token check unavailable” warning without blocking otherwise valid intake. Test with the design plugin absent.\n\n2. **Category: edge-case | Severity: medium**\n   **Finding:** The subprocess content check has no defined handling for launch failures, timeouts, or malformed output. These must remain distinguishable from an invalid brief.\n   **Suggestion:** Use the current interpreter, an argument list, a bounded timeout, and structured output. Report checker execution failures separately from `invalid_content`; test both paths.\n\n3. **Category: risk | Severity: medium**\n   **Finding:** Adding `warnings` to `_intake_dir` does not establish that callers display them or that token validation failures remain nonblocking.\n   **Suggestion:** Trace the result through the actual intake caller and surface actionable warnings there. Test that missing tokens and failing contrast pairs produce visible warnings while valid content still completes mapping.\n\n4. **Category: risk | Severity: medium**\n   **Finding:** The test plan does not explicitly cover rejection before mutation or preservation of existing `apply` behavior after extracting its validation logic.\n   **Suggestion:** Add focused regression coverage proving invalid package content leaves mappings and run configuration untouched, and that `check` and `apply` agree on representative valid and invalid content. Include a valid package without a kit to establish the int […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_brief_intake_checks.py",
+          "line": 72,
+          "finding": "third block of the cannot-run test depends on the monkeypatch still being active; non-blocking",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T00:16:16.984693+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ac1c4192bb11868caa5df570a96ef0088eaf8fcb"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: write_run_config prints only the refusal count, not the issues — fixed: issues printed, test asserts capability and code",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: brief-mode.md misdiagnoses why apply reports content issues — fixed: reworded",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: argv starting with a dash breaks argparse — fixed: = form",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: subprocess fragility under load — rebutted-in-docs: fail-closed io_error did not run means retry",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: doc and docstring precision — fixed: docstring and run reference",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T00:20:19.126573+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ac1c4192bb11868caa5df570a96ef0088eaf8fcb"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_intake_checks.py:35-53 (`check_content`) and shared/scripts/lib/brief_dir_intake.py (~line 173)",
+          "line": null,
+          "finding": "check_content` raises a bare `RuntimeError` on timeout/non-JSON output. The diff's own test (`test_a_check_that_hangs_is_an_error_distinct_from_invalid_content`) expects `BriefRefused` with code `io_error`, but the diff shows no conversion of `RuntimeError` into a `BriefRefused` in `_intake_dir` — unless pre-existing code in the not-shown part of `intake_dir`/`_intake_dir` does it, a hung or crashy tool subprocess escapes as an unhandled traceback rather than the documented \"exit 3, JSON `{\"refused\": true, ...}`\" contract that `brief-intake.md` promises for every failure. The same applies to the file-route caller in `brief_intake.py` (not in the diff).",
+          "suggestion": "Wrap the `checks.check_content` call in `_intake_dir` (or in `check_content` itself) and translate `RuntimeError` into `BriefRefused(\"io_error\", ...)`, matching what the test asserts; verify the test actually passes against the diff as shown.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/brief_intake_checks.py:104 (`_token_warnings`)",
+          "line": null,
+          "finding": "When `visual-guidelines.md` is absent, the check silently proceeds with an empty token set and reports \"declares 0 of the N kit colour tokens\", which is indistinguishable from a present-but-empty file. The test pins this behaviour (`test_missing_or_unreadable_guidelines_still_warn`), so it's intentional, but a missing mandatory package file is arguably `invalid_package` territory (layout check) rather than a token advisory — worth confirming `check_brief_dir` already refuses a missing `visual-guidelines.md`, otherwise a package that omits it entirely only gets an advisory warning.",
+          "suggestion": "Confirm `check_brief_dir`/layout verification rejects a missing `visual-guidelines.md`; if it doesn't, add that to the package layout check rather than relying on the warning text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/brief_intake_checks.py:66-68 (`_kit_checker` fallback order)",
+          "line": null,
+          "finding": "The comment says the cache's `plugins/` mirror \"can be stale\" and the installed version wins, which the test pins — but in a plain repo checkout there is no versioned directory, so the potentially-stale mirror is the only option, and there is no warning when only the mirror is used. Minor, but the advisory result then judges against a possibly-out-of-date rule set with no signal to the operator.",
+          "suggestion": "Consider appending a note to the warnings when the kit came from the `plugins/` mirror rather than an installed version.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/brief_intake_checks.py",
+          "line": 93,
+          "finding": "Missing font-size tokens never generate warnings. `wanted` and `missing` contain only colour tokens, and absent sizes are silently filled from `warm.css` before validation. Guidelines containing every colour but no `--font-size-` declarations therefore return no warnings, despite the documented colour-and-size coverage. The tests miss this case.",
+          "suggestion": "Check required font-size declarations before applying defaults and report missing names alongside missing colours. Add a test with complete colours and no font-size declarations.  Overall assessment: ship-with-fixes. Review was limited to the supplied diff because command execution was blocked; I could not read the referenced campaign brief or run tests.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T00:11:26.147268+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/brief_intake_checks.py:35-53 (`check_content`) and shared/scripts/lib/brief_dir_intake.py (~line 173)\n  Finding: `check_content` raises a bare `RuntimeError` on timeout/non-JSON output. The diff's own test (`test_a_check_that_hangs_is_an_error_distinct_from_invalid_content`) expects `BriefRefused` with code `io_error`, but the diff shows no conversion of `RuntimeError` into a `BriefRefused` in `_intake_dir` — unless pre-existing code in the not-shown part of `intake_dir`/`_intake_dir` does it, a hung or crashy tool subprocess escapes as an unhandled traceback rather than the documented \"exit 3, JSON `{\"refused\": true, ...}`\" contract that `brief-intake.md` promises for every failure. The same applies to the file-route caller in `brief_intake.py` (not in the diff).\n  Suggestion: Wrap the `checks.check_content` call in `_intake_dir` (or in `check_content` itself) and translate `RuntimeError` into `BriefRefused(\"io_error\", ...)`, matching what the test asserts; verify the test actually passes against the diff as shown.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/brief_intake_checks.py:104 (`_token_warnings`)\n  Finding: When `visual-guidelines.md` is absent, the check silently proceeds with an empty token set and reports \"declares 0 of the N kit colour tokens\", which is indistinguishable from a present-but-empty file. The test pins this behaviour (`test_missing_or_unreadable_guidelines_still_warn`), so it's intentional, but a missing mandatory package file is arguably `invalid_package` territory (layout check) rather than a token advisory — worth confirming `check_brief_dir` already refuses a missing `visual-guidelines.md`, otherwise a package that omits it entirely only gets an advisory warning.\n  Suggestion: Confirm `check_brief_dir`/layout verification rejects a missing `visual-guidelines.md`; if it doesn't, add that to the package layout check rather than re […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/brief_intake_checks.py:93\n- Finding: Missing font-size tokens never generate warnings. `wanted` and `missing` contain only colour tokens, and absent sizes are silently filled from `warm.css` before validation. Guidelines containing every colour but no `--font-size-*` declarations therefore return no warnings, despite the documented colour-and-size coverage. The tests miss this case.\n- Suggestion: Check required font-size declarations before applying defaults and report missing names alongside missing colours. Add a test with complete colours and no font-size declarations.\n\nOverall assessment: ship-with-fixes. Review was limited to the supplied diff because command execution was blocked; I could not read the referenced campaign brief or run tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:16:16.827610+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ac1c4192bb11868caa5df570a96ef0088eaf8fcb"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:09:53.309958+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:09:53.450232+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

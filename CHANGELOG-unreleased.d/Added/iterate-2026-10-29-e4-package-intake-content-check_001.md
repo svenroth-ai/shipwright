@@ -1,0 +1,1 @@
+feat(project): Brief-package intake runs the Project phase's content check and refuses a thin brief up front; visual guidelines lacking the design kit's tokens or contrast produce an advisory warning (E4, F6)

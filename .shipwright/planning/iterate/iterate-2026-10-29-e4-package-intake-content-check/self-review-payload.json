@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"content check at intake plus advisory kit-token warning, both reuse existing rule sets"},
+{"name":"Error Handling","verdict":"pass","note":"content-check failure refuses (io_error); token check fails open to a warning"},
+{"name":"Security Basics","verdict":"pass","note":"fixed argv subprocess, project-relative dir already resolved, no secrets"},
+{"name":"Test Quality","verdict":"pass","note":"19 shared tests tagged FR-01.02, in-process, real subprocess for the check"},
+{"name":"Performance Basics","verdict":"pass","note":"one extra interpreter start per intake"},
+{"name":"Naming & Structure","verdict":"pass","note":"new module 103 lines, brief_dir_intake stays at 300"},
+{"name":"Affected Boundaries","verdict":"pass","note":"brief_dir_intake to tools via subprocess JSON; real round trip proved by tests and the social-engagement fixture"}]}
