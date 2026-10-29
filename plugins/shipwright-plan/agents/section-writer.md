@@ -84,7 +84,10 @@ If the section involves a page, layout, or UI component, check if `.shipwright/d
 
 The mockup defines layout structure, component hierarchy, colors, spacing, and responsive behavior.
 The build agent MUST read the mockup before implementing.
+- Initial state: {what the mockup shows on first load, e.g. "Reddit tab selected", "filter: All", "first row expanded"}
 ```
+
+**Initial state is mandatory, not optional.** Open the mockup and copy what it shows on first load into the `Initial state` line: the selected tab, the active filter or sort, the expanded or open item, the default form values, the empty/loaded state. A link alone loses these details, and a section that says nothing about them contradicts the mockup the moment the build reads both (the build then stops to ask a person). Never write "none selected" when the mockup selects something. If the mockup shows no stateful control, write `Initial state: none`.
 
 Match by name convention: section "05-base-layout" → look for mockups like "03-public-layout.html", "04-admin-layout.html". Section "01-auth" → look for "01-login.html", "02-signup.html". When unsure, list all potentially relevant mockups.
 

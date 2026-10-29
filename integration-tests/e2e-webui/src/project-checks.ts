@@ -105,9 +105,14 @@ function hostOf(raw: string): string {
     const url = new URL(raw.replace(/^(?:href|src)=["']/i, "http:").replace(/^wss?:/i, "http:"));
     return url.hostname.includes(":") && !url.hostname.startsWith("[") ? `[${url.hostname}]` : url.hostname;
   } catch {
-    return raw;
+    // `new URL` rejects templated ports (`http://127.0.0.1:{port}`) and templated hosts (`http://{DEFAULT_HOST}:{port}`); read the host by hand.
+    const m = /^(?:[a-z]+:\/\/|\/\/)?(?:href=|src=)?["']?(?:[a-z]+:\/\/)?(\[[^\]]*\]|[^\s/:?#]+)/i.exec(raw);
+    return m ? m[1] : raw;
   }
 }
+
+/** A host that is ONE template token (`{DEFAULT_HOST}`, `${host}`, `%s`, `<host>`) names no real server; `{region}.api.openai.com` still does. */
+const PLACEHOLDER_HOST = /^(?:\$?\{[^}]*\}|%s|<[^>]*>)$/;
 
 /** External URLs and key reads in code lines (comment lines are skipped) of the given files. */
 export function findExternalUse(projectPath: string, files: string[]): string[] {
@@ -118,12 +123,12 @@ export function findExternalUse(projectPath: string, files: string[]): string[] 
       if (/^\s*(#|\/\/|\*|\/\*)/.test(line)) return;
       for (const m of line.matchAll(/(?:https?|wss?):\/\/[^\s"'`<>)]+|(?:href|src)=["']\/\/[^\s"'`<>)]+/gi)) {
         const host = hostOf(m[0]);
-        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
+        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host) && !PLACEHOLDER_HOST.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
       }
       for (const m of line.matchAll(SCHEMELESS)) {
         const host = hostOf(`http://${m[1]}`);
         if (FILE_EXT.test(host)) continue; // fetch("data.json") is a file, not a host
-        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
+        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host) && !PLACEHOLDER_HOST.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
       }
       if (KEY_READ.test(line)) hits.push(`${rel}:${i + 1} reads a key or token from the environment`);
     });
@@ -168,8 +173,8 @@ export function checkTestsRan(projectPath: string, checklist: Checklist): void {
     const b = data?.[k];
     const passed = Number(b?.passed ?? 0), total = Number(b?.total ?? 0), failed = Number(b?.failed ?? 0), skipped = Number(b?.skipped ?? 0);
     // Something must have passed (an all-skipped suite proves nothing), nothing failed, every test is accounted for,
-    // and a runner that says it did not succeed (pytest "5 passed, 2 errors") is believed.
-    const ok = passed > 0 && failed === 0 && passed + skipped === total && b?.success !== false && (b?.exit_code === undefined || b.exit_code === 0);
+    // (a runner that leaves skipped tests out of total is accepted too), and a runner that says it did not succeed (pytest "5 passed, 2 errors") is believed.
+    const ok = passed > 0 && failed === 0 && (passed + skipped === total || passed === total) && b?.success !== false && (b?.exit_code === undefined || b.exit_code === 0);
     return { ok, text: `${passed}/${total}${skipped ? ` (${skipped} skipped)` : ""}` };
   };
   const unit = judge("unit");

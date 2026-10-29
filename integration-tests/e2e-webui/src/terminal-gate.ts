@@ -75,3 +75,10 @@ export async function answerTerminalMenu(page: Page, lastAnsweredMs: number): Pr
   await page.keyboard.press("Enter");
   return menu;
 }
+
+/** The agent lost its login ("Login expired", "authentication_failed", "Please run /login"): no later step can recover, so the run stops at once. */
+export function isAuthFailure(terminalText: string): boolean {
+  // Only error-looking line starts in the last 40 lines: the terminal also shows the code the agent writes (diff lines start with "+"), and an app may contain "Login expired".
+  const tail = terminalText.split("\n").map((l) => l.trim()).filter(Boolean).slice(-40).join("\n");
+  return /^[\s⎿●✗✘!>•-]{0,4}(?:API Error|authentication_failed|Login expired|OAuth token has expired|Please run \/login)/im.test(tail);
+}

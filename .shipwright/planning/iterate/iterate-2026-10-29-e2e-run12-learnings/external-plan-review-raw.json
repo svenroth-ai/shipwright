@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review findings\n\n- **Category: risk \u00b7 Severity: medium** \u2014 The guard's effectiveness is unverified for the actual failure. The root-cause note admits the hang mechanism was \"inferred, not reproduced\" and the runtime is unknown; plugin hooks don't fire under Codex, so if the runaway `python -` processes came from Codex-run sub-iterators, the hook will not prevent the recurrence at all. AC7's prompt wording is the only Codex-side mitigation and is unenforceable.\n  **Suggestion:** Before shipping, reproduce or instrument at least one hang to confirm the runtime and command shape the hook must catch; consider a harness-level timeout/wrapper on sub-iterate-runner invocation (runtime-agnostic) rather than relying solely on the Claude Code hook.\n\n- **Category: edge-case \u00b7 Severity: medium** \u2014 AC8's deny conditions (\"`python -` with no stdin source\", \"unterminated heredoc\") are defined by parsing a shell command string, which is fragile. Not enumerated: `python3 -`, `pypy -`, multiline/quoted forms, `python -` as part of a larger pipeline where stdin comes from a later stage (`cat f | python -` must pass), heredocs with unusual delimiters, `&&`-chained commands where only one segment is bare. The probes covered \"both reported command shapes\" plus common well-formed forms, but the criteria themselves invite false positives (blocking legitimate piped invocations) or false negatives.\n  **Suggestion:** Enumerate the exact accepted grammar in the mini-plan (e.g., deny only when `python`/`python3` is the last token of a command segment AND the segment is not part of a pipeline/redirect/heredoc), and ensure the probe matrix includes pipeline, subshell, and `python3` variants, not just the two observed shapes.\n\n- **Category: risk \u00b7 Severity: medium** \u2014 AC6's root cause is explicitly \"inferred, not reproduced,\" and the fix depends on an undocumented assumption: that the attribution tool overwrites rather than merges on re-record. If it merges, re-recording with `--extra` entries could duplicate entries; if it rejects re-recording closed sections (the agent's claim), the wording fix doesn't unblock the build agent at all.\n  **Suggestion:** Verify overwrite-vs-merge behavior empirically (one probe) and include it in the Confidence Calibration section; otherwise this AC is a prompt change resting on an unverified tool behavior.\n\n- **Category: edge-case \u00b7 Severity: low** \u2014 AC8 says fail-open and provides an env-var off switch, but the plan doesn't state who/how the guard's deny output reaches the agent (does the deny message explain the escape hatch and the `uv run python` alternative?). A deny without actionable guidance invites the agent to retry variations.\n  **Suggestion:** Specify the hook's denial message content \u2014 include the `uv run python` remedy and the env-var in the deny text.\n\n- **Category: risk \u00b7 Severity: low** \u2014 AC5 adds a required `Initial state:` line to every `## Design Reference` block, which changes the section file format consumed downstream. If any existing sections or checks (e.g., build's contradiction rule, any section validators) are not updated to tolerate/expect the new bullet, previously valid sections may now fail or the new line may be ignored.\n  **Suggestion:** Confirm no downstream validator has a closed schema for `## Design Reference`; note whether pre-existing sections need regeneration or are grandfathered.\n\n- **Category: security \u00b7 Severity: low** \u2014 The hook is fail-open with a global opt-out env var (`SHIPWRIGHT_BARE_PYTHON_GUARD=off`). Acceptable for a dev-harness guard, but the env var can be set by the same agent session it guards. Fine given the guard is convenience-not-security; just confirm it's not relied on as a safety control anywhere.\n  **Suggestion:** None required if documented as best-effort; otherwise scope the off switch to config rather than ambient env.\n\nOverall: the direction is right \u2014 each AC traces to a concrete observed failure, probes back the guard, and the change is appropriately scoped. The two substantive weaknesses are that the headline fix (AC7/AC8) may not cover the runtime that actually produced the hangs, and AC6 rests on unverified tool semantics; both are cheaply verifiable before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** risk \u00b7 **Severity:** medium  \n   **Finding:** Attribution declarations overwrite rather than merge. Re-recording the same scope with only the newly missing `--extra` entries could remove existing entries. The approach also leaves unverified whether re-recording succeeds after the final section is archived and the phase closes.  \n   **Suggestion:** Require the repair to preserve the full original declaration and all existing extras, then append the missing entries. Test this against a completed final section; if closed-phase writes are rejected, move the attribution check before completion.\n\n2. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** The guard\u2019s probes cover basic stdin forms, but shell syntax can make stdin detection misleading. For example, a pipe attached to an earlier command must not make a later `python -` appear safe. Quoted heredoc markers, `<<-` tab stripping, and multiple heredocs also affect whether a terminator is valid.  \n   **Suggestion:** Add focused cases for those forms and compound commands. Keep source detection local to the interpreter invocation, and distinguish a confirmed unterminated heredoc from a parsing failure so the promised fail-open behavior is preserved.\n\n3. **Category:** risk \u00b7 **Severity:** medium  \n   **Finding:** AC4 requires immediate termination on terminal authentication failure, but the approach does not describe detection or validation. Terminal output can arrive across chunks or contain ANSI escapes; broad matching can also mistake quoted logs for a current failure.  \n   **Suggestion:** Use specific agent authentication-error signatures, normalize terminal output, and retain enough buffered text to match across chunks. Test that detection stops active run work and records `auth-failure`, while quoted diagnostic text does not trigger it.\n\n4. **Category:** dependency \u00b7 **Severity:** low  \n   **Finding:** The proposed guard does not run under Codex, while the runtime responsible for the reported hangs is unknown. Consequently, this change cannot establish that the reported runaway-process problem is covered.  \n   **Suggestion:** State the Claude-hook coverage explicitly and record the runtime in subsequent E2E reports so any remaining Codex-specific gap can be addressed from evidence.\n\nThe harness and prompt changes are reasonable and appropriately scoped. The attribution repair, shell guard edge cases, and authentication-stop behavior need concrete validation before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-29-e2e-run12-learnings",
+    "at": "2026-10-29T18:11:15.206658+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

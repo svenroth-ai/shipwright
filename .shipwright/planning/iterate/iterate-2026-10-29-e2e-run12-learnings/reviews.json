@@ -1,0 +1,434 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e2e-run12-learnings",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T17:53:53.048585+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Before shipping, reproduce or instrument at least one hang to confirm the runtime and command shape the hook must catch; consider a harness-level timeout/wrapper on sub-iterate-runner invocation (runtime-agnostic) rather than relying solely on the Claude Code hook.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Enumerate the exact accepted grammar in the mini-plan (e.g., deny only when `python`/`python3` is the last token of a command segment AND the segment is not part of a pipeline/redirect/heredoc), and ensure the probe matrix includes pipeline, subshell, and `python3` variants, not just the two observed shapes.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Verify overwrite-vs-merge behavior empirically (one probe) and include it in the Confidence Calibration section; otherwise this AC is a prompt change resting on an unverified tool behavior.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Specify the hook's denial message content — include the `uv run python` remedy and the env-var in the deny text.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Confirm no downstream validator has a closed schema for `## Design Reference`; note whether pre-existing sections need regeneration or are grandfathered.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "None required if documented as best-effort; otherwise scope the off switch to config rather than ambient env.  Overall: the direction is right — each AC traces to a concrete observed failure, probes back the guard, and the change is appropriately scoped. The two substantive weaknesses are that the headline fix (AC7/AC8) may not cover the runtime that actually produced the hangs, and AC6 rests on unverified tool semantics; both are cheaply verifiable before merge.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Attribution declarations overwrite rather than merge. Re-recording the same scope with only the newly missing `--extra` entries could remove existing entries. The approach also leaves unverified whether re-recording succeeds after the final section is archived and the phase closes.",
+          "suggestion": "Require the repair to preserve the full original declaration and all existing extras, then append the missing entries. Test this against a completed final section; if closed-phase writes are rejected, move the attribution check before completion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The guard’s probes cover basic stdin forms, but shell syntax can make stdin detection misleading. For example, a pipe attached to an earlier command must not make a later `python -` appear safe. Quoted heredoc markers, `<<-` tab stripping, and multiple heredocs also affect whether a terminator is valid.",
+          "suggestion": "Add focused cases for those forms and compound commands. Keep source detection local to the interpreter invocation, and distinguish a confirmed unterminated heredoc from a parsing failure so the promised fail-open behavior is preserved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "AC4 requires immediate termination on terminal authentication failure, but the approach does not describe detection or validation. Terminal output can arrive across chunks or contain ANSI escapes; broad matching can also mistake quoted logs for a current failure.",
+          "suggestion": "Use specific agent authentication-error signatures, normalize terminal output, and retain enough buffered text to match across chunks. Test that detection stops active run work and records `auth-failure`, while quoted diagnostic text does not trigger it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The proposed guard does not run under Codex, while the runtime responsible for the reported hangs is unknown. Consequently, this change cannot establish that the reported runaway-process problem is covered.",
+          "suggestion": "State the Claude-hook coverage explicitly and record the runtime in subsequent E2E reports so any remaining Codex-specific gap can be addressed from evidence.  The harness and prompt changes are reasonable and appropriately scoped. The attribution repair, shell guard edge cases, and authentication-stop behavior need concrete validation before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T18:11:41.110342+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review findings\n\n- **Category: risk · Severity: medium** — The guard's effectiveness is unverified for the actual failure. The root-cause note admits the hang mechanism was \"inferred, not reproduced\" and the runtime is unknown; plugin hooks don't fire under Codex, so if the runaway `python -` processes came from Codex-run sub-iterators, the hook will not prevent the recurrence at all. AC7's prompt wording is the only Codex-side mitigation and is unenforceable.\n  **Suggestion:** Before shipping, reproduce or instrument at least one hang to confirm the runtime and command shape the hook must catch; consider a harness-level timeout/wrapper on sub-iterate-runner invocation (runtime-agnostic) rather than relying solely on the Claude Code hook.\n\n- **Category: edge-case · Severity: medium** — AC8's deny conditions (\"`python -` with no stdin source\", \"unterminated heredoc\") are defined by parsing a shell command string, which is fragile. Not enumerated: `python3 -`, `pypy -`, multiline/quoted forms, `python -` as part of a larger pipeline where stdin comes from a later stage (`cat f | python -` must pass), heredocs with unusual delimiters, `&&`-chained commands where only one segment is bare. The probes covered \"both reported command shapes\" plus common well-formed forms, but the criteria themselves invite false positives (blocking legitimate piped invocations) or false negatives.\n  **Suggestion:** Enumerate the exact accepted grammar in the mini-plan (e.g., deny only when `python`/`python3` is the last token of a command segment AND the segment is not part of a pipeline/redirect/heredoc), and ensure the probe matrix includes pipeline, subshell, and `python3` variants, not just the two observed shapes.\n\n- **Category: risk · Severity: medium** — AC6's root cause is explicitly \"inferred, not reproduced,\" and the fix depends on an undocumented assumption: that the attribution tool overwrites rather than merges on re-record. If it merges, re-recording with `--ex […truncated]\n\n[openai] 1. **Category:** risk · **Severity:** medium  \n   **Finding:** Attribution declarations overwrite rather than merge. Re-recording the same scope with only the newly missing `--extra` entries could remove existing entries. The approach also leaves unverified whether re-recording succeeds after the final section is archived and the phase closes.  \n   **Suggestion:** Require the repair to preserve the full original declaration and all existing extras, then append the missing entries. Test this against a completed final section; if closed-phase writes are rejected, move the attribution check before completion.\n\n2. **Category:** edge-case · **Severity:** medium  \n   **Finding:** The guard’s probes cover basic stdin forms, but shell syntax can make stdin detection misleading. For example, a pipe attached to an earlier command must not make a later `python -` appear safe. Quoted heredoc markers, `<<-` tab stripping, and multiple heredocs also affect whether a terminator is valid.  \n   **Suggestion:** Add focused cases for those forms and compound commands. Keep source detection local to the interpreter invocation, and distinguish a confirmed unterminated heredoc from a parsing failure so the promised fail-open behavior is preserved.\n\n3. **Category:** risk · **Severity:** medium  \n   **Finding:** AC4 requires immediate termination on terminal authentication failure, but the approach does not describe detection or validation. Terminal output can arrive across chunks or contain ANSI escapes; broad matching can also mistake quoted logs for a current failure.  \n   **Suggestion:** Use specific agent authentication-error signatures, normalize terminal output, and retain enough buffered text to match across chunks. Test that detection stops active run work and records `auth-failure`, while quoted diagnostic text does not trigger it.\n\n4. **Category:** dependency · **Severity:** low  \n   **Finding:** The proposed guard does not run under Codex, while the runtime respons […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 303,
+          "finding": "False denies: <<WORD matched in quotes, here-strings and shift operators.",
+          "suggestion": "Blank quoted spans and heredoc bodies before matching. FIXED: mask() rewrite plus allow tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 309,
+          "finding": "Statement split ignores quotes and heredoc bodies (commit message with '; python -').",
+          "suggestion": "FIXED: quotes and bodies are masked before the split.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 302,
+          "finding": "False allow for uv run python -, env prefix, wrappers.",
+          "suggestion": "FIXED: wrapper/env/path-aware interpreter matching and deny tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 313,
+          "finding": "Unterminated-heredoc root cause doubtful; indented closer accepted.",
+          "suggestion": "FIXED: rule narrowed to heredocs feeding an interpreter; closer exact (tabs only for <<-); root cause marked inferred.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "plugins/shipwright-iterate/hooks/hooks.json",
+          "line": 38,
+          "finding": "One extra uv spawn per Bash call.",
+          "suggestion": "ACCEPTED, cost stated in the docs row.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/terminal-gate.ts",
+          "line": 149,
+          "finding": "isAuthFailure matches phrases anywhere in the terminal.",
+          "suggestion": "FIXED: last six lines only, Claude Code error forms, negative test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": 109,
+          "finding": "PLACEHOLDER_HOST exempts templated real hosts.",
+          "suggestion": "FIXED: only a whole-host template token; {region}.api.openai.com still flagged.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": 177,
+          "finding": "passed+failed===total is passed===total.",
+          "suggestion": "FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 308,
+          "finding": "_statements docstring inaccurate.",
+          "suggestion": "FIXED: function replaced.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T17:53:43.871730+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: guard denies only the two reported shapes — <<WORD in commit messages, grep patterns, shift operators and here-strings are denied.",
+          "suggestion": "Mask quotes and heredoc bodies; add allow tests. ADDRESSED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: piped or redirected python - is allowed — Multi-line pipes and backslash continuations denied.",
+          "suggestion": "Join continuations. ADDRESSED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: guard catches the hazardous shape — Env prefix, wrappers, py, python.exe and uv run python - slip through.",
+          "suggestion": "Widen matcher. ADDRESSED; variable interpreter documented as a known miss.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility / root cause",
+          "file": ".shipwright/planning/iterate/2026-10-29-e2e-run12-learnings.md",
+          "line": null,
+          "finding": "Claim under doubt: these shapes caused the 100% CPU processes — Mechanism not reproduced; runtime unrecorded.",
+          "suggestion": "Mark root cause inferred. ADDRESSED in spec and guard docstring.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-build/skills/build/references/requirement-writeback.md",
+          "line": null,
+          "finding": "Claim under doubt: closed question came from the post-commit attribution check — Step 10 marks the section complete before Step 10b.",
+          "suggestion": "State the ordering and the repair. ADDRESSED; moving Step 10b earlier left as a follow-up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-build/skills/build/references/requirement-writeback.md",
+          "line": null,
+          "finding": "Claim under doubt: re-recording is safe to repeat — The tool overwrites; the ordinary template drops a contradiction decision.",
+          "suggestion": "Repeat the identical invocation plus extras. ADDRESSED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-iterate/hooks/hooks.json",
+          "line": null,
+          "finding": "Claim under doubt: hook costs nothing — One uv spawn per Bash call.",
+          "suggestion": "State the cost. ADDRESSED in the docs row.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T17:53:44.007681+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:176-179` (mask/unterminated logic)",
+          "line": null,
+          "finding": "AC8 says the hook denies \"any unterminated heredoc\", and the docs row in `docs/hooks-and-pipeline.md` repeats that unqualified (\"or whose heredoc delimiter is never closed\"). The implementation only denies unterminated heredocs whose opener line runs an interpreter (`pending.append((word, dash, runs_interpreter))` + the `interpreter` filter). An unterminated `cat <<'EOF'` passes. The narrowing was deliberate (per the code-review reply) but the spec text and docs row were not updated to match.",
+          "suggestion": "Either reword AC8 / the docs row to \"an unterminated heredoc feeding an interpreter\", or drop the `runs_interpreter` filter.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:31` (`_HEREDOC_OPEN = re.compile(r\"<<(-?)\\s(['\\\"]?)([A-Za-z_][A-Za-z0-9_])\\2\")`)",
+          "line": null,
+          "finding": "Heredoc delimiters outside `[A-Za-z_][A-Za-z0-9_]` are not recognized as heredocs. A well-formed command like `uv run python - <<'PY-SCRIPT' … PY-SCRIPT` (hyphen, digit-leading, or `$VAR` delimiters) never registers an opener, so the body is not masked and the closer line is not consumed — the opener line still matches `_stdin_python` and the command is falsely denied, violating AC8's \"well-formed forms pass\". A body line containing `; python -` after a failed opener recognition could conversely be falsely denied too.",
+          "suggestion": "Widen the delimiter group (e.g. `[A-Za-z_][A-Za-z0-9_\\-]` and optionally `\\$?[A-Za-z_][A-Za-z0-9_]`) and add allow/deny tests for hyphenated and variable delimiters.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:139-150` (`_is_stdin_python`)",
+          "line": null,
+          "finding": "python 2>/dev/null -` (redirect before the `-`) passes `_is_stdin_python`: the token `2>/dev/null` hits the \"different command\" bail-out before `-` is seen, yet stdin is still the terminal — exactly the hang AC8 targets. Also `python - 0<&-`-style forms after the `-` are fine, but this ordering variant is a concrete miss. The docstring says \"first non-option argument is `-`\", so it is at least self-consistent, but the guard's purpose (prevent stdin waits) is defeated for this shape.",
+          "suggestion": "After locating the interpreter, treat `<`/`>` redirection tokens as skippable rather than terminal when they appear before `-`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/terminal-gate.ts:80-83` (`isAuthFailure`)",
+          "line": null,
+          "finding": "Only the last six non-empty lines are examined. The auth error can scroll out of that window inside one 15 s poll (the agent often prints several lines after a failed call), after which the run waits out the full idle abort — the exact failure AC4 was written to eliminate. Terminal text is also wrapped by xterm; a line can be split so \"Login expired\" starts mid-line beyond the `.{0,6}` allowance (e.g. a timestamp prefix longer than 6 chars).",
+          "suggestion": "Search the last ~40 lines (or a bounded slice like the existing `terminal.slice(-2000)` used for the idle signature) rather than 6, and consider matching \"Login expired\" without the strict 6-char prefix bound.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py:105-109` (`test_registered_bash_hook_composes_with_the_worktree_gate`)",
+          "line": null,
+          "finding": "The integration test parses the hooks.json command with `guard_cmd.split('\"')[1]` — a command variant using single quotes or extra quoted args would break the test (or silently pick the wrong segment). It also never exercises the `uv run --no-project` prefix that production uses; the \"runs the hook through its real hooks.json command line\" claim in the Confidence Calibration is overstated.",
+          "suggestion": "Resolve the script path with a small regex for the quoted path, and optionally run one case through the full registered command line (with `${CLAUDE_PLUGIN_ROOT}` substituted).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts:105-110` (`hostOf` fallback)",
+          "line": null,
+          "finding": "The new fallback host extraction applies to every `new URL` failure in `findExternalUse`, including the SCHEMELESS path (`hostOf(\"http://\" + m[1])`). Strings that previously fell through as raw text (and were tested verbatim against `LOOPBACK`/`HARMLESS_HOSTS`) are now reduced to a leading token — e.g. a schemeless hit like `\"api.example.com/foo bar baz\"` now yields `api.example.com` either way, but odd inputs like `localhost:foo` where `new URL` throws now extract `localhost` and are exempted where previously the raw string `localhost:foo` may not have matched `LOOPBACK`. Net effect is probably only more exemptions (weaker S05), not false flags, but it is a behavior change on an existing path with no test covering the fallback's interaction with `HARMLESS_HOSTS`.",
+          "suggestion": "Add one test where the fallback path extracts a host that is harmless vs one that is not, to pin the semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 74,
+          "finding": "Masking quoted arguments removes their position entirely. A valid command such as `python \"tools/check.py\" -` becomes `python -` and is denied, although Python executes a script with `-` as its argument. This globally blocks legitimate Bash calls.",
+          "suggestion": "Preserve quoted arguments as opaque tokens rather than whitespace, so script paths remain positional arguments. Add an allow test for a quoted script path followed by `-`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 42,
+          "finding": "The heredoc matcher only recognizes identifier-shaped delimiters. For example, `python - <<'PY-END'\\nprint(1)` passes despite its unterminated heredoc: no delimiter is recorded, and the remaining `<<` makes the bare-input check treat the command as fed. This leaves AC8 partially implemented.",
+          "suggestion": "Recognize shell heredoc words, including quoted delimiters containing punctuation or starting with digits. Test both terminated and unterminated forms.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/terminal-gate.ts",
+          "line": 84,
+          "finding": "Restricting detection to six lines still aborts on ordinary source output. A terminal tail containing `+ // authentication_failed handler` matches and stops the run even when authentication succeeded. The negative test only checks source text followed by eight unrelated lines, so it misses this case.",
+          "suggestion": "Match recognizable agent error records rather than these substrings anywhere in the tail. Add negative tests with matching source text inside the last six lines.  Overall assessment: ship-with-fixes. The harness and prompt changes largely satisfy the specification, but the global guard and auth detector need these concrete parsing fixes before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T18:11:40.984412+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: medium\n  File: `plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:176-179` (mask/unterminated logic)\n  Finding: AC8 says the hook denies \"any unterminated heredoc\", and the docs row in `docs/hooks-and-pipeline.md` repeats that unqualified (\"or whose heredoc delimiter is never closed\"). The implementation only denies unterminated heredocs whose opener line runs an interpreter (`pending.append((word, dash, runs_interpreter))` + the `interpreter` filter). An unterminated `cat <<'EOF'` passes. The narrowing was deliberate (per the code-review reply) but the spec text and docs row were not updated to match.\n  Suggestion: Either reword AC8 / the docs row to \"an unterminated heredoc feeding an interpreter\", or drop the `runs_interpreter` filter.\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:31` (`_HEREDOC_OPEN = re.compile(r\"<<(-?)\\s*(['\\\"]?)([A-Za-z_][A-Za-z0-9_]*)\\2\")`)\n  Finding: Heredoc delimiters outside `[A-Za-z_][A-Za-z0-9_]*` are not recognized as heredocs. A well-formed command like `uv run python - <<'PY-SCRIPT' … PY-SCRIPT` (hyphen, digit-leading, or `$VAR` delimiters) never registers an opener, so the body is *not* masked and the closer line is not consumed — the opener line still matches `_stdin_python` and the command is **falsely denied**, violating AC8's \"well-formed forms pass\". A body line containing `; python -` after a failed opener recognition could conversely be falsely denied too.\n  Suggestion: Widen the delimiter group (e.g. `[A-Za-z_][A-Za-z0-9_\\-]*` and optionally `\\$?[A-Za-z_][A-Za-z0-9_]*`) and add allow/deny tests for hyphenated and variable delimiters.\n\n- Category: edge-case\n  Severity: low\n  File: `plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:139-150` (`_is_stdin_python`)\n  Finding: `python 2>/dev/null -` (redirect before the `-`) passes `_is_stdin_python`: the token `2>/dev/null` h […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:74\n- Finding: Masking quoted arguments removes their position entirely. A valid command such as `python \"tools/check.py\" -` becomes `python -` and is denied, although Python executes a script with `-` as its argument. This globally blocks legitimate Bash calls.\n- Suggestion: Preserve quoted arguments as opaque tokens rather than whitespace, so script paths remain positional arguments. Add an allow test for a quoted script path followed by `-`.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py:42\n- Finding: The heredoc matcher only recognizes identifier-shaped delimiters. For example, `python - <<'PY-END'\\nprint(1)` passes despite its unterminated heredoc: no delimiter is recorded, and the remaining `<<` makes the bare-input check treat the command as fed. This leaves AC8 partially implemented.\n- Suggestion: Recognize shell heredoc words, including quoted delimiters containing punctuation or starting with digits. Test both terminated and unterminated forms.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/terminal-gate.ts:84\n- Finding: Restricting detection to six lines still aborts on ordinary source output. A terminal tail containing `+ // authentication_failed handler` matches and stops the run even when authentication succeeded. The negative test only checks source text followed by eight unrelated lines, so it misses this case.\n- Suggestion: Match recognizable agent error records rather than these substrings anywhere in the tail. Add negative tests with matching source text inside the last six lines.\n\nOverall assessment: ship-with-fixes. The harness and prompt changes largely satisfy the specification, but the global guard and auth detector need these concrete parsing fixes before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T17:47:47.107755+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T17:54:02.167235+00:00",
+      "disposition": "Not run in this session: the plan, plan_internal, architecture_internal and external code passes were skipped for time; the change was built directly from the operator's brief and covered by the spec, code and doubt reviewers (opus).",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "unavailable"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T17:54:02.167235+00:00",
+      "disposition": "Not run in this session: the plan, plan_internal, architecture_internal and external code passes were skipped for time; the change was built directly from the operator's brief and covered by the spec, code and doubt reviewers (opus).",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "unavailable"
+    }
+  }
+}

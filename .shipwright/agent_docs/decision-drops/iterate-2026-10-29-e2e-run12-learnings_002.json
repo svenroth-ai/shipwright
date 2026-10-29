@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-e2e-run12-learnings",
+  "date": "2026-10-29",
+  "section": "Iterate â€” change: E2E run-12 learnings",
+  "title": "Guard bare python - in Bash; carry mockup initial state through Plan; clarify build attribution repair",
+  "context": "The second E2E run showed harness false results (S05, S06), a Plan that dropped the mockup's default tab, and a build that asked whether a finished section could be reopened. Runner agents also left bare python - processes spinning for 15 and 17 hours.",
+  "decision": "Fix the harness checks, require an Initial state line in every section Design Reference, document the identical-invocation attribution repair, and add a fail-open PreToolUse Bash guard that denies python - with no stdin source.",
+  "consequences": "One extra hook spawn per Bash call. The guard blanks quotes and heredoc bodies before matching, so its known miss is a variable as interpreter. The hang mechanism and the item-6 cause are inferred, not reproduced.",
+  "rationale": "Reviewers traced false denies in a first, regex-only guard; masking quoted text and heredoc bodies removed them. The Plan fix lives where the detail is lost: the section-writer only linked the mockup.",
+  "rejected": "Moving Step 10b before Step 10 and a leftover-process check at campaign close were left out as larger changes.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -5,6 +5,7 @@ import * as ui from "./driver.js";
 import { IDLE_MINUTES, IdleWatch } from "./idle.js";
 import { fileActivity, phaseSignature, readRunState } from "./progress.js";
 import type { Report } from "./report.js";
+import { isAuthFailure } from "./terminal-gate.js";
 
 const POLL_MS = 15_000;
 
@@ -42,6 +43,11 @@ export async function follow(page: Page, base: string, projectId: string, projec
       await report.step(`Gate answered: ${done}`, page);
     }
     const terminal = await page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => "");
+    if (isAuthFailure(terminal)) {
+      report.escalation("The agent's login failed (Login expired / authentication_failed); the run was stopped at once instead of waiting for the idle abort.");
+      await report.step("Auth failure abort", page, "The terminal shows an authentication failure.");
+      return "auth-failure";
+    }
     if (!idle.observe(`${phases}|${fileActivity(projectPath)}|${terminal.slice(-2000)}`)) {
       const inbox = await page.context().newPage();
       const prompt = await ui.pendingPrompt(inbox, base);

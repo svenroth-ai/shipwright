@@ -1,0 +1,106 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-29-e2e-run12-learnings",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 15351,
+      "skipped": 57,
+      "total": 15408
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 48,
+      "skipped": 0,
+      "total": 48
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "S05 ignores templated loopback/placeholder URLs, still flags real hosts",
+          "disposition": "tested",
+          "evidence": "board.spec.ts run-12 templated URLs: passed"
+        },
+        {
+          "behavior": "S06 accepts total = passed+failed",
+          "disposition": "tested",
+          "evidence": "board.spec.ts run-12 S06: passed"
+        },
+        {
+          "behavior": "agent auth failure detected only in the terminal tail",
+          "disposition": "tested",
+          "evidence": "board.spec.ts run-12 auth failure (positive + two negatives): passed"
+        },
+        {
+          "behavior": "bare python - guard denies reported shapes, allows quoted/heredoc/piped forms",
+          "disposition": "tested",
+          "evidence": "test_bare_python_stdin_guard.py: 41 passed"
+        },
+        {
+          "behavior": "registered Bash hook composes with the worktree gate",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "test_registered_bash_hook_composes_with_the_worktree_gate: passed"
+        },
+        {
+          "behavior": "preview origin printed in the report",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "reason": "needs a full E2E run with the WebUI and a live agent session"
+        },
+        {
+          "behavior": "Initial state line produced by the section-writer",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "depends on an LLM writing the section; the prompt text is covered by the plan test root"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    },
+    "surface_verification": {
+      "surface": "web",
+      "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test integration-tests/e2e-webui/tests/unit --config integration-tests/e2e-webui/playwright.config.ts --project=unit",
+      "exit_code": 0,
+      "tests_run": 48,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\e2e-run12-learnings\\.shipwright\\runs\\iterate-2026-10-29-e2e-run12-learnings\\surface_verification.log",
+      "timestamp": "2026-10-29T18:19:40.679Z",
+      "run_id": "iterate-2026-10-29-e2e-run12-learnings"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
