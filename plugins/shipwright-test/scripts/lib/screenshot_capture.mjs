@@ -2,7 +2,9 @@
 //
 // node screenshot_capture.mjs --project <dir> --jobs <jobs.json> [--width 1280 --height 800]
 //
-// jobs.json: [{"url": "http://localhost:3000/login", "out": "<abs png path>"}, ...]
+// jobs.json: [{"url": "http://localhost:3000/login", "out": "<abs png path>", "steps": [{"click": "#tab-queue"}]}, ...]
+// optional "steps" bring a served page into a state before the shot: {"click": sel} | {"fill": [sel, text]} | {"wait_for": sel}.
+// Nothing is injected into the page (no style/script tag): the app's own Content-Security-Policy cannot block the capture.
 // url may be http(s):// (the built app) or file:// (an approved mockup). Every shot is the
 // FIXED viewport (no full-page), animations off, so both sides have the same pixel size.
 // `playwright` is resolved from the PROJECT (where playwright_setup installed it), not from here.
@@ -56,9 +58,20 @@ try {
       const response = await page.goto(job.url, { waitUntil: "load", timeout: 30000 });
       if (response && !response.ok()) throw new Error(`HTTP ${response.status()} for ${job.url}`);
       await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+      // Steps run in order, 10 s each; one that cannot run fails THIS job (never a silent shot of the initial state).
+      for (const [i, step] of (job.steps || []).entries()) {
+        try {
+          if (step.click) await page.click(step.click, { timeout: 10000 });
+          else if (step.fill) await page.fill(step.fill[0], String(step.fill[1]), { timeout: 10000 });
+          else if (step.wait_for) await page.waitForSelector(step.wait_for, { timeout: 10000 });
+        } catch (e) {
+          throw new Error(`step ${i + 1} ${JSON.stringify(step)} failed: ${String(e.message || e).split(String.fromCharCode(10))[0].slice(0, 160)}`);
+        }
+        await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+      }
       await page.evaluate(() => document.fonts.ready).catch(() => {});
-      await page.addStyleTag({ content: "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}" });
-      await page.screenshot({ path: job.out, fullPage: false });
+      // Playwright's own switches, not an injected <style>: an inline style is blocked by a page CSP (style-src without 'unsafe-inline').
+      await page.screenshot({ path: job.out, fullPage: false, animations: "disabled", caret: "hide" });
       result.captured.push(job.out);
     } catch (e) {
       result.ok = false;

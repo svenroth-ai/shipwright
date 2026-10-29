@@ -34,7 +34,7 @@ def test_every_outcome_has_a_stop_or_continue_instruction():
 
 def test_nothing_may_be_waived_edited_or_approved():
     never = REF[REF.index("Never:"):]
-    for forbidden in ("raise the tolerance", "edit or regenerate an approved mockup", "approve anything"):
+    for forbidden in ("raise the tolerance", "edit or regenerate an approved design screen", "approve anything"):
         assert forbidden in never
     assert "not** a\ndesign-approval gate" in REF or "not** a design-approval gate" in REF.replace("\n", " ")
 

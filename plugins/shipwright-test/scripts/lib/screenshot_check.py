@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Screenshot check: the BLOCKING Test-phase comparison of built screens with the approved mockups.
+"""Screenshot check: the BLOCKING Test-phase comparison of built screens with the approved design screens.
 
 Campaign brief-driven-run, B3c (D9). It sits BESIDE the non-blocking structural step
 (``design_fidelity_check.py``, Step 3.7) and does not touch it.
@@ -9,10 +9,13 @@ Campaign brief-driven-run, B3c (D9). It sits BESIDE the non-blocking structural 
 Applies ONLY when Design applied a Brief package (``.shipwright/designs/brief-package-applied.json``).
 Any other project: ``{"applies": false}``, exit 0 -- today's behaviour, unchanged.
 
-Per screen in ``.shipwright/designs/screen-routes.json`` the approved mockup is the byte-identical copy
+Per screen in ``.shipwright/designs/screen-routes.json`` the approved design screen is the byte-identical copy
 in ``.shipwright/designs/uploads/`` (found through the package's ``screen-map.json`` by the screen's NN
 prefix, else by the same file name). The mockup and the built route are screenshotted by the SAME
 Playwright run at the SAME viewport, then compared with ``png_compare`` (metric + tolerance recorded).
+
+A screen that is a STATE of one served page (a board tab, a pane) has no route of its own: give its entry the page's
+route plus ``steps`` (``{"click": sel}``, ``{"fill": [sel, text]}``, ``{"wait_for": sel}``), run on the built page before the shot.
 
 Exit codes: 0 = every screen passed (or the check does not apply) -- 1 = at least one screen is a
 visible mismatch (``fail``) -- 2 = the check could not run or a screen could not be compared (``error``).
@@ -58,6 +61,24 @@ def _approved_for(root: Path, mockup: str, screen_map: dict) -> Path | None:
             return upload
     same = designs / "uploads" / name
     return same if same.is_file() else None
+
+
+MAX_STEPS = 10
+_STEP_KEYS = {"click": str, "wait_for": str, "fill": list}
+
+
+def _bad_steps(steps) -> str | None:
+    """Why ``steps`` cannot run (None = fine): a list of one-key dicts click/wait_for (selector) or fill ([selector, text])."""
+    if not isinstance(steps, list) or len(steps) > MAX_STEPS:
+        return f"'steps' must be a list of at most {MAX_STEPS}"
+    for st in steps:
+        key = next(iter(st), None) if isinstance(st, dict) and len(st) == 1 else None
+        val = st.get(key) if key else None
+        ok = key in _STEP_KEYS and isinstance(val, _STEP_KEYS[key]) and val != "" and (
+            key != "fill" or (len(val) == 2 and isinstance(val[0], str) and val[0] != "" and isinstance(val[1], (str, int, float))))
+        if not ok:
+            return f"step {st!r} is not click / wait_for (selector) or fill ([selector, text])"
+    return None
 
 
 def _route_entries(data) -> tuple[str, list]:
@@ -151,14 +172,16 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
         source = _builder_file(root, mockup) or approved
         res = {"mockup": mockup, "route": route, "status": "pending", "stem": stem, **({"approved": approved} if approved else {})}
         if not stem or source is None:
-            res.update(status="error", error=f"no approved mockup in screens/ or uploads/ for {mockup!r}")
+            res.update(status="error", error=f"no approved design screen in screens/ or uploads/ for {mockup!r}")
         elif not route.startswith("/") or _DYNAMIC_RE.search(route):
             res.update(status="error", error=f"route {route!r} is not a concrete path: add a 'sample_route' to its screen-routes.json entry")
+        elif "steps" in entry and (steps := entry["steps"]) is not None and (why := _bad_steps(steps)):
+            res.update(status="error", error=f"screen {mockup!r}: {why}")
         else:
             res["compared_with"] = source.relative_to(root).as_posix()
             if capture:
                 jobs += [{"url": source.resolve().as_uri(), "out": str(shots / "approved" / f"{stem}.png")},
-                         {"url": f"{base_url}{route}", "out": str(shots / "built" / f"{stem}.png")}]
+                         {"url": f"{base_url}{route}", "out": str(shots / "built" / f"{stem}.png"), **({"steps": steps} if entry.get("steps") else {})}]
         results.append(res)
     covered = {res["approved"].name for res in results if "approved" in res}
     for entry in (smap.get("screens") if isinstance(smap.get("screens"), list) else []):
@@ -167,8 +190,8 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
             has_upload = (root / ".shipwright" / "designs" / "uploads" / mock).is_file()
             results.append({"mockup": mock, "route": "", "status": "error", "error": (
                 f"package screen {mock!r} has no entry in screen-routes.json: it was never built or mapped" if has_upload
-                else f"package screen {mock!r} has no entry in screen-routes.json and no approved mockup in uploads/")})
-    failure = _capture(root, jobs, timeout or 60 + 45 * len(jobs)) if capture and jobs else None
+                else f"package screen {mock!r} has no entry in screen-routes.json and no approved design screen in uploads/")})
+    failure = _capture(root, jobs, timeout or 60 + 45 * len(jobs) + 15 * sum(len(j.get("steps", [])) for j in jobs)) if capture and jobs else None
     for res in results:
         if res["status"] != "pending":
             continue
@@ -188,7 +211,7 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="Blocking screenshot check: built screens vs approved mockups (Brief package only)")
+    p = argparse.ArgumentParser(description="Blocking screenshot check: built screens vs approved design screens (Brief package only)")
     p.add_argument("--cwd", required=True, help="Project root")
     p.add_argument("--base-url", help="Running app, e.g. http://localhost:3000")
     p.add_argument("--tolerance", type=float, default=png_compare.TOLERANCE)

@@ -95,7 +95,7 @@ def test_approved_mockup_is_found_via_screen_map_then_by_same_name(tmp_path):
     assert sc._approved_for(root, "dash-mockup.html", smap).name == "dash-mockup.html"
     assert sc._approved_for(root, "screens/09-nothing.html", smap) is None
     r = run(root)
-    assert r["screens"][2]["status"] == "error" and "no approved mockup" in r["screens"][2]["error"]
+    assert r["screens"][2]["status"] == "error" and "no approved design screen" in r["screens"][2]["error"]
 
 
 def test_dynamic_route_needs_a_sample_route(tmp_path):
@@ -206,4 +206,4 @@ def test_a_package_screen_with_neither_route_nor_upload_is_an_error(tmp_path):
     place(root, "01-01-dashboard", "approved", dashboard())
     place(root, "01-01-dashboard", "built", dashboard())
     r = run(root)
-    assert r["status"] == "error" and "no approved mockup in uploads/" in r["screens"][-1]["error"]
+    assert r["status"] == "error" and "no approved design screen in uploads/" in r["screens"][-1]["error"]
