@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-10-29-design-kit-reply-board",
-  "date": "2026-10-29T22:26:49.511698Z",
-  "event_at": "2026-10-29T19:58:16.287911+00:00",
+  "date": "2026-10-29T22:41:31.128080Z",
+  "event_at": "2026-10-29T22:26:49.761300+00:00",
   "type": "feature",
   "complexity": "medium",
   "prior_source": "keyword",
@@ -48,15 +48,25 @@
         "evidence": "plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_kit_uses_tokens_only PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_committed_examples_match_what_the_kit_builds PASSED; plugins/shipwright-design/tests/test_untitled_ui_kit.py::test_token_contract_names_every_token_the_kit_uses PASSED"
       },
       {
-        "behavior": "Rendering of long-list independent scroll, depth 5+ nesting and the Layout B sticky offset on a real page",
+        "behavior": "Browser: wide screen puts the list pane beside the thread and hides the picker; narrow screen shows the picker and no sideways overflow (all three looks)",
+        "disposition": "tested",
+        "evidence": "integration-tests/e2e-webui/tests/unit/design-kit-reply-board.spec.ts::gallery-clean/warm/bold wide + narrow PASSED (Playwright, 6 tests)"
+      },
+      {
+        "behavior": "Browser: nested reply is indented with a 1px left rule; count shows in the segmented control; eyebrow is uppercase and the mono token; callout and copied button render",
+        "disposition": "tested",
+        "evidence": "integration-tests/e2e-webui/tests/unit/design-kit-reply-board.spec.ts::gallery-clean/warm/bold nested, counts+eyebrow, callout PASSED (Playwright, 9 tests)"
+      },
+      {
+        "behavior": "Rendering of independent scroll with a long list, depth 5+ nesting and the Layout B sticky offset on a real page",
         "disposition": "untestable",
         "reason_code": "requires-manual-visual-judgment",
-        "reason": "No browser test harness in the kit; the gallery was rendered once in headless Edge at 1280px and 600px (see spec), these three cases were not exercised"
+        "reason": "The gallery has no long list, no deep thread and no top-nav page to exercise these; the three cases were not rendered"
       }
     ],
     "counts": {
-      "testable": 7,
-      "tested": 7,
+      "testable": 9,
+      "tested": 9,
       "untestable": 1,
       "untested_testable": 0
     },
@@ -66,12 +76,12 @@
     }
   },
   "surface_verification": {
-    "surface": "cli",
-    "runner": "uv run --directory plugins/shipwright-design pytest tests/test_untitled_ui_kit.py -q",
+    "surface": "web",
+    "runner": "node integration-tests/e2e-webui/node_modules/@playwright/test/cli test --config integration-tests/e2e-webui/playwright.kit.config.ts --reporter=line integration-tests/e2e-webui/tests/unit/design-kit-reply-board.spec.ts",
     "exit_code": 0,
-    "tests_run": 41,
+    "tests_run": 15,
     "evidence_path": ".shipwright/runs/iterate-2026-10-29-design-kit-reply-board/surface_verification.log",
-    "timestamp": "2026-10-29T22:26:04.036Z",
+    "timestamp": "2026-10-29T22:41:30.764Z",
     "attempts": 1
   },
   "declared_removals": [],
