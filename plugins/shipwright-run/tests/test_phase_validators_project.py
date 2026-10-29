@@ -268,6 +268,7 @@ def test_fr_trace_coverage_mismatch_only_warns_in_extension_scope(tmp_path, monk
     rides the inform path (greenfield blocks: see test_grill_trace_entry_channel)."""
     _seed_basic_project(tmp_path)
     _seed_canon_artifacts(tmp_path, run_id="project-fr-join-mismatch")
+    assert json.loads((tmp_path / "shipwright_project_config.json").read_text())["scope"] == "extension"
     trace_dir = tmp_path / ".shipwright" / "planning" / "grill-traces"
     trace_dir.mkdir(parents=True, exist_ok=True)
     (trace_dir / "user-login.json").write_text(json.dumps({

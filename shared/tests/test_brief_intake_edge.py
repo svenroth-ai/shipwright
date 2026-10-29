@@ -158,3 +158,9 @@ def test_package_route_keeps_a_description_ending_in_a_file_name(tmp_path):
 @pytest.mark.covers("FR-01.16/AC01")
 def test_package_route_refuses_a_bare_relative_spaced_document(tmp_path):
     assert intake("my notes v2.pdf", str(tmp_path), package=True)["code"] == "brief_unreadable"
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_keeps_prose_that_ends_in_a_document_name(tmp_path):
+    result = intake("Build a dashboard for sales.csv", str(tmp_path), package=True)
+    assert result.get("refused") is None and result["has_brief"] is True
