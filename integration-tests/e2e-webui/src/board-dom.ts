@@ -26,12 +26,14 @@ function script(tokenNames: string[]): string {
   const findTabs = () => { const roled = [...document.querySelectorAll('[role="tab"]')]; return roled.length > 0 ? roled : [...document.querySelectorAll('button')].filter(isTab); };
   const tabEls = findTabs();
   const visible = (e) => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
-  const badges = () => [...document.querySelectorAll('[class*="badge"]')].filter(visible).map((e) => text(e).toLowerCase());
+  // Badges of the OPEN tab panel only (aria-controls, else the visible tabpanel); a board without panels falls back to the document.
+  const panelOf = (tab) => { const id = tab && tab.getAttribute('aria-controls'); const byId = id && document.getElementById(id); if (byId) return byId; return [...document.querySelectorAll('[role="tabpanel"]')].find(visible) || document; };
+  const badges = (tab) => [...panelOf(tab).querySelectorAll('[class*="badge"]')].filter(visible).map((e) => text(e).toLowerCase());
   const badgesByTab = {};
   const names = tabEls.map(text);
   // A board may redraw its tab strip on click: find each tab again by position before clicking it.
-  for (let i = 0; i < names.length; i += 1) { const t = findTabs()[i]; if (t) t.click(); await new Promise((r) => setTimeout(r, 500)); badgesByTab[names[i]] = badges(); }
-  if (tabEls.length === 0) badgesByTab[''] = badges();
+  for (let i = 0; i < names.length; i += 1) { const t = findTabs()[i]; if (t) t.click(); await new Promise((r) => setTimeout(r, 500)); badgesByTab[names[i]] = badges(findTabs()[i]); }
+  if (tabEls.length === 0) badgesByTab[''] = badges(null);
   const inputRe = /chat|composer|type a (message|command)|send a message/i;
   const panelRe = /chat|composer|message-log|msg-log/i;
   const chatInputs = [...document.querySelectorAll('input, textarea')].filter((e) => e.type !== 'hidden' && inputRe.test([e.placeholder, e.getAttribute('aria-label'), e.name, e.id].join(' '))).map((e) => e.outerHTML.slice(0, 120));

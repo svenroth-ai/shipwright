@@ -94,6 +94,12 @@ const LOOPBACK = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/i;
 const HARMLESS_HOSTS = /^(www\.w3\.org|example\.(com|org|net)|json-schema\.org)$/i;
 const KEY_READ = /(os\.environ|os\.getenv|process\.env)[^\n]{0,80}(API_?KEY|SECRET|PASSWORD|(API|ACCESS|AUTH)_?TOKEN)/i;
 
+// Calls with no scheme: protocol-relative `url(//host/x)`, `@import "//host"`, `fetch("//host")`, and a bare dotted host as the
+// first argument of a network call (`requests.get("api.example.com/x")`). Dotless names (`localhost:3911`) are not matched.
+const SCHEMELESS = /(?:url\(\s*["']?\/\/|@import\s+["']\/\/|(?:fetch|urlopen|Request|requests\.\w+|httpx\.\w+|axios\.\w+|http\.client\.\w+)\(\s*["'](?:\/\/)?)((?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d+)?)(?=[/"'?)\s]|$)/gi;
+
+const FILE_EXT = /\.(json|jsonl|js|mjs|py|html?|css|txt|md|csv|ya?ml|sh|ts|log|db|sqlite3?|svg|png|jpe?g|gif|webp|ico|woff2?|ttf|xml|php|map|wasm)$/i;
+
 function hostOf(raw: string): string {
   try {
     const url = new URL(raw.replace(/^(?:href|src)=["']/i, "http:").replace(/^wss?:/i, "http:"));
@@ -112,6 +118,11 @@ export function findExternalUse(projectPath: string, files: string[]): string[] 
       if (/^\s*(#|\/\/|\*|\/\*)/.test(line)) return;
       for (const m of line.matchAll(/(?:https?|wss?):\/\/[^\s"'`<>)]+|(?:href|src)=["']\/\/[^\s"'`<>)]+/gi)) {
         const host = hostOf(m[0]);
+        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
+      }
+      for (const m of line.matchAll(SCHEMELESS)) {
+        const host = hostOf(`http://${m[1]}`);
+        if (FILE_EXT.test(host)) continue; // fetch("data.json") is a file, not a host
         if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
       }
       if (KEY_READ.test(line)) hits.push(`${rel}:${i + 1} reads a key or token from the environment`);
@@ -133,15 +144,17 @@ export function findSeed(projectPath: string): { file: string; perPlatform: Reco
 
 const platformKey = (p: string) => p.toLowerCase().replace(/\s+/g, "");
 
-/** S05: no external service or key in the backend and the board, and a seed of at least nine matches, three per platform. */
+/** S05: no external service or key anywhere in the project's code, and a seed of at least nine matches, three per platform. */
 export function checkSelfContained(projectPath: string, checklist: Checklist): void {
-  const code = walk(projectPath, (r) => /^(backend|board|skills)\/.*\.(py|js|mjs|html|css)$/.test(r));
+  // The whole project, not three folders: a call hidden in a hook, a script or the plugin root counts. Tests, the package copy and the
+  // agent's own planning files are not shipped code and mention URLs freely.
+  const code = walk(projectPath, (r) => /\.(py|js|mjs|cjs|ts|html|css|sh)$/.test(r) && !/^(tests|brief|seed|docs|\.shipwright|\.claude|playwright-report|test-results|coverage|htmlcov)\//.test(r));
   const external = findExternalUse(projectPath, code);
   const seed = findSeed(projectPath);
   const counts = seed ? PLATFORMS.map((p) => seed.perPlatform[platformKey(p)] ?? 0) : [];
   const seedOk = !!seed && seed.total >= 9 && counts.every((n) => n >= 3);
   const evidence = [
-    external.length === 0 ? `no external use in ${code.length} backend/board/skills files` : `external use: ${external.slice(0, 4).join("; ")}`,
+    external.length === 0 ? `no external use in ${code.length} project code files` : `external use: ${external.slice(0, 4).join("; ")}`,
     seed ? `seed ${seed.file}: ${seed.total} matches (${PLATFORMS.map((p, i) => `${p} ${counts[i]}`).join(", ")})` : "no seed file found",
   ];
   checklist.record("S05", code.length > 0 && external.length === 0 && seedOk ? "pass" : "fail", evidence.join("; "));

@@ -14,6 +14,8 @@ export interface Stack {
   stop(): Promise<void>;
   /** Synchronous kill, for the shutdown path that runs from signal and exit handlers. */
   killSync(): void;
+  /** The WebUI server process (root of the tree the agent runs under); recorded in run.lock. */
+  pid: number | undefined;
 }
 
 /** Each build step gets its own limit so a hung build is reported as a build problem, not as an idle agent. */
@@ -162,5 +164,5 @@ export async function startStack(input: StartInput): Promise<Stack> {
     await stop();
     throw error;
   }
-  return { baseUrl, home, buildMs, stop, killSync };
+  return { baseUrl, home, buildMs, stop, killSync, pid: server.pid };
 }

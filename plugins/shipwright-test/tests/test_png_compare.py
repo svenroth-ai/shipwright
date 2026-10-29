@@ -92,7 +92,7 @@ def test_a_blank_approved_mockup_is_an_error_not_a_pass(tmp_path):
     blank_approved = write_png(tmp_path / "a.png", blank())
     built = write_png(tmp_path / "b.png", dashboard())
     r = pc.compare_images(blank_approved, built)
-    assert r["status"] == "error" and "renders blank" in r["error"]
+    assert r["status"] == "error" and "render blank" in r["error"]
 
 
 def test_a_corrupt_chunk_is_an_error(tmp_path):

@@ -43,7 +43,8 @@ export function classifyGates(gates: string[]): GateVerdict {
 
 export function checkGates(gates: string[], escalations: string[], checklist: Checklist): void {
   const v = classifyGates(gates);
-  const ok = v.unexpected.length === 0 && escalations.length === 0;
+  // A run in which no gate was answered proves nothing: the design approval must have happened at least once.
+  const ok = v.expected.length > 0 && v.unexpected.length === 0 && escalations.length === 0;
   checklist.record("S08", ok ? "pass" : "fail",
-    `${v.expected.length} gate(s) answered as expected; unexpected gates: ${v.unexpected.length ? v.unexpected.join(" | ") : "none"}; escalations: ${escalations.length ? escalations.join(" | ") : "none"}`);
+    `${v.expected.length === 0 ? "NO gate was answered (the design approval is required); " : ""}${v.expected.length} gate(s) answered as expected; unexpected gates: ${v.unexpected.length ? v.unexpected.join(" | ") : "none"}; escalations: ${escalations.length ? escalations.join(" | ") : "none"}`);
 }
