@@ -9,7 +9,7 @@ export const REQUIRED = [
   "SHIPWRIGHT_E2E_WEBUI_DIR",
   "SHIPWRIGHT_E2E_MAX_MINUTES",
 ] as const;
-export const OPTIONAL = ["SHIPWRIGHT_E2E_WORKDIR"] as const;
+export const OPTIONAL = ["SHIPWRIGHT_E2E_WORKDIR", "SHIPWRIGHT_E2E_RESUME_RUN"] as const;
 
 export type Source = "process-env" | "env-file" | "unset";
 
@@ -18,6 +18,8 @@ export interface E2EConfig {
   webuiDir: string;
   maxMinutes: number;
   workdir: string;
+  /** Optional run folder (run-<id> under the workdir) of an earlier, stopped run to continue; null = a new run. */
+  resumeRun: string | null;
   /** Which source supplied each variable (never a value that could be a secret). */
   sources: Record<string, Source>;
   envFile: string;
@@ -97,6 +99,7 @@ export function loadConfig(
     webuiDir,
     maxMinutes: minutes,
     workdir,
+    resumeRun: values.SHIPWRIGHT_E2E_RESUME_RUN ? path.resolve(values.SHIPWRIGHT_E2E_RESUME_RUN) : null,
     sources,
     envFile,
     envFileFound: fileText !== null,

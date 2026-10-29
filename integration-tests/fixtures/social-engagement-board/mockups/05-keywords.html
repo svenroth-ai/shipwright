@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Keywords</title>
+<style>
+:root{--color-bg:#f6f7f9;--color-surface:#fff;--color-text:#111827;--color-muted:#364050;--color-border:#d0d5dd;--color-primary:#2563eb;--color-on-primary:#fff}
+body{margin:0;font-family:system-ui,sans-serif;font-size:16px;color:var(--color-text);background:var(--color-bg)}
+main{max-width:880px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:8px;border-bottom:1px solid var(--color-border);margin-bottom:16px}
+.tab{border:0;background:none;padding:8px 12px;cursor:pointer}.tab.active{border-bottom:2px solid var(--color-primary);font-weight:600}
+.card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;padding:12px;margin-bottom:12px}
+.badge{font-size:14px;border-radius:999px;padding:2px 8px;border:1px solid var(--color-border)}
+.btn{background:var(--color-primary);color:var(--color-on-primary);border:0;border-radius:8px;padding:8px 16px}
+.muted{color:var(--color-muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>Social engagement board</h1>
+<div class="tabs" role="tablist"><button class="tab active" role="tab" type="button">Reddit</button><button class="tab" role="tab" type="button">Hacker News</button><button class="tab" role="tab" type="button">LinkedIn</button></div>
+<div class="card"><h2>Watch keywords</h2><p class="muted">Fetching only adds matches that contain one of these words.</p><ul><li>onboarding</li><li>pricing</li><li>integrations</li></ul><label>Keywords, comma separated <input type="text" value="onboarding, pricing, integrations"></label> <button class="btn" type="button">Save keywords</button></div>
+</main>
+</body>
+</html>

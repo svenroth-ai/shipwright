@@ -1,43 +1,55 @@
-// Walks the built app in the browser: one screenshot per chat command, each beside the approved mockup.
-// The hard checks already ran over the API (chat.ts); a missing chat box here is recorded, never fatal.
+// Walks the built board in the browser: one screenshot per approved screen, each beside its mockup. The hard checks
+// already ran (board-api.ts, board-dom.ts); a click that cannot be made here is recorded in the step, never fatal.
+// The data the earlier API checks left behind decides what each screen shows (posted, drafted, untouched thread).
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Page } from "@playwright/test";
-import { commandFor, type ChatMap } from "./chat.js";
+import type { ThreadState } from "./board-api.js";
 import type { Report } from "./report.js";
 
 interface ScreenMap {
   screens: { id: string; mockup: string }[];
 }
 
-const COMMANDS = ["fetch-matches", "show-thread", "draft-reply", "mark-posted", "set-keywords"];
+/** What to open on the board for each screen id of the fixture's screen-map.json. */
+export function openTarget(screenId: string, state: ThreadState): { thread?: number; text?: RegExp } {
+  const byThread = (id: number | null) => (id === null ? {} : { thread: id });
+  switch (screenId) {
+    case "thread-detail": return byThread(state.fresh);
+    case "reply-draft": return byThread(state.drafted);
+    case "thread-posted": return byThread(state.posted);
+    case "keywords": return { text: /keywords/i };
+    default: return {};
+  }
+}
 
-export async function tourApp(app: Page, mockPage: Page, fixtureDir: string, report: Report): Promise<void> {
-  const chatMap = JSON.parse(fs.readFileSync(path.join(fixtureDir, "chat-map.json"), "utf8")) as ChatMap;
+export async function tourBoard(app: Page, mockPage: Page, origin: string, fixtureDir: string, state: ThreadState, report: Report): Promise<void> {
   const screenMap = JSON.parse(fs.readFileSync(path.join(fixtureDir, "screen-map.json"), "utf8")) as ScreenMap;
-  await report.step("Built app, first view", app, `URL: ${app.url()}`);
-
-  for (const id of COMMANDS) {
-    const say = commandFor(chatMap, id);
-    const screenId = chatMap.capabilities.find((c) => c.id === id)?.screen ?? id;
-    const mockup = screenMap.screens.find((s) => s.id === screenId)?.mockup;
-    let note = `Chat command: \`${say}\`. First image: approved mockup. Second image: built screen.`;
+  for (const screen of screenMap.screens) {
+    let note = "First image: approved mockup. Second image: built screen.";
     try {
-      const box = app.getByRole("textbox").first();
-      await box.fill(say, { timeout: 10_000 });
-      await box.press("Enter");
-      await app.waitForTimeout(1500);
+      await app.goto(origin, { waitUntil: "domcontentloaded" });
+      const target = openTarget(screen.id, state);
+      if (target.thread !== undefined) {
+        // The thread may sit under another platform's tab: try the tabs until its title is visible.
+        const title = state.titles[target.thread] ?? "";
+        const tabs = await app.getByRole("tab").all();
+        for (const tab of [null, ...tabs]) {
+          if (tab) await tab.click({ timeout: 5000 });
+          if (await app.getByText(title).first().isVisible().catch(() => false)) break;
+        }
+        await app.getByText(title).first().click({ timeout: 10_000 });
+      } else if (target.text) {
+        await app.getByText(target.text).first().click({ timeout: 10_000 });
+      }
+      await app.waitForTimeout(800);
     } catch (error) {
-      note += ` The chat box could not be driven: ${(error as Error).message.split("\n")[0]}`;
+      note += ` The screen state could not be reached: ${(error as Error).message.split("\n")[0]}`;
     }
-    const images: string[] = [];
-    if (mockup) {
-      const file = `mockup-${screenId}.png`;
-      await mockPage.goto(pathToFileURL(path.join(fixtureDir, "mockups", mockup)).href);
-      await mockPage.screenshot({ path: path.join(report.dir, file), fullPage: true, timeout: 30_000 });
-      images.push(file);
-    }
-    await report.step(`Screen ${screenId}`, app, note, images);
+    const file = `mockup-${screen.id}.png`;
+    await mockPage.goto(pathToFileURL(path.join(fixtureDir, "mockups", screen.mockup)).href);
+    await mockPage.screenshot({ path: path.join(report.dir, file), fullPage: true, timeout: 30_000 });
+    await report.step(`Screen ${screen.id}`, app, note, [file]);
   }
 }

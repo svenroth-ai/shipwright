@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Checklist } from "./checklist.js";
+import { PROFILE } from "./fixture.js";
 
 export interface RunState {
   status: string;
@@ -74,7 +75,7 @@ export function checkProjectFiles(projectPath: string, fixtureDir: string, check
 
   const raw = state.raw ?? {};
   const blob = JSON.stringify(raw);
-  const profileOk = blob.includes("chat-first-json");
+  const profileOk = blob.includes(PROFILE);
   const packageOk = blob.includes("brief_dir") || blob.includes("brief_package");
   checklist.record("H02", profileOk && packageOk ? "pass" : "fail", `profile named: ${profileOk}; package recorded: ${packageOk}`);
 

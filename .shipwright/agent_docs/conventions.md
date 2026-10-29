@@ -555,6 +555,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-10-26) e2e-webui — an answer key for a hashed Brief package lives NEXT TO the package, never inside it (it would change the hash and the building agent could read it); a block comment containing `run-*/` ends early in TS (`*/`). [→ iterate-2026-10-26-b7-real-e2e-webui]
 - (2026-10-29) intake — code in `shared/scripts/lib` loaded as a private package (ADR-045) cannot import `tools/*` (they bind `lib`/`tools`); run the tool in its own interpreter, as `brief_intake_checks.check_content` does. [→ iterate-2026-10-29-e4-package-intake-content-check]
 - (2026-10-29) test — never inject a style/script tag into a page you screenshot (the page's CSP blocks it); use Playwright's `animations: "disabled"` / `caret: "hide"`. [→ iterate-2026-10-29-e2e-run-findings-e5-board-screenshot]
+- (2026-10-29) e2e-webui — the operator run checks a skill-backed app through its companion API, the served board and project files (no chat commands); a hard check must read stored state back, not trust the echo, and a resumed run is accepted only from a folder with the same fixture, package, profile and commit. [→ iterate-2026-10-29-e6-e2e-harness-skill-app]
 
 ## Contributing
 

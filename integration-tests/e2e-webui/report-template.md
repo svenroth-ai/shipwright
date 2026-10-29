@@ -1,8 +1,10 @@
-# End-to-end run report: social engagement desk
+# End-to-end run report: social engagement board (skill-backed app)
 
 Result: {{STATUS}}
 Started: {{STARTED}}
 Duration: {{DURATION}}
+Plugins loaded from commit: {{PLUGIN_COMMIT}}
+Run: {{RESUME}}
 
 This file is the template that `src/report.ts` fills in (see the README). The report is produced even when
 the run fails or is aborted, up to the point it stopped. The report folder is not committed.
@@ -25,11 +27,15 @@ deleted when the run ends.
 
 {{STEPS}}
 
-## Checklist (hard items must hold, soft items are compared by eye)
+## Checklist (every item is hard except S03, which is compared by eye)
+
+How each item is evaluated: H01-H04 and H12-H13 and S05-S06 read the project files; H05-H11 and S07 call the companion's JSON API (the chat is the Claude app, so there are no chat commands to type); S01, S02 and S04 read the served board page in a browser; S08 classifies the gates answered below by meaning.
 
 {{CHECKLIST}}
 
 ## Screenshot check of the Test phase (approved design screens against built screens)
+
+The metric and tolerance are the Test phase's own. Whether a placed screen is still the plain mockup copy is a separate hard check (H13).
 
 {{SCREENSHOT_CHECK}}
 

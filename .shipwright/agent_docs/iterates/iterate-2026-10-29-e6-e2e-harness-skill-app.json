@@ -1,0 +1,99 @@
+{
+  "run_id": "iterate-2026-10-29-e6-e2e-harness-skill-app",
+  "date": "2026-10-29T03:17:15.382873Z",
+  "event_at": "2026-10-29T02:43:09.980449+00:00",
+  "type": "feature",
+  "complexity": "large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-e2e-run-findings--E6",
+  "spec": ".shipwright/planning/iterate/iterate-2026-10-29-e6-e2e-harness-skill-app/mini-plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-29-e6-e2e-harness-skill-app",
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_io_boundary"
+  ],
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "API checks H06-H11 and S07 pass on a faithful stub companion and fail per flaw",
+        "disposition": "tested",
+        "evidence": "board.spec.ts API checks tests PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "board page S01, S02, S04 in a real browser: pass for faithful board, fail for chat box, wrong accent, plain badge, redrawn tabs",
+        "disposition": "tested",
+        "evidence": "board.spec.ts board page + board shape verdicts PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "token parsing and comparison",
+        "disposition": "tested",
+        "evidence": "board.spec.ts tokens test PASSED"
+      },
+      {
+        "behavior": "H12 plugin shape and H13 kit check (mockup copy vs composed)",
+        "disposition": "tested",
+        "evidence": "board.spec.ts project checks PASSED"
+      },
+      {
+        "behavior": "S05 self-contained and S06 tests ran incl. failed>0",
+        "disposition": "tested",
+        "evidence": "board.spec.ts S05/S06 test PASSED"
+      },
+      {
+        "behavior": "S08 gate classification by chosen option incl. vetoes",
+        "disposition": "tested",
+        "evidence": "board-gates-resume.spec.ts gates test PASSED"
+      },
+      {
+        "behavior": "resume accepted only for same identity, refused for links, finished, wrong hash",
+        "disposition": "tested",
+        "evidence": "board-gates-resume.spec.ts resume tests PASSED"
+      },
+      {
+        "behavior": "fixture package valid, intake content and token warnings empty, expected-result evaluable",
+        "disposition": "tested",
+        "evidence": "test_e2e_board_fixture.py 9 tests PASSED"
+      },
+      {
+        "behavior": "harness reads the new fixture and project structure",
+        "disposition": "tested",
+        "evidence": "test_e2e_webui_project.py 8 tests PASSED"
+      },
+      {
+        "behavior": "resumed run judges S08 over persisted gates; whole-text vetoes; S02 platform mapping; S06 skips; H06 unreadable answers; links in provisioned home",
+        "disposition": "tested",
+        "evidence": "review-round-4.spec.ts 6 tests PASSED"
+      },
+      {
+        "behavior": "S06 all-skipped and failing runners, S08 evidence from start snapshot, unknown commit refused",
+        "disposition": "tested",
+        "evidence": "review-round-4.spec.ts 9 tests PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 11,
+      "covered_acs": 11
+    }
+  },
+  "surface_verification": {
+    "surface": "web",
+    "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test --project=unit --config integration-tests/e2e-webui/playwright.config.ts integration-tests/e2e-webui/tests/unit",
+    "exit_code": 0,
+    "tests_run": 40,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-29-e6-e2e-harness-skill-app/surface_verification.json",
+    "timestamp": "2026-10-29T02:23:55.137Z"
+  }
+}

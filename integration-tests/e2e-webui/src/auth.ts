@@ -69,6 +69,8 @@ export function scrubStaleLogins(workdir: string, minAgeMs: number, now: number 
   for (const entry of fs.readdirSync(workdir, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.startsWith("run-")) continue;
     const home = path.join(workdir, entry.name, "home");
+    // A link at home/ or home/.claude could point at the real profile: skip such a folder.
+    if ([home, path.join(home, ".claude")].some((p) => fs.lstatSync(p, { throwIfNoEntry: false })?.isSymbolicLink())) continue;
     // The login copy and the .claude.json (API-key approval record). A file younger than the run budget may belong to a live run.
     for (const stale of [loginFile(home), path.join(home, ".claude.json")]) {
       if (fs.existsSync(stale) && now - fs.statSync(stale).mtimeMs >= minAgeMs) {

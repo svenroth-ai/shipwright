@@ -88,7 +88,9 @@ or in the terminal. The chat is the Claude app itself, so the app has no chat in
 own. Its **companion** is a served HTML board plus a Python backend with a JSON data folder; the
 skill is the front door that starts and stops the companion. The bundled `skill-companion-app`
 profile models the social-engagement skill and replaces `chat-first-json` for this app class
-(`chat-first-json` stays bundled so existing apps keep resolving).
+(`chat-first-json` stays bundled so existing apps keep resolving). The operator end-to-end run
+(`integration-tests/e2e-webui/`) builds this app class from the Brief package
+`integration-tests/fixtures/social-engagement-board/` and checks its API, board and files.
 
 The bundled profile records four concepts as a **convention**, under the comment key
 `_skill_companion` (keys starting with `_` are comments). They are **not** schema keys and no
