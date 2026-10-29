@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"capture survives a page CSP, board states via closed steps, design-screen wording fixed in the three named places"},
+{"name":"Error Handling","verdict":"pass","note":"malformed steps are a per-screen error; a failing step fails that job with its number, never a silent shot of the initial state"},
+{"name":"Security Basics","verdict":"pass","note":"step vocabulary closed to click/fill/wait_for with selectors only, max 10, no navigation or script step"},
+{"name":"Test Quality","verdict":"pass","note":"real Chromium CSP board: state equals its design screen, no-steps control fails; failing step and malformed-step cases covered"},
+{"name":"Performance Basics","verdict":"pass","note":"timeout budget grows 15 s per step"},
+{"name":"Naming & Structure","verdict":"pass","note":"extends the existing check and capture tool, new test file about 110 lines"},
+{"name":"Affected Boundaries","verdict":"pass","note":"screen-routes.json to Python to jobs.json to node capture: round trip proved by the real-browser tests"}]}

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "# Review of Mini-Plan E5\n\n- **Category: approach / Severity: medium**\n  **Finding:** Removing `addStyleTag` is the right call (the injected style tag is what trips the board's CSP and, as the plan notes, `bypassCSP:true` would mask the real problem and render differently). But the plan doesn't state *why* the tag was there originally. If it was hiding animations/flashing/caret artifacts beyond what `animations:'disabled'` + `caret:'hide'` now cover, screenshots may change for **all existing jobs**, not just the board route \u2014 breaking baselines/diffs and any stored expectations.\n  **Suggestion:** Before merging, capture before/after screenshots for a sample of existing routes and confirm no visual regression. If baselines shift, regenerate them in the same diff and note it in the PR description.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** \"Optional per-job steps (click/fill/wait_for)\" is under-specified. Undefined edge cases: click/fill targets that don't exist (timeout value? error message quality?), `wait_for` with no timeout default, steps whose selectors resolve to multiple elements, and step ordering guarantees (must a `wait_for` precede a fill?).\n  **Suggestion:** Pin down failure semantics: each step gets an explicit timeout (with a sensible default), strict single-element matching, and a clear error naming the route + failing step + selector. Without this, \"malformed steps = error\" in the Python side only covers shape, not runtime behavior in Chromium.\n\n- **Category: security / Severity: medium**\n  **Finding:** `fill` steps inject values into a page. If step configs come from screen-routes entries that anyone with repo write can add, that's fine, but if `screenshot_check.py` accepts `steps` from CLI/user input in any path, arbitrary `fill` values could leak secrets into screenshots (e.g., filling a credentials form on a real backend).\n  **Suggestion:** Confirm `steps` are only sourced from the checked-in screen-routes config, not from job parameters or user input. If they can come from job args, restrict `fill` targets to a denylist of sensitive selectors (password, token fields) or forbid `fill` on auth routes.\n\n- **Category: dependency / Severity: low**\n  **Finding:** The mini-plan's scope header lists pre-steps (`update-marketplace.sh`, `check_plugin_cache_sync.py --strict`) but the mini-plan body doesn't include them as steps or state their result. The docs updates (\"step-3.7b reference, guide\") also imply plugin-owned files are edited in the same diff, which per the header requires the Tier-3 admin-merge path.\n  **Suggestion:** Add the two pre-flight script runs as explicit first steps in the mini-plan, and confirm the docs files being edited are within the plugin paths covered by the approved admin-merge flow (so the merge command's `--match-head-commit` isn't invalidated by an out-of-scope path).\n\n- **Category: edge-case / Severity: low**\n  **Finding:** The \"real-Chromium CSP board + state\" test is good, but there's no stated assertion that the capture **fails loudly** if CSP blocks something unexpected (e.g., a future style injection elsewhere). A silent screenshot of a broken board could pass a check that should fail.\n  **Suggestion:** In the board test, assert on expected board content/state in the captured output (or at minimum that the job errors if the route fails to load), not just that the job completes without throwing.\n\n- **Category: risk / Severity: low**\n  **Finding:** `animations:'disabled'` + `caret:'hide'` are Chromium/Puppeteer screenshot options; if the capture code path also runs under other browsers (Playwright config, WebKit), these options differ or are no-ops.\n  **Suggestion:** Confirm the capture tooling is Chromium-only (the test name suggests it is); if so, note it in the docs so future route authors don't assume cross-browser parity.\n\n**Overall assessment:** The core approach is sound \u2014 removing the style injection rather than bypassing CSP is the correct call, and the rejection rationale is well-reasoned. The main gaps are unspecified step failure semantics and an unassessed blast radius on existing screenshot baselines; both are fixable within the plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository reads were blocked by the execution policy, so this review is based on the supplied specification and mini-plan; I could not verify the campaign brief or existing code.\n\n1. **Category: edge-case | Severity: medium**\n   - **Finding:** The step contract is underspecified. \u201cMalformed steps = error\u201d does not define supported fields, selector requirements, `wait_for` semantics, or execution timeouts. A failed interaction could leave capture showing the initial board while appearing successful.\n   - **Suggestion:** Define a small, explicit schema for each supported action and execute steps sequentially with bounded timeouts. Fail the job on any step failure and report the route and step index. Test unsupported actions, missing fields, missing targets, and timeout failures.\n\n2. **Category: risk | Severity: medium**\n   - **Finding:** The proposed tests do not explicitly verify the complete route-to-capture path. Separate step-validation tests and a Chromium capture test could pass while `steps` are dropped, attached to another job, or executed after capture.\n   - **Suggestion:** Add one integration test that builds jobs from screen-routes, executes the intended board interaction, and verifies the resulting captured state under enforced CSP. Include a route without steps to confirm existing behavior and job isolation.\n\n3. **Category: dependency | Severity: medium**\n   - **Finding:** Real-Chromium coverage requires an installed browser and a test path that actually runs it. The plan leaves this prerequisite unresolved while CI and dependency configuration are explicitly owned by BP.\n   - **Suggestion:** Confirm the existing test environment supplies Chromium and runs this test. If it does not, coordinate the prerequisite with BP; avoid silently skipping the regression test in the acceptance run.\n\nThe approach is focused and sensible, including preserving CSP enforcement. Clarify step execution guarantees and demonstrate the full integration path before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-29-e2e-run-findings-e5-board-screenshot",
+    "at": "2026-10-29T01:07:58.215365+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
