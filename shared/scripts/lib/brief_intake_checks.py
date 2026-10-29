@@ -98,6 +98,8 @@ def _token_warnings(guidelines: Path, kit: Any) -> list[str]:
         out.append(f"{guidelines.name} declares {len(wanted) - len(missing)} of the {len(wanted)} kit colour tokens; "
                    f"missing: {', '.join('--color-' + n for n in missing)}. Write them as '--color-bg: #f6f7f9' lines "
                    "(tokens-contract.md in the design kit); Design fills a missing one from a shipped set")
+    if (no_size := [n for n in ("base", "sm") if n not in sizes]):
+        out.append(f"{guidelines.name} declares no {', '.join('--font-size-' + n for n in no_size)} (e.g. '--font-size-base: 16px')")
     base = (kit.KIT / "tokens" / "warm.css").read_text(encoding="utf-8")
     judged = kit.check({**kit.parse_colours(base), **colours}, {**kit.parse_sizes(base), **sizes})
     out += [f"{guidelines.name}: {line} (tokens not declared are taken from the 'warm' set)" for line in judged]

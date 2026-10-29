@@ -95,7 +95,7 @@ def test_prose_guidelines_name_the_missing_kit_tokens(tmp_path, kit):
     out = checks.token_warnings(g, kit)
     missing = next(w for w in out if "kit colour tokens" in w)
     assert "declares 2 of the" in missing and "--color-primary" in missing and "--color-bg," not in missing
-    assert len(out) == 1  # declaring two tokens over the shipped base set breaks no contract rule
+    assert len(out) == 2 and "declares no --font-size-base, --font-size-sm" in out[1]  # and no contract rule is broken
 
 
 @pytest.mark.covers("FR-01.02")
@@ -206,3 +206,10 @@ def test_the_kit_surface_intake_depends_on_exists(kit):
     for name in ("parse_colours", "parse_sizes", "unreadable_values", "check", "CONTRAST_PAIRS", "OTHER_COLOURS", "KIT"):
         assert hasattr(kit, name), f"check_brand_tokens.{name} is used by brief_intake_checks"
     assert (kit.KIT / "tokens" / "warm.css").is_file()
+
+
+@pytest.mark.covers("FR-01.02")
+def test_complete_colours_without_font_sizes_still_warn(tmp_path, kit):
+    g = tmp_path / "g.md"
+    g.write_text(chr(10).join(l for l in _set(tmp_path).splitlines() if "font-size" not in l), encoding="utf-8")
+    assert checks.token_warnings(g, kit) == ["g.md declares no --font-size-base, --font-size-sm (e.g. '--font-size-base: 16px')"]
