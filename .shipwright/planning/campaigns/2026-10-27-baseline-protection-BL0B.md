@@ -11,7 +11,7 @@ This report measures; nothing gates. No change to `ci.yml`, `verify_local.py`, `
 - **The benefit is real but small.** Two independent blind labelers confirmed three PRs (#869, #887, #921) that changed behaviour of a requirement the author never named, and the git leg alone (spec text and test edits) already finds all three.
 - **The cost is too high.** If the approved scope were exactly what authors declared, BP with T-code would still hold **43 of 100 PRs (about 11 a week)**, against a limit of 20. The git leg alone holds 17 (4 a week) but finds only 6 of 27 confirmed requirement changes.
 - **T-code does not earn its keep.** Git leg plus T-code finds 78 % of the confirmed pairs; git leg plus the path-ownership guess finds 93 %. The rule needed T-code to be 20 points better; it is 15 points worse.
-- **Precision fails everywhere.** 35 of the sources' hits on the 35 labeled PRs were judged wrong (limit: 3 per 100 PRs); 17 of them come from one wide-conftest PR (#897) and 18 without it, still far over the limit.
+- **Precision fails everywhere.** 35 of the sources' hits on the 35 labeled PRs were judged wrong (limit: 3 per 100 PRs); 19 of them come from one wide-conftest PR (#897) and 16 without it, still far over the limit.
 
 ## 1. Setup fixed (item 1)
 
@@ -58,19 +58,19 @@ Ground truth = the two blind labelers. A pair counts only if both said "behaviou
 | R-benefit | at least 3 confirmed changes, FR not declared by the author, found by BP sources | 3 PRs (#869 FR-01.11; #887 FR-01.13 and FR-01.17; #921 FR-01.06), 4 pairs; git leg alone finds the same 3 | **PASS** (exactly at the limit) |
 | R-recall | at least 70 % of confirmed pairs found | 21 of 27 = 78 % (denominator 27 pairs, 22 PRs; 95 % interval 59 % to 89 %: wide, roughly plus/minus 15-20 points) | **PASS** (the interval reaches below 70) |
 | R-T-code-value | T-code adds at least 20 points over path baseline plus git leg | git + T-code 78 % minus git + path 93 % = **-15 points** | **FAIL** |
-| R-precision | at most 3 wrong hits per 100 PRs | 35 wrong hits on the 35 labeled PRs (18 without #897); the other 65 PRs are unlabeled, so this can only be higher; 8 disputed hits not counted | **FAIL** |
+| R-precision | at most 3 wrong hits per 100 PRs | 35 wrong hits on the 35 labeled PRs (19 from #897, 16 without it); the other 65 PRs are unlabeled, so this can only be higher; 8 disputed hits not counted | **FAIL** |
 | R-cost | at most 20 % held when scope equals the declared FRs | FR level 43 of 100; AC level 43 of 100; about 10.75 holds per week (git leg alone: 17 of 100, 4.25 per week) | **FAIL** |
 
-**Outside every FR (not counted):** #839, #859, #866, #886, #897 (neither labeler names an FR), #919, #923. These are behaviour changes labeler A found no requirement for; for #839, #859, #866, #886, #919, #923 labeler B names one FR. Unclear: #918. Wrong-hit examples: #911 (a no-op fix; T-code and path name FR-01.01), #897 (a wide conftest change names 17 FRs the labelers do not).
+**Outside every FR (not counted):** #839, #859, #866, #886, #897 (neither labeler names an FR), #919, #923. These are behaviour changes labeler A found no requirement for; for #839, #859, #866, #886, #919, #923 labeler B names one FR. Unclear: #918. Wrong-hit examples: #911 (a no-op fix; T-code and path name FR-01.01), #897 (a wide conftest change names 19 FRs the labelers do not).
 
 ## 6. Recommendation
 
-**SHADOW-ONLY: no BP gating decision yet.** Derivation: the full plan (GO) needs all five lines; three fail. GO-REDUCED does not rescue it: the path baseline recalls more (89 %) but holds 49 of 100 PRs at declared scope and has 25 wrong hits, and the AC level holds exactly as many PRs as the FR level. What the data do support: the benefit exists and is found by the cheap git leg; T-code and the path guess add recall at the price of many extra holds.
+**SHADOW-ONLY: no BP gating decision yet.** Derivation: the full plan (GO) needs all five lines; three fail. The pre-registered consequence of the failed R-T-code-value line is to replace BL2 by the path baseline. That does not rescue gating: the path baseline itself fails R-cost (49 of 100 held at declared scope) and R-precision (25 wrong hits), so the verdict stays SHADOW-ONLY, and any later BP work should use the path baseline or the git leg instead of T-code. GO-REDUCED does not rescue it either: the path baseline recalls more (89 %) but holds 49 of 100 PRs at declared scope and has 25 wrong hits, and the AC level holds exactly as many PRs as the FR level. What the data do support: the benefit exists and is found by the cheap git leg; T-code and the path guess add recall at the price of many extra holds.
 
 **What the operator must still decide:**
 1. Whether 43 % (git + T-code) or 17 % (git leg only) of PRs waiting for approval is acceptable, given that 17 % finds only about a fifth of the confirmed changes.
-2. Whether a wide-change rule (N, and treating a scope-wide conftest as "listed, not held") is tried in shadow first; one PR (#897) accounts for half of the wrong hits.
-3. Whether BL2 (a large unit) is still worth building, since T-code did not beat the path guess; if BP continues, BL1 and a git-leg-only shadow are the cheap next step.
+2. Whether a wide-change rule (N, and treating a scope-wide conftest as "listed, not held") is tried in shadow first; one PR (#897) accounts for 19 of the 35 wrong hits.
+3. Whether to follow the pre-registered consequence and replace BL2 by the path baseline, or drop T-code in favour of the git leg. This report's suggestion, for the operator to decide: if BP continues, BL1 plus a git-leg-only shadow is the cheap next step.
 4. The earlier open items (N, rule per PR class, BP's own `scope_frs`, P3.8) are unchanged from REPLAY section 11.
 
 ## 7. Operator spot-check sample (six PRs)
@@ -78,7 +78,7 @@ Ground truth = the two blind labelers. A pair counts only if both said "behaviou
 1. **#869** `feat(iterate): campaign runner reviews use the resolved tier`: both labelers: behaviour change in FR-01.11, the author declared nothing. Git leg and T-code both name FR-01.11 (the git leg also names FR-01.10, which the labelers do not), so this is a clean "benefit" case.
 2. **#887** `refactor(adopt): stop scaffolding the Claude-Code-Review workflows`: despite the "refactor" label, adopt no longer scaffolds the workflows (FR-01.13, FR-01.17). The git leg finds both; T-code names FR-01.06 instead, which is wrong.
 3. **#921** `fix(test): Windows-safe npx spawn, Browser Verify URL, chat-first host`: both name FR-01.06 and the author declared none. Git and T-code find it, but the git leg also names FR-01.12 and FR-01.13 which neither labeler affirms.
-4. **#897** `feat(profiles): stack-profile resolver, schema and CLI`: a wide conftest change makes the git leg name 17 FRs that neither labeler affirms, and both labelers found no FR that covers the change. It is the biggest single source of wrong hits.
+4. **#897** `feat(profiles): stack-profile resolver, schema and CLI`: a wide conftest change makes the git leg name 19 FRs that neither labeler affirms, and both labelers found no FR that covers the change. It is the biggest single source of wrong hits.
 5. **#911** `fix(run): bind state before the retry loop`: both labelers say no behaviour change. T-code and the path baseline still name FR-01.01, a wrong hit.
 6. **#923** `fix(run): a stack profile named in the wizard brief is taken over`: the author declared FR-01.01 and labeler B agrees, but labeler A found no matching FR. The git leg finds nothing; T-code names FR-01.01 plus FR-01.02 and FR-01.04.
 
