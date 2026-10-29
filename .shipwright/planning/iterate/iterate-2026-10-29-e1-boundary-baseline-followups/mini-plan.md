@@ -8,4 +8,4 @@ Files: `plugins/shipwright-design/scripts/lib/boundary_baseline.py`, `scripts/ch
 4. Drop the backslash replace in `dirty_paths`.
 5. Brief integration test: real repo + baseline, boundary gate included.
 
-Risk: `touches_io_boundary` (the baseline JSON gains a `run` key; old files read as another run, i.e. strict). Alternative considered: `git rev-parse --show-prefix` mapping for subdirectories - rejected, fail-closed was requested.
+Risk: `touches_io_boundary` (the baseline JSON gains a `run` key; old files read as another run, i.e. strict, when SHIPWRIGHT_SESSION_ID is set). Alternative considered: `git rev-parse --show-prefix` mapping for subdirectories - rejected, fail-closed was requested.
