@@ -102,7 +102,7 @@ def test_brief_md_documents_every_route_the_real_harness_calls():
     """The answer key is outside the package, so the building agent only knows the API from brief.md."""
     brief = (FIXTURE / "brief.md").read_text(encoding="utf-8")
     api = (SRC / "board-api-real.ts").read_text(encoding="utf-8")
-    routes = set(re.findall(r'["`](/api/[a-z/${}A-Za-z-]+)', api)) - {"/api/no-such-route"}
+    routes = set(re.findall(r'["`](/api/[A-Za-z/${}-]+)', api)) - {"/api/no-such-route"}
     assert routes, "board-api-real.ts calls no route?"
     for route in routes:
         stem = re.sub(r"\$\{[^}]+\}", "<id>", route)
