@@ -22,14 +22,14 @@ function script(tokenNames: string[]): string {
   return `(async () => {
   const text = (e) => (e.textContent || '').trim().replace(/\\s+/g, ' ');
   const platforms = ${JSON.stringify(PLATFORMS)};
-  let tabEls = [...document.querySelectorAll('[role="tab"]')];
-  if (tabEls.length === 0) tabEls = [...document.querySelectorAll('button')].filter((e) => platforms.some((p) => text(e).toLowerCase().startsWith(p.toLowerCase())));
+  const isTab = (e) => platforms.some((p) => text(e).toLowerCase().startsWith(p.toLowerCase()));
+  const findTabs = () => { const roled = [...document.querySelectorAll('[role="tab"]')]; return roled.length > 0 ? roled : [...document.querySelectorAll('button')].filter(isTab); };
+  const tabEls = findTabs();
   const visible = (e) => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
   const badges = () => [...document.querySelectorAll('[class*="badge"]')].filter(visible).map((e) => text(e).toLowerCase());
   const badgesByTab = {};
   const names = tabEls.map(text);
   // A board may redraw its tab strip on click: find each tab again by position before clicking it.
-  const findTabs = () => { let els = [...document.querySelectorAll('[role="tab"]')]; if (els.length === 0) els = [...document.querySelectorAll('button')].filter((e) => platforms.some((p) => text(e).startsWith(p))); return els; };
   for (let i = 0; i < names.length; i += 1) { const t = findTabs()[i]; if (t) t.click(); await new Promise((r) => setTimeout(r, 500)); badgesByTab[names[i]] = badges(); }
   if (tabEls.length === 0) badgesByTab[''] = badges();
   const inputRe = /chat|composer|type a (message|command)|send a message/i;
@@ -66,8 +66,13 @@ export function checkBoardShape(snap: BoardSnapshot, checklist: Checklist, perPl
   const key = (name: string) => name.toLowerCase().replace(/\s*\(?\d+\)?$/, "").replace(/\s+/g, "");
   const short = perTab.filter(([name, b]) => b.length < (perPlatform[key(name)] ?? 0)).map(([n]) => n);
   const seen = STATUSES.filter((s) => all.includes(s));
-  checklist.record("S02", tabsOk && empty.length === 0 && short.length === 0 && seen.length === STATUSES.length ? "pass" : "fail",
-    `tabs: ${snap.tabs.join(", ") || "none"}; empty tabs: ${empty.join(", ") || "none"}; tabs with fewer badges than threads: ${short.join(", ") || "none"}; statuses seen across tabs: ${seen.join(", ") || "none"}`);
+  // Every platform the API listed threads for needs its tab, and every tab needs its count: otherwise nothing ties badges to threads.
+  const tabKeys = perTab.map(([n]) => key(n));
+  const wanted = Object.keys(perPlatform);
+  const unmapped = wanted.filter((k) => !tabKeys.includes(k));
+  const uncounted = wanted.length > 0 ? perTab.filter(([n]) => !(key(n) in perPlatform)).map(([n]) => n) : [];
+  checklist.record("S02", tabsOk && empty.length === 0 && short.length === 0 && unmapped.length === 0 && uncounted.length === 0 && seen.length === STATUSES.length ? "pass" : "fail",
+    `tabs: ${snap.tabs.join(", ") || "none"}; empty tabs: ${empty.join(", ") || "none"}; tabs with fewer badges than threads: ${short.join(", ") || "none"}; API platforms without a tab: ${unmapped.join(", ") || "none"}; tabs without an API count: ${uncounted.join(", ") || "none"}; statuses seen across tabs: ${seen.join(", ") || "none"}`);
 }
 
 /** S04: every colour and font-size token the package declares has that value on the served board. */

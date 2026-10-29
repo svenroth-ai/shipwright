@@ -149,11 +149,11 @@ export function checkSelfContained(projectPath: string, checklist: Checklist): v
 
 /** S06: shipwright_test_results.json records both a unit (pytest) run and an e2e (Playwright) run with at least one test. */
 export function checkTestsRan(projectPath: string, checklist: Checklist): void {
-  const data = readJson(path.join(projectPath, "shipwright_test_results.json")) as Record<string, { passed?: number; total?: number; failed?: number } | undefined> | undefined;
-  const count = (k: string) => ({ passed: Number(data?.[k]?.passed ?? 0), total: Number(data?.[k]?.total ?? 0), failed: Number(data?.[k]?.failed ?? 0) });
+  const data = readJson(path.join(projectPath, "shipwright_test_results.json")) as Record<string, { passed?: number; total?: number; failed?: number; skipped?: number } | undefined> | undefined;
+  const count = (k: string) => ({ passed: Number(data?.[k]?.passed ?? 0), total: Number(data?.[k]?.total ?? 0), failed: Number(data?.[k]?.failed ?? 0), skipped: Number(data?.[k]?.skipped ?? 0) });
   const unit = count("unit");
   const e2e = count("e2e");
   const ran = (c: { total: number }) => c.total > 0;
-  checklist.record("S06", ran(unit) && ran(e2e) && unit.passed === unit.total && e2e.passed === e2e.total && unit.failed === 0 && e2e.failed === 0 ? "pass" : "fail",
+  checklist.record("S06", ran(unit) && ran(e2e) && unit.passed + unit.skipped === unit.total && e2e.passed + e2e.skipped === e2e.total && unit.failed === 0 && e2e.failed === 0 ? "pass" : "fail",
     data ? `unit (pytest) ${unit.passed}/${unit.total}; e2e (Playwright) ${e2e.passed}/${e2e.total}` : "shipwright_test_results.json is missing or unreadable");
 }

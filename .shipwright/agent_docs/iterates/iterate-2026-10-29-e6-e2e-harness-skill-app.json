@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-29-e6-e2e-harness-skill-app",
-  "date": "2026-10-29T02:55:00.296923Z",
+  "date": "2026-10-29T03:10:12.567130Z",
   "event_at": "2026-10-29T02:43:09.980449+00:00",
   "type": "feature",
   "complexity": "large",
@@ -65,24 +65,29 @@
         "behavior": "harness reads the new fixture and project structure",
         "disposition": "tested",
         "evidence": "test_e2e_webui_project.py 8 tests PASSED"
+      },
+      {
+        "behavior": "resumed run judges S08 over persisted gates; whole-text vetoes; S02 platform mapping; S06 skips; H06 unreadable answers; links in provisioned home",
+        "disposition": "tested",
+        "evidence": "review-round-4.spec.ts 6 tests PASSED"
       }
     ],
     "counts": {
-      "testable": 9,
-      "tested": 9,
+      "testable": 10,
+      "tested": 10,
       "untestable": 0,
       "untested_testable": 0
     },
     "enumeration_basis": {
-      "acs": 9,
-      "covered_acs": 9
+      "acs": 10,
+      "covered_acs": 10
     }
   },
   "surface_verification": {
     "surface": "web",
     "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test --project=unit --config integration-tests/e2e-webui/playwright.config.ts integration-tests/e2e-webui/tests/unit",
     "exit_code": 0,
-    "tests_run": 31,
+    "tests_run": 37,
     "evidence_path": ".shipwright/runs/iterate-2026-10-29-e6-e2e-harness-skill-app/surface_verification.json",
     "timestamp": "2026-10-29T02:23:55.137Z"
   }

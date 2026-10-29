@@ -26,6 +26,8 @@ export interface ReportMeta {
 export class Report {
   readonly dir: string;
   private steps: StepEntry[] = [];
+  /** Called for every gate and escalation as it is recorded (the spec persists them in the run folder). */
+  sink?: (kind: "gate" | "escalation", text: string) => void;
   private gates: string[] = [];
   private escalations: string[] = [];
   private modelSpend = "not available";
@@ -66,9 +68,11 @@ export class Report {
 
   gate(text: string): void {
     this.gates.push(text);
+    this.sink?.("gate", text);
   }
   escalation(text: string): void {
     this.escalations.push(text);
+    this.sink?.("escalation", text);
   }
   setScreenshotCheck(text: string): void {
     this.screenshotCheck = text;

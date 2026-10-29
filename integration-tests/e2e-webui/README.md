@@ -22,7 +22,7 @@ chat-first design tests (`test_chat_first_design.py`, the design plugin's `test_
 | H01-H04, H12, H13, S05, S06 | the project files (`src/progress.ts`, `src/project-checks.ts`); H13 is the check no tool did: a screen that does not carry the design kit (kit.css inline or at least two kit component classes, plus a token block in `:root`) is still the mockup copy and fails |
 | H05-H11, S07 | the companion's JSON API (`src/board-api.ts`), against the package's documented routes in `brief.md`; there are no chat commands |
 | S01, S02, S04 | the served board in a browser (`src/board-dom.ts`): no chat input or panel, one tab per platform with status badges, and every colour and font-size token of `visual-guidelines.md` present on the board |
-| S08 | the gates the spec answered, classified by meaning (`src/gates.ts`), plus the escalation list |
+| S08 | the gates the spec answered, classified by meaning (`src/gates.ts`; the veto words are read in the question and the option), plus the escalation list. Gates and escalations are written to `gates.jsonl` in the run folder as they happen, so a resumed run judges the whole run |
 | S03 | the Test phase's screenshot check (metric recorded; compared by eye) |
 
 The API checks need a fresh data folder. The Test phase has already used the throw-away `.dev-data` of port 3911, so

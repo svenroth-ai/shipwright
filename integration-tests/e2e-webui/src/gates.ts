@@ -23,8 +23,8 @@ export function subject(gate: string): string {
   return /answered with its first option "([^"]+)"/.exec(gate)?.[1] ?? gate;
 }
 
-/** Answers that mean something went wrong or was waived: always unexpected, whatever else the text says. */
-const NEVER_EXPECTED = /exemption|safety dialog|dangerous|stop the run|skip|waive|reject|deny|not approved/i;
+/** Words that mean something went wrong or was waived, in the question or the option: always unexpected. */
+const NEVER_EXPECTED = /exemption|safety dialog|dangerous|stop the run|skip|waive|reject|deny|not approved|(?:do not|don'?t|never) approve|disapprov/i;
 
 export interface GateVerdict {
   expected: string[];
@@ -34,7 +34,8 @@ export interface GateVerdict {
 export function classifyGates(gates: string[]): GateVerdict {
   const verdict: GateVerdict = { expected: [], unexpected: [] };
   for (const g of gates) {
-    const known = !NEVER_EXPECTED.test(subject(g)) && EXPECTED_GATES.some((e) => e.pattern.test(subject(g)));
+    // The veto reads the whole text (question and option); the expected meaning is judged on the chosen option only.
+    const known = !NEVER_EXPECTED.test(g) && EXPECTED_GATES.some((e) => e.pattern.test(subject(g)));
     (known ? verdict.expected : verdict.unexpected).push(g);
   }
   return verdict;

@@ -75,7 +75,8 @@ export function planResume(requested: string, workdir: string, current: RunIdent
   const projectPath = path.join(asked, "project");
   const tempHome = path.join(asked, "home");
   if (!fs.existsSync(projectPath) || !fs.existsSync(tempHome)) throw new ResumeError("Refusing to resume: the folder has no project/ and home/.");
-  for (const sub of [projectPath, tempHome, path.join(tempHome, ".claude"), path.join(tempHome, ".claude", ".credentials.json"), path.join(tempHome, ".claude.json"), path.join(tempHome, ".claude", "settings.json"), path.join(tempHome, ".claude", "plugins"), path.join(tempHome, ".gitconfig")]) {
+  for (const sub of [projectPath, tempHome, path.join(tempHome, ".claude"), path.join(tempHome, ".claude", ".credentials.json"), path.join(tempHome, ".claude.json"), path.join(tempHome, ".claude", "settings.json"), path.join(tempHome, ".claude", "plugins"), path.join(tempHome, ".gitconfig"),
+    ...["installed_plugins.json", "known_marketplaces.json", "cache", "cache/shipwright"].map((n) => path.join(tempHome, ".claude", "plugins", n))]) {
     // home/ is where the login is copied to and deleted from: a link there could point at the real HOME.
     if (fs.lstatSync(sub, { throwIfNoEntry: false })?.isSymbolicLink()) throw new ResumeError(`Refusing to resume: ${path.basename(sub)} inside the run folder is a link.`);
   }

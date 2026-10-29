@@ -13,6 +13,7 @@ import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
 import { FIXTURE_NAME, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
+import { appendRecord, loadRecords } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
 import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
 import { checkPluginShape, checkScreensComposed, checkSelfContained, checkTestsRan } from "../src/project-checks.js";
@@ -97,6 +98,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
   if (!resume) writeManifest(runDir, identity);
 
   const checklist = new Checklist(parseChecklist(fs.readFileSync(expectedFile, "utf8")));
+  const earlierRun = loadRecords(runDir);
   const template = fs.readFileSync(path.join(projectRoot, "report-template.md"), "utf8");
   const report = new Report(
     path.join(cfg.workdir, "e2e-report"),
@@ -118,6 +120,10 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     checklist,
     template,
   );
+  report.sink = (kind, text) => appendRecord(runDir, kind, text);
+  if (earlierRun.gates.length + earlierRun.escalations.length > 0) {
+    await report.step("Resume: gates and escalations of the earlier part", null, `${earlierRun.gates.length} gate(s), ${earlierRun.escalations.length} escalation(s) are judged with this part (S08).`);
+  }
 
   let housekeeping = ""; // not an escalation: S08 judges the run, not the scrub of an earlier run's leftovers
   let initialStatus = "";
@@ -231,7 +237,8 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       checkBoardTokens(snap, declared, checklist);
       await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
     }
-    checkGates(report.gateList(), report.escalationList(), checklist);
+    const wholeRun = loadRecords(runDir); // earlier parts of a resumed run included
+    checkGates(wholeRun.gates, wholeRun.escalations, checklist);
     const open = checklist.hardOpen();
     status = status === "complete" && open.length === 0 ? "complete, all hard items hold" : `${status}; hard items open: ${open.map((i) => i.id).join(", ") || "none"}`;
     await report.step("Finished", page, status);

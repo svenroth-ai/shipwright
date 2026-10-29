@@ -73,14 +73,15 @@ export async function runApiChecks(call: Call, checklist: Checklist): Promise<{ 
 
   // The Test phase may already have used the same dev data folder: note whether the board starts empty.
   const before = await ask("list before", "GET", "/api/threads");
-  const existing = Array.isArray(obj(before?.json).threads) ? (obj(before?.json).threads as unknown[]).length : 0;
+  const beforeReadable = before?.status === 200 && Array.isArray(obj(before.json).threads);
+  const existing = beforeReadable ? (obj(before?.json).threads as unknown[]).length : 0;
   const fetch1 = await ask("fetch", "POST", "/api/fetch", {});
   const fetch2 = await ask("fetch again", "POST", "/api/fetch", {});
   const added1 = Number(obj(fetch1?.json).added);
   const added2 = Number(obj(fetch2?.json).added);
   // The spec moves the Test phase's data folder aside first; a used folder cannot prove that fetch adds anything.
-  set("H06", fetch1?.status === 200 && existing === 0 && added1 > 0 && added2 === 0,
-    `first: added ${added1} (${existing} threads existed before); second: added ${added2}${existing > 0 ? "; the data folder was NOT fresh (a fetch on used data proves nothing)" : ""}`);
+  set("H06", beforeReadable && fetch1?.status === 200 && fetch2?.status === 200 && existing === 0 && added1 > 0 && added2 === 0,
+    `first: added ${added1} (${existing} threads existed before); second: added ${added2}${beforeReadable ? "" : "; the list before the fetch could not be read, freshness is unproven"}${existing > 0 ? "; the data folder was NOT fresh (a fetch on used data proves nothing)" : ""}`);
 
   const list = await ask("list", "GET", "/api/threads");
   const threads = (Array.isArray(obj(list?.json).threads) ? (obj(list?.json).threads as Obj[]) : []).sort((a, b) => Number(a.id) - Number(b.id));
