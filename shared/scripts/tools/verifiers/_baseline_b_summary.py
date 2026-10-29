@@ -10,7 +10,7 @@ from __future__ import annotations
 import statistics
 from collections import Counter
 
-__all__ = ["summarise_phase_a", "pr_sets", "pair_scores"]
+__all__ = ["summarise_phase_a", "pr_sets", "pair_scores", "summarise_probes"]
 
 N_BROAD = 5  # the REPLAY report's proposed threshold
 
@@ -106,4 +106,22 @@ def summarise_phase_a(replay: dict, a: dict, strata: dict[str, str]) -> dict:
         "ac_level": {"prs_with_any_touch": len(held_ac), "explicit_ac_tokens": explicit, "fr_wide_tokens": bare, "median_acs_per_touching_pr": statistics.median(per_pr_acs) if per_pr_acs else None,
                      "max_acs_per_touching_pr": max(per_pr_acs, default=0), "hold_scope_eq_declared_ac_level": ac_declared_hold,
                      "note": "the author declares FRs, never ACs, so a declared scope approves all ACs of an FR: the AC-level hold equals the FR-level hold by construction; the AC level changes the size of what an approval covers, not who is held"},
+    }
+
+
+def summarise_probes(probes: dict) -> dict:
+    """Blind probes: a probe is CAUGHT when a covers-bound test that passed at HEAD fails after the mutation."""
+    judged = [r for r in probes["results"] if r["status"] == "judged"]
+    caught = [r for r in judged if r["cause"] == "caught"]
+    tcode_on_caught = [r for r in caught if r["tcode_attributes_fr"]]
+    not_caught = [r for r in judged if r["cause"] != "caught"]
+    return {
+        "eligible_functions_in_ast_walk": probes["eligible_functions"], "seed": probes["seed"], "judged": len(judged),
+        "skipped_mutation_did_not_parse": sum(1 for r in probes["results"] if r["status"] != "judged"),
+        "caught_by_a_bound_test": len(caught), "not_caught": len(not_caught),
+        "tcode_recall_on_caught": {"hit": len(tcode_on_caught), "of": len(caught), "rate": round(len(tcode_on_caught) / len(caught), 3) if caught else None},
+        "tcode_flags_but_no_bound_test_fails": sum(1 for r in not_caught if r["tcode_attributes_fr"]),
+        "not_caught_by_cause": dict(Counter(r["cause"] for r in not_caught)),
+        "second_pass_tcode_flagged_without_textual_candidate": {"probes": sum(1 for r in judged if "second_pass" in r), "a_bound_test_failed": sum(1 for r in judged if r.get("second_pass", {}).get("bound_failures"))},
+        "note": "ground truth = a covers-bound test fails; candidate tests are the covers-bearing test files that name the module (textual, capped at 8 per root), so a probe the candidates could not see counts as not caught",
     }

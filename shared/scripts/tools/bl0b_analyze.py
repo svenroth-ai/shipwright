@@ -145,14 +145,23 @@ def cmd_summary(args, repo: Path, replay: dict, out: Path) -> None:
     print(json.dumps(summary, indent=1, sort_keys=True)[:6000])
 
 
+def cmd_probes(args, repo: Path, replay: dict, out: Path) -> None:
+    from verifiers._baseline_b_summary import summarise_probes
+
+    probes = json.loads(Path(args.probes_json).read_text(encoding="utf-8"))
+    _put(out, "probes", {"summary": summarise_probes(probes), "results": probes["results"]})
+    print(json.dumps(summarise_probes(probes), indent=1, sort_keys=True))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["paths", "headmap", "ac", "packs", "summary"])
+    ap.add_argument("command", choices=["paths", "headmap", "ac", "packs", "summary", "probes"])
     ap.add_argument("--repo", default=".")
     ap.add_argument("--replay")
     ap.add_argument("--out")
     ap.add_argument("--tree")
     ap.add_argument("--runs")
+    ap.add_argument("--probes-json")
     ap.add_argument("--run-dir", help="packs: the unit run directory (labels/ goes under it)")
     args = ap.parse_args(argv)
     repo = Path(args.repo).resolve()
@@ -160,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out) if args.out else repo / OUT
     if args.command == "headmap" and not (args.tree and args.runs):
         ap.error("headmap needs --tree and --runs")
-    {"paths": cmd_paths, "headmap": cmd_headmap, "ac": cmd_ac, "packs": cmd_packs, "summary": cmd_summary}[args.command](args, repo, replay, out)
+    {"paths": cmd_paths, "headmap": cmd_headmap, "ac": cmd_ac, "packs": cmd_packs, "summary": cmd_summary, "probes": cmd_probes}[args.command](args, repo, replay, out)
     return 0
 
 
