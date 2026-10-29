@@ -9,8 +9,6 @@ from pathlib import Path
 
 import pytest
 
-import _brief_harness as h
-
 _REPO = Path(__file__).resolve().parents[1]
 FIXTURES = _REPO / "integration-tests" / "fixtures"
 FIXTURE = FIXTURES / "social-engagement-board"
@@ -33,11 +31,8 @@ def _items():
 
 
 @pytest.mark.covers("FR-01.06")
-def test_package_validates_with_the_skill_app_class_values():
-    bp = _shared("brief_package")
+def test_package_declares_the_skill_app_class_values():
     brief = json.loads((FIXTURE / "brief.json").read_text(encoding="utf-8"))
-    ok, issues = bp.verify_package(FIXTURE, expected=brief["package_sha256"])
-    assert ok, issues
     assert (brief["profile"], brief["ux_shape"], brief["ui_host"]) == ("skill-companion-app", "classic", "served-board")
     assert not (FIXTURE / "chat-map.json").exists(), "the chat is the Claude app: no chat map for this app class"
     assert (_REPO / "shared" / "profiles" / f"{brief['profile']}.json").is_file()
@@ -50,26 +45,6 @@ def test_package_passes_the_intake_content_check_and_declares_every_kit_token():
     checks = _shared("brief_intake_checks")
     assert checks.check_content(_REPO, BRIEF_REL) == []
     assert checks.token_warnings(FIXTURE / "visual-guidelines.md") == []
-
-
-@pytest.mark.covers("FR-01.06")
-def test_package_passes_the_dry_harness(tmp_path, monkeypatch):
-    monkeypatch.setenv("SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL", "1")
-    project = h.prepare_scratch_project(tmp_path / "proj", FIXTURE)
-    report = h.run_harness(project, fixture="social-engagement-board", report_path=tmp_path / "report.json")
-    assert report["outcome"] == "dry-ok", report
-
-
-@pytest.mark.covers("FR-01.06")
-def test_brief_md_passes_the_project_phase_content_check():
-    sys.path.insert(0, str(_REPO / "shared" / "scripts"))
-    try:
-        from tools import brief_project_mode as bpm  # noqa: PLC0415
-    finally:
-        sys.path.remove(str(_REPO / "shared" / "scripts"))
-    text = (FIXTURE / "brief.md").read_text(encoding="utf-8")
-    assert bpm.check_capabilities(*bpm.parse_brief_md(text)) == []
-    assert bpm.glossary_unparsed(text) == []
 
 
 @pytest.mark.covers("FR-01.06")

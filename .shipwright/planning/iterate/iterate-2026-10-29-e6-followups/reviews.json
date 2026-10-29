@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e6-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:24:34.919906+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:29:00.483091+00:00",
+      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": 151,
+          "finding": "Wider S05 scan would also read generated playwright-report/ and test-results/ output, which may contain https links, failing every complete run.",
+          "suggestion": "Exclude generated output folders and add a unit case.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": 61,
+          "finding": "run.lock records only the spec process; if the spec is hard-killed, the WebUI server and agent keep running while the stale lock lets a resume start a second run on the same project.",
+          "suggestion": "Record the server pid in run.lock too.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": 180,
+          "finding": "markPipelineStarted runs after the report.step screenshot; a stop in between makes a resume click New pipeline again.",
+          "suggestion": "Mark right after startPipeline.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": 51,
+          "finding": "alive() uses only the pid; a reused pid yields a misleading 'stop it first' message.",
+          "suggestion": "Name run.lock as the thing to delete.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": 101,
+          "finding": "FILE_EXT lacks asset extensions such as svg, so fetch(\"icons.svg\") reads as a host.",
+          "suggestion": "Add asset extensions and a unit case.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T07:28:57.003736+00:00",
+      "disposition": "All 5 findings fixed in the same diff: report folders excluded, server pid in run.lock, started flag before screenshot, stale-lock hint, asset extensions; unit tests added",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:29:00.483091+00:00",
+      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:29:00.483091+00:00",
+      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:29:00.483091+00:00",
+      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:29:00.483091+00:00",
+      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:29:00.483091+00:00",
+      "disposition": "small harness change: spec, doubt and external passes are conditional at small without risk flags; internal code review ran",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
