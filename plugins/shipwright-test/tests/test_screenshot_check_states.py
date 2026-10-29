@@ -20,10 +20,14 @@ NODE_MODULES = os.environ.get("SHIPWRIGHT_PLAYWRIGHT_NODE_MODULES", "")
 _HAVE = bool(shutil.which("node") and NODE_MODULES and (Path(NODE_MODULES) / "playwright").is_dir())
 needs_browser = pytest.mark.skipif(not _HAVE, reason="set SHIPWRIGHT_PLAYWRIGHT_NODE_MODULES to a node_modules dir with playwright + Chromium installed")
 
-QUEUE = ('<!doctype html><body style="margin:0;font-family:Arial"><input id="q"><button id="tab-queue">Queue</button>'
+CSS = "body{margin:0;font-family:Arial}.q{height:300px;background:#123}"  # served as /app.css: the CSP blocks inline style attributes
+QUEUE = ('<!doctype html><head><link rel="stylesheet" href="/app.css"></head><body><input id="q"><button id="tab-queue">Queue</button>'
          '<main id="pane"><h1>Board</h1></main><script src="/app.js"></script></body>')
 APP_JS = ("document.getElementById('tab-queue').onclick=function(){document.getElementById('pane').innerHTML="
-          "'<h1>Queue</h1><div style=\"height:300px;background:#123\">queue</div>'}")
+          "'<h1>Queue</h1><div class=\"q\">queue</div>'}")
+# the design screen of the Queue state: the same page after the click, styled inline (a file:// page has no /app.css)
+QUEUE_STATE = ('<!doctype html><body style="margin:0;font-family:Arial"><input id="q"><button id="tab-queue">Queue</button>'
+               '<main id="pane"><h1>Queue</h1><div style="height:300px;background:#123">queue</div></main></body>')
 
 
 def project(tmp_path, entries):
@@ -31,7 +35,7 @@ def project(tmp_path, entries):
     designs = root / ".shipwright" / "designs"
     (designs / "uploads").mkdir(parents=True)
     (designs / sc.MARKER).write_text("{}", encoding="utf-8")
-    (designs / "uploads" / "04-queue.html").write_text("<body><h1>Queue</h1></body>", encoding="utf-8")
+    (designs / "uploads" / "04-queue.html").write_text(QUEUE_STATE, encoding="utf-8")
     (designs / "screen-routes.json").write_text(json.dumps({"screens": entries}), encoding="utf-8")
     return root
 
@@ -67,12 +71,12 @@ def board():
     """A served board: one route, its Queue tab is a state; every response carries a strict CSP (no inline style, own-origin script)."""
     class H(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
-            js = self.path == "/app.js"
+            kind = {"/app.js": ("text/javascript", APP_JS), "/app.css": ("text/css", CSS)}.get(self.path, ("text/html", QUEUE))
             self.send_response(200)
-            self.send_header("Content-Type", "text/javascript" if js else "text/html")
+            self.send_header("Content-Type", kind[0])
             self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'")
             self.end_headers()
-            self.wfile.write((APP_JS if js else QUEUE).encode())
+            self.wfile.write(kind[1].encode())
 
         def log_message(self, *args):
             pass
@@ -87,11 +91,15 @@ def board():
 @pytest.mark.integration
 def test_csp_restricted_board_is_captured_and_a_state_is_reached(tmp_path, board, monkeypatch):
     monkeypatch.setenv("NODE_PATH", NODE_MODULES)
-    root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": [{"fill": ["#q", "x"]}, {"click": "#tab-queue"}, {"wait_for": "div"}]}])
+    root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": [{"fill": ["#q", ""]}, {"click": "#tab-queue"}, {"wait_for": "div"}]}])
     r = sc.run_screenshot_check(root, base_url=board)
     assert "capture_error" not in r, r  # F3: the injected <style> used to be blocked by the page's CSP
-    built = root / "e2e" / "screenshots" / "screenshot-check" / "built" / "01-04-queue.png"
-    assert built.is_file() and r["screens"][0]["status"] in {"pass", "fail"}
+    assert r["screens"][0]["status"] == "pass", r["screens"]  # F2: the Queue state was reached, so it equals the Queue design screen
+    # control: the same screen WITHOUT steps is the initial Board state and must not match
+    entries = json.loads((root / ".shipwright" / "designs" / "screen-routes.json").read_text(encoding="utf-8"))
+    del entries["screens"][0]["steps"]
+    (root / ".shipwright" / "designs" / "screen-routes.json").write_text(json.dumps(entries), encoding="utf-8")
+    assert sc.run_screenshot_check(root, base_url=board)["screens"][0]["status"] == "fail"
 
 
 @needs_browser
