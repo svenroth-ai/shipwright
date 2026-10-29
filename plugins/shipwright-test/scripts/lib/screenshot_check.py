@@ -75,7 +75,7 @@ def _bad_steps(steps) -> str | None:
         key = next(iter(st), None) if isinstance(st, dict) and len(st) == 1 else None
         val = st.get(key) if key else None
         ok = key in _STEP_KEYS and isinstance(val, _STEP_KEYS[key]) and val != "" and (
-            key != "fill" or (len(val) == 2 and isinstance(val[0], str) and val[0] != "" and isinstance(val[1], (str, int, float)) and not isinstance(val[1], bool)))
+            key != "fill" or (len(val) == 2 and isinstance(val[0], str) and val[0] != "" and isinstance(val[1], (str, int)) and not isinstance(val[1], bool)))
         if not ok:
             return f"step {st!r} is not click / wait_for (selector) or fill ([selector, text])"
     return None
@@ -180,6 +180,8 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
             res.update(status="error", error=f"screen {mockup!r}: {why}")
         else:
             res["compared_with"] = source.relative_to(root).as_posix()
+            if steps:
+                res["steps"] = steps  # evidence: the state the built page was brought into
             if capture:
                 jobs += [{"url": source.resolve().as_uri(), "out": str(shots / "approved" / f"{stem}.png")},
                          {"url": f"{base_url}{route}", "out": str(shots / "built" / f"{stem}.png"), **({"steps": steps} if steps else {})}]

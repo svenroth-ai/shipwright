@@ -51,8 +51,9 @@ try {
   process.exit(0);
 }
 try {
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
   for (const job of jobs) {
+    // One context per job: a step that saves state (localStorage, cookies, a submitted form) never reaches the next screen.
+    const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
     const page = await context.newPage();
     try {
       const response = await page.goto(job.url, { waitUntil: "load", timeout: 30000 });
@@ -70,6 +71,10 @@ try {
         await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       }
       await page.evaluate(() => document.fonts.ready).catch(() => {});
+      if (job.steps && job.steps.length) {  // no hover or focus ring left by the steps (the design screen has none)
+        await page.mouse.move(0, 0);
+        await page.evaluate(() => document.activeElement && document.activeElement.blur && document.activeElement.blur()).catch(() => {});
+      }
       // Playwright's own switches, not an injected <style>: an inline style is blocked by a page CSP (style-src without 'unsafe-inline').
       await page.screenshot({ path: job.out, fullPage: false, animations: "disabled", caret: "hide" });
       result.captured.push(job.out);
@@ -77,7 +82,7 @@ try {
       result.ok = false;
       result.errors.push({ out: job.out, error: String(e.message || e).slice(0, 300) });
     } finally {
-      await page.close();
+      await context.close();
     }
   }
 } finally {

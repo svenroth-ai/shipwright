@@ -23,8 +23,9 @@ needs_browser = pytest.mark.skipif(not _HAVE, reason="set SHIPWRIGHT_PLAYWRIGHT_
 CSS = "body{margin:0;font-family:Arial}.q{height:300px;background:#123}"  # served as /app.css: the CSP blocks inline style attributes
 QUEUE = ('<!doctype html><head><link rel="stylesheet" href="/app.css"></head><body><input id="q"><button id="tab-queue">Queue</button>'
          '<main id="pane"><h1>Board</h1></main><script src="/app.js"></script></body>')
-APP_JS = ("document.getElementById('tab-queue').onclick=function(){document.getElementById('pane').innerHTML="
-          "'<h1>Queue</h1><div class=\"q\">queue</div>'}")
+APP_JS = ("function q(){document.getElementById('pane').innerHTML='<h1>Queue</h1><div class=\"q\">queue</div>'}"
+          "document.getElementById('tab-queue').onclick=function(){localStorage.setItem('tab','q');q()};"
+          "if(localStorage.getItem('tab')==='q')q();")  # the board remembers its tab, like real ones do
 # the design screen of the Queue state: the same page after the click, styled inline (a file:// page has no /app.css)
 QUEUE_STATE = ('<!doctype html><body style="margin:0;font-family:Arial"><input id="q"><button id="tab-queue">Queue</button>'
                '<main id="pane"><h1>Queue</h1><div style="height:300px;background:#123">queue</div></main></body>')
@@ -47,12 +48,13 @@ def test_steps_ride_on_the_built_job_only(tmp_path, monkeypatch):
     root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": steps}])
     seen = {}
     monkeypatch.setattr(sc, "_capture", lambda r, jobs, t: seen.update(jobs=jobs) or "stub")
-    sc.run_screenshot_check(root, base_url="http://h")
+    r = sc.run_screenshot_check(root, base_url="http://h")
     approved, built = seen["jobs"]
     assert "steps" not in approved and built["steps"] == steps and built["url"] == "http://h/"
+    assert r["screens"][0]["steps"] == steps  # recorded as evidence
 
 
-@pytest.mark.parametrize("steps", ["click", [{"hover": "a"}], [{"click": 1}], [{"fill": ["only-selector"]}], ["click"], [{"click": "a", "wait_for": "b"}], {}, "", [{"click": ""}], [{"fill": [1, 2]}], [{"fill": ["#q", True]}], [{"wait_for": "a"}] * 11])
+@pytest.mark.parametrize("steps", ["click", [{"hover": "a"}], [{"click": 1}], [{"fill": ["only-selector"]}], ["click"], [{"click": "a", "wait_for": "b"}], {}, "", [{"click": ""}], [{"fill": [1, 2]}], [{"fill": ["#q", True]}], [{"fill": ["#q", float("nan")]}], [{"wait_for": "a"}] * 11])
 def test_malformed_steps_are_an_error_not_a_pass(tmp_path, steps):
     root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": steps}])
     r = sc.run_screenshot_check(root, base_url="http://h", capture=False)
@@ -110,3 +112,14 @@ def test_a_step_that_cannot_run_fails_the_screen_with_its_number(tmp_path, board
     root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": [{"wait_for": "#tab-queue"}, {"click": "#no-such-tab"}]}])
     r = sc.run_screenshot_check(root, base_url=board, timeout=120)
     assert r["status"] == "error" and "step 2" in r["capture_error"] and "no-such-tab" in r["capture_error"], r
+
+
+@needs_browser
+@pytest.mark.integration
+def test_one_screens_saved_state_does_not_reach_the_next_screen(tmp_path, board, monkeypatch):
+    monkeypatch.setenv("NODE_PATH", NODE_MODULES)
+    root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": [{"click": "#tab-queue"}]},
+                              {"mockup": "05-queue-again.html", "route": "/"}])  # no steps: must show the default tab, not the remembered one
+    (root / ".shipwright" / "designs" / "uploads" / "05-queue-again.html").write_text(QUEUE_STATE, encoding="utf-8")
+    r = sc.run_screenshot_check(root, base_url=board)
+    assert [s["status"] for s in r["screens"]] == ["pass", "fail"], r["screens"]
