@@ -1,6 +1,11 @@
 """E6 (campaign e2e-run-findings): the Brief package for the skill-backed board app and the answer key the operator
 harness (`integration-tests/e2e-webui/`) evaluates. No model, no browser: CI checks that the package is a valid,
-warning-free input for the pipeline and that every checklist item has an evaluator in the harness."""
+warning-free input for the pipeline and that every checklist item has an evaluator in the harness.
+
+Package hash + verify_package, the dry harness (run_harness) and the project-phase brief.md check run on the very same
+FIXTURE (social-engagement-board) in test_e2e_webui_project.py::test_package_validates_and_hash_matches_the_recorded_one,
+::test_package_passes_the_dry_harness and ::test_package_brief_md_passes_the_project_phase_content_check; they are not
+repeated here."""
 
 import json
 import re
