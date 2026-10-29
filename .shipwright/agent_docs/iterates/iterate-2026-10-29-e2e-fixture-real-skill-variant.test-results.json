@@ -31,10 +31,10 @@
       "surface": "web",
       "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test integration-tests/e2e-webui/tests/unit --project=unit -c integration-tests/e2e-webui/playwright.config.ts",
       "exit_code": 0,
-      "tests_run": 55,
+      "tests_run": 56,
       "evidence_path": ".shipwright/runs/iterate-2026-10-29-e2e-fixture-real-skill-variant/surface_verification.log",
-      "timestamp": "2026-10-29T20:10:01.449Z",
-      "justification": "Operator E2E harness (integration-tests/e2e-webui) driven through its 55 Playwright unit specs in a real browser, including the five new mockups."
+      "timestamp": "2026-10-29T20:23:41.581Z",
+      "justification": "Operator E2E harness (integration-tests/e2e-webui) driven through its 56 Playwright unit specs in a real browser, including the five new mockups."
     },
     "test_completeness": {
       "status": "complete",
