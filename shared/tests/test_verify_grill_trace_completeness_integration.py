@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 from tools.grill_trace_format import parse_trace
 from tools.verifiers.common import Severity
