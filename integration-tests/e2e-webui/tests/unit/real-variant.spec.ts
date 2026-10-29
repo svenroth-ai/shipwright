@@ -12,7 +12,7 @@ import { checkMasterDetailShape, snapshotMasterDetail, type MasterDetailSnapshot
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { activeFixture, FIXTURE_NAME, REAL_FIXTURE_NAME } from "../../src/fixture.js";
 import { checkSelfContainedWithAdapter, findRecorded } from "../../src/project-checks-adapter.js";
-import { checkSkillTriggers, projectSkillNames, skillsCalled, TRIGGER_PHRASE } from "../../src/skill-trigger.js";
+import { checkSkillTriggers, projectSkillNames, skillsCalled, stagePluginCopy, TRIGGER_PHRASE } from "../../src/skill-trigger.js";
 import { compareFonts, parseFontTokens, parseTokens } from "../../src/tokens.js";
 import { variantFor } from "../../src/variant.js";
 
@@ -250,4 +250,25 @@ test("S09: reads Skill calls from a stream, is not run unless asked for, and nev
   expect(verdict(broken, "S09")).toBe("not evaluated");
   expect(broken.hardOpen().map((i) => i.id)).not.toContain("S09");
   fs.rmSync(proj, { recursive: true, force: true });
+});
+
+// @covers FR-01.06
+test("S09 loads a scratch copy of the project: skills and a hook-free manifest only, nothing the model wrote that could run", () => {
+  const proj = tmp();
+  write(proj, ".claude-plugin/plugin.json", JSON.stringify({ name: "app", hooks: "hooks/hooks.json", mcpServers: {}, description: "kept" }));
+  write(proj, "skills/board/SKILL.md", "# skill");
+  write(proj, "hooks/hooks.json", "{}");
+  write(proj, "hooks/run.py", "print('x')");
+  write(proj, ".mcp.json", "{}");
+  write(proj, "commands/c.md", "x");
+  const copy = stagePluginCopy(proj);
+  try {
+    expect(copy).not.toBe(proj);
+    expect(fs.readdirSync(copy).sort()).toEqual([".claude-plugin", "skills"]);
+    expect(fs.existsSync(path.join(copy, "skills", "board", "SKILL.md"))).toBe(true);
+    const manifest = JSON.parse(fs.readFileSync(path.join(copy, ".claude-plugin", "plugin.json"), "utf8"));
+    expect(manifest).toEqual({ name: "app", description: "kept" });
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
+  }
 });

@@ -1,9 +1,11 @@
 // S09 (soft): does the built plugin's skill trigger in a real Claude session on a trigger phrase? A headless `claude -p`
 // session loads the project as a plugin, gets one phrase and may use the Skill tool only; the stream is read for a Skill
 // call. Opt-in (`SHIPWRIGHT_E2E_SKILL_TRIGGER=1`): it needs a login and costs one short model call. Fixed argv, no shell.
-// The project is model-written data: it is loaded as a plugin directory, never executed by this module.
+// The project is model-written data and a plugin's hooks run as commands, so the session never loads the project itself:
+// it loads a scratch copy that holds only `skills/` and a manifest without `hooks` (see stagePluginCopy).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import type { Checklist } from "./checklist.js";
 
@@ -34,10 +36,32 @@ export interface TriggerRun {
 }
 export type Runner = (projectPath: string, phrase: string, env: NodeJS.ProcessEnv) => TriggerRun;
 
+/** Scratch plugin dir with only the project's `skills/` and a manifest stripped of `hooks`; hooks, agents, commands and MCP servers are not copied. */
+export function stagePluginCopy(projectPath: string): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "s09-plugin-"));
+  const skills = path.join(projectPath, "skills");
+  if (fs.existsSync(skills)) fs.cpSync(skills, path.join(dir, "skills"), { recursive: true });
+  let manifest: Record<string, unknown> = {};
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(projectPath, ".claude-plugin", "plugin.json"), "utf8")) as Record<string, unknown>;
+  } catch {
+    // no readable manifest: an empty one is enough for the loader
+  }
+  for (const key of ["hooks", "mcpServers", "agents", "commands"]) delete manifest[key];
+  fs.mkdirSync(path.join(dir, ".claude-plugin"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".claude-plugin", "plugin.json"), JSON.stringify(manifest));
+  return dir;
+}
+
 export const runClaude: Runner = (projectPath, phrase, env) => {
-  const r = spawnSync("claude", ["-p", phrase, "--output-format", "stream-json", "--verbose", "--plugin-dir", projectPath, "--allowedTools", "Skill", "--max-turns", "2"],
-    { cwd: projectPath, env, encoding: "utf8", timeout: 180_000, maxBuffer: 16 * 1024 * 1024 });
-  return { stdout: r.stdout ?? "", status: r.status, error: r.error?.message };
+  const copy = stagePluginCopy(projectPath);
+  try {
+    const r = spawnSync("claude", ["-p", phrase, "--output-format", "stream-json", "--verbose", "--plugin-dir", copy, "--allowedTools", "Skill", "--max-turns", "2"],
+      { cwd: copy, env, encoding: "utf8", timeout: 180_000, maxBuffer: 16 * 1024 * 1024 });
+    return { stdout: r.stdout ?? "", status: r.status, error: r.error?.message };
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
+  }
 };
 
 /** Names under which the project's own skills can be called: `<skill>` and `<plugin>:<skill>` (the provisioned home has other plugins' skills too). */

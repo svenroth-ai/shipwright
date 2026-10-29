@@ -10,6 +10,9 @@ rendering, a status filter with skipped and expired, and the hits fetched throug
 that replays recorded Syften and Apify answers (no network, no keys). Keywords are sources, not a board tab. Select
 it with `SHIPWRIGHT_E2E_FIXTURE=social-engagement-real`; the harness then evaluates S02, S04 and S05 in their variant form.
 
+The package ships no recorded answers on purpose: `brief.md` specifies `seed/recorded/syften.json` and `apify_linkedin.json`,
+the build creates them, and S05 reads them from the built project.
+
 Each item is **hard** (must hold; `integration-tests/e2e-webui` evaluates it and the run fails if it does not)
 or **soft** (recorded in the report and compared by eye). Item lines keep the form
 `- [hard|soft] <ID>: <text>`; `integration-tests/e2e-webui` parses them. S03 and S09 are soft.
