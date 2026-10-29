@@ -24,6 +24,7 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
 
 - **Brief fields override derived values:** `profile`, `deploy_target` and `autonomy` come from
   `brief.json`; `remaining_questions` is empty, so nothing the package answers is re-asked.
+- **Thin visual guidelines warn, they do not block:** the result's `warnings` lists the kit tokens `visual-guidelines.md` lacks (declared as `--color-bg: #f6f7f9`, names in the design kit's `tokens-contract.md`) and declared colour pairs that miss a contrast rule. Show them to the person before the run goes on; Design fills a missing token from a shipped set.
 - **Verified before use:** layout and hash must verify, and `brief.json` needs `approved_by` and
   `approved_at`. `approved_by: "fixture:<id>"` is accepted only with
   `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` (the acceptance is recorded in `run_config`).
@@ -31,7 +32,7 @@ The result has the shape below plus `source: "package"`, `brief_dir`, `autonomy`
   `fixture_approval_refused` stops and reports the refusal; it does not set the variable, edit `approved_by`, or look for another way around.
 - **A bad package fails loudly** (exit 3, JSON `{"refused": true, "code": ..., "issues": [...]}`;
   codes: `bad_brief_dir`, `invalid_package`, `hash_mismatch`, `missing_approval`,
-  `fixture_approval_refused`, `approval_changed`, `missing_record`, `config_mismatch`, `brief_dir_conflict`; the file route adds `profile_unusable`: a named stack profile that cannot be used, see "A stack profile named in the brief" - ask the user which profile, never infer). It never degrades to the interview.
+  `fixture_approval_refused`, `approval_changed`, `missing_record`, `config_mismatch`, `brief_dir_conflict`, `invalid_content` (`brief.md` fails the Project phase's content check: empty dimension, missing fit criterion, ...; `issues` names each; fix the package, which needs a new approval); the file route adds `profile_unusable`: a named stack profile that cannot be used, see "A stack profile named in the brief" - ask the user which profile, never infer). It never degrades to the interview.
 - **`brief_dir` is persisted** by `brief_dir_intake.py record` (Step 4) together with the approved
   hash, so a resume finds the package and compares against a hash held outside it;
   `single-session-resume`, `-next` and `-apply` re-check it IN CODE (`orchestrator_pkg/brief_resume_guard.py`,

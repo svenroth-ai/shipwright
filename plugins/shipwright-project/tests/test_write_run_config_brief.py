@@ -20,10 +20,25 @@ _spec.loader.exec_module(bdi)
 bp = bdi._lib("brief_package")
 
 
-def _package(project: Path, approved_by: str | None = "human:sven") -> Path:
+_BRIEF_MD = """# App
+
+## Capture note
+Requirement: A user can add a note with a title and a body.
+- Outcome: a saved note appears in the list
+- Fit criterion: a note added with a title is listed within one second
+- Purpose: keep ideas from getting lost
+- Boundaries: plain text only
+- Failure: an empty title is refused
+- Glossary: n/a: no new term
+- Rationale: n/a: simplest flow
+- Out of scope: sharing
+"""
+
+
+def _package(project: Path, approved_by: str | None = "human:sven", md: str = _BRIEF_MD) -> Path:
     dest = project / "brief"
     (dest / "mockups").mkdir(parents=True)
-    files = {"brief.md": "# App\n\n## Capture note\nx\n", "scope.md": "s\n", "visual-guidelines.md": "v\n",
+    files = {"brief.md": md, "scope.md": "s\n", "visual-guidelines.md": "v\n",
              "mockups/01.html": "<html></html>\n",
              "screen-map.json": json.dumps({"screens": [{"id": "n", "mockup": "01.html"}]})}
     for rel, text in files.items():
@@ -60,11 +75,29 @@ def test_brief_profile_wins_and_brief_dir_is_stored(tmp_path):
 
 
 @pytest.mark.covers("FR-01.02")
+def test_thin_visual_guidelines_warn_but_do_not_block(tmp_path, capsys):
+    _package(tmp_path)  # visual-guidelines.md is "v": no kit tokens at all
+    assert _run(tmp_path, "--brief-dir", "brief") == 0
+    err = capsys.readouterr().err
+    assert "WARNING: visual-guidelines.md declares 0 of the" in err
+    assert (tmp_path / "shipwright_run_config.json").is_file()
+
+
+@pytest.mark.covers("FR-01.02")
 def test_refused_package_writes_no_config(tmp_path, capsys, monkeypatch):
     monkeypatch.delenv(bdi.FIXTURE_ENV, raising=False)
     _package(tmp_path, approved_by="fixture:demo")
     assert _run(tmp_path, "--brief-dir", "brief") == 5
     assert "fixture_approval_refused" in capsys.readouterr().err
+    assert not (tmp_path / "shipwright_run_config.json").exists()
+
+
+@pytest.mark.covers("FR-01.02")
+def test_thin_brief_is_refused_at_intake_not_in_the_project_phase(tmp_path, capsys):
+    """F6: the Project content check runs when the package is taken in; nothing is written."""
+    _package(tmp_path, md=_BRIEF_MD.replace("- Purpose: keep ideas from getting lost\n", "- Purpose:\n"))
+    assert _run(tmp_path, "--brief-dir", "brief") == 5
+    assert "invalid_content" in capsys.readouterr().err
     assert not (tmp_path / "shipwright_run_config.json").exists()
 
 

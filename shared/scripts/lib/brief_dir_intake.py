@@ -7,25 +7,23 @@ the approval rules:
 
 * the package must verify (layout + hash) before ``write-config``, on every resume / next /
   apply and on every ``needs_input`` answer -- :func:`open_package` / :func:`verify_run_config`;
-* the first intake takes the expected hash from ``brief.json``; :func:`record` then stores it in
-  ``shipwright_run_config.json`` (``brief_dir`` + ``brief_package``), so later checks compare
-  against a hash held OUTSIDE the package; it never re-baselines, and a started run gets none;
+* the first intake takes the expected hash from ``brief.json``; :func:`record` stores it in
+  ``shipwright_run_config.json`` (``brief_dir`` + ``brief_package``), outside the package; it never
+  re-baselines, and a started run gets none;
 * a missing approval is refused; ``approved_by: "fixture:<id>"`` needs
   ``SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1`` and the acceptance is recorded;
-* brief fields override derived values (``profile``, ``deploy_target``, ``autonomy``).
+* brief fields override derived values (``profile``, ``deploy_target``, ``autonomy``);
+* ``brief.md`` gets the Project content check (refused: ``invalid_content``), the visual guidelines
+  an advisory kit-token check (``warnings``): ``brief_intake_checks.py``.
 
-Loading (ADR-045): ``brief_package`` uses package-relative imports, so this file loads the
-shared ``lib`` directory as a privately named package instead of importing ``lib``; it is
-itself loaded by file path from ``brief_intake.py``.
+Loading (ADR-045): loads the shared ``lib`` directory as a privately named package; itself loaded by file path.
 
-CLI: ``verify --project-root P`` and ``record --project-root P --brief-dir D`` (after
-``write-config``). Exit 0 ok, 3 refused.
+CLI: ``verify --project-root P``, ``record --project-root P --brief-dir D`` (after ``write-config``). Exit 0 ok, 3 refused.
 """
 
 from __future__ import annotations
 
 import argparse
-import importlib
 import importlib.util
 import json
 import os
@@ -172,15 +170,18 @@ def _intake_dir(source: str, project_root: Optional[Path], env: Optional[Mapping
     info = open_package(bdir, env=env)  # text read first: narrows, does not close, the swap window (U3)
     brief = info["brief"]
     check_brief_dir(brief, rel)
+    checks = _lib("brief_intake_checks")  # F6: the Project content check now; the token check only warns
+    if issues := checks.check_content(root, rel):
+        raise BriefRefused("invalid_content", f"brief.md fails the Project content check ({len(issues)}); fix it and re-approve (new approved_at)", issues)
     bi = _lib("brief_intake")
-    result = bi.map_brief(bi.normalize_brief({"description": text}))  # derived values ...
-    result.update(  # ... which the brief fields override
+    result = bi.map_brief(bi.normalize_brief({"description": text}))
+    result.update(  # derived values, which the brief fields override
         profile=brief["profile"], profile_reason="brief.json profile (package field wins)",
         deploy_target=brief["deploy_target"], answered=["description", "profile", "deploy_target", "autonomy"],
         remaining_questions=[], env_questions=list(brief.get("env_preflight") or []),
         autonomy=brief["autonomy"], ux_shape=brief["ux_shape"], ui_host=brief["ui_host"],
         source_class=brief["source_class"], allow_parallel_builders=brief["allow_parallel_builders"],
-        source="package", brief_dir=rel,
+        source="package", brief_dir=rel, warnings=checks.token_warnings(bdir / "visual-guidelines.md"),
         package={k: info[k] for k in ("package_sha256", "approved_by", "approved_at", "fixture_approval_accepted")})
     return result
 
@@ -208,7 +209,7 @@ def record(project_root: Path, brief_dir: str, env: Optional[Mapping[str, str]] 
     """Verify the package, then store ``brief_dir`` + ``brief_package`` in run_config (under the
     run-config lock). A second record never re-baselines: it verifies against the stored hash."""
     root = Path(project_root).resolve()
-    path = Path(root) / CONFIG_NAME
+    path = root / CONFIG_NAME
     if not path.is_file():
         raise BriefRefused("no_run_config", f"{CONFIG_NAME} does not exist yet; run write-config first")
     bdir = resolve_dir(brief_dir, root)
@@ -233,7 +234,7 @@ def record(project_root: Path, brief_dir: str, env: Optional[Mapping[str, str]] 
 
 
 def _run_started(cfg: Mapping[str, Any]) -> bool:
-    """True once any phase task left its initial state (or a phase task is recorded complete)."""
+    """True once any phase task left its initial state (or is recorded complete)."""
     tasks = [t for t in cfg.get("phase_tasks") or [] if isinstance(t, dict)]
     return bool(cfg.get("completed_phase_task_ids")) or any(t.get("status") not in ("awaiting_launch", "pending") for t in tasks)
 

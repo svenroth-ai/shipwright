@@ -149,7 +149,10 @@ def main() -> int:
     package_profile = None
     if bdi:
         try:
-            package_profile = bdi.intake_dir(args.brief_dir, project_root)["profile"]
+            intake = bdi.intake_dir(args.brief_dir, project_root)
+            package_profile = intake["profile"]
+            for warning in intake.get("warnings") or []:  # advisory (kit tokens of the visual guidelines): never blocks
+                print(f"WARNING: {warning}", file=sys.stderr)
             if args.profile and args.profile != package_profile:
                 raise bdi.BriefRefused("config_mismatch", f"--profile {args.profile!r} differs from the "
                                        f"approved brief profile {package_profile!r}")

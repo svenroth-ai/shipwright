@@ -36,6 +36,8 @@ duplicate or empty key.
 uv run "{shared_root}/scripts/tools/brief_project_mode.py" apply --project-root "$(pwd)"
 ```
 
+Package intake (`write_run_config.py --brief-dir`, `/shipwright-run --brief`) already ran this content check (`brief_project_mode.py check`) and refused a thin brief as `invalid_content`, so an issue here means the package changed after intake.
+
 It verifies the package against the hash `run_config` holds (exit 3 = changed or unapproved:
 stop), checks the content, and only then writes `shipwright_project_interview.md` (a pointer, not
 a transcript: no interview was held), `requirements.md`, one grill-trace per capability
