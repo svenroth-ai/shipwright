@@ -216,6 +216,7 @@ def test_cli_exit_code_contract_red_tree_exits_1_green_tree_exits_0(tmp_path):
     assert green_proc.returncode == 0, green_proc.stdout
 
 
+@pytest.mark.covers("FR-01.16/AC01")
 def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist(tmp_path):
     """The gap external plan review found: a PARTIALLY recorded interview
     (some requirements traced, one not) passes the plain grill_trace_coverage
