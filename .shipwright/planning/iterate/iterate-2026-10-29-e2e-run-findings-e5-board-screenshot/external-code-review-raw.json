@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: test\n- Severity: medium\n- File:line \u2014 `plugins/shipwright-test/tests/test_screenshot_check_states.py:93`\n- Finding: The browser test does not verify that the Queue state was reached. It accepts either `pass` or `fail` and checks only that a screenshot exists. Removing the entire step-execution loop would still satisfy these assertions, leaving the central E5 behavior untested.\n- Suggestion: Use an approved screen matching the Queue state and require `pass`; verify that capturing the initial Board state against that same reference fails.\n\nOverall assessment: ship-with-fixes\u2014the state-capture behavior needs a meaningful regression test. Review was limited to the supplied diff because filesystem policy blocked reading the campaign brief and running tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: test\n  Severity: medium\n  File: plugins/shipwright-test/tests/test_screenshot_check_states.py:96-101 (`test_csp_restricted_board_is_captured_and_a_state_is_reached`)\n  Finding: The assertion `r[\"screens\"][0][\"status\"] in {\"pass\", \"fail\"}` accepts both outcomes, so the test does not actually verify the steps reached the Queue state. If the steps were silently ignored (e.g. a regression that drops `job.steps` before the click), the built shot would be the initial Board state, compare as `fail` against the Queue design screen, and the test would still pass. Only the error-free capture (F3/CSP) is really validated; the F2 half of the unit (\"a state is reached\") is not.\n  Suggestion: Assert the built screenshot differs from a control capture taken with no steps (or assert the status matches the expected outcome given the served fixture, e.g. compare the built PNG's content against a step-less reference via the existing png_compare grid, or assert `status == \"pass\"` with a design screen that matches the post-click pane).\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-test/tests/test_screenshot_check_states.py:69-71 (`test_capture_script_injects_nothing_into_the_page`)\n  Finding: This is a text grep of the source, not a behavioural test; a regression that injects via `page.evaluate(\"document.body.style...\")` or `addStyleTag` spelled differently (`add_style_tag` via a wrapper, `addScriptTag` via CDP) would pass. It's a reasonable smoke test but should not be the only CSP guard \u2014 fortunately the real-browser fixture covers the behaviour, so this is acceptable as redundancy.\n  Suggestion: None required; optionally note in the test docstring that the real CSP coverage lives in the integration test below.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-test/scripts/lib/screenshot_check.py:66-79 (`_bad_steps`)\n  Finding: `fill` values pass `isinstance(val[1], (str, int, float))`, so `True`/`False` are accepted (bool is int in Python) and a single-element selector list `[1, 2]` passes the type check only because both elements are ints \u2014 actually `[1, 2]` is rejected (val[0] not str), but `[{\"fill\": [\"#q\", True]}]` is accepted and silently rendered as `\"True\"` in the input. Minor, no real failure; likewise whitespace-only selectors (`\" \"`) pass `val != \"\"`.\n  Suggestion: Optionally exclude `bool` and require non-blank strings; not blocking.\n\n- Category: spec\n  Severity: low\n  File: (whole diff)\n  Finding: The unit scope requires running `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` for plugin-side edits (skills references changed under `plugins/shipwright-test/skills/test/references/`). Nothing in the diff or test output evidences this was done \u2014 it may have been run outside the diff, but it should be confirmed before merge.\n  Suggestion: Run both checks before the next unit / PR merge as the spec requires.\n\nPositive notes: the step-validation logic is solid (malformed `steps` error rather than pass, tested across 11 malformed shapes); steps correctly ride only on the built job (verified by a dedicated unit test); the CSP fix (removing `addStyleTag`, using Playwright's `animations: \"disabled\"` / `caret: \"hide\"`) is the right mechanism and is exercised against a real strict-CSP server; the timeout budget grows correctly (10 s step + 5 s networkidle = 15 s per step); docs and prose tests were updated in the same diff as required; the retry-free, no-silent-shot semantics (\"a step that cannot run fails this job\") match the docs and are tested with the step number in the error.\n\nOverall: ship-as-is for the implementation; the one substantive gap is that the \"state is reached\" acceptance is only weakly tested, and the plugin-cache sync step should be confirmed run.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-29-e2e-run-findings-e5-board-screenshot",
+    "at": "2026-10-29T01:15:05.755839+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

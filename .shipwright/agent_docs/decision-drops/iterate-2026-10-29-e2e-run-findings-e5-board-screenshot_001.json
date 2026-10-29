@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-e2e-run-findings-e5-board-screenshot",
+  "date": "2026-10-29",
+  "section": "Iterate — fix: screenshot check for a served board",
+  "title": "Screenshot capture injects nothing; board states via steps",
+  "context": "The capture injected an inline style tag, which a page CSP (style-src without unsafe-inline) blocks; a board tab has no route of its own (findings F2, F3).",
+  "decision": "Use Playwright's own animations:disabled and caret:hide screenshot options, inject nothing, and let a screen-routes entry carry optional steps (click, fill, wait_for) run on the built page before the shot.",
+  "consequences": "A CSP-restricted board is captured as users see it; states of one page are comparable; a step that cannot run fails that screen with its number. The steps vocabulary is a small contract to keep.",
+  "rationale": "Smallest change in the existing tool; the cause (the injected tag) is removed, not masked.",
+  "rejected": "bypassCSP:true (renders the board unlike what users see, hides the cause); a separate capture tool for boards.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

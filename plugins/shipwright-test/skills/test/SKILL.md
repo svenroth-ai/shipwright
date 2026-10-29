@@ -211,7 +211,7 @@ Full body: see [step-3.7-design-fidelity](references/step-3.7-design-fidelity.md
 
 Runs only when `.shipwright/designs/brief-package-applied.json` exists; any other
 project skips it and keeps Step 3.7's non-blocking behaviour. Screenshots every
-built screen and its approved mockup, compares them (metric + tolerance recorded).
+built screen and its approved design screen, compares them (metric + tolerance recorded).
 `fail` or `error` = STOP and report; never waive, never edit a mockup (D9: a Test
 gate, not a design-approval gate).
 Full body: see [step-3.7b-screenshot-check](references/step-3.7b-screenshot-check.md).

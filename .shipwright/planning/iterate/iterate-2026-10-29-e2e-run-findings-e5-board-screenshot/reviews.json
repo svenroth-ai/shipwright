@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e2e-run-findings-e5-board-screenshot",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T01:17:55.115709+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Removing `addStyleTag` is the right call (the injected style tag is what trips the board's CSP and, as the plan notes, `bypassCSP:true` would mask the real problem and render differently). But the plan doesn't state why the tag was there originally. If it was hiding animations/flashing/caret artifacts beyond what `animations:'disabled'` + `caret:'hide'` now cover, screenshots may change for all existing jobs, not just the board route — breaking baselines/diffs and any stored expectations.",
+          "suggestion": "Before merging, capture before/after screenshots for a sample of existing routes and confirm no visual regression. If baselines shift, regenerate them in the same diff and note it in the PR description.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "\"Optional per-job steps (click/fill/wait_for)\" is under-specified. Undefined edge cases: click/fill targets that don't exist (timeout value? error message quality?), `wait_for` with no timeout default, steps whose selectors resolve to multiple elements, and step ordering guarantees (must a `wait_for` precede a fill?).",
+          "suggestion": "Pin down failure semantics: each step gets an explicit timeout (with a sensible default), strict single-element matching, and a clear error naming the route + failing step + selector. Without this, \"malformed steps = error\" in the Python side only covers shape, not runtime behavior in Chromium.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security /",
+          "file": null,
+          "line": null,
+          "finding": "fill` steps inject values into a page. If step configs come from screen-routes entries that anyone with repo write can add, that's fine, but if `screenshot_check.py` accepts `steps` from CLI/user input in any path, arbitrary `fill` values could leak secrets into screenshots (e.g., filling a credentials form on a real backend).",
+          "suggestion": "Confirm `steps` are only sourced from the checked-in screen-routes config, not from job parameters or user input. If they can come from job args, restrict `fill` targets to a denylist of sensitive selectors (password, token fields) or forbid `fill` on auth routes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan's scope header lists pre-steps (`update-marketplace.sh`, `check_plugin_cache_sync.py --strict`) but the mini-plan body doesn't include them as steps or state their result. The docs updates (\"step-3.7b reference, guide\") also imply plugin-owned files are edited in the same diff, which per the header requires the Tier-3 admin-merge path.",
+          "suggestion": "Add the two pre-flight script runs as explicit first steps in the mini-plan, and confirm the docs files being edited are within the plugin paths covered by the approved admin-merge flow (so the merge command's `--match-head-commit` isn't invalidated by an out-of-scope path).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The \"real-Chromium CSP board + state\" test is good, but there's no stated assertion that the capture fails loudly if CSP blocks something unexpected (e.g., a future style injection elsewhere). A silent screenshot of a broken board could pass a check that should fail.",
+          "suggestion": "In the board test, assert on expected board content/state in the captured output (or at minimum that the job errors if the route fails to load), not just that the job completes without throwing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "animations:'disabled'` + `caret:'hide'` are Chromium/Puppeteer screenshot options; if the capture code path also runs under other browsers (Playwright config, WebKit), these options differ or are no-ops.",
+          "suggestion": "Confirm the capture tooling is Chromium-only (the test name suggests it is); if so, note it in the docs so future route authors don't assume cross-browser parity.  Overall assessment: The core approach is sound — removing the style injection rather than bypassing CSP is the correct call, and the rejection rationale is well-reasoned. The main gaps are unspecified step failure semantics and an unassessed blast radius on existing screenshot baselines; both are fixable within the plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The step contract is underspecified. “Malformed steps = error” does not define supported fields, selector requirements, `wait_for` semantics, or execution timeouts. A failed interaction could leave capture showing the initial board while appearing successful.",
+          "suggestion": "Define a small, explicit schema for each supported action and execute steps sequentially with bounded timeouts. Fail the job on any step failure and report the route and step index. Test unsupported actions, missing fields, missing targets, and timeout failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The proposed tests do not explicitly verify the complete route-to-capture path. Separate step-validation tests and a Chromium capture test could pass while `steps` are dropped, attached to another job, or executed after capture.",
+          "suggestion": "Add one integration test that builds jobs from screen-routes, executes the intended board interaction, and verifies the resulting captured state under enforced CSP. Include a route without steps to confirm existing behavior and job isolation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Real-Chromium coverage requires an installed browser and a test path that actually runs it. The plan leaves this prerequisite unresolved while CI and dependency configuration are explicitly owned by BP.",
+          "suggestion": "Confirm the existing test environment supplies Chromium and runs this test. If it does not, coordinate the prerequisite with BP; avoid silently skipping the regression test in the acceptance run.  The approach is focused and sensible, including preserving CSP enforcement. Clarify step execution guarantees and demonstrate the full integration path before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T01:17:55.255642+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review of Mini-Plan E5\n\n- **Category: approach / Severity: medium**\n  **Finding:** Removing `addStyleTag` is the right call (the injected style tag is what trips the board's CSP and, as the plan notes, `bypassCSP:true` would mask the real problem and render differently). But the plan doesn't state *why* the tag was there originally. If it was hiding animations/flashing/caret artifacts beyond what `animations:'disabled'` + `caret:'hide'` now cover, screenshots may change for **all existing jobs**, not just the board route — breaking baselines/diffs and any stored expectations.\n  **Suggestion:** Before merging, capture before/after screenshots for a sample of existing routes and confirm no visual regression. If baselines shift, regenerate them in the same diff and note it in the PR description.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** \"Optional per-job steps (click/fill/wait_for)\" is under-specified. Undefined edge cases: click/fill targets that don't exist (timeout value? error message quality?), `wait_for` with no timeout default, steps whose selectors resolve to multiple elements, and step ordering guarantees (must a `wait_for` precede a fill?).\n  **Suggestion:** Pin down failure semantics: each step gets an explicit timeout (with a sensible default), strict single-element matching, and a clear error naming the route + failing step + selector. Without this, \"malformed steps = error\" in the Python side only covers shape, not runtime behavior in Chromium.\n\n- **Category: security / Severity: medium**\n  **Finding:** `fill` steps inject values into a page. If step configs come from screen-routes entries that anyone with repo write can add, that's fine, but if `screenshot_check.py` accepts `steps` from CLI/user input in any path, arbitrary `fill` values could leak secrets into screenshots (e.g., filling a credentials form on a real backend).\n  **Suggestion:** Confirm `steps` are only sourced from the checked-in screen-routes config, not […truncated]\n\n[openai] Repository reads were blocked by the execution policy, so this review is based on the supplied specification and mini-plan; I could not verify the campaign brief or existing code.\n\n1. **Category: edge-case | Severity: medium**\n   - **Finding:** The step contract is underspecified. “Malformed steps = error” does not define supported fields, selector requirements, `wait_for` semantics, or execution timeouts. A failed interaction could leave capture showing the initial board while appearing successful.\n   - **Suggestion:** Define a small, explicit schema for each supported action and execute steps sequentially with bounded timeouts. Fail the job on any step failure and report the route and step index. Test unsupported actions, missing fields, missing targets, and timeout failures.\n\n2. **Category: risk | Severity: medium**\n   - **Finding:** The proposed tests do not explicitly verify the complete route-to-capture path. Separate step-validation tests and a Chromium capture test could pass while `steps` are dropped, attached to another job, or executed after capture.\n   - **Suggestion:** Add one integration test that builds jobs from screen-routes, executes the intended board interaction, and verifies the resulting captured state under enforced CSP. Include a route without steps to confirm existing behavior and job isolation.\n\n3. **Category: dependency | Severity: medium**\n   - **Finding:** Real-Chromium coverage requires an installed browser and a test path that actually runs it. The plan leaves this prerequisite unresolved while CI and dependency configuration are explicitly owned by BP.\n   - **Suggestion:** Confirm the existing test environment supplies Chromium and runs this test. If it does not, coordinate the prerequisite with BP; avoid silently skipping the regression test in the acceptance run.\n\nThe approach is focused and sensible, including preserving CSP enforcement. Clarify step execution guarantees and demonstrate the full integration path before […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "browser tests skip without SHIPWRIGHT_PLAYWRIGHT_NODE_MODULES; record local run as evidence (done: surface_verification cli run, 10 tests passed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "steps walrus binding",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "fill accepts booleans",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "long doc line, env var sentence, flat form",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "source-grep test is only a tripwire",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T01:20:31.704322+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "88f423e1c164042a901372b741e6e35bfda89a13"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_capture.mjs",
+          "line": null,
+          "finding": "Claim under doubt: a step only affects its own screen — one shared browser context lets saved state (localStorage) leak to the next screen",
+          "suggestion": "one context per job (fixed, tested)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "gate integrity",
+          "file": "plugins/shipwright-test/skills/test/references/step-3.7b-screenshot-check.md",
+          "line": null,
+          "finding": "Claim under doubt: steps reach only the state the screen shows — steps are agent-editable wiring",
+          "suggestion": "record the steps in the result (done) and the doc rule",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "state at shot",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_capture.mjs",
+          "line": null,
+          "finding": "Claim under doubt: shot shows the screen state — hover and focus ring left by steps",
+          "suggestion": "mouse.move and blur (done)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": null,
+          "finding": "Claim under doubt: a bad entry fails only its screen — NaN fill value blanks the whole capture",
+          "suggestion": "str/int only (done)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py",
+          "line": null,
+          "finding": "Claim under doubt: errors are attributed per screen — joined capture error text names other screens",
+          "suggestion": "accepted: the screen is still an error",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "evidence",
+          "file": "plugins/shipwright-test/tests/test_screenshot_check_states.py",
+          "line": null,
+          "finding": "Claim under doubt: CSP survival proven — browser tests skip without the env var",
+          "suggestion": "local run recorded as evidence",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T01:24:32.584005+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "52a98b1c992e5bf9c28505a0636d09f180cc5259"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-test/tests/test_screenshot_check_states.py:96-101 (`test_csp_restricted_board_is_captured_and_a_state_is_reached`)",
+          "line": null,
+          "finding": "The assertion `r[\"screens\"][0][\"status\"] in {\"pass\", \"fail\"}` accepts both outcomes, so the test does not actually verify the steps reached the Queue state. If the steps were silently ignored (e.g. a regression that drops `job.steps` before the click), the built shot would be the initial Board state, compare as `fail` against the Queue design screen, and the test would still pass. Only the error-free capture (F3/CSP) is really validated; the F2 half of the unit (\"a state is reached\") is not.",
+          "suggestion": "Assert the built screenshot differs from a control capture taken with no steps (or assert the status matches the expected outcome given the served fixture, e.g. compare the built PNG's content against a step-less reference via the existing png_compare grid, or assert `status == \"pass\"` with a design screen that matches the post-click pane).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-test/tests/test_screenshot_check_states.py:69-71 (`test_capture_script_injects_nothing_into_the_page`)",
+          "line": null,
+          "finding": "This is a text grep of the source, not a behavioural test; a regression that injects via `page.evaluate(\"document.body.style...\")` or `addStyleTag` spelled differently (`add_style_tag` via a wrapper, `addScriptTag` via CDP) would pass. It's a reasonable smoke test but should not be the only CSP guard — fortunately the real-browser fixture covers the behaviour, so this is acceptable as redundancy.",
+          "suggestion": "None required; optionally note in the test docstring that the real CSP coverage lives in the integration test below.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_check.py:66-79 (`_bad_steps`)",
+          "line": null,
+          "finding": "fill` values pass `isinstance(val[1], (str, int, float))`, so `True`/`False` are accepted (bool is int in Python) and a single-element selector list `[1, 2]` passes the type check only because both elements are ints — actually `[1, 2]` is rejected (val[0] not str), but `[{\"fill\": [\"#q\", True]}]` is accepted and silently rendered as `\"True\"` in the input. Minor, no real failure; likewise whitespace-only selectors (`\" \"`) pass `val != \"\"`.",
+          "suggestion": "Optionally exclude `bool` and require non-blank strings; not blocking.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "(whole diff)",
+          "line": null,
+          "finding": "The unit scope requires running `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` for plugin-side edits (skills references changed under `plugins/shipwright-test/skills/test/references/`). Nothing in the diff or test output evidences this was done — it may have been run outside the diff, but it should be confirmed before merge.",
+          "suggestion": "Run both checks before the next unit / PR merge as the spec requires.  Positive notes: the step-validation logic is solid (malformed `steps` error rather than pass, tested across 11 malformed shapes); steps correctly ride only on the built job (verified by a dedicated unit test); the CSP fix (removing `addStyleTag`, using Playwright's `animations: \"disabled\"` / `caret: \"hide\"`) is the right mechanism and is exercised against a real strict-CSP server; the timeout budget grows correctly (10 s step + 5 s networkidle = 15 s per step); docs and prose tests were updated in the same diff as required; the retry-free, no-silent-shot semantics (\"a step that cannot run fails this job\") match the docs and are tested with the step number in the error.  Overall: ship-as-is for the implementation; the one substantive gap is that the \"state is reached\" acceptance is only weakly tested, and the plugin-cache sync step should be confirmed run.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "line — `plugins/shipwright-test/tests/test_screenshot_check_states.py",
+          "line": 93,
+          "finding": "The browser test does not verify that the Queue state was reached. It accepts either `pass` or `fail` and checks only that a screenshot exists. Removing the entire step-execution loop would still satisfy these assertions, leaving the central E5 behavior untested.",
+          "suggestion": "Use an approved screen matching the Queue state and require `pass`; verify that capturing the initial Board state against that same reference fails.  Overall assessment: ship-with-fixes—the state-capture behavior needs a meaningful regression test. Review was limited to the supplied diff because filesystem policy blocked reading the campaign brief and running tests.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T01:17:55.652275+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: test\n  Severity: medium\n  File: plugins/shipwright-test/tests/test_screenshot_check_states.py:96-101 (`test_csp_restricted_board_is_captured_and_a_state_is_reached`)\n  Finding: The assertion `r[\"screens\"][0][\"status\"] in {\"pass\", \"fail\"}` accepts both outcomes, so the test does not actually verify the steps reached the Queue state. If the steps were silently ignored (e.g. a regression that drops `job.steps` before the click), the built shot would be the initial Board state, compare as `fail` against the Queue design screen, and the test would still pass. Only the error-free capture (F3/CSP) is really validated; the F2 half of the unit (\"a state is reached\") is not.\n  Suggestion: Assert the built screenshot differs from a control capture taken with no steps (or assert the status matches the expected outcome given the served fixture, e.g. compare the built PNG's content against a step-less reference via the existing png_compare grid, or assert `status == \"pass\"` with a design screen that matches the post-click pane).\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-test/tests/test_screenshot_check_states.py:69-71 (`test_capture_script_injects_nothing_into_the_page`)\n  Finding: This is a text grep of the source, not a behavioural test; a regression that injects via `page.evaluate(\"document.body.style...\")` or `addStyleTag` spelled differently (`add_style_tag` via a wrapper, `addScriptTag` via CDP) would pass. It's a reasonable smoke test but should not be the only CSP guard — fortunately the real-browser fixture covers the behaviour, so this is acceptable as redundancy.\n  Suggestion: None required; optionally note in the test docstring that the real CSP coverage lives in the integration test below.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-test/scripts/lib/screenshot_check.py:66-79 (`_bad_steps`)\n  Finding: `fill` values pass `isinstance(val[1], (str, int, float))`, so `True`/`False` are accepted ( […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File:line — `plugins/shipwright-test/tests/test_screenshot_check_states.py:93`\n- Finding: The browser test does not verify that the Queue state was reached. It accepts either `pass` or `fail` and checks only that a screenshot exists. Removing the entire step-execution loop would still satisfy these assertions, leaving the central E5 behavior untested.\n- Suggestion: Use an approved screen matching the Queue state and require `pass`; verify that capturing the initial Board state against that same reference fails.\n\nOverall assessment: ship-with-fixes—the state-capture behavior needs a meaningful regression test. Review was limited to the supplied diff because filesystem policy blocked reading the campaign brief and running tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T01:17:55.783907+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "933aff8802a973985f43d0cb7deb89290dcf0d9d"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T01:17:55.388465+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T01:17:55.516357+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+fix(test): the screenshot check captures a board served with its own Content-Security-Policy and can compare a board tab or pane state (route plus steps); design output is called approved design screens

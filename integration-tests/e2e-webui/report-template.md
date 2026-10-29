@@ -29,7 +29,7 @@ deleted when the run ends.
 
 {{CHECKLIST}}
 
-## Screenshot check of the Test phase (approved mockups against built screens)
+## Screenshot check of the Test phase (approved design screens against built screens)
 
 {{SCREENSHOT_CHECK}}
 

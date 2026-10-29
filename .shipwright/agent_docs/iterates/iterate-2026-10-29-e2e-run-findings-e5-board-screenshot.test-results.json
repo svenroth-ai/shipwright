@@ -1,0 +1,105 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-29-e2e-run-findings-e5-board-screenshot",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 401,
+      "skipped": 1,
+      "total": 402
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 3,
+      "skipped": 0,
+      "total": 3
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "capture of a page with a strict CSP works (nothing injected into the page)",
+          "disposition": "tested",
+          "evidence": "test_screenshot_check_states.py::test_csp_restricted_board_is_captured_and_a_state_is_reached PASSED (real Chromium; the old build failed it with the addStyleTag CSP violation)",
+          "category": "integration"
+        },
+        {
+          "behavior": "a board state (steps) equals its design screen; the same screen without steps does not",
+          "disposition": "tested",
+          "evidence": "same test, pass plus no-steps control fail PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a step that cannot run fails that screen with its step number",
+          "disposition": "tested",
+          "evidence": "test_a_step_that_cannot_run_fails_the_screen_with_its_number PASSED"
+        },
+        {
+          "behavior": "malformed steps (wrong shape, empty selector, bool text, over 10) are a per-screen error",
+          "disposition": "tested",
+          "evidence": "test_malformed_steps_are_an_error_not_a_pass 12 cases PASSED"
+        },
+        {
+          "behavior": "steps ride on the built job only",
+          "disposition": "tested",
+          "evidence": "test_steps_ride_on_the_built_job_only PASSED"
+        },
+        {
+          "behavior": "design output is named approved design screens in docstring, report template, guide",
+          "disposition": "tested",
+          "evidence": "test_screenshot_check.py, test_screenshot_check_prose.py PASSED"
+        },
+        {
+          "behavior": "saved state of one screen does not reach the next screen (one browser context per screen)",
+          "disposition": "tested",
+          "evidence": "test_one_screens_saved_state_does_not_reach_the_next_screen PASSED (fails with a shared context)",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-test --extra dev pytest plugins/shipwright-test/tests/test_screenshot_check_states.py -q -p no:cacheprovider --rootdir plugins/shipwright-test",
+      "exit_code": 0,
+      "tests_run": 18,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-e2e-run-findings--E5\\.shipwright\\runs\\iterate-2026-10-29-e2e-run-findings-e5-board-screenshot\\surface_verification.log",
+      "timestamp": "2026-10-29T01:26:31.745Z",
+      "attempts": 1
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-29-e2e-run-findings-e5-board-screenshot",
+    "commit": "fe8b5755d2230ed4a69f5596ef510d121dfb26a9",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
