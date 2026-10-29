@@ -1,0 +1,100 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-28-bl0b-broader-measurement",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 1453,
+      "skipped": 21,
+      "total": 1474
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/scripts/tools/tests/test_baseline_b.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 7,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-28-bl0b-broader-measurement/surface_verification.json",
+      "timestamp": "2026-10-29T00:29:44.946Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "HEAD-run mapping finds a changed function by qualified name after the lines shifted",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_function_is_found_by_name_after_the_lines_shifted PASSED"
+        },
+        {
+          "behavior": "Unbound, unexecuted and unmeasured functions are told apart",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_unbound_unexecuted_and_unmeasured_are_told_apart PASSED"
+        },
+        {
+          "behavior": "New code reached by a modified base function is class a, otherwise b",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_new_function_called_by_a_modified_base_function_is_class_a_else_b PASSED"
+        },
+        {
+          "behavior": "Path baseline maps plugin files and transitively importing plugins; tests skipped",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_path_baseline_maps_plugins_and_importing_plugins PASSED"
+        },
+        {
+          "behavior": "Mutation flips a comparison, never leaves unparsable code; probe causes are classified",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_mutation_flips_a_comparison_and_classification_names_the_cause PASSED"
+        },
+        {
+          "behavior": "Root prefix for plugin and shared roots",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_prefix_of_roots PASSED"
+        },
+        {
+          "behavior": "Label pack carries no author declaration and redacts FR ids in the title",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_pack_has_no_author_declaration_and_redacts_fr_ids_in_the_title PASSED"
+        },
+        {
+          "behavior": "Rule evaluation against two labelers (confirmed pairs, outside-every-FR, wrong vs disputed hits)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b.py::test_rule_evaluation_counts_only_pairs_both_labelers_confirm PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

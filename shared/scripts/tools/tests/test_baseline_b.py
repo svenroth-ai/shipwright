@@ -100,3 +100,22 @@ def test_pack_has_no_author_declaration_and_redacts_fr_ids_in_the_title(tmp_path
     text = packs.build_pack(GitRev(root, base, head), "fix(x): per FR-01.09 AC04", 7, cat)
     assert "affected_frs" not in text and "Title: fix(x): per FR-xx" in text and "x == 2" in text
     assert cat[0]["id"] == "FR-01.09" and cat[0]["acs"][0][0] == "AC01"
+
+
+def test_rule_evaluation_counts_only_pairs_both_labelers_confirm():
+    from verifiers._baseline_b_eval import evaluate
+
+    rec = lambda pr, src, decl: {"pr": pr, "sources": {fr: ["test"] for fr in src}, "declared": decl, "class": "iterate", "new_frs": []}  # noqa: E731
+    replay = {"records": [rec(1, ["FR-01.09"], []), rec(2, ["FR-01.10"], []), rec(3, [], []), rec(4, ["FR-01.09"], [])]}
+    held = {"hold_scope_eq_declared_fr_level": {"git+tcode_head": 25, "git": 2}, "hold_per_week_scope_eq_declared": {"git+tcode_head": 1.25}, "ac_level": {"hold_scope_eq_declared_ac_level": 5}}
+    data = {"phaseA": {"headmap": {"per_pr": {}}, "paths": {"per_pr": {"3": {"FR-01.05": ["x"]}}}, "summary": held}}
+    lab = lambda yn, frs: {"changed_behavior": yn, "affected_frs": frs, "affected_acs": []}  # noqa: E731
+    la = {"1": lab("yes", ["FR-01.09"]), "2": lab("yes", []), "3": lab("yes", ["FR-01.05"]), "4": lab("no", [])}
+    lb = {"1": lab("yes", ["FR-01.09"]), "2": lab("yes", ["FR-01.10"]), "3": lab("yes", ["FR-01.05"]), "4": lab("no", [])}
+    out = evaluate(replay, data, la, lb)
+    assert out["confirmed_pairs"] == [[1, "FR-01.09"], [3, "FR-01.05"]]
+    assert [o["pr"] for o in out["labels"]["yes_pr_outside_every_fr"]] == [2]
+    assert out["rules"]["R-recall"]["found"]["found"] == 1  # BP finds PR 1 only; PR 3 is the path baseline's
+    assert out["hits_on_judged_prs"]["BP(git+tcode)"]["wrong"] == 1  # PR 4: a hit on a PR both judged "no"
+    assert out["hits_on_judged_prs"]["BP(git+tcode)"]["disputed"] == 1  # PR 2: only labeler B names FR-01.10
+    assert out["rules"]["R-cost"]["result"] == "FAIL"

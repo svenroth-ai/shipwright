@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Items 1-8 done; the pre-registered rules are evaluated unchanged; cuts (merge-base fallback, 17 failures unreproduced) disclosed."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable git or test files are reported as notes; a mutation that does not parse is skipped; probes always restore the file."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets; subprocess environment scrubbed; scratch trees live outside the repo; label packs exclude evidence files."},
+{"name":"Test Quality","verdict":"pass","note":"7 in-process tests on real git assert outcomes (mapping by name after line shift, class a/b, path reach, mutation, pack redaction)."},
+{"name":"Performance Basics","verdict":"pass","note":"Serial long runs by design (ADR-044); analysis steps take seconds to minutes."},
+{"name":"Naming & Structure","verdict":"pass","note":"All new files under 300 lines, sibling _baseline_b_* modules, ruff clean."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Reads coverage databases (real CoverageData files loaded) and JUnit XML; writes only the BL0B JSON; no existing serialized format changed."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"New tests tagged with a module-level covers mark, no skips, no weakened assertions."}]}

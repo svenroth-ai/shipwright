@@ -153,9 +153,20 @@ def cmd_probes(args, repo: Path, replay: dict, out: Path) -> None:
     print(json.dumps(summarise_probes(probes), indent=1, sort_keys=True))
 
 
+def cmd_eval(args, repo: Path, replay: dict, out: Path) -> None:
+    from verifiers._baseline_b_eval import evaluate
+
+    labels = Path(args.run_dir) / "labels"
+    la, lb = (json.loads((labels / f"labeler_{x}.json").read_text(encoding="utf-8")) for x in "AB")
+    data = _load(out)
+    data["eval"] = evaluate(replay, data, la, lb)
+    _save(out, data)
+    print(json.dumps({"rules": data["eval"]["rules"], "labels": data["eval"]["labels"], "recall": data["eval"]["recall_on_confirmed"]}, indent=1)[:7000])
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["paths", "headmap", "ac", "packs", "summary", "probes"])
+    ap.add_argument("command", choices=["paths", "headmap", "ac", "packs", "summary", "probes", "eval"])
     ap.add_argument("--repo", default=".")
     ap.add_argument("--replay")
     ap.add_argument("--out")
@@ -169,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out) if args.out else repo / OUT
     if args.command == "headmap" and not (args.tree and args.runs):
         ap.error("headmap needs --tree and --runs")
-    {"paths": cmd_paths, "headmap": cmd_headmap, "ac": cmd_ac, "packs": cmd_packs, "summary": cmd_summary, "probes": cmd_probes}[args.command](args, repo, replay, out)
+    {"paths": cmd_paths, "headmap": cmd_headmap, "ac": cmd_ac, "packs": cmd_packs, "summary": cmd_summary, "probes": cmd_probes, "eval": cmd_eval}[args.command](args, repo, replay, out)
     return 0
 
 
