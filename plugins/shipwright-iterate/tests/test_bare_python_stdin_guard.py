@@ -112,3 +112,16 @@ def test_registered_bash_hook_composes_with_the_worktree_gate():
     allowed = subprocess.run([sys.executable, str(script)], input=json.dumps(_payload("uv run python - <<'EOF'\nprint(1)\nEOF")),
                              capture_output=True, text=True, timeout=30)
     assert allowed.stdout == ""
+
+
+def test_main_fails_open_when_the_decision_raises(monkeypatch, capsys):
+    """An exception inside handle_payload must not deny, crash or print: main() returns 0."""
+    import io
+
+    def boom(_payload):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(guard, "handle_payload", boom)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(_payload("python -"))))
+    assert guard.main() == 0
+    assert capsys.readouterr().out == ""
