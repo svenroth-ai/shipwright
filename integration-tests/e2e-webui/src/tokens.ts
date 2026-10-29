@@ -34,3 +34,24 @@ export function compareTokens(declared: Tokens, served: Tokens): TokenCheck {
     .map((n) => `${n}: package ${declared[n]}, board ${served[n] ? served[n] : "not declared"}`);
   return { declared: names.length, matching: names.length - mismatches.length, mismatches };
 }
+
+// Font families (`- --font-family: Inter` / `- --font-mono: Geist Mono`): the intake check ignores them, so the
+// harness reads them itself. A served value passes when it names the declared family (fallbacks and quotes allowed).
+const FONT_DECL = /^[-*\s]*(--font-(?:family|mono))\s*:\s*([^\r\n]+?)\s*$/gm;
+
+export function parseFontTokens(markdown: string): Tokens {
+  const out: Tokens = {};
+  for (const m of markdown.matchAll(FONT_DECL)) out[m[1]] = m[2].replace(/[`'"]/g, "").trim();
+  return out;
+}
+
+/** The first family a font stack names, lower case, without quotes. */
+const firstFamily = (stack: string): string => (stack.split(",")[0] ?? "").replace(/['"`]/g, "").trim().toLowerCase();
+
+export function compareFonts(declared: Tokens, served: Tokens): TokenCheck {
+  const names = Object.keys(declared);
+  const mismatches = names
+    .filter((n) => firstFamily(served[n] ?? "") !== firstFamily(declared[n]))
+    .map((n) => `${n}: package ${declared[n]}, board ${served[n] ? served[n] : "not declared"}`);
+  return { declared: names.length, matching: names.length - mismatches.length, mismatches };
+}

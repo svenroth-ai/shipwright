@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e2e-fixture-real-skill-variant",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T20:03:07.553917+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security / risk",
+          "file": null,
+          "line": null,
+          "finding": "seed/recorded/syften.json` and `apify_linkedin.json` are recordings of real API answers and are excluded from the S05 code scan (like `seed/`). Recorded Apify/Syften payloads can contain real usernames, permalinks, or account identifiers from svenroth.ai's actual monitored sources. Committing them to the repo exposes that data and couples the fixture to a person's real monitoring setup.",
+          "suggestion": "Scrub/replace author handles and permalinks with synthetic values before committing, keeping only the shape (which is all the adapter needs to replay). Document a redaction step in the fixture README so future re-recordings follow it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "expired` is derived from wall-clock age (\"new/drafted older than 14 days\") against timestamps in the recorded JSON. If those timestamps are fixed absolute dates, every recording goes stale the same way over time — eventually all items show as expired, or (if dates are in the future at authoring time) none do for months. The AC requires \"at least two old items visible on a fresh run,\" which will silently break as the calendar moves.",
+          "suggestion": "Store relative ages (e.g. `days_ago`) in the recordings and have the adapter or answer key convert to absolute timestamps at load time, or compute `expired` against a fixture-provided clock. Add a check that the run shows at least one non-expired and at least two expired items, so the drift fails loudly instead of passing vacuously.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The S09 live `claude -p` flags (`--allowedTools Skill`, `--max-turns 2`, `--plugin-dir`) are explicitly unverified, and the check is soft so it can never fail. The realistic failure mode is that it always reports \"not triggered\" and nobody notices the parser or the flag combination is wrong — the check gives persistent false confidence.",
+          "suggestion": "Have S09 distinguish three outcomes (triggered / not-triggered / invocation-error, e.g. claude exits non-zero or emits no parseable lines) and surface invocation-errors in the run report even though they don't fail it. A smoke run of the real command should be a prerequisite before calling AC5 done at even soft-check quality.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The S04 font-family check compares \"the first family of the served `--font-family` / `--font-mono`.\" Real brand stacks often start with a generic or an OS-dependent family (`\"Helvetica Neue\", Helvetica, Arial, ...`), and comparing only the first token is brittle in both directions: a composed screen using a font-stack prefix match passes, a correct screen whose guidelines list families in a different order fails.",
+          "suggestion": "Compare against the guidelines' first declared family but allow the served value to be an ordered stack whose first entry matches; make the exact comparison rule explicit in the answer key and unit-test it with a realistic svenroth.ai-style stack.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The Variant interface means S02/S04/S05 now run \"in their variant form,\" and the default fixture must stay green with 48 unchanged specs. But `activeFixture()` rejecting unknown names changes behavior for any existing operator who currently sets `SHIPWRIGHT_E2E_FIXTURE` to something unexpected (or empty-but-set, e.g. `SHIPWRIGHT_E2E_FIXTURE=`).",
+          "suggestion": "Confirm the empty-string case resolves to the default fixture rather than erroring, and that the rejection message names the valid values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The spec depends on trg-af4fff29's harness items being on main (#954). The plan doesn't state a hard verification step that those four items (loopback/S05, S06 total rule, preview origin, auth-failure stop) are actually present in the tree this branch builds on — S05's variant form is being written against behavior that may not be merged yet.",
+          "suggestion": "Add a one-line prerequisite check (e.g. the #954 tests present and green on the base commit) to the mini-plan before the S05 variant work is marked done.  Overall assessment: The approach is sound and well-calibrated — opt-in selection with hard failure on unknown names, deterministic replay data, and honest kit-gap analysis are the right calls. The two things worth fixing before merge are PII scrubbing in the recorded payloads and making the `expired` derivation clock-stable; the rest are refinements that can ride along.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Expiry depends on the current date, while recordings have fixed timestamps. Requiring two old items ensures expired examples exist, but newer `new`/`drafted` examples will eventually expire too, changing expected counts and filter results.",
+          "suggestion": "Define a fixed evaluation clock shared by the app and harness, or rebase recording timestamps against a documented reference time. Test the 14-day boundary and ensure fresh and expired examples remain available.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Replay is guaranteed only “without a token.” An operator environment containing Syften or Apify credentials could therefore switch this supposedly offline fixture to live requests, introducing costs, nondeterminism, and different results.",
+          "suggestion": "Make replay the explicit default for this fixture regardless of ambient credentials. Require a separate opt-in for live sources, and verify that replay makes no outbound requests even when credentials are present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "S04 compares declared font-family tokens, which cannot establish that the fonts loaded or are applied to the board. A missing font asset or an overriding component style could pass while displaying fallback fonts. This leaves the stated G6 verification incomplete.",
+          "suggestion": "Retain the token comparison and add a browser check that the required fonts load and that representative body and mono elements use the expected computed font families. Include a missing-font negative case.  The fixture variant and shared harness interface are a sound, proportionate approach, and the existing default-fixture checks provide useful regression coverage. Address deterministic ageing, explicit replay selection, and actual font rendering before treating the new variant’s checks as reliable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T19:48:09.548886+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: security / risk — Severity: medium**\n  **Finding:** `seed/recorded/syften.json` and `apify_linkedin.json` are recordings of real API answers and are excluded from the S05 code scan (like `seed/`). Recorded Apify/Syften payloads can contain real usernames, permalinks, or account identifiers from svenroth.ai's actual monitored sources. Committing them to the repo exposes that data and couples the fixture to a person's real monitoring setup.\n  **Suggestion:** Scrub/replace author handles and permalinks with synthetic values before committing, keeping only the *shape* (which is all the adapter needs to replay). Document a redaction step in the fixture README so future re-recordings follow it.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `expired` is derived from wall-clock age (\"new/drafted older than 14 days\") against timestamps in the recorded JSON. If those timestamps are fixed absolute dates, every recording goes stale the same way over time — eventually *all* items show as expired, or (if dates are in the future at authoring time) none do for months. The AC requires \"at least two old items visible on a fresh run,\" which will silently break as the calendar moves.\n  **Suggestion:** Store relative ages (e.g. `days_ago`) in the recordings and have the adapter or answer key convert to absolute timestamps at load time, or compute `expired` against a fixture-provided clock. Add a check that the run shows at least one non-expired *and* at least two expired items, so the drift fails loudly instead of passing vacuously.\n\n- **Category: risk — Severity: low**\n  **Finding:** The S09 live `claude -p` flags (`--allowedTools Skill`, `--max-turns 2`, `--plugin-dir`) are explicitly unverified, and the check is soft so it can never fail. The realistic failure mode is that it *always* reports \"not triggered\" and nobody notices the parser or the flag combination is wrong — the check gives persistent false confidence.\n  **Suggestio […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Expiry depends on the current date, while recordings have fixed timestamps. Requiring two old items ensures expired examples exist, but newer `new`/`drafted` examples will eventually expire too, changing expected counts and filter results.  \n   **Suggestion:** Define a fixed evaluation clock shared by the app and harness, or rebase recording timestamps against a documented reference time. Test the 14-day boundary and ensure fresh and expired examples remain available.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Replay is guaranteed only “without a token.” An operator environment containing Syften or Apify credentials could therefore switch this supposedly offline fixture to live requests, introducing costs, nondeterminism, and different results.  \n   **Suggestion:** Make replay the explicit default for this fixture regardless of ambient credentials. Require a separate opt-in for live sources, and verify that replay makes no outbound requests even when credentials are present.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** S04 compares declared font-family tokens, which cannot establish that the fonts loaded or are applied to the board. A missing font asset or an overriding component style could pass while displaying fallback fonts. This leaves the stated G6 verification incomplete.  \n   **Suggestion:** Retain the token comparison and add a browser check that the required fonts load and that representative body and mono elements use the expected computed font families. Include a missing-font negative case.\n\nThe fixture variant and shared harness interface are a sound, proportionate approach, and the existing default-fixture checks provide useful regression coverage. Address deterministic ageing, explicit replay selection, and actual font rendering before treating the new variant’s checks as reliable.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/fixtures/social-engagement-real/brief.md",
+          "line": 127,
+          "finding": "Recorded answers are static JSON while expired is derived from today; old recordings make every thread expired and H07/H09 fail falsely.",
+          "suggestion": "Require the adapter to re-base timestamps on replay. FIXED in brief.md (replay shifts timestamps so the newest item is one day old; two items stay more than 14 days older).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/skill-trigger.ts",
+          "line": 548,
+          "finding": "S09 counted any Skill call, including skills of other plugins in the provisioned home.",
+          "suggestion": "Count only the project's own skills. FIXED: projectSkillNames, other calls listed in the evidence, unit-tested.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/skill-trigger.ts",
+          "line": 531,
+          "finding": "spawnSync cannot start a claude.cmd shim on Windows.",
+          "suggestion": "Name the cause. FIXED in the evidence text.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 301,
+          "finding": "openRow switched platform only through role=tab.",
+          "suggestion": "FIXED: button/link fallback.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 304,
+          "finding": "Row click needed the full title.",
+          "suggestion": "FIXED: first 30 characters.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 285,
+          "finding": "Status filter detection could be satisfied by list rows or the platform switcher.",
+          "suggestion": "FIXED: whole-text option match, platform switcher entries excluded.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 338,
+          "finding": "Badge count assumes the filter starts at all.",
+          "suggestion": "FIXED in brief.md: the status filter starts at all.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T19:42:06.430000+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T19:47:22.178970+00:00",
+      "disposition": "Stage 3 is for migrations, async/concurrency, cross-plugin imports or irreversible operations; this diff is test fixtures and an operator harness only",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "integration-tests/e2e-webui/tests/unit/real-variant.spec.ts (~line 100, the browser test)",
+          "line": null,
+          "finding": "The S02 \"list beside thread\" evidence is not really tested. The mockups are static HTML where the thread title already appears twice (list row + detail card), so `openRow` returns `count > 1` before any click matters; the flaw-injection cases only mutate snapshot fields (`{...base, listBesideThread: false}`), so the actual interaction logic in `openRow` (tab switching, row clicking, re-query after re-render, the 400/600 ms waits) is never exercised against a real master-detail app. A regression in `openRow` would still pass this suite.",
+          "suggestion": "Add a small served page (or use the built in-memory data) where selecting a row is required to reveal the detail title, and assert `snapshotMasterDetail` reports `listBesideThread: false` when the click path is broken (e.g. rows are not clickable).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts (~line 30, `badgesByTab` loop in the injected script)",
+          "line": null,
+          "finding": "switcherEls()` is re-queried inside the loop after each `t.click()`. If the app re-renders the switcher on selection (counts or order change), index `i` can pair with a different element than `names[i]`, misattributing badge sets to platforms and producing a false S02 failure on an otherwise correct board.",
+          "suggestion": "Capture the element array once (`const els = switcherEls()`) before the loop and click `els[i]`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "integration-tests/e2e-webui/src/board-api-real.ts (~line 40, `const [first, second, third] = [fresh[0] ?? 1, ...]`)",
+          "line": null,
+          "finding": "When there are fewer new threads than expected (H07 already failing), the `?? 1 / ?? 2 / ?? 3` fallbacks can select expired/derived-status threads; the subsequent draft/feedback/skip calls then fail with 409s and the evidence for H08/H14/H09 points at the wrong cause (\"draft refused\") instead of \"no fresh threads\". Also `state.fresh = fresh[3] ?? second` falls back to a thread that was just skipped.",
+          "suggestion": "Guard: if `fresh.length < 4`, return early with the state fields set to null and let the already-failing H07 carry the diagnosis; or at least pick the fallback from `threads` with status `new` only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "integration-tests/test_e2e_real_fixture.py (last two tests)",
+          "line": null,
+          "finding": "test_harness_selects_the_fixture_by_name...` and parts of `test_answer_key_has_an_evaluator_per_item` validate by grepping source strings (e.g. `assert \"variantFor(FIXTURE_NAME)\" in spec`). They pin the exact spelling of code rather than behaviour and would break on a harmless rename while passing a logic regression; the behavioural counterpart already exists in `real-variant.spec.ts` (`activeFixture` unit test).",
+          "suggestion": "Keep at most one structural assertion (the fixture-name constants) and drop the source-text greps that duplicate behavioural unit tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "integration-tests/e2e-webui/src/skill-trigger.ts (`runClaude`)",
+          "line": null,
+          "finding": "With `--max-turns 2`, a session that spends its turns reading the SKILL.md before invoking the Skill tool yields no `tool_use` and S09 records \"fail\" even though the skill triggers fine interactively; a timeout kill also discards a stream that may already contain the call. Soft, so it never fails the run, but the \"fail\" verdict is noise for the operator.",
+          "suggestion": "Consider wording the negative verdict as \"not observed within 2 turns\" or bumping `--max-turns` slightly; at minimum mention the turn limit in the evidence text.  Checked and found sound: the opt-in `activeFixture()` refusal, the additive `Obj`/`obj`/`errorText`/`walk`/`readJson` exports (no existing caller changes shape), the default-param changes to `fixtureDir`/`expectedFile`/`checkBoardTokens` (default fixture path byte-equivalent, including the unchanged project name `social-engagement-board-e2e`), the S05 adapter scoping (loopback exclusion, `tests/`/`seed/` exclusion, `fetch_items` presence, per-platform recording counts with the ≥3-per-platform check subsuming total ≥9), `compareFonts` first-family comparison, and the S09 soft-fail guarantee (error path records \"not evaluated\"). No security issues: `spawnSync` uses fixed argv without a shell, no secrets are introduced, and the harness only reads model-written output.  Overall: the implementation matches the spec's ACs, the harness logic is careful, and the remaining findings are test-strength and evidence-quality refinements rather than functional defects. Ship-as-is.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 89,
+          "finding": "Platform counts are only rejected when they exceed the API count. A board displaying `Reddit 0`, `Hacker News 0`, and `LinkedIn 0` passes this check even when each platform has threads. The filter starts at “all,” so these counts are demonstrably wrong.",
+          "suggestion": "Compare each switcher count for equality with its API count. Add a test where an understated count fails S02.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 95,
+          "finding": "S02 requires only three distinct statuses to appear. A board that never renders `skipped` or `expired` can pass with new, drafted, and posted badges, provided its filter contains the missing status names. No API check verifies expiration either, so the variant’s required derived status can be entirely unimplemented without failing.",
+          "suggestion": "Verify that recorded old items appear as expired and that the thread skipped during API setup renders a skipped badge. Add negative tests for implementations that omit either status.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts",
+          "line": 24,
+          "finding": "“Recorded answers complete” is implemented as array counts only. For example, an Apify recording containing `[null, null, null]` counts as three valid LinkedIn items; Syften entries need only a backend name. Missing URLs, timestamps, content, or the required old items are accepted, undermining AC3’s recording check.",
+          "suggestion": "Validate the documented recording fields and timestamp distribution, including at least two items more than 14 days older than the newest. Cover malformed and insufficiently aged recordings in the unit tests.  Overall assessment: ship-with-fixes. The variant structure is implemented, but its checks can certify incorrect counts, missing statuses, and unusable recordings.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T19:47:22.054682+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: test | Severity: medium\n- File: integration-tests/e2e-webui/tests/unit/real-variant.spec.ts (~line 100, the browser test)\n- Finding: The S02 \"list beside thread\" evidence is not really tested. The mockups are static HTML where the thread title already appears twice (list row + detail card), so `openRow` returns `count > 1` before any click matters; the flaw-injection cases only mutate snapshot fields (`{...base, listBesideThread: false}`), so the actual interaction logic in `openRow` (tab switching, row clicking, re-query after re-render, the 400/600 ms waits) is never exercised against a real master-detail app. A regression in `openRow` would still pass this suite.\n- Suggestion: Add a small served page (or use the built in-memory data) where selecting a row is required to reveal the detail title, and assert `snapshotMasterDetail` reports `listBesideThread: false` when the click path is broken (e.g. rows are not clickable).\n\n- Category: edge-case | Severity: low\n- File: integration-tests/e2e-webui/src/board-dom-real.ts (~line 30, `badgesByTab` loop in the injected script)\n- Finding: `switcherEls()` is re-queried inside the loop after each `t.click()`. If the app re-renders the switcher on selection (counts or order change), index `i` can pair with a different element than `names[i]`, misattributing badge sets to platforms and producing a false S02 failure on an otherwise correct board.\n- Suggestion: Capture the element array once (`const els = switcherEls()`) before the loop and click `els[i]`.\n\n- Category: edge-case | Severity: low\n- File: integration-tests/e2e-webui/src/board-api-real.ts (~line 40, `const [first, second, third] = [fresh[0] ?? 1, ...]`)\n- Finding: When there are fewer new threads than expected (H07 already failing), the `?? 1 / ?? 2 / ?? 3` fallbacks can select expired/derived-status threads; the subsequent draft/feedback/skip calls then fail with 409s and the evidence for H08/H14/H09 points at the wrong cause […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/board-dom-real.ts:89\n- Finding: Platform counts are only rejected when they exceed the API count. A board displaying `Reddit 0`, `Hacker News 0`, and `LinkedIn 0` passes this check even when each platform has threads. The filter starts at “all,” so these counts are demonstrably wrong.\n- Suggestion: Compare each switcher count for equality with its API count. Add a test where an understated count fails S02.\n\n- Category: test\n- Severity: medium\n- File: integration-tests/e2e-webui/src/board-dom-real.ts:95\n- Finding: S02 requires only three distinct statuses to appear. A board that never renders `skipped` or `expired` can pass with new, drafted, and posted badges, provided its filter contains the missing status names. No API check verifies expiration either, so the variant’s required derived status can be entirely unimplemented without failing.\n- Suggestion: Verify that recorded old items appear as expired and that the thread skipped during API setup renders a skipped badge. Add negative tests for implementations that omit either status.\n\n- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/project-checks-adapter.ts:24\n- Finding: “Recorded answers complete” is implemented as array counts only. For example, an Apify recording containing `[null, null, null]` counts as three valid LinkedIn items; Syften entries need only a backend name. Missing URLs, timestamps, content, or the required old items are accepted, undermining AC3’s recording check.\n- Suggestion: Validate the documented recording fields and timestamp distribution, including at least two items more than 14 days older than the newest. Cover malformed and insufficiently aged recordings in the unit tests.\n\nOverall assessment: ship-with-fixes. The variant structure is implemented, but its checks can certify incorrect counts, missing statuses, and unusable recordings.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T19:37:45.073877+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T19:47:22.453423+00:00",
+      "disposition": "No mini-plan was written before build (see plan); not run, compensated by the spec and code reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "unavailable"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T19:47:22.580052+00:00",
+      "disposition": "Not run before build; the change adds an opt-in fixture variant and leaves the default untouched, reviewed after the fact by the spec and code reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "unavailable"
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "run_id": "iterate-2026-10-29-e2e-fixture-real-skill-variant",
+  "date": "2026-10-29T19:58:16.052269Z",
+  "event_at": "2026-10-29T18:04:49.438934+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/e2e-fixture-real-skill-variant",
+  "spec": ".shipwright/planning/iterate/2026-10-29-e2e-fixture-real-skill-variant.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-29-e2e-fixture-real-skill-variant",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "New Brief package is valid, hash-verified and warning-free at intake",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_e2e_real_fixture.py::test_package_declares_the_skill_app_class_and_the_hash_matches, ::test_package_is_warning_free_at_intake_and_brief_md_passes_the_project_content_check, ::test_package_passes_the_dry_harness PASSED"
+      },
+      {
+        "behavior": "Mockups are master-detail boards with shared header, brand fonts, no chat, no keywords tab",
+        "disposition": "tested",
+        "evidence": "test_e2e_real_fixture.py::test_mockups_are_master_detail_boards_without_chat_and_without_a_keywords_tab PASSED"
+      },
+      {
+        "behavior": "brief.md documents every route the real harness calls and the adapter contract the checks read",
+        "disposition": "tested",
+        "evidence": "test_e2e_real_fixture.py::test_brief_md_documents_every_route_the_real_harness_calls, ::test_adapter_contract_and_recorded_answers_are_spelled_out_in_brief_md PASSED"
+      },
+      {
+        "behavior": "Fixture selection by SHIPWRIGHT_E2E_FIXTURE: default unchanged, typo refused",
+        "disposition": "tested",
+        "evidence": "real-variant.spec.ts fixture selection; test_e2e_real_fixture.py::test_harness_selects_the_fixture_by_name_and_defaults_to_the_tabs_one PASSED"
+      },
+      {
+        "behavior": "Real-variant API checks H06-H11, H14, S07 pass for a faithful companion and each flaw fails its own item",
+        "disposition": "tested",
+        "evidence": "real-variant.spec.ts real API checks PASSED"
+      },
+      {
+        "behavior": "S02 master-detail check in a real browser incl. required skipped/expired statuses, zero counts, click-required detail",
+        "disposition": "tested",
+        "evidence": "real-variant.spec.ts master-detail board and S02 with the run's data PASSED"
+      },
+      {
+        "behavior": "S04 compares font families and colours/sizes",
+        "disposition": "tested",
+        "evidence": "real-variant.spec.ts font tokens and master-detail board PASSED"
+      },
+      {
+        "behavior": "S05 variant: services only in backend/sources, fetch_items, validated recordings with age spread",
+        "disposition": "tested",
+        "evidence": "real-variant.spec.ts S05 variant PASSED"
+      },
+      {
+        "behavior": "S09 opt-in trigger check parses stream-json, counts only the project's skills, never fails the run",
+        "disposition": "tested",
+        "evidence": "real-variant.spec.ts S09 PASSED"
+      },
+      {
+        "behavior": "Default fixture and its checks unchanged",
+        "disposition": "tested",
+        "evidence": "48 pre-existing Playwright unit specs and 643 integration tests PASSED; F0 suite 18 units GREEN"
+      },
+      {
+        "behavior": "A real E2E run builds the app from the new package",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "operator-started, uses a real agent and model spend"
+      },
+      {
+        "behavior": "Live claude -p flags of S09",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "needs a login and a model call"
+      },
+      {
+        "behavior": "Design composing the new mockups and carrying the brand fonts (G6)",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "needs a model-driven Design run"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 3,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "web",
+    "runner": "node integration-tests/e2e-webui/node_modules/playwright/cli.js test integration-tests/e2e-webui/tests/unit --project=unit -c integration-tests/e2e-webui/playwright.config.ts",
+    "exit_code": 0,
+    "tests_run": 56,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-29-e2e-fixture-real-skill-variant/surface_verification.log",
+    "timestamp": "2026-10-29T20:23:41.581Z",
+    "justification": "Operator E2E harness (integration-tests/e2e-webui) driven through its 56 Playwright unit specs in a real browser, including the five new mockups."
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

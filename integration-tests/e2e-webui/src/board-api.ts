@@ -32,9 +32,9 @@ export interface ThreadState {
 
 export const KEYWORDS = ["onboarding", "pricing", "integrations"];
 
-type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === "object" ? (v as Obj) : {});
-const errorText = (a: ApiAnswer | null): string => String(obj(a?.json).error ?? "");
+export type Obj = Record<string, unknown>;
+export const obj = (v: unknown): Obj => (v && typeof v === "object" ? (v as Obj) : {});
+export const errorText = (a: ApiAnswer | null): string => String(obj(a?.json).error ?? "");
 
 /** Builds a `Call` over fetch for one loopback origin; the Origin header is the app's own, as a browser would send. */
 export function httpCall(origin: string, doFetch: typeof fetch = fetch): Call {
