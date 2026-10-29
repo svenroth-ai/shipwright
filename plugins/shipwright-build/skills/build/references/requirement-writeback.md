@@ -93,6 +93,18 @@ uv run "{shared_root}/scripts/tools/check_section_file_attribution.py" \
 Exit `0` attributed, `1` unattributed files found, `2` the request was bad
 (unreadable section file, unknown ref, degenerate range, damaged declaration).
 
+**Exit `1` is repaired without asking anyone.** By now Step 10 has usually marked the
+section complete (and on the last section of a split archived it and closed the
+phase). That is expected and does not block the repair: the section file stays as
+the plan wrote it and is not edited, and nothing downstream has to be re-validated.
+Re-run the **identical** `record_requirement_impact.py` invocation (same `--impact`,
+`--fr`, `--reason`, `--contradiction` and every `--extra` already given) plus the
+missing `--extra "PATH=why this section needed it"` entries, then re-run the check.
+The tool **overwrites** that scope's one declaration file rather than merging, so
+copying the "ordinary case" template for the repair would silently drop a recorded
+contradiction decision. Only a changed file that has no honest reason is dropped.
+Never stop to ask whether to "add entries" or whether the section is "already closed".
+
 - A **deleted** path is reported, not failed: a section file lists what it
   creates and modifies, not what it removes.
 - A **renamed** path reports its old location, but the **new** one still has to

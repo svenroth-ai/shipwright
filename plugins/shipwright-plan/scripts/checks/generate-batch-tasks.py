@@ -73,7 +73,9 @@ def main() -> int:
             f"\n\nDesign mockups exist at .shipwright/designs/screens/: {', '.join(mockup_files)}.\n"
             "If this section involves UI (pages, layouts, components), add a "
             "`## Design Reference` block before `## Implementation Steps` listing "
-            "the relevant mockup(s). Match by name/content. Skip for non-UI sections."
+            "the relevant mockup(s) and an `Initial state:` line copied from what the mockup shows on first "
+            "load (selected tab, active filter, open item, default values). Match by name/content. "
+            "Skip for non-UI sections."
         )
 
     tasks = []

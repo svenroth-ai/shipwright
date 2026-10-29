@@ -10,6 +10,7 @@ import { FIXTURE_NAME, PLATFORMS } from "../../src/fixture.js";
 import { checkPluginShape, checkScreensComposed, checkSelfContained, checkTestsRan, compareScreens, findExternalUse, findSeed } from "../../src/project-checks.js";
 import { compareTokens, normalise, parseTokens } from "../../src/tokens.js";
 import { startStub, type Flaws } from "./stub-companion.js";
+import { isAuthFailure } from "../../src/terminal-gate.js";
 
 const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const fixtures = path.join(repo, "integration-tests", "fixtures");
@@ -212,4 +213,46 @@ test("project checks: S05 needs a nine-match seed and no external use, S06 needs
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// @covers FR-01.06
+test("run-12: templated loopback and placeholder URLs are not external use", () => {
+  const dir = tmp();
+  try {
+    write(dir, "backend/a.py", "A = f'http://127.0.0.1:{port}/x'\nB = f'http://{DEFAULT_HOST}:{port}'\n");
+    expect(findExternalUse(dir, ["backend/a.py"])).toEqual([]);
+    write(dir, "backend/b.py", "C = f'https://api.reddit.com:{port}/x'\n");
+    expect(findExternalUse(dir, ["backend/b.py"]).length).toBe(1);
+    write(dir, "backend/c.py", "D = f'https://{region}.api.openai.com/v1'\n");
+    expect(findExternalUse(dir, ["backend/c.py"]).length).toBe(1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("run-12: S06 accepts total = passed+failed as well as passed+failed+skipped", () => {
+  const dir = tmp();
+  try {
+    write(dir, "shipwright_test_results.json", JSON.stringify({ unit: { passed: 399, total: 399, failed: 0, skipped: 1 }, e2e: { passed: 5, total: 6, failed: 0, skipped: 1 } }));
+    const l = list();
+    checkTestsRan(dir, l);
+    expect(verdict(l, "S06")).toBe("pass");
+    write(dir, "shipwright_test_results.json", JSON.stringify({ unit: { passed: 3, total: 9, failed: 0, skipped: 1 }, e2e: { passed: 5, total: 5, failed: 0 } }));
+    const l2 = list();
+    checkTestsRan(dir, l2);
+    expect(verdict(l2, "S06")).toBe("fail");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// @covers FR-01.06
+test("run-12: an agent auth failure in the terminal is detected", () => {
+  expect(isAuthFailure("Login expired. Please run /login")).toBe(true);
+  expect(isAuthFailure("API Error: authentication_failed")).toBe(true);
+  expect(isAuthFailure("all good")).toBe(false);
+  expect(isAuthFailure("● API Error: 401 authentication_failed")).toBe(true);
+  expect(isAuthFailure("+ // authentication_failed handler\n+ const msg = 'Login expired';")).toBe(false);
+  expect(isAuthFailure("+ throw new Error('Invalid API key')\n+ // authentication_failed handler\n" + "x\n".repeat(8))).toBe(false);
 });

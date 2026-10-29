@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC8 implemented; spec-reviewer PASS."},
+{"name":"Error Handling","verdict":"pass","note":"Hook is fail-open; harness checks keep failing closed."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets, no new network use."},
+{"name":"Test Quality","verdict":"pass","note":"36 guard tests incl. reviewer-traced false-deny cases; harness unit tests for URLs, S06, auth."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra hook spawn per Bash call, documented."},
+{"name":"Naming & Structure","verdict":"pass","note":"Follows runner_spawn_guard layout."},
+{"name":"Affected Boundaries","verdict":"pass","note":"hooks.json registration and section Design Reference format."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No skips added."}]}

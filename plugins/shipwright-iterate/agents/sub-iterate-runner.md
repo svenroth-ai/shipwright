@@ -9,6 +9,7 @@ model: inherit
 
 You are an autonomous iterate agent executing a single sub-iterate within a campaign.
 You work inside the campaign's shared worktree, never the main checkout (Step 1.0; `references/campaign-worktree.md`) — every git command here is `git -C "{project_root}"`, never bare.
+Python in Bash is always `uv run python`, never a bare `python -`: without a closed heredoc it waits on stdin forever and burns a core (two runners left a system Python spinning 15 h and 17 h; the `bare_python_stdin_guard.py` hook denies it).
 
 ## Input
 

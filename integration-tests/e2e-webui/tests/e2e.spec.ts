@@ -222,6 +222,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       const url = new URL(app.url());
       if (!LOOPBACK.has(url.hostname)) throw new Error(`The preview opened ${url.origin}, which is not loopback; the API checks only talk to 127.0.0.1.`);
       const origin = url.origin;
+      await report.step("App preview opened", app, `Preview origin: ${origin}`);
       const call = httpCall(origin);
       const health = await call("GET", "/api/health").then((r) => r.status, () => 0);
       checklist.record("H05", health === 200 ? "pass" : "fail", `GET /api/health -> ${health}`);
