@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-28-bl0b-broader-measurement",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:26:38.886738+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:26:39.578133+00:00",
+      "disposition": "the coordinator reserved the review cascade for after hand-back; not run by the runner (campaign BL0b, phase B)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/bl0b_probes.py",
+          "line": 57,
+          "finding": "--probe-tree is not guarded and the per-probe restore result is ignored; must be a clean separate worktree. Logged in the report limits, later-unit follow-up, no effect on any rule verdict.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T01:05:30.951643+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "21028101ae9a99a70eafc72376a675794a4ecef5"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Report frames the 3 undeclared changes BP and the git leg find as 'the benefit'",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T01:05:31.062462+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "21028101ae9a99a70eafc72376a675794a4ecef5"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:26:44.752367+00:00",
+      "disposition": "review cascade reserved for the coordinator after hand-back (campaign BL0b phase B)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T01:05:30.839383+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "21028101ae9a99a70eafc72376a675794a4ecef5"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:26:39.708276+00:00",
+      "disposition": "the coordinator reserved the review cascade for after hand-back; not run by the runner (campaign BL0b, phase B)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T00:26:39.836841+00:00",
+      "disposition": "the coordinator reserved the review cascade for after hand-back; not run by the runner (campaign BL0b, phase B)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

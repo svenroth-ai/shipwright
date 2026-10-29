@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-28-bl0b-broader-measurement",
+  "date": "2026-10-29",
+  "section": "Iterate — feature: BL0b broader baseline measurement",
+  "title": "Measure BP on independent labels before it goes further",
+  "context": "BL0's replay used the authors' own affected_frs as truth and ran T-code on 20 PRs only; the operator asked for a broader, blind measurement before BL1/BL2.",
+  "decision": "One HEAD context run of 18 roots mapped to 100 PRs, a path-ownership baseline, 50 blind probes and 35 blind label packs judged by two labelers; five pre-registered rules evaluated unchanged.",
+  "consequences": "R-benefit and R-recall pass; R-T-code-value, R-precision and R-cost fail (43 of 100 held); recommendation SHADOW-ONLY, the operator decides at stop 1.",
+  "rationale": "Decide from independent evidence; ADR-266 precedent: measure false holds before anything blocks.",
+  "rejected": "Spending BL2 on the BL0 evidence alone; using affected_frs as ground truth.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-10-28-bl0b-broader-measurement-broader-measurement-before-bp-goes-further.md"
+}

@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Round 3 at 21028101a: PASS. Rounds 1-2 fixed the #897 split (19/35, 16 without) and carried the R-T-code-value consequence into the recommendation; round 3 re-verified the five doubt-driven rewrites against the JSON. Rules and SHADOW-ONLY unchanged, no gate files changed."}
