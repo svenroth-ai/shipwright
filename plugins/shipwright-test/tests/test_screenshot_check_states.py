@@ -52,7 +52,7 @@ def test_steps_ride_on_the_built_job_only(tmp_path, monkeypatch):
     assert "steps" not in approved and built["steps"] == steps and built["url"] == "http://h/"
 
 
-@pytest.mark.parametrize("steps", ["click", [{"hover": "a"}], [{"click": 1}], [{"fill": ["only-selector"]}], ["click"], [{"click": "a", "wait_for": "b"}], {}, "", [{"click": ""}], [{"fill": [1, 2]}], [{"wait_for": "a"}] * 11])
+@pytest.mark.parametrize("steps", ["click", [{"hover": "a"}], [{"click": 1}], [{"fill": ["only-selector"]}], ["click"], [{"click": "a", "wait_for": "b"}], {}, "", [{"click": ""}], [{"fill": [1, 2]}], [{"fill": ["#q", True]}], [{"wait_for": "a"}] * 11])
 def test_malformed_steps_are_an_error_not_a_pass(tmp_path, steps):
     root = project(tmp_path, [{"mockup": "04-queue.html", "route": "/", "steps": steps}])
     r = sc.run_screenshot_check(root, base_url="http://h", capture=False)
@@ -60,6 +60,7 @@ def test_malformed_steps_are_an_error_not_a_pass(tmp_path, steps):
 
 
 def test_capture_script_injects_nothing_into_the_page():
+    """A cheap tripwire; the behavioural proof is the real-Chromium CSP test below."""
     js = (Path(sc.__file__).parent / "screenshot_capture.mjs").read_text(encoding="utf-8")
     assert "addStyleTag" not in js and "addScriptTag" not in js and 'animations: "disabled"' in js
 
