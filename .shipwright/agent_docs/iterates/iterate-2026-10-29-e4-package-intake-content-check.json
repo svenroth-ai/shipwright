@@ -1,0 +1,84 @@
+{
+  "run_id": "iterate-2026-10-29-e4-package-intake-content-check",
+  "date": "2026-10-29T00:24:25.584042Z",
+  "event_at": "2026-10-28T23:01:55.931885+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-e2e-run-findings--E4",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-29-e4-package-intake-content-check",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "intake refuses a brief.md that fails the Project content check (invalid_content, issues listed)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_brief_intake_checks.py::test_intake_refuses_the_content_the_project_phase_would_refuse PASSED"
+      },
+      {
+        "behavior": "intake and the Project phase use one content-check function",
+        "disposition": "tested",
+        "evidence": "test_intake_and_project_phase_share_one_check PASSED"
+      },
+      {
+        "behavior": "a content check that cannot run or reports an error shape is an error, not a pass",
+        "disposition": "tested",
+        "evidence": "test_content_check_that_cannot_run_is_an_error_not_a_pass + test_a_check_that_hangs_is_an_error_distinct_from_invalid_content PASSED"
+      },
+      {
+        "behavior": "guidelines lacking kit colour or font-size tokens produce an advisory warning naming them",
+        "disposition": "tested",
+        "evidence": "test_prose_guidelines_name_the_missing_kit_tokens + test_complete_colours_without_font_sizes_still_warn PASSED"
+      },
+      {
+        "behavior": "declared pairs that miss a tokens-contract contrast rule are named with a fix",
+        "disposition": "tested",
+        "evidence": "test_weak_contrast_and_small_text_are_named_with_a_fix + test_a_failing_background_pair_moves_the_fill PASSED"
+      },
+      {
+        "behavior": "the token check fails open and finds the kit in repo and cache layouts",
+        "disposition": "tested",
+        "evidence": "test_a_kit_checker_that_breaks_becomes_a_warning_never_an_exception, test_installed_version_wins_over_the_plugins_mirror PASSED"
+      },
+      {
+        "behavior": "write_run_config refuses a thin brief (exit 5, issues printed, no config) and prints warnings without blocking",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_write_run_config_brief.py::test_thin_brief_is_refused_at_intake_not_in_the_project_phase PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "real CLI round trip brief_intake.py on a valid and a thin package",
+        "disposition": "tested",
+        "evidence": "F0.5 cli probe, 2 runs, exit 0",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run python C:/Users/SvenRoth/AppData/Local/Temp/claude/C--01-Development-shipwright/d4d77bea-a533-4f97-97c1-c685682b397e/scratchpad/probe_intake.py",
+    "exit_code": 0,
+    "tests_run": 2,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-e2e-run-findings--E4\\.shipwright\\runs\\iterate-2026-10-29-e4-package-intake-content-check\\surface_verification.log",
+    "timestamp": "2026-10-29T00:11:51.766Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

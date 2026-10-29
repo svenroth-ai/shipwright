@@ -1,0 +1,1 @@
+Design in Brief-package mode recomposes the placed screens from the Untitled UI kit and the package tokens instead of keeping the mockups, and no longer builds a chat layout for skill-backed apps; the run phase's screenshot gate names the approved design screens

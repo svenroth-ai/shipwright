@@ -18,7 +18,7 @@ section and every dimension text is non-empty, and ONLY THEN writes the transcri
 pointer, ``requirements.md``, one grill-trace per capability (``evidence:
 ["brief.md#<slug>"]``, ``confirmed_by: "brief:<path>"``) and the glossary terms
 (``CONTEXT.md``). ``verify-traces`` re-checks that every brief-confirmed trace's evidence
-anchor resolves to a non-empty section; ``check-fr-names`` checks spec.md FR Names equal
+anchor resolves to a non-empty section; ``check`` runs the content check alone (package intake calls it); ``check-fr-names`` checks spec.md FR Names equal
 the brief's Names. Exit 0 ok, 1 content issues, 3 package refused.
 """
 
@@ -168,12 +168,24 @@ def _open(root: Path, brief_dir: str | None) -> tuple[Path, str, dict, str]:
     return bdir, rel, info, text
 
 
-def apply(root: Path, brief_dir: str | None = None) -> dict:
-    bdir, rel, info, text = _open(root, brief_dir)
+def content_issues(text: str) -> tuple[list[dict], dict[str, str], list[dict]]:
+    """``(caps, glossary, issues)``: the one content check, shared by ``apply`` and ``check``."""
     caps, glossary = parse_brief_md(text)
     issues = check_capabilities(caps, glossary) + [
         {"code": "glossary_line_unparsed", "capability": "",
          "message": f"## Glossary line is not '- **Term**: definition': {line!r}"} for line in glossary_unparsed(text)]
+    return caps, glossary, issues
+
+
+def check(root: Path, brief_dir: str | None = None) -> dict:
+    """The content check alone (what package intake runs after it verified the package itself): reads ``brief.md``, writes nothing."""
+    issues = content_issues(bdi.read_text(bdi.resolve_dir(brief_dir or ".", root) / "brief.md"))[2]
+    return {"ok": not issues, "issues": issues}
+
+
+def apply(root: Path, brief_dir: str | None = None) -> dict:
+    bdir, rel, info, text = _open(root, brief_dir)
+    caps, glossary, issues = content_issues(text)
     traces = [] if issues else [build_trace(c, glossary, f"{rel}/brief.md") for c in caps]
     for cap, trace in zip(caps, traces):  # validate EVERY trace before the first write
         try:
@@ -225,11 +237,11 @@ def check_fr_names(root: Path, brief_dir: str | None = None) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("command", choices=["apply", "verify-traces", "check-fr-names"])
+    parser.add_argument("command", choices=["apply", "check", "verify-traces", "check-fr-names"])
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--brief-dir", default=None)
     args = parser.parse_args(argv)
-    fn = {"apply": apply, "verify-traces": verify_traces, "check-fr-names": check_fr_names}[args.command]
+    fn = {"apply": apply, "check": check, "verify-traces": verify_traces, "check-fr-names": check_fr_names}[args.command]
     try:
         out = fn(Path(args.project_root).resolve(), args.brief_dir)
     except bdi.BriefRefused as exc:

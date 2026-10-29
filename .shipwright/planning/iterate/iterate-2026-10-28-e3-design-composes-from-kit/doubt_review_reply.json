@@ -1,0 +1,6 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"high","lens":"boundary & contract","claim_under_doubt":"skill-companion-app with chat-first is composed as a board","disproof_attempt":"apply tool still writes chat flow pages from raw mockups","what_would_resolve_it":"treat as package defect: STOP (fixed in 038568da4)"},
+{"severity":"medium","lens":"reversibility","claim_under_doubt":"only untouched copies are recomposed","disproof_attempt":"comparison by eye can miss edits","what_would_resolve_it":"exact diff command (fixed 038568da4, refined c27bcc272)"},
+{"severity":"medium","lens":"hidden coupling","claim_under_doubt":"token step stays inside boundary","disproof_attempt":"scratch override file location","what_would_resolve_it":"path under .shipwright/designs (fixed 038568da4)"},
+{"severity":"medium","lens":"boundary & contract","claim_under_doubt":"every path ends composed","disproof_attempt":"@file branch skips compose","what_would_resolve_it":"compose first (fixed 038568da4, scope in c27bcc272)"}
+]}

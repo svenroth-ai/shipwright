@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Option B scope delivered, no apply-tool change"},
+{"name":"Error Handling","verdict":"pass","note":"STOP rules named per gate in brief-compose.md"},
+{"name":"Security Basics","verdict":"pass","note":"package tokens and mockups treated as data"},
+{"name":"Test Quality","verdict":"pass","note":"prose pins, link and order checks; agent behaviour declared untestable"},
+{"name":"Performance Basics","verdict":"n/a","note":"prose only"},
+{"name":"Naming & Structure","verdict":"pass","note":"brief-compose.md 40 lines, SKILL.md under 300"},
+{"name":"Affected Boundaries","verdict":"pass","note":"no serialized format touched; run-gate message wording pinned by test"}]}

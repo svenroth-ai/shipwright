@@ -490,7 +490,7 @@ Use for: Login, signup, password reset, email verification, onboarding steps.
 
 ## Layout D: Chat + Pane (chat-first)
 
-For `ux_shape: chat-first` apps (profile `chat-first-json`, `ui_host` `served-pane`): a chat on the left, a pane on the right that shows the state the last chat command produced. There is NO sidebar, topbar or top navigation, so no `nav-item` / `topnav-link` anywhere. Chat shortcuts are **chips**: class `chip` (or `chip-*`), never `nav-item` / `topnav-link` (the chrome gate refuses it). Pane tabs use class `pane-tab` with `role="tab"`. Use only this layout for screens of a chat-first app; the page shell and CSS variables are the same as for the other layouts.
+Legacy: retired for skill-backed apps (the chat is the Claude app; use the board layout). For `ux_shape: chat-first` apps (profile `chat-first-json`, `ui_host` `served-pane`): a chat on the left, a pane on the right that shows the state the last chat command produced. There is NO sidebar, topbar or top navigation, so no `nav-item` / `topnav-link` anywhere. Chat shortcuts are **chips**: class `chip` (or `chip-*`), never `nav-item` / `topnav-link` (the chrome gate refuses it). Pane tabs use class `pane-tab` with `role="tab"`. Use only this layout for screens of a chat-first app; the page shell and CSS variables are the same as for the other layouts.
 
 ### HTML
 

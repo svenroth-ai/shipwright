@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-28-e3-design-composes-from-kit",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 1108,
+      "total": 1108
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "brief-compose.md pins the compose rules (kit, tokens, no chat layout, self-check, definition of carries-the-kit)",
+          "disposition": "tested",
+          "evidence": "test_brief_compose_prose.py PASSED"
+        },
+        {
+          "behavior": "Brief-mode prose composes before preview and does not contradict itself; boundary STOP wording",
+          "disposition": "tested",
+          "evidence": "test_brief_compose_prose.py + test_apply_brief_package.py PASSED"
+        },
+        {
+          "behavior": "run phase screenshot gate names approved design screens",
+          "disposition": "tested",
+          "evidence": "test_phase_validators_screenshot.py PASSED"
+        },
+        {
+          "behavior": "Design agent actually composes screens from the kit",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "agent behaviour, no deterministic check; named follow-up detector if runs show prose insufficient"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-28T22:59:58.213Z",
+      "attempts": 0,
+      "justification": "Instruction prose, docs and one validator message wording; no startable surface (design skill instructions are read by an agent)",
+      "reason_code": "docs-only-surface"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

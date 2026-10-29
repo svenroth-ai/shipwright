@@ -1,0 +1,21 @@
+{
+  "status": "completed",
+  "timestamp": "2026-10-28T22:59:44.252943+00:00",
+  "provider": "codex",
+  "findings_count": 3,
+  "self_review_fallback_ran": false,
+  "reason": "only some provider legs could be itemized \u2014 the count (3) may understate what was found",
+  "review_mode": "iterate",
+  "marker_schema": 4,
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  },
+  "contradiction_resolution": null
+}

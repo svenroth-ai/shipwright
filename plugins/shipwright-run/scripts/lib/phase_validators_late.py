@@ -49,7 +49,7 @@ def _screenshot_check_issue(project_root: Path, results: dict) -> str:
         return "A Brief package was applied but the screenshot check has no result (Step 3.7b). Run it before continuing."
     expected = _screenshot_tolerance()
     if block.get("applies") is not True or block.get("status") != "pass":
-        return f"Screenshot check did not pass (status={block.get('status')!r}); built screens do not match the approved mockups. STOP and report."
+        return f"Screenshot check did not pass (status={block.get('status')!r}); built screens do not match the approved design screens (.shipwright/designs/screens). STOP and report."
     if block.get("captured") is not True:
         return "Screenshot check result was not made from fresh screenshots (captured is not true)."
     if block.get("tolerance") != expected:
