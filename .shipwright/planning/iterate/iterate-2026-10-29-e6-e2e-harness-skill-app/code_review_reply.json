@@ -1,11 +1,12 @@
-{
-  "section": "E6 (round 4, reviewed at 36aa52e5f)",
-  "review": [
-    {"severity": "medium", "category": "security", "file": "integration-tests/e2e-webui/src/resume.ts", "line": 80, "finding": "Link guard used existsSync before lstat, so a dangling link passed; settings.json, plugins and .gitconfig were unguarded.", "suggestion": "lstat with throwIfNoEntry:false and guard more paths. Fixed in e45ea8283."},
-    {"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/tests/e2e.spec.ts", "line": 187, "finding": "count() of the launch button does not wait for the single-page app to render, so a resumed task could be logged as already launched.", "suggestion": "waitFor visible with a timeout. Fixed in e45ea8283."},
-    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/gates.ts", "line": 27, "finding": "Reduced NEVER_EXPECTED terms had no unit test.", "suggestion": "Cases for Not approved, Reject, Skip. Added in e45ea8283."},
-    {"severity": "low", "category": "readability", "file": "integration-tests/e2e-webui/tests/unit/board.spec.ts", "line": 27, "finding": "Single-value loop left over from the H06 change.", "suggestion": "Remove the loop. Accepted as cosmetic, not changed."},
-    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/board-dom.ts", "line": 33, "finding": "Fixed 500 ms wait after a tab click; fallback tab match was case sensitive.", "suggestion": "Lowercase fixed in e45ea8283; the wait stays (documented limit)."},
-    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/resume.ts", "line": 56, "finding": "Exact string compare of the direct-child path on Windows drive-letter case; fails safe.", "suggestion": "Accepted, fails safe."}
-  ]
-}
+{"section": "E6-e2e-harness-skill-app", "verdict": "pass", "review": [
+{"severity": "high", "category": "correctness", "file": "integration-tests/e2e-webui/tests/e2e.spec.ts", "line": 234, "finding": "A resumed run could pass S08 vacuously: the gates and escalations of the earlier part were dropped.", "suggestion": "Persist gates and escalations in the run folder and judge S08 on the full list. FIXED in 04302f5b3 (gate log); evidence source moved to start snapshot plus memory in a435f345e."},
+{"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/src/gates.ts", "line": 37, "finding": "Veto words were checked against the chosen option only; do-not-approve counted as expected.", "suggestion": "Check the whole gate text. FIXED in 04302f5b3."},
+{"severity": "medium", "category": "security", "file": "integration-tests/e2e-webui/src/resume.ts", "line": 78, "finding": "Link guard stopped at home/.claude/plugins while provisionHome writes deeper paths.", "suggestion": "lstat-walk the written paths. FIXED in 04302f5b3."},
+{"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/tests/e2e.spec.ts", "line": 51, "finding": "Resume identity does not hash uncommitted changes and trusts the recorded package_sha256.", "suggestion": "Follow-up card (deferred, recorded in the decision drop)."},
+{"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/src/board-dom.ts", "line": 67, "finding": "S02 could pass when a perPlatform key maps to no tab.", "suggestion": "Fail on unmappable keys. FIXED in 04302f5b3."},
+{"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/board-dom.ts", "line": 29, "finding": "findTabs was not case-insensitive like the first search.", "suggestion": "FIXED in 04302f5b3."},
+{"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/project-checks.ts", "line": 157, "finding": "S06 counted skipped tests as failures.", "suggestion": "FIXED in 04302f5b3, then tightened in a435f345e (needs passes and a succeeding runner)."},
+{"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/project-checks.ts", "line": 138, "finding": "S05 scan breadth limited to backend, board and skills folders and scheme-based URLs.", "suggestion": "Follow-up card (deferred)."},
+{"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/board-api.ts", "line": 76, "finding": "H06 treated an unreadable list as a fresh folder.", "suggestion": "FIXED in 04302f5b3."},
+{"severity": "medium", "category": "readability", "file": "integration-tests/test_e2e_board_fixture.py", "line": 33, "finding": "Three tests duplicate assertions in test_e2e_webui_project.py.", "suggestion": "Follow-up card (deferred)."}
+]}

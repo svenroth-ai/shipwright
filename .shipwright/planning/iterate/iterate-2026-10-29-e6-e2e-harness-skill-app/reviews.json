@@ -132,29 +132,213 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": 234,
+          "finding": "A resumed run could pass S08 vacuously: the gates and escalations of the earlier part were dropped.",
+          "suggestion": "Persist gates and escalations in the run folder and judge S08 on the full list. FIXED in 04302f5b3 (gate log); evidence source moved to start snapshot plus memory in a435f345e.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/gates.ts",
+          "line": 37,
+          "finding": "Veto words were checked against the chosen option only; do-not-approve counted as expected.",
+          "suggestion": "Check the whole gate text. FIXED in 04302f5b3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": 78,
+          "finding": "Link guard stopped at home/.claude/plugins while provisionHome writes deeper paths.",
+          "suggestion": "lstat-walk the written paths. FIXED in 04302f5b3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": 51,
+          "finding": "Resume identity does not hash uncommitted changes and trusts the recorded package_sha256.",
+          "suggestion": "Follow-up card (deferred, recorded in the decision drop).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom.ts",
+          "line": 67,
+          "finding": "S02 could pass when a perPlatform key maps to no tab.",
+          "suggestion": "Fail on unmappable keys. FIXED in 04302f5b3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom.ts",
+          "line": 29,
+          "finding": "findTabs was not case-insensitive like the first search.",
+          "suggestion": "FIXED in 04302f5b3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": 157,
+          "finding": "S06 counted skipped tests as failures.",
+          "suggestion": "FIXED in 04302f5b3, then tightened in a435f345e (needs passes and a succeeding runner).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": 138,
+          "finding": "S05 scan breadth limited to backend, board and skills folders and scheme-based URLs.",
+          "suggestion": "Follow-up card (deferred).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-api.ts",
+          "line": 76,
+          "finding": "H06 treated an unreadable list as a fresh folder.",
+          "suggestion": "FIXED in 04302f5b3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "integration-tests/test_e2e_board_fixture.py",
+          "line": 33,
+          "finding": "Three tests duplicate assertions in test_e2e_webui_project.py.",
+          "suggestion": "Follow-up card (deferred).",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-29T02:45:30.722555+00:00",
-      "disposition": "code-reviewer ran (opus) at 36aa52e5f: PASS WITH FIXES, fixes applied; recorded not_run because the spec-reviewer spawn guard (3 per runner) left the Stage-1 row not_run, and a completed code row needs a completed spec row; 3f-bis re-runs the cascade",
-      "recorded_by": "none",
+      "completed_at": "2026-10-29T03:24:43.752276+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-3f-bis",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "reviewed_commit": "76ecee5d60c85a8ad9372590f8b99e9f2fefef65"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": null,
+          "finding": "Claim under doubt: S06 holds only when pytest and Playwright each ran at least one test and all passed — After the first fix round S06 accepted passed+skipped===total, so an all-skipped suite (passed 0, skipped 5, total 5) passed.",
+          "suggestion": "Require passed > 0 in addition. FIXED in a435f345e with an all-skipped unit case.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts",
+          "line": null,
+          "finding": "Claim under doubt: All passed in S06 means the pytest run succeeded — pytest with 5 passed and 2 errors is recorded passed 5, failed 0, success false; S06 ignored success and exit_code.",
+          "suggestion": "Also require success not false and exit_code 0. FIXED in a435f345e.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "integration-tests/e2e-webui/src/follow.ts",
+          "line": null,
+          "finding": "Claim under doubt: Resume lets an operator continue an idle-aborted run — Idle, budget and crash escalations are persisted, so a resumed run can never pass S08.",
+          "suggestion": "Document it as fail-closed by design. DONE in a435f345e (README, expected-result).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": null,
+          "finding": "Claim under doubt: S08 judges the gates the harness answered — The final re-read of gates.jsonl is reachable by the agent under test.",
+          "suggestion": "Judge on the start snapshot plus memory. FIXED in a435f345e.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": null,
+          "finding": "Claim under doubt: A resumed run skips New pipeline only when the earlier part started it — skipStartPipeline is inferred from the presence of the run config.",
+          "suggestion": "Follow-up card (deferred, recorded in the decision drop).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": null,
+          "finding": "Claim under doubt: A resumed run is the only writer of project/ — No liveness check of the earlier part's processes.",
+          "suggestion": "Documented in the README; a PID lock is a follow-up card.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "integration-tests/e2e-webui",
+          "line": null,
+          "finding": "Claim under doubt: The TypeScript unit specs protect the harness in CI — No CI job runs the unit specs or the typecheck; ci.yml is owned by BP.",
+          "suggestion": "Follow-up card for BP; the local run is recorded in the evidence.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "integration-tests/e2e-webui/src/board-dom.ts",
+          "line": null,
+          "finding": "Claim under doubt: S02 ties a badge to each thread per tab — The badge count is document-wide.",
+          "suggestion": "Follow-up card (deferred).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "integration-tests/e2e-webui/src/gates.ts",
+          "line": null,
+          "finding": "Claim under doubt: S08 shows the person-like gates happened — Zero gates answered passes.",
+          "suggestion": "Follow-up card (deferred).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": null,
+          "finding": "Claim under doubt: Resume refuses a different plugin commit — A git failure collapses the identity to unknown.",
+          "suggestion": "Treat unknown as not resumable. FIXED in a435f345e.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-10-29T02:45:30.861555+00:00",
-      "disposition": "doubt-reviewer ran (opus) at 527fb496d, findings fixed; delegated with the rest of the cascade after the spec spawn guard",
-      "recorded_by": "none",
+      "completed_at": "2026-10-29T03:24:43.894910+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-3f-bis",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "reviewed_commit": "04302f5b31ff623a7f908acd6814f15e42c9112f"
     },
     "external_code": {
       "review_type": "external_code",
@@ -274,16 +458,17 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-10-29T02:42:20.609390+00:00",
-      "disposition": "spec-reviewer spawn guard reached its limit of 3 runs per runner (campaign-step-3-7-internal-reviews.md); last run (round 3, 527fb496d) returned REJECT, its findings were fixed in 36aa52e5f; delegated to 3f-bis",
-      "recorded_by": "none",
+      "completed_at": "2026-10-29T03:24:43.642888+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-3f-bis",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "reviewed_commit": "76ecee5d60c85a8ad9372590f8b99e9f2fefef65"
     },
     "plan_internal": {
       "review_type": "plan_internal",
