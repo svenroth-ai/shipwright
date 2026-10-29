@@ -1,0 +1,75 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-29-baseline-b-probes-junit-hardening",
+    "date": "2026-10-29",
+    "unit": {
+      "status": "passed",
+      "passed": 24230,
+      "skipped": 106,
+      "total": 24336
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests/test_baseline_b_more.py -q",
+      "exit_code": 0,
+      "tests_run": 8,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-29-baseline-b-probes-junit-hardening/surface_verification.json",
+      "timestamp": "2026-10-29T07:34:39.517Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "junit_failures returns failed testcase ids from a well-formed report",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b_more.py::test_junit_failures_resolve_class_names_to_files_and_bindings_are_read PASSED"
+        },
+        {
+          "behavior": "junit_failures returns an empty set for DOCTYPE/ENTITY, garbled, non-UTF-8 and oversized reports",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_baseline_b_more.py::test_junit_failures_treat_dtd_garbled_and_oversized_reports_as_no_failures PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-29-baseline-b-probes-junit-hardening",
+    "commit": "38d9d8ddf20436623397d4c0263866049a789ae2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

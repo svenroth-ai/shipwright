@@ -73,6 +73,23 @@ def test_junit_failures_resolve_class_names_to_files_and_bindings_are_read(tmp_p
     assert len(probes.draw([{"i": i} for i in range(10)], 3, 1)) == 3
 
 
+def test_junit_failures_treat_dtd_garbled_and_oversized_reports_as_no_failures(tmp_path, monkeypatch):
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests/test_m.py").write_text("")
+    xml = tmp_path / "j.xml"
+    xml.write_text(JUNIT)
+    assert probes.junit_failures(xml, tmp_path, "") == {"tests/test_m.py::TestC.test_bound"}
+    xml.write_text('<!DOCTYPE r [<!ENTITY a "x">]>' + JUNIT)  # entity-expansion door stays shut
+    assert probes.junit_failures(xml, tmp_path, "") == set()
+    xml.write_text("<testsuites><testcase")
+    assert probes.junit_failures(xml, tmp_path, "") == set()
+    xml.write_bytes(b"\xff\xfe<testsuites/>")
+    assert probes.junit_failures(xml, tmp_path, "") == set()
+    xml.write_text(JUNIT)
+    monkeypatch.setattr(probes, "_MAX_XML_BYTES", 10)
+    assert probes.junit_failures(xml, tmp_path, "") == set()
+
+
 def test_run_probe_reads_failures_from_the_junit_file(tmp_path, monkeypatch):
     (tmp_path / "plugins/shipwright-x/tests").mkdir(parents=True)
     (tmp_path / "plugins/shipwright-x/tests/test_m.py").write_text(TEST_SRC)
