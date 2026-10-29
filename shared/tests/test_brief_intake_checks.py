@@ -5,6 +5,7 @@ In-process wherever possible: the diff-coverage gate cannot see a subprocess.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -61,12 +62,17 @@ def test_valid_content_passes_and_carries_warnings(tmp_path):
 
 
 @pytest.mark.covers("FR-01.02")
-def test_content_check_that_cannot_run_is_an_error_not_a_pass(tmp_path):
+def test_content_check_that_cannot_run_is_an_error_not_a_pass(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="did not run"):
         checks.check_content(tmp_path, "no-such-dir")  # the tool reports a refusal, not a result
+    done = checks.subprocess.CompletedProcess([], 1, stdout=json.dumps({"ok": False, "error": "x"}), stderr="")
+    monkeypatch.setattr(checks.subprocess, "run", lambda *a, **kw: done)  # the tool's error shape has no 'issues'
+    with pytest.raises(RuntimeError, match="did not run"):
+        checks.check_content(tmp_path, "brief")
+    build_package(tmp_path)
     with pytest.raises(bdi.BriefRefused) as exc:
         bdi.intake_dir("brief", tmp_path)
-    assert exc.value.code == "bad_brief_dir"
+    assert exc.value.code == "io_error"
 
 
 @pytest.mark.covers("FR-01.02")

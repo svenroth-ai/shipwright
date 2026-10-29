@@ -167,7 +167,7 @@ def _intake_dir(source: str, project_root: Optional[Path], env: Optional[Mapping
     bdir = resolve_dir(source, root)
     rel = _relative(bdir, root)
     text = read_text(bdir / "brief.md").strip()
-    info = open_package(bdir, env=env)  # text read first: narrows, does not close, the swap window (U3)
+    info = open_package(bdir, env=env)  # text read first (the content check re-reads it): narrows, does not close, the swap window (U3)
     brief = info["brief"]
     check_brief_dir(brief, rel)
     checks = _lib("brief_intake_checks")  # F6: the Project content check now; the token check only warns

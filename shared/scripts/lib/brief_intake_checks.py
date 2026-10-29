@@ -44,7 +44,7 @@ def check_content(project_root: Path, brief_dir: str) -> list[dict]:
         out = json.loads(proc.stdout)
     except ValueError:
         out = None
-    if not isinstance(out, dict) or not isinstance(out.get("issues", []), list) or "ok" not in out:
+    if not isinstance(out, dict) or not isinstance(out.get("issues"), list) or out.get("ok") is not (not out["issues"]):
         detail = (proc.stderr or proc.stdout or "no output").strip()[-300:]
         raise RuntimeError(f"the brief content check did not run (exit {proc.returncode}): {detail}")
     return out["issues"]
