@@ -3,7 +3,7 @@
 import type { Page } from "@playwright/test";
 import type { Checklist } from "./checklist.js";
 import { PLATFORMS, STATUSES } from "./fixture.js";
-import { compareTokens, type Tokens } from "./tokens.js";
+import { compareFonts, compareTokens, type Tokens } from "./tokens.js";
 
 export interface BoardSnapshot {
   /** Texts of the tab elements (role=tab, else buttons/links named like a platform). */
@@ -78,8 +78,12 @@ export function checkBoardShape(snap: BoardSnapshot, checklist: Checklist, perPl
 }
 
 /** S04: every colour and font-size token the package declares has that value on the served board. */
-export function checkBoardTokens(snap: BoardSnapshot, declared: Tokens, checklist: Checklist): void {
+/** `fonts`: the declared font-family tokens (variant fixture); each must be the first family of the served stack. Empty = colours and sizes only. */
+export function checkBoardTokens(snap: BoardSnapshot, declared: Tokens, checklist: Checklist, fonts: Tokens = {}): void {
   const r = compareTokens(declared, snap.tokens);
-  checklist.record("S04", r.declared > 0 && r.mismatches.length === 0 ? "pass" : "fail",
-    r.declared === 0 ? "the package declares no tokens" : `${r.matching}/${r.declared} declared tokens match${r.mismatches.length ? "; " + r.mismatches.slice(0, 5).join("; ") : ""}`);
+  const f = compareFonts(fonts, snap.tokens);
+  const bad = [...r.mismatches, ...f.mismatches];
+  const total = r.declared + f.declared;
+  checklist.record("S04", r.declared > 0 && bad.length === 0 ? "pass" : "fail",
+    r.declared === 0 ? "the package declares no tokens" : `${r.matching + f.matching}/${total} declared tokens match${f.declared ? ` (${f.declared} font)` : ""}${bad.length ? "; " + bad.slice(0, 5).join("; ") : ""}`);
 }

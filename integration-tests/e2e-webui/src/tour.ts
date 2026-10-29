@@ -16,10 +16,12 @@ interface ScreenMap {
 export function openTarget(screenId: string, state: ThreadState): { thread?: number; text?: RegExp } {
   const byThread = (id: number | null) => (id === null ? {} : { thread: id });
   switch (screenId) {
-    case "thread-detail": return byThread(state.fresh);
+    case "thread-detail":
+    case "thread": return byThread(state.fresh);
     case "reply-draft": return byThread(state.drafted);
     case "thread-posted": return byThread(state.posted);
     case "keywords": return { text: /keywords/i };
+    case "sources": return { text: /sources/i };
     default: return {};
   }
 }

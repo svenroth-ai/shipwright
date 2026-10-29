@@ -31,6 +31,25 @@ fails H06. If a Test-phase companion is still listening on 127.0.0.1:3911 (for e
 skill-companion project's dev server), the preview can attach to it and serve stale state: stop it before the run, the
 port is fixed by the profile.
 
+## Two fixtures
+
+`SHIPWRIGHT_E2E_FIXTURE` picks the app the run builds; unset means `social-engagement-board` (above). An unknown name is
+refused. `social-engagement-real` (`../fixtures/social-engagement-real/`, key `../fixtures/social-engagement-real-expected-result.md`)
+is shaped like the real `social-engagement` skill: a master-detail board (thread list left, one thread right with summary,
+draft and a Copy reply button, feedback, status), the svenroth.ai tokens including Inter and Geist Mono, a status filter
+with skipped and expired, and the keywords as sources (Syften filters, LinkedIn queries), not a board tab. The hits come
+through an exchangeable `fetch_items()` adapter in `backend/sources/`; without a token it replays the recorded
+Syften- and Apify-shaped answers in `seed/recorded/`, so a build and its tests need no network and no key.
+
+The checks that differ run in their variant form (`src/variant.ts`): S02 reads the platform switcher with counts, the
+status filter, a badge per list row, the thread beside the list and Copy reply (`src/board-dom-real.ts`); S04 also compares
+the font families; S05 allows a service name only under `backend/sources/` and needs `fetch_items` and nine recorded items,
+three per platform (`src/project-checks-adapter.ts`); H06-H11 plus H14 (feedback) run against the variant's API
+(`src/board-api-real.ts`). **S09 (soft)**: with `SHIPWRIGHT_E2E_SKILL_TRIGGER=1` a headless `claude -p` session loads the built
+plugin and gets "open the social engagement board" with only the Skill tool allowed; the verdict is whether a skill was
+called (`src/skill-trigger.ts`). It costs one short model call and is skipped otherwise. The variant has not run against a
+live agent yet; its first run also shows whether Design carries the brand fonts.
+
 ## One-time setup
 
 1. WebUI checkout (separate repo `shipwright-webui`): run `npm ci` in its `server/` and `client/`.

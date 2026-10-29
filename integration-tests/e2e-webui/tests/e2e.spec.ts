@@ -6,19 +6,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { AuthError, authEnv, copyLogin, pickAuthSource, realHomeDir, scrubStaleLogins, type AuthSource } from "../src/auth.js";
-import { httpCall, runApiChecks } from "../src/board-api.js";
-import { checkBoardShape, checkBoardTokens, snapshotBoard } from "../src/board-dom.js";
+import { httpCall } from "../src/board-api.js";
 import { Checklist, parseChecklist } from "../src/checklist.js";
 import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
-import { FIXTURE_NAME, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
+import { activeFixture, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
 import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
 import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
-import { checkPluginShape, checkScreensComposed, checkSelfContained, checkTestsRan } from "../src/project-checks.js";
+import { checkPluginShape, checkScreensComposed, checkTestsRan } from "../src/project-checks.js";
+import { checkSkillTriggers } from "../src/skill-trigger.js";
+import { variantFor } from "../src/variant.js";
 import { acquireLock, addLockPid, markFinished, markPipelineStarted, planResume, releaseLock, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
-import { parseTokens } from "../src/tokens.js";
 import { provisionHome } from "../src/provision.js";
 import { Report } from "../src/report.js";
 import { packageDigest, pluginFingerprint } from "../src/run-identity.js";
@@ -29,8 +29,10 @@ import { tourBoard } from "../src/tour.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, "..");
 const repoRoot = path.resolve(projectRoot, "..", "..");
-const fixtureDir = fixturePath(repoRoot);
-const expectedFile = expectedPath(repoRoot);
+const FIXTURE_NAME = activeFixture(); // SHIPWRIGHT_E2E_FIXTURE; the default is the tabs fixture
+const variant = variantFor(FIXTURE_NAME);
+const fixtureDir = fixturePath(repoRoot, FIXTURE_NAME);
+const expectedFile = expectedPath(repoRoot, FIXTURE_NAME);
 const TEARDOWN_MARGIN_MS = 15 * 60_000; // room after the run budget for the report and the shutdown
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
@@ -168,7 +170,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     // 3. Create the project through the expert wizard (a resumed run reuses it when the WebUI still lists it), place the
     //    package, start "New pipeline". A resumed run skips what the earlier run already did (src/resume.ts).
     const known = resume ? await ui.findProjectId(page.request, base, projectPath).catch(() => null) : null;
-    if (!known) await ui.createProject(page, base, "social-engagement-board-e2e", projectPath, PROFILE);
+    if (!known) await ui.createProject(page, base, `${FIXTURE_NAME}-e2e`, projectPath, PROFILE);
     const projectId = known ?? (await ui.findProjectId(page.request, base, projectPath));
     if (!resume?.skipPackageCopy) fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
     await ui.openBoard(page, base, projectId);
@@ -204,8 +206,9 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     const mockups = listHtml(path.join(fixtureDir, "mockups"));
     checkPluginShape(projectPath, checklist);
     checkScreensComposed(projectPath, mockups, checklist);
-    checkSelfContained(projectPath, checklist);
+    variant.selfContained(projectPath, checklist);
     checkTestsRan(projectPath, checklist);
+    if (checklist.items.some((i) => i.id === "S09")) checkSkillTriggers(projectPath, checklist, { ...process.env, HOME: tempHome, USERPROFILE: tempHome });
     if (status === "complete") {
       await ui.openBoard(page, base, projectId);
       // The Test phase used the throw-away data folder of this fixed port; move it aside so H06-H10 start fresh.
@@ -226,12 +229,9 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       const call = httpCall(origin);
       const health = await call("GET", "/api/health").then((r) => r.status, () => 0);
       checklist.record("H05", health === 200 ? "pass" : "fail", `GET /api/health -> ${health}`);
-      const { state } = await runApiChecks(call, checklist);
+      const { state } = await variant.api(call, checklist);
       await app.goto(origin, { waitUntil: "domcontentloaded" });
-      const declared = parseTokens(fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"));
-      const snap = await snapshotBoard(app, Object.keys(declared));
-      checkBoardShape(snap, checklist, state.perPlatform);
-      checkBoardTokens(snap, declared, checklist);
+      await variant.board(app, fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"), state, checklist);
       await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
     }
     // Earlier part as loaded at start + this run's memory; gates.jsonl is not re-read (the agent can reach it).

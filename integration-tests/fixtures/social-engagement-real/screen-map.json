@@ -1,0 +1,9 @@
+{
+  "screens": [
+    {"id": "board", "mockup": "01-board.html", "requirements": ["open-the-board-from-the-skill", "view-the-board", "fetch-new-hits"]},
+    {"id": "thread", "mockup": "02-thread.html", "requirements": ["read-a-thread"]},
+    {"id": "reply-draft", "mockup": "03-reply-draft.html", "requirements": ["draft-a-reply-and-copy-it", "give-feedback-on-a-draft"]},
+    {"id": "thread-posted", "mockup": "04-thread-posted.html", "requirements": ["mark-a-thread-as-posted-or-skipped"]},
+    {"id": "sources", "mockup": "05-sources.html", "requirements": ["set-the-sources"]}
+  ]
+}

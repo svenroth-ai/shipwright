@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-29-e2e-fixture-real-skill-variant",
+  "date": "2026-10-29",
+  "section": "Iterate — feature: e2e fixture variant social-engagement-real",
+  "title": "Second E2E fixture shaped like the real social-engagement skill, selected by environment variable",
+  "context": "The run-12 comparison showed the simplified board fixture exercises less than the real skill: no master-detail page, neutral tokens, a local seed instead of an external source, keywords as a board tab.",
+  "decision": "Add social-engagement-real beside the default fixture, chosen with SHIPWRIGHT_E2E_FIXTURE; hits come through a replaceable fetch_items() adapter that replays recorded Syften and Apify answers by default; S02, S04 and S05 run in variant form behind one Variant interface.",
+  "consequences": "The default fixture and its checks are unchanged. The variant is unproven against a live run; font loading, the Design composition and the live claude flags of the soft check S09 are verified only by the first operator run.",
+  "rationale": "A second fixture keeps the stable one as a baseline, an opt-in selector that refuses unknown names cannot silently run the wrong app, and replay as the default keeps tests free of network and keys even when tokens are in the environment.",
+  "rejected": "Replacing the existing fixture (loses the baseline and the 48 specs built on it); branching on the fixture name inside the spec; making the adapter go live whenever a token is present.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

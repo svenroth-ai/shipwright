@@ -8,7 +8,7 @@ import { PLATFORMS } from "./fixture.js";
 
 const SKIP = new Set([".git", "node_modules", ".venv", "__pycache__", ".pytest_cache", ".dev-data"]);
 
-function walk(root: string, accept: (rel: string) => boolean, limit = 4000): string[] {
+export function walk(root: string, accept: (rel: string) => boolean, limit = 4000): string[] {
   const out: string[] = [];
   const stack = [""];
   while (stack.length > 0 && out.length < limit) {
@@ -29,7 +29,7 @@ function walk(root: string, accept: (rel: string) => boolean, limit = 4000): str
   return out.sort();
 }
 
-const readJson = (file: string): unknown => {
+export const readJson = (file: string): unknown => {
   try {
     return JSON.parse(fs.readFileSync(file, "utf8"));
   } catch {
