@@ -1,9 +1,9 @@
-// No browser, no model: report writer, checklist parser, idle watch and the chat hard checks.
+// No browser, no model: report writer, checklist parser, idle watch, terminal menus and the project file checks.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { runChatScript, type ChatMap, type Send } from "../../src/chat.js";
+import { FIXTURE_NAME } from "../../src/fixture.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { IdleWatch } from "../../src/idle.js";
 import { Report } from "../../src/report.js";
@@ -11,11 +11,10 @@ import { isDangerousOperationPrompt, needsTerminalAnswer, readTerminalMenu, want
 
 const repo = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const fixtures = path.join(repo, "integration-tests", "fixtures");
-const expected = fs.readFileSync(path.join(fixtures, "social-engagement-expected-result.md"), "utf8");
+const expected = fs.readFileSync(path.join(fixtures, `${FIXTURE_NAME}-expected-result.md`), "utf8");
 const template = fs.readFileSync(path.resolve(import.meta.dirname, "..", "..", "report-template.md"), "utf8");
-const chatMap = JSON.parse(fs.readFileSync(path.join(fixtures, "social-engagement", "chat-map.json"), "utf8")) as ChatMap;
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("terminal menu: the highlighted first option with its footer, recorded, never twice in 15 seconds", () => {
   const approve = ["Do you approve the mockups?", "❯ 1. Approve mockups", "2. I have feedback", "Enter to select"].join("\n");
   const commit = ["How should I handle the failing check?", "❯ 1. Commit earlier output first", "2. Leave it", "Enter to select"].join("\n");
@@ -40,15 +39,15 @@ test("terminal menu: the highlighted first option with its footer, recorded, nev
   expect(readTerminalMenu(submit)?.option).toBe("Submit answers");
 });
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("the committed checklist has hard and soft items with the ids the spec records", () => {
   const items = parseChecklist(expected);
   expect(items.filter((i) => i.kind === "hard").map((i) => i.id)).toEqual(
-    ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11"]);
-  expect(items.filter((i) => i.kind === "soft").length).toBeGreaterThan(3);
+    ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "H12", "H13", "S01", "S02", "S04", "S05", "S06", "S07", "S08"]);
+  expect(items.filter((i) => i.kind === "soft").map((i) => i.id)).toEqual(["S03"]);
 });
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("report: every placeholder of the committed template is filled, screenshots are linked", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-rep-"));
   try {
@@ -74,7 +73,7 @@ test("report: every placeholder of the committed template is filled, screenshots
   }
 });
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("report: the folder name is unpredictable, owner-only on POSIX, and two reports never share a folder", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-rep-"));
   try {
@@ -94,7 +93,7 @@ test("report: the folder name is unpredictable, owner-only on POSIX, and two rep
   }
 });
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("checklist: a backslash and a pipe in a cell are both escaped, every occurrence", () => {
   const list = new Checklist(parseChecklist(expected));
   list.record("H01", "pass", "a\\|b | c\\d \\ e|f");
@@ -102,7 +101,7 @@ test("checklist: a backslash and a pipe in a cell are both escaped, every occurr
   expect(row).toContain("a\\\\\\|b \\| c\\\\d \\\\ e\\|f");
 });
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("idle watch: only a changing snapshot counts as progress", () => {
   let now = 0;
   const watch = new IdleWatch(20 * 60_000, () => now);
@@ -115,54 +114,12 @@ test("idle watch: only a changing snapshot counts as progress", () => {
   expect(watch.observe("b")).toBe(false);
 });
 
-function fakeApp(): Send {
-  const status: Record<number, string> = {};
-  let fetched = false;
-  let keywords = "";
-  return async (message) => {
-    const m = message.toLowerCase();
-    if (m.startsWith("fetch")) {
-      const reply = fetched ? "0 new threads" : "9 new threads";
-      fetched = true;
-      return { reply, pane: { board: true } };
-    }
-    const id = Number(/\d+/.exec(m)?.[0]);
-    if (m.startsWith("show")) return id === 99 ? { reply: "There is no thread 99", pane: {} } : { reply: `Thread ${id}`, pane: { id } };
-    if (m.startsWith("draft")) { status[id] = "drafted"; return { reply: "Draft stored", pane: { id, draft: "Hi", status: "drafted" } }; }
-    if (m.startsWith("mark")) {
-      if (status[id] !== "drafted") return { reply: "Only a drafted thread can be marked", pane: {} };
-      status[id] = "posted";
-      return { reply: "Thread marked posted", pane: { id, status: "posted" } };
-    }
-    keywords = message.split(":")[1] ?? "";
-    return { reply: `Keywords: ${keywords}`, pane: { keywords } };
-  };
-}
-
-// @covers FR-01.04
-test("chat hard checks pass against a faithful app and fail against a broken one", async () => {
-  const good = new Checklist(parseChecklist(expected));
-  await runChatScript(fakeApp(), chatMap, good);
-  const verdicts = Object.fromEntries(good.items.filter((i) => i.kind === "hard").map((i) => [i.id, i.verdict]));
-  for (const id of ["H06", "H07", "H08", "H09", "H10", "H11"]) expect(verdicts[id], id).toBe("pass");
-
-  const bad = new Checklist(parseChecklist(expected));
-  const app = fakeApp();
-  await runChatScript(async (m) => (m.startsWith("mark") ? { reply: "Thread marked posted", pane: { status: "posted" } } : app(m)), chatMap, bad);
-  expect(bad.items.find((i) => i.id === "H09")!.verdict).toBe("fail");
-
-  const down = new Checklist(parseChecklist(expected));
-  const log = await runChatScript(async () => { throw new Error("connection refused"); }, chatMap, down);
-  expect(log.every((e) => e.error)).toBe(true);
-  expect(down.items.find((i) => i.id === "H11")!.verdict).toBe("fail");
-});
-
-// @covers FR-01.04
+// @covers FR-01.06
 test("project file checks: complete project passes H01-H04, a missing screen fails H04", async () => {
   const { checkProjectFiles } = await import("../../src/progress.js");
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-proj-"));
   try {
-    const mockups = path.join(fixtures, "social-engagement", "mockups");
+    const mockups = path.join(fixtures, FIXTURE_NAME, "mockups");
     const designs = path.join(dir, ".shipwright", "designs");
     fs.mkdirSync(path.join(designs, "uploads"), { recursive: true });
     fs.mkdirSync(path.join(designs, "screens"), { recursive: true });
@@ -171,20 +128,20 @@ test("project file checks: complete project passes H01-H04, a missing screen fai
       fs.copyFileSync(path.join(mockups, m), path.join(designs, "screens", m));
     }
     fs.writeFileSync(path.join(dir, "shipwright_run_config.json"),
-      JSON.stringify({ status: "complete", profile: "chat-first-json", brief_dir: "brief", phase_tasks: [] }));
+      JSON.stringify({ status: "complete", profile: "skill-companion-app", brief_dir: "brief", phase_tasks: [] }));
     const ok = new Checklist(parseChecklist(expected));
-    checkProjectFiles(dir, path.join(fixtures, "social-engagement"), ok);
+    checkProjectFiles(dir, path.join(fixtures, FIXTURE_NAME), ok);
     expect(["H01", "H02", "H03", "H04"].map((id) => ok.items.find((i) => i.id === id)!.verdict)).toEqual(["pass", "pass", "pass", "pass"]);
     fs.rmSync(path.join(designs, "screens", "05-keywords.html"));
     const bad = new Checklist(parseChecklist(expected));
-    checkProjectFiles(dir, path.join(fixtures, "social-engagement"), bad);
+    checkProjectFiles(dir, path.join(fixtures, FIXTURE_NAME), bad);
     expect(bad.items.find((i) => i.id === "H04")!.verdict).toBe("fail");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
-// @covers FR-01.04
+// @covers FR-01.06
 test("screenshot check from the Test phase fills S03 and the report; absent reads as not recorded", async () => {
   const { readScreenshotCheck, recordScreenshotCheck } = await import("../../src/progress.js");
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-shot-"));

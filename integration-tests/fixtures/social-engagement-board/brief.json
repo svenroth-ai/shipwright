@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "profile": "skill-companion-app",
+  "deploy_target": "none",
+  "autonomy": "guided",
+  "ui_host": "served-board",
+  "ux_shape": "classic",
+  "source_class": "synthetic",
+  "scope": "scope.md",
+  "design_system": "visual-guidelines.md",
+  "brief_dir": "brief",
+  "env_preflight": [],
+  "allow_parallel_builders": false,
+  "approved_by": "fixture:social-engagement-board",
+  "approved_at": "2026-10-29T00:00:00Z",
+  "package_sha256": "154645955ce1507c9d8505d598bf7c930af08c24ec09f90da4c92f7083fc74bd"
+}

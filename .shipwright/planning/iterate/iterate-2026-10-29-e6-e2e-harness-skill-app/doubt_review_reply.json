@@ -1,0 +1,9 @@
+{
+  "stage": 3,
+  "doubts": [
+    {"severity": "medium", "lens": "freshness", "claim_under_doubt": "H06 proves fetch adds threads on a fresh data folder.", "disproof_attempt": "The Test phase fills the same fixed-port data folder; a used folder makes the first fetch add nothing.", "what_would_resolve_it": "Move .dev-data aside before the preview and fail H06 on a used folder. Fixed in 36aa52e5f."},
+    {"severity": "medium", "lens": "robustness", "claim_under_doubt": "S02 reads one badge set per tab.", "disproof_attempt": "A board redrawing its tab strip on click detaches the collected elements; data-status doubles counts.", "what_would_resolve_it": "Re-query tabs by index and count class-badge elements only. Fixed in 36aa52e5f."},
+    {"severity": "medium", "lens": "security", "claim_under_doubt": "A resume folder cannot redirect the login copy or its removal.", "disproof_attempt": "Links under home/ (credentials, claude.json) were not all refused.", "what_would_resolve_it": "lstat every credential path. Fixed in 36aa52e5f and e45ea8283."},
+    {"severity": "low", "lens": "docs", "claim_under_doubt": "README matches the checks.", "disproof_attempt": "H13 row and data-folder paragraph described the old behaviour.", "what_would_resolve_it": "Rewritten in 36aa52e5f."}
+  ]
+}

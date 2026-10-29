@@ -1,0 +1,1 @@
+End-to-end run harness and fixture for the skill-backed board app: companion API, board and project-file checks replace the chat commands, soft items S01, S02 and S04-S08 become hard checks, a screen left as the mockup copy is detected, and a stopped run can resume (E6)

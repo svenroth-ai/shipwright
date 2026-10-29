@@ -19,6 +19,8 @@ interface StepEntry {
 export interface ReportMeta {
   config: Record<string, string>;
   authSource: string;
+  /** git HEAD of the checkout whose plugins the run loads, with a dirty-tree flag (E8 records the commit under test). */
+  commit?: string;
 }
 
 export class Report {
@@ -28,6 +30,7 @@ export class Report {
   private escalations: string[] = [];
   private modelSpend = "not available";
   private screenshotCheck = "not recorded";
+  private resume = "new run (not resumed)";
   private readonly started = Date.now();
   private readonly startedIso: string;
 
@@ -70,6 +73,15 @@ export class Report {
   setScreenshotCheck(text: string): void {
     this.screenshotCheck = text;
   }
+  setResume(text: string): void {
+    this.resume = text;
+  }
+  gateList(): string[] {
+    return [...this.gates];
+  }
+  escalationList(): string[] {
+    return [...this.escalations];
+  }
   setModelSpend(text: string): void {
     this.modelSpend = text;
   }
@@ -81,6 +93,8 @@ export class Report {
       DURATION: minutes(now - this.started),
       CONFIG: Object.entries(this.meta.config).map(([k, v]) => `- ${k}: ${v}`).join("\n"),
       AUTH_SOURCE: this.meta.authSource,
+      PLUGIN_COMMIT: this.meta.commit ?? "not recorded",
+      RESUME: this.resume,
       STEPS: this.renderSteps(),
       CHECKLIST: this.checklist.toMarkdown(),
       GATES: list(this.gates, "none"),

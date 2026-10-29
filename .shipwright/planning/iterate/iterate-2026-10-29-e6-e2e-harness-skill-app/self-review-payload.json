@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Fixture, harness, hard S-items, resume and report template delivered; S03 stays soft."},
+    {"name": "Error Handling", "verdict": "pass", "note": "API calls report errors per check; resume refuses with ResumeError; scrub tolerant."},
+    {"name": "Security Basics", "verdict": "pass", "note": "Loopback-only calls, untrusted resume folder (links refused, identity manifest), no secrets committed."},
+    {"name": "Test Quality", "verdict": "pass", "note": "31 Playwright unit specs with a flawed stub companion, 17 Python fixture tests, in-process."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "Bounded waits and file scans only."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "All new files at most 300 lines; dead code removed."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Package hash, intake check, expected-result parser, report placeholders probed by tests and the F0.5 dry harness."}
+  ]
+}

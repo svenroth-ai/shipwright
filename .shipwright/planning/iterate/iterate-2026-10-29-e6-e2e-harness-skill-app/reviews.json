@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e6-e2e-harness-skill-app",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T02:42:20.193879+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "The plan says to read a brief file and run `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` \"before the next unit,\" but the acceptance criteria don't state where the outputs of those prerequisite steps land. If the fixture introduces a new skill-adjacent package, the cache-sync strict check may fail until a marketplace rebuild is committed — but the plan doesn't say whether that rebuild belongs in this diff or the BP side.",
+          "suggestion": "State explicitly whether this unit adds anything the cache-sync check inspects; if yes, include the regenerated marketplace artifacts in this diff so the pre-merge strict run passes on the PR itself.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "\"Replaces chat.ts\" is listed as a parenthetical inside the harness step, but legacy `social-engagement/` fixtures \"stay for the legacy chat-first tests.\" If chat.ts is shared by those legacy tests, replacing rather than adding alongside it (`board-api.ts`) risks breaking the legacy suite. The plan is ambiguous about whether chat.ts is deleted or retained.",
+          "suggestion": "Make this explicit: if any existing spec imports chat.ts, keep it and add board-api.ts alongside; only delete chat.ts in the unit that removes the legacy fixture.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "resume.ts` (\"resume plan from an earlier run folder\") has no stated contract for what happens when the run folder is missing, partially written (crash mid-run), or from a schema version older than the new report placeholders. Resume is exactly where half-written state bites.",
+          "suggestion": "Define behavior for missing/corrupt/stale run folders (fail with a clear message vs. fresh start), and unit-test at least the missing-folder and older-schema cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "H13 \"screens vs mockup copy\" implies string/content comparison, but token lines like `--color-bg: #f6f7f9` suggest the check should be structural. Copy-matching is brittle to whitespace and case; the plan doesn't say how near-matches are judged.",
+          "suggestion": "Specify normalization (whitespace, case) for the copy comparison and have at least one near-miss test in the answer key to prove the check fails when it should.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "\"Pure over injected readers so unit tests need no browser\" is sound, but `board-dom.ts` + `tokens.ts` + `gates.ts` + `follow.ts` + `resume.ts` + `project-checks.ts` is six modules for one unit. If `gates.ts` (S08 \"by meaning\") and `follow.ts` are thin, consider folding them into project-checks/board modules unless they're independently reusable — the ≤300-line rule suggests they may be small single-use wrappers.",
+          "suggestion": "Only keep modules that have more than one consumer or a genuinely distinct boundary; otherwise merge thin ones to reduce surface area. Not a blocker if they're each substantive.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Report template gains \"new placeholders\" — existing consumers of the report (diff tools, answer-key comparison) need to tolerate or be updated for the new fields, and old run folders rendered by the new template would show empty placeholders.",
+          "suggestion": "Confirm answer-key comparison ignores unknown/absent placeholders gracefully, or version the report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security /",
+          "file": null,
+          "line": null,
+          "finding": "The harness talks to a companion HTTP API (H06–H11) over what is presumably localhost. If the fixture package or harness executes any code from the run folder (resume plan), that's an injection vector if run folders are ever externally supplied. Low practical risk for a local test harness.",
+          "suggestion": "Note that run folders are trusted inputs; no action needed beyond documenting it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Replaces chat.ts” and rewriting the tour leave legacy compatibility unclear. Keeping the legacy fixture alone does not preserve its harness execution path.",
+          "suggestion": "Explicitly select the board harness by profile/host, retain the chat-first path, and add a regression test proving each fixture selects the appropriate harness.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Injected-reader unit tests and a dry harness do not demonstrate that the companion HTTP adapter, DOM capture, and report generation work together. Wiring failures could remain undetected until the operator’s E8 run.",
+          "suggestion": "Add one bounded integration smoke test using a local companion API stub and served board. Exercise the actual adapters through report generation, including an API failure. Keep the full operator run outside this unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Resuming from an earlier run folder has no stated compatibility or evidence-freshness rules. A different fixture, profile, or incomplete run could supply stale passing results.",
+          "suggestion": "Validate run identity and required artifacts before resuming, define which checks must rerun, and write fresh results separately. Test mismatched and incomplete run folders.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“S08 by meaning” and “S06 test results” lack explicit evidence rules. Missing or ambiguous evidence could inadvertently count as success, making the harness unreliable.",
+          "suggestion": "Define pass, fail, and missing-evidence outcomes for these checks. Add negative cases covering misleading gate wording, absent test results, and results belonging to another run.  The fixture and modular harness direction is reasonable, but compatibility, adapter integration, and evidence handling need concrete coverage before implementation proceeds. Compliance with the brief’s exact scope remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T02:42:21.017867+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: dependency / Severity: medium**\n  **Finding:** The plan says to read a brief file and run `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` \"before the next unit,\" but the acceptance criteria don't state where the outputs of those prerequisite steps land. If the fixture introduces a new skill-adjacent package, the cache-sync strict check may fail until a marketplace rebuild is committed — but the plan doesn't say whether that rebuild belongs in this diff or the BP side.\n  **Suggestion:** State explicitly whether this unit adds anything the cache-sync check inspects; if yes, include the regenerated marketplace artifacts in this diff so the pre-merge strict run passes on the PR itself.\n\n- **Category: risk / Severity: medium**\n  **Finding:** \"Replaces chat.ts\" is listed as a parenthetical inside the harness step, but legacy `social-engagement/` fixtures \"stay for the legacy chat-first tests.\" If chat.ts is shared by those legacy tests, replacing rather than adding alongside it (`board-api.ts`) risks breaking the legacy suite. The plan is ambiguous about whether chat.ts is deleted or retained.\n  **Suggestion:** Make this explicit: if any existing spec imports chat.ts, keep it and add board-api.ts alongside; only delete chat.ts in the unit that removes the legacy fixture.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** `resume.ts` (\"resume plan from an earlier run folder\") has no stated contract for what happens when the run folder is missing, partially written (crash mid-run), or from a schema version older than the new report placeholders. Resume is exactly where half-written state bites.\n  **Suggestion:** Define behavior for missing/corrupt/stale run folders (fail with a clear message vs. fresh start), and unit-test at least the missing-folder and older-schema cases.\n\n- **Category: edge-case / Severity: low**\n  **Finding:** H13 \"screens vs mockup copy\" implies string/content comparison, but t […truncated]\n\n[openai] Repository reads were blocked by the execution policy, so I could not verify the referenced brief or existing harness. This review is limited to the supplied plan.\n\n1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** “Replaces chat.ts” and rewriting the tour leave legacy compatibility unclear. Keeping the legacy fixture alone does not preserve its harness execution path.  \n   **Suggestion:** Explicitly select the board harness by profile/host, retain the chat-first path, and add a regression test proving each fixture selects the appropriate harness.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Injected-reader unit tests and a dry harness do not demonstrate that the companion HTTP adapter, DOM capture, and report generation work together. Wiring failures could remain undetected until the operator’s E8 run.  \n   **Suggestion:** Add one bounded integration smoke test using a local companion API stub and served board. Exercise the actual adapters through report generation, including an API failure. Keep the full operator run outside this unit.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Resuming from an earlier run folder has no stated compatibility or evidence-freshness rules. A different fixture, profile, or incomplete run could supply stale passing results.  \n   **Suggestion:** Validate run identity and required artifacts before resuming, define which checks must rerun, and write fresh results separately. Test mismatched and incomplete run folders.\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** “S08 by meaning” and “S06 test results” lack explicit evidence rules. Missing or ambiguous evidence could inadvertently count as success, making the harness unreliable.  \n   **Suggestion:** Define pass, fail, and missing-evidence outcomes for these checks. Add negative cases covering misleading gate wording, absent test results, and results belonging to another run.\n\nThe fi […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T02:45:30.722555+00:00",
+      "disposition": "code-reviewer ran (opus) at 36aa52e5f: PASS WITH FIXES, fixes applied; recorded not_run because the spec-reviewer spawn guard (3 per runner) left the Stage-1 row not_run, and a completed code row needs a completed spec row; 3f-bis re-runs the cascade",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T02:45:30.861555+00:00",
+      "disposition": "doubt-reviewer ran (opus) at 527fb496d, findings fixed; delegated with the rest of the cascade after the spec spawn guard",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts — `report.gate(\"resume: the pipeline was already started, so New pipeline was not clicked again\")` (resume branch of step 3), interacting with `src/gates.ts` `classifyGates`.",
+          "line": null,
+          "finding": "Every resumed run fails S08. This synthetic gate string is pushed into the report's gate list, and `checkGates(report.gateList(), ...)` later grades it: it matches none of `EXPECTED_GATES` (no \"approv…design/screens\", no \"launched the next pipeline phase\", no submit/confirm/continue/proceed), so it lands in `unexpected` and S08 is recorded as `fail`. The README explicitly promises that a resumed run \"runs every check again\" — but the resume path guarantees the S08 check can never pass.",
+          "suggestion": "Either record the resume note via a channel that is not the gate list (e.g. a step or `setResume`), or add a pattern to `EXPECTED_GATES` matching this exact synthetic note.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug / test",
+          "file": "integration-tests/e2e-webui/tests/unit/board.spec.ts — `expect(() => planResume(path.join(work, \"..\", \"run-Ab12Cd\"), work, id)).toThrow(/direct child/)` vs `src/resume.ts` `planResume` first check.",
+          "line": null,
+          "finding": "path.join(work, \"..\", \"run-Ab12Cd\")` normalizes to `work/run-Ab12Cd`, and `planResume` immediately does `path.resolve(requested)`. So `path.dirname(asked)` equals both `path.resolve(workdir)` and the realpath'd `work` on Linux (and on macOS, where tmpdir is symlinked, it still equals `path.resolve(workdir)`), the check passes, the folder exists with a matching manifest, and no error is thrown — the assertion `toThrow(/direct child/)` should fail wherever it runs. Either the test is broken (CI red) or the intended \"..\"-detection the test claims does not exist. Note the underlying security property (only direct children of the workdir are accepted) still holds after resolution, so the fix is to drop/rewrite this assertion (e.g. test a genuinely foreign path like `<work>/../elsewhere/run-X`).",
+          "suggestion": "Change the test input to a folder truly outside the workdir, or assert `planResume` accepts the normalized `work/../run-X` form — whichever matches the intended contract — and make the code enforce it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/board-dom.ts — `checkBoardShape`, `const tabsOk = snap.tabs.length === PLATFORMS.length && PLATFORMS.every((p, i) => snap.tabs[i] === p);",
+          "line": null,
+          "finding": "S02 is graded as hard, but the answer key only requires \"one tab per platform\" — not a specific order. A fully compliant agent-built board that lists the platforms in a different order (e.g. LinkedIn, Reddit, Hacker News) fails the real run on a technicality the brief never states. Same risk in `stub-companion.ts`/the unit test, which bake in the exact order and so can't catch this.",
+          "suggestion": "Compare as sets (`PLATFORMS.every(p => snap.tabs.includes(p)) && new Set(snap.tabs).size === snap.tabs.length`) or state the order requirement in the answer key.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_e2e_board_fixture.py — `test_brief_md_documents_every_route_the_harness_calls`.",
+          "line": null,
+          "finding": "The regex `r'\"(/api/[a-z/${}A-Za-z-]+)'` only matches double-quoted strings, so every parameterized route in board-api.ts (`\\`/api/threads/${first}\\``, `\\`/api/threads/${first}/draft\\``, …) written as template literals escapes the check. The test's stated purpose (\"every route the harness calls is documented\") is not actually enforced for the id-parameterized routes — the most important ones.",
+          "suggestion": "Extend the regex to backtick strings (e.g. also scan `` `(/api/[^`]+)` `` and substitute `${...}` before comparing), so `/api/threads/<id>`, `/api/threads/<id>/draft`, `/api/threads/<id>/posted` are verified against brief.md.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "integration-tests/test_e2e_webui_project.py / tests/unit/report.spec.ts — `@covers` annotations repointed from FR-01.04 to FR-01.06.",
+          "line": null,
+          "finding": "The unit's scope_frs are FR-01.06 and FR-01.01, with \"touches no FR outside\". Wholesale repointing of the existing e2e-webui project tests (dry harness, checklist shape, template placeholders, report writer) from FR-01.04 to FR-01.06 may leave FR-01.04's WebUI-harness acceptance without any coverage annotation, depending on how the FR-coverage gate aggregates `@covers`. The behaviors those tests check (report writer, idle watch, checklist parser) are app-class-agnostic and arguably belong to FR-01.04 still.",
+          "suggestion": "Keep the generic harness-structure tests annotated FR-01.04 (or both), leaving only the board-specific ones on FR-01.06; confirm against the FR-coverage gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/project-checks.ts — `findSeed` (`path.basename(r)` on `/`-joined relative paths) and `walk`.",
+          "line": null,
+          "finding": "walk` builds relative paths with `/` separators but `findSeed` uses `path.basename`, which on Windows only splits on `\\\\` — so on Windows no file ever matches `/seed|match/i` and S05 always fails. Same platform coupling in the `/^(backend|board)\\/...` regex. Low priority if the harness is POSIX-only, but it is a silent wrong-verdict path, not an error.",
+          "suggestion": "Split on both separators (`rel.split(/[\\\\/]/).pop()`) and normalize separators in the accept predicates, or document POSIX-only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/stub-companion.ts — `plainBadge` flaw.",
+          "line": null,
+          "finding": "plainBadge` is defined but never exercised by any unit test (and the S02 badge selector `[class=\"badge\"]` would already miss a `.tag` class, making the flaw indistinguishable from \"empty badges\"). Dead flaw flag gives false confidence that badge-value validation is fault-tested.",
+          "suggestion": "Either add a case routing `plainBadge` to a `data-status`-less, non-`badge`-classed element and assert S02 fails, or remove the flag.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": 174,
+          "finding": "Every resumed pipeline records `\"resume: the pipeline was already started...\"` as a gate. This matches none of `EXPECTED_GATES`, so `checkGates()` always fails hard item S08 on an otherwise successful resumed run.",
+          "suggestion": "Record pipeline reuse as a report step rather than an answered gate. Add a test covering the resumed run’s gate list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/src/board-api.ts",
+          "line": 95,
+          "finding": "H08 and H09 check mutation responses without reading the affected thread afterward. A backend that returns fabricated drafted/posted objects but never saves either change passes these checks, despite the requirements to store the draft and persist status changes.",
+          "suggestion": "Read the thread after each successful mutation and assert its stored draft and status. Add a stub flaw that returns success without modifying stored state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/src/board-dom.ts",
+          "line": 57,
+          "finding": "S02 checks aggregate badge values, not whether each thread has a badge or each tab shows only its platform’s threads. A broken board displaying every platform’s threads under every tab, or omitting badges from some cards, can pass.",
+          "suggestion": "Capture thread identities, platforms and badges per visible card after each tab click, then compare them with the API’s expected threads. Test incorrect filtering and missing individual badges.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/resume.ts",
+          "line": 70,
+          "finding": "Resume is refused whenever the pipeline config says `complete`, even if the harness subsequently crashed or exhausted its budget during preview or acceptance checks. Such a stopped run cannot continue its remaining checks, contrary to the documented crash-resume behavior.",
+          "suggestion": "Track harness completion separately from pipeline completion. Allow a completed pipeline to resume unfinished checks without starting another pipeline.  Overall assessment: ship-with-fixes. The change establishes the intended board harness, but resume has deterministic failure paths and several hard checks can approve broken behavior.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-29T02:42:21.177979+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: high\n  File: integration-tests/e2e-webui/tests/e2e.spec.ts — `report.gate(\"resume: the pipeline was already started, so New pipeline was not clicked again\")` (resume branch of step 3), interacting with `src/gates.ts` `classifyGates`.\n  Finding: Every resumed run fails S08. This synthetic gate string is pushed into the report's gate list, and `checkGates(report.gateList(), ...)` later grades it: it matches none of `EXPECTED_GATES` (no \"approv…design/screens\", no \"launched the next pipeline phase\", no submit/confirm/continue/proceed), so it lands in `unexpected` and S08 is recorded as `fail`. The README explicitly promises that a resumed run \"runs every check again\" — but the resume path guarantees the S08 check can never pass.\n  Suggestion: Either record the resume note via a channel that is not the gate list (e.g. a step or `setResume`), or add a pattern to `EXPECTED_GATES` matching this exact synthetic note.\n\n- Category: bug / test\n  Severity: high\n  File: integration-tests/e2e-webui/tests/unit/board.spec.ts — `expect(() => planResume(path.join(work, \"..\", \"run-Ab12Cd\"), work, id)).toThrow(/direct child/)` vs `src/resume.ts` `planResume` first check.\n  Finding: `path.join(work, \"..\", \"run-Ab12Cd\")` normalizes to `work/run-Ab12Cd`, and `planResume` immediately does `path.resolve(requested)`. So `path.dirname(asked)` equals both `path.resolve(workdir)` and the realpath'd `work` on Linux (and on macOS, where tmpdir is symlinked, it still equals `path.resolve(workdir)`), the check passes, the folder exists with a matching manifest, and **no error is thrown** — the assertion `toThrow(/direct child/)` should fail wherever it runs. Either the test is broken (CI red) or the intended \"..\"-detection the test claims does not exist. Note the underlying security property (only direct children of the workdir are accepted) still holds after resolution, so the fix is to drop/rewrite this assertion (e.g. test a genuinely foreign […truncated]\n\n[openai] I could review the supplied diff, but filesystem policy blocked reading the campaign brief and running tests.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/tests/e2e.spec.ts:174\n- Finding: Every resumed pipeline records `\"resume: the pipeline was already started...\"` as a gate. This matches none of `EXPECTED_GATES`, so `checkGates()` always fails hard item S08 on an otherwise successful resumed run.\n- Suggestion: Record pipeline reuse as a report step rather than an answered gate. Add a test covering the resumed run’s gate list.\n\n- Category: test\n- Severity: high\n- File: integration-tests/e2e-webui/src/board-api.ts:95\n- Finding: H08 and H09 check mutation responses without reading the affected thread afterward. A backend that returns fabricated drafted/posted objects but never saves either change passes these checks, despite the requirements to store the draft and persist status changes.\n- Suggestion: Read the thread after each successful mutation and assert its stored draft and status. Add a stub flaw that returns success without modifying stored state.\n\n- Category: test\n- Severity: medium\n- File: integration-tests/e2e-webui/src/board-dom.ts:57\n- Finding: S02 checks aggregate badge values, not whether each thread has a badge or each tab shows only its platform’s threads. A broken board displaying every platform’s threads under every tab, or omitting badges from some cards, can pass.\n- Suggestion: Capture thread identities, platforms and badges per visible card after each tab click, then compare them with the API’s expected threads. Test incorrect filtering and missing individual badges.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/resume.ts:70\n- Finding: Resume is refused whenever the pipeline config says `complete`, even if the harness subsequently crashed or exhausted its budget during preview or acceptance checks. Such a stopped run cannot continue its remaining checks, contrary to the documen […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T02:42:20.609390+00:00",
+      "disposition": "spec-reviewer spawn guard reached its limit of 3 runs per runner (campaign-step-3-7-internal-reviews.md); last run (round 3, 527fb496d) returned REJECT, its findings were fixed in 36aa52e5f; delegated to 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T02:42:20.331424+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T02:42:20.481327+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

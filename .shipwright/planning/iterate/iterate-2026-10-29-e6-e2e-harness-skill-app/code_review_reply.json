@@ -1,0 +1,11 @@
+{
+  "section": "E6 (round 4, reviewed at 36aa52e5f)",
+  "review": [
+    {"severity": "medium", "category": "security", "file": "integration-tests/e2e-webui/src/resume.ts", "line": 80, "finding": "Link guard used existsSync before lstat, so a dangling link passed; settings.json, plugins and .gitconfig were unguarded.", "suggestion": "lstat with throwIfNoEntry:false and guard more paths. Fixed in e45ea8283."},
+    {"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/tests/e2e.spec.ts", "line": 187, "finding": "count() of the launch button does not wait for the single-page app to render, so a resumed task could be logged as already launched.", "suggestion": "waitFor visible with a timeout. Fixed in e45ea8283."},
+    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/gates.ts", "line": 27, "finding": "Reduced NEVER_EXPECTED terms had no unit test.", "suggestion": "Cases for Not approved, Reject, Skip. Added in e45ea8283."},
+    {"severity": "low", "category": "readability", "file": "integration-tests/e2e-webui/tests/unit/board.spec.ts", "line": 27, "finding": "Single-value loop left over from the H06 change.", "suggestion": "Remove the loop. Accepted as cosmetic, not changed."},
+    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/board-dom.ts", "line": 33, "finding": "Fixed 500 ms wait after a tab click; fallback tab match was case sensitive.", "suggestion": "Lowercase fixed in e45ea8283; the wait stays (documented limit)."},
+    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/resume.ts", "line": 56, "finding": "Exact string compare of the direct-child path on Windows drive-letter case; fails safe.", "suggestion": "Accepted, fails safe."}
+  ]
+}

@@ -1,31 +1,36 @@
-// Operator-started real end-to-end run: Brief package -> chat-first app, driven through the WebUI like a person.
+// Operator-started real end-to-end run: Brief package -> skill-backed board app, driven through the WebUI like a person.
 // NOT a CI gate: it uses a real agent (tokens, wall-clock). See README.md for the operator procedure.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { AuthError, authEnv, copyLogin, pickAuthSource, realHomeDir, scrubStaleLogins, type AuthSource } from "../src/auth.js";
-import { runChatScript } from "../src/chat.js";
+import { httpCall, runApiChecks } from "../src/board-api.js";
+import { checkBoardShape, checkBoardTokens, snapshotBoard } from "../src/board-dom.js";
 import { Checklist, parseChecklist } from "../src/checklist.js";
 import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
-import { IDLE_MINUTES, IdleWatch } from "../src/idle.js";
-import { checkProjectFiles, fileActivity, phaseSignature, readRunState, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
+import { FIXTURE_NAME, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
+import { follow, waitForTask } from "../src/follow.js";
+import { checkGates } from "../src/gates.js";
+import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
+import { checkPluginShape, checkScreensComposed, checkSelfContained, checkTestsRan } from "../src/project-checks.js";
+import { markFinished, planResume, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
+import { parseTokens } from "../src/tokens.js";
 import { provisionHome } from "../src/provision.js";
 import { Report } from "../src/report.js";
 import { Shutdown } from "../src/shutdown.js";
 import { BUILD_STEP_TIMEOUT_MS, startStack, checkWebuiDir } from "../src/stack.js";
-import { tourApp } from "../src/tour.js";
+import { tourBoard } from "../src/tour.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, "..");
 const repoRoot = path.resolve(projectRoot, "..", "..");
-const fixtureDir = path.join(repoRoot, "integration-tests", "fixtures", "social-engagement");
-const expectedFile = path.join(repoRoot, "integration-tests", "fixtures", "social-engagement-expected-result.md");
-const POLL_MS = 15_000;
+const fixtureDir = fixturePath(repoRoot);
+const expectedFile = expectedPath(repoRoot);
 const TEARDOWN_MARGIN_MS = 15 * 60_000; // room after the run budget for the report and the shutdown
-const PROFILE = "chat-first-json";
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
 function onPath(names: string[]): boolean {
   const dirs = (process.env.PATH ?? "").split(path.delimiter);
@@ -40,8 +45,17 @@ function gitInit(dir: string): void {
   execFileSync("git", ["-C", dir, ...git, "commit", "-q", "--allow-empty", "-m", "baseline"], { stdio: "ignore" });
 }
 
-// @covers FR-01.04
-test("brief package to a working chat-first app through the WebUI", async ({ page }) => {
+function gitHead(dir: string): string {
+  const git = (...args: string[]) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8" }).trim();
+  try {
+    return `${git("rev-parse", "HEAD")}${git("status", "--porcelain") ? " (working tree has uncommitted changes)" : ""}`;
+  } catch {
+    return "unknown";
+  }
+}
+
+// @covers FR-01.06
+test("brief package to a working skill-backed board app through the WebUI", async ({ page }) => {
   // 1. Refuse to start without the operator inputs and an authentication source (no defaults).
   let cfg;
   let authSource: AuthSource;
@@ -62,11 +76,25 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
   const deadline = Date.now() + cfg.maxMinutes * 60_000; // one overall deadline, from the start of the run
   // The run folder gets an unpredictable name (mkdtemp, prefix run- is what the stale-login scrub scans) and owner-only rights.
   fs.mkdirSync(cfg.workdir, { recursive: true, mode: 0o700 });
-  const runDir = fs.mkdtempSync(path.join(cfg.workdir, "run-"));
+  // Identity of this run: a resumed run is only accepted from a folder that recorded the same one (src/resume.ts).
+  const identity: RunIdentity = {
+    fixture: FIXTURE_NAME, profile: PROFILE, commit: gitHead(repoRoot),
+    packageSha256: String((JSON.parse(fs.readFileSync(path.join(fixtureDir, "brief.json"), "utf8")) as { package_sha256?: string }).package_sha256 ?? ""),
+  };
+  let resume: ResumePlan | null = null;
+  if (cfg.resumeRun) {
+    try {
+      resume = planResume(cfg.resumeRun, cfg.workdir, identity);
+    } catch (error) {
+      throw new Error((error as Error).message);
+    }
+  }
+  const runDir = resume ? resume.runDir : fs.mkdtempSync(path.join(cfg.workdir, "run-"));
   const tempHome = path.join(runDir, "home");
   const projectPath = path.join(runDir, "project");
   fs.mkdirSync(tempHome, { recursive: true, mode: 0o700 });
   fs.mkdirSync(projectPath, { recursive: true, mode: 0o700 });
+  if (!resume) writeManifest(runDir, identity);
 
   const checklist = new Checklist(parseChecklist(fs.readFileSync(expectedFile, "utf8")));
   const template = fs.readFileSync(path.join(projectRoot, "report-template.md"), "utf8");
@@ -74,6 +102,7 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
     path.join(cfg.workdir, "e2e-report"),
     {
       authSource,
+      commit: identity.commit,
       config: {
         permission_mode: cfg.permissionMode,
         max_minutes: String(cfg.maxMinutes),
@@ -83,12 +112,15 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
         workdir_source: cfg.sources.SHIPWRIGHT_E2E_WORKDIR,
         env_file: cfg.envFileFound ? "found" : "not found",
         project: projectPath,
+        resume_run_source: cfg.sources.SHIPWRIGHT_E2E_RESUME_RUN,
       },
     },
     checklist,
     template,
   );
 
+  let housekeeping = ""; // not an escalation: S08 judges the run, not the scrub of an earlier run's leftovers
+  let initialStatus = "";
   let status = "aborted";
   let login: { remove(): void } | null = null;
   let stop: (() => Promise<void>) | null = null;
@@ -110,7 +142,7 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
   shutdown.install();
   try {
     const scrubbed = scrubStaleLogins(cfg.workdir, (cfg.maxMinutes + 60) * 60_000);
-    if (scrubbed > 0) report.escalation(`Removed ${scrubbed} stale login copy/copies left by an earlier run that was killed.`);
+    if (scrubbed > 0) housekeeping = `Removed ${scrubbed} stale login copy/copies left by an earlier run that was killed.`;
     // 2. Provision the temp HOME and start the second WebUI instance.
     if (authSource === "copied login") login = copyLogin(realHome, tempHome);
     const key = process.env.ANTHROPIC_API_KEY ?? "";
@@ -118,7 +150,8 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
       repoRoot, tempHome, projectPath, permissionMode: cfg.permissionMode,
       apiKeyTail: authSource === "env key" ? key.slice(-20) : undefined,
     });
-    gitInit(projectPath);
+    if (!fs.existsSync(path.join(projectPath, ".git"))) gitInit(projectPath);
+    if (resume) report.setResume(resume.note);
     const stack = await startStack({
       webuiDir: cfg.webuiDir, repoRoot, home: tempHome,
       extraEnv: { ...authEnv(authSource, process.env), SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL: "1" },
@@ -131,45 +164,79 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
     await report.step("WebUI built and started (second instance, temp HOME)", page,
       `Base URL ${base}. Build took ${(stack.buildMs / 60_000).toFixed(1)} min (each build step is limited to ${BUILD_STEP_TIMEOUT_MS / 60_000} min; the overall budget of ${cfg.maxMinutes} min started at the beginning of the run).`);
 
-    // 3. Create the project through the expert wizard, place the package, start "New pipeline".
-    await ui.createProject(page, base, "social-engagement-e2e", projectPath, PROFILE);
-    const projectId = await ui.findProjectId(page.request, base, projectPath);
-    fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
+    // 3. Create the project through the expert wizard (a resumed run reuses it when the WebUI still lists it), place the
+    //    package, start "New pipeline". A resumed run skips what the earlier run already did (src/resume.ts).
+    const known = resume ? await ui.findProjectId(page.request, base, projectPath).catch(() => null) : null;
+    if (!known) await ui.createProject(page, base, "social-engagement-board-e2e", projectPath, PROFILE);
+    const projectId = known ?? (await ui.findProjectId(page.request, base, projectPath));
+    if (!resume?.skipPackageCopy) fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
     await ui.openBoard(page, base, projectId);
-    await report.step("Project created, Brief package placed in brief/", page);
-    await ui.startPipeline(page, "Build the social engagement desk", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
-    await report.step("New pipeline, package handed over", page);
-    await ui.launchPipeline(page);
+    await report.step("Project ready, Brief package in brief/", page, [resume?.note, housekeeping].filter(Boolean).join(" "));
+    if (resume?.skipStartPipeline) {
+      await report.step("Resume: the pipeline was already started, New pipeline not clicked again", null);
+    } else {
+      await ui.startPipeline(page, "Build the social engagement board", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
+      await report.step("New pipeline, package handed over", page);
+      await ui.launchPipeline(page);
+    }
 
     // 4. Follow the phases, answer gates, until complete, failed, idle or out of budget.
     const taskId = await waitForTask(page, base, projectId);
     if (taskId) await page.goto(`${base}/tasks/${taskId}`);
-    await ui.startTaskSession(page);
+    // A resumed task may already be launched (or its pipeline over): no launch button is then not an error.
+    const hasLaunch = await page.getByTestId("cta-launch-in-terminal").waitFor({ state: "visible", timeout: 10_000 }).then(() => true, () => false);
+    if (resume?.skipStartPipeline && !hasLaunch) {
+      await report.step("Resume: no launch button on the task page, the task was already launched", page);
+    } else {
+      await ui.startTaskSession(page);
+    }
     await report.step("Task page after launch", page);
     status = await follow(page, base, projectId, projectPath, deadline, cfg.maxMinutes, report);
+    initialStatus = status;
 
     // 5. Hard file checks, then the built app (only when the run completed).
     checkProjectFiles(projectPath, fixtureDir, checklist);
     const shot = readScreenshotCheck(projectPath);
     report.setScreenshotCheck(shot.summary);
     recordScreenshotCheck(checklist, shot);
+    const mockups = listHtml(path.join(fixtureDir, "mockups"));
+    checkPluginShape(projectPath, checklist);
+    checkScreensComposed(projectPath, mockups, checklist);
+    checkSelfContained(projectPath, checklist);
+    checkTestsRan(projectPath, checklist);
     if (status === "complete") {
       await ui.openBoard(page, base, projectId);
+      // The Test phase used the throw-away data folder of this fixed port; move it aside so H06-H10 start fresh.
+      const used = path.join(projectPath, ".dev-data");
+      if (fs.existsSync(used)) {
+        try {
+          fs.renameSync(used, `${used}.before-e2e-${Date.now()}`);
+          await report.step("Test-phase data folder moved aside before the preview", null, ".dev-data was renamed so the API checks start from a fresh folder.");
+        } catch (error) {
+          report.escalation(`The Test-phase data folder could not be moved aside (${(error as Error).message.split("\n")[0]}); H06 will show the folder was not fresh.`);
+        }
+      }
       const app = await ui.openPreview(page);
-      const origin = new URL(app.url()).origin;
-      const health = await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(30_000) }).then((r) => r.status, () => 0);
+      const url = new URL(app.url());
+      if (!LOOPBACK.has(url.hostname)) throw new Error(`The preview opened ${url.origin}, which is not loopback; the API checks only talk to 127.0.0.1.`);
+      const origin = url.origin;
+      const call = httpCall(origin);
+      const health = await call("GET", "/api/health").then((r) => r.status, () => 0);
       checklist.record("H05", health === 200 ? "pass" : "fail", `GET /api/health -> ${health}`);
-      await runChatScript(async (message) => {
-        const res = await fetch(`${origin}/api/chat`, {
-          method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message }), signal: AbortSignal.timeout(60_000),
-        });
-        return (await res.json()) as { reply: string; pane: unknown };
-      }, JSON.parse(fs.readFileSync(path.join(fixtureDir, "chat-map.json"), "utf8")), checklist);
-      await tourApp(app, await page.context().newPage(), fixtureDir, report);
+      const { state } = await runApiChecks(call, checklist);
+      await app.goto(origin, { waitUntil: "domcontentloaded" });
+      const declared = parseTokens(fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"));
+      const snap = await snapshotBoard(app, Object.keys(declared));
+      checkBoardShape(snap, checklist, state.perPlatform);
+      checkBoardTokens(snap, declared, checklist);
+      await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
     }
+    checkGates(report.gateList(), report.escalationList(), checklist);
     const open = checklist.hardOpen();
     status = status === "complete" && open.length === 0 ? "complete, all hard items hold" : `${status}; hard items open: ${open.map((i) => i.id).join(", ") || "none"}`;
     await report.step("Finished", page, status);
+    // Only a pipeline that really ended is finished; an idle abort or a spent budget stays resumable.
+    if (initialStatus === "complete" || initialStatus === "failed") markFinished(runDir);
   } catch (error) {
     status = `failed: ${(error as Error).message.split("\n")[0]}`;
     report.escalation(status);
@@ -190,52 +257,3 @@ test("brief package to a working chat-first app through the WebUI", async ({ pag
   }
   expect(checklist.hardOpen().map((i) => i.id)).toEqual([]);
 });
-
-async function waitForTask(page: Page, base: string, projectId: string): Promise<string | null> {
-  for (let i = 0; i < 40; i += 1) {
-    const id = await ui.findTaskId(page.request, base, projectId);
-    if (id) return id;
-    await page.waitForTimeout(3000);
-  }
-  return null;
-}
-
-async function follow(page: Page, base: string, projectId: string, projectPath: string, deadline: number, maxMinutes: number, report: Report): Promise<string> {
-  const idle = new IdleWatch(IDLE_MINUTES * 60_000);
-  let lastPhases = "";
-  let boardShot = false;
-  const gateState: ui.GateState = { launchPending: false, terminalApprovalMs: 0 };
-  while (Date.now() < deadline) {
-    const state = readRunState(projectPath);
-    const phases = phaseSignature(state);
-    if (phases !== lastPhases) {
-      lastPhases = phases;
-      await report.step(`Phase state: ${phases}`, page);
-      if (!boardShot && state.status === "in_progress") {
-        boardShot = true;
-        const tab = await ui.openBoardTab(page, base, projectId);
-        await report.step("Task board with the running pipeline", tab);
-        await tab.close();
-      }
-    }
-    if (state.status === "complete" || state.status === "failed") return state.status;
-    for (const done of await ui.answerGates(page, gateState)) {
-      report.gate(done);
-      if (/exemption|safety dialog/i.test(done)) report.escalation(done);
-      await report.step(`Gate answered: ${done}`, page);
-    }
-    const terminal = await page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => "");
-    if (!idle.observe(`${phases}|${fileActivity(projectPath)}|${terminal.slice(-2000)}`)) {
-      const inbox = await page.context().newPage();
-      const prompt = await ui.pendingPrompt(inbox, base);
-      report.escalation(`No progress for ${IDLE_MINUTES} minutes; pending prompt the spec cannot answer: ${prompt ? "yes (see inbox screenshot)" : "none found in the inbox"}.`);
-      await report.step("Idle abort: inbox", inbox);
-      await report.step("Idle abort", page, "No new phase, task state, file change or terminal output.");
-      return "idle-abort";
-    }
-    await page.waitForTimeout(POLL_MS);
-  }
-  report.escalation(`Wall-clock budget of ${maxMinutes} minutes used up.`);
-  await report.step("Budget used up", page);
-  return "out-of-budget";
-}

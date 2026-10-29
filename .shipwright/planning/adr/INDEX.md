@@ -205,3 +205,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Baseline touched-set: measure first, as a library plus a replay](iterate-2026-10-28-bl0-touch-library-and-replay-baseline-touched-set.md)
 - [BL0b: measure BP on a broader base before it goes further](iterate-2026-10-28-bl0b-broader-measurement-broader-measurement-before-bp-goes-further.md)
 - [Bundled stack profile for skill-backed apps, without schema keys](iterate-2026-10-28-e2-skill-app-stack-profile-skill-companion-app-profile.md)
+- [E6: harness and fixture for the skill-backed app class](iterate-2026-10-29-e6-e2e-harness-skill-app-board-fixture-and-checks.md)

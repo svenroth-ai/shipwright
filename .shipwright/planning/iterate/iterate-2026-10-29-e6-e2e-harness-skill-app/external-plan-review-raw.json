@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: dependency / Severity: medium**\n  **Finding:** The plan says to read a brief file and run `scripts/update-marketplace.sh` and `check_plugin_cache_sync.py --strict` \"before the next unit,\" but the acceptance criteria don't state where the outputs of those prerequisite steps land. If the fixture introduces a new skill-adjacent package, the cache-sync strict check may fail until a marketplace rebuild is committed \u2014 but the plan doesn't say whether that rebuild belongs in this diff or the BP side.\n  **Suggestion:** State explicitly whether this unit adds anything the cache-sync check inspects; if yes, include the regenerated marketplace artifacts in this diff so the pre-merge strict run passes on the PR itself.\n\n- **Category: risk / Severity: medium**\n  **Finding:** \"Replaces chat.ts\" is listed as a parenthetical inside the harness step, but legacy `social-engagement/` fixtures \"stay for the legacy chat-first tests.\" If chat.ts is shared by those legacy tests, replacing rather than adding alongside it (`board-api.ts`) risks breaking the legacy suite. The plan is ambiguous about whether chat.ts is deleted or retained.\n  **Suggestion:** Make this explicit: if any existing spec imports chat.ts, keep it and add board-api.ts alongside; only delete chat.ts in the unit that removes the legacy fixture.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** `resume.ts` (\"resume plan from an earlier run folder\") has no stated contract for what happens when the run folder is missing, partially written (crash mid-run), or from a schema version older than the new report placeholders. Resume is exactly where half-written state bites.\n  **Suggestion:** Define behavior for missing/corrupt/stale run folders (fail with a clear message vs. fresh start), and unit-test at least the missing-folder and older-schema cases.\n\n- **Category: edge-case / Severity: low**\n  **Finding:** H13 \"screens vs mockup copy\" implies string/content comparison, but token lines like `--color-bg: #f6f7f9` suggest the check should be structural. Copy-matching is brittle to whitespace and case; the plan doesn't say how near-matches are judged.\n  **Suggestion:** Specify normalization (whitespace, case) for the copy comparison and have at least one near-miss test in the answer key to prove the check fails when it should.\n\n- **Category: approach / Severity: low**\n  **Finding:** \"Pure over injected readers so unit tests need no browser\" is sound, but `board-dom.ts` + `tokens.ts` + `gates.ts` + `follow.ts` + `resume.ts` + `project-checks.ts` is six modules for one unit. If `gates.ts` (S08 \"by meaning\") and `follow.ts` are thin, consider folding them into project-checks/board modules unless they're independently reusable \u2014 the \u2264300-line rule suggests they may be small single-use wrappers.\n  **Suggestion:** Only keep modules that have more than one consumer or a genuinely distinct boundary; otherwise merge thin ones to reduce surface area. Not a blocker if they're each substantive.\n\n- **Category: risk / Severity: low**\n  **Finding:** Report template gains \"new placeholders\" \u2014 existing consumers of the report (diff tools, answer-key comparison) need to tolerate or be updated for the new fields, and old run folders rendered by the new template would show empty placeholders.\n  **Suggestion:** Confirm answer-key comparison ignores unknown/absent placeholders gracefully, or version the report.\n\n- **Category: security / Severity: low**\n  **Finding:** The harness talks to a companion HTTP API (H06\u2013H11) over what is presumably localhost. If the fixture package or harness executes any code from the run folder (resume plan), that's an injection vector if run folders are ever externally supplied. Low practical risk for a local test harness.\n  **Suggestion:** Note that run folders are trusted inputs; no action needed beyond documenting it.\n\n## Overall assessment\n\nThe approach is sound and well-scoped: pure modules over a DOM snapshot and HTTP API is the right shape for browserless unit tests, and the legacy/fixture split is handled. The main revisions needed are clarifying chat.ts's fate against the retained legacy tests and pinning down the resume folder's failure contract before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository reads were blocked by the execution policy, so I could not verify the referenced brief or existing harness. This review is limited to the supplied plan.\n\n1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** \u201cReplaces chat.ts\u201d and rewriting the tour leave legacy compatibility unclear. Keeping the legacy fixture alone does not preserve its harness execution path.  \n   **Suggestion:** Explicitly select the board harness by profile/host, retain the chat-first path, and add a regression test proving each fixture selects the appropriate harness.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Injected-reader unit tests and a dry harness do not demonstrate that the companion HTTP adapter, DOM capture, and report generation work together. Wiring failures could remain undetected until the operator\u2019s E8 run.  \n   **Suggestion:** Add one bounded integration smoke test using a local companion API stub and served board. Exercise the actual adapters through report generation, including an API failure. Keep the full operator run outside this unit.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Resuming from an earlier run folder has no stated compatibility or evidence-freshness rules. A different fixture, profile, or incomplete run could supply stale passing results.  \n   **Suggestion:** Validate run identity and required artifacts before resuming, define which checks must rerun, and write fresh results separately. Test mismatched and incomplete run folders.\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** \u201cS08 by meaning\u201d and \u201cS06 test results\u201d lack explicit evidence rules. Missing or ambiguous evidence could inadvertently count as success, making the harness unreliable.  \n   **Suggestion:** Define pass, fail, and missing-evidence outcomes for these checks. Add negative cases covering misleading gate wording, absent test results, and results belonging to another run.\n\nThe fixture and modular harness direction is reasonable, but compatibility, adapter integration, and evidence handling need concrete coverage before implementation proceeds. Compliance with the brief\u2019s exact scope remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-29-e6-e2e-harness-skill-app",
+    "at": "2026-10-29T02:08:55.512178+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
