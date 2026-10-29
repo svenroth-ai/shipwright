@@ -296,3 +296,45 @@ def test_brand_checker_requires_primary_hover_darker_and_font_sizes_present() ->
     for hover in (colours["primary"], "#93c5fd"):  # the same colour, and a lighter one: neither is a darker hover
         assert any(f.startswith("primary-hover") and "darker" in f for f in mod.check({**colours, "primary-hover": hover}))
     assert mod.check(mod.parse_colours((KIT / "tokens" / "clean.css").read_text(encoding="utf-8")), {}) == ["missing --font-size-base", "missing --font-size-sm"]
+
+
+def _rule_line(css: str, selector: str) -> str:
+    return next(line for line in css.splitlines() if line.startswith(selector))
+
+
+@pytest.mark.covers("FR-01.04")
+def test_master_detail_collapses_to_a_picker_on_a_narrow_screen() -> None:
+    css = _css_without_comments()
+    start = css.index("@media (max-width: 900px) {\n  .master-detail")
+    narrow = css[start:css.index("\n}", start)]
+    assert ".master-picker { display: block; }" in narrow
+    assert ".master-pane > :not(.master-picker) { display: none; }" in narrow  # whatever the list is built from
+    wide = css[:start]
+    assert ".master-picker { display: none; }" in wide  # hidden on a wide screen
+    assert "position: sticky" in _rule_line(wide, ".master-pane {")
+
+
+@pytest.mark.covers("FR-01.04")
+def test_sticky_pane_clears_the_sticky_page_headers_and_keeps_its_edge() -> None:
+    css = _css_without_comments()
+    assert "top: calc(57px" in _rule_line(css, ".app-topnav .master-pane")
+    assert "position: static" in _rule_line(css, ".main-area .master-pane")  # no remembered pixel guess for the Layout A top bar
+    pane = _rule_line(css, ".master-pane {")
+    assert "padding: var(--space-2)" in pane and "margin: calc(-1 * var(--space-2))" in pane  # shadow and focus ring are not clipped
+
+
+@pytest.mark.covers("FR-01.04")
+def test_selected_count_uses_a_contrast_pair_the_contract_checks() -> None:
+    css = _css_without_comments()
+    rule = _rule_line(css, ".tab.active .count")
+    assert "color: var(--color-muted)" in rule and "background: var(--color-primary-soft)" in rule  # muted on primary-soft is 7:1 in CONTRAST_PAIRS
+
+
+@pytest.mark.covers("FR-01.04")
+def test_replies_nest_and_eyebrow_is_mono() -> None:
+    css = _css_without_comments()
+    assert ".comment-tree .comment-tree" in css
+    assert '.list-item[aria-current]:not([aria-current="false"])' in css  # selected, but not an item that says aria-current="false"
+    for hit in re.finditer(r"\.count(?![\w-])", css):  # the count slot is scoped to the two switchers
+        assert css[:hit.start()].endswith((".tab ", ".segmented-item ", ".tab.active ", ".segmented-item.active ")), css[max(0, hit.start() - 40):hit.end()]
+    assert "var(--font-mono)" in _rule_line(css, ".eyebrow")

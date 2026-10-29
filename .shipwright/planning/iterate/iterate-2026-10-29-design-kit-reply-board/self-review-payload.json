@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"G1-G5 built as kit classes (thread/comment-tree, master-detail with picker, count slot, callout+copy-btn, eyebrow); G6 verify-only, not built; derived from Untitled UI tab badge, feed item, code snippet per operator note."},
+{"name":"Error Handling","verdict":"n/a","note":"Static CSS and HTML fragments; no runtime paths."},
+{"name":"Security Basics","verdict":"pass","note":"No scripts, no external assets, no inline event handlers added."},
+{"name":"Test Quality","verdict":"pass","note":"Two tests assert narrow-screen picker collapse, nested replies, count slot in both switchers, mono eyebrow; existing kit tests cover tokens-only, gallery coverage, example currency."},
+{"name":"Performance Basics","verdict":"pass","note":"About 40 CSS lines; no layout thrash; sticky pane only."},
+{"name":"Naming & Structure","verdict":"pass","note":"Classes follow existing kebab/prefix naming; new sections commented like neighbours; docs table and derivation note updated."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Kit class inventory vs gallery, snippets and token contract: all consumer tests green; no new tokens."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff reported no findings."}
+]}

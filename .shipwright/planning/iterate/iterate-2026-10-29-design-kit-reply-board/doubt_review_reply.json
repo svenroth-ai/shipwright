@@ -1,0 +1,8 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","marking":"must-address","claim_under_doubt":"docs say the selected item carries aria-current, kit styles only .active","what_would_resolve_it":"RESOLVED: .list-item[aria-current] styled like .active, doc updated, test added."},
+{"severity":"medium","marking":"must-address","claim_under_doubt":"narrow collapse hides only .master-pane .list; picker placement undocumented","what_would_resolve_it":"RESOLVED: rule is now .master-pane > :not(.master-picker), doc says master-picker goes on the select-wrap."},
+{"severity":"low","marking":"advisory","claim_under_doubt":"72px Layout A offset is a guess","what_would_resolve_it":"ACCEPTED: stated in the docs as approximate; not browser-measured."},
+{"severity":"low","marking":"advisory","claim_under_doubt":"global .count collides","what_would_resolve_it":"RESOLVED: scoped to .tab .count and .segmented-item .count; test added."},
+{"severity":"low","marking":"advisory","claim_under_doubt":"fixture mono counts and primary eyebrow not recorded","what_would_resolve_it":"RESOLVED: recorded as brand choices outside the kit in the docs."},
+{"severity":"low","marking":"advisory","claim_under_doubt":"aria-live on the button is unreliable","what_would_resolve_it":"RESOLVED: doc recommends a separate role=status region; attribute removed from the gallery."}
+],"summary":"2 must-address resolved, 4 advisory resolved or accepted."}

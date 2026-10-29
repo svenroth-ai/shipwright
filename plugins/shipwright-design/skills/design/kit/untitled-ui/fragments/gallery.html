@@ -41,9 +41,20 @@
         <div class="stat-card"><div class="stat-header"><span class="stat-label">Replies</span></div><div class="stat-value">34</div><div class="stat-trend trend-down"><span>4% vs last week</span></div></div>
       </div>
 
+      <h2>Thread and reply board</h2>
+      <div class="master-detail">
+        <div class="master-pane"><div class="select-wrap master-picker"><select class="select" aria-label="Thread"><option>Reddit: onboarding checklist</option><option>Hacker News: pipelines</option></select></div><div class="list"><a class="list-item active" href="#reddit" aria-current="true"><div class="list-item-main"><div class="list-item-title">Reddit: onboarding checklist</div></div></a><a class="list-item" href="#hn"><div class="list-item-main"><div class="list-item-title">Hacker News: pipelines</div></div></a></div></div>
+        <div class="detail-pane">
+          <div class="thread"><div class="eyebrow">Reddit &middot; r/webdev</div><h3 class="thread-title">How do you keep onboarding checklists current?</h3><div class="thread-meta"><div class="avatar avatar-sm">MK</div><strong>maria_k</strong><span>42 points</span><span>3 hours ago</span></div><p class="thread-body">Ours rot within a month.</p>
+            <ul class="comment-tree" role="list"><li class="comment"><div class="comment-head"><div class="avatar avatar-sm">TL</div><strong>tomlin</strong><span>12 points</span><span>2 hours ago</span></div><p class="comment-body">Generate them from the repo.</p>
+              <ul class="comment-tree" role="list"><li class="comment"><div class="comment-head"><div class="avatar avatar-sm">MK</div><strong>maria_k</strong><span>3 points</span><span>1 hour ago</span></div><p class="comment-body">Do you test the generated output?</p></li></ul></li></ul></div>
+          <div class="callout"><div class="callout-head"><span class="eyebrow">Draft reply</span><button class="btn btn-secondary btn-sm copy-btn copied" type="button">Copied</button></div><p class="callout-text">We generate ours from the repo and check them in CI.</p></div>
+        </div>
+      </div>
+
       <h2>Tabs, segmented control, progress</h2>
       <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">One</button><button class="tab" role="tab" aria-selected="false" type="button">Two</button><button class="tab" role="tab" aria-selected="false" type="button">Three</button></div></div>
-      <div class="segmented"><button class="segmented-item active" aria-pressed="true" type="button">Day</button><button class="segmented-item" aria-pressed="false" type="button">Week</button><button class="segmented-item" aria-pressed="false" type="button">Month</button></div>
+      <div class="segmented"><button class="segmented-item active" aria-pressed="true" type="button">Day <span class="count">4</span></button><button class="segmented-item" aria-pressed="false" type="button">Week <span class="count">3</span></button><button class="segmented-item" aria-pressed="false" type="button">Month</button></div>
       <div class="progress"><div class="progress-bar" style="width: 62%"></div></div>
 
       <h2>Form</h2>
@@ -159,7 +170,7 @@
           <tbody><tr><td><input type="checkbox" class="row-check" aria-label="Select row"></td><td>Onboarding for a new tool</td><td><span class="badge badge-info">new</span></td></tr></tbody></table>
         <div class="table-footer"><span>Showing 1 of 9 threads</span></div>
       </div>
-      <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">Details</button><button class="tab" role="tab" aria-selected="false" type="button">History</button></div><div class="tab-content"><p class="card-desc">Content of the active tab.</p></div></div>
+      <div class="tabs-container"><div class="tabs-nav" role="tablist"><button class="tab active" role="tab" aria-selected="true" type="button">Details <span class="count">2</span></button><button class="tab" role="tab" aria-selected="false" type="button">History</button></div><div class="tab-content"><p class="card-desc">Content of the active tab.</p></div></div>
       <div class="detail-layout">
         <div class="detail-main"><div class="detail-section"><h3>Thread</h3><div class="detail-fields"><div><span class="detail-label">Platform</span><span class="detail-value">Reddit</span></div><div><span class="detail-label">Author</span><span class="detail-value">u/maria_k</span></div></div></div></div>
         <div class="detail-sidebar"><div class="detail-section"><h3>Actions</h3><div class="detail-actions"><button class="btn btn-secondary btn-sm" type="button">Open draft</button></div></div></div>

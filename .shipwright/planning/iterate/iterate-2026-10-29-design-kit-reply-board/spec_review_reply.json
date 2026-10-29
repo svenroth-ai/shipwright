@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Re-review after the gallery placement fix: block now sits after the closed stats row under its own heading, in the fragment and all three built examples; all six ACs hold. Non-blocking: docs do not mention the 16px floor (recorded in the spec's Out of Scope)."}
