@@ -69,18 +69,21 @@
    (`shared/grill-trace-format.md` §3) — so fixing a red result is always a
    completeness fix, never a rewrite for tone.
 
-   **WARNING severity (visible, does not block completion):**
-   `fr_trace_coverage` — once spec.md files exist, a live FR row whose
-   `Name` cell has no matching grill-trace at all (catches a partially
-   recorded interview, not just a fully skipped one). This is routed to an
-   `inform`-level note rather than an `ask`-level block
-   (`phase_validators._run_canon_checks`, PR #705 Tier-3 review) because the
-   FR-row-to-trace join has no stable identity contract yet (see
-   `shared/grill-trace-format.md` §5 "Known limitation") — a mismatch here
-   is still a real, worth-reading signal that the interview may have missed
-   a requirement, so treat a red `fr_trace_coverage` result as a prompt to
-   go back and check, just not as something that stops you from completing
-   the phase.
+   **Every entry channel owes the same two artifacts** — the interview, a
+   Brief package (`brief_project_mode.py apply`) and a seed file alike must
+   leave `shipwright_project_interview.md` (a transcript, or the brief-mode
+   pointer to the signed-off package) and one grill-trace per requirement.
+   Also ERROR: `grill_trace_coverage` once spec.md FR rows exist (or the
+   project config says `complete`) with no transcript and no traces — the
+   interview was bypassed; `interview_transcript_present` — traces exist but
+   the transcript/pointer does not; and `fr_trace_coverage` — a live FR row
+   whose `Name` slug has no matching grill-trace (a partially recorded
+   interview) — in Extension scope only rows whose Basis is not `interview`
+   (inherited, adopted) downgrade to a WARNING; an untraced `interview` row still blocks. `human_signoff` — a brief-mode pointer
+   or `brief:` trace without a `brief_dir` in run_config, or a `confirmed_by`
+   naming no person (`agent`, `claude`, `auto`, `seed`). If `fr_trace_coverage` is a false positive (a renamed
+   requirement), align the FR `Name` with the trace's `requirement_key`; do
+   not skip the trace.
 
    **A project whose interview began before this gate shipped** will
    correctly show `grill_trace_coverage` red at Step 8 — the transcript
@@ -91,9 +94,8 @@
    there is no separate "grandfather" path, by design (the design's own
    thesis: a prompt-only guarantee that reads "should have happened" is
    exactly what this gate replaces). The same pre-existing-interview gap
-   can also surface as a `fr_trace_coverage` warning; because that check is
-   WARNING severity it will not block completion, but it is still worth the
-   same retroactive pass.
+   also surfaces as a blocking `fr_trace_coverage` result; the same
+   retroactive pass resolves it.
 
 ## Phase complete — update pipeline state
 

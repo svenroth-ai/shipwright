@@ -132,11 +132,23 @@ confused with the four closed-vocabulary STOPs above:
   (slugified with the same rule as `requirement_key`, §1) must match some
   grill-trace file. Catches a PARTIALLY recorded interview the coverage
   check above cannot see (some requirements traced, one silently skipped).
-  SKIPPED entirely before any spec.md exists. **WARNING severity, not
-  blocking** (PR #705 Tier-3 review) — see the "Known limitation" note
-  below for why; `grill_trace_coverage` above stays at the default ERROR
-  severity, since it is a structural presence check, not a fragile
-  cross-artifact identity join.
+  SKIPPED entirely before any spec.md exists. **ERROR severity** since
+  the entry-channel hardening (it was a WARNING after PR #705): every entry
+  channel owes one trace per requirement. A false positive from the
+  brittle Name-slug join (see "Known limitation") is fixed by aligning the
+  FR `Name` with the trace's `requirement_key`, not by tolerating a gap.
+- **`human_signoff`** (`grill_trace_entry_channel.py`) — a brief-mode pointer
+  transcript or a `brief:` trace needs a `brief_dir` recorded in run_config (whose
+  hash and approval `brief_mode_checks` verifies), and `confirmed_by` must not be
+  the agent attesting to itself (`agent`, `claude`, `auto`, `seed`, ...). In
+  Extension scope `fr_trace_coverage` is a WARNING only for rows whose Basis is not
+  `interview` (inherited / adopted rows never went through this run's interview);
+  an untraced `interview` row still blocks.
+- **`interview_transcript_present`** (`grill_trace_entry_channel.py`) —
+  traces exist but `shipwright_project_interview.md` (a transcript, or the
+  brief-mode pointer) is missing or empty. `grill_trace_coverage` also
+  fails (no longer SKIPPED) when spec.md FR rows exist or the project
+  config is `complete` and neither transcript nor traces exist.
 - **`glossary_source_available`** (`grill_trace_glossary.py`) — the
   framework's own `shared/glossary.md` is missing, is not a regular file
   (e.g. a directory), or exists but could not actually be read (PR #705
@@ -177,20 +189,12 @@ Neither produces a false PASS on the four closed-vocabulary STOPs
 missed or ambiguous coverage signal, not a silently-accepted incomplete
 trace. Follow-up tracked as a triage card rather than blocking P4.2.
 
-**Severity (PR #705, Tier-3 automated review):** because the join has no
-stable identity contract, a mismatch defaulting to the same ERROR severity
-as the four real STOPs made it hard-block `update-step --step project` for
-a project that did the elicitation work correctly — exactly the
-over-gating failure mode this section already documented as a risk, now
-also enforced. `check_fr_trace_coverage()`'s failure branch is WARNING
-severity: still surfaced in every report (`verify_grill_trace_completeness.py`'s
-CLI, `run_project_checks`), still a real signal worth reading, but routed
-to `phase_validators._run_canon_checks`'s `inform` bucket instead of `ask`,
-so it no longer blocks completion on its own. The larger, correct fix — a
-stable trace key carried from interview output into the generated FR row,
-with uniqueness/orphan validation — remains out of scope here and is the
-real resolution of the collision/orphan gaps above; this is the narrow,
-pragmatic mitigation until that identity contract exists.
+**Severity:** `check_fr_trace_coverage()` was WARNING severity after PR #705
+(the join has no stable identity contract, so a rename read as "missing").
+It is ERROR now: "each requirement gets a trace" holds for every entry
+channel, and a bypassed or partial interview passing silently was the worse
+failure. The larger fix — a stable trace key carried from interview output
+into the generated FR row — remains out of scope.
 
 ---
 

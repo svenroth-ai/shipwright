@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
 
 from brief_intake import (  # noqa: E402
@@ -100,3 +102,65 @@ def test_fenced_json_block_with_nested_object_parses_in_full():
     result = intake(payload)
     assert result["has_brief"] is True
     assert result["profile"] == "supabase-nextjs"
+
+
+# --- run route: an unusable brief FILE is refused, never swapped for the interview ---
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_refuses_missing_brief_file(tmp_path):
+    result = intake("@" + str(tmp_path / "gone.json"), str(tmp_path), package=True)
+    assert result["refused"] is True and result["code"] == "brief_unreadable"
+    assert result["has_brief"] is False
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_refuses_unsupported_suffix(tmp_path):
+    (tmp_path / "brief.pdf").write_bytes(b"%PDF")
+    for source in ("@" + str(tmp_path / "brief.pdf"), str(tmp_path / "brief.pdf")):
+        result = intake(source, str(tmp_path), package=True)
+        assert result["refused"] is True and "unsupported suffix" in result["message"]
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_still_reads_a_good_file_and_plain_descriptions(tmp_path):
+    good = tmp_path / "brief.md"
+    good.write_text("description: a notes app\n", encoding="utf-8")
+    assert intake(str(good), str(tmp_path), package=True)["has_brief"] is True
+    assert intake("Build a SaaS time tracker", str(tmp_path), package=True)["has_brief"] is True
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_non_package_route_keeps_the_degrade_for_adopt(tmp_path):
+    assert intake("@" + str(tmp_path / "gone.json"))["has_brief"] is False
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_refuses_a_document_path_with_spaces(tmp_path):
+    result = intake(str(tmp_path / "dinovo GmbH" / "brief.pdf"), str(tmp_path), package=True)
+    assert result["code"] == "brief_unreadable"
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_cli_exits_3_on_an_unreadable_brief_file(tmp_path, monkeypatch, capsys):
+    import brief_intake
+    monkeypatch.setattr(sys, "argv", ["brief_intake.py", "--brief", "@" + str(tmp_path / "gone.json"),
+                                      "--project-root", str(tmp_path)])
+    assert brief_intake.main() == 3
+    assert json.loads(capsys.readouterr().out)["code"] == "brief_unreadable"
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_keeps_a_description_ending_in_a_file_name(tmp_path):
+    result = intake("Build an app that edits package.json", str(tmp_path), package=True)
+    assert result.get("refused") is None  # not mistaken for a file (load_brief's own legacy degrade is unchanged)
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_refuses_a_bare_relative_spaced_document(tmp_path):
+    assert intake("my notes v2.pdf", str(tmp_path), package=True)["code"] == "brief_unreadable"
+
+
+@pytest.mark.covers("FR-01.16/AC01")
+def test_package_route_keeps_prose_that_ends_in_a_document_name(tmp_path):
+    result = intake("Build a dashboard for sales.csv", str(tmp_path), package=True)
+    assert result.get("refused") is None and result["has_brief"] is True

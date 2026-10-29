@@ -30,6 +30,10 @@ prose judgment, same honesty guard as the four):
 - ``grill_trace_coverage`` — an interview transcript exists but ZERO
   grill-trace records were written at all. The exact failure mode the
   design opens with (three times, dogfooded, zero traces).
+- ``interview_transcript_present`` / the no-transcript arm of ``grill_trace_coverage``
+  (``grill_trace_entry_channel.py``) — every entry channel (interview, Brief package,
+  seed) must leave a transcript or brief-mode pointer AND traces; a project past the
+  interview with neither no longer SKIPs, and traces without a transcript fail.
 - ``fr_trace_coverage`` (``grill_trace_fr_coverage.py``, external plan
   review, P4.2) — a spec.md FR row has no matching grill-trace at all.
   Catches a PARTIALLY recorded interview the coverage check above cannot
@@ -77,6 +81,10 @@ from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
 from tools.grill_trace_format import (  # noqa: E402
     DIMENSIONS, GrillTrace, GrillTraceError, grill_traces_dir, read_trace_dir,
+)
+from tools.grill_trace_entry_channel import (  # noqa: E402
+    check_grill_trace_coverage, check_human_signoff, check_transcript_present, interview_expected,
+    is_extension_scope,
 )
 from tools.grill_trace_fr_coverage import check_fr_trace_coverage  # noqa: E402
 from tools.grill_trace_glossary import (  # noqa: E402
@@ -185,27 +193,6 @@ def check_glossary_delta_declared(trace: GrillTrace) -> CheckResult:
     return CheckResult(name, True, f"{len(delta_terms)} glossary_delta term(s), all declared")
 
 
-def check_grill_trace_coverage(planning_dir: Path, traces: list[GrillTrace]) -> CheckResult:
-    """Not one of the four closed-vocabulary STOP conditions — a distinct
-    structural guard against the exact bypass the design opens with:
-    an interview ran and produced no trace at all. Kept under its own,
-    differently-named result so it is never mistaken for one of the four."""
-    name = "grill_trace_coverage"
-    if traces:
-        return CheckResult(name, True, f"{len(traces)} grill-trace record(s) found")
-    transcript = planning_dir / "shipwright_project_interview.md"
-    if transcript.exists():
-        return CheckResult(
-            name, False,
-            f"{transcript} exists (an interview ran) but no grill-trace records "
-            f"were written under {grill_traces_dir(planning_dir)}",
-        )
-    return CheckResult(
-        name, None, "no interview transcript yet — nothing to check",
-        severity=Severity.SKIPPED.value,
-    )
-
-
 def run_all_checks(
     project_root: Path,
     *,
@@ -235,8 +222,12 @@ def run_all_checks(
     spec_paths = sorted(planning_dir.glob("*/spec.md"))
 
     results: list[CheckResult] = [
-        check_grill_trace_coverage(planning_dir, traces),
-        check_fr_trace_coverage(spec_paths, trace_keys),
+        check_grill_trace_coverage(
+            planning_dir, traces, interview_expected=interview_expected(project_root, planning_dir),
+        ),
+        check_transcript_present(planning_dir, traces),
+        check_human_signoff(project_root, planning_dir, traces),
+        check_fr_trace_coverage(spec_paths, trace_keys, inherited_ok=is_extension_scope(project_root)),
         check_glossary_source_available(glossary_path),
     ]
     if not traces:

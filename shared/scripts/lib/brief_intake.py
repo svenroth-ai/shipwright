@@ -257,7 +257,7 @@ def _package_intake(source, root):
 
 def intake(source: Optional[Union[str, dict]], project_root: str = ".", package: bool = False) -> dict:
     """Full brief-intake: load + normalize + map (dict, payload, file path; a package dir if ``package``)."""
-    result = _package_intake(source, project_root) if package else None
+    result = (_package_intake(source, project_root) or _sibling("brief_file_guard").refusal(source, load_brief, _BRIEF_SUFFIXES)) if package else None
     if result is not None:
         return result
     raw = load_brief(source)
@@ -292,7 +292,7 @@ def main() -> int:
         print(json.dumps(exc.as_dict(), indent=2))
         return 3
     print(json.dumps(result, indent=2))
-    return 3 if result.get("profile_error") else 0  # a named profile that cannot be used is loud
+    return 3 if result.get("profile_error") or result.get("refused") else 0  # a named profile or brief file that cannot be used is loud
 
 
 if __name__ == "__main__":
