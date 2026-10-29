@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"all five follow-ups implemented"},
+{"name":"Error Handling","verdict":"pass","note":"git/OSError paths fail strict"},
+{"name":"Security Basics","verdict":"pass","note":"gate fails closed on subdir/other-run"},
+{"name":"Test Quality","verdict":"pass","note":"outcome tests per follow-up, incl. regression for laundering"},
+{"name":"Performance Basics","verdict":"pass","note":"one extra git rev-parse per call"},
+{"name":"Naming & Structure","verdict":"pass","note":"at_repo_root public helper"},
+{"name":"Affected Boundaries","verdict":"pass","note":"baseline JSON gains a run key; old files read as other-run (strict)"},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"no skips except Windows backslash name"}]}

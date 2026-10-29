@@ -1,0 +1,17 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {"severity": "high", "claim_under_doubt": "Keying to SHIPWRIGHT_SESSION_ID stops a resume from laundering the session's writes",
+     "disproof_attempt": "SHIPWRIGHT_SESSION_ID is the per-Claude-session id, so a design phase continued in a new session writes a fresh baseline at the same HEAD. Disposition: accepted residual and documented; the follow-up asked for run keying and no restart-stable run id exists to this phase."},
+    {"severity": "medium", "claim_under_doubt": "Carry-forward keeps pre-commit edits reported",
+     "disproof_attempt": "Newly dirty paths were added at their current hash on a HEAD move. Disposition: FIXED (carry old entries only) with a regression test."},
+    {"severity": "medium", "claim_under_doubt": "Same run + moved HEAD means design committed the earlier output",
+     "disproof_attempt": "Single-session pipelines re-entering design after build can see a carried-forward entry reported as changed (false red, strict direction). Disposition: accepted; fails closed."},
+    {"severity": "medium", "claim_under_doubt": "A missing SHIPWRIGHT_SESSION_ID is handled",
+     "disproof_attempt": "None==None collapses run separation; set/unset mismatch goes strict. Disposition: accepted; both fail closed or equal the previous behavior."},
+    {"severity": "low", "claim_under_doubt": "at_repo_root misbehaves on Windows paths/symlinks/worktrees",
+     "disproof_attempt": "Not broken; a Cygwin-style git path fails closed."}
+  ],
+  "summary": "1 high, 3 medium, 1 low; carry-forward laundering fixed, the rest accepted with disposition."
+}

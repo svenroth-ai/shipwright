@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.boundary_baseline import write_baseline
+from lib.boundary_baseline import at_repo_root, write_baseline
 from lib.screen_registry import scan_designs_dir
 
 # Stack-profile resolution (project > user > bundled). Appended, then removed again:
@@ -141,7 +141,9 @@ def main() -> int:
 
     # FR-01.04 #11: what an earlier phase left uncommitted is not this session's change.
     try:
-        boundary_baseline = "written" if write_baseline(project_root) else "kept"
+        boundary_baseline = (
+            ("written" if write_baseline(project_root) else "kept") if at_repo_root(project_root) else "not_written"
+        )
     except OSError:  # the gate then stays strict; never fail the session over it
         boundary_baseline = "not_written"
 

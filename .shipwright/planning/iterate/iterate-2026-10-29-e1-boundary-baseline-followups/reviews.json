@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-29-e1-boundary-baseline-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:52.497436+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:59.376031+00:00",
+      "disposition": "small iterate; plan applies at medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 103,
+          "finding": "The 'run' key is SHIPWRIGHT_SESSION_ID (the Claude Code session id), not a pipeline run id; a restarted session at the same HEAD writes a fresh baseline and absorbs the earlier session's writes.",
+          "suggestion": "Key to a restart-stable id, or keep the old baseline when HEAD is unchanged. Disposition: accepted residual, documented in docs/hooks-and-pipeline.md (self-attested trust level).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/test_design_takes_package.py",
+          "line": 61,
+          "finding": "Removing the boundary exclusion proved nothing: the scratch project was not a git repo, so the gate passed vacuously.",
+          "suggestion": "git init, leave project-phase output uncommitted, record the baseline. Disposition: FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 154,
+          "finding": "On a same-run HEAD move newly dirty paths were added at their current fingerprint, laundering them.",
+          "suggestion": "Carry old entries forward only. Disposition: FIXED, with a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 175,
+          "finding": "A monorepo subdirectory project root can never pass the boundary gate (fails closed).",
+          "suggestion": "Use git rev-parse --show-prefix. Disposition: documented; fail-closed is the requested behavior.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/scripts/lib/boundary_baseline.py",
+          "line": 143,
+          "finding": "write_baseline returns False for both kept and not-at-root; stale docstring.",
+          "suggestion": "Docstring FIXED; return-state refactor deferred.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 6011,
+          "finding": "Capital 'The' after a semicolon; not_written listed twice.",
+          "suggestion": "FIXED (capital).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:52.910901+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Keying to SHIPWRIGHT_SESSION_ID stops a resume from laundering the session's writes — SHIPWRIGHT_SESSION_ID is the per-Claude-session id, so a design phase continued in a new session writes a fresh baseline at the same HEAD. Disposition: accepted residual and documented; the follow-up asked for run keying and no restart-stable run id exists to this phase.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Carry-forward keeps pre-commit edits reported — Newly dirty paths were added at their current hash on a HEAD move. Disposition: FIXED (carry old entries only) with a regression test.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Same run + moved HEAD means design committed the earlier output — Single-session pipelines re-entering design after build can see a carried-forward entry reported as changed (false red, strict direction). Disposition: accepted; fails closed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A missing SHIPWRIGHT_SESSION_ID is handled — None==None collapses run separation; set/unset mismatch goes strict. Disposition: accepted; both fail closed or equal the previous behavior.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: at_repo_root misbehaves on Windows paths/symlinks/worktrees — Not broken; a Cygwin-style git path fails closed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:53.106229+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:12:00.001241+00:00",
+      "disposition": "small iterate; external_code applies at medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:52.678251+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:59.591546+00:00",
+      "disposition": "small iterate; plan_internal applies at medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-29T07:11:59.793392+00:00",
+      "disposition": "small iterate; architecture_internal applies at medium+",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
