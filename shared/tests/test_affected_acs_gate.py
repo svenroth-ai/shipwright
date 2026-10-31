@@ -109,5 +109,29 @@ def test_replay_counts_required_declared_and_missing():
         {"type": "work_completed", "source": "iterate", "intent": "change", "adr_id": "c", "changed_files": ["docs/guide.md"]},
         {"type": "work_completed", "source": "build", "intent": "change", "adr_id": "d", "changed_files": ["shared/scripts/x.py"]},
     ]
-    assert replay(events, 100) == {"window": 3, "required": 2, "declared": 1, "missing": 1, "missing_run_ids": ["a"]}
+    got = replay(events, 100)
+    assert (got["window"], got["required"], got["declared"], got["missing"]) == (3, 2, 1, 1)
+    assert got["missing_run_ids"] == ["a"] and got["conclusive"] is True
     assert replay(events, 1)["window"] == 1
+
+
+@pytest.mark.covers("FR-01.11")
+def test_replay_without_path_data_is_inconclusive_not_clean():
+    events = [{"type": "work_completed", "source": "iterate", "intent": "change", "adr_id": "x"}]
+    got = replay(events, 100)
+    assert got["required"] == 0 and got["unknown_paths"] == 1 and got["conclusive"] is False
+
+
+@pytest.mark.covers("FR-01.11")
+def test_check_ignores_non_iterate_events(tmp_path):
+    _seed(tmp_path, source="build", intent="change", changed_files=["shared/scripts/lib/x.py"])
+    assert check_affected_acs_declared(tmp_path, _RUN, "").severity == "skipped"
+
+
+@pytest.mark.covers("FR-01.11")
+def test_empty_git_view_does_not_hide_runtime_paths_listed_on_the_event(tmp_path, monkeypatch):
+    from tools.verifiers import affected_acs_check as mod
+    monkeypatch.setattr(mod, "git_context", lambda root: "work_tree")
+    monkeypatch.setattr(mod, "_iterate_changed_paths", lambda root, commit: [])
+    _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"])
+    assert check_affected_acs_declared(tmp_path, _RUN, "").ok is False

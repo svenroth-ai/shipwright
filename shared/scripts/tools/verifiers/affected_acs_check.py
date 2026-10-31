@@ -59,18 +59,24 @@ def check_affected_acs_declared(project_root: Path, run_id: str, commit_hash: st
     event = _work_event(root, run_id)
     if event is None:
         return _skip(f"no work_completed event for {run_id}")
+    if event.get("source") != "iterate":
+        return _skip(f"source={event.get('source') or 'unknown'}, not an iterate event")
     if str(event.get("intent") or "").strip().lower() not in SPEC_IMPACT_INTENTS:
         return _skip(f"intent={event.get('intent') or 'unknown'}")
     if declaration_present(event):
         return CheckResult(CHECK_NAME, True, "declared")
 
-    paths = None
+    # Two views of "what changed": the branch (git) and the paths the event lists. Either one showing a
+    # runtime path is enough; an EMPTY git view is not proof of "clean" while the event lists paths.
+    views: list[list] = []
     if git_context(root) == "work_tree":
-        paths = _iterate_changed_paths(root, str(event.get("commit") or "") or commit_hash)
-    if paths is None and isinstance(event.get("changed_files"), list):
-        paths = event["changed_files"]
-    if paths is None:
+        git_paths = _iterate_changed_paths(root, str(event.get("commit") or "") or commit_hash)
+        if git_paths is not None:
+            views.append(git_paths)
+    if isinstance(event.get("changed_files"), list):
+        views.append(event["changed_files"])
+    if not views:
         return _skip("BLIND: no readable branch view and no changed_files on the event")
-    if not requires_declaration(event, paths):
+    if not any(requires_declaration(event, view) for view in views):
         return _skip("no runtime path touched; nothing to declare")
     return CheckResult(CHECK_NAME, False, f"this iterate touched runtime paths but its event has no affected_acs - {_REPAIR}")
