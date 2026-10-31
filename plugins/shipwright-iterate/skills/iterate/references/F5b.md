@@ -72,6 +72,16 @@ Specs that exist but parse to zero requirements refuse any declared FR id
 
 **Plan stub and spec chain (`plan_path`, `pr`).** Every feature/change/bug iterate writes its plan stub before F5b: write the values to a JSON file with the Write tool (`{"run_id": "...", "goal": "{WHAT}", "reason": "{WHY}", "ref": "{PR, plan or brief}"}`; optional `"tiny": true`, `"ac": ["FR-..ACnn"]`, `"gap_fr": "FR-.."`), then run `uv run "{shared_root}/scripts/tools/write_plan_stub.py" --project-root "{project_root}" --from-json "{json_file}"` (three lines; `tiny` for one; `ac` or `gap_fr` for a run that changes an AC or declares a catalog gap, which gets the full stub). goal, reason and ref are never interpolated into a shell command: free text with quotes, `$(...)` or backticks would be executed or mangled by the shell. The one filename is `.shipwright/planning/iterate/{run_id}/plan.md` (the spec-chain record; a mini-plan stays a working note and may keep its own name); F5b stamps it on the event as `plan_path` when the file exists (or pass `"plan_path"` in the extras). `"pr"` (the PR number) is optional on the event - the PR number exists only after the push. Record it once the PR is open with `record_event.py --type event_amended --amends {event_id} --fields '{"pr": N}'` (the lookup applies amendments); otherwise it is found from the squash commit that carries the `Run-ID`. F11 `check_plan_stub_recorded` reports a missing stub as an advisory warning. `tools/spec_chain_cli.py lookup --ac FR-01.03.AC05` answers which runs, plans and PRs shaped an AC.
 
+**Independent gap check (after the event is recorded, before F6; every complexity; advisory).** One fresh-context call to a NON-Claude model (GPT or GLM, through the external-review OpenRouter route) reads the diff, the catalog's acceptance criteria and this event's declaration, and answers one narrow question: is the declaration a fair account of the diff? It looks for a wrong `none` and for catalog gaps; it is not an "AC untrue" detector. It never blocks: no key, a provider outage or an unreadable reply record `status: "not_run"` with the reason and exit 0.
+
+```bash
+uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/ai_gap_check.py" \
+  --project-root "{project_root}" --run-id "{run_id}" --base-ref "{base_branch}" \
+  --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}"
+```
+
+It writes `ai-gap-check.json` (F6 stages the run directory) and `ai-gap-check.md`, the one PR-body block (requirements changed, requirements checked, verdict agree/disagree, gap yes/no). Paste `ai-gap-check.md` into the PR body (F11); a `not_run` note goes in the same way, so a skipped check is visible, never silent. Free text is passed through files only (diff, event, specs), never interpolated into the shell. A `disagree` is a prompt for the PR reader, not a finding to argue away; do not edit the declaration to satisfy it. F11 `check_ai_gap_check_recorded` warns when no record exists. `tools/ai_gap_check_replay.py` replays the check over merged PRs.
+
 **Behavior-affecting changes must be FR-linked.** If `spec_impact` is
 `add`/`modify`/`remove` (the change alters an FR's observable behavior), the
 No-FR branch is **not available** — the gate rejects it even with a valid

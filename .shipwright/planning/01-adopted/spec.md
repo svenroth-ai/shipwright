@@ -1065,6 +1065,14 @@ _Where the work detail lives_ at the end of this document.
   works and not what it does; a missing answer shows a visible warning and never holds
   the change back, because a finished record cannot be corrected afterwards.
   (iterate-2026-10-31-p2-close-gaps-and-backfill)
+- (E) [AC49] Given a change is about to be finished, when an independent reviewer that is not the
+  assistant's own model family reads it, then the pull request shows one plain note that
+  says which criteria the reviewer thinks the change altered, which it checked, whether it
+  agrees with the change's own account of its effect on the requirements, and whether it sees
+  behaviour that no criterion describes; the note only informs and never holds the change
+  back, and when the reviewer cannot be reached the note says it was not run and why rather
+  than staying silent.
+  (iterate-2026-10-31-p4-ai-gap-check)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview
