@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-31-p4-ai-gap-check",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T22:52:48.788980+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk / edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Exit 0 always\" plus an advisory, never-blocking design makes it easy for the check to silently never run or silently fail, which defeats the whole purpose (the package measurement showed authors self-certify wrongly ~15–20% of the time). If the PR reader can't distinguish \"not run / errored\" from \"ran, agreed,\" the feature will be skipped exactly when it's most needed.",
+          "suggestion": "Make the artifact's presence and parse status first-class: the F11 verifier should WARN (or fail) when the \"not run\" note appears or when `ai-gap-check.json` is missing/unparseable for an iterate change, rather than strict-exempting the whole thing. Advisory output is fine; unrun checks should be visible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Diff trimming (\"whole files cut past a cap\") can truncate exactly the hunks containing a catalog gap, producing false \"agree / no gap\" results. This directly threatens the ≥6/7 hit-rate acceptance criterion — your measurement will conflate prompt quality with truncation artifacts.",
+          "suggestion": "Prefer head-and-tail sampling or hunk-count-based trimming over wholesale file cutoff, and record in the output JSON which files/hunks were trimmed so measurement can separate the two effects.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan reuses `external_review.review_with_openrouter` but doesn't confirm that path supports pinned non-Claude models with its existing key/rate-limit handling. If the OpenRouter route is Claude-pinned or the non-Claude model names/keys differ, this is a late-stage blocker.",
+          "suggestion": "Verify (one smoke call through the shared helper with the intended GPT/GLM model ID) before building the parser and templates around its reply format.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The diff and the change's own declaration are untrusted input feeding an LLM whose verdict appears in the PR body. Prompt injection via commit messages/diff comments can flip the agree/disagree verdict, and the verdict text is echoed into PR-visible markdown.",
+          "suggestion": "Frame the prompt to treat diff content as data only, and render the model's free text verbatim-quoted in the markdown output rather than interpolated as markdown.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk / dependency",
+          "file": null,
+          "line": null,
+          "finding": "The fourth acceptance criterion (\"operator agrees on a fresh set of 10\") is a human-in-the-loop gate with no owner or timing in the plan; the measure record is marked \"pending.\" The done-when criteria require measuring before the next unit starts.",
+          "suggestion": "Name who runs the fresh-10 review and when, and define what happens on disagreement (iterate prompt vs. stop the campaign) before declaring the unit done.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Two prompt versions × 35 PRs in the replay tool plus a separate CLI plus a shared core module is borderline over-production for an advisory check; the replay script largely duplicates the CLI's call path.",
+          "suggestion": "Consider having the replay tool invoke the CLI (or core) per PR rather than maintaining a parallel invocation path — fewer places for prompt/parser drift between measured and live behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds a CLI and documentation but does not identify the actual invocation before commit or how its output reaches the PR body. Registering an F11 verifier alone does not establish that the independent check runs.",
+          "suggestion": "Name the existing iterate integration point, invoke the CLI there, and specify how the generated block is inserted or replaced. Verify both a successful run and an unavailable-provider run through that path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Cutting whole files beyond a cap can omit the only evidence of an affected requirement. The proposed binary answers could then report agreement from an incomplete diff.",
+          "suggestion": "Record omitted paths and coverage in the artifacts. Require an explicit incomplete/indeterminate status when coverage cannot support a conclusion, display it in the PR block, and count it separately during measurement rather than treating it as agreement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The measurement plan leaves the acceptance decision underspecified. Two prompt versions allow selection against the known examples, and “fresh 10 … pending” does not establish a completion gate. With unconditional exit zero, a failed measure could also be mistaken for campaign readiness.",
+          "suggestion": "Freeze the chosen prompt and model before the fresh set, replay all 35 PRs using that configuration, and report each acceptance criterion separately. At most 25% disagreement means at most 8 of 35. Define handling of failed/indeterminate runs and require recorded operator agreement on the fresh 10 before starting the next unit; keep that campaign gate separate from advisory runtime behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Reusing the external-review route and pinned models does not explicitly guarantee a non-Claude invocation. A default or retry fallback could violate the core independence requirement while producing a plausible record.",
+          "suggestion": "Explicitly select an allowed GPT or GLM model, prohibit Claude fallback for this check, and record the model used. If an independent model is unavailable, produce the visible “not run” status. Keep the independent check’s model selection distinct from the Opus implementation-review requirement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Fixed output filenames and an always-successful CLI leave stale evidence unaddressed. A previous successful result could survive a failed rerun or be attached after the diff, catalog, or declaration changes.",
+          "suggestion": "Bind each record to hashes of those three inputs plus prompt version and model. Replace outputs on every attempt, including failure, and have F11 warn on stale or mismatched records. Reject malformed replies as unavailable results rather than interpreting them as agreement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "The model reads author-controlled declarations and diff content, which can contain instructions to return agreement. File-based input avoids shell interpolation but does not address this failure mode.",
+          "suggestion": "Delimit those inputs as untrusted evidence, explicitly prohibit following instructions within them, validate a constrained response schema, and include an instruction-bearing diff/declaration fixture in the tests.  The advisory design and reuse of the existing provider client are sound. The plan needs concrete invocation, evidence-validity handling, and an enforceable measurement decision before it is ready to implement.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-31T22:52:48.926840+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk / edge-case — Severity: high**\n**Finding:** \"Exit 0 always\" plus an advisory, never-blocking design makes it easy for the check to silently never run or silently fail, which defeats the whole purpose (the package measurement showed authors self-certify wrongly ~15–20% of the time). If the PR reader can't distinguish \"not run / errored\" from \"ran, agreed,\" the feature will be skipped exactly when it's most needed.\n**Suggestion:** Make the artifact's presence and parse status first-class: the F11 verifier should WARN (or fail) when the \"not run\" note appears or when `ai-gap-check.json` is missing/unparseable for an iterate change, rather than strict-exempting the whole thing. Advisory output is fine; unrun checks should be visible.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Diff trimming (\"whole files cut past a cap\") can truncate exactly the hunks containing a catalog gap, producing false \"agree / no gap\" results. This directly threatens the ≥6/7 hit-rate acceptance criterion — your measurement will conflate prompt quality with truncation artifacts.\n**Suggestion:** Prefer head-and-tail sampling or hunk-count-based trimming over wholesale file cutoff, and record in the output JSON which files/hunks were trimmed so measurement can separate the two effects.\n\n**Category: dependency — Severity: medium**\n**Finding:** The plan reuses `external_review.review_with_openrouter` but doesn't confirm that path supports pinned *non-Claude* models with its existing key/rate-limit handling. If the OpenRouter route is Claude-pinned or the non-Claude model names/keys differ, this is a late-stage blocker.\n**Suggestion:** Verify (one smoke call through the shared helper with the intended GPT/GLM model ID) before building the parser and templates around its reply format.\n\n**Category: security — Severity: medium**\n**Finding:** The diff and the change's own declaration are untrusted input feeding an LLM whose verdict appears in the PR […truncated]\n\n[openai] Repository access was blocked by the execution policy, so this review covers the supplied plan; compliance with the binding brief and existing code remains unverified.\n\n1. **Category: dependency | Severity: high**  \n   **Finding:** The plan adds a CLI and documentation but does not identify the actual invocation before commit or how its output reaches the PR body. Registering an F11 verifier alone does not establish that the independent check runs.  \n   **Suggestion:** Name the existing iterate integration point, invoke the CLI there, and specify how the generated block is inserted or replaced. Verify both a successful run and an unavailable-provider run through that path.\n\n2. **Category: edge-case | Severity: high**  \n   **Finding:** Cutting whole files beyond a cap can omit the only evidence of an affected requirement. The proposed binary answers could then report agreement from an incomplete diff.  \n   **Suggestion:** Record omitted paths and coverage in the artifacts. Require an explicit incomplete/indeterminate status when coverage cannot support a conclusion, display it in the PR block, and count it separately during measurement rather than treating it as agreement.\n\n3. **Category: risk | Severity: high**  \n   **Finding:** The measurement plan leaves the acceptance decision underspecified. Two prompt versions allow selection against the known examples, and “fresh 10 … pending” does not establish a completion gate. With unconditional exit zero, a failed measure could also be mistaken for campaign readiness.  \n   **Suggestion:** Freeze the chosen prompt and model before the fresh set, replay all 35 PRs using that configuration, and report each acceptance criterion separately. At most 25% disagreement means at most 8 of 35. Define handling of failed/indeterminate runs and require recorded operator agreement on the fresh 10 before starting the next unit; keep that campaign gate separate from advisory runtime behavior.\n\n4. **Category: dependency | Seve […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T23:00:35.638552+00:00",
+      "disposition": "Round 1 found 1 high and 4 medium (all fixed); round 2 rejected once on a medium (header parsing, fixed in the last commit, not re-reviewed: re-review cap of 2 reached). Orchestrator 3f-bis re-runs the cascade before merge.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T23:00:35.756696+00:00",
+      "disposition": "Stage 3 not spawned: Stage 2 ended unresolved at the re-review cap; delegated with the code pass.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "mini-plan.md:12 (item 6, \"Measure record ... pending\")",
+          "line": null,
+          "finding": "All four acceptance criteria of P4 (≥6/7 known misses flagged, 0/5 no-change PRs flagged, ≤25% disagreement on 35 PRs, operator fresh-10) are measurement outcomes, and none is evidenced in the diff. The measure record is listed as \"pending\" and no measurement data or tool exists in the diff to score the replay output (the replay writes per-PR JSON but nothing aggregates the pass/fail counts against the four ACs).",
+          "suggestion": "Ship the unit only with the completed `2026-10-31-baseline-package-P4-MEASURE.md` and a small scoring step in `ai_gap_check_replay.py` (or the record) that shows the four AC numbers; otherwise the done-when criteria are unverifiable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/ai_gap_check_core.py:render_not_run (near the `render_not_run` definition, `one_line = \" \".join(...)[:300]`)",
+          "line": null,
+          "finding": "render_not_run` pastes the reason into the PR body with only whitespace collapse and truncation — no `_inert()` sanitization. The reason can carry model/provider-derived text (e.g. `record[\"reason\"] = f\"{reply.get('status')}: {reply.get('reason')}\"` in `run_check`, which forwards provider/model strings). So an injected reply or error message can emit raw HTML/markup/`@`-mentions into the PR body, exactly what `_inert` exists to prevent for the ran path.",
+          "suggestion": "Route the reason through `_inert` (or the same escaping) in `render_not_run`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ai_gap_check.py (whole file) vs. shared/scripts/tools/ai_gap_check_replay.py",
+          "line": null,
+          "finding": "ai_gap_check_replay.py` — a full 127-line tool that produces the AC measurement — has zero test coverage. Its trickiest pieces (`event_in_diff` header detection, `specs_before`'s `n.count(\"/\") == 3` filter, the `--fresh` draw/exclude logic, resume-without-`--force`) would pass tests even if wrong. In particular `specs_before` silently drops any spec not exactly three path segments deep, which would skew the measurement toward \"no catalog found\" without any visible failure.",
+          "suggestion": "Add unit tests for `event_in_diff` (including the quoted-path diff header case), `specs_before` path filtering, and the exclude/sample logic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/ai_gap_check.py — `run_check`, `record[\"raw_reply\"] = reply.get(\"feedback\") or \"\"",
+          "line": null,
+          "finding": "The full raw model reply is written verbatim into `ai-gap-check.json`, which F6 stages. Unlike the `.md` block it is not size-limited or sanitized; a verbose or junk reply bloats the committed record. Cosmetic at best, an unbounded payload in the repo at worst.",
+          "suggestion": "Truncate `raw_reply` (e.g. a few KB) before writing the record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ai_gap_check_core.py — `catalog_from_specs",
+          "line": null,
+          "finding": "A spec whose H2 headings use trailing content (e.g. `## Acceptance Criteria (cont.)` later in the file) or whose AC section is followed only by H3/H4 headings will include everything to end-of-file — including \"Provenance\"-style run logs — in the catalog. Combined with `trim_diff`'s 400k cap this can push actual diff content out of the prompt. Low likelihood given the current spec format.",
+          "suggestion": "Optional: also stop at a known \"run log / provenance\" marker, or accept as-is given the format is controlled.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-10-31-p4-ai-gap-check/mini-plan.md",
+          "line": 12,
+          "finding": "The required measurement is explicitly pending, and the diff contains no results demonstrating any of the four acceptance criteria. Unit tests with mocked responses cannot establish detection of 6/7 known misses, zero false positives, the disagreement limit, or operator agreement on ten fresh PRs.",
+          "suggestion": "Run and record the non-Claude replay against the specified sets and obtain the fresh-ten operator assessment. Stop the campaign if any measure fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/ai_gap_check_core.py:185–192",
+          "line": null,
+          "finding": "A response containing only `{\"verdict\":\"agree\",\"gap\":false}` is accepted as a completed check. Missing or malformed requirements lists silently become empty lists, so the PR falsely reports “Requirements checked: none” instead of visibly recording an unreadable response.",
+          "suggestion": "Validate all required response fields and their types before accepting the result. Add tests showing that incomplete responses produce `not_run`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ai_gap_check_core.py",
+          "line": 269,
+          "finding": "The diff limit does not apply to the first retained file because truncation requires `kept` to be nonempty. A single oversized generated file therefore bypasses the 400,000-character cap and can exhaust the provider’s context, preventing review of subsequent meaningful changes.",
+          "suggestion": "Apply the size limit to every file, including the first, and record oversized files as omitted. Test a first file larger than the cap followed by a small reviewable file.  Ship-with-fixes: acceptance evidence is still missing, and response validation and input limiting need correction. Local execution was denied by the environment, so this assessment is based on the supplied diff; the referenced binding brief could not be inspected.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-31T22:52:49.260544+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: medium\n  File: mini-plan.md:12 (item 6, \"Measure record ... pending\")\n  Finding: All four acceptance criteria of P4 (≥6/7 known misses flagged, 0/5 no-change PRs flagged, ≤25% disagreement on 35 PRs, operator fresh-10) are measurement outcomes, and none is evidenced in the diff. The measure record is listed as \"pending\" and no measurement data or tool exists in the diff to score the replay output (the replay writes per-PR JSON but nothing aggregates the pass/fail counts against the four ACs).\n  Suggestion: Ship the unit only with the completed `2026-10-31-baseline-package-P4-MEASURE.md` and a small scoring step in `ai_gap_check_replay.py` (or the record) that shows the four AC numbers; otherwise the done-when criteria are unverifiable.\n\n- Category: security\n  Severity: medium\n  File: shared/scripts/lib/ai_gap_check_core.py:render_not_run (near the `render_not_run` definition, `one_line = \" \".join(...)[:300]`)\n  Finding: `render_not_run` pastes the reason into the PR body with only whitespace collapse and truncation — no `_inert()` sanitization. The reason can carry model/provider-derived text (e.g. `record[\"reason\"] = f\"{reply.get('status')}: {reply.get('reason')}\"` in `run_check`, which forwards provider/model strings). So an injected reply or error message can emit raw HTML/markup/`@`-mentions into the PR body, exactly what `_inert` exists to prevent for the ran path.\n  Suggestion: Route the reason through `_inert` (or the same escaping) in `render_not_run`.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_ai_gap_check.py (whole file) vs. shared/scripts/tools/ai_gap_check_replay.py\n  Finding: `ai_gap_check_replay.py` — a full 127-line tool that produces the AC measurement — has zero test coverage. Its trickiest pieces (`event_in_diff` header detection, `specs_before`'s `n.count(\"/\") == 3` filter, the `--fresh` draw/exclude logic, resume-without-`--force`) would pass tests even if wrong. In partic […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: .shipwright/planning/iterate/iterate-2026-10-31-p4-ai-gap-check/mini-plan.md:12\n- Finding: The required measurement is explicitly pending, and the diff contains no results demonstrating any of the four acceptance criteria. Unit tests with mocked responses cannot establish detection of 6/7 known misses, zero false positives, the disagreement limit, or operator agreement on ten fresh PRs.\n- Suggestion: Run and record the non-Claude replay against the specified sets and obtain the fresh-ten operator assessment. Stop the campaign if any measure fails.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/ai_gap_check_core.py:185–192\n- Finding: A response containing only `{\"verdict\":\"agree\",\"gap\":false}` is accepted as a completed check. Missing or malformed requirements lists silently become empty lists, so the PR falsely reports “Requirements checked: none” instead of visibly recording an unreadable response.\n- Suggestion: Validate all required response fields and their types before accepting the result. Add tests showing that incomplete responses produce `not_run`.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/lib/ai_gap_check_core.py:269\n- Finding: The diff limit does not apply to the first retained file because truncation requires `kept` to be nonempty. A single oversized generated file therefore bypasses the 400,000-character cap and can exhaust the provider’s context, preventing review of subsequent meaningful changes.\n- Suggestion: Apply the size limit to every file, including the first, and record oversized files as omitted. Test a first file larger than the cap followed by a small reviewable file.\n\nShip-with-fixes: acceptance evidence is still missing, and response validation and input limiting need correction. Local execution was denied by the environment, so this assessment is based on the supplied diff; the referenced binding brief could not be inspected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T22:54:12.831072+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a1a2b0ab3ab62464e333e0f8f4be02ca3935b2e3"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T22:54:12.986230+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T22:52:49.097623+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

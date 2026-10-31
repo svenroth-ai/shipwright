@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-p4-ai-gap-check",
+  "date": "2026-10-31",
+  "section": "Iterate - change: independent AI gap check",
+  "title": "Advisory non-Claude gap check, never blocking",
+  "context": "The author is not the only judge of a wrong none; about 15 to 20 of 100 PRs record no requirement affected while adding behaviour no criterion describes. Architecture review: both external and the internal reviewer approved option 1.",
+  "decision": "One advisory call to GPT through the external-review OpenRouter route reads diff, catalog ACs and the declaration and writes a PR-body block (changed, checked, agree/disagree, gap yes/no); a failure records not_run with its reason; F11 only warns when no record exists.",
+  "consequences": "Every iterate carries a visible second opinion; the verdict is never a gate. Measured: flags 6-7 of 7 misses, 0 of 5 controls, 21-24 percent mismatch vs labels; the operator fresh-10 bar is pending.",
+  "rationale": "Reusing the shared route keeps key check, pinned models and retries; advisory because nothing may newly block a PR.",
+  "rejected": "A blocking check or required PR check; a new provider client; showing the block only on disagree (not measured); adding a prompt-injection rule after the prompt was measured.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

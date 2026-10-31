@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: .shipwright/planning/iterate/iterate-2026-10-31-p4-ai-gap-check/mini-plan.md:12\n- Finding: The required measurement is explicitly pending, and the diff contains no results demonstrating any of the four acceptance criteria. Unit tests with mocked responses cannot establish detection of 6/7 known misses, zero false positives, the disagreement limit, or operator agreement on ten fresh PRs.\n- Suggestion: Run and record the non-Claude replay against the specified sets and obtain the fresh-ten operator assessment. Stop the campaign if any measure fails.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/ai_gap_check_core.py:185\u2013192\n- Finding: A response containing only `{\"verdict\":\"agree\",\"gap\":false}` is accepted as a completed check. Missing or malformed requirements lists silently become empty lists, so the PR falsely reports \u201cRequirements checked: none\u201d instead of visibly recording an unreadable response.\n- Suggestion: Validate all required response fields and their types before accepting the result. Add tests showing that incomplete responses produce `not_run`.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/lib/ai_gap_check_core.py:269\n- Finding: The diff limit does not apply to the first retained file because truncation requires `kept` to be nonempty. A single oversized generated file therefore bypasses the 400,000-character cap and can exhaust the provider\u2019s context, preventing review of subsequent meaningful changes.\n- Suggestion: Apply the size limit to every file, including the first, and record oversized files as omitted. Test a first file larger than the cap followed by a small reviewable file.\n\nShip-with-fixes: acceptance evidence is still missing, and response validation and input limiting need correction. Local execution was denied by the environment, so this assessment is based on the supplied diff; the referenced binding brief could not be inspected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: spec\n  Severity: medium\n  File: mini-plan.md:12 (item 6, \"Measure record ... pending\")\n  Finding: All four acceptance criteria of P4 (\u22656/7 known misses flagged, 0/5 no-change PRs flagged, \u226425% disagreement on 35 PRs, operator fresh-10) are measurement outcomes, and none is evidenced in the diff. The measure record is listed as \"pending\" and no measurement data or tool exists in the diff to score the replay output (the replay writes per-PR JSON but nothing aggregates the pass/fail counts against the four ACs).\n  Suggestion: Ship the unit only with the completed `2026-10-31-baseline-package-P4-MEASURE.md` and a small scoring step in `ai_gap_check_replay.py` (or the record) that shows the four AC numbers; otherwise the done-when criteria are unverifiable.\n\n- Category: security\n  Severity: medium\n  File: shared/scripts/lib/ai_gap_check_core.py:render_not_run (near the `render_not_run` definition, `one_line = \" \".join(...)[:300]`)\n  Finding: `render_not_run` pastes the reason into the PR body with only whitespace collapse and truncation \u2014 no `_inert()` sanitization. The reason can carry model/provider-derived text (e.g. `record[\"reason\"] = f\"{reply.get('status')}: {reply.get('reason')}\"` in `run_check`, which forwards provider/model strings). So an injected reply or error message can emit raw HTML/markup/`@`-mentions into the PR body, exactly what `_inert` exists to prevent for the ran path.\n  Suggestion: Route the reason through `_inert` (or the same escaping) in `render_not_run`.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_ai_gap_check.py (whole file) vs. shared/scripts/tools/ai_gap_check_replay.py\n  Finding: `ai_gap_check_replay.py` \u2014 a full 127-line tool that produces the AC measurement \u2014 has zero test coverage. Its trickiest pieces (`event_in_diff` header detection, `specs_before`'s `n.count(\"/\") == 3` filter, the `--fresh` draw/exclude logic, resume-without-`--force`) would pass tests even if wrong. In particular `specs_before` silently drops any spec not exactly three path segments deep, which would skew the measurement toward \"no catalog found\" without any visible failure.\n  Suggestion: Add unit tests for `event_in_diff` (including the quoted-path diff header case), `specs_before` path filtering, and the exclude/sample logic.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/ai_gap_check.py \u2014 `run_check`, `record[\"raw_reply\"] = reply.get(\"feedback\") or \"\"`\n  Finding: The full raw model reply is written verbatim into `ai-gap-check.json`, which F6 stages. Unlike the `.md` block it is not size-limited or sanitized; a verbose or junk reply bloats the committed record. Cosmetic at best, an unbounded payload in the repo at worst.\n  Suggestion: Truncate `raw_reply` (e.g. a few KB) before writing the record.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/ai_gap_check_core.py \u2014 `catalog_from_specs`\n  Finding: A spec whose H2 headings use trailing content (e.g. `## Acceptance Criteria (cont.)` later in the file) or whose AC section is followed only by H3/H4 headings will include everything to end-of-file \u2014 including \"Provenance\"-style run logs \u2014 in the catalog. Combined with `trim_diff`'s 400k cap this can push actual diff content out of the prompt. Low likelihood given the current spec format.\n  Suggestion: Optional: also stop at a known \"run log / provenance\" marker, or accept as-is given the format is controlled.\n\n## What is solid\n\nThe never-blocks promise is genuinely enforced and tested from three angles (tool exit code, `run_check` exception swallowing, WARNING-only strict-exempt verifier). The Claude-family guard (`run_check` rejecting resolved models containing \"claude\"/\"anthropic\") directly protects the spec's independence requirement and has a test. Free-text-through-arguments is tested with an actual `$(touch pwned)` payload, and the record check is exercised for both status values and malformed records.\n\nOverall: the implementation is competent and the advisory design is honored, but the unit's acceptance criteria are unmeasured in this diff and `render_not_run` has a real sanitization gap \u2014 fix those before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-31-p4-ai-gap-check",
+    "at": "2026-10-31T22:51:09.755971+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
