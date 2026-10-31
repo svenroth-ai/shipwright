@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+  "date": "2026-10-31",
+  "section": "Iterate - change: affected_acs on runtime-touching iterates",
+  "title": "affected_acs declaration, presence-only F11 check",
+  "context": "Iterates changing runtime behaviour recorded spec_impact none without saying which acceptance criteria they checked; 11 of 17 behaviour-adding PRs left no AC behind.",
+  "decision": "Runtime-touching feature/change/bug iterates carry affected_acs (or catalog_gap with the nearest FR) on the work_completed event; an F11 claim check enforces presence only.",
+  "consequences": "Every such iterate states its AC position; wrong declarations are not caught here (a later AI gap check does that). A replay tool measures the rule over past iterates.",
+  "rationale": "Presence-only keeps the field from holding a PR on content; the check lives in the claims registry because iterate_checks.py is at its cap.",
+  "rejected": "A write-time refusal at F5b (harder gate, same safety); no check and rely on reviewers (what failed before).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

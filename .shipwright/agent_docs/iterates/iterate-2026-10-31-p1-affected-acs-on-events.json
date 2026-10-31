@@ -1,0 +1,57 @@
+{
+  "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+  "date": "2026-10-31T09:12:43.738011Z",
+  "event_at": "2026-10-31T09:12:39.623208+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-baseline-package--P1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-31-p1-affected-acs-on-events",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "runtime path classification (tests/docs excluded; test_* modules and a test dir count as runtime)",
+        "disposition": "tested",
+        "evidence": "test_affected_acs_gate.py::test_runtime_path_classification PASSED"
+      },
+      {
+        "behavior": "declaration is presence-only (list, or catalog_gap with nearest FR)",
+        "disposition": "tested",
+        "evidence": "test_affected_acs_gate.py::test_declaration_is_presence_only PASSED"
+      },
+      {
+        "behavior": "F11 check fails on missing declaration, passes when declared, skips docs-only/other intent/non-iterate/blind, fails closed on git error",
+        "disposition": "tested",
+        "evidence": "test_affected_acs_gate.py::test_check_fails_when_runtime_touched_and_field_absent PASSED; test_git_error_fails_closed_unless_the_event_already_decides PASSED"
+      },
+      {
+        "behavior": "replay reports unknown paths as inconclusive and uses git paths when supplied",
+        "disposition": "tested",
+        "evidence": "test_affected_acs_gate.py::test_replay_without_path_data_is_inconclusive_not_clean PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/affected_acs_replay.py --project-root . --window 100 --git",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-10-31-p1-affected-acs-on-events/surface_verification.log",
+    "timestamp": "2026-10-31T10:00:00Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

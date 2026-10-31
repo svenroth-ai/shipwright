@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "The P1 diff meets the brief and every step of the mini-plan. Presence-only F11 check registered in CLAIM_CHECKS; docs, tests and replay present. Code-reviewer can run next."}

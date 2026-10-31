@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/affected_acs_replay.py:37\n- Finding: Events with missing or malformed `changed_files` are treated as having no runtime changes and silently excluded from `required`. Consequently, a 100-event window with unavailable path data can report `required: 0, missing: 0`, without establishing the acceptance criterion. The live verifier explicitly distinguishes this state as blind; replay loses that distinction.\n- Suggestion: Report unknown path coverage separately and mark the measurement inconclusive when it exists, or reconstruct those events\u2019 changed paths from Git. Add a test showing that unavailable path data cannot produce an apparently clean measurement.\n\nShip-with-fixes: the replay needs to distinguish unknown coverage from confirmed non-runtime changes. This review is limited to the supplied diff: environment policy blocked repository reads and test execution, so I could not verify the binding brief or the fresh-iterate F11 result.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "### Findings\n\n- Category: bug | Severity: medium\n  File: `shared/scripts/tools/verifiers/affected_acs_check.py:62` (`check_affected_acs_declared`)\n  Finding: The check never filters on `source == \"iterate\"`. `_work_event` matches any `work_completed` event whose `adr_id` equals the run id; a build/campaign run with `intent: change` and runtime-touching paths would be FAILED by this gate, even though the spec and the replay tool scope the rule to iterate events only (`replay` filters `source == \"iterate\"`). The check and the replay can disagree on the same event.\n  Suggestion: In `_work_event` or the check, require `evt.get(\"source\") == \"iterate\"` before applying the intent filter, matching the replay tool and the spec's \"feature/change/bug iterate\" scope.\n\n- Category: edge-case | Severity: medium\n  File: `shared/scripts/tools/affected_acs_replay.py:30-38` (`replay`)\n  Finding: Historical iterate events that lack `changed_files` are silently dropped (`files if isinstance(files, list) else []` \u2192 `requires_declaration` false \u2192 not counted as `required`). The acceptance criterion is \"replay over the 100-PR window shows the field required on all runtime-touching iterates\" \u2014 events without recorded paths are runtime-touching-unknown, not non-runtime, and the replay has no git-view fallback, so `required` undercounts and old missing declarations are invisible. The F11 check itself treats this state as BLIND; the replay should surface it (e.g., a `blind` count) rather than skip.\n  Suggestion: Count events with no `changed_files` (and a runtime-intent) separately as `blind`/`unknown` in the replay output so the measure is honest.\n\n- Category: bug | Severity: low\n  File: `shared/scripts/tools/verifiers/affected_acs_check.py:67-70`\n  Finding: When `git_context == \"work_tree\"` and `_iterate_changed_paths` returns an empty list (e.g., a branch already merged, or a commit hash that resolves to nothing), `paths` is `[]` (not `None`), so the `changed_files` fallback on the event is skipped and the check reports \"no runtime path touched\" \u2014 reading blindness as clean for the event-supplied path list. The spec's stance is \"a blind branch view SKIPPED\", not pass-as-clean.\n  Suggestion: Only use the git-view result when it is `None`-vs-list distinguishable; if the git view yields an empty list but the event lists runtime `changed_files`, prefer the event list (or report BLIND).\n\n- Category: test | Severity: low\n  File: `shared/tests/test_affected_acs_gate.py:96-101` (`test_check_skips_docs_only_other_intent_and_missing_event`)\n  Finding: The skip-path assertions compare `severity == \"skipped\"` but never assert `ok`; more importantly there is no test that the check rejects a `source: \"build\"` event (which, per the finding above, it currently wouldn't skip) and no test of the empty-git-view + event-`changed_files` interaction. A regression in either direction would pass the suite.\n  Suggestion: Add cases: a `work_completed` event with `source: \"build\"`, intent `change`, runtime paths \u2192 expect SKIPPED; and a work-tree scenario where the git view is empty but `changed_files` lists a runtime path.\n\nOverall: the core rule (presence-only gate) is implemented and reasonably tested, but the check's missing `source == \"iterate\"` filter and the replay's silent drop of path-less events are real scope/measure defects against the acceptance criteria. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+    "at": "2026-10-31T08:43:38.167659+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
