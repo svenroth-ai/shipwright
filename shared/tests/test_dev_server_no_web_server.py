@@ -14,7 +14,7 @@ import dev_server  # type: ignore  # noqa: E402
 
 
 # ---- profiles without a web dev server ----
-
+@pytest.mark.covers("FR-01.12/AC01", "FR-01.01/AC09")
 
 @pytest.mark.covers("FR-01.12/AC01")
 @pytest.mark.parametrize(

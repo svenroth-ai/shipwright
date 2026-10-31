@@ -46,6 +46,7 @@ def test_validate_command_allows_normal():
     assert result.returncode == 0
 
 
+@pytest.mark.covers("FR-01.05/AC09")
 def test_validate_command_blocks_force_push():
     """git push --force should be blocked."""
     result = subprocess.run(
@@ -115,7 +116,7 @@ ALLOWED_COMMANDS = [
 ]
 
 
-@pytest.mark.covers("FR-01.05/AC08")
+@pytest.mark.covers("FR-01.05/AC08", "FR-01.05/AC09")
 @pytest.mark.parametrize("command", ALLOWED_COMMANDS)
 def test_validate_command_allows_false_positives(command):
     result = _validate(command)

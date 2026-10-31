@@ -67,7 +67,7 @@ def _refused(tmp_path, monkeypatch, change, needle):
     assert not (root / ".shipwright" / "designs").exists()  # all checks run before the first write
 
 
-@pytest.mark.covers("FR-01.04")
+@pytest.mark.covers("FR-01.04", "FR-01.04/AC14")
 def test_a_capability_without_its_pane_state_screen_stops_the_tool(tmp_path, monkeypatch):
     _refused(tmp_path, monkeypatch, lambda d: d["capabilities"][0].update(screen="nowhere"), "pane-state screen")
 

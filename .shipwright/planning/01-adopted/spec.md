@@ -101,6 +101,29 @@ _Where the work detail lives_ at the end of this document.
   records are too coarse to say which of two things happened first — says which
   part it could not settle instead of passing.
   (iterate-2026-07-27-c3-phase-history-join)
+- (E) [AC09] Given a project has chosen its technology profile, when the preview, the tests or the
+  local server step run, then each follows that profile instead of assuming one default
+  stack; a profile with no web server is answered with a plain "no server for this
+  project" result rather than a crash; and a project that has no hosting target ends the
+  pipeline after the release notes, with the hosting checks skipped.
+  (iterate-2026-10-10-profile-aware-phases)
+- (E) [AC10] Given a technology profile of the same name exists in the project, in the user's own
+  settings and in the product, when a profile is looked up, then the project's own is
+  used first, then the user's, then the product's, the first one found being used whole
+  and never blended with another; a profile that is malformed is reported as such rather
+  than quietly skipped; and the profiles on offer can be listed, and each one checked for problems, on request.
+  (iterate-2026-10-24-s1-resolver-core)
+- (E) [AC11] Given a project is a conversation-driven app that runs on the operator's own machine
+  with nothing to deploy, when the operator chooses the ready-made profile for such
+  apps, then planning, building, previewing and testing all follow it, including the
+  address where its local page can be opened, and no hosting target is asked for.
+  (iterate-2026-10-25-b4-chat-first-profile-sc)
+- (E) [AC12] Given the project brief names a technology profile, when the pipeline starts, then that
+  named profile is checked and used in preference to one guessed from the brief's
+  content, and it carries through the rest of the run; a name that is unknown or
+  unusable is never swapped for another profile or silently dropped, and instead the run
+  stops and shows the name asked for and the reason it cannot be used.
+  (iterate-2026-10-25-b2b-wizard-brief-explicit-profile)
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units
@@ -316,6 +339,13 @@ _Where the work detail lives_ at the end of this document.
   the look and feel is chosen, then the brand is taken from it rather than
   guessed, and anything that would make the mockups hard to read is corrected
   and reported, so the mockups carry the brand without breaking readability.
+- (E) [AC14] Given a design brief describes a conversation-driven app (a chat beside a working
+  pane), when its mockups are produced, then every command a person can type is tied to
+  the pane screen it opens and checked against the requirements that screen serves, and
+  one flow mockup is produced for each journey the design brief names without anyone drawing it by hand; a
+  command that points to a screen that does not exist, or one that does not serve the
+  stated requirement, is reported as an error instead of being accepted.
+  (iterate-2026-10-26-b3b-chat-first-design)
 
 <a id="fr-0105"></a>
 ### FR-01.05 — Test-driven build of planned sections
@@ -351,6 +381,19 @@ _Where the work detail lives_ at the end of this document.
   self-contained unit — one section, one branch, one commit — under the
   framework's delivery discipline (the constitution's how), which build follows
   rather than restates.
+- (E) [AC09] Given an assistant is about to run a command, when that command forces a push onto the
+  shared main branch, then it is stopped; a command that merely mentions forcing
+  or the branch name elsewhere, or that pushes to some other branch, runs untouched; a
+  forced push that names no branch is judged by the branch it would really update; a
+  failure of the guard itself never blocks work; and a command containing
+  non-English characters is judged exactly like any other.
+  (iterate-2026-10-08-validate-command-force-push-fp)
+- (E) [AC10] Given a planned section has passed the internal reviews, when its build is finished,
+  then an independent outside review of that section's code change runs by default, the same as
+  for any other finished change, unless the operator has switched it off; it is skipped, with
+  the reason shown, when the outside reviewers are not set up or there is nothing to
+  review, and the operator is warned that the change is sent to outside providers.
+  (iterate-2026-10-10-build-review-record-external)
 
 <a id="fr-0106"></a>
 ### FR-01.06 — Multi-level project testing
@@ -738,6 +781,13 @@ _Where the work detail lives_ at the end of this document.
   including reuse of a number already retired — when the audit runs, then it
   fails, because one ID naming two requirements breaks the identity that tests
   and the change log both depend on.
+- (E) [AC15] Given a developer commits to a project, when the commit-time coverage check runs, then
+  it measures how many requirements are covered by tests from the project's committed
+  traceability record, and holds the commit back when requirement coverage falls below the project's set minimum;
+  criterion-level coverage is reported for information, with criteria that no test names
+  counted as uncovered; and a measurement that cannot be made at all shows a visible warning
+  instead of silently letting every commit through.
+  (iterate-2026-10-08-u9-rtm-80-hook)
 
 <a id="fr-0111"></a>
 ### FR-01.11 — Ongoing change at the depth it deserves
@@ -984,6 +1034,37 @@ _Where the work detail lives_ at the end of this document.
   change that already reached its merged end, is never held back, and a failure of the
   guard itself never traps the session.
   (iterate-2026-10-09-iterate-stop-guard)
+- (E) [AC44] Given a change is being finished, when the checks that confirm it really did what it
+  claims run, then every way of finishing a change runs the same full set of checks, so a
+  check added once applies to all of them and none can be run on one and skipped on
+  another; and a review recorded as not run gives its reason from one fixed list shared
+  by every check, so two checks cannot read the same reason differently.
+  (iterate-2026-10-08-u0-foundation-gate-registry)
+- (E) [AC45] Given a small change carries a risk marker or is larger than a stated size, when it is
+  finished, then it must show that its code review was done, or give a fitting reason
+  from the fixed list for why it was not; a reason that contradicts the facts, or a claim
+  that review did not apply, is refused, and a small change with no risk marker and within that size is left free of this.
+  (iterate-2026-10-08-u4-cascade-trigger-100)
+- (E) [AC46] Given a hands-off run of several changes, when its reviewers are started, then they use
+  the review strength the operator chose once for the whole run rather than a fixed one;
+  and when the coordinator would otherwise repeat a review, it skips the repeat only if
+  the earlier review is shown to cover the exact code being merged (the reviewed version
+  is part of the history, only bookkeeping records, not the code itself, have changed since, and no serious finding is
+  open), and otherwise runs the full review again.
+  (iterate-2026-10-09-pr860-followups)
+- (E) [AC47] Given a finished change alters how the product behaves, when its completion record is
+  written, then the record names each acceptance criterion the change altered, delivered
+  or checked and left true, with one line on why it still holds, or states that no
+  criterion covers the change and names the nearest requirement; leaving this out shows
+  a visible warning and never holds the change back, and the wording is not judged by
+  the check, only that an answer is there.
+  (iterate-2026-10-31-p1-affected-acs-on-events)
+- (E) [AC48] Given a finished change states that no criterion covers what it did, when it is
+  completed, then it either adds a plain what-and-why criterion for it (or folds it into
+  an existing one) or records the one allowed reason that the change concerns how the product
+  works and not what it does; a missing answer shows a visible warning and never holds
+  the change back, because a finished record cannot be corrected afterwards.
+  (iterate-2026-10-31-p2-close-gaps-and-backfill)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview

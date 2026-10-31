@@ -86,6 +86,7 @@ def _record_passing_cascade(project: Path, commit: str) -> None:
     assert rc == 0, out
 
 
+@pytest.mark.covers("FR-01.11/AC46")
 def test_attested_when_only_artifacts_changed_after_the_review(unit):
     project, reviewed = unit
     _record_passing_cascade(project, reviewed)

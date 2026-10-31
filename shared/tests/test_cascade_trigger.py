@@ -37,7 +37,7 @@ def test_quiet_small_run_is_not_triggered(tmp_path):
     assert result.ok and "not triggered" in result.detail and "10 changed lines" in result.detail
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC45")
 def test_101_lines_with_free_text_not_run_fails_naming_the_count(tmp_path):
     root, sha = make_repo(tmp_path, {"src/a.py": lines(101)})
     write_run(root)

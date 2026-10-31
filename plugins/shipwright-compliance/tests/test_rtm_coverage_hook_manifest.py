@@ -49,6 +49,7 @@ def _run(root: Path, *, full: bool = False):
     return r if full else (r.returncode, r.stdout.strip())
 
 
+@pytest.mark.covers("FR-01.10/AC15")
 def test_blocks_on_requirement_coverage_and_prints_the_definition(tmp_path):
     _manifest(tmp_path, 3, 10)
     rc, out = _run(tmp_path)

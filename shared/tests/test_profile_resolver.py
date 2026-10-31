@@ -23,6 +23,7 @@ pytestmark = pytest.mark.covers("FR-01.06")
 
 
 # (1) project > user > bundled ------------------------------------------------
+@pytest.mark.covers("FR-01.01/AC10")
 def test_precedence_project_over_user_over_bundled(project, user_dir):
     assert pr.resolve_profile("vite-hono", project).source == "bundled"
     _write(user_dir, "vite-hono")

@@ -1,0 +1,62 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-p2-close-gaps-and-backfill",
+    "date": "2026-10-31",
+    "unit": {
+      "status": "passed",
+      "passed": 1263,
+      "skipped": 6,
+      "total": 1269
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "gap_closed: a declared catalog gap is closed by catalog_gap_acs or the one allowed reason how-only, presence only",
+          "disposition": "tested",
+          "evidence": "test_affected_acs_gate.py::test_gap_closed_by_ac_or_closed_reason_only PASSED"
+        },
+        {
+          "behavior": "F11 check: an open gap is a strict-exempt warning naming both repairs; a closed gap passes",
+          "disposition": "tested",
+          "evidence": "test_affected_acs_gate.py::test_open_gap_is_a_strict_exempt_warning_naming_both_repairs PASSED; test_check_passes_with_catalog_gap PASSED"
+        },
+        {
+          "behavior": "11 backfill ACs bound to the existing tests that exercise the shipped behaviour",
+          "disposition": "tested",
+          "evidence": "11 existing tests re-run green with their AC ids in the covers marker (shared 238 passed; build 206; compliance 28; design 16; run 4)"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/affected_acs_replay.py --project-root . --window 100 --git",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-31-p2-close-gaps-and-backfill/surface_verification.log",
+      "timestamp": "2026-10-31T14:30:00Z"
+    }
+  }
+}
