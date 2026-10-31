@@ -116,6 +116,12 @@ def _fake_review(monkeypatch, reply: dict) -> dict:
 
     mod.review_with_openrouter = review_with_openrouter  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "external_review", mod)
+    import external_review_config as cfg
+    import external_review_gateway as gw
+
+    monkeypatch.setattr(cfg, "is_external_review_enabled", lambda c: True)
+    monkeypatch.setattr(cfg, "is_external_code_review_enabled", lambda c: True)
+    monkeypatch.setattr(gw, "gateway_configured", lambda: False)
     return seen
 
 
@@ -284,3 +290,36 @@ def test_replay_reads_the_event_the_pr_added():
             "+" + json.dumps(other) + "\n+" + json.dumps(evt) + "\n")
     assert event_in_diff(diff) == evt
     assert event_in_diff("diff --git a/x b/x\n+" + json.dumps(evt)) == {}
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_run_check_respects_opt_outs_and_gateway(monkeypatch, tmp_path):
+    import external_review_config as cfg
+    import external_review_gateway as gw
+
+    seen = _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(_GOOD)})
+    monkeypatch.setattr(cfg, "is_external_code_review_enabled", lambda c: False)
+    rec = tool.run_check(_DIFF, {}, [_SPEC], "openai", tmp_path)
+    assert rec["status"] == "not_run" and "switched off" in rec["reason"] and not seen
+    monkeypatch.setattr(cfg, "is_external_code_review_enabled", lambda c: True)
+    monkeypatch.setattr(gw, "gateway_configured", lambda: True)
+    rec = tool.run_check(_DIFF, {}, [_SPEC], "openai", tmp_path)
+    assert rec["status"] == "not_run" and "gateway" in rec["reason"] and not seen
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_codex_driver_never_gets_a_gpt_reviewer_and_secret_files_stay_home(monkeypatch, tmp_path):
+    seen = _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(_GOOD)})
+    diff, out, spec = tmp_path / "d.diff", tmp_path / "out", tmp_path / "s.md"
+    diff.write_text(_DIFF, encoding="utf-8")
+    spec.write_text(_SPEC, encoding="utf-8")
+    ev = tmp_path / "e.json"
+    ev.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["x", "--project-root", str(tmp_path), "--diff-file", str(diff), "--spec-file", str(spec),
+                                      "--event-file", str(ev), "--out-dir", str(out), "--driver", "codex"])
+    assert tool.main() == 0 and seen["key"] == "glm"
+    for name, hidden in (("notes.env", False), (".env.local", True), ("server.pem", True), ("my_credentials.json", True), ("a.py", False)):
+        assert bool(tool._SECRET_SHAPED.search(name)) is hidden
+    from lib.ai_gap_check_core import trim_diff as trim
+    gap = "diff --git a/x b/.shipwright/planning/iterate/r/ai-gap-check.json\n+old verdict\n"
+    assert "old verdict" not in trim(gap)[0]

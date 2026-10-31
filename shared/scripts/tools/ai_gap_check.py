@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -46,6 +47,7 @@ from lib.ai_gap_check_core import (  # noqa: E402
 )
 
 REVIEWERS = ("openai", "glm")
+_SECRET_SHAPED = re.compile(r"(?i)(^|/)(\.env[^/]*|[^/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519)[^/]*|[^/]*(secret|credential)[^/]*)$")
 
 
 def _event_for_run(project_root: Path, run_id: str) -> dict | None:
@@ -76,7 +78,7 @@ def working_tree_diff(root: Path, base_ref: str) -> str:
     base = git("merge-base", base_ref, "HEAD").strip()
     parts = [git("diff", "--no-color", base)]
     for name in git("ls-files", "--others", "--exclude-standard").splitlines():
-        if name.strip():
+        if name.strip() and not _SECRET_SHAPED.search(name):
             parts.append(git("diff", "--no-color", "--no-index", "--", "/dev/null", name.strip(), ok=(0, 1)))
     return "".join(parts)
 
@@ -98,6 +100,15 @@ def run_check(diff_text: str, declaration: dict, spec_texts: list[str], reviewer
         from external_review_routing import resolve_reviewer_model
 
         config = load_review_config(project_root=project_root)
+        from external_review_config import is_external_code_review_enabled, is_external_review_enabled
+        from external_review_gateway import gateway_configured
+
+        if gateway_configured():
+            record["reason"] = "a gateway-only review route is configured; this check does not use it"
+            return record
+        if not (is_external_review_enabled(config) and is_external_code_review_enabled(config)):
+            record["reason"] = "external review is switched off for this project"
+            return record
         record["model"] = resolve_reviewer_model(config, reviewer, "openrouter")
         if any(bad in record["model"].lower() for bad in ("claude", "anthropic")):  # independence is the point of this check
             record["reason"] = f"the resolved model {record['model']} is not independent of the assistant"
@@ -136,10 +147,14 @@ def main() -> int:
     ap.add_argument("--event-file", help="declaration source: a work_completed event as JSON (default: look the run up)")
     ap.add_argument("--spec-file", action="append", default=[], help="catalog source, repeatable (default: planning/*/spec.md)")
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--reviewer", choices=REVIEWERS, default="openai")
+    ap.add_argument("--reviewer", choices=REVIEWERS, default="", help="default: openai, or glm under --driver codex")
+    ap.add_argument("--driver", choices=("claude", "codex"), default="claude",
+                    help="harness that wrote the change; codex never gets a GPT-family reviewer (not independent)")
     args = ap.parse_args()
 
     root = Path(args.project_root).resolve()
+    if args.driver == "codex" or not args.reviewer:
+        args.reviewer = "glm" if args.driver == "codex" else (args.reviewer or "openai")
     out = Path(args.out_dir)
     try:
         out.mkdir(parents=True, exist_ok=True)

@@ -248,7 +248,7 @@ def render_not_run(reason: str) -> str:
 _RECORD_PATH = re.compile(
     r"^(?:shipwright_events\.jsonl|shipwright_test_results\.json|CHANGELOG-unreleased\.d/"
     r"|\.shipwright/(?:agent_docs/(?:iterates|decision-drops)/|triage\.jsonl|compliance/|runs/)"
-    r"|\.shipwright/planning/iterate/[^/]+/(?:[^/]*-raw[^/]*|[^/]*\.stderr\.txt|reviews\.json|risk_recheck\.json"
+    r"|\.shipwright/planning/iterate/[^/]+/(?:ai-gap-check\.(?:json|md)|[^/]*-raw[^/]*|[^/]*\.stderr\.txt|reviews\.json|risk_recheck\.json"
     r"|self-review-payload\.json|[^/]*_reply\.json|[^/]*\.err))"
 )
 _DIFF_HEAD = re.compile(r"^diff --git a/(\S+) b/(\S+)", re.MULTILINE)
