@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "Repository access was blocked by policy, so this review is based on the supplied diff. I could not read the binding brief or run tests.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/spec_chain_cli.py:69\u201370\n- Finding: The post-change cohort includes only events already carrying `plan_path`. A new run that fails to record that field\u2014the regression this measurement should detect\u2014is excluded entirely. The seeded sample also draws from all historical runs rather than 20 post-change runs, so neither result establishes the required 20/20 acceptance criterion.\n- Suggestion: Select post-change runs using an independent boundary, sample 20 with seed 20261031, and count missing `plan_path` or unresolved links as failures. Report insufficient eligible runs explicitly and test the missing-field case.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/spec_chain.py:152\u2013159\n- Finding: PR discovery accepts the run ID anywhere in a commit message rather than requiring its `Run-ID:` trailer. A later PR mentioning an older run in its description can therefore be returned as that older run\u2019s PR; the exact-token check only protects against longer IDs.\n- Suggestion: Require an exact `Run-ID: <id>` trailer before accepting the PR number. Add a test where a newer PR mentions the target run but carries a different Run-ID trailer.\n\nShip-with-fixes: the approach is reasonable, but the acceptance measurement can hide missing provenance and PR lookup can return incorrect provenance. The supplied evidence does not demonstrate either required acceptance measurement.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/spec_chain.py:~118 (`parse_spec_acs`, `current = f\"{fr}.{start.group(1)}\"`)\n  Finding: The AC key built from spec text uses the raw bracket number (`[AC5]` \u2192 `FR-01.01.AC5`), while `normalise_ac` \u2014 used for both the `lookup --ac` argument and event `affected_acs` \u2014 zero-pads to two digits (`AC05`). Any catalog AC written with an unpadded number produces a key the lookup can never match, silently dropping that AC's history. Given the unit's own context (\"AC history existed for ~13% of ACs\", format drift), this directly threatens the \"10 ACs with history\" acceptance criterion.\n  Suggestion: Normalise in `parse_spec_acs` too: `current = f\"{fr}.AC{int(start.group(1)[2:]):02d}\"`, and add a test with `[AC5]` matching a lookup of `FR-01.01.AC05`.\n\n- Category: security\n  Severity: low\n  File: shared/scripts/lib/spec_chain.py:~150\u2013170 (`find_plan`)\n  Finding: `event[\"adr_id\"]` is joined into paths without validation: `base / rid`, `root / _ADR_DIR / f\"{rid}.md\"`. An adr_id containing `../` (malformed/hostile event line) makes `find_plan` probe and return paths outside `.shipwright/planning/`, bypassing `safe_plan_path` (which is only applied to the *recorded* `plan_path` field, not to paths the finder constructs). The external plan review flagged exactly this; `write_plan_stub.py` sanitizes but the reader does not.\n  Suggestion: Validate `rid` against the `_RUN_ID` / `ADR-` pattern (or reject any `/`, `..`) before any path join in `find_plan` (and in `fold_plan_path` via `plan_rel_path`).\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/tools/spec_chain_cli.py (`replay`)\n  Finding: The acceptance criterion is \"a replay of the 20-iterate sample (seed 20261031) resolves 20 of 20 **for runs recorded after the change**\", but no output of `replay` measures that: `fr_plan_pr_resolved`/`fully_resolved` mix pre-change legacy runs (which the docstring admits may not resolve), and `post_change_cohort.resolved_plan_and_pr` checks plan+PR but not `ac_link`. Additionally the sample is drawn from a pool that grows as events accumulate, so the seed does not reproduce a fixed sample \u2014 the tool itself acknowledges this. The criterion as written cannot be verified from this command's output.\n  Suggestion: Have `replay` report resolution restricted to the post-change cohort including `ac_link`, and pin the sample (e.g., record the sampled run ids, or filter the pool to runs up to a boundary) so the measurement is reproducible.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/spec_chain.py:~205\u2013225 (`parse_spec_acs` continuation logic)\n  Finding: An AC's text is only extended by lines starting with a literal space; tab-indented continuations, wrapped lines with no indent, or nested `- ` bullets under an AC flush the buffer and silently drop any run ids that appear after them. The parser is only tested against a synthetic spec in the test's own exact format \u2014 the real catalog (whose drift caused the 13% baseline) is never validated, despite both external reviewers flagging this.\n  Suggestion: Run `spec_chain_cli.py coverage` against the live catalog as part of closing the unit (the plan review's suggestion), and add a fixture with a tab-indented or non-indented continuation to document current behavior.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/spec_chain.py (`find_pr`)\n  Finding: `git log --all --fixed-strings --grep=<rid>` returns the first commit whose subject ends in `(#N)`; a matching commit on an unmerged branch, or a later PR that references the same run id in its body, yields a wrong or partial PR. Only one PR per run is ever reported.\n  Suggestion: Prefer the first-parent / trunk ref range, or report all matches and flag ambiguity rather than silently returning the first.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_spec_chain.py (`test_check_is_registered`)\n  Finding: `assert CHECK_NAME` is a tautology \u2014 it validates nothing beyond that the string is non-empty. The registration assertion is the only meaningful part.\n  Suggestion: Drop the `CHECK_NAME` assertion or assert it equals the documented check name so a rename is caught.\n\nPositives: the stub writer sanitizes run ids, `safe_plan_path` guards the recorded field, the F11 check is correctly warning-only and strict-exempt, `fold_plan_path` is idempotent and respects a caller-supplied `plan_path`, and the tests exercise real error paths (non-UTF-8 stub, traversal attempts, prefix-collision run ids) rather than just happy paths. The registration of the new claim check cannot newly block PRs, matching the brief's constraint.\n\nOverall: the core mechanism is sound and well-tested, but the AC-number normalisation asymmetry, the unsanitized `adr_id` in path joins, and the fact that no command output actually measures the stated \"20 of 20 post-change\" criterion should be fixed before this closes. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-10-31-p3-spec-chain",
+    "at": "2026-10-31T12:29:51.457348+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

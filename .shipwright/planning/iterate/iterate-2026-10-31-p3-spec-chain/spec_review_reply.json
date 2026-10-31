@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"P3 passes. Every clause of P3 in BRIEF.md:L27 is implemented as written, and nothing new blocks a PR."}

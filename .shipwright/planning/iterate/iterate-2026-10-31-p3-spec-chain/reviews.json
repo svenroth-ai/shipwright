@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-31-p3-spec-chain",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T12:41:58.240797+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The 20-iterate replay acceptance criterion says \"resolves 20 of 20 for runs recorded after the change,\" but the replay tool (`spec_chain_cli.py replay --seed`) will encounter legacy runs whose plan files exist in five different shapes and whose PR is only discoverable via commit grep. If the plan finder's \"legacy\" and \"convention\" fallbacks don't cover all five observed shapes, replay will fail on exactly the runs it's meant to validate.",
+          "suggestion": "Enumerate the five observed plan-file shapes in the test suite and add fixtures for each. If any shape can't be resolved deterministically, the `ac_history`/replay output should mark it unresolved rather than fail, and the replay criterion should be measured against that behavior explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "PR is \"known only after push,\" so `plan_path` is stamped at finalize time but the PR link is not. The lookup \"which specs shaped AC X\" for 10+ ACs presumably needs PR provenance for recent runs, yet nothing in the plan says when or how the PR gets backfilled onto the event after push.",
+          "suggestion": "Specify the backfill mechanism: either a post-push hook/step that stamps `pr` onto the recorded event, or the CLI's Run-ID commit-grep fallback as the only path for new runs too. If the latter, state it — otherwise the Run-ID grep must work for new runs, which is the same fragile mechanism the measurement just flagged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "finalize_iterate.py` stamps `plan_path` \"when the stub exists.\" There's no stated handling for runs where a stub should exist but wasn't written (write_plan_stub failed, hook skipped, non-triviality classification wrong). This produces silent provenance gaps that the WARNING-only F11 check won't surface to anyone who doesn't run it.",
+          "suggestion": "Confirm the F11 WARNING is surfaced in the operator's standard loop (e.g., it appears in the iterate summary the operator reads), not only when someone invokes the verifier explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The strict-exempt, WARNING-only F11 check means no enforcement: the next iterate could regress stub-writing without failing CI. Given the campaign's done-when depends on recorded provenance accumulating, silent regression directly undermines the acceptance criteria of later measurement.",
+          "suggestion": "Acceptable as scoped (brief says no write-time gate), but add a `coverage` trend check to the campaign's per-unit measurement step so a regression shows up at the next unit boundary rather than at the end.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC history depends on the catalog AC parser matching the actual AC format(s) in use; 13% coverage today suggests format drift already exists. The mini-plan doesn't mention validating the parser against the full current catalog.",
+          "suggestion": "Add a one-time parser-validation pass over the live catalog as part of the test suite (or a CLI `coverage` run against the real catalog before closing the unit).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Path handling: `plan_path` is stored on events and consumed by the CLI. If `write_plan_stub.py` derives paths from `run_id` (which may contain slashes or `..` from malformed input), path traversal into arbitrary repo locations is possible. Low risk in a trusted local pipeline, but cheap to fix.",
+          "suggestion": "Sanitize `run_id` (allowlist `[A-Za-z0-9_-]+`) in both the stub writer and any path consumers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Correct call on avoiding a tracked index file — computed-on-demand is the simpler, non-stale design. No over-production concerns; the module split (spec_chain lib + thin CLI + stub writer) is proportionate.",
+          "suggestion": "None; keep it this way.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds a stub writer but does not identify what invokes it for every non-trivial iterate. Finalization only records an existing stub, and a warning-only verifier cannot ensure creation.",
+          "suggestion": "Wire stub creation into the existing iterate workflow before finalization, define “non-trivial,” and test that an ordinary qualifying run produces both the stub and its event reference. No new blocking gate is necessary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "P3 explicitly names `pr` on the event, but the changes describe only reading that field and falling back to commit search. Deferring PR discovery does not establish how the event eventually receives it.",
+          "suggestion": "Specify where an already-known PR is recorded and how later discovery is persisted using the existing event lifecycle. Cover runs finalized before PR creation and runs without a PR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The goal shifts from “which specs shaped AC X” to “which runs shaped AC X.” A catalog parser and run lookup do not establish how each historical AC links to the specific specs that shaped it.",
+          "suggestion": "Define the provenance chain explicitly: AC → run → plan/spec references. Return those references with supporting evidence, and demonstrate at least 10 historical ACs. Label inferred associations so they are distinguishable from explicit links.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The replay command does not define its eligible population or what counts as “resolved.” A fixed seed alone cannot reproduce the sample when the event corpus changes, and finding any conventional plan file could incorrectly count as successful resolution.",
+          "suggestion": "Record the sampled run IDs and post-change boundary, verify each resolved artifact belongs to its run, and report missing or ambiguous matches as failures. Explicitly run both acceptance measurements before the next unit and stop for the operator if either fails.  The shared resolver and computed index are a reasonable, proportionate design. The plan needs explicit production wiring, event PR handling, and evidence-based acceptance measurements before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-31T12:41:45.650159+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review: P3 — Spec chain mini-plan\n\n## Findings\n\n- **Category: edge-case** — **Severity: medium**\n  **Finding:** The 20-iterate replay acceptance criterion says \"resolves 20 of 20 for runs recorded after the change,\" but the replay tool (`spec_chain_cli.py replay --seed`) will encounter legacy runs whose plan files exist in five different shapes and whose PR is only discoverable via commit grep. If the plan finder's \"legacy\" and \"convention\" fallbacks don't cover all five observed shapes, replay will fail on exactly the runs it's meant to validate.\n  **Suggestion:** Enumerate the five observed plan-file shapes in the test suite and add fixtures for each. If any shape can't be resolved deterministically, the `ac_history`/replay output should mark it unresolved rather than fail, and the replay criterion should be measured against that behavior explicitly.\n\n- **Category: edge-case** — **Severity: medium**\n  **Finding:** PR is \"known only after push,\" so `plan_path` is stamped at finalize time but the PR link is not. The lookup \"which specs shaped AC X\" for 10+ ACs presumably needs PR provenance for recent runs, yet nothing in the plan says when or how the PR gets backfilled onto the event after push.\n  **Suggestion:** Specify the backfill mechanism: either a post-push hook/step that stamps `pr` onto the recorded event, or the CLI's Run-ID commit-grep fallback as the only path for new runs too. If the latter, state it — otherwise the Run-ID grep must work for new runs, which is the same fragile mechanism the measurement just flagged.\n\n- **Category: edge-case** — **Severity: low**\n  **Finding:** `finalize_iterate.py` stamps `plan_path` \"when the stub exists.\" There's no stated handling for runs where a stub *should* exist but wasn't written (write_plan_stub failed, hook skipped, non-triviality classification wrong). This produces silent provenance gaps that the WARNING-only F11 check won't surface to anyone who doesn't run it.\n  **Suggestion:** Confirm the  […truncated]\n\n[openai] Repository access was blocked by policy, so this review is based on the supplied mini-plan; compliance with the binding brief remains unverified.\n\n1. **Category: dependency | Severity: high**  \n   **Finding:** The plan adds a stub writer but does not identify what invokes it for every non-trivial iterate. Finalization only records an existing stub, and a warning-only verifier cannot ensure creation.  \n   **Suggestion:** Wire stub creation into the existing iterate workflow before finalization, define “non-trivial,” and test that an ordinary qualifying run produces both the stub and its event reference. No new blocking gate is necessary.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** P3 explicitly names `pr` on the event, but the changes describe only reading that field and falling back to commit search. Deferring PR discovery does not establish how the event eventually receives it.  \n   **Suggestion:** Specify where an already-known PR is recorded and how later discovery is persisted using the existing event lifecycle. Cover runs finalized before PR creation and runs without a PR.\n\n3. **Category: approach | Severity: high**  \n   **Finding:** The goal shifts from “which specs shaped AC X” to “which runs shaped AC X.” A catalog parser and run lookup do not establish how each historical AC links to the specific specs that shaped it.  \n   **Suggestion:** Define the provenance chain explicitly: AC → run → plan/spec references. Return those references with supporting evidence, and demonstrate at least 10 historical ACs. Label inferred associations so they are distinguishable from explicit links.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** The replay command does not define its eligible population or what counts as “resolved.” A fixed seed alone cannot reproduce the sample when the event corpus changes, and finding any conventional plan file could incorrectly count as successful resolution.  \n   **Suggestion:** Record the  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "replay post-change cohort required affected_acs for runs that touch no runtime path",
+          "suggestion": "filter with requires_declaration",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "write_plan_stub main only covered by subprocess tests",
+          "suggestion": "in-process test",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-10-31T12:48:41.013220+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "4c8af109c5dffdc58b04a334a5fec2f4ac0822f7"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T12:46:26.435477+00:00",
+      "disposition": "Stage 3 doubt-reviewer applies to migrations, concurrency, cross-plugin imports or irreversible operations; this diff has none, so the runner did not spawn it and leaves any decision to the orchestrator",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/spec_chain.py:~118 (`parse_spec_acs`, `current = f\"{fr}.{start.group(1)}\"`)",
+          "line": null,
+          "finding": "The AC key built from spec text uses the raw bracket number (`[AC5]` → `FR-01.01.AC5`), while `normalise_ac` — used for both the `lookup --ac` argument and event `affected_acs` — zero-pads to two digits (`AC05`). Any catalog AC written with an unpadded number produces a key the lookup can never match, silently dropping that AC's history. Given the unit's own context (\"AC history existed for ~13% of ACs\", format drift), this directly threatens the \"10 ACs with history\" acceptance criterion.",
+          "suggestion": "Normalise in `parse_spec_acs` too: `current = f\"{fr}.AC{int(start.group(1)[2:]):02d}\"`, and add a test with `[AC5]` matching a lookup of `FR-01.01.AC05`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/spec_chain.py:~150–170 (`find_plan`)",
+          "line": null,
+          "finding": "event[\"adr_id\"]` is joined into paths without validation: `base / rid`, `root / _ADR_DIR / f\"{rid}.md\"`. An adr_id containing `../` (malformed/hostile event line) makes `find_plan` probe and return paths outside `.shipwright/planning/`, bypassing `safe_plan_path` (which is only applied to the recorded `plan_path` field, not to paths the finder constructs). The external plan review flagged exactly this; `write_plan_stub.py` sanitizes but the reader does not.",
+          "suggestion": "Validate `rid` against the `_RUN_ID` / `ADR-` pattern (or reject any `/`, `..`) before any path join in `find_plan` (and in `fold_plan_path` via `plan_rel_path`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/spec_chain_cli.py (`replay`)",
+          "line": null,
+          "finding": "The acceptance criterion is \"a replay of the 20-iterate sample (seed 20261031) resolves 20 of 20 for runs recorded after the change\", but no output of `replay` measures that: `fr_plan_pr_resolved`/`fully_resolved` mix pre-change legacy runs (which the docstring admits may not resolve), and `post_change_cohort.resolved_plan_and_pr` checks plan+PR but not `ac_link`. Additionally the sample is drawn from a pool that grows as events accumulate, so the seed does not reproduce a fixed sample — the tool itself acknowledges this. The criterion as written cannot be verified from this command's output.",
+          "suggestion": "Have `replay` report resolution restricted to the post-change cohort including `ac_link`, and pin the sample (e.g., record the sampled run ids, or filter the pool to runs up to a boundary) so the measurement is reproducible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/spec_chain.py:~205–225 (`parse_spec_acs` continuation logic)",
+          "line": null,
+          "finding": "An AC's text is only extended by lines starting with a literal space; tab-indented continuations, wrapped lines with no indent, or nested `- ` bullets under an AC flush the buffer and silently drop any run ids that appear after them. The parser is only tested against a synthetic spec in the test's own exact format — the real catalog (whose drift caused the 13% baseline) is never validated, despite both external reviewers flagging this.",
+          "suggestion": "Run `spec_chain_cli.py coverage` against the live catalog as part of closing the unit (the plan review's suggestion), and add a fixture with a tab-indented or non-indented continuation to document current behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/spec_chain.py (`find_pr`)",
+          "line": null,
+          "finding": "git log --all --fixed-strings --grep=<rid>` returns the first commit whose subject ends in `(#N)`; a matching commit on an unmerged branch, or a later PR that references the same run id in its body, yields a wrong or partial PR. Only one PR per run is ever reported.",
+          "suggestion": "Prefer the first-parent / trunk ref range, or report all matches and flag ambiguity rather than silently returning the first.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_spec_chain.py (`test_check_is_registered`)",
+          "line": null,
+          "finding": "assert CHECK_NAME` is a tautology — it validates nothing beyond that the string is non-empty. The registration assertion is the only meaningful part.",
+          "suggestion": "Drop the `CHECK_NAME` assertion or assert it equals the documented check name so a rename is caught.  Positives: the stub writer sanitizes run ids, `safe_plan_path` guards the recorded field, the F11 check is correctly warning-only and strict-exempt, `fold_plan_path` is idempotent and respects a caller-supplied `plan_path`, and the tests exercise real error paths (non-UTF-8 stub, traversal attempts, prefix-collision run ids) rather than just happy paths. The registration of the new claim check cannot newly block PRs, matching the brief's constraint.  Overall: the core mechanism is sound and well-tested, but the AC-number normalisation asymmetry, the unsanitized `adr_id` in path joins, and the fact that no command output actually measures the stated \"20 of 20 post-change\" criterion should be fixed before this closes. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/spec_chain_cli.py:69–70",
+          "line": null,
+          "finding": "The post-change cohort includes only events already carrying `plan_path`. A new run that fails to record that field—the regression this measurement should detect—is excluded entirely. The seeded sample also draws from all historical runs rather than 20 post-change runs, so neither result establishes the required 20/20 acceptance criterion.",
+          "suggestion": "Select post-change runs using an independent boundary, sample 20 with seed 20261031, and count missing `plan_path` or unresolved links as failures. Report insufficient eligible runs explicitly and test the missing-field case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/spec_chain.py:152–159",
+          "line": null,
+          "finding": "PR discovery accepts the run ID anywhere in a commit message rather than requiring its `Run-ID:` trailer. A later PR mentioning an older run in its description can therefore be returned as that older run’s PR; the exact-token check only protects against longer IDs.",
+          "suggestion": "Require an exact `Run-ID: <id>` trailer before accepting the PR number. Add a test where a newer PR mentions the target run but carries a different Run-ID trailer.  Ship-with-fixes: the approach is reasonable, but the acceptance measurement can hide missing provenance and PR lookup can return incorrect provenance. The supplied evidence does not demonstrate either required acceptance measurement.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-31T12:41:45.810917+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/spec_chain.py:~118 (`parse_spec_acs`, `current = f\"{fr}.{start.group(1)}\"`)\n  Finding: The AC key built from spec text uses the raw bracket number (`[AC5]` → `FR-01.01.AC5`), while `normalise_ac` — used for both the `lookup --ac` argument and event `affected_acs` — zero-pads to two digits (`AC05`). Any catalog AC written with an unpadded number produces a key the lookup can never match, silently dropping that AC's history. Given the unit's own context (\"AC history existed for ~13% of ACs\", format drift), this directly threatens the \"10 ACs with history\" acceptance criterion.\n  Suggestion: Normalise in `parse_spec_acs` too: `current = f\"{fr}.AC{int(start.group(1)[2:]):02d}\"`, and add a test with `[AC5]` matching a lookup of `FR-01.01.AC05`.\n\n- Category: security\n  Severity: low\n  File: shared/scripts/lib/spec_chain.py:~150–170 (`find_plan`)\n  Finding: `event[\"adr_id\"]` is joined into paths without validation: `base / rid`, `root / _ADR_DIR / f\"{rid}.md\"`. An adr_id containing `../` (malformed/hostile event line) makes `find_plan` probe and return paths outside `.shipwright/planning/`, bypassing `safe_plan_path` (which is only applied to the *recorded* `plan_path` field, not to paths the finder constructs). The external plan review flagged exactly this; `write_plan_stub.py` sanitizes but the reader does not.\n  Suggestion: Validate `rid` against the `_RUN_ID` / `ADR-` pattern (or reject any `/`, `..`) before any path join in `find_plan` (and in `fold_plan_path` via `plan_rel_path`).\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/tools/spec_chain_cli.py (`replay`)\n  Finding: The acceptance criterion is \"a replay of the 20-iterate sample (seed 20261031) resolves 20 of 20 **for runs recorded after the change**\", but no output of `replay` measures that: `fr_plan_pr_resolved`/`fully_resolved` mix pre-change legacy runs (which the docstring admits may not resolve), and `post_ch […truncated]\n\n[openai] Repository access was blocked by policy, so this review is based on the supplied diff. I could not read the binding brief or run tests.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/spec_chain_cli.py:69–70\n- Finding: The post-change cohort includes only events already carrying `plan_path`. A new run that fails to record that field—the regression this measurement should detect—is excluded entirely. The seeded sample also draws from all historical runs rather than 20 post-change runs, so neither result establishes the required 20/20 acceptance criterion.\n- Suggestion: Select post-change runs using an independent boundary, sample 20 with seed 20261031, and count missing `plan_path` or unresolved links as failures. Report insufficient eligible runs explicitly and test the missing-field case.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/spec_chain.py:152–159\n- Finding: PR discovery accepts the run ID anywhere in a commit message rather than requiring its `Run-ID:` trailer. A later PR mentioning an older run in its description can therefore be returned as that older run’s PR; the exact-token check only protects against longer IDs.\n- Suggestion: Require an exact `Run-ID: <id>` trailer before accepting the PR number. Add a test where a newer PR mentions the target run but carries a different Run-ID trailer.\n\nShip-with-fixes: the approach is reasonable, but the acceptance measurement can hide missing provenance and PR lookup can return incorrect provenance. The supplied evidence does not demonstrate either required acceptance measurement.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T12:44:07.867391+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "4c8af109c5dffdc58b04a334a5fec2f4ac0822f7"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T12:41:45.944944+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T12:41:46.063535+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

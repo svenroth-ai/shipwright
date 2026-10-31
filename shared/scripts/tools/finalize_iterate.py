@@ -36,6 +36,7 @@ from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  # noqa: E402
 from lib.iterate_phase_groups import fold_into_event as _fold_phase_timings  # noqa: E402
 from lib.iterate_tests_block import fold_into_event as _fold_tests_block  # noqa: E402
+from lib.spec_chain import fold_plan_path as _fold_plan_path  # noqa: E402
 from lib.iterate_timings_normalize import fold_into_event as _fold_iterate_timings  # noqa: E402
 from tools.context_cost_summary import read_and_fold_into_event as _fold_context_cost  # noqa: E402
 
@@ -297,6 +298,7 @@ def _record_event(
         if session and "session" not in event:
             event["session"] = session
 
+        _fold_plan_path(event, project_root, run_id)  # plan_path when the run wrote plan.md (spec chain)
         _fold_phase_timings(event, project_root, run_id)  # boundary-mark durations, additive/best-effort
         _fold_context_cost(event, project_root, session)  # per-Stop cost (context_cost_core.py), additive/best-effort
 

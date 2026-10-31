@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-p3-spec-chain",
+  "date": "2026-10-31",
+  "section": "Iterate - change: spec chain",
+  "title": "plan_path on the event, plan stubs, AC lookup",
+  "context": "Plans came in five shapes, 45 of 192 runs had none, the event carried no plan or PR and AC history existed for about 13% of ACs.",
+  "decision": "Runs leave plan.md at one path, F5b stamps plan_path, pr stays optional (found from the Run-ID commit); a read-only lookup joins events, catalog text, plans and git; a warning-only F11 check.",
+  "consequences": "Which runs shaped an AC is one command; older runs are answered by labelled fallbacks. Stub quality is not judged; a missing stub only warns.",
+  "rationale": "Computed on demand cannot go stale; warning-only because nothing may newly block a PR and recorded events cannot be rewritten.",
+  "rejected": "A tracked index file (goes stale like the RTM); a hard F11 error for the stub; requiring pr on the event (unknown before the push).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}
