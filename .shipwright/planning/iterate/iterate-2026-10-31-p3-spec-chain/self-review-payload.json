@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"plan_path, optional pr, stubs, one filename, lookup by AC and FR; Done-when numbers measured in the P3 MEASURE file"},
+{"name":"Error Handling","verdict":"pass","note":"finders return None, never raise; the F11 check turns unreadable or non-UTF-8 stubs into a warning"},
+{"name":"Security Basics","verdict":"pass","note":"run ids and recorded plan_path validated before any path join; read-only tools"},
+{"name":"Test Quality","verdict":"pass","note":"23 tests incl. git round trips and the crash path; full shared/tests green after the events-log helper fix"},
+{"name":"Performance Basics","verdict":"pass","note":"one git log per run on demand; a run-id to PR map is a possible follow-up"},
+{"name":"Naming & Structure","verdict":"pass","note":"tool named spec_chain_cli to avoid the lib name collision; new check in its own module"},
+{"name":"Affected Boundaries","verdict":"pass","note":"event log JSONL read through resolve_events_path and apply_amendments; catalog spec.md parsed against the live file (39 ACs with history)"}]}
