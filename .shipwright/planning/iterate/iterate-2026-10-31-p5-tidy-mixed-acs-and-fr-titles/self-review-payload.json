@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All named MIXED ACs reworded to promise-only, 13 titles renamed per brief."},
+{"name":"Error Handling","verdict":"n/a","note":"Catalog text only, no code."},
+{"name":"Security Basics","verdict":"pass","note":"No code, secrets or inputs touched."},
+{"name":"Test Quality","verdict":"pass","note":"Catalog contract, RTM and table-reader suites pass against the edited catalog."},
+{"name":"Performance Basics","verdict":"n/a","note":"No runtime change."},
+{"name":"Naming & Structure","verdict":"pass","note":"IDs and AC numbers unchanged; moved detail lives in the P5 plan file."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Catalog is read by RTM and table readers; probed by running those suites on the edited file."}]}
