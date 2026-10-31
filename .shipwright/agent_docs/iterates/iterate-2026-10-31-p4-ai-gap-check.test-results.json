@@ -77,9 +77,9 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --project plugins/shipwright-plan shared/scripts/tools/ai_gap_check.py --project-root . --run-id surface-probe --diff-file small.diff --event-file ev.json --out-dir probe-out2",
+      "runner": "uv run pytest shared/tests/test_ai_gap_check.py -q",
       "exit_code": 0,
-      "tests_run": 1,
+      "tests_run": 35,
       "evidence_path": ".shipwright/runs/iterate-2026-10-31-p4-ai-gap-check/surface_verification.log",
       "timestamp": "2026-10-31T23:00:06Z"
     }
