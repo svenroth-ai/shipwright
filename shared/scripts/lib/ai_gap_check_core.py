@@ -183,6 +183,11 @@ def parse_reply(text: str) -> dict[str, Any]:
     verdict = str(obj.get("verdict") or "").strip().lower()
     if verdict not in ("agree", "disagree"):
         raise ValueError(f"verdict must be agree or disagree, got {obj.get('verdict')!r}")
+    for key in ("requirements_changed", "requirements_checked"):
+        if not isinstance(obj.get(key), list):
+            raise ValueError(f"{key} must be a list")
+    if not isinstance(obj.get("reason"), str) or not obj["reason"].strip():
+        raise ValueError("reason must be a non-empty string")
     gap = obj.get("gap")
     if not isinstance(gap, bool):
         raise ValueError(f"gap must be true or false, got {gap!r}")
@@ -231,7 +236,7 @@ def render_block(result: dict[str, Any], model: str = "", files_cut: Iterable[st
 
 def render_not_run(reason: str) -> str:
     """The visible note that replaces the block when the check could not run."""
-    one_line = " ".join(str(reason or "unknown").split())[:300]
+    one_line = _inert(reason or "unknown", 300)
     return (
         "### Independent gap check\n\n"
         f"Not run: {one_line}. Nothing was blocked; the declaration on the change record stands unchecked.\n"
@@ -268,7 +273,7 @@ def trim_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> tuple[str, 
         if path and _RECORD_PATH.match(path):
             dropped.append(path)
             continue
-        if size + len(chunk) > max_chars and kept:
+        if size + len(chunk) > max_chars:
             cut.append(path or "(unnamed)")
             continue
         kept.append(chunk)

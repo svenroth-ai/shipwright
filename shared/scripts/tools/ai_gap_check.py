@@ -111,8 +111,9 @@ def run_check(diff_text: str, declaration: dict, spec_texts: list[str], reviewer
         if reply.get("status") != "success":
             record["reason"] = f"{reply.get('status')}: {reply.get('reason') or 'no reply'}"
             return record
-        record["raw_reply"] = reply.get("feedback") or ""
-        record["result"] = parse_reply(record["raw_reply"])
+        raw = reply.get("feedback") or ""
+        record["raw_reply"] = raw[:8000]
+        record["result"] = parse_reply(raw)
         record["status"] = "ran"
     except Exception as exc:  # noqa: BLE001 - advisory by design: nothing here may fail the run
         record["status"] = "not_run"

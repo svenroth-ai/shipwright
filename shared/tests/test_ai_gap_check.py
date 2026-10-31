@@ -252,3 +252,35 @@ def test_run_check_refuses_a_claude_family_model(monkeypatch, tmp_path):
     monkeypatch.setattr(routing, "resolve_reviewer_model", lambda *a, **k: "anthropic/claude-opus-5-5")
     rec = tool.run_check(_DIFF, {}, [_SPEC], "openai", tmp_path)
     assert rec["status"] == "not_run" and "not independent" in rec["reason"]
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_incomplete_reply_is_unusable_and_first_oversized_file_is_cut():
+    with pytest.raises(ValueError):
+        parse_reply('{"verdict": "agree", "gap": false}')
+    with pytest.raises(ValueError):
+        parse_reply(json.dumps({**_GOOD, "reason": " "}))
+    head = "diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -0,0 +1 @@\n"
+    big = head.format(p="gen.py") + "+" + "q" * 500 + "\n"
+    small = head.format(p="ok.py") + "+x\n"
+    text, _, cut = trim_diff(big + small, max_chars=300)
+    assert cut == ["gen.py"] and "ok.py" in text and "qqqq" not in text
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_not_run_note_is_inert():
+    note = render_not_run("error: <script> @everyone [x](y)")
+    assert "<script>" not in note and "@everyone" not in note and "[x]" not in note
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_replay_reads_the_event_the_pr_added():
+    from tools.ai_gap_check_replay import event_in_diff
+
+    evt = {"type": "work_completed", "source": "iterate", "spec_impact": "none"}
+    other = {"type": "grade_snapshot"}
+    diff = ("diff --git a/other.py b/other.py\n+" + json.dumps(evt) + "\n"
+            "diff --git a/shipwright_events.jsonl b/shipwright_events.jsonl\n--- a/shipwright_events.jsonl\n+++ b/shipwright_events.jsonl\n"
+            "+" + json.dumps(other) + "\n+" + json.dumps(evt) + "\n")
+    assert event_in_diff(diff) == evt
+    assert event_in_diff("diff --git a/x b/x\n+" + json.dumps(evt)) == {}
