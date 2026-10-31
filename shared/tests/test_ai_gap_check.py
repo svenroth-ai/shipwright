@@ -323,3 +323,43 @@ def test_codex_driver_never_gets_a_gpt_reviewer_and_secret_files_stay_home(monke
     from lib.ai_gap_check_core import trim_diff as trim
     gap = "diff --git a/x b/.shipwright/planning/iterate/r/ai-gap-check.json\n+old verdict\n"
     assert "old verdict" not in trim(gap)[0]
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_inert_text_cannot_close_issues_mention_or_link():
+    nasty = {**_GOOD, "reason": "fixes #12 and &#64;x see http://evil.example"}
+    block = render_block(parse_reply(json.dumps(nasty)), "m")
+    assert "#12" not in block and "&#64;" not in block and "http://" not in block
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_secret_shaped_files_are_dropped_even_when_tracked_and_all_cut_means_nothing_to_check():
+    head = "diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -0,0 +1 @@\n"
+    text, dropped, _ = trim_diff(head.format(p="config/.env.local") + "+KEY=1\n" + head.format(p="a.py") + "+x\n")
+    assert "KEY=1" not in text and dropped == ["config/.env.local"] and "a.py" in text
+    text, _, cut = trim_diff(head.format(p="huge.py") + "+" + "z" * 900 + "\n", max_chars=300)
+    assert text == "" and cut == ["huge.py"]
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_main_survives_a_cp1252_stdout_and_non_ascii_untracked_names(monkeypatch, tmp_path, capsysbinary):
+    _git(tmp_path, "init", "-q", "-b", "main")
+    _git(tmp_path, "config", "user.email", "t@example.org")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.txt").write_text("one\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.txt")
+    _git(tmp_path, "commit", "-q", "-m", "base")
+    (tmp_path / "\u00e4.txt").write_text("umlaut\n", encoding="utf-8")
+    assert "umlaut" in tool.working_tree_diff(tmp_path, "main")
+    reply = {**_GOOD, "reason": "ping @x \u2192 done"}
+    _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(reply)})
+    diff, spec, ev = tmp_path / "d.diff", tmp_path / "s.md", tmp_path / "e.json"
+    diff.write_text(_DIFF, encoding="utf-8")
+    spec.write_text(_SPEC, encoding="utf-8")
+    ev.write_text("{}", encoding="utf-8")
+    import io
+
+    monkeypatch.setattr(sys, "stdout", io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict"))
+    monkeypatch.setattr(sys, "argv", ["x", "--project-root", str(tmp_path), "--diff-file", str(diff), "--spec-file", str(spec),
+                                      "--event-file", str(ev), "--out-dir", str(tmp_path / "out")])
+    assert tool.main() == 0

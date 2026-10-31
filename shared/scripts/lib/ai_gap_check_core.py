@@ -204,7 +204,7 @@ def parse_reply(text: str) -> dict[str, Any]:
 def _inert(text: object, limit: int = 600) -> str:
     """Model text made safe for a PR body: one line, no markup, no @-mention that would notify someone."""
     s = " ".join(str(text or "").split())[:limit]
-    for ch, rep in (("<", "&lt;"), (">", "&gt;"), ("`", "'"), ("[", "("), ("]", ")"), ("|", "/"), ("*", "")):
+    for ch, rep in (("&", "&amp;"), ("<", "&lt;"), (">", "&gt;"), ("://", ":" + chr(0x200B) + "//"), ("#", "#" + chr(0x200B)), ("`", "'"), ("[", "("), ("]", ")"), ("|", "/"), ("*", "")):
         s = s.replace(ch, rep)
     return s.replace("@", "@" + chr(0x200B))
 
@@ -251,6 +251,8 @@ _RECORD_PATH = re.compile(
     r"|\.shipwright/planning/iterate/[^/]+/(?:ai-gap-check\.(?:json|md)|[^/]*-raw[^/]*|[^/]*\.stderr\.txt|reviews\.json|risk_recheck\.json"
     r"|self-review-payload\.json|[^/]*_reply\.json|[^/]*\.err))"
 )
+#: Files that look like credentials never leave the machine, tracked or not.
+_SECRET_PATH = re.compile(r"(?i)(^|/)(\.env[^/]*|[^/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519)[^/]*|[^/]*(secret|credential)[^/]*)$")
 _DIFF_HEAD = re.compile(r"^diff --git a/(\S+) b/(\S+)", re.MULTILINE)
 DEFAULT_MAX_DIFF_CHARS = 400_000
 
@@ -270,7 +272,7 @@ def trim_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> tuple[str, 
             continue
         m = _DIFF_HEAD.match(chunk)
         path = m.group(2) if m else ""
-        if path and _RECORD_PATH.match(path):
+        if path and (_RECORD_PATH.match(path) or _SECRET_PATH.search(path)):
             dropped.append(path)
             continue
         if size + len(chunk) > max_chars:
@@ -279,6 +281,8 @@ def trim_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> tuple[str, 
         kept.append(chunk)
         size += len(chunk)
     text = "".join(kept)
+    if not kept:
+        return "", dropped, cut
     if cut:
         text += "\n\n[files left out because the diff was too large: " + ", ".join(cut) + "]\n"
     return text, dropped, cut

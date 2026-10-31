@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -35,6 +34,7 @@ for _p in (str(_SCRIPTS_ROOT), str(_SCRIPTS_ROOT / "lib"), str(_TOOLS)):
 from lib.ai_gap_check_core import (  # noqa: E402
     PROMPT_VERSION,
     SCHEMA,
+    _SECRET_PATH,
     SYSTEM_PROMPT,
     USER_TEMPLATE,
     catalog_from_specs,
@@ -47,7 +47,7 @@ from lib.ai_gap_check_core import (  # noqa: E402
 )
 
 REVIEWERS = ("openai", "glm")
-_SECRET_SHAPED = re.compile(r"(?i)(^|/)(\.env[^/]*|[^/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519)[^/]*|[^/]*(secret|credential)[^/]*)$")
+_SECRET_SHAPED = _SECRET_PATH
 
 
 def _event_for_run(project_root: Path, run_id: str) -> dict | None:
@@ -77,7 +77,7 @@ def working_tree_diff(root: Path, base_ref: str) -> str:
 
     base = git("merge-base", base_ref, "HEAD").strip()
     parts = [git("diff", "--no-color", base)]
-    for name in git("ls-files", "--others", "--exclude-standard").splitlines():
+    for name in git("ls-files", "-z", "--others", "--exclude-standard").split(chr(0)):
         if name.strip() and not _SECRET_SHAPED.search(name):
             parts.append(git("diff", "--no-color", "--no-index", "--", "/dev/null", name.strip(), ok=(0, 1)))
     return "".join(parts)
@@ -151,6 +151,8 @@ def main() -> int:
     ap.add_argument("--driver", choices=("claude", "codex"), default="claude",
                     help="harness that wrote the change; codex never gets a GPT-family reviewer (not independent)")
     args = ap.parse_args()
+    if hasattr(sys.stdout, "reconfigure"):  # a cp1252 pipe must not turn the block into a crash
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     root = Path(args.project_root).resolve()
     if args.driver == "codex" or not args.reviewer:
@@ -167,7 +169,7 @@ def main() -> int:
         specs = [p.read_text(encoding="utf-8", errors="replace") for p in spec_paths if p.exists()]
         record = run_check(diff_text, declaration_from_event(event), specs, args.reviewer, root)
     except Exception as exc:  # noqa: BLE001 - see run_check
-        record = {"schema": SCHEMA, "status": "not_run", "reviewer": args.reviewer, "reason": f"{type(exc).__name__}: {exc}"}
+        record = {"schema": SCHEMA, "prompt_version": PROMPT_VERSION, "status": "not_run", "reviewer": args.reviewer, "reason": f"{type(exc).__name__}: {exc}"}
     record["run_id"] = args.run_id
     record["block"] = block_for(record)
     try:
