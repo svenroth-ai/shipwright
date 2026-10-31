@@ -381,12 +381,10 @@ _Where the work detail lives_ at the end of this document.
   self-contained unit — one section, one branch, one commit — under the
   framework's delivery discipline (the constitution's how), which build follows
   rather than restates.
-- (E) [AC09] Given an assistant is about to run a command, when that command forces a push onto the
-  shared main branch, then it is stopped; a command that merely mentions forcing
-  or the branch name elsewhere, or that pushes to some other branch, runs untouched; a
-  forced push that names no branch is judged by the branch it would really update; a
-  failure of the guard itself never blocks work; and a command containing
-  non-English characters is judged exactly like any other.
+- (E) [AC09] Given an assistant is about to run a command, when that command would overwrite the
+  shared main branch's history by force, then it is stopped; any other command, including
+  one that only mentions it, runs untouched, and a failure of this protection never
+  blocks work.
   (iterate-2026-10-08-validate-command-force-push-fp)
 - (E) [AC10] Given a planned section has passed the internal reviews, when its build is finished,
   then an independent outside review of that section's code change runs by default, the same as

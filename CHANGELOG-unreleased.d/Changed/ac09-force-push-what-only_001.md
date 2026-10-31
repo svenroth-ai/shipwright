@@ -1,0 +1,1 @@
+Requirement catalog: the dangerous-command guard criterion in FR-01.05 now states only the promise (a forced overwrite of the main branch is stopped, everything else runs) and leaves the detection detail to the code
