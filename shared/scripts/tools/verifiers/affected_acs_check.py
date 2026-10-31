@@ -7,7 +7,14 @@ event and the paths its branch changed, and reports.
 * No event for the run, or an intent outside feature/change/bug: SKIPPED.
 * The branch cannot be seen (``None`` from the git view) and the event lists no
   ``changed_files``: SKIPPED as blind, never read as clean.
-* Runtime paths touched and the declaration absent: FAIL, naming both repairs.
+* Runtime paths touched and the declaration absent: a WARNING (never an error, and exempt from
+  ``--strict``), naming both repairs. Nothing holds a PR on this check, and the F5b repair path cannot
+  rewrite an already-recorded event, so an error would be an unfixable block.
+* git failing inside a real repository while the event paths do not decide: the same WARNING, naming
+  the git error.
+
+Runtime means ``plugins/**`` or ``shared/**``; only directories named ``tests`` and ``docs`` are excluded.
+SKILL.md, prompts, the glossary and other markdown under those trees count as runtime.
 """
 
 from __future__ import annotations
@@ -71,7 +78,8 @@ def check_affected_acs_declared(project_root: Path, run_id: str, commit_hash: st
     ctx = git_context(root)
     if ctx not in ("work_tree", "not_git"):  # git failed inside a real repo: never read that as clean
         if not (isinstance(event.get("changed_files"), list) and requires_declaration(event, event["changed_files"])):
-            return CheckResult(CHECK_NAME, False, f"git could not answer ({ctx}); refusing to certify that no runtime path was touched")
+            return CheckResult(CHECK_NAME, False, f"git could not answer ({ctx}); refusing to certify that no runtime path was touched",
+                               severity=Severity.WARNING.value, strict_exempt=True)
     if ctx == "work_tree":
         git_paths = _iterate_changed_paths(root, str(event.get("commit") or "") or commit_hash)
         if git_paths is not None:
@@ -82,4 +90,5 @@ def check_affected_acs_declared(project_root: Path, run_id: str, commit_hash: st
         return _skip("BLIND: no readable branch view and no changed_files on the event")
     if not any(requires_declaration(event, view) for view in views):
         return _skip("no runtime path touched; nothing to declare")
-    return CheckResult(CHECK_NAME, False, f"this iterate touched runtime paths but its event has no affected_acs - {_REPAIR}")
+    return CheckResult(CHECK_NAME, False, f"this iterate touched runtime paths but its event has no affected_acs - {_REPAIR}",
+                       severity=Severity.WARNING.value, strict_exempt=True)

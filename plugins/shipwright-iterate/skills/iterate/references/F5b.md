@@ -68,7 +68,7 @@ not skip the rule: F5b takes it from this run's iterate entry `type`, and an
 Specs that exist but parse to zero requirements refuse any declared FR id
 (`fr_gate_specs_unparsed`).
 
-**Runtime-touching iterates declare `affected_acs`** (F11 `check_affected_acs_declared`, presence only). A feature/change/bug whose diff touches `plugins/**` or `shared/**` (tests and docs excluded) puts on the event either `affected_acs` - a non-empty list, one entry per acceptance criterion that was changed, implemented, or checked and left unchanged, shaped `{"ac": "FR-01.03.AC05", "disposition": "changed|implemented|checked-unchanged", "why": "one line on why the promise holds"}` - or `"catalog_gap": true` with `"catalog_gap_fr": "FR-.."` (the nearest FR) when no AC covers the change. This holds for `spec_impact: none` too. The check never reads the content: whether the line is true is for the reviewers. `tools/affected_acs_replay.py` replays the rule over past iterates.
+**Runtime-touching iterates declare `affected_acs`** (F11 `check_affected_acs_declared`, presence only). A feature/change/bug whose diff touches `plugins/**` or `shared/**` (only directories named `tests/` and `docs/` are excluded; SKILL.md, prompts, glossary and other markdown under `plugins/**` or `shared/**` count as runtime) puts on the event either `affected_acs` - a non-empty list, one entry per acceptance criterion that was changed, implemented, or checked and left unchanged, shaped `{"ac": "FR-01.03.AC05", "disposition": "changed|implemented|checked-unchanged", "why": "one line on why the promise holds"}` - or `"catalog_gap": true` with `"catalog_gap_fr": "FR-.."` (the nearest FR) when no AC covers the change. This holds for `spec_impact: none` too. F11 reports a missing declaration as an advisory warning; the declaration is still expected at F5b. The check never reads the content: whether the line is true is for the reviewers. `tools/affected_acs_replay.py` replays the rule over past iterates.
 
 **Behavior-affecting changes must be FR-linked.** If `spec_impact` is
 `add`/`modify`/`remove` (the change alters an FR's observable behavior), the
@@ -107,7 +107,7 @@ extras='{
   "spec_impact_reason_code": "{required when spec_impact=none: closed code}",
   "affected_frs": ["FR-..."],
   "new_frs": ["FR-..."],
-  "affected_acs": [{"ac": "FR-..ACnn", "disposition": "checked-unchanged", "why": "{one line}"}]
+  "affected_acs": [{"ac": "FR-01.03.AC05", "disposition": "checked-unchanged", "why": "{one line}"}]
 }'
 uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
   --project-root "{project_root}" \

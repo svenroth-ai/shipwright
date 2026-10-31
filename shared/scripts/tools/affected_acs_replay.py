@@ -8,6 +8,8 @@ An event with no ``changed_files`` list cannot be placed either way; it is count
 Events recorded before the field existed show up as ``missing``: that is the
 measure of how many past iterates the rule would have asked.
 
+The "100-PR window" is the last 100 iterate events (one PR can carry several).
+
     uv run shared/scripts/tools/affected_acs_replay.py --project-root . --window 100
 """
 

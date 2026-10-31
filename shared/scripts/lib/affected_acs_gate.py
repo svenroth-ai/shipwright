@@ -19,7 +19,8 @@ declaration is *present* when ``affected_acs`` is a non-empty list, or
 ``catalog_gap`` is true next to a non-empty ``catalog_gap_fr``.
 
 Scope: a feature/change/bug iterate whose diff touches a runtime path -
-``plugins/**`` or ``shared/**`` except tests and docs. Everything else (docs,
+``plugins/**`` or ``shared/**`` except directories named ``tests`` or ``docs``
+(SKILL.md, prompts, the glossary and other markdown there count as runtime). Everything else (docs,
 tests, planning records, compliance output) is not asked.
 """
 

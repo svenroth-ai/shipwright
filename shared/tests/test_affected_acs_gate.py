@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -66,7 +68,7 @@ def _seed(root: Path, **event) -> None:
 def test_check_fails_when_runtime_touched_and_field_absent(tmp_path):
     _seed(tmp_path, intent="change", spec_impact="none", changed_files=["shared/scripts/lib/x.py"])
     result = check_affected_acs_declared(tmp_path, _RUN, "")
-    assert result.name == CHECK_NAME and result.ok is False
+    assert result.name == CHECK_NAME and result.ok is False and result.severity == "warning"
     assert "affected_acs" in result.detail and "catalog_gap" in result.detail
 
 
@@ -172,4 +174,46 @@ def test_git_error_fails_closed_unless_the_event_already_decides(tmp_path, monke
     monkeypatch.setattr(mod, "git_context", lambda root: "git_error")
     _seed(tmp_path, intent="change")
     result = check_affected_acs_declared(tmp_path, _RUN, "")
-    assert result.ok is False and "git could not answer" in result.detail
+    assert result.ok is False and result.severity == "warning" and "git could not answer" in result.detail
+
+
+@pytest.mark.covers("FR-01.11")
+def test_missing_declaration_is_a_strict_exempt_warning_and_present_one_passes(tmp_path):
+    _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"])
+    missing = check_affected_acs_declared(tmp_path, _RUN, "")
+    assert missing.severity == "warning" and missing.strict_exempt is True and missing.ok is False
+    _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"],
+          affected_acs=[{"ac": "FR-01.03.AC05", "disposition": "checked-unchanged", "why": "x"}])
+    present = check_affected_acs_declared(tmp_path, _RUN, "")
+    assert present.ok is True and present.severity != "warning"
+
+
+@pytest.mark.covers("FR-01.11")
+def test_replay_main_prints_counts_from_an_events_file(tmp_path, monkeypatch, capsys):
+    from tools import affected_acs_replay as mod
+    _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"])
+    monkeypatch.setattr(sys, "argv", ["affected_acs_replay.py", "--project-root", str(tmp_path), "--window", "5"])
+    assert mod.main() == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["required"] == 1 and out["missing"] == 1 and out["conclusive"] is True
+
+
+@pytest.mark.covers("FR-01.11")
+def test_git_paths_for_run_reads_run_id_commits(tmp_path, monkeypatch):
+    from tools import affected_acs_replay as mod
+
+    def fake_run(cmd, **kwargs):
+        out = "sha1\nsha2\n" if "log" in cmd else ("b.py\na.py\n" if cmd[-1] == "sha1" else "a.py\n")
+        return types.SimpleNamespace(stdout=out)
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.git_paths_for_run(tmp_path, "run-1") == ["a.py", "b.py"]
+    assert mod.git_paths_for_run(tmp_path, "") is None
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: types.SimpleNamespace(stdout=""))
+    assert mod.git_paths_for_run(tmp_path, "run-1") is None
+
+    def boom(*a, **k):
+        raise OSError("no git")
+
+    monkeypatch.setattr(mod.subprocess, "run", boom)
+    assert mod.git_paths_for_run(tmp_path, "run-1") is None
