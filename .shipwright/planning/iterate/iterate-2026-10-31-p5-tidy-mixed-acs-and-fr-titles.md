@@ -12,6 +12,8 @@ Reason (WHY): baseline-package campaign, unit P5 (`.shipwright/planning/campaign
 | FR-01.03 AC03 | The internal reviewer's Claude model is set per project (`ModelConfig` plan-review tier), default `inherit` = the session model. |
 | FR-01.03 AC07 | Minimum of two implementation steps per section (tuning number in the section validator). |
 | FR-01.04 AC13 | Brand source is the claude.ai Design System. |
+| FR-01.03 AC13 | Reviewer count reworded to "two of the outside reviewers" (the default roster is larger than two). |
+| FR-01.03 AC22 | The internal reviewer's Claude model is configurable per project and defaults to the session's own model when unset. |
 | FR-01.11 AC11 | Review passes recorded today: self, plan, code, doubt, external code. |
 | FR-01.11 AC30 | Drivers are Claude and Codex; reviewer pairs are chosen per driver. |
 | FR-01.11 AC32 | `fable` joins `opus`/`sonnet`/`haiku` as an accepted tier value; AC34 keeps the "every written-out list agrees" promise. |
@@ -24,3 +26,7 @@ Reason (WHY): baseline-package campaign, unit P5 (`.shipwright/planning/campaign
 ## Title renames (heading and Name column in the catalog table)
 
 FR-01.01 End-to-end delivery pipeline; .02 Project decomposition into scoped units; .03 Implementation planning with independent review; .04 Mockups from requirements; .05 Test-driven build of planned sections; .06 Multi-level project testing; .07 Security scanning and remediation; .08 Deployment and rollback; .09 Release notes and changelog; .10 Audit-ready compliance evidence; .11 Ongoing change at the depth it deserves; .12 Local project preview; .13 Onboarding an existing codebase. IDs, order and ACs are unchanged, so no re-mint. FR-01.18 (`/shipwright-grade`) is not in the brief's 13 and is left as is.
+
+## Measure
+
+Of the 12 tidied ACs, 12 read as mixed (promise plus how-it-is-built) before the tidy. After two rounds, 5 still read as mixed on a blind Opus re-read. The original 60-AC sample archive is unavailable, so the sample was regenerated with seed 20261031. The strict reader still rates 23 of the whole sample as mixed, so this is not a like-for-like comparison with the earlier measurement.

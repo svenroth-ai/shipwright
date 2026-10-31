@@ -62,7 +62,7 @@ def test_new_function_called_by_a_modified_base_function_is_class_a_else_b(tmp_p
 
 
 def test_path_baseline_maps_plugins_and_importing_plugins(tmp_path):
-    spec = "| FR-01.09 | Adopted | /shipwright-changelog | Must | x | code | unit |\n| FR-01.10 | Adopted | /shipwright-compliance | Must | y | code | unit |\n"
+    spec = "| FR-01.09 | Adopted | Release notes and changelog | Must | x | code | unit |\n| FR-01.10 | Adopted | Audit-ready compliance evidence | Must | y | code | unit |\n"
     owners = paths.plugin_owners(spec)
     assert owners == {"shipwright-changelog": "FR-01.09", "shipwright-compliance": "FR-01.10"}
     (tmp_path / "shared/scripts/lib").mkdir(parents=True)
@@ -74,6 +74,12 @@ def test_path_baseline_maps_plugins_and_importing_plugins(tmp_path):
     assert reach["inner"] == {"FR-01.10"}  # transitively, through another shared module
     changed = [("M", p, p) for p in ("shared/scripts/lib/inner.py", "plugins/shipwright-changelog/scripts/z.py", "plugins/shipwright-changelog/tests/test_z.py")]
     assert sorted(paths.path_frs(changed, owners, reach)) == ["FR-01.09", "FR-01.10"]
+
+
+def test_plugin_owners_reads_the_real_catalog():
+    spec = (Path(__file__).resolve().parents[4] / ".shipwright/planning/01-adopted/spec.md").read_text(encoding="utf-8")
+    owners = paths.plugin_owners(spec)
+    assert len(owners) >= 14 and owners["shipwright-grade"] == "FR-01.18"
 
 
 def test_mutation_flips_a_comparison_and_classification_names_the_cause(tmp_path):

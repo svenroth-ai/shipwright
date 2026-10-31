@@ -220,7 +220,7 @@ _Where the work detail lives_ at the end of this document.
   finished, then each finding has been either folded into the plan or recorded
   with the reason it was rejected — a review whose findings were only counted has
   not been done.
-- (E) [AC13] Given the two outside reviewers reached opposite conclusions about the
+- (E) [AC13] Given two of the outside reviewers reached opposite conclusions about the
   plan as a whole — one endorsing it, the other saying the approach is wrong —
   when the review step ends, then that disagreement is recorded as its own
   outcome and put to the person to decide, and dividing the plan into sections
@@ -266,8 +266,7 @@ _Where the work detail lives_ at the end of this document.
   off, or have not yet answered, when the plan's review step asks whether the
   work should be built at all, then an independent internal reviewer has
   already asked and answered that same question first, before the outside
-  reviewers — on a Claude model configurable per project, defaulting to the
-  session's own model when unset — so that question is never left unasked
+  reviewers, so that question is never left unasked
   merely because no outside model was available.
   (iterate-2026-09-28-architecture-review-internal-arm)
 
@@ -914,8 +913,8 @@ _Where the work detail lives_ at the end of this document.
   not done and exactly why, never guessed at or hidden.
   (iterate-2026-09-13-codex-internal-review-transport)
 - (E) [AC32] Given a step names which model should review or finalize the
-  work, when it is one of the choices the framework recognises, then it is
-  accepted rather than rejected as unrecognised.
+  work, then every model tier in the recognised set is accepted at every
+  place a tier can be named (project config, per-call, session).
   (iterate-2026-09-18-codex-review-tier-config)
 - (E) [AC33] Given the outside second opinion runs through Codex directly, when a
   project or a single run names which Codex model should do that review, then
