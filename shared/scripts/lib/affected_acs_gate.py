@@ -29,11 +29,11 @@ from typing import Iterable
 
 from lib.spec_impact_gate import SPEC_IMPACT_INTENTS
 
-__all__ = ["declaration_present", "is_runtime_path", "requires_declaration", "touches_runtime"]
+__all__ = ["declaration_present", "is_runtime_path", "is_scoped_intent", "requires_declaration", "touches_runtime"]
 
 _RUNTIME_ROOTS = ("plugins/", "shared/")
 #: A directory with one of these names holds tests or docs, never runtime.
-_NON_RUNTIME_DIRS = frozenset({"tests", "test", "docs", "__pycache__"})
+_NON_RUNTIME_DIRS = frozenset({"tests", "docs", "__pycache__"})
 
 
 def is_runtime_path(path: object) -> bool:
@@ -45,11 +45,9 @@ def is_runtime_path(path: object) -> bool:
         norm = norm[2:]
     if not norm.startswith(_RUNTIME_ROOTS):
         return False
-    parts = norm.split("/")
-    if any(part in _NON_RUNTIME_DIRS for part in parts[:-1]):
-        return False
-    name = parts[-1]
-    return not (name.startswith("test_") or name.endswith("_test.py") or name == "conftest.py")
+    # Directory names only: runtime modules are named test_*.py (shipwright-test, test_hygiene.py) and the
+    # shipwright-test skill lives in a folder called ``test``, so neither a filename nor a bare "test" dir counts.
+    return not any(part in _NON_RUNTIME_DIRS for part in norm.split("/")[:-1])
 
 
 def touches_runtime(paths: Iterable[object]) -> bool:
@@ -68,9 +66,11 @@ def declaration_present(event: object) -> bool:
     return event.get("catalog_gap") is True and isinstance(gap_fr, str) and bool(gap_fr.strip())
 
 
+def is_scoped_intent(event: object) -> bool:
+    """True for an event whose intent is feature, change or bug."""
+    return isinstance(event, dict) and str(event.get("intent") or "").strip().lower() in SPEC_IMPACT_INTENTS
+
+
 def requires_declaration(event: object, changed_paths: Iterable[object]) -> bool:
     """True for a feature/change/bug iterate event whose diff touches a runtime path."""
-    if not isinstance(event, dict):
-        return False
-    intent = str(event.get("intent") or "").strip().lower()
-    return intent in SPEC_IMPACT_INTENTS and touches_runtime(changed_paths)
+    return is_scoped_intent(event) and touches_runtime(changed_paths)

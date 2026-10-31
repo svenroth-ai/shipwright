@@ -21,6 +21,9 @@ _RUN = "iterate-2026-10-31-acs-probe"
     ("shared/scripts/lib/x.py", True),
     ("plugins/shipwright-iterate/skills/iterate/SKILL.md", True),
     ("shared/scripts/tests/test_x.py", False),
+    ("plugins/shipwright-test/skills/test/SKILL.md", True),
+    ("plugins/shipwright-test/scripts/lib/test_runner.py", True),
+    ("shared/scripts/test_hygiene.py", True),
     ("shared/tests/test_x.py", False),
     ("plugins/shipwright-build/tests/conftest.py", False),
     ("shared/docs/notes.md", False),
@@ -135,3 +138,38 @@ def test_empty_git_view_does_not_hide_runtime_paths_listed_on_the_event(tmp_path
     monkeypatch.setattr(mod, "_iterate_changed_paths", lambda root, commit: [])
     _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"])
     assert check_affected_acs_declared(tmp_path, _RUN, "").ok is False
+
+
+@pytest.mark.covers("FR-01.11")
+def test_replay_uses_the_git_supplied_paths_for_events_without_a_path_list():
+    events = [{"type": "work_completed", "source": "iterate", "intent": "change", "adr_id": "x"}]
+    got = replay(events, 100, paths_for=lambda rid: ["shared/scripts/lib/a.py"] if rid == "x" else None)
+    assert got["required"] == 1 and got["missing"] == 1 and got["conclusive"] is True
+    assert replay(events, 100, paths_for=lambda rid: None)["conclusive"] is False
+
+
+@pytest.mark.covers("FR-01.11")
+def test_git_view_showing_runtime_paths_fails_even_when_event_lists_docs_only(tmp_path, monkeypatch):
+    from tools.verifiers import affected_acs_check as mod
+    monkeypatch.setattr(mod, "git_context", lambda root: "work_tree")
+    monkeypatch.setattr(mod, "_iterate_changed_paths", lambda root, commit: ["plugins/x/scripts/lib/y.py"])
+    _seed(tmp_path, intent="change", changed_files=["docs/guide.md"])
+    assert check_affected_acs_declared(tmp_path, _RUN, "").ok is False
+
+
+@pytest.mark.covers("FR-01.11")
+def test_blind_git_view_falls_back_to_event_paths(tmp_path, monkeypatch):
+    from tools.verifiers import affected_acs_check as mod
+    monkeypatch.setattr(mod, "git_context", lambda root: "work_tree")
+    monkeypatch.setattr(mod, "_iterate_changed_paths", lambda root, commit: None)
+    _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"])
+    assert check_affected_acs_declared(tmp_path, _RUN, "").ok is False
+
+
+@pytest.mark.covers("FR-01.11")
+def test_git_error_fails_closed_unless_the_event_already_decides(tmp_path, monkeypatch):
+    from tools.verifiers import affected_acs_check as mod
+    monkeypatch.setattr(mod, "git_context", lambda root: "git_error")
+    _seed(tmp_path, intent="change")
+    result = check_affected_acs_declared(tmp_path, _RUN, "")
+    assert result.ok is False and "git could not answer" in result.detail

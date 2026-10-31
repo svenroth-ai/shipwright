@@ -19,10 +19,9 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.affected_acs_gate import declaration_present, requires_declaration  # noqa: E402
+from lib.affected_acs_gate import declaration_present, is_scoped_intent, requires_declaration  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records  # noqa: E402
-from lib.spec_impact_gate import SPEC_IMPACT_INTENTS  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _iterate_changed_paths, git_context  # noqa: E402
@@ -61,7 +60,7 @@ def check_affected_acs_declared(project_root: Path, run_id: str, commit_hash: st
         return _skip(f"no work_completed event for {run_id}")
     if event.get("source") != "iterate":
         return _skip(f"source={event.get('source') or 'unknown'}, not an iterate event")
-    if str(event.get("intent") or "").strip().lower() not in SPEC_IMPACT_INTENTS:
+    if not is_scoped_intent(event):
         return _skip(f"intent={event.get('intent') or 'unknown'}")
     if declaration_present(event):
         return CheckResult(CHECK_NAME, True, "declared")
@@ -69,7 +68,11 @@ def check_affected_acs_declared(project_root: Path, run_id: str, commit_hash: st
     # Two views of "what changed": the branch (git) and the paths the event lists. Either one showing a
     # runtime path is enough; an EMPTY git view is not proof of "clean" while the event lists paths.
     views: list[list] = []
-    if git_context(root) == "work_tree":
+    ctx = git_context(root)
+    if ctx not in ("work_tree", "not_git"):  # git failed inside a real repo: never read that as clean
+        if not (isinstance(event.get("changed_files"), list) and requires_declaration(event, event["changed_files"])):
+            return CheckResult(CHECK_NAME, False, f"git could not answer ({ctx}); refusing to certify that no runtime path was touched")
+    if ctx == "work_tree":
         git_paths = _iterate_changed_paths(root, str(event.get("commit") or "") or commit_hash)
         if git_paths is not None:
             views.append(git_paths)
