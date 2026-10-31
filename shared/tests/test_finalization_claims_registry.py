@@ -30,7 +30,7 @@ def _documented() -> set[str]:
     return set(_ROW.findall(match.group(1)))
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC44")
 def test_every_registered_check_resolves_to_a_three_argument_callable():
     assert claims.CLAIM_CHECKS, "the registry must ship with at least its first tenant"
     for check in claims.CLAIM_CHECKS:

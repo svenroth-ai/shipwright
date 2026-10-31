@@ -59,7 +59,7 @@ def test_profile_declares_a_frontend_and_no_services_list():
     assert "services" not in data  # the WebUI preview ignores 'services'
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06", "FR-01.01/AC11")
 def test_testing_block_names_pytest_and_playwright_and_deploy_is_none():
     data = _data()
     assert data["testing"]["unit"]["command"] == "uv run pytest"

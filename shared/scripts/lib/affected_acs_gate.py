@@ -11,6 +11,9 @@ nearest FR in ``catalog_gap_fr``). The answer rides on the event as::
                       "why": "the new field is additive; the output is the same"}]
     # or, when no AC covers the change:
     "catalog_gap": true, "catalog_gap_fr": "FR-01.11"
+    # a declared gap is then closed one of two ways (``gap_closed``):
+    "catalog_gap_acs": ["FR-01.11.AC47"]      # the AC written, or folded into an existing FR
+    "catalog_gap_reason": "how-only"          # the closed reason: the change is about HOW, not WHAT
 
 This module judges **presence only**. It never reads the sentence, the ids or
 the disposition: whether the declaration is true is a question for a reviewer,
@@ -30,7 +33,7 @@ from typing import Iterable
 
 from lib.spec_impact_gate import SPEC_IMPACT_INTENTS
 
-__all__ = ["declaration_present", "is_runtime_path", "is_scoped_intent", "requires_declaration", "touches_runtime"]
+__all__ = ["GAP_CLOSED_REASONS", "declaration_present", "gap_closed", "is_runtime_path", "is_scoped_intent", "requires_declaration", "touches_runtime"]
 
 _RUNTIME_ROOTS = ("plugins/", "shared/")
 #: A directory with one of these names holds tests or docs, never runtime.
@@ -65,6 +68,26 @@ def declaration_present(event: object) -> bool:
         return True
     gap_fr = event.get("catalog_gap_fr")
     return event.get("catalog_gap") is True and isinstance(gap_fr, str) and bool(gap_fr.strip())
+
+
+#: The closed list of reasons that close a catalog gap without writing an AC.
+GAP_CLOSED_REASONS = frozenset({"how-only"})
+
+
+def gap_closed(event: object) -> bool:
+    """True when a declared ``catalog_gap`` is closed, or none was declared.
+
+    A gap is closed by naming the AC it produced (``catalog_gap_acs``, a non-empty list - the AC was
+    minted or folded through the FR-authoring path) or by one reason from ``GAP_CLOSED_REASONS``
+    (``catalog_gap_reason``). Presence only, like ``declaration_present``: the ids and the truth of
+    the reason are for a reviewer.
+    """
+    if not isinstance(event, dict) or event.get("catalog_gap") is not True:
+        return True
+    acs = event.get("catalog_gap_acs")
+    if isinstance(acs, list) and len(acs) > 0:
+        return True
+    return str(event.get("catalog_gap_reason") or "").strip().lower() in GAP_CLOSED_REASONS
 
 
 def is_scoped_intent(event: object) -> bool:

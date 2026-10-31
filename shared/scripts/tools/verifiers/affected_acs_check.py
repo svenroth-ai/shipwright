@@ -7,6 +7,8 @@ event and the paths its branch changed, and reports.
 * No event for the run, or an intent outside feature/change/bug: SKIPPED.
 * The branch cannot be seen (``None`` from the git view) and the event lists no
   ``changed_files``: SKIPPED as blind, never read as clean.
+* A declared ``catalog_gap`` with neither ``catalog_gap_acs`` nor a closed ``catalog_gap_reason``: the same
+  kind of WARNING (``gap_closed`` in the lib), for the same reason: the recorded event cannot be rewritten.
 * Runtime paths touched and the declaration absent: a WARNING (never an error, and exempt from
   ``--strict``), naming both repairs. Nothing holds a PR on this check, and the F5b repair path cannot
   rewrite an already-recorded event, so an error would be an unfixable block.
@@ -26,7 +28,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.affected_acs_gate import declaration_present, is_scoped_intent, requires_declaration  # noqa: E402
+from lib.affected_acs_gate import declaration_present, gap_closed, is_scoped_intent, requires_declaration  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.jsonl_records import read_jsonl_records  # noqa: E402
 
@@ -38,6 +40,11 @@ CHECK_NAME = "affected_acs declared (runtime-touching iterate)"
 _REPAIR = (
     "add affected_acs (AC ids changed, implemented, or checked-and-unchanged, each with one line why "
     "the promise holds) to the F5b event extras, or catalog_gap: true with catalog_gap_fr (the nearest FR)"
+)
+
+_GAP_REPAIR = (
+    "write the AC through the MINT/FOLD path and list it as catalog_gap_acs, or record the closed reason "
+    "catalog_gap_reason: \"how-only\" (the change is about how the product works, not what it does)"
 )
 
 
@@ -70,6 +77,9 @@ def check_affected_acs_declared(project_root: Path, run_id: str, commit_hash: st
     if not is_scoped_intent(event):
         return _skip(f"intent={event.get('intent') or 'unknown'}")
     if declaration_present(event):
+        if not gap_closed(event):
+            return CheckResult(CHECK_NAME, False, f"this iterate declared a catalog gap but neither closed it nor gave a reason - {_GAP_REPAIR}",
+                               severity=Severity.WARNING.value, strict_exempt=True)
         return CheckResult(CHECK_NAME, True, "declared")
 
     # Two views of "what changed": the branch (git) and the paths the event lists. Either one showing a

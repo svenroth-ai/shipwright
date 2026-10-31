@@ -287,7 +287,7 @@ def test_build_kern_still_under_300_loc() -> None:
     )
 
 
-@pytest.mark.covers("FR-01.05/AC08")
+@pytest.mark.covers("FR-01.05/AC08", "FR-01.05/AC10")
 def test_external_cascade_6c_is_default_on_like_iterate() -> None:
     """6c runs after the internal cascade unless explicitly disabled.
 

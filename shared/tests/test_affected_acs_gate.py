@@ -64,7 +64,7 @@ def _seed(root: Path, **event) -> None:
     (root / "shipwright_events.jsonl").write_text(json.dumps(evt) + "\n", encoding="utf-8")
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC47")
 def test_check_fails_when_runtime_touched_and_field_absent(tmp_path):
     _seed(tmp_path, intent="change", spec_impact="none", changed_files=["shared/scripts/lib/x.py"])
     result = check_affected_acs_declared(tmp_path, _RUN, "")
@@ -72,7 +72,7 @@ def test_check_fails_when_runtime_touched_and_field_absent(tmp_path):
     assert "affected_acs" in result.detail and "catalog_gap" in result.detail
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC47")
 def test_check_passes_with_declaration_whatever_the_content(tmp_path):
     _seed(tmp_path, intent="change", changed_files=["shared/scripts/lib/x.py"],
           affected_acs=[{"ac": "not even an id", "why": ""}])
@@ -81,7 +81,32 @@ def test_check_passes_with_declaration_whatever_the_content(tmp_path):
 
 @pytest.mark.covers("FR-01.11")
 def test_check_passes_with_catalog_gap(tmp_path):
+    _seed(tmp_path, intent="feature", changed_files=["plugins/a/b.py"], catalog_gap=True, catalog_gap_fr="FR-01.11",
+          catalog_gap_acs=["FR-01.11.AC47"])
+    assert check_affected_acs_declared(tmp_path, _RUN, "").ok is True
+
+
+@pytest.mark.covers("FR-01.11")
+def test_gap_closed_by_ac_or_closed_reason_only():
+    from lib.affected_acs_gate import gap_closed
+    assert gap_closed({"affected_acs": [{"ac": "x"}]})  # no gap declared: nothing to close
+    assert gap_closed({"catalog_gap": True, "catalog_gap_fr": "FR-01.11", "catalog_gap_acs": ["FR-01.11.AC47"]})
+    assert gap_closed({"catalog_gap": True, "catalog_gap_fr": "FR-01.11", "catalog_gap_reason": "how-only"})
+    assert gap_closed({"catalog_gap": True, "catalog_gap_reason": " How-Only "})
+    assert not gap_closed({"catalog_gap": True, "catalog_gap_fr": "FR-01.11"})
+    assert not gap_closed({"catalog_gap": True, "catalog_gap_acs": []})
+    assert not gap_closed({"catalog_gap": True, "catalog_gap_reason": "because"})
+    assert gap_closed(None)  # not an event: nothing to close
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC48")
+def test_open_gap_is_a_strict_exempt_warning_naming_both_repairs(tmp_path):
     _seed(tmp_path, intent="feature", changed_files=["plugins/a/b.py"], catalog_gap=True, catalog_gap_fr="FR-01.11")
+    result = check_affected_acs_declared(tmp_path, _RUN, "")
+    assert result.ok is False and result.severity == "warning" and result.strict_exempt is True
+    assert "catalog_gap_acs" in result.detail and "how-only" in result.detail
+    _seed(tmp_path, intent="feature", changed_files=["plugins/a/b.py"], catalog_gap=True, catalog_gap_fr="FR-01.11",
+          catalog_gap_reason="how-only")
     assert check_affected_acs_declared(tmp_path, _RUN, "").ok is True
 
 

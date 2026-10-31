@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Open-gap rule, 11 backfill ACs, AC47/AC48 delivered; blocking replaced by a visible warning, declared plainly."},
+ {"name": "Error Handling", "verdict": "pass", "note": "gap_closed accepts any non-dict and returns True; wrong types in catalog_gap_acs or the reason read as open."},
+ {"name": "Security Basics", "verdict": "pass", "note": "Read-only over local event data; no input reaches a shell or path."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Closed-by-AC, closed-by-reason, empty list, wrong reason, open gap and the check's warning are asserted; 11 existing tests now bind the backfill ACs."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "No new IO; one dict lookup."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "Rule in the lib next to declaration_present; check wiring in the existing verifier."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer is the F5b extras JSON, consumer the F11 check; probed with a real events.jsonl in tests."}
+]}
