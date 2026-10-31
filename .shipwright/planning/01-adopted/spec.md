@@ -10,19 +10,19 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 
 | ID | Area | Name | Priority | Description | Basis | Layers |
 |---|---|---|---|---|---|---|
-| FR-01.01 | Adopted | /shipwright-run | Must | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | code | unit (inferred) |
-| FR-01.02 | Adopted | /shipwright-project | Must | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | code | unit (inferred) |
-| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: an independent reviewer always checks it first, two independent external language models review it by default on top of that, and if the outside reviewers cannot be reached the independent reviewer's check is what carries the gate rather than the plan's own author re-reading it (unless that reviewer itself could not be reached either, in which case the route taken is recorded as such). The same review step asks a second, separate question — whether the work should be built at all — of the same two external reviewers, over a short brief that withholds the plan's own reasons for rejecting the alternatives. | code | unit (inferred) |
-| FR-01.04 | Adopted | /shipwright-design | Should | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | code | e2e (inferred) |
-| FR-01.05 | Adopted | /shipwright-build | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
-| FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
-| FR-01.07 | Adopted | /shipwright-security | Must | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | code | unit (inferred) |
-| FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
-| FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, open the release pull request, and publish a readable summary to the code host's release page (best-effort, forward-only). | code | unit (inferred) |
-| FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
-| FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature, change or fix records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. When an outside second opinion is asked for, the pair of reviewers stays independent of whichever tool drove the change, never the same vendor family reviewing its own output. | code | unit (inferred) |
-| FR-01.12 | Adopted | /shipwright-preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
-| FR-01.13 | Adopted | /shipwright-adopt | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
+| FR-01.01 | Adopted | End-to-end delivery pipeline | Must | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | code | unit (inferred) |
+| FR-01.02 | Adopted | Project decomposition into scoped units | Must | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | code | unit (inferred) |
+| FR-01.03 | Adopted | Implementation planning with independent review | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: an independent reviewer always checks it first, two independent external language models review it by default on top of that, and if the outside reviewers cannot be reached the independent reviewer's check is what carries the gate rather than the plan's own author re-reading it (unless that reviewer itself could not be reached either, in which case the route taken is recorded as such). The same review step asks a second, separate question — whether the work should be built at all — of the same two external reviewers, over a short brief that withholds the plan's own reasons for rejecting the alternatives. | code | unit (inferred) |
+| FR-01.04 | Adopted | Mockups from requirements | Should | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | code | e2e (inferred) |
+| FR-01.05 | Adopted | Test-driven build of planned sections | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
+| FR-01.06 | Adopted | Multi-level project testing | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
+| FR-01.07 | Adopted | Security scanning and remediation | Must | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | code | unit (inferred) |
+| FR-01.08 | Adopted | Deployment and rollback | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
+| FR-01.09 | Adopted | Release notes and changelog | Must | Turn the commit history into a release note a human can read, tag the release, open the release pull request, and publish a readable summary to the code host's release page (best-effort, forward-only). | code | unit (inferred) |
+| FR-01.10 | Adopted | Audit-ready compliance evidence | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
+| FR-01.11 | Adopted | Ongoing change at the depth it deserves | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature, change or fix records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. When an outside second opinion is asked for, the pair of reviewers stays independent of whichever tool drove the change, never the same vendor family reviewing its own output. | code | unit (inferred) |
+| FR-01.12 | Adopted | Local project preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
+| FR-01.13 | Adopted | Onboarding an existing codebase | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
 | FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
 | FR-01.15 | Adopted | Cross-repo output contract | Must | Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently. | code | e2e (inferred) |
 | FR-01.16 | Adopted | Guided requirement elicitation | Must | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | interview | unit (inferred) |
@@ -58,7 +58,7 @@ event log, so the answer cannot rot inside the requirement text. See
 _Where the work detail lives_ at the end of this document.
 
 <a id="fr-0101"></a>
-### FR-01.01 — /shipwright-run
+### FR-01.01 — End-to-end delivery pipeline
 
 - (E) [AC01] Given a described change, when the pipeline is run, then the phases are
   carried out in their fixed order, each one handing what it produced to the
@@ -103,7 +103,7 @@ _Where the work detail lives_ at the end of this document.
   (iterate-2026-07-27-c3-phase-history-join)
 
 <a id="fr-0102"></a>
-### FR-01.02 — /shipwright-project
+### FR-01.02 — Project decomposition into scoped units
 
 - (E) [AC01] Given a project description and the interview about it, when setup is
   declared finished, then what exists is a catalogue of requirements, each one
@@ -169,14 +169,14 @@ _Where the work detail lives_ at the end of this document.
   live, and its number stays permanently taken.
 
 <a id="fr-0103"></a>
-### FR-01.03 — /shipwright-plan
+### FR-01.03 — Implementation planning with independent review
 
 - (E) [AC01] Given requirements to implement, when planning is declared finished, then
   what exists is an implementation plan divided into sections the build phase
   can take one at a time — not a single undivided document.
-- (E) [AC02] Given a plan is being produced, when the step in which two independent
-  outside reviewers check it cannot run because no access key is configured,
-  then the run stops and asks whether to add a key or continue without that
+- (E) [AC02] Given a plan is being produced, when the step in which independent
+  outside reviewers check it cannot run because they are not set up, then the
+  run stops and asks whether to set them up or continue without that
   review — it is never skipped quietly.
 - (E) [AC03] Given the outside reviewers cannot be reached or have been switched
   off, when the plan's review step ends, then an independent reviewer has
@@ -185,10 +185,7 @@ _Where the work detail lives_ at the end of this document.
   plan's own author re-reading it, unless that independent reviewer itself
   could not be reached either, in which case the route taken (a self-review
   by the plan's own author) is recorded as what happened rather than
-  presented as an independent check. Which Claude model that independent
-  reviewer runs on is configurable per project, defaulting to the same
-  model as the rest of the session when left unset — it is never hard-wired
-  to one fixed model.
+  presented as an independent check.
 - (E) [AC04] Given that review step has ended by any route — reviewed, declined by the
   operator, or switched off in configuration — when the plan is divided into
   sections, then the route taken is on record, and dividing it refuses to begin
@@ -199,7 +196,7 @@ _Where the work detail lives_ at the end of this document.
   traces back to at least one requirement it serves, so a plan cannot quietly
   add work nobody asked for.
 - (E) [AC07] Given the sections, when the plan is declared finished, then each
-  one says what it is for, lists at least two implementation steps, and states
+  one says what it is for, lists its implementation steps, and states
   how it will be tested.
 - (E) [AC08] Given a section, when someone builds it, then that section together with
   the prerequisites it names is enough to implement it — a builder does not have
@@ -223,7 +220,7 @@ _Where the work detail lives_ at the end of this document.
   finished, then each finding has been either folded into the plan or recorded
   with the reason it was rejected — a review whose findings were only counted has
   not been done.
-- (E) [AC13] Given the two outside reviewers reached opposite conclusions about the
+- (E) [AC13] Given two of the outside reviewers reached opposite conclusions about the
   plan as a whole — one endorsing it, the other saying the approach is wrong —
   when the review step ends, then that disagreement is recorded as its own
   outcome and put to the person to decide, and dividing the plan into sections
@@ -269,13 +266,12 @@ _Where the work detail lives_ at the end of this document.
   off, or have not yet answered, when the plan's review step asks whether the
   work should be built at all, then an independent internal reviewer has
   already asked and answered that same question first, before the outside
-  reviewers — on a Claude model configurable per project, defaulting to the
-  session's own model when unset — so that question is never left unasked
+  reviewers, so that question is never left unasked
   merely because no outside model was available.
   (iterate-2026-09-28-architecture-review-internal-arm)
 
 <a id="fr-0104"></a>
-### FR-01.04 — /shipwright-design
+### FR-01.04 — Mockups from requirements
 
 - (E) [AC01] Given requirements with a user-facing side, when design is declared
   finished, then every one of them has at least one screen — none is left
@@ -316,14 +312,13 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC12] Given the design phase runs, when it produces its output, then what it
   produces are review mockups, not production code — the build phase writes the
   real thing, so a mockup is never mistaken for the shipped implementation.
-- (E) [AC13] Given the operator keeps their brand in a Design System on claude.ai, when
-  the look and feel is chosen, then the brand's colours, fonts and shapes are taken
-  from it rather than guessed, and any colour pair that would be too hard to read
-  is corrected and reported, so the mockups carry the brand without breaking the
-  readability rules.
+- (E) [AC13] Given the operator keeps their brand in a design system, when
+  the look and feel is chosen, then the brand is taken from it rather than
+  guessed, and anything that would make the mockups hard to read is corrected
+  and reported, so the mockups carry the brand without breaking readability.
 
 <a id="fr-0105"></a>
-### FR-01.05 — /shipwright-build
+### FR-01.05 — Test-driven build of planned sections
 
 - (E) [AC01] Given a planned section, when building it is declared finished, then what
   exists is working code that runs — the section has been turned into part of
@@ -358,7 +353,7 @@ _Where the work detail lives_ at the end of this document.
   rather than restates.
 
 <a id="fr-0106"></a>
-### FR-01.06 — /shipwright-test
+### FR-01.06 — Multi-level project testing
 
 - (E) [AC01] Given a project with tests, when the test phase runs, then the tests are
   actually executed at every level the project has — unit, integration,
@@ -436,7 +431,7 @@ _Where the work detail lives_ at the end of this document.
   never mistaken for a security clearance.
 
 <a id="fr-0107"></a>
-### FR-01.07 — /shipwright-security
+### FR-01.07 — Security scanning and remediation
 
 - (E) [AC01] Given a project to scan, when the scan runs, then it looks for the kinds
   of weakness that actually put a project at risk: code written so that an
@@ -512,7 +507,7 @@ _Where the work detail lives_ at the end of this document.
   through, rather than changing code it was not asked to change.
 
 <a id="fr-0108"></a>
-### FR-01.08 — /shipwright-deploy
+### FR-01.08 — Deployment and rollback
 
 - (E) [AC01] Given a project and a hosting target configured for it, when a release is
   asked for, then the project is put onto that target and made to run there —
@@ -586,7 +581,7 @@ _Where the work detail lives_ at the end of this document.
   record, so nobody assumes the data went back too.
 
 <a id="fr-0109"></a>
-### FR-01.09 — /shipwright-changelog
+### FR-01.09 — Release notes and changelog
 
 - (E) [AC01] Given the work recorded since the last release, when the phase finishes,
   then three things exist: a release note a person can read without knowing the
@@ -667,7 +662,7 @@ _Where the work detail lives_ at the end of this document.
   forward get one.
 
 <a id="fr-0110"></a>
-### FR-01.10 — /shipwright-compliance
+### FR-01.10 — Audit-ready compliance evidence
 
 - (E) [AC01] Given a project under the framework, when the compliance phase runs, then
   what exists is evidence someone outside the project can read without access to
@@ -745,7 +740,7 @@ _Where the work detail lives_ at the end of this document.
   and the change log both depend on.
 
 <a id="fr-0111"></a>
-### FR-01.11 — /shipwright-iterate
+### FR-01.11 — Ongoing change at the depth it deserves
 
 - (E) [AC01] Given a change described in ordinary words for a project already finished,
   when the change workflow completes, then that change exists in the product —
@@ -797,10 +792,9 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC10] Given the plugin is enabled, when the user types an ordinary prompt, then
   the right next step is offered; in a directory that is not a Shipwright
   project the offer stays silent and changes nothing.
-- (E) [AC11] Given a change is reviewed, when each review pass finishes — the author's
-  own check, the plan review, the code review, the doubt pass and the outside
-  second opinion — then what that pass found is written down for that run and
-  can be read back later, instead of surviving only as prose in a decision note.
+- (E) [AC11] Given a change is reviewed, when each review pass the change goes
+  through finishes, then what that pass found is written down and can be read
+  back later, instead of surviving only as prose in a decision note.
   (iterate-2026-07-21-review-record)
 - (E) [AC12] Given a feature or change of the depth that gets a written plan, when
   that plan's review step runs, then an independent reviewer checks it first,
@@ -907,11 +901,10 @@ _Where the work detail lives_ at the end of this document.
   it is picked back up, then what is reported names every review pass still
   open, read from the same record each pass writes to — not only whether an
   outside second opinion ran. (iterate-2026-08-09-compaction-state-audit)
-- (E) [AC30] Given an outside second opinion is asked for, when the tool that drove
-  the change is Claude or Codex, then the pair of reviewers it consults stays
-  independent of that tool — never the same vendor family reviewing its own
-  output — instead of being fixed to one hard-coded pair regardless of which
-  tool produced the change. (iterate-2026-09-16-opus-review-leg-codex-driver)
+- (E) [AC30] Given an outside second opinion is asked for, when the change was driven by any one tool,
+  then the reviewers it consults stay independent of that tool —
+  never the same vendor family reviewing its own output — instead of being
+  fixed to one pair regardless of which tool produced the change. (iterate-2026-09-16-opus-review-leg-codex-driver)
 - (E) [AC31] Given a reviewer would normally be asked for by spawning a second, genuinely
   independent AI subagent, when the session driving the work cannot actually do that —
   because it is Codex itself, or its own model has been swapped for a non-Anthropic one —
@@ -919,10 +912,10 @@ _Where the work detail lives_ at the end of this document.
   skipped or recorded as never having happened. Where even that fails, it is recorded as
   not done and exactly why, never guessed at or hidden.
   (iterate-2026-09-13-codex-internal-review-transport)
-- (E) [AC32] Given a step names which Claude model should review or finalize the
-  work, when `fable` is the one chosen, then it is accepted the same way
-  `opus`/`sonnet`/`haiku` already are, instead of being rejected as an
-  unrecognised choice. (iterate-2026-09-18-codex-review-tier-config)
+- (E) [AC32] Given a model tier is in the recognised set, when a step names it
+  to review or finalize the work, then it is accepted at every place a tier
+  can be named (project config, per-call, session) rather than rejected as unknown.
+  (iterate-2026-09-18-codex-review-tier-config)
 - (E) [AC33] Given the outside second opinion runs through Codex directly, when a
   project or a single run names which Codex model should do that review, then
   that choice is used — checked first against a safe pattern so a value that
@@ -934,12 +927,11 @@ _Where the work detail lives_ at the end of this document.
   then each of those places is confirmed to already include it, so a
   forgotten spot cannot silently keep describing a stale list.
   (iterate-2026-09-18-codex-review-tier-config)
-- (E) [AC35] Given the outside second opinion runs through Codex directly, when a
-  choice of model is set once for the whole working session rather than
-  repeated on each call, then it is used ahead of the project's own saved
-  choice but behind anything given for that one specific call — so a session
-  can steer its Codex reviewer everywhere at once without editing project
-  settings or repeating the same choice on every review.
+- (E) [AC35] Given the outside second opinion's model can be chosen in more than one
+  place, when a choice is made once for the whole working session, then it
+  outranks the project's saved choice but not a choice made for one specific
+  call — so a session can steer every review at once without editing project
+  settings or repeating the choice on each call.
   (iterate-2026-09-19-codex-reviewer-session-override)
 - (E) [AC37] Given the outside second opinion runs through Codex directly, when
   all three review stages have answered, then what is recorded shows three
@@ -994,7 +986,7 @@ _Where the work detail lives_ at the end of this document.
   (iterate-2026-10-09-iterate-stop-guard)
 
 <a id="fr-0112"></a>
-### FR-01.12 — /shipwright-preview
+### FR-01.12 — Local project preview
 
 - (E) [AC01] Given a project with work already built, when a preview is asked for, then
   the project is running on this machine and the address to open it in a
@@ -1025,7 +1017,7 @@ _Where the work detail lives_ at the end of this document.
   working preview says nothing about whether the hosted version works.
 
 <a id="fr-0113"></a>
-### FR-01.13 — /shipwright-adopt
+### FR-01.13 — Onboarding an existing codebase
 
 - (E) [AC01] Given an existing codebase, when it is onboarded, then what exists
   afterwards is enough for the change workflow to take over: guidance an
@@ -1120,10 +1112,10 @@ _Where the work detail lives_ at the end of this document.
   rotation checklist and a link.
 - (E) [AC13] Given the code host's tooling is missing or not signed in, when the import
   runs, then it finishes quietly without blocking the session.
-- (E) [AC14] Given a class of finding the host's own analysis covers, when that
-  analysis is available, then the copy published by a recent successful security
-  run is not read at all, so the two sources are never counted twice; when the
-  analysis is unavailable, that published copy is used in its place.
+- (E) [AC14] Given a class of finding that two sources both report, when the
+  preferred source is available, then the other is not read for that class at
+  all, so the two are never counted twice; when the preferred source is
+  unavailable, the other is used in its place.
 - (E) [AC15] Given a class of finding the host's own analysis never carries, when the
   import runs, then it is always taken from the published results — otherwise
   the project would be blind to that whole class exactly while the host's
@@ -1137,8 +1129,8 @@ _Where the work detail lives_ at the end of this document.
   it, while the sources that did answer are recorded normally. No import failure
   ever blocks the session.
 - (E) [AC18] Given a scanner's findings are recorded, when the entry is written, then
-  it carries only aggregated counts and stable links, never the finding text
-  itself, and its detail is length-capped.
+  it carries only a summary and stable references, never the finding text
+  itself.
 - (E) [AC19] Given an entry has to carry text the project does not control — the name
   of a failing check, or the title someone gave a proposed change — when it is
   shown, then that text cannot take over the display it appears in, and it is
@@ -1413,11 +1405,9 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0120"></a>
 ### FR-01.20 — Context-Cost Meter
 
-- (E) [AC01] Given the assistant finishes a turn, when its transcript is read, then
-  every exchange with the model is counted exactly once — never once per
-  transcript line — because a single exchange is written as several lines that
-  all share one request id, and those are folded together before anything is
-  counted.
+- (E) [AC01] Given the assistant finishes a turn, when its usage is read, then
+  every exchange with the model is counted exactly once, however many records
+  were written for it.
 - (E) [AC02] Given a counted exchange happened while a pipeline phase was active, when
   it is recorded, then it carries that phase's label, so the running total can
   be broken down by phase instead of standing as one number nobody can
@@ -1465,13 +1455,9 @@ _Where the work detail lives_ at the end of this document.
   already reads `SHIPWRIGHT_PLUGIN_ROOT` or `CLAUDE_PLUGIN_ROOT` is exercised
   again, then it behaves exactly as before — this is packaging and a shared
   resolver only, not a behavior change for Claude.
-- (E) [AC05] Given the installed Codex plugin bundle, when its hooks are synced into
-  Codex's global config-layer hooks file via `codex_hooks_sync.py`, then a
-  hook fires under real `codex exec` against a trusted project without
-  `--dangerously-bypass-hook-trust` — AC01 covers skill discoverability, this
-  covers hook *execution* parity, distinct because Codex does not execute a
-  plugin-bundled `hooks` key at all (`openai/codex#16430`, `#39895`); the
-  config-layer sync is the confirmed-working path.
+- (E) [AC05] Given the installed Codex plugin bundle, when a project is trusted, then
+  Shipwright's hooks actually run under Codex, not only its skills — the skills
+  being discoverable does not by itself mean the hooks run.
 - (E) [AC06] Given a Codex-driven session whose first prompt armed an iterate
   (matched the activation envelope), when its first eligible local-tool call
   is anything other than the mandatory worktree-setup command, then that

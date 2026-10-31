@@ -1,0 +1,63 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-p5-tidy-mixed-acs-and-fr-titles",
+    "date": "2026-10-31",
+    "unit": {
+      "status": "passed",
+      "passed": 413,
+      "skipped": 0,
+      "total": 413
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 50,
+      "skipped": 0,
+      "total": 50
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "renamed FR titles and reworded ACs still parse in the requirements catalog readers",
+          "disposition": "tested",
+          "evidence": "integration-tests catalog/RTM/table-reader suites: 50 passed"
+        },
+        {
+          "behavior": "compliance RTM and catalog generators resolve the renamed FRs",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance tests -k rtm/catalog/trace: 394 passed; test_audit_group_i.py 19 passed alone"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-31-p5-tidy-mixed-acs-and-fr-titles",
+    "commit": "cc472bf40656cc186fa94bad637f97040360ea03",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
