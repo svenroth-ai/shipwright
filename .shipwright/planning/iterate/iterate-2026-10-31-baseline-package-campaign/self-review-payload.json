@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Exactly the brief (byte-identical) and the two measurement reports (one AI-label note line added each) under .shipwright/planning/campaigns/; nothing else."},
+{"name":"Error Handling","verdict":"n/a","note":"No code."},
+{"name":"Security Basics","verdict":"pass","note":"Planning prose only; scanned for absolute local paths and personal data, none present; archive-relative paths are labelled as such."},
+{"name":"Test Quality","verdict":"n/a","note":"No tests added or edited."},
+{"name":"Performance Basics","verdict":"n/a","note":"No code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Dated campaign-document naming as the existing baseline-protection BRIEF/REPLAY files."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No boundary touched; documents are read by the baseline-package campaign runners only."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No test files in the diff."}
+]}

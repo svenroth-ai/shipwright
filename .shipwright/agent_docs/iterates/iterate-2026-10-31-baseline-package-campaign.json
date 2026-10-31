@@ -1,0 +1,22 @@
+{
+  "run_id": "iterate-2026-10-31-baseline-package-campaign",
+  "date": "2026-10-31T07:14:11.443171Z",
+  "event_at": "2026-10-29T22:26:49.761300+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "history",
+  "branch": "iterate/baseline-package-campaign",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-10-31-baseline-package-campaign",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

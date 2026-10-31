@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-baseline-package-campaign",
+  "date": "2026-10-31",
+  "section": "Iterate — change: land the baseline-package campaign brief and its evidence",
+  "title": "Baseline-package campaign brief and measurement reports on main",
+  "context": "The baseline-package campaign (successor of the stopped baseline-protection campaign) was approved as a brief, and its two measurement reports existed only outside the repository, so no campaign worktree could read them.",
+  "decision": "Commit the brief unchanged plus the MEASURE and REPLAY2 reports under .shipwright/planning/campaigns/, each report with one note line marking it as AI-made evidence for the brief. No code, spec or gate changes.",
+  "consequences": "The baseline-package campaign (P1, P2, P3, P5, P4) can be started by the operator from main; its local board under .shipwright/planning/iterate/campaigns/ stays gitignored by design.",
+  "rationale": "Planning documents reach main through an iterate so the commit carries a work_completed event and a Run-ID footer.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
