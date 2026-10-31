@@ -35,7 +35,7 @@ _GOOD = {
 }
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_parse_reply_accepts_plain_and_fenced_json():
     assert parse_reply(json.dumps(_GOOD))["verdict"] == "disagree"
     fenced = "Here you go:\n```json\n" + json.dumps(_GOOD) + "\n```\n"
@@ -44,14 +44,14 @@ def test_parse_reply_accepts_plain_and_fenced_json():
     assert parse_reply("noise " + json.dumps(_GOOD) + " trailing")["gap_fr"] == "FR-01.11"
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 @pytest.mark.parametrize("bad", ["", "no json here", '{"verdict": "maybe", "gap": true}', '{"verdict": "agree"}', '{"verdict": "agree", "gap": "yes"}', "[1, 2]"])
 def test_parse_reply_rejects_unusable_replies(bad):
     with pytest.raises(ValueError):
         parse_reply(bad)
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_block_has_the_four_parts_and_says_it_is_advisory():
     block = render_block(parse_reply(json.dumps(_GOOD)), "some/model")
     for part in ("Requirements changed: FR-01.11.AC03", "Requirements checked: FR-01.11.AC47", "**disagree**", "Catalog gap: **yes (nearest FR-01.11)**"):
@@ -60,13 +60,13 @@ def test_block_has_the_four_parts_and_says_it_is_advisory():
     assert "Catalog gap: **no**" in render_block(parse_reply(json.dumps({**_GOOD, "gap": False, "gap_fr": ""})))
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_not_run_note_is_visible_and_says_nothing_was_blocked():
     note = render_not_run("no key\nset   anywhere")
     assert note.startswith("### Independent gap check") and "Not run: no key set anywhere" in note and "Nothing was blocked" in note
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_declaration_and_owning_frs():
     event = {"type": "work_completed", "intent": "change", "summary": "s", "spec_impact": "none", "affected_frs": ["FR-01.03"],
              "affected_acs": [{"ac": "FR-01.11.AC47", "disposition": "x", "why": "y"}], "catalog_gap": True, "catalog_gap_fr": "FR-01.05",
@@ -78,14 +78,14 @@ def test_declaration_and_owning_frs():
     assert "(no declaration was recorded)" in render_spec_context({}, "cat")
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_catalog_takes_the_criteria_section_only():
     spec = "# S\n## Functional Requirements\ntable\n## Acceptance Criteria\n### FR-01.01 - x\n- AC\n## Provenance\nrun log\n"
     cat = catalog_from_specs([spec, "plain spec without the section"])
     assert "### FR-01.01" in cat and "table" not in cat and "run log" not in cat and "plain spec without the section" in cat
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_trim_drops_finalization_records_and_cuts_by_whole_file():
     def chunk(path: str, body: str = "+x\n") -> str:
         return f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n@@ -0,0 +1 @@\n{body}"
@@ -100,7 +100,7 @@ def test_trim_drops_finalization_records_and_cuts_by_whole_file():
     assert "big1.py" in text and cut == ["big2.py"] and "left out because the diff was too large: big2.py" in text
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_prompt_frames_a_gap_check_not_an_untrue_detector():
     assert 'wrong "none"' in SYSTEM_PROMPT and "catalog gap" in SYSTEM_PROMPT
     assert "{SPEC}" in USER_TEMPLATE and "{DIFF}" in USER_TEMPLATE
@@ -129,7 +129,7 @@ _DIFF = "diff --git a/shared/scripts/lib/a.py b/shared/scripts/lib/a.py\n--- a/s
 _SPEC = "## Acceptance Criteria\n### FR-01.11 - x\n- (E) [AC01] Given a, when b, then c.\n"
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_run_check_ran_passes_free_text_through_arguments(monkeypatch, tmp_path):
     seen = _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(_GOOD)})
     rec = tool.run_check(_DIFF, {"summary": "$(touch pwned) `x`"}, [_SPEC], "openai", tmp_path)
@@ -138,7 +138,7 @@ def test_run_check_ran_passes_free_text_through_arguments(monkeypatch, tmp_path)
     assert "Independent gap check" in tool.block_for(rec)
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 @pytest.mark.parametrize("reply", [
     {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
     {"status": "error", "reason": "provider down"},
@@ -152,13 +152,13 @@ def test_run_check_degrades_to_not_run_never_raises(monkeypatch, tmp_path, reply
     assert tool.block_for(rec).startswith("### Independent gap check") and "Not run" in tool.block_for(rec)
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_run_check_without_diff_or_catalog_is_not_run(tmp_path):
     assert tool.run_check("", {}, [_SPEC], "openai", tmp_path)["status"] == "not_run"
     assert "catalog" in tool.run_check(_DIFF, {}, [], "openai", tmp_path)["reason"]
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_run_check_survives_a_crashing_provider_module(monkeypatch, tmp_path):
     mod = types.ModuleType("external_review")
 
@@ -171,7 +171,7 @@ def test_run_check_survives_a_crashing_provider_module(monkeypatch, tmp_path):
     assert rec["status"] == "not_run" and "network exploded" in rec["reason"]
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_main_always_exits_zero_and_writes_both_files(monkeypatch, tmp_path):
     _fake_review(monkeypatch, {"status": "error", "reason": "provider down"})
     diff, out = tmp_path / "d.diff", tmp_path / "out"
@@ -194,7 +194,7 @@ def _git(root: Path, *args: str) -> str:
     return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=True).stdout
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_working_tree_diff_sees_committed_edited_and_new_files(tmp_path):
     _git(tmp_path, "init", "-q", "-b", "main")
     _git(tmp_path, "config", "user.email", "t@example.org")
@@ -215,7 +215,7 @@ def _event(tmp_path: Path, **kw) -> None:
     (tmp_path / "shipwright_events.jsonl").write_text(json.dumps(evt) + "\n", encoding="utf-8")
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_record_check_is_advisory_and_accepts_ran_or_not_run(tmp_path):
     assert check_ai_gap_check_recorded(tmp_path, _RUN).severity == "skipped"  # no event
     _event(tmp_path, source="adopt")
@@ -235,12 +235,12 @@ def test_record_check_is_advisory_and_accepts_ran_or_not_run(tmp_path):
         assert res.ok is False and res.severity == "warning" and res.strict_exempt
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_record_check_is_registered():
     assert check_ai_gap_check_recorded in claims.CLAIM_CHECKS and CHECK_NAME
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_block_renders_model_text_inert_and_flags_an_incomplete_input():
     nasty = {**_GOOD, "reason": "ping @someone <img src=x> [click](http://e) `rm` | table", "requirements_changed": [{"ac": "FR-01.11.AC03", "why": "**bold** @bob"}]}
     block = render_block(parse_reply(json.dumps(nasty)), "m", ["big.py"])
@@ -250,7 +250,7 @@ def test_block_renders_model_text_inert_and_flags_an_incomplete_input():
     assert "Incomplete input" not in render_block(parse_reply(json.dumps(_GOOD)), "m")
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_run_check_refuses_a_claude_family_model(monkeypatch, tmp_path):
     _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(_GOOD)})
     import external_review_routing as routing
@@ -260,7 +260,7 @@ def test_run_check_refuses_a_claude_family_model(monkeypatch, tmp_path):
     assert rec["status"] == "not_run" and "not independent" in rec["reason"]
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_incomplete_reply_is_unusable_and_first_oversized_file_is_cut():
     with pytest.raises(ValueError):
         parse_reply('{"verdict": "agree", "gap": false}')
@@ -273,13 +273,13 @@ def test_incomplete_reply_is_unusable_and_first_oversized_file_is_cut():
     assert cut == ["gen.py"] and "ok.py" in text and "qqqq" not in text
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_not_run_note_is_inert():
     note = render_not_run("error: <script> @everyone [x](y)")
     assert "<script>" not in note and "@everyone" not in note and "[x]" not in note
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_replay_reads_the_event_the_pr_added():
     from tools.ai_gap_check_replay import event_in_diff
 
@@ -292,7 +292,7 @@ def test_replay_reads_the_event_the_pr_added():
     assert event_in_diff("diff --git a/x b/x\n+" + json.dumps(evt)) == {}
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_run_check_respects_opt_outs_and_gateway(monkeypatch, tmp_path):
     import external_review_config as cfg
     import external_review_gateway as gw
@@ -307,7 +307,7 @@ def test_run_check_respects_opt_outs_and_gateway(monkeypatch, tmp_path):
     assert rec["status"] == "not_run" and "gateway" in rec["reason"] and not seen
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_codex_driver_never_gets_a_gpt_reviewer_and_secret_files_stay_home(monkeypatch, tmp_path):
     seen = _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(_GOOD)})
     diff, out, spec = tmp_path / "d.diff", tmp_path / "out", tmp_path / "s.md"
@@ -325,14 +325,14 @@ def test_codex_driver_never_gets_a_gpt_reviewer_and_secret_files_stay_home(monke
     assert "old verdict" not in trim(gap)[0]
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_inert_text_cannot_close_issues_mention_or_link():
     nasty = {**_GOOD, "reason": "fixes #12 and &#64;x see http://evil.example"}
     block = render_block(parse_reply(json.dumps(nasty)), "m")
     assert "#12" not in block and "&#64;" not in block and "http://" not in block
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_secret_shaped_files_are_dropped_even_when_tracked_and_all_cut_means_nothing_to_check():
     head = "diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -0,0 +1 @@\n"
     text, dropped, _ = trim_diff(head.format(p="config/.env.local") + "+KEY=1\n" + head.format(p="a.py") + "+x\n")
@@ -341,7 +341,7 @@ def test_secret_shaped_files_are_dropped_even_when_tracked_and_all_cut_means_not
     assert text == "" and cut == ["huge.py"]
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_main_survives_a_cp1252_stdout_and_non_ascii_untracked_names(monkeypatch, tmp_path, capsysbinary):
     _git(tmp_path, "init", "-q", "-b", "main")
     _git(tmp_path, "config", "user.email", "t@example.org")
@@ -365,7 +365,7 @@ def test_main_survives_a_cp1252_stdout_and_non_ascii_untracked_names(monkeypatch
     assert tool.main() == 0
 
 
-@pytest.mark.covers("FR-01.11", _AC)
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_secret_detection_survives_spaces_quotes_and_unreadable_headers():
     body = "--- a/x\n+++ b/x\n@@ -0,0 +1 @@\n+SECRET=1\n"
     for header in ("diff --git a/config/prod credentials.json b/config/prod credentials.json",
