@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-pyasn1-0-6-5-bump",
+  "date": "2026-10-31",
+  "section": "Iterate — bug: pyasn1 0.6.5 security bump",
+  "title": "Bump transitive pyasn1 0.6.4 to 0.6.5 in shipwright-plan lockfile",
+  "context": "Trivy reported CVE-2026-119194..119197 (code-scanning alerts 1454-1457, high) for pyasn1 0.6.4 in plugins/shipwright-plan/uv.lock. pyasn1 is only transitive: google-genai -> google-auth -> pyasn1-modules -> pyasn1.",
+  "decision": "Run uv lock --upgrade-package pyasn1 to move the lockfile to 0.6.5, the fixed release. No pyproject.toml change and no direct pin; no other uv.lock in the repo pins pyasn1.",
+  "consequences": "The four alerts close once Security Scan runs on main. Only a lock refresh: no runtime code changed, and F0 stayed fully green.",
+  "rationale": "Fix the vulnerable version rather than suppress the finding. Lock-only keeps the change minimal and reversible.",
+  "rejected": "Dismissing the alerts as accepted risk (low exposure but a fix exists); adding a direct pyasn1 pin to pyproject (needless coupling to a transitive dependency).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
