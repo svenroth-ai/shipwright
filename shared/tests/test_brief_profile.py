@@ -49,6 +49,7 @@ def test_explicit_supabase_profile_asks_the_env_questions(tmp_path):
     assert out["profile"] == "supabase-nextjs" and out["env_questions"]
 
 
+@pytest.mark.covers("FR-01.01/AC12")
 def test_unknown_name_is_reported_not_replaced(tmp_path):
     out = brief_intake.intake({**BASE, "profile": "no-such-stack"}, str(tmp_path))
     assert out["profile"] is None  # NOT supabase-nextjs (the inference) and not silent

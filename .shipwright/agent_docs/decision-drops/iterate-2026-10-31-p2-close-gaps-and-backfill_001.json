@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-p2-close-gaps-and-backfill",
+  "date": "2026-10-31",
+  "section": "Iterate - change: close catalog gaps in the same PR, backfill 11 holes",
+  "title": "A declared catalog gap is closed by an AC or one allowed reason; 13 ACs added",
+  "context": "P1 let an iterate declare a catalog gap but nothing asked it to close the gap, so 11 merged PRs left behaviour out of the catalog.",
+  "decision": "gap_closed (presence only): catalog_gap needs catalog_gap_acs or catalog_gap_reason how-only, else an advisory F11 warning; 11 backfill ACs plus AC47/AC48 added to the catalog and bound to existing tests.",
+  "consequences": "Open gaps show a warning, never a block. The 11 backfill ACs are drafted by the runner and checked by an Opus reader; the operator reads them in the PR before merge.",
+  "rationale": "The F5b repair path cannot rewrite a recorded event, so an error would be an unfixable block; same call as P1.",
+  "rejected": "A blocking F11 error (unfixable); a new required CI check (brief: nothing holds a PR).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

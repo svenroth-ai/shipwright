@@ -46,7 +46,7 @@ def _cfg(root: Path) -> dict:
     return json.loads((root / "shipwright_run_config.json").read_text("utf-8"))
 
 
-@pytest.mark.covers("FR-01.01/AC01")
+@pytest.mark.covers("FR-01.01/AC01", "FR-01.01/AC09")
 def test_deploy_target_none_completes_run_after_changelog(tmp_project, monkeypatch):
     monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
     create_config(scope="full_app", profile="python-plugin-monorepo",
