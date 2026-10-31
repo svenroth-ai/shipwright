@@ -145,7 +145,7 @@ def main() -> int:
     ap.add_argument("--diff-file", help="the diff to check (default: the branch against --base-ref, working tree included)")
     ap.add_argument("--base-ref", default="origin/main", help="ref the branch left, for the default diff")
     ap.add_argument("--event-file", help="declaration source: a work_completed event as JSON (default: look the run up)")
-    ap.add_argument("--spec-file", action="append", default=[], help="catalog source, repeatable (default: planning/*/spec.md)")
+    ap.add_argument("--spec-file", action="append", default=[], help="catalog source, repeatable (default: the catalog under .shipwright/planning)")
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--reviewer", choices=REVIEWERS, default="", help="default: openai, or glm under --driver codex")
     ap.add_argument("--driver", choices=("claude", "codex"), default="claude",
@@ -165,7 +165,7 @@ def main() -> int:
             event = json.loads(Path(args.event_file).read_text(encoding="utf-8"))
         else:
             event = _event_for_run(root, args.run_id) or {}
-        spec_paths = [Path(p) for p in args.spec_file] or sorted((root / ".shipwright" / "planning").glob("*/spec.md"))
+        spec_paths = [Path(p) for p in args.spec_file] or sorted((root / ".shipwright/planning").glob("*/spec.md"))
         specs = [p.read_text(encoding="utf-8", errors="replace") for p in spec_paths if p.exists()]
         record = run_check(diff_text, declaration_from_event(event), specs, args.reviewer, root)
     except Exception as exc:  # noqa: BLE001 - see run_check

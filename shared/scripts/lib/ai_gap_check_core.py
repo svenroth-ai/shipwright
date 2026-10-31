@@ -247,7 +247,8 @@ def render_not_run(reason: str) -> str:
 #: declaration separately, so these only add noise (and the event log would show it its own answer).
 _RECORD_PATH = re.compile(
     r"^(?:shipwright_events\.jsonl|shipwright_test_results\.json|CHANGELOG-unreleased\.d/"
-    r"|\.shipwright/(?:agent_docs/(?:iterates|decision-drops)/|triage\.jsonl|compliance/|runs/)"
+    r"|\.shipwright/agent_docs/(?:iterates|decision-drops)/|\.shipwright/compliance/"
+    r"|\.shipwright/(?:triage\.jsonl|runs/)"
     r"|\.shipwright/planning/iterate/[^/]+/(?:ai-gap-check\.(?:json|md)|[^/]*-raw[^/]*|[^/]*\.stderr\.txt|reviews\.json|risk_recheck\.json"
     r"|self-review-payload\.json|[^/]*_reply\.json|[^/]*\.err))"
 )
