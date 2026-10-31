@@ -23,7 +23,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.affected_acs_gate import declaration_present, requires_declaration  # noqa: E402
+from lib.affected_acs_gate import declaration_present, is_scoped_intent, requires_declaration  # noqa: E402
 from lib.spec_chain import ac_history, find_plan, find_pr, fr_history, load_events, parse_spec_acs  # noqa: E402
 
 
@@ -70,7 +70,6 @@ def replay(root: Path, events: list[dict], seed: int, n: int, since: str = "") -
                      "pr": pr[0] if pr else None, "ac_link": ac, "recorded_with_plan_path": bool(e.get("plan_path"))})
     chain = [r for r in rows if r["plan"] and r["pr"]]
     # Post-change cohort: an independent boundary (--since), not "has plan_path": a run that forgot the field is a FAILURE.
-    from lib.affected_acs_gate import is_scoped_intent
     after = [e for e in events if since and e.get("type") == "work_completed" and e.get("source") == "iterate"
              and is_scoped_intent(e) and str(e.get("ts") or "") >= since]
     cohort = random.Random(seed).sample(after, min(n, len(after)))

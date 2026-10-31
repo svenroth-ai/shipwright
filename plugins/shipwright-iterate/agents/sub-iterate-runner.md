@@ -268,7 +268,7 @@ perform; F6-verify checks all three ran.
   (`references/F5.md`) — PRODUCER of both the `test_completeness` ledger and the
   `surface_verification` block F0.5 fills, read from exactly there by F6-verify, so a
   sub-iterate that skips F5 fails its own gate. F5c carries the ledger durably too.
-- **F5b:** (feature/change/bug: write the plan stub first - `tools/write_plan_stub.py`, `references/F5b.md` "Plan stub"; F5b stamps `plan_path`) `finalize_iterate.py` records `work_completed` (idempotent per run_id) + regenerates
+- **F5b:** (feature/change/bug: write the plan stub first - put goal/reason/ref in a JSON file with the Write tool and call `tools/write_plan_stub.py --from-json <file>`; they are never interpolated into a shell command, `references/F5b.md` "Plan stub"; F5b stamps `plan_path`) `finalize_iterate.py` records `work_completed` (idempotent per run_id) + regenerates
   compliance MDs / dashboard / handoff: `uv run "{shared_root}/scripts/tools/finalize_iterate.py"
   --project-root "{project_root}" --run-id "{run_id}" --event-extras-json "$extras"`. `$extras` =
   the `references/F5b.md` classification fields **plus the campaign stamp**

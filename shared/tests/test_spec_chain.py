@@ -250,6 +250,24 @@ def test_write_plan_stub_cli_refuses_overwrite_and_bad_run_id(tmp_path):
 
 
 @pytest.mark.covers("FR-01.11")
+def test_write_plan_stub_from_json_stores_hostile_text_verbatim(tmp_path):
+    tool = Path(__file__).resolve().parents[1] / "scripts" / "tools" / "write_plan_stub.py"
+    goal = 'say "hi" $(touch pwned) and `id` done'
+    spec = tmp_path / "stub.json"
+    spec.write_text(json.dumps({"run_id": _RUN, "goal": goal, "reason": "why `x` $(y)", "ref": 'PR "1"'}), encoding="utf-8")
+    cmd = ["uv", "run", str(tool), "--project-root", str(tmp_path), "--from-json", str(spec)]
+    res = subprocess.run(cmd, capture_output=True, text=True, cwd=tmp_path)
+    assert res.returncode == 0, res.stderr
+    parsed = sc.parse_stub((tmp_path / sc.plan_rel_path(_RUN)).read_text(encoding="utf-8"))
+    assert parsed["goal"] == goal and parsed["reason"] == "why `x` $(y)"
+    assert not (tmp_path / "pwned").exists()
+    bad = subprocess.run([*cmd[:-1], str(tmp_path / "missing.json")], capture_output=True, text=True)
+    assert bad.returncode == 2
+    spec.write_text(json.dumps({"run_id": _RUN, "goal": "g"}), encoding="utf-8")
+    assert subprocess.run(cmd, capture_output=True, text=True).returncode == 2  # reason/ref missing
+
+
+@pytest.mark.covers("FR-01.11")
 def test_find_pr_prefers_run_id_trailer_over_a_mention(tmp_path):
     _git(tmp_path, "init", "-q")
     (tmp_path / "f").write_text("1", encoding="utf-8")

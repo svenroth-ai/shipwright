@@ -230,6 +230,7 @@ def ac_history(project_root: Path, ac: str, events: list[dict], spec_acs: dict[s
                 spec_acs.update(parse_spec_acs(spec.read_text(encoding="utf-8")))
             except (OSError, ValueError):
                 continue
+    # by_run keeps the LAST work_completed event per run (later events overwrite earlier ones with the same adr_id).
     by_run = {str(e.get("adr_id")): e for e in events if e.get("type") == "work_completed" and e.get("adr_id")}
     runs: dict[str, dict] = {r: {"run_id": r, "via": ["spec-text"]} for r in spec_acs.get(norm, [])}
     for evt in events:
