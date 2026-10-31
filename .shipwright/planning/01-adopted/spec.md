@@ -912,9 +912,9 @@ _Where the work detail lives_ at the end of this document.
   skipped or recorded as never having happened. Where even that fails, it is recorded as
   not done and exactly why, never guessed at or hidden.
   (iterate-2026-09-13-codex-internal-review-transport)
-- (E) [AC32] Given a step names which model should review or finalize the
-  work, then every model tier in the recognised set is accepted at every
-  place a tier can be named (project config, per-call, session).
+- (E) [AC32] Given a model tier is in the recognised set, when a step names it
+  to review or finalize the work, then it is accepted at every place a tier
+  can be named (project config, per-call, session) rather than rejected as unknown.
   (iterate-2026-09-18-codex-review-tier-config)
 - (E) [AC33] Given the outside second opinion runs through Codex directly, when a
   project or a single run names which Codex model should do that review, then
