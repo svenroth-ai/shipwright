@@ -1,0 +1,1 @@
+{"review":[{"severity":"medium","category":"correctness","finding":"replay post-change cohort required affected_acs for runs that touch no runtime path","suggestion":"filter with requires_declaration"},{"severity":"low","category":"architecture","finding":"write_plan_stub main only covered by subprocess tests","suggestion":"in-process test"}]}

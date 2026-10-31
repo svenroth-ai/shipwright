@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-p3-spec-chain",
+    "date": "2026-10-31",
+    "unit": {
+      "status": "passed",
+      "passed": 13566,
+      "skipped": 55,
+      "total": 13621
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "plan stub shapes (tiny one line, three lines, full with ACs/gap) round-trip through parse_stub",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_stub_shapes_and_roundtrip PASSED"
+        },
+        {
+          "behavior": "plan finder: field, convention, legacy (exact or mini-plan suffix, never bare prefix), ADR; paths outside planning ignored",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_find_plan_field_convention_legacy_adr PASSED; test_find_plan_ignores_paths_outside_planning PASSED"
+        },
+        {
+          "behavior": "PR finder: field, Run-ID trailer over prose mention, longer run id not matched",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_find_pr_field_and_git_exact_match PASSED; test_find_pr_prefers_run_id_trailer_over_a_mention PASSED"
+        },
+        {
+          "behavior": "AC history joins catalog text, events and amendments; FR lookup",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_ac_history_joins_spec_text_events_plan_and_pr PASSED; test_load_events_applies_pr_amendment_and_fr_history PASSED"
+        },
+        {
+          "behavior": "F11 plan-stub check only warns (missing, unreadable, non-UTF-8, malformed), skips without event/intent",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_check_warns_when_plan_stub_missing_never_errors PASSED; test_check_warns_not_crashes_on_non_utf8_plan PASSED"
+        },
+        {
+          "behavior": "F5b stamps plan_path only when the stub exists",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_fold_plan_path_only_when_stub_exists PASSED"
+        },
+        {
+          "behavior": "replay counts a post-change run without plan_path as a failure",
+          "disposition": "tested",
+          "evidence": "test_spec_chain.py::test_replay_separates_post_change_cohort_and_with_history PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/spec_chain_cli.py lookup --ac FR-01.11.AC03 --no-pr",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-31-p3-spec-chain/surface_verification.log",
+      "timestamp": "2026-10-31T13:00:00Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
