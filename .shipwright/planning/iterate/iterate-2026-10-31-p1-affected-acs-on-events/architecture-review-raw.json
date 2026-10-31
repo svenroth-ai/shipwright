@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** Yes \u2014 a required event field plus a presence-only check is the smallest honest version of this; the mechanism is proportionate to the problem of silently lost acceptance criteria.\n\n2. **The smallest thing that would do** \u2014 Option A as described: the `affected_acs` field, a presence-only finalization check, and nothing else. Option B (write-time refusal) is the same mechanism with a harder gate for no extra safety, since the constraint already forbids holding PRs on content; a refusal at finalize on absence is a hair from B, so A's presence-only check is right. The replay capability, however, should be a one-shot verification script for the 100-PR window, not a standing tool.\n\n3. **What it costs to keep** \u2014 every future emitter of `work_completed` must populate the field; the finalization check must stay in sync with the field name; the replay tool (if kept) must be maintained against event-schema changes.\n\n4. **What it forecloses** \u2014 none identified. Optional-then-required migration keeps old events readable.\n\n**Findings**\n\n- Category: proportionality\n- Severity: medium\n- Finding: the replay tool is justified only by the one-time 100-PR window verification in the acceptance criteria; as a standing tool it becomes a second schema consumer that must track every future event change.\n- Suggestion: build the replay as a disposable script used once to verify the window, and delete it or archive it under the campaign; don't present it as a supported read-only tool.\n\n- Category: existence\n- Severity: low\n- Finding: the check list file is at its size cap, so adding this check either forces growing the file (a new standing cost) or a second list (a new mechanism).\n- Suggestion: confirm which of the two this change implies before building; if it's a second list, that is the real new mechanism here and deserves its own proportionality look.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014option A is proportionate: require an explicit AC declaration through the existing finalization machinery, without judging its content.**\n\n2. **Smallest thing:** One `affected_acs` field on runtime-touching iterate events and one presence check within existing finalization validation. Use the replay tool to measure the required 100-PR window; it needs no scheduled operation. Respect the checklist\u2019s size cap by keeping validation in the existing finalize path.\n\n3. **What it costs to keep:** Maintaining the event contract and presence rule as event producers and finalization evolve. Reviewers must still assess the declaration; presence alone does not establish that promises were preserved.\n\n4. **What it forecloses:** Runtime-touching iterates can no longer finalize without an explicit declaration. None otherwise identified.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+    "at": "2026-10-31T08:42:33.281223+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

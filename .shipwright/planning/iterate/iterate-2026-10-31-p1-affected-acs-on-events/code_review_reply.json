@@ -1,0 +1,1 @@
+{"section": "iterate-2026-10-31-p1-affected-acs-on-events (round 2)", "review": [], "summary": "Round 1 found two high (runtime classification excluded a dir named test and files named test_*) and one medium (git_error read as not_git); all fixed and re-reviewed with no remaining high or medium findings."}

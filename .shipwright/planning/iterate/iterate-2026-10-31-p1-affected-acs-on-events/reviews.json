@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T08:43:10.838885+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan states the new claim check goes into the claims registry, but notes `iterate_checks.py` is \"at its cap\" without any change listed to raise or restructure that cap. If the registry genuinely enforces a limit, registration is a blocker; if the cap is a soft convention, the plan should say which.",
+          "suggestion": "Add an explicit step to either raise the cap, or document that the cap refers to something else (e.g., a review-complexity threshold) and how registration works around it. This is the one item that could make the whole unit unimplementable as written.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Path classification lives in `affected_acs_gate.py` (pure rule), but `affected_acs_replay.py` must classify historical events the same way. The plan doesn't say the replay imports the gate's classifier; if it re-implements or (worse) interprets historical paths differently, the replay measurement and the live check will disagree, and the acceptance criterion (\"replay over the 100-PR window\") becomes ambiguous.",
+          "suggestion": "State explicitly that replay uses the gate's classification function, and that a historical event failing under today's rules is reported as a pre-existing gap, not a new failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The replay over \"the last N recorded iterate events\" must have a defined pass condition. Is the acceptance criterion \"all 100 events have `affected_acs`\" (almost certainly fails — the whole premise is 11 of 17 behaviour-adding PRs left no AC behind) or \"all events that would require a declaration under the new gate have one\"? The plan doesn't say, and the campaign-halt rule (\"stop the campaign if a measure fails\") makes this load-bearing.",
+          "suggestion": "Define the replay's done-when precisely: which events count as runtime-touching, and whether historical non-compliance is a baseline measurement (expected) or a failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Presence-only declaration test (\"never reads content\") means an iterate can satisfy the gate with `affected_acs: \"none\"` while actually changing runtime code. That's an accepted scope cut for P1, but worth noting the blind-SKIP path plus presence-only means the check can't catch wrong declarations at all.",
+          "suggestion": "Fine for this unit — but record it as a known limitation in F5b.md so a later unit can tighten it, and make sure the SKIP case is logged visibly so silent skips don't look like passes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Renames/moves of runtime files (e.g., moving a file from `shared/` to `docs/`, or a plugin reorganization) will require declarations under the path rule even when behaviour is unchanged. This may generate friction and habituate `affected_acs: checked, unchanged` boilerplate, diluting the signal.",
+          "suggestion": "Acceptable, but mention the \"checked-and-left-unchanged\" reason string in F5b.md examples so authors have a sanctioned low-effort truthful answer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No real exposure — the gate is a local script over repo paths and event extras, read-only replay. Nothing here handles untrusted input beyond repo contents.",
+          "suggestion": "No action needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The requirement covers all runtime-touching iterates, but `requires_declaration` additionally restricts enforcement to `feature/change/bug`. A runtime-changing refactor or another iterate type could escape the requirement.",
+          "suggestion": "Make runtime changes the deciding condition, unless P1 explicitly authorizes those type exclusions. Test a runtime-touching iterate outside those three types.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not establish how F11 sees the declaration that will appear in `work_completed`. If F11 runs before that event is written, checking recorded events can inspect stale data or SKIP the fresh iterate. With no write-time gate, this connection is essential.",
+          "suggestion": "Specify the declaration source and lifecycle ordering. Add an integration test proving that a fresh runtime iterate fails without the field, passes with it, and persists that same declaration in its completion event. Missing required evidence must not count as successful validation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Last N recorded iterate events” does not necessarily reproduce the required 100-PR window. PRs can contain multiple iterates, and missing historical path evidence could cause SKIPs that make coverage appear complete.",
+          "suggestion": "Anchor replay to the specified PR window, associate its completion events, and report eligible, declared, missing, and unclassifiable counts separately. Test that incomplete evidence cannot produce a passing measurement, and explicitly stop for the operator when the measure fails.  The shared pure rule and read-only replay are a reasonable, restrained design. Resolve eligibility coverage, F11 lifecycle integration, and replay measurement semantics before implementation is accepted.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-31T08:43:00.133336+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: dependency — Severity: high**\n  Finding: The plan states the new claim check goes into the claims registry, but notes `iterate_checks.py` is \"at its cap\" without any change listed to raise or restructure that cap. If the registry genuinely enforces a limit, registration is a blocker; if the cap is a soft convention, the plan should say which.\n  Suggestion: Add an explicit step to either raise the cap, or document that the cap refers to something else (e.g., a review-complexity threshold) and how registration works around it. This is the one item that could make the whole unit unimplementable as written.\n\n- **Category: approach — Severity: medium**\n  Finding: Path classification lives in `affected_acs_gate.py` (pure rule), but `affected_acs_replay.py` must classify historical events the same way. The plan doesn't say the replay imports the gate's classifier; if it re-implements or (worse) interprets historical paths differently, the replay measurement and the live check will disagree, and the acceptance criterion (\"replay over the 100-PR window\") becomes ambiguous.\n  Suggestion: State explicitly that replay uses the gate's classification function, and that a historical event failing under today's rules is reported as a pre-existing gap, not a new failure.\n\n- **Category: edge-case — Severity: medium**\n  Finding: The replay over \"the last N recorded iterate events\" must have a defined pass condition. Is the acceptance criterion \"all 100 events have `affected_acs`\" (almost certainly fails — the whole premise is 11 of 17 behaviour-adding PRs left no AC behind) or \"all events that *would* require a declaration under the new gate have one\"? The plan doesn't say, and the campaign-halt rule (\"stop the campaign if a measure fails\") makes this load-bearing.\n  Suggestion: Define the replay's done-when precisely: which events count as runtime-touching, and whether historical non-compliance is a baseline measurement (expected) or a failure. […truncated]\n\n[openai] I could review the supplied plan, but execution policy blocked repository access, so I could not verify the binding brief or existing F11 lifecycle.\n\n1. **Category: approach | Severity: high**\n   **Finding:** The requirement covers all runtime-touching iterates, but `requires_declaration` additionally restricts enforcement to `feature/change/bug`. A runtime-changing refactor or another iterate type could escape the requirement.\n   **Suggestion:** Make runtime changes the deciding condition, unless P1 explicitly authorizes those type exclusions. Test a runtime-touching iterate outside those three types.\n\n2. **Category: dependency | Severity: high**\n   **Finding:** The plan does not establish how F11 sees the declaration that will appear in `work_completed`. If F11 runs before that event is written, checking recorded events can inspect stale data or SKIP the fresh iterate. With no write-time gate, this connection is essential.\n   **Suggestion:** Specify the declaration source and lifecycle ordering. Add an integration test proving that a fresh runtime iterate fails without the field, passes with it, and persists that same declaration in its completion event. Missing required evidence must not count as successful validation.\n\n3. **Category: edge-case | Severity: medium**\n   **Finding:** “Last N recorded iterate events” does not necessarily reproduce the required 100-PR window. PRs can contain multiple iterates, and missing historical path evidence could cause SKIPs that make coverage appear complete.\n   **Suggestion:** Anchor replay to the specified PR window, associate its completion events, and report eligible, declared, missing, and unclassifiable counts separately. Test that incomplete evidence cannot produce a passing measurement, and explicitly stop for the operator when the measure fails.\n\nThe shared pure rule and read-only replay are a reasonable, restrained design. Resolve eligibility coverage, F11 lifecycle integration, and replay measurement sem […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T08:50:05.759366+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b71512ae85f84de4b0132c8891b429f4a9154667"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T08:50:05.980786+00:00",
+      "disposition": "Stage 3 applies only to migrations, async or concurrency, cross-plugin imports and irreversible operations; none touched here",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "shared/scripts/tools/verifiers/affected_acs_check.py:62` (`check_affected_acs_declared`)",
+          "line": null,
+          "finding": "The check never filters on `source == \"iterate\"`. `_work_event` matches any `work_completed` event whose `adr_id` equals the run id; a build/campaign run with `intent: change` and runtime-touching paths would be FAILED by this gate, even though the spec and the replay tool scope the rule to iterate events only (`replay` filters `source == \"iterate\"`). The check and the replay can disagree on the same event.",
+          "suggestion": "In `_work_event` or the check, require `evt.get(\"source\") == \"iterate\"` before applying the intent filter, matching the replay tool and the spec's \"feature/change/bug iterate\" scope.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/affected_acs_replay.py:30-38` (`replay`)",
+          "line": null,
+          "finding": "Historical iterate events that lack `changed_files` are silently dropped (`files if isinstance(files, list) else []` → `requires_declaration` false → not counted as `required`). The acceptance criterion is \"replay over the 100-PR window shows the field required on all runtime-touching iterates\" — events without recorded paths are runtime-touching-unknown, not non-runtime, and the replay has no git-view fallback, so `required` undercounts and old missing declarations are invisible. The F11 check itself treats this state as BLIND; the replay should surface it (e.g., a `blind` count) rather than skip.",
+          "suggestion": "Count events with no `changed_files` (and a runtime-intent) separately as `blind`/`unknown` in the replay output so the measure is honest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/verifiers/affected_acs_check.py:67-70",
+          "line": null,
+          "finding": "When `git_context == \"work_tree\"` and `_iterate_changed_paths` returns an empty list (e.g., a branch already merged, or a commit hash that resolves to nothing), `paths` is `[]` (not `None`), so the `changed_files` fallback on the event is skipped and the check reports \"no runtime path touched\" — reading blindness as clean for the event-supplied path list. The spec's stance is \"a blind branch view SKIPPED\", not pass-as-clean.",
+          "suggestion": "Only use the git-view result when it is `None`-vs-list distinguishable; if the git view yields an empty list but the event lists runtime `changed_files`, prefer the event list (or report BLIND).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_affected_acs_gate.py:96-101` (`test_check_skips_docs_only_other_intent_and_missing_event`)",
+          "line": null,
+          "finding": "The skip-path assertions compare `severity == \"skipped\"` but never assert `ok`; more importantly there is no test that the check rejects a `source: \"build\"` event (which, per the finding above, it currently wouldn't skip) and no test of the empty-git-view + event-`changed_files` interaction. A regression in either direction would pass the suite.",
+          "suggestion": "Add cases: a `work_completed` event with `source: \"build\"`, intent `change`, runtime paths → expect SKIPPED; and a work-tree scenario where the git view is empty but `changed_files` lists a runtime path.  Overall: the core rule (presence-only gate) is implemented and reasonably tested, but the check's missing `source == \"iterate\"` filter and the replay's silent drop of path-less events are real scope/measure defects against the acceptance criteria. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/affected_acs_replay.py",
+          "line": 37,
+          "finding": "Events with missing or malformed `changed_files` are treated as having no runtime changes and silently excluded from `required`. Consequently, a 100-event window with unavailable path data can report `required: 0, missing: 0`, without establishing the acceptance criterion. The live verifier explicitly distinguishes this state as blind; replay loses that distinction.",
+          "suggestion": "Report unknown path coverage separately and mark the measurement inconclusive when it exists, or reconstruct those events’ changed paths from Git. Add a test showing that unavailable path data cannot produce an apparently clean measurement.  Ship-with-fixes: the replay needs to distinguish unknown coverage from confirmed non-runtime changes. This review is limited to the supplied diff: environment policy blocked repository reads and test execution, so I could not verify the binding brief or the fresh-iterate F11 result.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-10-31T08:44:35.542764+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: bug | Severity: medium\n  File: `shared/scripts/tools/verifiers/affected_acs_check.py:62` (`check_affected_acs_declared`)\n  Finding: The check never filters on `source == \"iterate\"`. `_work_event` matches any `work_completed` event whose `adr_id` equals the run id; a build/campaign run with `intent: change` and runtime-touching paths would be FAILED by this gate, even though the spec and the replay tool scope the rule to iterate events only (`replay` filters `source == \"iterate\"`). The check and the replay can disagree on the same event.\n  Suggestion: In `_work_event` or the check, require `evt.get(\"source\") == \"iterate\"` before applying the intent filter, matching the replay tool and the spec's \"feature/change/bug iterate\" scope.\n\n- Category: edge-case | Severity: medium\n  File: `shared/scripts/tools/affected_acs_replay.py:30-38` (`replay`)\n  Finding: Historical iterate events that lack `changed_files` are silently dropped (`files if isinstance(files, list) else []` → `requires_declaration` false → not counted as `required`). The acceptance criterion is \"replay over the 100-PR window shows the field required on all runtime-touching iterates\" — events without recorded paths are runtime-touching-unknown, not non-runtime, and the replay has no git-view fallback, so `required` undercounts and old missing declarations are invisible. The F11 check itself treats this state as BLIND; the replay should surface it (e.g., a `blind` count) rather than skip.\n  Suggestion: Count events with no `changed_files` (and a runtime-intent) separately as `blind`/`unknown` in the replay output so the measure is honest.\n\n- Category: bug | Severity: low\n  File: `shared/scripts/tools/verifiers/affected_acs_check.py:67-70`\n  Finding: When `git_context == \"work_tree\"` and `_iterate_changed_paths` returns an empty list (e.g., a branch already merged, or a commit hash that resolves to nothing), `paths` is `[]` (not `None`), so the `changed_files` fallback on […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/affected_acs_replay.py:37\n- Finding: Events with missing or malformed `changed_files` are treated as having no runtime changes and silently excluded from `required`. Consequently, a 100-event window with unavailable path data can report `required: 0, missing: 0`, without establishing the acceptance criterion. The live verifier explicitly distinguishes this state as blind; replay loses that distinction.\n- Suggestion: Report unknown path coverage separately and mark the measurement inconclusive when it exists, or reconstruct those events’ changed paths from Git. Add a test showing that unavailable path data cannot produce an apparently clean measurement.\n\nShip-with-fixes: the replay needs to distinguish unknown coverage from confirmed non-runtime changes. This review is limited to the supplied diff: environment policy blocked repository reads and test execution, so I could not verify the binding brief or the fresh-iterate F11 result.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T08:44:43.433660+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "40dbad96b2c7fd2ae7ebada037ed7393b3be6a5e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T08:43:00.308596+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-10-31T08:43:00.486075+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

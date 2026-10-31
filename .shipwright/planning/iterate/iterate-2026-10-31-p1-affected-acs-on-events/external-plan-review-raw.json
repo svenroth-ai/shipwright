@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: dependency \u2014 Severity: high**\n  Finding: The plan states the new claim check goes into the claims registry, but notes `iterate_checks.py` is \"at its cap\" without any change listed to raise or restructure that cap. If the registry genuinely enforces a limit, registration is a blocker; if the cap is a soft convention, the plan should say which.\n  Suggestion: Add an explicit step to either raise the cap, or document that the cap refers to something else (e.g., a review-complexity threshold) and how registration works around it. This is the one item that could make the whole unit unimplementable as written.\n\n- **Category: approach \u2014 Severity: medium**\n  Finding: Path classification lives in `affected_acs_gate.py` (pure rule), but `affected_acs_replay.py` must classify historical events the same way. The plan doesn't say the replay imports the gate's classifier; if it re-implements or (worse) interprets historical paths differently, the replay measurement and the live check will disagree, and the acceptance criterion (\"replay over the 100-PR window\") becomes ambiguous.\n  Suggestion: State explicitly that replay uses the gate's classification function, and that a historical event failing under today's rules is reported as a pre-existing gap, not a new failure.\n\n- **Category: edge-case \u2014 Severity: medium**\n  Finding: The replay over \"the last N recorded iterate events\" must have a defined pass condition. Is the acceptance criterion \"all 100 events have `affected_acs`\" (almost certainly fails \u2014 the whole premise is 11 of 17 behaviour-adding PRs left no AC behind) or \"all events that *would* require a declaration under the new gate have one\"? The plan doesn't say, and the campaign-halt rule (\"stop the campaign if a measure fails\") makes this load-bearing.\n  Suggestion: Define the replay's done-when precisely: which events count as runtime-touching, and whether historical non-compliance is a baseline measurement (expected) or a failure.\n\n- **Category: edge-case \u2014 Severity: low**\n  Finding: Presence-only declaration test (\"never reads content\") means an iterate can satisfy the gate with `affected_acs: \"none\"` while actually changing runtime code. That's an accepted scope cut for P1, but worth noting the blind-SKIP path plus presence-only means the check can't catch wrong declarations at all.\n  Suggestion: Fine for this unit \u2014 but record it as a known limitation in F5b.md so a later unit can tighten it, and make sure the SKIP case is logged visibly so silent skips don't look like passes.\n\n- **Category: risk \u2014 Severity: low**\n  Finding: Renames/moves of runtime files (e.g., moving a file from `shared/` to `docs/`, or a plugin reorganization) will require declarations under the path rule even when behaviour is unchanged. This may generate friction and habituate `affected_acs: checked, unchanged` boilerplate, diluting the signal.\n  Suggestion: Acceptable, but mention the \"checked-and-left-unchanged\" reason string in F5b.md examples so authors have a sanctioned low-effort truthful answer.\n\n- **Category: security \u2014 Severity: low**\n  Finding: No real exposure \u2014 the gate is a local script over repo paths and event extras, read-only replay. Nothing here handles untrusted input beyond repo contents.\n  Suggestion: No action needed.\n\n## Overall Assessment\n\nThe approach is sound and appropriately minimal \u2014 a read-time claim check with a read-only replay is the right shape for a P1, and skipping the write path avoids the riskiest integration. The blocking concerns are definitional, not architectural: the registry-cap dependency and an undefined replay pass condition both need one clarifying sentence before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "I could review the supplied plan, but execution policy blocked repository access, so I could not verify the binding brief or existing F11 lifecycle.\n\n1. **Category: approach | Severity: high**\n   **Finding:** The requirement covers all runtime-touching iterates, but `requires_declaration` additionally restricts enforcement to `feature/change/bug`. A runtime-changing refactor or another iterate type could escape the requirement.\n   **Suggestion:** Make runtime changes the deciding condition, unless P1 explicitly authorizes those type exclusions. Test a runtime-touching iterate outside those three types.\n\n2. **Category: dependency | Severity: high**\n   **Finding:** The plan does not establish how F11 sees the declaration that will appear in `work_completed`. If F11 runs before that event is written, checking recorded events can inspect stale data or SKIP the fresh iterate. With no write-time gate, this connection is essential.\n   **Suggestion:** Specify the declaration source and lifecycle ordering. Add an integration test proving that a fresh runtime iterate fails without the field, passes with it, and persists that same declaration in its completion event. Missing required evidence must not count as successful validation.\n\n3. **Category: edge-case | Severity: medium**\n   **Finding:** \u201cLast N recorded iterate events\u201d does not necessarily reproduce the required 100-PR window. PRs can contain multiple iterates, and missing historical path evidence could cause SKIPs that make coverage appear complete.\n   **Suggestion:** Anchor replay to the specified PR window, associate its completion events, and report eligible, declared, missing, and unclassifiable counts separately. Test that incomplete evidence cannot produce a passing measurement, and explicitly stop for the operator when the measure fails.\n\nThe shared pure rule and read-only replay are a reasonable, restrained design. Resolve eligibility coverage, F11 lifecycle integration, and replay measurement semantics before implementation is accepted.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+    "at": "2026-10-31T08:42:05.973009+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-p1-affected-acs-on-events",
+    "date": "2026-10-31",
+    "unit": {
+      "status": "passed",
+      "passed": 13539,
+      "skipped": 55,
+      "total": 13594
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "runtime path classification (tests/docs excluded; test_* modules and a test dir count as runtime)",
+          "disposition": "tested",
+          "evidence": "test_affected_acs_gate.py::test_runtime_path_classification PASSED"
+        },
+        {
+          "behavior": "declaration is presence-only (list, or catalog_gap with nearest FR)",
+          "disposition": "tested",
+          "evidence": "test_affected_acs_gate.py::test_declaration_is_presence_only PASSED"
+        },
+        {
+          "behavior": "F11 check fails on missing declaration, passes when declared, skips docs-only/other intent/non-iterate/blind, fails closed on git error",
+          "disposition": "tested",
+          "evidence": "test_affected_acs_gate.py::test_check_fails_when_runtime_touched_and_field_absent PASSED; test_git_error_fails_closed_unless_the_event_already_decides PASSED"
+        },
+        {
+          "behavior": "replay reports unknown paths as inconclusive and uses git paths when supplied",
+          "disposition": "tested",
+          "evidence": "test_affected_acs_gate.py::test_replay_without_path_data_is_inconclusive_not_clean PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/affected_acs_replay.py --project-root . --window 100 --git",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-31-p1-affected-acs-on-events/surface_verification.log",
+      "timestamp": "2026-10-31T10:00:00Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Field and escape (catalog_gap + nearest FR), presence-only F11 check, docs, tests and replay delivered; replay counts only events that list changed_files."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Missing event, other intent, no runtime path and blind git view all SKIP; a crashing check is caught by the registry."},
+ {"name": "Security Basics", "verdict": "pass", "note": "Read-only over local event logs; no input reaches a shell or path."},
+ {"name": "Test Quality", "verdict": "pass", "note": "20 tests cover path classes, presence-only stance, pass/fail/skip/blind and the replay counts."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "One linear read of the events log."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "Rule in lib, check in its own verifier registered in CLAIM_CHECKS; iterate_checks.py untouched."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer is the F5b extras JSON (merged freely), consumer is the F11 check; probed with a real events.jsonl in tests."}
+]}
