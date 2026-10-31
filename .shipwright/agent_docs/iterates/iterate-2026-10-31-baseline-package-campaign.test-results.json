@@ -1,0 +1,54 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-baseline-package-campaign",
+    "date": "2026-10-31",
+    "unit": {
+      "status": "passed",
+      "passed": 23666,
+      "skipped": 107,
+      "total": 23773
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 643,
+      "skipped": 0,
+      "total": 643
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-31-baseline-package-campaign",
+    "commit": "04575e5e946e04c4806184c5915d785fabd8f2c8",
+    "dirty": false,
+    "base": null,
+    "release": null
+  }
+}
