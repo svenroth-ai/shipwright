@@ -1,0 +1,10 @@
+{"items":[
+{"name":"scope-matches-request","verdict":"pass","note":"Only plugins/shipwright-plan/uv.lock changed: pyasn1 0.6.4 -> 0.6.5 (version, sdist + wheel URL/hash). No other package moved."},
+{"name":"root-cause-addressed","verdict":"pass","note":"Trivy CVE-2026-119194..119197 (alerts 1454-1457) are all pyasn1 < 0.6.5; 0.6.5 is the fixed release and current PyPI latest."},
+{"name":"other-lockfiles-checked","verdict":"pass","note":"grep over all uv.lock files: plugins/shipwright-plan/uv.lock is the only one pinning pyasn1."},
+{"name":"no-pyproject-change-needed","verdict":"pass","note":"pyasn1 is transitive (google-genai -> google-auth -> pyasn1-modules -> pyasn1); no direct constraint to edit."},
+{"name":"tests","verdict":"pass","note":"F0 full suite 18/18 units PASS, diff-coverage n/a (no source lines), AC ratchet clean, verify_local 3/3 gates green."},
+{"name":"surface-verification","verdict":"pass","note":"surface=none, build-config-only; lockfile only."},
+{"name":"security-and-secrets","verdict":"pass","note":"No secrets; hashes come from uv resolving PyPI."},
+{"name":"affected-boundaries","verdict":"n/a","note":"No I/O boundary or runtime code touched; touches_build only."}
+]}

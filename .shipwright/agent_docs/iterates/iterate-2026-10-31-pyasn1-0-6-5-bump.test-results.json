@@ -1,0 +1,83 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-pyasn1-0-6-5-bump",
+    "date": "2026-10-31",
+    "unit": {
+      "status": "passed",
+      "passed": 24309,
+      "skipped": 107,
+      "total": 24416
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-10-31T08:57:16.343Z",
+      "attempts": 0,
+      "justification": "Lockfile-only bump of transitive dependency pyasn1 0.6.4 -> 0.6.5 in plugins/shipwright-plan/uv.lock; no runtime code, UI, API or startable surface changed.",
+      "reason_code": "build-config-only"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "plugins/shipwright-plan/uv.lock pins pyasn1 0.6.5 (fixed release) instead of 0.6.4",
+          "disposition": "tested",
+          "evidence": "uv lock --upgrade-package pyasn1 resolved 36 packages; git diff shows only the pyasn1 block changed; F0 full suite 18/18 units PASS (24309 passed, 107 skipped, 0 failed)"
+        },
+        {
+          "behavior": "shipwright-plan still installs and its tests pass with pyasn1 0.6.5",
+          "disposition": "tested",
+          "evidence": "shipwright-plan unit PASS in F0 run_test_suite (uv run resolves the updated lockfile)"
+        },
+        {
+          "behavior": "Trivy no longer reports CVE-2026-119194..119197 on plugins/shipwright-plan/uv.lock",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "confirmed only by the post-merge Security Scan / Trivy run on main; verified in the closing step after merge"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-10-31-pyasn1-0-6-5-bump",
+    "commit": "cd57d6f4884e80fe07ea403aecbbba003cc1950f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
