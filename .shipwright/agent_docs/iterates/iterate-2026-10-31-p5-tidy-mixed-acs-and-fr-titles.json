@@ -1,0 +1,48 @@
+{
+  "run_id": "iterate-2026-10-31-p5-tidy-mixed-acs-and-fr-titles",
+  "date": "2026-10-31T08:47:27.491995Z",
+  "event_at": "2026-10-31T07:14:11.676732+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-baseline-package--P5",
+  "spec": ".shipwright/planning/iterate/campaigns/baseline-package/sub-iterates/P5-tidy-mixed-acs-and-fr-titles.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-10-31-p5-tidy-mixed-acs-and-fr-titles",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "renamed FR titles and reworded ACs still parse in the requirements catalog readers",
+        "disposition": "tested",
+        "evidence": "integration-tests catalog/RTM/table-reader suites: 50 passed"
+      },
+      {
+        "behavior": "compliance RTM and catalog generators resolve the renamed FRs",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance tests -k rtm/catalog/trace: 394 passed; test_audit_group_i.py 19 passed alone"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "Requirement catalog text only; no startable surface.",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

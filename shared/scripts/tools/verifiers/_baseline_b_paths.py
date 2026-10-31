@@ -1,6 +1,6 @@
 """Path-ownership baseline: the null model T-code has to beat (BP unit BL0b, item 3).
 
-A changed non-test file under ``plugins/X/`` maps to the FR whose catalog name is ``/X``. A changed non-test Python file
+A changed non-test file under ``plugins/X/`` maps to the FR whose catalog row id is in the explicit plugin->FR table. A changed non-test Python file
 under ``shared/`` maps to the FRs of the plugins that (transitively, through other ``shared`` modules) import it. The import graph
 is read from the HEAD tree by module STEM (``lib.events_log`` -> ``events_log``): stems shared by two modules over-approximate
 (a recall-friendly bias for the baseline, i.e. it errs in the baseline's favour). Not followed: imports built at run time,
@@ -17,12 +17,23 @@ from ._baseline_touch_git import is_test_path
 
 __all__ = ["plugin_owners", "import_owners", "path_frs"]
 
-_ROW = re.compile(r"^\|\s*(FR-\d{2}\.\d{2})\s*\|[^|]*\|\s*/(shipwright-[\w-]+)\s*\|", re.M)
+_FR_ROW = re.compile(r"^\|\s*(FR-\d{2}\.\d{2})\s*\|", re.M)
+
+# Plugin -> owning FR. Explicit on purpose: catalog titles are capability names (not "/shipwright-x"), so ownership is
+# never derived from the Name column.
+_PLUGIN_FR = {
+    "shipwright-run": "FR-01.01", "shipwright-project": "FR-01.02", "shipwright-plan": "FR-01.03",
+    "shipwright-design": "FR-01.04", "shipwright-build": "FR-01.05", "shipwright-test": "FR-01.06",
+    "shipwright-security": "FR-01.07", "shipwright-deploy": "FR-01.08", "shipwright-changelog": "FR-01.09",
+    "shipwright-compliance": "FR-01.10", "shipwright-iterate": "FR-01.11", "shipwright-preview": "FR-01.12",
+    "shipwright-adopt": "FR-01.13", "shipwright-grade": "FR-01.18",
+}
 
 
 def plugin_owners(spec_text: str) -> dict[str, str]:
-    """``shipwright-x`` -> ``FR-01.nn`` from the catalog rows named ``/shipwright-x``."""
-    return {plugin: fr for fr, plugin in _ROW.findall(spec_text)}
+    """``shipwright-x`` -> ``FR-01.nn`` for every plugin whose FR id has a row in the catalog (ids only, titles ignored)."""
+    present = set(_FR_ROW.findall(spec_text))
+    return {plugin: fr for plugin, fr in _PLUGIN_FR.items() if fr in present}
 
 
 def _imported_stems(path: Path) -> set[str]:

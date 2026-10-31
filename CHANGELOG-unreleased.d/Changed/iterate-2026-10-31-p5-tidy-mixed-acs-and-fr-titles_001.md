@@ -1,0 +1,1 @@
+Requirement catalog: twelve acceptance criteria that mixed in model, vendor or format detail now state only the promise, and FR-01.01 to FR-01.13 are named for the capability instead of the slash command

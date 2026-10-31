@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-10-31-p5-tidy-mixed-acs-and-fr-titles",
+  "date": "2026-10-31",
+  "section": "Iterate — change: tidy mixed ACs and FR titles",
+  "title": "ACs state the promise, FR titles name a capability",
+  "context": "Model, vendor, threshold and format detail inside MIXED ACs, and slash-command FR titles, tie the catalog to todays tools.",
+  "decision": "Moved that detail to a plan file; rewrote 12 ACs as promise-only; renamed FR-01.01 to FR-01.13 to capability names.",
+  "consequences": "A rebuild keeps stable anchors; IDs and AC numbering unchanged so no re-mint; derived artifacts refresh at release.",
+  "rationale": "Brief P5 of baseline-package: the HOW may change freely while the WHAT/WHY stays stable.",
+  "rejected": "Deleting AC32 (would orphan its tests); renaming FR-01.18 (outside the brief's 13).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
