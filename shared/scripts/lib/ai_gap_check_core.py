@@ -272,7 +272,11 @@ def trim_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> tuple[str, 
             continue
         m = _DIFF_HEAD.match(chunk)
         path = m.group(2) if m else ""
-        if path and (_RECORD_PATH.match(path) or _SECRET_PATH.search(path)):
+        header = chunk.split("\n", 1)[0].rstrip().rstrip(chr(34))
+        if header.startswith("diff --git ") and (not m or _SECRET_PATH.search(header) or _SECRET_PATH.search(path)):
+            dropped.append(path or "(unreadable header)")  # fail closed: a header we cannot read may hide a credential file
+            continue
+        if path and _RECORD_PATH.match(path):
             dropped.append(path)
             continue
         if size + len(chunk) > max_chars:

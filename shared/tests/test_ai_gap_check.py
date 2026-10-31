@@ -363,3 +363,15 @@ def test_main_survives_a_cp1252_stdout_and_non_ascii_untracked_names(monkeypatch
     monkeypatch.setattr(sys, "argv", ["x", "--project-root", str(tmp_path), "--diff-file", str(diff), "--spec-file", str(spec),
                                       "--event-file", str(ev), "--out-dir", str(tmp_path / "out")])
     assert tool.main() == 0
+
+
+@pytest.mark.covers("FR-01.11", _AC)
+def test_secret_detection_survives_spaces_quotes_and_unreadable_headers():
+    body = "--- a/x\n+++ b/x\n@@ -0,0 +1 @@\n+SECRET=1\n"
+    for header in ("diff --git a/config/prod credentials.json b/config/prod credentials.json",
+                   'diff --git "a/\\303\\244.env" "b/\\303\\244.env"',
+                   "diff --git garbled header"):
+        text, dropped, _ = trim_diff(header + "\n" + body + "diff --git a/ok.py b/ok.py\n+fine\n")
+        assert "SECRET=1" not in text and len(dropped) == 1 and "ok.py" in text
+    text, dropped, _ = trim_diff("diff --git a/old.py b/new.py\nrename from old.py\nrename to new.py\n")
+    assert "rename to" in text and dropped == []

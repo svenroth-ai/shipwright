@@ -70,7 +70,7 @@ def working_tree_diff(root: Path, base_ref: str) -> str:
     Untracked files are diffed against nothing (``git diff --no-index``) so the index is never touched.
     """
     def git(*a: str, ok: tuple[int, ...] = (0,)) -> str:
-        out = subprocess.run(["git", "-C", str(root), *a], capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
+        out = subprocess.run(["git", "-C", str(root), "-c", "core.quotePath=false", *a], capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
         if out.returncode not in ok:
             raise RuntimeError(f"git {a[0]} failed: {out.stderr.strip()[:200]}")
         return out.stdout
