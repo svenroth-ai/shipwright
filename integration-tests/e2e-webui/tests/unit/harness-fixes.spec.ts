@@ -131,5 +131,6 @@ test("no launch button is fine only when the modal already launched the task", (
   expect(launchedByModal(false, "state active")).toBe(true);
   expect(launchedByModal(true, "state awaiting_external_start")).toBe(false); // button present: click it
   expect(launchedByModal(false, "state failed")).toBe(false);
+  expect(launchedByModal(false, "state inactive")).toBe(false); // only the exact words count
   expect(launchedByModal(false, "task not in the list")).toBe(false);
 });
