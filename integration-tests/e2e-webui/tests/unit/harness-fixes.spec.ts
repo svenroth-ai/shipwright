@@ -161,6 +161,10 @@ test("launch watch: started at once, handed over again when stalled, failing fas
   expect(launchVerdict("state not reported", "")).toBe("stalled");
   expect(launchVerdict("state awaiting_external_start", `${PS} claude --x\nWelcome`)).toBe("started");
   expect(launchVerdict("state active", PS)).toBe("started");
+  expect(launchVerdict("state failed", PS)).toBe("failed");
+  expect(launchVerdict("state inactive", "")).toBe("failed");
+  expect(launchVerdict("state awaiting_external_start", "claude: command not found")).toBe("stalled");
+  await expect(ensureLaunched(mk(["state launch_failed"], [PS]).w)).rejects.toThrow(/failed to launch: state launch_failed/);
 
   const ok = mk(["state active"], [""]);
   await ensureLaunched(ok.w);

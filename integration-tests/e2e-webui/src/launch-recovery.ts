@@ -23,9 +23,10 @@ export function captureLaunchCommands(page: Page): { get: () => LaunchCommands |
  * command or its output); else "stalled". Shell banners and prompts (pwsh/cmd/bash) are never evidence of a start, and an
  * unreadable state ("state unreadable (...)", "state not reported") is no evidence either way.
  */
-export function launchVerdict(stateText: string, terminalText: string): "started" | "stalled" {
+export function launchVerdict(stateText: string, terminalText: string): "started" | "stalled" | "failed" {
+  if (/^state (?:failed|launch_failed|jsonl_missing|inactive|cancelled|error)$/.test(stateText)) return "failed";
   if (/^state (?!awaiting_external_start$|not reported$)\w+$/.test(stateText)) return "started";
-  return /claude/i.test(terminalText) ? "started" : "stalled";
+  return /claude/i.test(terminalText) && !/not recognized|command not found|no such file/i.test(terminalText) ? "started" : "stalled";
 }
 
 export interface LaunchWatch {
@@ -49,7 +50,9 @@ export async function ensureLaunched(w: LaunchWatch): Promise<void> {
     for (let waited = 0; ; waited += 3_000) {
       state = await w.readState();
       terminal = await w.readTerminal();
-      if (launchVerdict(state, terminal) === "started") {
+      const verdict = launchVerdict(state, terminal);
+      if (verdict === "failed") throw new Error(`The task failed to launch: ${state}; terminal: ${terminal.trim().slice(-300) || "(empty)"}`);
+      if (verdict === "started") {
         await w.step(attempt === 1 ? "Launch confirmed" : `Launch confirmed after hand-over ${attempt - 1}`, `${state}; the terminal shows activity or the task left awaiting_external_start.`);
         return;
       }
