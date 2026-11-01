@@ -8,6 +8,7 @@ import { checkMasterDetailShape, snapshotMasterDetail, type MasterDetailSnapshot
 import type { RealThreadState } from "../../src/board-api-real.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { launchedByModal, startTaskSession, taskStateText } from "../../src/driver.js";
+import { ensureLaunched, launchVerdict } from "../../src/launch-recovery.js";
 import { REAL_FIXTURE_NAME } from "../../src/fixture.js";
 import { findExternalUse } from "../../src/project-checks.js";
 import { checkSelfContainedWithAdapter } from "../../src/project-checks-adapter.js";
@@ -133,4 +134,44 @@ test("no launch button is fine only when the modal already launched the task", (
   expect(launchedByModal(false, "state failed")).toBe(false);
   expect(launchedByModal(false, "state inactive")).toBe(false); // only the exact words count
   expect(launchedByModal(false, "task not in the list")).toBe(false);
+});
+
+// @covers FR-01.06
+test("launch watch: started at once, handed over again when stalled, failing fast with state and terminal text", async () => {
+  const mk = (states: string[], terminals: string[], canSend = true) => {
+    const log: string[] = [];
+    let i = 0;
+    return {
+      log,
+      w: {
+        readState: async () => states[Math.min(i, states.length - 1)]!,
+        readTerminal: async () => terminals[Math.min(i++, terminals.length - 1)]!,
+        handOver: async () => { log.push("handover"); return canSend; },
+        step: async (t: string) => { log.push(t); },
+        sleep: async () => undefined,
+        windowMs: 6_000,
+      },
+    };
+  };
+  expect(launchVerdict("state awaiting_external_start", "PS C:\app>\n")).toBe("stalled");
+  expect(launchVerdict("state awaiting_external_start", "")).toBe("stalled");
+  expect(launchVerdict("state awaiting_external_start", "PS C:\app> claude --x\nWelcome")).toBe("started");
+  expect(launchVerdict("state active", "PS C:\app>")).toBe("started");
+
+  const ok = mk(["state active"], [""]);
+  await ensureLaunched(ok.w);
+  expect(ok.log).toEqual(["Launch confirmed"]);
+
+  // stalled for the whole first window, then the second hand-over works
+  const retry = mk(["state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state active"], ["PS C:\app>"]);
+  await ensureLaunched(retry.w);
+  expect(retry.log.filter((l) => l === "handover")).toHaveLength(1);
+  expect(retry.log.at(-1)).toMatch(/after hand-over 1/);
+
+  const never = mk(["state awaiting_external_start"], ["PS C:\app>"]);
+  await expect(ensureLaunched(never.w)).rejects.toThrow(/did not start after 3 tries: state awaiting_external_start; terminal: PS C:\app>/);
+  expect(never.log.filter((l) => l === "handover")).toHaveLength(2);
+
+  const nothing = mk(["state awaiting_external_start"], [""], false);
+  await expect(ensureLaunched(nothing.w)).rejects.toThrow(/no command was captured.*\(empty\)/);
 });
