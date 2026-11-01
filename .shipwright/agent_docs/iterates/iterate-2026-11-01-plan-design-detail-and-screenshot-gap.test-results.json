@@ -41,9 +41,9 @@
           "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_section_writer_copies_design_values_from_the_screen PASSED"
         },
         {
-          "behavior": "spec-reviewer accepts only a declared extension whose FR/AC names the element; contradiction line is no exemption",
+          "behavior": "Build spec-reviewer gate unchanged; no declared line is an exemption",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_spec_reviewer_accepts_only_declared_extensions PASSED"
+          "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_build_spec_reviewer_gate_is_unchanged PASSED"
         },
         {
           "behavior": "batch task prompt carries the rules with mockups and not without",
@@ -51,9 +51,9 @@
           "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_batch_task_prompt_carries_the_rules PASSED; ::test_batch_task_prompt_without_mockups_has_no_design_rules PASSED"
         },
         {
-          "behavior": "screenshot-check reference states the text-length caveat and the override path",
+          "behavior": "screenshot-check reference keeps a fail a plain STOP with a neutral non-normative length note",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-test/tests/test_screenshot_check_prose.py::test_text_length_caveat_replaces_the_layout_only_claim PASSED"
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check_prose.py::test_a_fail_is_a_plain_stop_and_the_length_note_is_not_normative PASSED"
         }
       ],
       "counts": {

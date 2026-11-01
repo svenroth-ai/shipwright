@@ -51,8 +51,8 @@ def test_existing_fidelity_step_stays_non_blocking():
     assert "screenshot" not in old.lower()
 
 
-def test_text_length_caveat_replaces_the_layout_only_claim():
+def test_a_fail_is_a_plain_stop_and_the_length_note_is_not_normative():
     flat = " ".join(REF.split())
     assert "a correct layout with wrong text passes" not in flat
-    assert "text of a different LENGTH moves cells" in flat
-    assert "0.177 and 0.175" in flat and "this step never waives it" in flat
+    assert "A `fail` is a STOP: nothing in this reference licenses continuing past it" in flat
+    assert "(informational, not a rule)" in flat

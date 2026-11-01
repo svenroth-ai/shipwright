@@ -27,12 +27,12 @@ def test_section_writer_copies_design_values_from_the_screen():
         assert needle in flat, needle
 
 
-def test_spec_reviewer_accepts_only_declared_extensions():
-    """Name kept for the recorded ledger row; the gate is deliberately UNCHANGED: no declared line is an exemption."""
+def test_build_spec_reviewer_gate_is_unchanged():
+    """The Build gate is deliberately UNCHANGED: no declared line is an exemption."""
     flat = " ".join(REVIEWER.split())
     assert "REJECT with `kind: \"contradiction\"`" in flat
     assert "Design extension" not in flat and "Design contradiction" not in flat
-    assert "differs from the screen a person confirms" in " ".join(AGENT.split()) or "a person confirms" in " ".join(AGENT.split())
+    assert "a person confirms" in " ".join(AGENT.split())
 
 
 def test_batch_task_prompt_without_mockups_has_no_design_rules(tmp_path, monkeypatch, capsys):
