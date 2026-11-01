@@ -68,7 +68,7 @@ result-JSON (exact shape: Output → Escalation below).
 ### Step 3: Build
 
 Execute the iterate build steps as defined in the sub-iterate spec:
-0. **Feature/change unit: pre-build AC first** (`references/path-a-feature.md` Step 2a, every complexity): record the frozen AC / outcome exemption / restore, write the plan stub. An ask STOPS the unit (never auto-approve): write the tool's `escalation` to Step 6's `result.json`, return `status:"escalated"`, `reason_code:"ac_question_requires_operator"` with `ac_questions`; commit and push nothing.
+0. **Pre-build AC first** (`references/path-a-feature.md` Step 2a): an ask holds ONLY this unit, `status:"escalated"`, `reason_code:"ac_question_requires_operator"`; never answer it yourself; commit and push nothing.
 1. Write tests (if applicable for the change type)
 2. Implement changes
 3. Run tests — all must pass; failing after 3 retries: return failure result

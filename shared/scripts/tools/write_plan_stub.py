@@ -13,8 +13,9 @@ an AC (``--ac``) or declares a catalog gap (``--gap-fr``) gets the full stub. F5
 path on the event as ``plan_path`` when it exists. Refuses to overwrite an existing stub.
 
 ``--ac-decision`` takes the file ``ac_decision.py --out`` wrote (status ok): the stub then carries the frozen AC
-record (hash, one line per item, the per-AC decisions) and is always the full stub. A feature/change iterate
-writes it BEFORE the build; F5b only stamps the path.
+copy (one line per item, the per-AC decisions) and is always the full stub. The authoritative freeze is an
+append-only record next to it (``ac-record.jsonl``, :mod:`lib.ac_record`): ``--force`` appends a ``superseded``
+line, it never replaces. An iterate writes it BEFORE the build; F5b only stamps the path.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.ac_decision import stub_lines  # noqa: E402
+from lib.ac_record import append_record  # noqa: E402
 from lib.spec_chain import plan_rel_path, render_stub, stub_kind  # noqa: E402
 
 
@@ -85,6 +87,8 @@ def main() -> int:
     target.parent.mkdir(parents=True, exist_ok=True)
     body = render_stub(kind, args.goal, args.reason, args.ref, args.ac, args.gap_fr) + "".join(line + "\n" for line in ac_lines)
     target.write_text(body, encoding="utf-8", newline="\n")
+    if ac_lines:
+        append_record(args.project_root, args.run_id, decided)
     print(f"{kind} stub written: {plan_rel_path(args.run_id)}")
     return 0
 

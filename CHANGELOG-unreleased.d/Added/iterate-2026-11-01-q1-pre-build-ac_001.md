@@ -1,1 +1,1 @@
-feat(iterate): a feature or change records what it promises (or why nothing observable changes) before it is built, with a fixed ask-or-decide table and a frozen text; an unattended run that would have to ask stops that unit
+feat(iterate): every iterate records what it promises before it is built; whether anything observable changed is computed from the diff, the operator is asked only when an existing promise changes or goes away or no single requirement owns the new one, and an unattended question holds only its own unit

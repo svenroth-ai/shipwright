@@ -28,6 +28,8 @@ uv run "{shared_root}/scripts/tools/record_hard_blocker.py" --project-root "{pro
   --detail "<one sentence: what blocks, what the operator must do>"
 ```
 
+For an open acceptance-criterion question (`operator-only-decision`) use exactly this fixed `--detail` sentence, never interpolated text: `an acceptance-criterion question is open; the operator answers it through ac_decision.py answer and the run continues`.
+
 The F12 summary must name the recorded blocker (`code: detail`) so a self-release is visible in review; the hook also prints it to stderr when it lets the Stop through.
 
 ## Enforcement

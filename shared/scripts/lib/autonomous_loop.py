@@ -38,6 +38,7 @@ from file_lock import LockTimeout, file_lock
 # `file_lock` stay bare-imported above, unchanged — loop_state.py imports
 # `branch_base` the same bare way, so it is never loaded under two names.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.ac_hold import is_ac_hold  # noqa: E402
 from lib.campaign_drain import sweep_never_started  # noqa: E402
 from lib.loop_state import (  # noqa: E402
     STATES,
@@ -335,12 +336,11 @@ def cmd_record(args: argparse.Namespace) -> int:
         # pre-check above already uses — a case-mismatched `--unit` that
         # passes the fence via case-fold must not then be silently dropped
         # by an exact-match write loop that finds nothing (which used to
-        # still print `{"recorded": true}` / exit 0). `kind == "section"`
-        # keeps its original exact-match lookup unchanged.
+        # still print `{"recorded": true}` / exit 0). `kind == "section"` keeps its exact-match lookup.
         target_unit = find_unit_row(state, args.unit) if is_sub_iterate else next(
             (u for u in state["units"] if u["id"] == args.unit), None)
         if is_sub_iterate and target_unit is not None:
-            target_status = resolve_record_status(state.get("kind"), target_unit, result.get("status", "failed"))
+            target_status = resolve_record_status(state.get("kind"), target_unit, result.get("status", "failed"), result.get("reason_code") or "")
             rejection = enforce_record_fencing(state_path, state, args.unit, attempt_id,
                                                  result_str, target_status=target_status)
             if rejection is not None:
@@ -350,7 +350,7 @@ def cmd_record(args: argparse.Namespace) -> int:
             return 3
         for unit in state["units"]:
             if unit is target_unit or (target_unit is None and unit["id"] == args.unit):
-                unit["status"] = resolve_record_status(state.get("kind"), unit, result.get("status", "failed"))
+                unit["status"] = resolve_record_status(state.get("kind"), unit, result.get("status", "failed"), result.get("reason_code") or "")
                 unit["finished_at"] = now_iso()
                 unit["commit"] = result.get("commit")
                 unit["branch"] = result.get("branch", unit.get("branch"))
@@ -402,7 +402,7 @@ def cmd_record(args: argparse.Namespace) -> int:
 
     if result.get("status") != "complete":
         print(json.dumps({"recorded": True, "status": result.get("status"), "unit": args.unit}))
-        return 3
+        return 0 if is_ac_hold(result) else 3  # an AC question holds only its own unit, never the wave
 
     print(json.dumps({"recorded": True, "status": "complete", "unit": args.unit}))
     return 0

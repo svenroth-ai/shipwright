@@ -1063,16 +1063,10 @@ _Where the work detail lives_ at the end of this document.
   works and not what it does; a missing answer shows a visible warning and never holds
   the change back, because a finished record cannot be corrected afterwards.
   (iterate-2026-10-31-p2-close-gaps-and-backfill)
-- (E) [AC49] Given a new or altered behaviour is about to be built, when the change is planned,
-  then what it promises is written down first in plain words (or, when nothing a user or operator
-  can see changes, why not), and that wording is then fixed so a later edit of it shows up; the
-  person who owns the product is asked before an existing promise is changed or removed, when no
-  single requirement owns the new promise, when the promise reads as a description of how it
-  works, or when the request leaves open what people will see, and is otherwise only told; a
-  hands-off run that would have to ask stops that piece of work with the question recorded and
-  never answers for the owner; and a fix that only restores a promise must name the promise it
-  restores, otherwise the missing promise is added; a missing record shows a visible warning and
-  never holds the change back.
+- (E) [AC49] Given a change would alter what a user or operator can see or rely on, when it is planned, then the promise it
+  makes is written down in plain outcome words before it is built, and the person who owns the product is asked only when an
+  existing promise is changed or removed or no single requirement owns the new one; a change that alters nothing anyone can
+  observe needs no new promise.
   (iterate-2026-11-01-q1-pre-build-ac)
 
 <a id="fr-0112"></a>

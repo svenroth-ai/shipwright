@@ -1,13 +1,15 @@
-"""F11 claim check: a feature/change iterate recorded its AC (or exemption, or restore) BEFORE the build (a warning, never a hold).
+"""F11 claim check: an iterate that changed observable behaviour recorded the AC it promises (a warning, never a hold).
 
-The decision, the table and the frozen-hash rule live in :mod:`lib.ac_decision`. This module finds the run's
-``work_completed`` event and its plan stub, and reports.
+Whether anything observable changed is COMPUTED from the branch diff (:mod:`lib.ac_surface`) - never read from a
+label or an agent's say-so - and applies to every intent, bug fixes included. The decision table, the wording rule
+and the freeze compare live in :mod:`lib.ac_decision` / :mod:`lib.ac_record`; this module finds the run's event and
+the diff and reports.
 
-* No event for the run, a non-iterate source, or an intent other than feature/change: SKIPPED (a bug fix is
-  not asked for a new promise here).
-* No plan stub, or a stub with no ``AC frozen:`` record: an advisory WARNING.
-* A record whose text no longer matches its frozen hash, an item that is unreadable, an exemption whose reason is
-  only a label, or a restore naming an AC that is not in the catalog: the same WARNING.
+* No event for the run, a non-iterate source, or a branch that cannot be seen: SKIPPED.
+* The diff changes nothing observable (docs, tests, comments, whitespace, renames): passes, no record needed.
+* The diff is observable and there is no record, only an exemption, a restore naming an AC that is not in the
+  catalog, a frozen text that differs from the catalog text in the diff, or a record that was superseded: WARNING.
+* Malformed record, stub or decision data never crashes the check and never turns F11 red: it is a WARNING.
 
 Advisory and strict-exempt, like the other iterate-local claims: the recorded event cannot be rewritten by the F5b
 repair path, and nothing holds a PR on this check. Structure only: whether the sentence is true is for the reviewers.
@@ -22,16 +24,17 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.ac_decision import label_only, load_catalog_acs, parse_stub_ac  # noqa: E402
-from lib.spec_chain import plan_rel_path, safe_plan_path  # noqa: E402
+from lib.ac_decision import count_decisions, load_catalog  # noqa: E402
+from lib.ac_record import changed_catalog, freeze_differences, read_records  # noqa: E402
+from lib.ac_surface import git_changes, observable_files  # noqa: E402
 
 from .affected_acs_check import _work_event  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
+from .git_helpers import _branch_base_commit  # noqa: E402
 
-CHECK_NAME = "pre-build AC recorded (feature/change iterate)"
-_INTENTS = ("feature", "change")
-_REPAIR = ("write the declaration with tools/ac_decision.py (the exact AC text, an exemption by outcome, or the AC id a "
-           "restore restores), then tools/write_plan_stub.py --ac-decision")
+CHECK_NAME = "pre-build AC recorded (observable change)"
+_REPAIR = ("write the declaration with tools/ac_decision.py (the exact AC text, or the id of the AC a fix restores), "
+           "then tools/write_plan_stub.py --ac-decision")
 
 
 def _warn(detail: str) -> CheckResult:
@@ -42,33 +45,46 @@ def _skip(why: str) -> CheckResult:
     return CheckResult(CHECK_NAME, True, f"skipped ({why})", severity=Severity.SKIPPED.value)
 
 
+def _problems(root: Path, run_id: str, files: list[str], base: str, commit: str) -> list[str]:
+    records = read_records(root, run_id)
+    if not records:
+        return [f"the diff changes observable behaviour ({', '.join(files[:4])}) but no AC record exists - {_REPAIR}"]
+    last = records[-1]
+    items = last.get("items") if isinstance(last.get("items"), list) else []
+    if not items or not all(isinstance(i, dict) for i in items):
+        return ["the AC record carries no readable items"]
+    out: list[str] = []
+    if all(i.get("kind") == "exempt" for i in items):
+        out.append(f"recorded as no observable change, but the diff changes observable behaviour ({', '.join(files[:4])}) - name the AC it restores, or add one")
+    catalog = load_catalog(root)["acs"]
+    out += [f"restores {i.get('restores_ac')}, which is not in the catalog - that is a catalog gap, so add the AC"
+            for i in items if i.get("kind") == "restore" and i.get("restores_ac") not in catalog]
+    specs = [f for f in git_changes(root, base, commit) if f.startswith(".shipwright/planning/") and f.endswith("/spec.md")]
+    changed, removed = changed_catalog(root, base, commit, specs)
+    out += [f"the frozen AC differs from the catalog - {d}" for d in freeze_differences(items, changed, removed)]
+    if len(records) > 1:
+        out.append(f"the AC record was superseded {len(records) - 1} time(s); first frozen: {records[0].get('items')!r}; now: {items!r}")
+    decisions = last.get("decisions")
+    if not isinstance(decisions, list) or count_decisions(decisions)["total"] != len(items):
+        out.append("the AC record has no usable decisions (one {ac, mode, answer, kind} per item)")
+    return out
+
+
 def check_pre_build_ac_recorded(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
     root = Path(project_root)
-    event = _work_event(root, run_id)
-    if event is None:
-        return _skip(f"no work_completed event for {run_id}")
-    intent = str(event.get("intent") or "").strip().lower()
-    if event.get("source") != "iterate" or intent not in _INTENTS:
-        return _skip(f"source={event.get('source') or 'unknown'}, intent={intent or 'unknown'}")
-    recorded = event.get("plan_path")
-    rel = recorded if isinstance(recorded, str) and recorded.strip() else plan_rel_path(run_id)
-    target = root / rel
-    if not safe_plan_path(rel) or not target.is_file():
-        return _warn(f"no plan stub to hold the pre-build AC ({rel}) - {_REPAIR}")
     try:
-        ac = parse_stub_ac(target.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        return _warn(f"{rel} is unreadable ({exc})")
-    if not ac["frozen"] or not ac["items"]:
-        return _warn(f"{rel} carries no 'AC frozen:' record - {_REPAIR}")
-    if not ac["hash_ok"]:
-        return _warn(f"the AC text in {rel} no longer matches its frozen hash (edited after the freeze, or unreadable) - re-run the decision and say why the text moved")
-    if len(ac["decisions"]) != len(ac["items"]) or not all(isinstance(d, dict) and d.get("mode") in ("auto", "asked") and d.get("ac") for d in ac["decisions"]):
-        return _warn(f"{rel} has no usable 'AC decisions:' line (one {{ac, mode: auto|asked, answer}} per item) - {_REPAIR}")
-    catalog = load_catalog_acs(root)
-    for item in ac["items"]:
-        if item.get("kind") == "exempt" and label_only(item.get("exempt_reason")):
-            return _warn(f"an exemption in {rel} gives a label, not an outcome - say what stays the same for users and operators")
-        if item.get("kind") == "restore" and item.get("restores_ac") not in catalog:
-            return _warn(f"{rel} restores {item.get('restores_ac')}, which is not in the catalog - that is a catalog gap, so add the AC")
-    return CheckResult(CHECK_NAME, True, "recorded")
+        event = _work_event(root, run_id)
+        if event is None:
+            return _skip(f"no work_completed event for {run_id}")
+        if event.get("source") != "iterate":
+            return _skip(f"source={event.get('source') or 'unknown'}")
+        base = _branch_base_commit(root, commit_hash) if commit_hash else None
+        if not base:
+            return _skip("branch not visible")
+        surface = observable_files(git_changes(root, base, commit_hash))
+        if not surface["observable"]:
+            return CheckResult(CHECK_NAME, True, f"no observable change (computed from the diff; {surface['ignored']} file(s) ignored)")
+        problems = _problems(root, run_id, surface["files"], base, commit_hash)
+    except Exception as exc:  # noqa: BLE001 - malformed record data must never turn F11 red
+        return _warn(f"the AC record could not be checked ({type(exc).__name__}: {exc})")
+    return _warn("; ".join(problems)) if problems else CheckResult(CHECK_NAME, True, "recorded")

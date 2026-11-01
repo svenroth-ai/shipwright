@@ -156,6 +156,8 @@ definition — a behavior-preserving simplify changes no FR; record the one-line
 NONE justification (FR-gate branch: `change_type = tooling`/`infra` only when the
 simplified code is non-FR framework/tooling code).
 
+
+**Pre-build AC.** A simplify's diff must stay non-observable: `tools/ac_decision.py` and F11 `check_pre_build_ac_recorded` compute from the diff whether behaviour changed (comment, whitespace and rename-only edits do not count). If it did, this is not a simplify: name the AC the change restores or add one.
 ---
 
 > Adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
