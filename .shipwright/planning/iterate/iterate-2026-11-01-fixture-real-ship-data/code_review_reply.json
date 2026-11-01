@@ -1,0 +1,8 @@
+{"stage": "code-review", "section": "iterate-2026-11-01-fixture-real-ship-data", "verdict": "PASS_WITH_FINDINGS", "review_type": "full-review", "review": [
+{"severity": "medium", "category": "correctness", "file": "brief.md", "finding": "Empty-text rule wording applies the first-sentence regex to the title; summary.py returns the whole title."},
+{"severity": "medium", "category": "correctness", "file": "brief.md", "finding": "Replay ignoring the source query (every item of an active kind is returned) is implicit; N=12 depends on it."},
+{"severity": "low", "category": "correctness", "file": "brief.md", "finding": "points field absent from the Recorded answer schema."},
+{"severity": "low", "category": "readability", "file": "brief.md", "finding": "Cut point wording ambiguous (0-/1-based)."},
+{"severity": "low", "category": "correctness", "file": "test_e2e_real_fixture.py", "finding": "Draft check and list-row loop can pass vacuously."},
+{"severity": "low", "category": "correctness", "file": "test_e2e_real_fixture.py", "finding": "Old-item oracle uses whole days and >=2; harness uses >14 days and spec says exactly 3."}
+]}

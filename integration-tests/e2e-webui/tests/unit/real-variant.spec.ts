@@ -214,6 +214,22 @@ test("S05 variant: only the adapter may name a service; the adapter must define 
   }
 });
 
+// @covers FR-01.06
+test("S05 variant: the recorded answers the package ships, copied to seed/recorded/ of a project, pass the check (12 valid, 4 per platform, 3 old)", () => {
+  const root = tmp();
+  try {
+    for (const f of ["syften.json", "apify_linkedin.json"]) write(root, `seed/recorded/${f}`, fs.readFileSync(path.join(real, "seed", "recorded", f), "utf8"));
+    write(root, "backend/sources/__init__.py", "def fetch_items(s):\n    return []\n");
+    write(root, "backend/server.py", "from sources import fetch_items\n");
+    expect(findRecorded(root)).toEqual({ perPlatform: { reddit: 4, hackernews: 4, linkedin: 4 }, total: 12, old: 3, missing: [] });
+    const l = list();
+    checkSelfContainedWithAdapter(root, l);
+    expect(verdict(l, "S05"), l.items.find((i) => i.id === "S05")!.evidence).toBe("pass");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 const stream = (...blocks: object[]) => blocks.map((content) => JSON.stringify({ type: "assistant", message: { content: [content] } })).join("\n");
 
 // @covers FR-01.06

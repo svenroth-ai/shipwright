@@ -147,3 +147,126 @@ def test_harness_selects_the_fixture_by_name_and_defaults_to_the_tabs_one():
     assert "activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture })" in spec and "variantFor(FIXTURE_NAME)" in spec
     env_ts = (SRC / "env.ts").read_text(encoding="utf-8")  # the env file is read like the other inputs (trg-cbf58cba)
     assert "SHIPWRIGHT_E2E_FIXTURE" in env_ts
+
+
+# --- the shipped recorded answers, the summary rule and the draft template (trg-5da1201c) -------------------------------
+
+_SENTENCE = re.compile(r"^(.+?[.!?])(?:\s|$)", re.S)
+_ANGLE = "Answer the question plainly, share what worked for us and ask what they tried."
+_DRAFT = 'Hi {author}, thanks for asking about "{title}". We ran into the same question. Happy to share what worked for us - what have you tried so far?'
+
+
+def _collapse(value) -> str:
+    return " ".join(value.split()) if isinstance(value, str) else ""
+
+
+def _shorten(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    cut = text.rfind(" ", 0, limit - 1)
+    return (text[:cut] if cut > 0 else text[: limit - 1]).rstrip() + "…"
+
+
+def _summarize(item: dict) -> dict:
+    """The rule of brief.md 'Read a thread', written out once more so the package text and the mockups are held to it."""
+    text = _collapse(item["text"])
+    if text:
+        m = _SENTENCE.match(text)
+        question = _shorten(m.group(1) if m else text, 300)
+    else:
+        question = _shorten(_collapse(item["title"]), 300)
+    joined = " ".join(t for t in (_collapse(c["text"]) for c in item["comments"]) if t)
+    return {"question": question, "others": _shorten(joined, 400) if joined else "No comments yet.", "angle": _ANGLE}
+
+
+def _recorded():
+    rec = FIXTURE / "seed" / "recorded"
+    syften = json.loads((rec / "syften.json").read_text(encoding="utf-8"))
+    apify = json.loads((rec / "apify_linkedin.json").read_text(encoding="utf-8"))
+    return syften, apify
+
+
+@pytest.mark.covers("FR-01.06")
+def test_shipped_recordings_are_valid_four_per_platform_with_old_items_and_no_real_hosts():
+    from datetime import datetime, timedelta  # noqa: PLC0415
+
+    syften, apify = _recorded()
+    stamps, per = [], {"reddit": 0, "hackernews": 0, "linkedin": 0}
+    urls = []
+    for rec in syften:
+        item = rec["item"]
+        assert {"item_url", "backend", "timestamp", "title", "author", "text", "comments"} <= set(item), rec["id"]
+        per[item["backend"]] += 1
+        stamps.append(datetime.fromisoformat(item["timestamp"].replace("Z", "+00:00")))
+        urls.append(item["item_url"])
+        for c in item["comments"]:
+            assert {"author", "text"} <= set(c) and 0 <= c["depth"] <= 2
+    for rec in apify:
+        assert {"id", "linkedinUrl", "author", "content", "postedAt", "comments"} <= set(rec), rec["id"]
+        assert rec["author"]["name"]
+        per["linkedin"] += 1
+        stamps.append(datetime.fromisoformat(rec["postedAt"]["date"].replace("Z", "+00:00")))
+        urls.append(rec["linkedinUrl"])
+        for c in rec["comments"]:
+            assert {"author", "text"} <= set(c) and 0 <= c["depth"] <= 2
+    assert per == {"reddit": 4, "hackernews": 4, "linkedin": 4}
+    assert all(s.tzinfo is not None for s in stamps)
+    newest = max(stamps)
+    assert sum(1 for s in stamps if newest - s > timedelta(days=14)) == 3
+    # the app expires a thread one day earlier (the replay shifts the newest item to 1 day old): no item may sit in that window
+    assert sum(1 for s in stamps if newest - s > timedelta(days=13)) == 3
+    assert len(set(urls)) == 12
+    assert all(re.match(r"https?://[^/]*\.example/", u) for u in urls), "recordings must use invented hosts"
+
+
+@pytest.mark.covers("FR-01.06")
+def test_brief_md_states_the_rule_the_angle_the_template_and_the_copy_of_the_recordings_verbatim():
+    brief = (FIXTURE / "brief.md").read_text(encoding="utf-8")
+    assert _ANGLE in brief and _DRAFT in brief
+    assert r"^(.+?[.!?])(?:\s|$)" in brief and "`No comments yet.`" in brief
+    assert "the build copies both byte for byte to `seed/recorded/` of the project it builds" in brief
+    assert "adds no further recorded data" in brief
+    syften, _ = _recorded()
+    thread = next(r["item"] for r in syften if r["item"]["author"] == "copper_fieldmouse")
+    assert _DRAFT.format(author=_collapse(thread["author"]), title=_collapse(thread["title"])) in brief, "named-thread fit criterion"
+    onboarding = next(r["item"] for r in syften if r["item"]["author"] == "quiet_lantern_42")
+    assert f"`{_summarize(onboarding)['question']}`" in brief
+
+
+@pytest.mark.covers("FR-01.06")
+def test_mockup_text_equals_what_the_shipped_recordings_the_rule_and_the_template_produce():
+    import html  # noqa: PLC0415
+
+    syften, _ = _recorded()
+    by_title = {r["item"]["title"]: r["item"] for r in syften}
+    checked = drafts = 0
+    for name in ("02-thread", "03-reply-draft", "04-thread-posted"):
+        text = html.unescape((FIXTURE / "mockups" / f"{name}.html").read_text(encoding="utf-8"))
+        title = re.search(r'<article class="card post">.*?<h2>(.*?)</h2>', text, re.S).group(1)
+        item = by_title[title]
+        s = _summarize(item)
+        assert re.findall(r"<dd>(.*?)</dd>", text) == [s["question"], s["others"], s["angle"]], name
+        assert re.search(r"<h2>.*?</h2><p>" + re.escape(item["text"]) + "</p>", text), name
+        n = item["points"]
+        assert f" · {n} point{'' if n == 1 else 's'} · " in text, name
+        shown = re.findall(r'<div class="comment(?: d(\d))?"><div class="meta">u/(.*?) · (\d+) points?</div>(.*?)</div>', text)
+        assert [(int(d or 0), a, int(pt), tx) for d, a, pt, tx in shown] == [(c["depth"], c["author"], c["points"], c["text"]) for c in item["comments"]], name
+        draft_cards = re.findall(r'<section class="card draft">.*?<p>(.*?)</p>', text, re.S)
+        assert len(draft_cards) == (1 if name == "03-reply-draft" else 0), name
+        for d in draft_cards:
+            assert d == _DRAFT.format(author=item["author"], title=item["title"]), name
+            drafts += 1
+        checked += 1
+    assert (checked, drafts) == (3, 1)
+    # The list on every screen is the same four recorded Reddit threads, in recorded order, with the same status labels.
+    order = [r["item"] for r in syften if r["item"]["backend"] == "reddit"]
+    expected = [(re.search(r"/r/([^/]+)/", i["item_url"]).group(1), i["author"], i["title"]) for i in order]
+    rows_by_screen = {}
+    for m in sorted((FIXTURE / "mockups").glob("*.html")):
+        text = html.unescape(m.read_text(encoding="utf-8"))
+        rows = re.findall(r'<div class="w"><span>r/(.*?)</span><span>u/(.*?)</span></div><div class="t">(.*?)</div><span class="badge badge-(\w+)">(\w+)</span>', text)
+        assert [r[:3] for r in rows] == expected, m.name
+        assert all(r[3] == r[4] for r in rows), m.name
+        rows_by_screen[m.name] = [r[3] for r in rows]
+    assert len(rows_by_screen) == 5
+    assert all(v == ["new", "drafted", "posted", "expired"] for v in rows_by_screen.values()), rows_by_screen

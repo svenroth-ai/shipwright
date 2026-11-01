@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-01-fixture-real-ship-data",
+  "date": "2026-11-01",
+  "section": "Iterate - change: social-engagement-real ships its recordings, summary rule and draft template",
+  "title": "The social-engagement-real package ships its recorded answers and states the summary rule and reply template",
+  "context": "The package only described the recorded answers, the summary rule and the draft template, so each build invented its own and the mockup text matched the built page only by chance.",
+  "decision": "The package ships seed/recorded/syften.json and apify_linkedin.json (12 items, 4 per platform, 3 old) that the build copies unchanged; brief.md states the rule, angle line and template verbatim with named-thread fit criteria; the build adds no further recorded data; tests recompute the mockup text; tolerance, metric, check and plugins are unchanged.",
+  "consequences": "The same package now yields the same twelve threads and the mockup text if the build copies the files; no harness item enforces the copy, so only the next real run proves it.",
+  "rationale": "Shipping the data removes the chance agreement between mockups and builds without touching the calibrated screenshot gate.",
+  "rejected": "Raising the 0.15 tolerance; a new hard answer-key item comparing the built project with the package (out of scope, left to the operator).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/iterate-2026-11-01-fixture-real-ship-data.md"
+}
