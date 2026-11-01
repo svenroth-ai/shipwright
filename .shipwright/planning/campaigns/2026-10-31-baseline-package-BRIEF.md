@@ -37,3 +37,6 @@ Diff-to-FR inference and any blocking gate on requirement changes (BP), splittin
 - "Requirement change" and WHAT versus HOW are judged by AI readers; the operator confirmed 10 of 10 labels, not the whole set. P4 therefore uses a second model family and a fresh operator sample.
 - P1 can turn into a ritual sentence. P4 is the test of that; if P4 fails its bars the campaign stops and reports.
 - Backfilled ACs can themselves drift to HOW; the P2 second reader and the operator's reading are the control.
+
+## 6. Outcome note (2026-11-01)
+P1, P2, P3 and P5 are merged. P4 was built and measured but is deliberately NOT merged (draft PR #964): the 25 percent noise bar (disagreement with the author) was not met (63 to 66 percent; 5 of a fresh 10), and the operator preferred to prevent the gap before the build. The successor is `2026-11-01-ac-at-start-BRIEF.md`; P4 may return later as a spot check on `none` declarations.
