@@ -31,23 +31,27 @@ for _p in (str(_SCRIPTS_ROOT), str(_SCRIPTS_ROOT / "lib"), str(_TOOLS)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from lib.ai_gap_check_core import (  # noqa: E402
-    PROMPT_VERSION,
-    SCHEMA,
-    _SECRET_PATH,
-    SYSTEM_PROMPT,
-    USER_TEMPLATE,
-    catalog_from_specs,
-    declaration_from_event,
-    parse_reply,
-    render_block,
-    render_not_run,
-    render_spec_context,
-    trim_diff,
-)
+try:
+    from lib.ai_gap_check_core import (  # noqa: E402
+        PROMPT_VERSION,
+        SCHEMA,
+        SYSTEM_PROMPT,
+        USER_TEMPLATE,
+        catalog_from_specs,
+        declaration_from_event,
+        parse_reply,
+        render_block,
+        render_not_run,
+        render_spec_context,
+        trim_diff,
+    )
+    _CORE_ERROR: Exception | None = None
+except Exception as _exc:  # noqa: BLE001 - a broken import must still end in a not_run record and exit 0
+    _CORE_ERROR = _exc
 
 REVIEWERS = ("openai", "glm")
-_SECRET_SHAPED = _SECRET_PATH
+DEFAULT_MAX_DIFF = 400_000
+MAX_PROMPT_CHARS = 700_000  # catalog + diff together
 
 
 def _event_for_run(project_root: Path, run_id: str) -> dict | None:
@@ -65,35 +69,38 @@ def _event_for_run(project_root: Path, run_id: str) -> dict | None:
 
 
 def working_tree_diff(root: Path, base_ref: str) -> str:
-    """Everything this branch changes since it left ``base_ref``: committed, staged, unstaged and new files.
+    """What this branch changes since it left ``base_ref``: committed, staged and unstaged changes of tracked files.
 
-    Untracked files are diffed against nothing (``git diff --no-index``) so the index is never touched.
+    Untracked files are never sent; stage the run's files first (``git add``, or ``git add -N`` for a new file).
+    Renames are shown as delete plus add so a credential file cannot hide behind a harmless new name.
     """
-    def git(*a: str, ok: tuple[int, ...] = (0,)) -> str:
-        out = subprocess.run(["git", "-C", str(root), "-c", "core.quotePath=false", *a], capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
-        if out.returncode not in ok:
+    def git(*a: str) -> str:
+        out = subprocess.run(["git", "-C", str(root), "-c", "core.quotePath=false", *a], capture_output=True, text=True,
+                             encoding="utf-8", errors="replace", check=False)
+        if out.returncode != 0:
             raise RuntimeError(f"git {a[0]} failed: {out.stderr.strip()[:200]}")
         return out.stdout
 
     base = git("merge-base", base_ref, "HEAD").strip()
-    parts = [git("diff", "--no-color", base)]
-    for name in git("ls-files", "-z", "--others", "--exclude-standard").split(chr(0)):
-        if name.strip() and not _SECRET_SHAPED.search(name):
-            parts.append(git("diff", "--no-color", "--no-index", "--", "/dev/null", name.strip(), ok=(0, 1)))
-    return "".join(parts)
+    return git("diff", "--no-color", "--no-renames", base)
 
 
 def run_check(diff_text: str, declaration: dict, spec_texts: list[str], reviewer: str, project_root: Path) -> dict:
     """The record for one check. Never raises: every failure is a ``not_run`` record."""
     record: dict = {"schema": SCHEMA, "prompt_version": PROMPT_VERSION, "status": "not_run", "reviewer": reviewer, "reason": ""}
     try:
-        diff, dropped, cut = trim_diff(diff_text)
-        if not diff.strip():
-            record["reason"] = "the diff holds nothing to check"
-            return record
         catalog = catalog_from_specs(spec_texts)
         if not catalog.strip():
             record["reason"] = "no requirement catalog (spec.md) was found"
+            return record
+        context = render_spec_context(declaration, catalog)
+        budget = MAX_PROMPT_CHARS - len(context)
+        if budget < 20_000:
+            record["reason"] = "the requirement catalog alone is too large to send"
+            return record
+        diff, dropped, cut, withheld = trim_diff(diff_text, min(budget, DEFAULT_MAX_DIFF))
+        if not diff.strip():
+            record["reason"] = "nothing to check: the diff is empty, or every file was too large or withheld"
             return record
         import external_review as er  # the shared review route; imported here so a broken import is a not_run note
         from external_review_config import load_review_config
@@ -116,8 +123,9 @@ def run_check(diff_text: str, declaration: dict, spec_texts: list[str], reviewer
         record["diff_chars"] = len(diff)
         record["records_left_out"] = len(dropped)
         record["files_cut"] = cut
+        record["files_withheld"] = withheld
         reply = er.review_with_openrouter(
-            diff, render_spec_context(declaration, catalog), SYSTEM_PROMPT, USER_TEMPLATE, config, reviewer,
+            diff, context, SYSTEM_PROMPT, USER_TEMPLATE, config, reviewer,
         )
         if reply.get("status") != "success":
             record["reason"] = f"{reply.get('status')}: {reply.get('reason') or 'no reply'}"
@@ -134,8 +142,22 @@ def run_check(diff_text: str, declaration: dict, spec_texts: list[str], reviewer
 
 def block_for(record: dict) -> str:
     if record.get("status") == "ran":
-        return render_block(record["result"], str(record.get("model") or ""), record.get("files_cut") or ())
+        return render_block(record["result"], str(record.get("model") or ""), [*(record.get("files_cut") or ()), *(record.get("files_withheld") or ())])
     return render_not_run(record.get("reason") or "unknown")
+
+
+def _fallback(args: argparse.Namespace, reason: str) -> int:
+    """The core module would not even import: still leave a not_run record and exit 0."""
+    note = "### Independent gap check\n\nNot run: " + " ".join(reason.split())[:200].replace("$", "S").replace(chr(34), "'") + ". Nothing was blocked.\n"
+    try:
+        out = Path(args.out_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "ai-gap-check.json").write_text(json.dumps({"schema": 1, "status": "not_run", "reason": reason[:300], "run_id": args.run_id}) + "\n", encoding="utf-8")
+        (out / "ai-gap-check.md").write_text(note, encoding="utf-8")
+    except OSError:
+        pass
+    print(note)
+    return 0
 
 
 def main() -> int:
@@ -151,6 +173,8 @@ def main() -> int:
     ap.add_argument("--driver", choices=("claude", "codex"), default="claude",
                     help="harness that wrote the change; codex never gets a GPT-family reviewer (not independent)")
     args = ap.parse_args()
+    if _CORE_ERROR is not None:
+        return _fallback(args, f"{type(_CORE_ERROR).__name__}: {_CORE_ERROR}")
     if hasattr(sys.stdout, "reconfigure"):  # a cp1252 pipe must not turn the block into a crash
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 

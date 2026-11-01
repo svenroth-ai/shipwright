@@ -4,9 +4,9 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 14940,
+      "passed": 14959,
       "skipped": 69,
-      "total": 15009
+      "total": 15028
     },
     "integration": {
       "status": "not_run"
@@ -79,9 +79,22 @@
       "surface": "cli",
       "runner": "uv run pytest shared/tests/test_ai_gap_check.py -q",
       "exit_code": 0,
-      "tests_run": 35,
+      "tests_run": 43,
       "evidence_path": ".shipwright/runs/iterate-2026-10-31-p4-ai-gap-check/surface_verification.log",
-      "timestamp": "2026-10-31T23:00:06Z"
+      "timestamp": "2026-11-01T00:41:59.111Z"
     }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
   }
 }

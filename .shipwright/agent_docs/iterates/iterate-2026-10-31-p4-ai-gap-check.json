@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-10-31-p4-ai-gap-check",
-  "date": "2026-10-31T23:13:39.677868Z",
+  "date": "2026-11-01T00:45:21.766018Z",
   "event_at": "2026-10-31T23:10:47.722299+00:00",
   "type": "change",
   "complexity": "medium",
@@ -64,9 +64,9 @@
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_ai_gap_check.py -q",
     "exit_code": 0,
-    "tests_run": 35,
+    "tests_run": 43,
     "evidence_path": ".shipwright/runs/iterate-2026-10-31-p4-ai-gap-check/surface_verification.log",
-    "timestamp": "2026-10-31T23:00:06Z"
+    "timestamp": "2026-11-01T00:41:59.111Z"
   },
   "declared_removals": [],
   "exemptions": {

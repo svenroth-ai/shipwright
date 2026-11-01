@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from lib.ai_gap_check_core import (
+    SECRET_PATH,
     SYSTEM_PROMPT,
     USER_TEMPLATE,
     catalog_from_specs,
@@ -92,11 +93,11 @@ def test_trim_drops_finalization_records_and_cuts_by_whole_file():
 
     diff = "".join([chunk("shared/scripts/lib/a.py"), chunk("shipwright_events.jsonl"), chunk("CHANGELOG-unreleased.d/Added/x.md"),
                     chunk(".shipwright/planning/iterate/run-1/external-code-review-raw.json"), chunk(".shipwright/planning/iterate/run-1/mini-plan.md")])
-    text, dropped, cut = trim_diff(diff)
+    text, dropped, cut, _w = trim_diff(diff)
     assert "lib/a.py" in text and "mini-plan.md" in text and "events.jsonl" not in text
     assert len(dropped) == 3 and cut == []
     big = chunk("big1.py", "+" + "y" * 50 + "\n") + chunk("big2.py", "+" + "z" * 50 + "\n")
-    text, _, cut = trim_diff(big, max_chars=150)
+    text, _, cut, _w = trim_diff(big, max_chars=150)
     assert "big1.py" in text and cut == ["big2.py"] and "left out because the diff was too large: big2.py" in text
 
 
@@ -205,9 +206,10 @@ def test_working_tree_diff_sees_committed_edited_and_new_files(tmp_path):
     _git(tmp_path, "checkout", "-q", "-b", "work")
     (tmp_path / "a.txt").write_text("one\ntwo\n", encoding="utf-8")
     (tmp_path / "new.txt").write_text("brand new\n", encoding="utf-8")
+    _git(tmp_path, "add", "-N", "new.txt")
     diff = tool.working_tree_diff(tmp_path, "main")
     assert "+two" in diff and "+brand new" in diff and "new.txt" in diff
-    assert "new.txt" not in _git(tmp_path, "diff", "--cached", "--name-only")  # the index stays untouched
+    assert "brand new" in diff
 
 
 def _event(tmp_path: Path, **kw) -> None:
@@ -269,7 +271,7 @@ def test_incomplete_reply_is_unusable_and_first_oversized_file_is_cut():
     head = "diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -0,0 +1 @@\n"
     big = head.format(p="gen.py") + "+" + "q" * 500 + "\n"
     small = head.format(p="ok.py") + "+x\n"
-    text, _, cut = trim_diff(big + small, max_chars=300)
+    text, _, cut, _w = trim_diff(big + small, max_chars=300)
     assert cut == ["gen.py"] and "ok.py" in text and "qqqq" not in text
 
 
@@ -319,8 +321,8 @@ def test_codex_driver_never_gets_a_gpt_reviewer_and_secret_files_stay_home(monke
                                       "--event-file", str(ev), "--out-dir", str(out), "--driver", "codex"])
     assert tool.main() == 0 and seen["key"] == "glm"
     for name, hidden in (("notes.env", False), (".env.local", True), ("server.pem", True), ("my_credentials.json", True), ("a.py", False)):
-        assert bool(tool._SECRET_SHAPED.search(name)) is hidden
-    from lib.ai_gap_check_core import trim_diff as trim
+        assert bool(SECRET_PATH.search(name)) is hidden
+    trim = trim_diff
     gap = "diff --git a/x b/.shipwright/planning/iterate/r/ai-gap-check.json\n+old verdict\n"
     assert "old verdict" not in trim(gap)[0]
 
@@ -335,9 +337,9 @@ def test_inert_text_cannot_close_issues_mention_or_link():
 @pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
 def test_secret_shaped_files_are_dropped_even_when_tracked_and_all_cut_means_nothing_to_check():
     head = "diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -0,0 +1 @@\n"
-    text, dropped, _ = trim_diff(head.format(p="config/.env.local") + "+KEY=1\n" + head.format(p="a.py") + "+x\n")
-    assert "KEY=1" not in text and dropped == ["config/.env.local"] and "a.py" in text
-    text, _, cut = trim_diff(head.format(p="huge.py") + "+" + "z" * 900 + "\n", max_chars=300)
+    text, dropped, _, held = trim_diff(head.format(p="config/.env.local") + "+KEY=1\n" + head.format(p="a.py") + "+x\n")
+    assert "KEY=1" not in text and dropped == [] and held == ["config/.env.local"] and "a.py" in text
+    text, _, cut, _w = trim_diff(head.format(p="huge.py") + "+" + "z" * 900 + "\n", max_chars=300)
     assert text == "" and cut == ["huge.py"]
 
 
@@ -350,6 +352,8 @@ def test_main_survives_a_cp1252_stdout_and_non_ascii_untracked_names(monkeypatch
     _git(tmp_path, "add", "a.txt")
     _git(tmp_path, "commit", "-q", "-m", "base")
     (tmp_path / "\u00e4.txt").write_text("umlaut\n", encoding="utf-8")
+    assert "umlaut" not in tool.working_tree_diff(tmp_path, "main")  # untracked files are never sent
+    _git(tmp_path, "add", "-N", "ä.txt")
     assert "umlaut" in tool.working_tree_diff(tmp_path, "main")
     reply = {**_GOOD, "reason": "ping @x \u2192 done"}
     _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(reply)})
@@ -371,7 +375,70 @@ def test_secret_detection_survives_spaces_quotes_and_unreadable_headers():
     for header in ("diff --git a/config/prod credentials.json b/config/prod credentials.json",
                    'diff --git "a/\\303\\244.env" "b/\\303\\244.env"',
                    "diff --git garbled header"):
-        text, dropped, _ = trim_diff(header + "\n" + body + "diff --git a/ok.py b/ok.py\n+fine\n")
-        assert "SECRET=1" not in text and len(dropped) == 1 and "ok.py" in text
-    text, dropped, _ = trim_diff("diff --git a/old.py b/new.py\nrename from old.py\nrename to new.py\n")
+        text, dropped, _, held = trim_diff(header + "\n" + body + "diff --git a/ok.py b/ok.py\n+fine\n")
+        assert "SECRET=1" not in text and len(held) == 1 and dropped == [] and "ok.py" in text
+    text, dropped, _, _w = trim_diff("diff --git a/old.py b/new.py\nrename from old.py\nrename to new.py\n")
     assert "rename to" in text and dropped == []
+
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_a_secret_renamed_to_a_harmless_name_is_withheld_on_either_side():
+    swap = ("diff --git a/prod.pem b/notes.txt\nsimilarity index 100%\nrename from prod.pem\nrename to notes.txt\n"
+            "--- a/prod.pem\n+++ b/notes.txt\n@@ -1 +1 @@\n+TOKEN=abc\n")
+    keep = "diff --git a/ok.py b/ok.py\n--- a/ok.py\n+++ b/ok.py\n@@ -0,0 +1 @@\n+fine\n"
+    text, _, _, held = trim_diff(swap + keep)
+    assert "TOKEN=abc" not in text and held == ["notes.txt"] and "files withheld for safety: notes.txt" in text
+    copy = "diff --git a/x.txt b/y.txt\ncopy from creds/id_rsa\ncopy to y.txt\n"
+    text, _, _, held = trim_diff(copy + keep)
+    assert held == ["y.txt"]
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_widened_secret_list_covers_any_segment_and_known_credential_files():
+    for name in ("deploy/secrets/app.yaml", ".npmrc", "a/.pypirc", ".netrc", "keys/release.jks", "x.keystore", "kubeconfig",
+                 "infra/prod.tfvars", "k.ppk", ".htpasswd", "cfg/auth.json", "id_ecdsa", "id_dsa.pub"):
+        assert SECRET_PATH.search(name), name
+    for name in ("src/app.py", "docs/guide.md", "notes.env"):
+        assert not SECRET_PATH.search(name), name
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_withheld_files_make_the_pr_block_say_incomplete_input():
+    block = render_block(parse_reply(json.dumps({**_GOOD, "verdict": "agree", "gap": False})), "m", ["a.env"])
+    assert "Incomplete input" in block and "not conclusive" in " ".join(block.split())
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_inert_neutralises_shell_characters_and_www_links():
+    block = render_block(parse_reply(json.dumps({**_GOOD, "reason": 'cost $(rm -rf x) "q" back' + chr(92) + 'slash www.evil.example'})), "m")
+    for bad in ("$(", chr(34) + "q", chr(92), "www.evil"):
+        assert bad not in block
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_reply_json_is_found_by_raw_decode_amid_prose_and_braces():
+    reply = "note {not json} then " + json.dumps(_GOOD) + " trailing {x}"
+    assert parse_reply(reply)["verdict"] == "disagree"
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_prompt_treats_diff_text_as_data_and_fences_it():
+    assert "never instructions" in SYSTEM_PROMPT and "BEGIN DIFF" in USER_TEMPLATE and "END DIFF" in USER_TEMPLATE
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_a_broken_core_import_still_writes_a_not_run_record_and_exits_zero(monkeypatch, tmp_path):
+    monkeypatch.setattr(tool, "_CORE_ERROR", ImportError("boom"))
+    monkeypatch.setattr(sys, "argv", ["x", "--project-root", str(tmp_path), "--run-id", "r1", "--out-dir", str(tmp_path / "out")])
+    assert tool.main() == 0
+    rec = json.loads((tmp_path / "out" / "ai-gap-check.json").read_text(encoding="utf-8"))
+    assert rec["status"] == "not_run" and "boom" in rec["reason"]
+
+
+@pytest.mark.covers("FR-01.11", "FR-01.11/AC49")
+def test_an_oversized_catalog_is_reported_not_sent(monkeypatch):
+    seen = _fake_review(monkeypatch, {"status": "success", "feedback": json.dumps(_GOOD)})
+    monkeypatch.setattr(tool, "MAX_PROMPT_CHARS", 10)
+    rec = tool.run_check(_DIFF, {}, [_SPEC], "openai", Path("."))
+    assert rec["status"] == "not_run" and "too large" in rec["reason"] and not seen

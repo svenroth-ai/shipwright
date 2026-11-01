@@ -45,7 +45,7 @@ def merge_commit(root: Path, pr: int) -> str:
 
 
 def pr_diff(root: Path, merge: str) -> str:
-    return _run(["git", "diff", "--no-color", f"{merge}^1", merge], root)
+    return _run(["git", "diff", "--no-color", "--no-renames", f"{merge}^1", merge], root)
 
 
 def specs_before(root: Path, merge: str) -> list[str]:

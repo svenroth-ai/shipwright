@@ -1,0 +1,789 @@
+{
+ "model": "openai/gpt-6.1-sol",
+ "prompts": {
+  "v1": 1,
+  "v2": 2,
+  "v2b": 2,
+  "v3": 3
+ },
+ "note": "v3 only on the 12 known-miss and control PRs",
+ "prs": {
+  "837": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This is not behaviour-preserving: operators can now record standard reasons, and finishing rejects malformed exemption records. No existing criterion describes the new exemption validation or the exemption counts now required in delivery reports."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes operator-visible behaviour: malformed exemption records can block finishing, and delivery summaries must show exemption counts. No existing acceptance criterion describes that validation or reporting, so declaring no specification impact misses a catalog gap."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This is not behaviour-preserving: operators now see exemption totals, and malformed exemption records prevent finishing. No existing criterion describes exemption accounting, its validation, or its display in delivery summaries."
+   }
+  },
+  "839": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change alters when commits are blocked, adds a configurable coverage baseline, and warns when coverage cannot be measured, so declaring no specification impact misses observable behaviour. FR-01.10 describes compliance evidence and audits, but none of its acceptance criteria describes this commi"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change alters when commits are stopped, adds a configurable coverage baseline, and warns when coverage cannot be measured, so declaring no specification impact is incorrect. FR-01.10 is the nearest requirement, but none of its acceptance criteria describes this commit-time coverage gate."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes when users are blocked from committing, adds coverage warnings, and lets projects lower the threshold through a recorded baseline, so declaring no impact is incorrect. FR-01.10 is the nearest requirement, but none of its acceptance criteria describes this commit-time gate."
+   }
+  },
+  "842": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Finishing can now be refused for small changes that previously passed, so this is an observable change rather than no specification impact. The catalog covers scaled review and recorded skip reasons, but does not describe the risk-or-100-line trigger, its counting exclusions, or the restricted reaso"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes when operators can finish a small change, so declaring no specification impact is incorrect. No existing criterion defines the risk-or-more-than-100-lines review gate, its accepted skip reasons, or its treatment of unknown inputs."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes product behaviour: finishing certain small changes is now refused unless code review has evidence or an accepted reason for not running. The catalog covers scaled reviews and recorded skips, but does not describe the risk-or-more-than-100-lines trigger, its counting exclusions, or how u"
+   }
+  },
+  "843": {
+   "label": "NEW",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change switches the default automatic reviewer from OpenAI to Anthropic, an operator-visible choice rather than behavior-preserving maintenance. The catalog requires automatic review but has no criterion describing its default model or provider."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change switches the model used by the project's own automated pull-request review tooling. This is repository upkeep, with no demonstrated change to product behaviour for users or operators."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change switches the default model in the product's review tool, not just in this repository's automation. The catalog covers automatic review but does not describe the default reviewer model or how it is selected."
+   },
+   "v3": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff changes the model used by the repository's own automatic pull-request review and updates its supporting tests and records. This is upkeep of internal review tooling, not a change to product behaviour that requires a catalog declaration."
+   }
+  },
+  "848": {
+   "label": "NONE",
+   "set": "ctrl",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Operators will now receive automatic weekly update proposals for CI actions, grouped by update type and delayed seven days; no existing criterion describes that behaviour. The change also re-enables a security rule previously suppressed, so declaring no requirement impact misses a security-policy ch"
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change activates dependency-update proposals and tightens a security check only for the productâ€™s own repository, with related test and record upkeep. It does not change what the product does for its users, so declaring no catalog impact is appropriate."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change enables dependency-update requests and adjusts security-check settings only for the product's own repository, with related test and record upkeep. It does not change what the product does for its users or operators, so declaring no catalog impact is appropriate."
+   },
+   "v3": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change adjusts this repository's dependency-update bot and security-check settings, with matching test and record upkeep. It does not change what the product does for its users, so declaring no requirements impact is appropriate."
+   }
+  },
+  "855": {
+   "label": "NONE",
+   "set": "ctrl",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff only makes two tests tolerate newer automation versions and adds requirement labels to those tests. It does not change the product or the automation that actually runs, so declaring no requirement impact is appropriate."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff only relaxes version expectations in the repository's own tests and adds requirement labels to those tests. It does not change what the product does for its users or operators, so declaring no specification impact is appropriate."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff only relaxes version expectations in the repository's own tests and adds requirement labels to them. It does not change what the product does for users or operators, so declaring no catalog impact is appropriate."
+   },
+   "v3": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change only relaxes version expectations in the repository's own tests and adds requirement labels to those tests. It does not change what the product does for users or operators."
+   }
+  },
+  "859": {
+   "label": "IMPLEMENT_RESTORE/NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The shipped safety protection changes which commands operators can run, allowing harmless commands previously blocked and retaining checks when its usual interpreter is unavailable. No existing acceptance criterion describes these command-blocking rules, so this is a catalog gap rather than a toolin"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The shipped safety hook changes which user commands are allowed, including keeping protection active when its interpreter is unavailable, so this is not internal tooling only. No existing acceptance criterion describes its force-push restrictions or fallback behavior."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes a shipped safety guard: harmless commands are allowed, force pushes targeting protected branches are blocked more precisely, and protection remains active when its interpreter is unavailable. These are observable changes for operators, not repository upkeep, and no existing acceptance c"
+   }
+  },
+  "866": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes observable behaviour: commits that previously escaped the coverage check can now be blocked based on their staged coverage results, so declaring no impact is incorrect. No existing acceptance criterion describes commit-time coverage enforcement or its one-use override behaviour."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The added check governs commits to the product's own repository and is not installed for projects that use the product. This is repository upkeep rather than a change to product behaviour, so declaring no catalog impact is reasonable."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The added check governs commits to the product's own repository, rather than changing behavior delivered to managed projects. The override hand-off supports that repository check, so this is internal upkeep and does not require a catalog change."
+   }
+  },
+  "869": {
+   "label": "NEW",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes the product's review workflow and restores review-record guarantees, so declaring no requirement impact is incorrect. No existing criterion describes when a campaign may skip a second review based on earlier results and whether the reviewed work has changed."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes the product's campaign review behavior, including honoring the chosen reviewer model and preserving review replies, so declaring no requirement impact is incorrect. No existing criterion describes the new rule allowing a second review to be skipped when earlier passing reviews are verif"
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes the product's campaign review workflow, including configured reviewer choices and preservation of review replies, so declaring no requirement impact is incorrect. No existing criterion describes when a recorded review is current enough to skip the additional review."
+   },
+   "v3": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This changes the campaign workflow operators use, including honoring their reviewer model choice and preserving review replies, so declaring no requirement impact is incorrect. No existing criterion describes when a verified earlier review may replace the additional campaign review."
+   }
+  },
+  "871": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "agree",
+    "gap": true,
+    "reason": "The declaration correctly assigns the new autonomous stop protection to FR-01.11, and the diff adds the promised criterion. No existing catalog criterion describes this protection or its early-stop exceptions."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": true,
+    "reason": "The declaration correctly identifies the autonomous stop protection and adds a criterion under the right requirement. The supplied catalog has no existing criterion describing that protection, its recorded-blocker escape, or its bounded release."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": true,
+    "reason": "The declaration correctly identifies the new protection that keeps hands-off changes running and places it under the change workflow. No existing catalog criterion describes preventing early stops or the permitted escape conditions; the proposed new criterion addresses that gap."
+   }
+  },
+  "883": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The named requirements cover profile-aware operation, but refusing preview for projects without a web server adds an unstated exception to the preview promise. Ending a run without deployment when no target is configured also needs explicit acceptance criteria rather than a declaration that the cata"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The profile-aware fixes fit the named requirements, but refusing previews for non-web projects narrows the existing preview promise and needs an explicit criterion. Completing a pipeline when deployment is disabled also introduces an observable outcome that no existing criterion describes."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The named requirements cover the profile-aware fixes, but this is not entirely a restoration of existing promises. The catalog needs to describe the new no-preview outcome for built projects without a web server and completion without deployment when no hosting target is selected."
+   }
+  },
+  "884": {
+   "label": "NEW",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Build now requests outside code review by default after its internal reviews unless the operator switches it off, changing when project code is sent to an outside provider. No existing build acceptance criterion describes this default or its opt-out, so this is a catalog gap rather than a behavior-p"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Build now requests an outside code review by default unless the operator switches it off, changing when project code is sent to an outside provider. This is product behaviour, not internal tooling upkeep, and no existing build acceptance criterion describes that default or its opt-out."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Build now requests an outside code review by default and sends the change to external providers unless disabled, which changes what operators can expect. No existing build acceptance criterion describes this default, its opt-out, or the external review step, so this is a catalog gap rather than tool"
+   },
+   "v3": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Build now requests an outside code review by default unless the project opts out, potentially sending code changes to a third party. This changes operator-visible behavior, and no existing build acceptance criterion describes that review default or its opt-out."
+   }
+  },
+  "886": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Automatic promotion now leaves adopted requirements' testing expectations advisory and reports them as skipped, while other requirements can still be promoted. No existing acceptance criterion describes this exemption, so the declaration misses a catalog gap."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change prevents automatic promotion of test obligations for adopted requirements and reports a named skip instead, which operators can observe. No existing acceptance criterion describes this advisory-only policy, so restoring an intended rule does not justify declaring no catalog impact."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change stops automatic promotion of test-layer expectations for adopted requirements, including in users' projects, so it is not behaviour-preserving maintenance. No existing acceptance criterion describes this exemption or requires those expectations to remain inferred."
+   }
+  },
+  "887": {
+   "label": "CHANGE",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Removing automatic pull-request review changes an observable protection for newly onboarded projects, so this is not tooling-only. FR-01.17.AC03 describes that protection and does not limit it to the framework's own repository; review during the change workflow does not replace automatic review on t"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Onboarding now stops providing automatic review on the code host, which is an observable product change, not internal repository upkeep. FR-01.17.AC03 already describes that behaviour and does not limit its promise to Shipwright's own repository."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Removing automatic pull-request review from newly onboarded projects changes behavior users receive, not just internal tooling. The catalog already promises automatic code-host review and does not limit that promise to Shipwright's own repository."
+   },
+   "v3": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Removing automatic host review from newly adopted repositories changes product behaviour covered by the catalog. That promise is not limited to the product's own repository, and review during the change workflow does not replace review on the host."
+   }
+  },
+  "891": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change stops replaced, cancelled checks from being reported as failures while retaining genuine failures and cancellations with no newer replacement. The declaration names the existing requirement covering actionable inbox entries, so this is a restoration of covered behaviour rather than a cata"
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change stops reporting superseded cancelled checks as failures. The declaration names the existing requirement covering actionable imports and correctly describes this as restoring its promised behaviour."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change stops obsolete cancelled checks from producing false failure reports while retaining genuine failures. The declaration names the existing requirement and criterion covering actionable imports, so no catalog gap is evident."
+   }
+  },
+  "892": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores the specified working-copy protection for adopted projects and lets their change workflow proceed. The declaration names the relevant requirement and explains the restoration; no uncovered behavior is introduced."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores the existing worktree protection for adopted projects and aligns their eligibility for the change workflow. The declaration names the relevant requirement, and its acceptance criteria already describe the protection."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores working-copy protection for adopted projects and allows their change workflow to proceed. The declaration names the relevant requirement and explains the restoration; existing criteria cover the behavior."
+   }
+  },
+  "897": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Operators can already resolve, list and validate stack profiles, with project profiles taking priority and broken selections reported rather than replaced. These are observable capabilities even before other phases use them, and no existing acceptance criterion describes their selection and validati"
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Operators can now list, resolve and validate stack profiles, with project-over-home-over-bundled priority and explicit errors for broken profiles. These are usable new behaviours even before phases adopt them, and no existing acceptance criterion describes them."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Operators can now list, locate and validate custom stack profiles, even though existing phases do not use them yet, so this is not only internal tooling. No existing acceptance criterion describes profile lookup priority or rejection of broken profiles, and the new versioned output also touches the "
+   }
+  },
+  "900": {
+   "label": "NONE",
+   "set": "ctrl",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff reorganizes existing logic while preserving its decisions, outputs and public entry points. The added tests, documentation and bookkeeping do not introduce observable product behaviour."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff reorganizes existing logic without changing user-visible decisions, results, or workflows. The added tests, documentation updates, and repository bookkeeping introduce no new product behaviour."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff reorganizes existing logic without changing observable outcomes or completion rules. The added tests, documentation updates and repository housekeeping introduce no new product behaviour."
+   },
+   "v3": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff reorganizes existing logic while preserving its decisions, outputs and entry points. The accompanying tests, documentation and repository upkeep add no observable product behavior."
+   }
+  },
+  "908": {
+   "label": "NONE",
+   "set": "ctrl",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change strengthens internal test guards, isolates test environments, and updates planning records and comments. It does not change behavior available to users or operators, so declaring no requirement impact is appropriate."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change strengthens the product's own test guards, isolates test environments, and updates internal records and comments. It does not change behavior for users or operators, so declaring no requirement impact is appropriate."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change strengthens the product repository's own tests and updates internal review records and comments. It does not change what users or operators can do or observe in the product, so declaring no requirements impact is appropriate."
+   },
+   "v3": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change strengthens internal repository checks, isolates test environments, and updates planning records and comments. It does not change what the product does for users or operators."
+   }
+  },
+  "910": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change makes project setup save its settings where later commands and completion checks can find them, so it is not behaviour-preserving. No existing acceptance criterion describes saving project settings so subsequent steps can read them."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change makes project setup save its settings where later commands and completion checks can find them, so it is an observable fix rather than an unaffected catalog. No existing acceptance criterion describes saving project settings so subsequent steps can read them."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Project setup now saves its settings where later commands can find them, fixing cases where completed setup was reported as missing. This changes observable behaviour, but no existing criterion describes saving project settings so subsequent commands can read them."
+   },
+   "v3": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Project setup now saves its settings where later commands can find them and recognize setup as complete, which changes observable behavior even though it is a bug fix. No existing acceptance criterion describes saving project settings so subsequent commands can read them."
+   }
+  },
+  "911": {
+   "label": "NONE",
+   "set": "ctrl",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff only initializes a local value before the existing retry loop and shows no change to what users or operators experience. Declaring no requirement impact is appropriate."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff only initializes a local variable before the existing retry loop; it does not change the loop or how its result is used. No observable behavior change or catalog gap is evident."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change only gives a variable an initial value before an existing retry loop. The diff shows no change to what users or operators can observe."
+   },
+   "v3": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff only initializes a local value before the existing retry loop; it does not change the loop or any user-visible outcome. Declaring no requirements impact is consistent with this change."
+   }
+  },
+  "913": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores completion of a blocked pipeline under the requirement the author named, without changing its promised behavior. The completion status is also kept consistent for the operator, and no uncovered capability is introduced."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores completion of the pipeline under the requirement the author named, and keeps the displayed run status consistent. The declaration identifies that requirement and explains why its existing criteria need no text change."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff restores run completion under the requirement the author named, while preserving the record of deliberately skipped work. The declaration identifies the affected requirement and explains why its existing criteria need no text change."
+   }
+  },
+  "914": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "This fix changes observable audit evidence: tests with bracketed parameter values are no longer incorrectly shown as never run. That restores existing requirement-to-test evidence behavior, so the declaration should name the requirement rather than say none."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "The fix changes evidence readers see: parameterized tests with brackets in their values are now recognized as executed rather than not run. This restores existing requirement-coverage behavior, so the declaration should name the requirement rather than say none."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "The fix changes observable audit evidence: tests with bracketed parameter values can now be recognized as executed rather than not run. This restores existing requirement-to-test evidence behavior, so the declaration should name the requirement it checked instead of claiming no impact."
+   },
+   "v3": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "The fix changes reported evidence: tests with brackets in their parameter values are now recognized as executed rather than not run. This restores existing requirement-to-test evidence behavior, so declaring no requirement impact misses FR-01.10."
+   }
+  },
+  "918": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Profile validation now rejects non-text values for these two settings, even though no loader reads them yet, so the change is not behavior-preserving. No existing acceptance criterion describes which values stack profile settings must accept or reject."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff declares optional settings and checks their types, but shows no change to how the product uses profiles. The documentation and tests do not establish any new user or operator behaviour."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff declares optional metadata and checks its schema, but does not show any product operation reading the new settings or changing its behavior. The documentation and test changes do not establish a user-visible capability or a catalog gap."
+   }
+  },
+  "919": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This adds a usable stack choice and changes how its projects are created, tested and previewed, so declaring no impact is incorrect. Existing criteria cover testing and preview, but none describes offering a bundled chat-first setup with local JSON storage and a served pane."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This adds a usable built-in stack and changes how its projects are created, tested and previewed, so declaring no behavioural impact is incorrect. Existing criteria cover testing and preview, but none describes selecting this stack and creating its chat-and-pane application shell with local-only sto"
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Adding a usable built-in stack changes how people set up, test and preview projects, even when existing projects behave as before. Preview and testing have existing criteria, but none describes the new stack-specific application scaffolding supplied during project setup."
+   }
+  },
+  "920": {
+   "label": "CHANGE",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "An optional way to supply requirements and bypass the interview is observable new behavior, not a behavior-preserving change. No existing criterion describes package approval rules or refusing to continue when the supplied package changes."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This adds a user-visible package intake mode and replaces the project interview, so declaring no specification impact is incorrect even though two requirements are named. No existing criterion describes package approval rules or refusing to continue when the recorded package changes."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "This adds an observable package-based setup path and replaces the required shared interview method, so declaring no specification impact is incorrect. No existing criterion describes the new approval rules or refusal to continue when the approved package changes."
+   }
+  },
+  "921": {
+   "label": "NEW",
+   "set": "miss",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "These fixes affect whether browser checks actually run against the application, so the declaration should name the requirements they restore. The new rule that a profile's address overrides project and environment settings is observable but is not described by any existing acceptance criterion."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "The change repairs user-visible browser testing on Windows and changes which application address verification uses. Existing criteria cover these capabilities, so the declaration should name the requirements checked even though their promises remain unchanged."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "The change restores browser testing and verification that users rely on, so it should name the existing requirements it supports rather than declare no impact. Those capabilities are already covered by the catalog; no new gap is apparent."
+   },
+   "v3": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "This changes product behaviour: browser checks can start on Windows and check the correct running application. Restoring existing promises still requires naming the requirements checked, rather than declaring no impact."
+   }
+  },
+  "923": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change lets a brief's named stack override automatic selection and stops intake when that choice cannot be used, so it is not behavior-preserving. Although the declaration names the relevant requirement, none of its acceptance criteria describes stack selection, precedence, or refusal."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change lets a brief's named stack profile override the automatic choice and stops intake when that name cannot be used, so it is not behavior-preserving. FR-01.01 is the right area, but no existing criterion describes profile selection, precedence, or refusal."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change lets a brief's named stack override the inferred choice and stops intake when that choice cannot be used, so it is not behaviour-preserving. FR-01.01 is the right area, but no existing criterion describes profile selection, precedence or refusal."
+   }
+  },
+  "924": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change adds chat-first flow generation and completion checks, so declaring it behavior-preserving is incorrect even though it names the right requirement. No existing criterion describes the new rule rejecting navigation-styled chips, which applies to all designs, not just chat-first ones."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Naming the design requirement is appropriate, but claiming no impact is not: the change adds chat journey mockups and new reasons to refuse a design. No existing acceptance criterion describes the new prohibition on using chips as navigation, which applies beyond the opt-in chat path."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change adds chat-first design outputs and completion checks, so declaring no catalog impact is incorrect even though Design is named. Existing criteria cover screens and flows, but none describes the new rule that rejects chips used as navigation, which applies to all designs."
+   }
+  },
+  "925": {
+   "label": "CHANGE",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Brief-package projects now cannot complete testing without a passing screenshot comparison, so this is not behaviour-preserving despite naming the relevant requirement. Existing criteria cover mockup comparisons and stopping a phase that fails its checks."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Although the declaration names the right requirement, this is not behaviour-preserving: projects using an approved Brief package now face a blocking screenshot check. Existing criteria cover mockup comparisons and stopping phases that fail their checks, so there is no catalog gap."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": false,
+    "reason": "Although the declaration names the relevant test requirement, calling this behaviour-preserving is incorrect: Brief-package projects now cannot finish testing without a passing screenshot check. Existing criteria cover mockup comparisons and preventing completion when a phase fails its checks."
+   }
+  },
+  "933": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The checks now recognize completed archived sections and avoid false oversized-decision warnings, so declaring no impact misses observable changes. Naming the requirements does not close the catalog gap: no existing acceptance criterion describes decision-size checking."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The completion check now recognises archived finished sections, and the audit no longer counts unrelated sections toward a decision's size. These change results operators see; naming the requirements does not address the catalog gap, because no acceptance criterion describes decision-size checks."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change alters results operators see: archived completed sections now count as finished, and unrelated decision-log sections no longer trigger oversized-decision warnings. Naming the requirements does not justify declaring no impact: no existing acceptance criterion describes the decision-size ch"
+   }
+  },
+  "934": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores access to compliance updates and shared grading in installed environments. Although it declares no catalog edits, it names the existing requirements whose behaviour it repairs."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The declaration names the restored capabilities, but misses a catalog gap: installed security scans can now refresh compliance reports automatically. Existing criteria require scan findings to be available as evidence, but none describes that automatic post-scan refresh."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Installed security scans can now trigger the compliance refresh that previously failed. No existing acceptance criterion requires that refresh after a security scan, so the declaration misses a catalog gap."
+   }
+  },
+  "935": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change prevents a failed release-event recording from proceeding to a push and removes an early push when releasing directly on main. No existing criterion describes these release safeguards, so naming the release requirement without declaring a catalog gap is incomplete."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change alters release behaviour by stopping after a recording failure and withholding the main-branch push until the version tag is pushed. FR-01.09 is the right requirement, but no existing criterion describes these safeguards, so the declaration misses a catalog gap."
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The release workflow now stops when recording its completion fails and avoids pushing main before the release tag is ready. The declaration names the right requirement, but no existing acceptance criterion describes these release safeguards, so declaring no catalog impact misses a gap."
+   }
+  },
+  "936": {
+   "label": "NEW",
+   "set": "other",
+   "v1": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "Naming the design requirement is appropriate, but calling this behaviour-preserving misses changes to the mockups people see and use. Existing criteria cover reusable design tokens, but not the added readability, visible keyboard focus and reduced-motion behaviour."
+   },
+   "v2": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change alters the appearance and accessibility of generated mockups, so declaring no behavioural impact is inaccurate even though FR-01.04 is named. Reusable design tokens are already covered, but no existing criterion describes the added visible keyboard focus, reduced-motion support or minimum"
+   },
+   "v2b": {
+    "verdict": "disagree",
+    "gap": true,
+    "reason": "The change alters the appearance of generated mockups and adds visible keyboard focus and reduced-motion support, so it is not behaviour-preserving. Although FR-01.04 covers reusable design tokens, no existing criterion describes these accessibility behaviours."
+   }
+  },
+  "937": {
+   "label": "IMPLEMENT_RESTORE",
+   "set": "other",
+   "v1": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The diff restores the existing version-number promise, and the declaration names the requirement it checks. No new acceptance criterion is needed."
+   },
+   "v2": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores the existing version-number rule, and the declaration explicitly names the requirement it repairs. No new acceptance criterion is needed."
+   },
+   "v2b": {
+    "verdict": "agree",
+    "gap": false,
+    "reason": "The change restores the version-number behavior already promised by the catalog, and the declaration explicitly identifies that requirement. No new acceptance criterion is needed."
+   }
+  }
+ },
+ "fresh": {
+  "814": {
+   "verdict": "agree",
+   "gap": false,
+   "reason": "The diff only updates an internal test to accommodate different versions of its supporting tool. It changes no behaviour for product users or operators, so no requirement impact needs to be named."
+  },
+  "818": {
+   "verdict": "disagree",
+   "gap": false,
+   "reason": "The declaration correctly identifies the advisory audit fix, but misses its effect on triage. Making the finding advisory also removes it from the triage card, contrary to the promise that every audit finding is available in the Triage Inbox."
+  },
+  "836": {
+   "verdict": "agree",
+   "gap": false,
+   "reason": "The change adds planning documents describing proposed hardening work, but does not implement new gates or alter product behaviour. Declaring no catalog impact is appropriate for this diff."
+  },
+  "844": {
+   "verdict": "disagree",
+   "gap": true,
+   "reason": "Naming FR-01.11 is appropriate, but declaring no impact misses new operator-visible rules. Existing criteria require recording missed reviews and their reasons, but do not describe requiring captured failure evidence, announcing missed reviews in the delivery request and run summary, or creating a r"
+  },
+  "845": {
+   "verdict": "agree",
+   "gap": false,
+   "reason": "The declaration correctly identifies the change-workflow requirement. The diff updates its criteria to cover fixes, fixed-list reasons, checks against the actual changes, and refusal when requirement references cannot be verified."
+  },
+  "863": {
+   "verdict": "agree",
+   "gap": false,
+   "reason": "The change closes ways that added or edited tests could escape the requirement-tag check, which belongs to the declared requirement. The existing criteria cover this behavior, and the clarification makes the newly handled cases explicit."
+  },
+  "879": {
+   "verdict": "disagree",
+   "gap": true,
+   "reason": "This is not only a restoration: separate finding cards and their stored details change existing promises about grouping and permitted content. No criterion describes bypassing the import waiting period when a newer security scan becomes available."
+  },
+  "905": {
+   "verdict": "disagree",
+   "gap": true,
+   "reason": "The change adds an interview choice for custom stack descriptions and changes how setup finds and validates them, so it is not behavior-preserving or confined to testing. No existing acceptance criterion describes offering those choices or stopping when an explicit choice is unusable."
+  },
+  "915": {
+   "verdict": "disagree",
+   "gap": true,
+   "reason": "Advisory requirements with ambiguous test evidence now skip promotion instead of asking for an operator decision, which is an observable change. No existing acceptance criterion describes this exception, so declaring no impact misses a catalog gap."
+  },
+  "960": {
+   "verdict": "agree",
+   "gap": false,
+   "reason": "The diff edits requirement wording and titles and adjusts internal ownership bookkeeping and tests. It does not change how the product behaves for users or operators, so declaring no behavioral impact is appropriate."
+  }
+ }
+}

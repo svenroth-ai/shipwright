@@ -5,9 +5,9 @@
   "title": "Advisory non-Claude gap check, never blocking",
   "context": "The author is not the only judge of a wrong none; about 15 to 20 of 100 PRs record no requirement affected while adding behaviour no criterion describes. Architecture review: both external and the internal reviewer approved option 1.",
   "decision": "One advisory call to GPT through the external-review OpenRouter route reads diff, catalog ACs and the declaration and writes a PR-body block (changed, checked, agree/disagree, gap yes/no); a failure records not_run with its reason; F11 only warns when no record exists.",
-  "consequences": "Every iterate carries a visible second opinion; the verdict is never a gate. Measured: flags 6-7 of 7 misses, 0 of 5 controls, 21-24 percent mismatch vs labels; the operator fresh-10 bar is pending.",
+  "consequences": "Visible second opinion on every iterate, never a gate. Measured: 6-7 of 7 misses, 0 of 5 controls (v1: 1). Vs the author 63-71 pct disagree: the brief's 25 pct bar is NOT met (fresh 10: 5 disagree); vs labels 15-24 pct. Open for the operator: which bar reading counts; prompt v1 (better on labels) or v2 (fixes #848, regressed #843/#866); fresh-10 sheet pending.",
   "rationale": "Reusing the shared route keeps key check, pinned models and retries; advisory because nothing may newly block a PR.",
-  "rejected": "A blocking check or required PR check; a new provider client; showing the block only on disagree (not measured); adding a prompt-injection rule after the prompt was measured.",
+  "rejected": "A blocking check or required PR check; a new provider client; showing the block only on disagree (not measured); a prompt-injection rule was first rejected, then added as prompt v3 (safety only).",
   "commit": "",
   "architecture_impact": "convention",
   "spec_ref": ""
