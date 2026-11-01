@@ -1,0 +1,117 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-01-q1-pre-build-ac",
+    "date": "2026-11-01",
+    "unit": {
+      "status": "passed",
+      "passed": 17078,
+      "skipped": 89,
+      "total": 17167
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 642,
+      "skipped": 0,
+      "total": 642
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "integration: test_devops_flow.py::TestDeployValidation::test_validate_with_token fails identically on main (pre-existing), not counted"
+    ],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "lexical HOW test flags path, snake_case, flag, ADR number, slug, number with unit, GET/POST and passes plain outcome sentences",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_how_test_flags_each_shape PASSED; test_how_test_passes_plain_outcome_sentences PASSED"
+        },
+        {
+          "behavior": "ask/auto table: first matching row wins (rows 1-4, else auto)",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_table_first_matching_row_wins PASSED"
+        },
+        {
+          "behavior": "question wording, removal variant, three answers; question sentence must be plain",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_removal_variant_and_three_answers_in_the_question PASSED; test_question_sentence_must_be_plain PASSED"
+        },
+        {
+          "behavior": "a restore must name an AC in the catalog, else catalog gap",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_restore_must_name_an_ac_in_the_catalog PASSED"
+        },
+        {
+          "behavior": "exemption by label refused; by outcome auto; how-only asks",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_exemption_by_label_is_refused PASSED; test_exemption_by_outcome_is_auto_and_how_only_asks PASSED"
+        },
+        {
+          "behavior": "operator answers close a question and are recorded; frozen hash stable and sees edits",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_answers_close_the_question_and_are_recorded PASSED; test_frozen_hash_is_stable_and_sees_a_text_edit PASSED"
+        },
+        {
+          "behavior": "CLI exit codes 0/10/2 and autonomous escalation, validated against the runner schema",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_cli_exit_codes_and_autonomous_escalation PASSED; test_escalation_matches_the_runner_contract_schema PASSED"
+        },
+        {
+          "behavior": "plan stub carries the frozen record; undecided declaration refused; stub round-trips",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_write_plan_stub_carries_the_frozen_record_and_refuses_an_undecided_one PASSED; test_stub_lines_round_trip_and_detect_an_edit PASSED"
+        },
+        {
+          "behavior": "answers are validated and follow the original operation; a made-up answer cannot bypass a question",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_answers_are_validated_and_follow_the_original_operation PASSED"
+        },
+        {
+          "behavior": "old_text must equal the catalog text of the AC (a fragment is refused)",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_old_text_must_match_the_catalog_text PASSED"
+        },
+        {
+          "behavior": "F11 pre-build AC check warns (never errors) on missing/edited/label-only/unknown-restore, skips other intents, registered",
+          "disposition": "tested",
+          "evidence": "test_ac_decision.py::test_check_warns_never_errors_on_a_missing_edited_or_label_record PASSED; test_check_skips_other_intents_and_is_registered PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac_self.json",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-01-q1-pre-build-ac/surface_verification.log",
+      "timestamp": "2026-11-01T17:00:00Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category: dependency \u2014 Severity: high**\n**Finding:** The ask/auto table's actual content is nowhere in the plan. The acceptance criteria hinge on \"first matching row wins\" behavior beating the old Step 2 text by \u22653 PRs, but the plan lists files and mechanisms without specifying where the table rows come from or who authors them. If the table is invented during the build, the replay measure is measuring an unreviewed artifact and a failed measure stops the whole campaign.\n**Suggestion:** Add the table (or its source section in the brief) explicitly to the mini-plan, or gate the build on drafting it first, so the review can evaluate the rows before code exists.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Spec says \"Replay on the 16 baseline PRs\"; the plan's measure says \"replay of 25 baseline PRs.\" This mismatch will make the pass/fail measure ambiguous at gate time \u2014 25 vs 16 changes whether \"beats by at least 3\" is achievable or trivial.\n**Suggestion:** Pick one number and reconcile with the brief's baseline-package outcome note before building.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Freeze-by-hash is mentioned but the verification path isn't. Nothing in the plan says *when* the hash is checked (post-build? at merge? at review?), so a drifted AC text between freeze and delivery may go undetected \u2014 the freeze becomes decoration rather than enforcement.\n**Suggestion:** Specify the point at which the frozen text is re-verified against the hash (the pre_build_ac_check / F11 hook is the natural place) and what happens on mismatch.\n\n**Category: risk \u2014 Severity: medium**\n**Finding:** Exit codes 0/10/2 for the CLI with \"autonomous escalation\" and a runner `reason_code` are three interacting stop conditions, but no test cases for the interaction (e.g., exit 10 in autonomous mode vs. interactive mode, partial table match plus invalid input). A wrong exit path could silently skip the AC gate or wedge the runner.\n**Suggestion:** Enumerate the state matrix (match/no-match/autonomous/interactive \u00d7 ask/auto rows) as explicit test cases in the plan.\n\n**Category: approach \u2014 Severity: low**\n**Finding:** The exemption path (\"exemption by outcome\") is one clause with no worked example. Outcomes in a campaign brief can be heterogeneous; a single lexical HOW test plus one exemption slot risks forcing ill-fitting units into fake AC text to satisfy the gate.\n**Suggestion:** Include one example of a legitimate exemption in the plan or tests so builders and reviewers apply the same bar.\n\n**Category: risk \u2014 Severity: low**\n**Finding:** \"Prose changes... net-zero lines\" across five documents (path-a, path-b, runner, F5b, hooks-and-pipeline) is a wide blast zone for a unit that claims tight scope. Each doc edit risks conflicting with AC47/AC48 which are explicitly frozen.\n**Suggestion:** Keep AC49 additions isolated under FR-01.11 as planned and verify no other FR section is touched in the same commit.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** \"The operator finds the question clear on 10 recorded cases\" is subjective with no rubric; if the measure fails, the campaign stops and there's no defined remediation loop for question phrasing.\n**Suggestion:** Define what \"clear\" means minimally (e.g., operator answers without re-reading, or picks a row unambiguously) so the gate is decidable.\n\n## Overall Assessment\n\nThe mechanism design is sound and well-scoped, but the plan is a file list rather than an implementation plan: the table content, hash verification point, and the 16-vs-25 PR discrepancy must be resolved before building, since the campaign-level gate depends on them.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency | Severity: high**  \n   **Finding:** The measurement plan specifies 25 baseline PRs, while the acceptance criterion names 16 PRs and separate denominators of 12 demand cases and 11 other cases. It also omits the explicit control comparison and pass thresholds. As written, the measurement cannot establish acceptance unambiguously.  \n   **Suggestion:** Reconcile the cohorts against the brief\u2019s baseline-package outcome note. Specify the four-class mapping, control replay, scoring denominators, and all thresholds, including operator clarity on 10 recorded cases.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** Recording a hash and adding an advisory F11 check does not establish that AC text is frozen before building. The plan does not state where build entry requires a completed `ac_decisions` record or how subsequent text changes are detected.  \n   **Suggestion:** Identify the existing build entry point that validates the decision and frozen text before proceeding. Cover missing decisions, mismatched hashes, old/new catalog text, outcome exemptions, and restore IDs through that mechanism; no new PR check is needed.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** \u201cLexical HOW test, table\u201d leaves the central decision behavior underspecified. The acceptance criteria require first-match precedence and the plain-language question in both FEATURE and CHANGE paths; neither integration nor precedence is explicit in the plan.  \n   **Suggestion:** Specify that both paths use the brief\u2019s ordered table and question wording. Test overlapping matches and exemption/restore outcomes so a lexical match cannot override an earlier applicable row.\n\n4. **Category: risk | Severity: high**  \n   **Finding:** CLI exit codes and a new runner reason code do not by themselves guarantee that autonomous execution stops. The plan also places measurement in a post-merge report without explicitly preventing the next campaign unit from starting after a failed measure.  \n   **Suggestion:** State how the runner consumes exit code 10, persists the question, and prevents build continuation. Define the campaign stop on failed measurement and explicitly retain Sonnet for builds and Opus for every review.\n\nThe direction is reasonable, but freeze enforcement and the acceptance measurement need concrete integration details before implementation. Repository reads were blocked by the environment, so this review is based on the supplied specification and mini-plan; the binding brief\u2019s contents remain unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-01-q1-pre-build-ac",
+    "at": "2026-11-01T14:45:58.147955+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

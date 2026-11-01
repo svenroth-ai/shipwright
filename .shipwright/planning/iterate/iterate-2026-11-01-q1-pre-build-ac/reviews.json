@@ -1,0 +1,308 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-q1-pre-build-ac",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:23:26.434438+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The ask/auto table's actual content is nowhere in the plan. The acceptance criteria hinge on \"first matching row wins\" behavior beating the old Step 2 text by ≥3 PRs, but the plan lists files and mechanisms without specifying where the table rows come from or who authors them. If the table is invented during the build, the replay measure is measuring an unreviewed artifact and a failed measure stops the whole campaign.",
+          "suggestion": "Add the table (or its source section in the brief) explicitly to the mini-plan, or gate the build on drafting it first, so the review can evaluate the rows before code exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Spec says \"Replay on the 16 baseline PRs\"; the plan's measure says \"replay of 25 baseline PRs.\" This mismatch will make the pass/fail measure ambiguous at gate time — 25 vs 16 changes whether \"beats by at least 3\" is achievable or trivial.",
+          "suggestion": "Pick one number and reconcile with the brief's baseline-package outcome note before building.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Freeze-by-hash is mentioned but the verification path isn't. Nothing in the plan says when the hash is checked (post-build? at merge? at review?), so a drifted AC text between freeze and delivery may go undetected — the freeze becomes decoration rather than enforcement.",
+          "suggestion": "Specify the point at which the frozen text is re-verified against the hash (the pre_build_ac_check / F11 hook is the natural place) and what happens on mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Exit codes 0/10/2 for the CLI with \"autonomous escalation\" and a runner `reason_code` are three interacting stop conditions, but no test cases for the interaction (e.g., exit 10 in autonomous mode vs. interactive mode, partial table match plus invalid input). A wrong exit path could silently skip the AC gate or wedge the runner.",
+          "suggestion": "Enumerate the state matrix (match/no-match/autonomous/interactive × ask/auto rows) as explicit test cases in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The exemption path (\"exemption by outcome\") is one clause with no worked example. Outcomes in a campaign brief can be heterogeneous; a single lexical HOW test plus one exemption slot risks forcing ill-fitting units into fake AC text to satisfy the gate.",
+          "suggestion": "Include one example of a legitimate exemption in the plan or tests so builders and reviewers apply the same bar.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Prose changes... net-zero lines\" across five documents (path-a, path-b, runner, F5b, hooks-and-pipeline) is a wide blast zone for a unit that claims tight scope. Each doc edit risks conflicting with AC47/AC48 which are explicitly frozen.",
+          "suggestion": "Keep AC49 additions isolated under FR-01.11 as planned and verify no other FR section is touched in the same commit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"The operator finds the question clear on 10 recorded cases\" is subjective with no rubric; if the measure fails, the campaign stops and there's no defined remediation loop for question phrasing.",
+          "suggestion": "Define what \"clear\" means minimally (e.g., operator answers without re-reading, or picks a row unambiguously) so the gate is decidable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The measurement plan specifies 25 baseline PRs, while the acceptance criterion names 16 PRs and separate denominators of 12 demand cases and 11 other cases. It also omits the explicit control comparison and pass thresholds. As written, the measurement cannot establish acceptance unambiguously.",
+          "suggestion": "Reconcile the cohorts against the brief’s baseline-package outcome note. Specify the four-class mapping, control replay, scoring denominators, and all thresholds, including operator clarity on 10 recorded cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Recording a hash and adding an advisory F11 check does not establish that AC text is frozen before building. The plan does not state where build entry requires a completed `ac_decisions` record or how subsequent text changes are detected.",
+          "suggestion": "Identify the existing build entry point that validates the decision and frozen text before proceeding. Cover missing decisions, mismatched hashes, old/new catalog text, outcome exemptions, and restore IDs through that mechanism; no new PR check is needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Lexical HOW test, table” leaves the central decision behavior underspecified. The acceptance criteria require first-match precedence and the plain-language question in both FEATURE and CHANGE paths; neither integration nor precedence is explicit in the plan.",
+          "suggestion": "Specify that both paths use the brief’s ordered table and question wording. Test overlapping matches and exemption/restore outcomes so a lexical match cannot override an earlier applicable row.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "CLI exit codes and a new runner reason code do not by themselves guarantee that autonomous execution stops. The plan also places measurement in a post-merge report without explicitly preventing the next campaign unit from starting after a failed measure.",
+          "suggestion": "State how the runner consumes exit code 10, persists the question, and prevents build continuation. Define the campaign stop on failed measurement and explicitly retain Sonnet for builds and Opus for every review.  The direction is reasonable, but freeze enforcement and the acceptance measurement need concrete integration details before implementation. Repository reads were blocked by the environment, so this review is based on the supplied specification and mini-plan; the binding brief’s contents remain unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-01T15:23:26.563130+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: dependency — Severity: high**\n**Finding:** The ask/auto table's actual content is nowhere in the plan. The acceptance criteria hinge on \"first matching row wins\" behavior beating the old Step 2 text by ≥3 PRs, but the plan lists files and mechanisms without specifying where the table rows come from or who authors them. If the table is invented during the build, the replay measure is measuring an unreviewed artifact and a failed measure stops the whole campaign.\n**Suggestion:** Add the table (or its source section in the brief) explicitly to the mini-plan, or gate the build on drafting it first, so the review can evaluate the rows before code exists.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Spec says \"Replay on the 16 baseline PRs\"; the plan's measure says \"replay of 25 baseline PRs.\" This mismatch will make the pass/fail measure ambiguous at gate time — 25 vs 16 changes whether \"beats by at least 3\" is achievable or trivial.\n**Suggestion:** Pick one number and reconcile with the brief's baseline-package outcome note before building.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Freeze-by-hash is mentioned but the verification path isn't. Nothing in the plan says *when* the hash is checked (post-build? at merge? at review?), so a drifted AC text between freeze and delivery may go undetected — the freeze becomes decoration rather than enforcement.\n**Suggestion:** Specify the point at which the frozen text is re-verified against the hash (the pre_build_ac_check / F11 hook is the natural place) and what happens on mismatch.\n\n**Category: risk — Severity: medium**\n**Finding:** Exit codes 0/10/2 for the CLI with \"autonomous escalation\" and a runner `reason_code` are three interacting stop conditions, but no test cases for the interaction (e.g., exit 10 in autonomous mode vs. interactive mode, partial table match plus invalid input). A wrong exit path could silently skip the AC gate or wedge the runner. […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** The measurement plan specifies 25 baseline PRs, while the acceptance criterion names 16 PRs and separate denominators of 12 demand cases and 11 other cases. It also omits the explicit control comparison and pass thresholds. As written, the measurement cannot establish acceptance unambiguously.  \n   **Suggestion:** Reconcile the cohorts against the brief’s baseline-package outcome note. Specify the four-class mapping, control replay, scoring denominators, and all thresholds, including operator clarity on 10 recorded cases.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** Recording a hash and adding an advisory F11 check does not establish that AC text is frozen before building. The plan does not state where build entry requires a completed `ac_decisions` record or how subsequent text changes are detected.  \n   **Suggestion:** Identify the existing build entry point that validates the decision and frozen text before proceeding. Cover missing decisions, mismatched hashes, old/new catalog text, outcome exemptions, and restore IDs through that mechanism; no new PR check is needed.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** “Lexical HOW test, table” leaves the central decision behavior underspecified. The acceptance criteria require first-match precedence and the plain-language question in both FEATURE and CHANGE paths; neither integration nor precedence is explicit in the plan.  \n   **Suggestion:** Specify that both paths use the brief’s ordered table and question wording. Test overlapping matches and exemption/restore outcomes so a lexical match cannot override an earlier applicable row.\n\n4. **Category: risk | Severity: high**  \n   **Finding:** CLI exit codes and a new runner reason code do not by themselves guarantee that autonomous execution stops. The plan also places measurement in a post-merge report without explicitly preventing the next campaign unit fro […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:23:27.218576+00:00",
+      "disposition": "the orchestrator runs the Opus code and doubt review itself after the runner returns (task brief); delegated to 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:23:27.392626+00:00",
+      "disposition": "the orchestrator runs the Opus code and doubt review itself after the runner returns (task brief); delegated to 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "entire diff (no replay tooling present)",
+          "line": null,
+          "finding": "The unit's AC requires \"Replay on the 16 baseline PRs classifies them into the four classes … beats the current Step 2 text replayed as a control by at least 3 PRs, misses at most 1 of 12 demand cases and flags at most 1 of the 11 other cases\" and \"the operator finds the question clear on 10 recorded cases.\" The diff contains no replay harness, no recorded baseline classification, no control comparison, and no recorded operator-clarity cases. Compare with the precedent in this codebase: `tools/affected_acs_replay.py` was shipped alongside its rule. The decision logic may be fine, but the campaign's measurement gate — which the scope says \"a failed measure stops the campaign\" — has nothing to measure against.",
+          "suggestion": "Add a replay tool that runs `decide`'s table over the 16 baseline PR declarations, records the four-class classification vs the Step 2 control, and commit the recorded outcome plus the 10 operator-clarity cases (or point to where they are recorded).  2. `test_check_warns…` label and restore branches are not actually exercised",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ac_decision.py (`test_check_warns_never_errors_on_a_missing_edited_or_label_record`)",
+          "line": null,
+          "finding": "The label-exemption and restore-not-in-catalog cases are constructed by tampering with an already-frozen stub (`text.replace(...)`), which breaks the frozen hash first. `check_pre_build_ac_recorded` returns the hash-mismatch warning before reaching the label/restore branches, so both assertions pass even if `label_only` detection or the restore-catalog lookup were deleted. Only `severity == \"warning\"` is asserted — the detail string is not.",
+          "suggestion": "Build those stubs by re-running `decide`/`stub_lines` with the bad item directly (no tampering, so the hash is valid), and assert on the specific warning detail text (\"label\", \"catalog gap\") so each branch is pinned.  3. Tamper-detection in `parse_stub_ac` round-trips only `_frozen_fields`; extra fields in the stub are invisible",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ac_decision.py (`parse_stub_ac` / `frozen_hash`)",
+          "line": null,
+          "finding": "hash_ok` is computed over `_frozen_fields` of the parsed items. Any promise-relevant content the schema later adds outside those eight keys (e.g. a future `answer` citation or a note line inside the stub body between `AC item:` lines) is not covered by the freeze, so an edit that changes what the stub says to a reader can still verify as `hash_ok`. Also `_frozen_fields` drops empty values, so changing a field from a non-empty value to empty is detected, but changing one empty-optional to another empty-optional is not — acceptable, but worth noting the freeze is narrower than \"the text.\"",
+          "suggestion": "Document the frozen field set in the stub format, or hash the raw `AC item:` line bytes verbatim rather than the re-canonicalized subset.  4. `old_text` catalog match is a case-insensitive substring test",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/ac_decision.py, `_check",
+          "line": null,
+          "finding": "_norm(item.get(\"old_text\")).lower() not in catalog[ac].lower()` accepts any substring: an `old_text` of `\"given\"` or even `\"a\"` validates against most AC texts. The spec's intent (\"old and new for a change\", copied exactly) is only loosely enforced, and the test only covers a prefix. Not a security hole (the check is advisory and the question is asked anyway for change/remove), but the guard is much weaker than the error message claims (\"copy it exactly\").",
+          "suggestion": "Compare normalized full strings with an explicit near-match allowance, or at minimum require the normalized `old_text` to equal the normalized catalog text after whitespace/case folding.  5. `how-only` exemption after a \"no\" answer can re-ask forever without guidance",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ac_decision.py, `_resolve` / `_row",
+          "line": null,
+          "finding": "When the operator answers \"no, it is a promise\" to a `how-only` exemption, `_resolve` promotes the item to `kind: add` with the operator's text. If the original exempt item carried no `owner_fr` (the usual case), row 2 fires and the tool asks again — a different question, but the docs don't tell the agent/operator this two-step is expected, and an `owner_fr`-less promotion under `--autonomous` escalates again rather than converging. The loop is not infinite, but the interaction is undocumented.",
+          "suggestion": "Either require `owner_fr` on a `how-only` exemption up front (so a \"no\" resolves in one round), or note in `path-a-feature.md` step 3 that a \"no\" on an exemption is followed by an owner question.  6. `decide` computes decisions for items even when other items are invalid — but only conditionally",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/ac_decision.py, `decide",
+          "line": null,
+          "finding": "The loop `if errors and not it.get(\"kind\"): continue` skips only kindless items when errors exist; items with a valid kind still get `ac_decisions` entries computed and question-sentence HOW errors appended mid-loop before the final `invalid` return. The output is discarded (status `invalid`), so behavior is correct, but the question-sentence errors are appended after the initial `errors` list was already used for the skip decision — a non-dict or kindless item earlier in the list combined with a HOW-tripping question later still lands in `invalid`, which is fine. No user-visible defect; noting only that the interleaving is fragile if `errors` is ever checked before the loop again.",
+          "suggestion": "None required; optionally restructure so validation completes before decision-building.  7. Cross-module private import",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/tools/verifiers/pre_build_ac_check.py",
+          "line": null,
+          "finding": "from .affected_acs_check import _work_event` depends on a private helper of another check; if `affected_acs_check` refactors `_work_event`, this check breaks silently at import time (tests would catch it, but F11 runs in prod). Also the docs row says \"Not a PR check\" while the check is appended to `CLAIM_CHECKS` in `_finalization_claims.py` — verify that list is only invoked from the F11 iterate-local path and not the PR-side gate, or the \"no new PR check\" scope constraint is violated.",
+          "suggestion": "Move `_work_event` to `common` (or a shared helper) and confirm `run_claim_checks` is not wired into the PR pipeline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/tests/test_ac_decision.py",
+          "line": 1,
+          "finding": "The tests cover synthetic declarations, but provide neither the required 16-PR baseline replay against the current Step 2 control nor the operator’s assessment of 10 recorded questions. The classification, improvement, miss-rate, false-positive, and clarity acceptance criteria remain unverified.",
+          "suggestion": "Add the baseline replay and record its results against all specified thresholds. Record the operator’s clarity assessment before treating Q1 as complete or starting the next unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/ac_decision.py",
+          "line": 181,
+          "finding": "The old-text validation accepts any case-insensitive substring of the catalog AC. A declaration can freeze only a fragment, omitting important conditions or guarantees, while claiming to record the exact existing promise. The new test explicitly accepts this truncation.",
+          "suggestion": "Compare the complete normalized AC wording for equality, consistently excluding catalog markup if needed. Add a test rejecting a proper substring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/pre_build_ac_check.py",
+          "line": 72,
+          "finding": "The verifier returns success without checking either the parsed `AC decisions:` record or the event’s `ac_decisions`. Removing the decisions line from an otherwise valid stub still passes because the hash excludes decisions, leaving missing audit records undetected.",
+          "suggestion": "Warn when the stub or event lacks the required decision list, and validate that each frozen item has a corresponding decision with the required fields.  Ship-with-fixes: the core workflow is implemented, but exact-text validation and decision-record auditing need correction, and the required campaign measurements remain unproven. Execution checks were unavailable because the environment rejected the read command.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-01T15:23:26.732960+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Missing acceptance criterion: baseline replay and measurement**\n- Category: spec\n- Severity: high\n- File: entire diff (no replay tooling present)\n- Finding: The unit's AC requires \"Replay on the 16 baseline PRs classifies them into the four classes … beats the current Step 2 text replayed as a control by at least 3 PRs, misses at most 1 of 12 demand cases and flags at most 1 of the 11 other cases\" and \"the operator finds the question clear on 10 recorded cases.\" The diff contains no replay harness, no recorded baseline classification, no control comparison, and no recorded operator-clarity cases. Compare with the precedent in this codebase: `tools/affected_acs_replay.py` was shipped alongside its rule. The decision logic may be fine, but the campaign's measurement gate — which the scope says \"a failed measure stops the campaign\" — has nothing to measure against.\n- Suggestion: Add a replay tool that runs `decide`'s table over the 16 baseline PR declarations, records the four-class classification vs the Step 2 control, and commit the recorded outcome plus the 10 operator-clarity cases (or point to where they are recorded).\n\n**2. `test_check_warns…` label and restore branches are not actually exercised**\n- Category: test\n- Severity: medium\n- File: shared/tests/test_ac_decision.py (`test_check_warns_never_errors_on_a_missing_edited_or_label_record`)\n- Finding: The label-exemption and restore-not-in-catalog cases are constructed by tampering with an already-frozen stub (`text.replace(...)`), which breaks the frozen hash first. `check_pre_build_ac_recorded` returns the *hash-mismatch* warning before reaching the label/restore branches, so both assertions pass even if `label_only` detection or the restore-catalog lookup were deleted. Only `severity == \"warning\"` is asserted — the detail string is not.\n- Suggestion: Build those stubs by re-running `decide`/`stub_lines` with the bad item directly (no tampering, so the hash is valid), and assert […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: shared/tests/test_ac_decision.py:1\n- Finding: The tests cover synthetic declarations, but provide neither the required 16-PR baseline replay against the current Step 2 control nor the operator’s assessment of 10 recorded questions. The classification, improvement, miss-rate, false-positive, and clarity acceptance criteria remain unverified.\n- Suggestion: Add the baseline replay and record its results against all specified thresholds. Record the operator’s clarity assessment before treating Q1 as complete or starting the next unit.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/ac_decision.py:181\n- Finding: The old-text validation accepts any case-insensitive substring of the catalog AC. A declaration can freeze only a fragment, omitting important conditions or guarantees, while claiming to record the exact existing promise. The new test explicitly accepts this truncation.\n- Suggestion: Compare the complete normalized AC wording for equality, consistently excluding catalog markup if needed. Add a test rejecting a proper substring.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/pre_build_ac_check.py:72\n- Finding: The verifier returns success without checking either the parsed `AC decisions:` record or the event’s `ac_decisions`. Removing the decisions line from an otherwise valid stub still passes because the hash excludes decisions, leaving missing audit records undetected.\n- Suggestion: Warn when the stub or event lacks the required decision list, and validate that each frozen item has a corresponding decision with the required fields.\n\nShip-with-fixes: the core workflow is implemented, but exact-text validation and decision-record auditing need correction, and the required campaign measurements remain unproven. Execution checks were unavailable because the environment rejected the read command.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:23:27.076438+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "9d54d3dcb9aa324574b3325af41eb3324aca2b85"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:23:27.574299+00:00",
+      "disposition": "the runner's spawn guard allows opus-plan-reviewer three spawns per runner and all three were used for the blind replay classifiers",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:23:27.756126+00:00",
+      "disposition": "internal architecture arm not spawned; external architecture review ran (glm approve, openai revise, no reject)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

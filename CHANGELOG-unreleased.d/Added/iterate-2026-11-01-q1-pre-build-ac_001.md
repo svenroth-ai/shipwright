@@ -1,0 +1,1 @@
+feat(iterate): a feature or change records what it promises (or why nothing observable changes) before it is built, with a fixed ask-or-decide table and a frozen text; an unattended run that would have to ask stops that unit

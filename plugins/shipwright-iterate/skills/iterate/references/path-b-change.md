@@ -88,6 +88,10 @@ differences:
      one-line justification and a closed reason code, passed to F7 as
      `--spec-impact none --spec-impact-justification "..."
      --spec-impact-reason-code behavior-preserving` (F5b: same keys).
+2a. **Step 2a (Pre-build AC) applies identically** (`references/path-a-feature.md`): before any code, declare
+   per promise the exact AC text — for a CHANGE usually `change` with the old and the new text, or `remove` — an
+   exemption by outcome, or the AC a restore restores; run `ac_decision.py`; an existing AC that changes or goes
+   away always asks. Never exempt by path label, tier, or the words bug, trivial, tooling.
 3. **NONE must be *justified*, not assumed.** The Phase Matrix marks this
    step `always` for CHANGE — that is load-bearing. Scope size is a
    reason the update is *small*, not a reason to skip it. The F11

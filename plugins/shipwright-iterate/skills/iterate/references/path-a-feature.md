@@ -35,6 +35,9 @@ this template:
 - [ ] {AC from interview — concrete, testable}
 - [ ] {AC 2}
 
+**Frozen pre-build record (Step 2a):** `AC frozen: sha256:{hash}` (copied from the plan stub) and the exact
+AC text added or changed (old and new for a change), the outcome exemption, or the AC id a restore restores.
+
 ## Spec Impact
 {Classify how this iterate changes the FR spec — see Step 2.}
 - **Classification:** {add | modify | remove | none — one or more}
@@ -206,6 +209,48 @@ If no boundaries touched: write `n/a` with one-line justification.}
 > verifiable by the F0.5 runner), not story-shaped. Story-shaped ACs
 > cannot be empirically driven and silently degrade F0.5 to spec-only
 > authorship.
+
+## Step 2a: Pre-build AC — the promise, frozen BEFORE any code (FEATURE and CHANGE, every complexity)
+
+Step 2 decides which requirement a change belongs to; this step writes down **what it promises**, before the
+build, so the promise cannot drift to fit the code. It runs at trivial and small too. A bug fix is not asked here
+(a fix that gives the product behaviour no AC states is a CHANGE).
+
+1. **Declare one item per promise** in a JSON file written with the Write tool (free text never goes through a
+   shell command line); the shape is in the docstring of `shared/scripts/tools/ac_decision.py`:
+   - `add`: the exact AC text (WHAT/WHY, `shared/fr-authoring.md`; a business user can read it, no mechanism,
+     file, flag or threshold) and `owner_fr`, the single FR the MINT-vs-FOLD gate chose (blank if none fits).
+   - `change` / `remove`: `ac`, the current text copied exactly from the catalog (`old_text`; the tool compares it) and the new text (`new_text`).
+   - `restore`: `restores_ac`, the id of the AC the work brings back. **It must exist in the catalog** — the tool
+     checks. If no AC names the promise, it is a catalog gap: declare an `add`.
+   - `exempt`: `exempt_kind` `no-observable-change` or `how-only`, and `exempt_reason` in words about the
+     OUTCOME: "no user- or operator-observable behaviour changes, because ...". Ask yourself what a user or
+     operator would see, do or rely on differently; if nothing, say so. **Never exempt by a path label, a
+     complexity tier, or the words bug, trivial, tooling** — the tool refuses a reason that is only a label.
+   - For an `add`/`change`/`remove` that may be asked about, also write `plain_new` / `plain_old`: one sentence
+     about the outcome, no path, symbol, flag, number with a unit (the tool refuses a question that has one).
+     Set `request_open: true` when the request leaves open what the user sees.
+2. **Run it:** `uv run "{shared_root}/scripts/tools/ac_decision.py" --project-root "{project_root}" --from-json "{ac_json}" --out "{decided_json}"`
+   (add `--autonomous` under `--autonomous`). **First matching row wins:** (1) an existing AC is changed or
+   removed: ask · (2) no single FR owns it: ask · (3) the AC text trips the lexical HOW test (path, snake_case,
+   flag, ADR number, slug, number with a unit, GET/POST — the Step 1a altitude self-check, as code): ask ·
+   (4) the request leaves open what the user sees: ask · otherwise **auto**, and the PR body lists it (`references/F11.md`).
+   A `how-only` exemption always asks (it is the operator's call); `no-observable-change` and a restore
+   with an existing AC are decided alone and counted. Exit `0` decided · `10` ask · `2` fix the declaration.
+3. **Ask (exit 10), interactively:** put each printed question to the operator in exactly its words —
+   "This change gives the product a new promise: <one sentence>. Until now: <old promise or nothing>. Should it
+   hold like this? 1 Yes, write it. 2 No, instead: <text>. 3 This is only how it is built, not a promise."
+   (a removal says "Until now this held: <promise>. After this change it no longer holds."). Write the answer into
+   the item (`"answer": {"choice": "yes|no|only-how", "text": "..."}`) and run the tool again. **Under
+   `--autonomous` an ask never auto-approves:** a campaign unit writes the printed `escalation` to its
+   `result.json` and returns `status:"escalated"`, `reason_code:"ac_question_requires_operator"` (commit and
+   push nothing); a standalone run records `record_hard_blocker.py --reason-code operator-only-decision`.
+4. **Freeze:** write the plan stub NOW, before the build: `write_plan_stub.py ... --ac-decision "{decided_json}"`
+   (`references/F5b.md`). It holds `AC frozen: sha256:...`, the items and `AC decisions`. At medium+ copy the hash
+   line into the iterate spec's Acceptance Criteria. A later edit of the text re-runs the tool and shows as a
+   diff in the stub; the spec-reviewer reads it. Pass `"ac_decisions"` (the printed list) in the F5b extras.
+   The exemption maps to `spec_impact: none` with `behavior-preserving` (no-observable-change); F11
+   `check_pre_build_ac_recorded` warns (never blocks) when the record is missing or edited.
 
 ## Step 3: Mini-Plan (persisted at every tier that runs it)
 

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-01-q1-pre-build-ac",
+  "date": "2026-11-01",
+  "section": "Iterate - feature: pre-build AC",
+  "title": "Pre-build AC decision is code, not prose",
+  "context": "Eleven changes shipped without a written promise because the building agent chose the exemption.",
+  "decision": "A small script applies a fixed ask-or-decide table and a lexical HOW test; the AC text is frozen by hash in the plan stub; an unattended ask stops the unit as escalated/ac_question_requires_operator; the F11 read is advisory.",
+  "consequences": "Operators get a plain question in four cases; the replay bar for the outcome classes FAILED (5 of 9 non-demand cases flagged) and the campaign stops for the operator.",
+  "rationale": "Deterministic-first: the table and the HOW test are testable code; the class judgement stays with the operator.",
+  "rejected": "Prose only (rejected by the brief: deterministic-first); a blocking PR check (outside the campaign)",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

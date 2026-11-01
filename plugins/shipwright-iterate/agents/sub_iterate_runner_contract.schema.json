@@ -221,8 +221,8 @@
         "reason": { "type": "string" },
         "reason_code": {
           "type": "string",
-          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01). `architecture_review_rejected` is the Step 3.5 case: either external architecture reviewer answered `reject`; the interactive contract is STOP-and-ask, the autonomous runner cannot ask, so it halts the unit and carries both verdicts plus the recommended alternative inline for the orchestrator to surface at campaign end.",
-          "enum": ["complexity_large", "ci_supplychain_requires_operator", "architecture_review_rejected"]
+          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01). `architecture_review_rejected` is the Step 3.5 case: either external architecture reviewer answered `reject`; the interactive contract is STOP-and-ask, the autonomous runner cannot ask, so it halts the unit and carries both verdicts plus the recommended alternative inline for the orchestrator to surface at campaign end. `ac_question_requires_operator` is the pre-build AC case: the ask/auto table (tools/ac_decision.py) says the operator must answer a question about what the product promises; the runner cannot ask and never auto-approves, so it stops the unit before building and carries the plain-language questions inline in `ac_questions`.",
+          "enum": ["complexity_large", "ci_supplychain_requires_operator", "architecture_review_rejected", "ac_question_requires_operator"]
         },
         "detected_complexity": {
           "type": "string",
@@ -252,10 +252,33 @@
             "findings": { "type": "array", "items": { "type": "string" } }
           }
         },
+        "ac_questions": {
+          "type": "array",
+          "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask/auto table row that fired (1 to 4, or `exempt`).",
+          "items": {
+            "type": "object",
+            "required": ["item", "row", "question"],
+            "properties": {
+              "item": { "type": "integer", "minimum": 0 },
+              "row": { "type": ["integer", "string"] },
+              "question": { "type": "string", "pattern": "\\S" }
+            }
+          }
+        },
         "partial_commit": { "type": ["string", "null"] }
       },
       "additionalProperties": false,
       "allOf": [
+        {
+          "if": {
+            "required": ["reason_code"],
+            "properties": { "reason_code": { "const": "ac_question_requires_operator" } }
+          },
+          "then": {
+            "required": ["reason_code", "ac_questions"],
+            "properties": { "ac_questions": { "minItems": 1 } }
+          }
+        },
         {
           "if": {
             "required": ["reason_code"],
