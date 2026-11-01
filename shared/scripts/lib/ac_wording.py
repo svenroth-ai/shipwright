@@ -8,7 +8,7 @@ agent rewrites it as outcome wording; this is NOT a question to the operator) wh
 * an identifier taken from the CHANGED CODE: a function, class or constant name, a flag, a module name;
 * a snake_case, camelCase, CamelCase or UPPER_SNAKE token, or a double-dash flag;
 * backticked code;
-* an ADR number, an AC id or an FR id.
+* an ADR number, an AC id or an FR id (the requirement catalog's own ids).
 
 Ordinary prose passes: end-to-end, and/or, read/write, CI, API, brand names such as GitHub. Plain one-word
 function names are not extracted from the diff (they are ordinary words); only code-shaped names are.
@@ -28,7 +28,11 @@ _CAMEL = re.compile(r"\b(?:[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]*)+|[a-z]+(?:[A-Z][a-z0
 _FLAG = re.compile(r"(?<![\w-])--[A-Za-z][\w-]*")
 _TICKS = re.compile(r"`(?!/[a-z][a-z-]*`)[^`]+`")  # a slash command the user types is product wording, not code
 _NUMBERS = re.compile(r"\b(?:ADR-\d+|FR-\d+(?:\.\d+)*(?:\.AC\d+)?|AC\d+)\b")
-_BRANDS = frozenset({"GitHub", "JavaScript", "TypeScript", "OpenAI", "OpenRouter", "PowerShell", "GitLab", "DevOps", "YouTube", "LinkedIn", "PyPI"})
+# Product and brand names read as product wording, not code (a name with a dot is removed before the file-name rule).
+_BRANDS = frozenset({"GitHub", "JavaScript", "TypeScript", "OpenAI", "OpenRouter", "PowerShell", "GitLab", "DevOps", "YouTube", "LinkedIn", "PyPI",
+                     "WebUI", "CodeQL", "PostgreSQL", "MySQL", "SQLite", "MongoDB", "GraphQL", "FastAPI", "OpenTelemetry", "SonarQube", "VSCode"})
+_DOTTED = ("Node.js", "Next.js", "Vue.js", "Nuxt.js", "Express.js", "React.js", "Three.js", "Chart.js")
+_COMMAND = re.compile(r"^/shipwright-[a-z]+$")
 _DEF = re.compile(r"\b(?:def|class|function|const|let|var)\s+([A-Za-z_]\w+)")
 _CONST = re.compile(r"^\s*([A-Z][A-Z0-9_]{3,})\s*[:=]")
 
@@ -38,6 +42,8 @@ def _path_like(token: str) -> bool:
     if "/" not in token or "://" in token:
         return False
     segs = [s for s in token.split("/") if s]
+    if _COMMAND.match(token):
+        return False  # a bare slash command the user types (/shipwright-iterate) is product wording
     return (token.count("/") >= 2 or bool(re.search(r"\.\w{1,5}$", segs[-1] if segs else ""))
             or token[:1] in (".", "~", "/") or token.split("/")[0] in _ROOTS)
 
@@ -63,7 +69,10 @@ def wording_violations(text: object, identifiers: set[str] | None = None) -> lis
     if not isinstance(text, str):
         return []
     hits = [f"file path {t.strip('()[]{}<>,;:.')!r}" for t in text.split() if _path_like(t)]
-    hits += [f"file name {m!r}" for m in _FILE.findall(text)]
+    plain = text
+    for dotted in _DOTTED:
+        plain = plain.replace(dotted, "")
+    hits += [f"file name {m!r}" for m in _FILE.findall(plain)]
     hits += [f"backticked code {m!r}" for m in _TICKS.findall(text)]
     for kind, rx in (("snake_case name", _SNAKE), ("UPPER_SNAKE name", _UPPER), ("flag", _FLAG), ("ADR/AC/FR number", _NUMBERS)):
         hits += [f"{kind} {m!r}" for m in rx.findall(text)]

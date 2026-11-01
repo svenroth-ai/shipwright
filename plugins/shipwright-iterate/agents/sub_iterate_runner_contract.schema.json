@@ -257,7 +257,7 @@
           "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask rule that fired (1 = an existing AC changed or removed, 2 = no single FR owns the new AC); `question_sha256` is the sha256 of the question text the operator's answer is bound to.",
           "items": {
             "type": "object",
-            "required": ["item", "row", "question"],
+            "required": ["item", "row", "question", "question_sha256"],
             "properties": {
               "item": { "type": "integer", "minimum": 0 },
               "row": { "type": ["integer", "string"] },

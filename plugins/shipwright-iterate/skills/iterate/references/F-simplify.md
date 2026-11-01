@@ -157,7 +157,7 @@ NONE justification (FR-gate branch: `change_type = tooling`/`infra` only when th
 simplified code is non-FR framework/tooling code).
 
 
-**Pre-build AC.** A simplify's diff must stay non-observable: `tools/ac_decision.py` and F11 `check_pre_build_ac_recorded` compute from the diff whether behaviour changed (comment, whitespace and rename-only edits do not count). If it did, this is not a simplify: name the AC the change restores or add one.
+**Pre-build AC.** A simplify may touch observable files (scripts, prompts), so "touches observable files" does not by itself make it a normal change. `tools/ac_decision.py` and F11 `check_pre_build_ac_recorded` compare every hunk in order, keeping indentation: a hunk that changes only comments, blank lines or inner whitespace, or a pure rename inside one class, shows no logic change, and the run is recorded as a decision with kind `exempt`. Any other hunk (reordered lines, a changed indentation in Python or YAML, a changed shebang, a moved file across the test/production boundary) is a logic change: it is not a simplify, and it follows the normal path (name the AC it restores, or add one).
 ---
 
 > Adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)

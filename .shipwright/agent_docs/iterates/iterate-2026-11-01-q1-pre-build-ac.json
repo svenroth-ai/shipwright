@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-01-q1-pre-build-ac",
-  "date": "2026-11-01T18:16:04.154344Z",
+  "date": "2026-11-01T18:53:17.561270Z",
   "event_at": "2026-11-01T15:23:39.946873+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -13,80 +13,70 @@
     "status": "complete",
     "behaviors": [
       {
-        "behavior": "AC wording is a hard validation: paths, names from the changed code, code-shaped tokens, backticks and ADR/AC numbers are refused; end-to-end, and/or, read/write, brands and slash commands pass",
+        "behavior": "AC wording is a hard validation: paths, names from the changed code, code-shaped tokens, backticks, ADR/AC/FR numbers are refused; product names, dotted names, end-to-end and a bare slash command pass; every text field is typed",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_wording_refuses_code_shapes PASSED; test_wording_passes_plain_prose PASSED; test_wording_refuses_a_name_taken_from_the_changed_code PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_wording_refuses_code_shapes PASSED; shared/tests/test_ac_decision.py::test_wording_passes_plain_prose PASSED; shared/tests/test_ac_decision.py::test_wording_refuses_a_name_taken_from_the_changed_code PASSED; shared/tests/test_ac_decision.py::test_wording_covers_every_text_field_and_types_are_checked PASSED"
       },
       {
-        "behavior": "a how-wording is invalid (exit 2), never a question to the operator",
+        "behavior": "one ask rule: an AC changed or removed, no single owner, or a new area (asked once, approvable); no label ever asks; everything else is decided alone",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_a_how_wording_is_invalid_not_a_question PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_a_new_ac_with_one_owner_is_decided_alone_and_records_how PASSED; shared/tests/test_ac_decision.py::test_ask_when_an_ac_changes_has_no_single_owner_or_opens_a_new_area PASSED; shared/tests/test_ac_decision.py::test_a_new_area_is_asked_once_and_can_be_approved_or_refused PASSED"
       },
       {
-        "behavior": "one ask rule: an AC changed or removed, or no single FR owns a new AC; no label or HOW test ever asks; everything else is decided alone",
+        "behavior": "a restore must name an AC in the base catalog (wording checked); the catalog is read from the base ref, not the working tree",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_ask_when_an_ac_changes_or_has_no_single_owner PASSED; test_a_new_ac_with_one_owner_is_decided_alone PASSED; test_no_label_and_no_how_test_ever_asks PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_restore_must_name_an_ac_in_the_catalog_and_checks_types PASSED; shared/tests/test_ac_decision.py::test_the_catalog_comes_from_the_base_ref_not_the_working_tree PASSED; shared/tests/test_ac_decision.py::test_catalog_loading_reads_acs_and_frs PASSED"
       },
       {
-        "behavior": "a restore must name an AC in the catalog, otherwise it is a catalog gap; old_text must equal the catalog text",
+        "behavior": "exemption is a claim before the build and refused against an observable diff",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_restore_must_name_an_ac_in_the_catalog PASSED; test_old_text_must_match_the_catalog_and_kinds_are_checked PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_exemption_is_refused_when_a_diff_exists_and_is_observable_else_only_a_claim PASSED; shared/tests/test_ac_decision.py::test_exempt_is_a_claim_before_the_build_and_checked_once_a_diff_exists PASSED"
       },
       {
-        "behavior": "exemption is computed from the diff: refused while observable, free when not; applies to every intent",
+        "behavior": "answers are bound to run, item index and question wording; no keeps the owner; unattended runs refuse inline and unmarked answers; unattended is read from state, not the flag",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_exemption_is_refused_when_the_diff_is_observable_and_free_when_it_is_not PASSED; shared/tests/test_ac_surface_record.py::test_check_passes_without_a_record_when_nothing_observable_changed_even_for_a_bug PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_a_bound_answer_closes_the_question_and_keeps_the_owner_on_no PASSED; shared/tests/test_ac_decision.py::test_the_answer_is_bound_to_run_item_and_wording PASSED; shared/tests/test_ac_decision.py::test_unattended_runs_refuse_inline_answers_and_unmarked_answer_files PASSED; shared/tests/test_ac_decision.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED; shared/tests/test_ac_decision.py::test_cli_reads_the_campaign_environment_not_only_the_flag PASSED"
       },
       {
-        "behavior": "observable surface: path classes, docs/tests/comment/whitespace/rename-only diffs exempt, behaviour change and new/deleted files observable, git changes incl. untracked",
+        "behavior": "CLI: exit codes, escalation names the unit, answer subcommand works from a held result.json, no tracebacks, BOM/UTF-16 text, verify subcommand, UTF-8 output",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_path_classes PASSED; test_only_docs_tests_comments_whitespace_and_renames_are_exempt PASSED; test_a_behaviour_change_is_observable_and_new_or_deleted_files_always_are PASSED; test_git_changes_sees_committed_working_tree_and_untracked PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_cli_exit_codes_and_the_unit_hold_escalation PASSED; shared/tests/test_ac_decision.py::test_the_answer_subcommand_is_an_operator_channel_that_works_from_a_held_result PASSED; shared/tests/test_ac_decision.py::test_cli_never_prints_a_traceback_for_bad_input PASSED; shared/tests/test_ac_decision.py::test_text_files_are_read_with_or_without_a_byte_order_mark PASSED; shared/tests/test_ac_decision.py::test_verify_subcommand_reports_the_finalize_compare PASSED; shared/tests/test_ac_decision.py::test_cli_prints_non_ascii_without_crashing_and_keeps_the_exit_codes PASSED"
       },
       {
-        "behavior": "answers only through the operator channel, bound to the sha256 of the question text; a stale-text answer and an inline answer under --autonomous are refused",
+        "behavior": "one counting producer has exempt, restore and auto buckets next to asked",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_a_bound_answer_closes_the_question PASSED; test_an_answer_for_other_question_text_is_refused PASSED; test_inline_answers_are_refused_under_autonomous_and_allowed_interactively PASSED; test_answers_are_validated PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_one_counting_producer_has_exempt_restore_and_auto_buckets PASSED; shared/tests/test_ac_decision.py::test_stub_lines_carry_items_decisions_and_a_new_area PASSED"
       },
       {
-        "behavior": "CLI: exit codes 0/10/2, escalation names the unit, answer subcommand round-trip, UTF-8 output keeps the exit codes",
+        "behavior": "observable surface fails closed: directory-only test roots, rename across the boundary, per-hunk ordered compare keeping indentation and shebang, textless changes observable",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_cli_exit_codes_and_the_unit_hold_escalation PASSED; test_the_answer_subcommand_binds_the_answer_and_the_run_accepts_it PASSED; test_cli_prints_non_ascii_without_crashing_and_keeps_the_exit_codes PASSED"
+        "evidence": "shared/tests/test_ac_surface_record.py::test_path_classes PASSED; shared/tests/test_ac_surface_record.py::test_is_test_path_is_by_directory_only PASSED; shared/tests/test_ac_surface_record.py::test_only_docs_tests_comments_whitespace_and_renames_are_exempt PASSED; shared/tests/test_ac_surface_record.py::test_a_behaviour_change_and_new_deleted_or_textless_changes_are_observable PASSED; shared/tests/test_ac_surface_record.py::test_a_rename_that_crosses_the_boundary_is_observable_and_one_inside_a_class_is_not PASSED; shared/tests/test_ac_surface_record.py::test_the_compare_is_per_hunk_in_order_keeping_indentation_and_shebangs PASSED; shared/tests/test_ac_surface_record.py::test_git_changes_sees_committed_working_tree_and_untracked PASSED"
       },
       {
-        "behavior": "one counting producer makes the exempt share visible; malformed input counts as nothing",
+        "behavior": "freeze is an append-only record; --force appends a superseded line",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_one_counting_producer_makes_the_exempt_share_visible PASSED"
+        "evidence": "shared/tests/test_ac_surface_record.py::test_force_appends_a_superseded_record_and_never_replaces PASSED; shared/tests/test_ac_surface_record.py::test_write_plan_stub_force_keeps_the_original_freeze PASSED; shared/tests/test_ac_surface_record.py::test_freeze_compare_names_both_texts PASSED"
       },
       {
-        "behavior": "freeze is an append-only record outside the stub; --force appends a superseded line, never replaces",
+        "behavior": "F11 check warns (never errors) on: no record, exemption on an observable diff, restore without base AC or test mention, differing frozen text, undeclared catalog edits, wording against committed-diff names, unattended asked decision not operator-answered; malformed data and no event are safe",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_force_appends_a_superseded_record_and_never_replaces PASSED; test_write_plan_stub_force_keeps_the_original_freeze PASSED"
+        "evidence": "shared/tests/test_ac_surface_record.py::test_undeclared_catalog_edits_are_found_from_the_diff_not_from_a_label PASSED; shared/tests/test_ac_surface_record.py::test_check_passes_without_a_record_when_nothing_observable_changed_even_for_a_bug PASSED; shared/tests/test_ac_surface_record.py::test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemption PASSED; shared/tests/test_ac_surface_record.py::test_check_restore_needs_a_base_catalog_ac_and_a_test_that_names_it PASSED; shared/tests/test_ac_surface_record.py::test_check_compares_the_frozen_text_with_the_catalog_in_the_diff PASSED; shared/tests/test_ac_surface_record.py::test_check_warns_on_a_catalog_edit_no_item_names_even_without_an_observable_diff PASSED; shared/tests/test_ac_surface_record.py::test_check_reruns_the_wording_check_against_identifiers_of_the_committed_diff PASSED; shared/tests/test_ac_surface_record.py::test_check_warns_when_an_unattended_asked_decision_was_not_operator_answered PASSED; shared/tests/test_ac_surface_record.py::test_malformed_record_data_is_a_warning_never_a_crash PASSED; shared/tests/test_ac_surface_record.py::test_check_skips_cleanly_and_never_raises PASSED"
       },
       {
-        "behavior": "freeze compare names both the frozen and the catalog text; F11 check warns on no record, exemption on an observable diff, unknown restore, differing text, superseded record",
+        "behavior": "only a well-formed AC question (non-empty ac_questions, valid sha, attempt id, sub-iterate loop) holds its own unit; every other escalation stops the wave",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_freeze_compare_names_both_texts PASSED; test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemption PASSED; test_check_accepts_a_restore_of_an_existing_ac_and_flags_a_gap PASSED; test_check_compares_the_frozen_text_with_the_catalog_in_the_diff PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_the_hold_needs_a_well_formed_escalation PASSED; shared/tests/test_ac_surface_record.py::test_only_a_well_formed_ac_question_holds_its_own_unit PASSED; shared/tests/test_ac_surface_record.py::test_record_holds_only_the_unit_on_a_well_formed_question_else_the_wave_stops PASSED"
       },
       {
-        "behavior": "malformed record data is a warning, never a crash or a red F11",
-        "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_malformed_record_data_is_a_warning_never_a_crash PASSED; test_check_skips_cleanly_and_never_raises PASSED"
-      },
-      {
-        "behavior": "only the AC question escalation holds its own unit (record exits 0); every other escalation still stops the wave",
-        "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_only_the_ac_question_escalation_holds_its_own_unit PASSED; test_record_holds_only_the_unit_on_an_ac_question_and_stops_the_wave_otherwise PASSED"
-      },
-      {
-        "behavior": "an unattended question flows from the CLI to a held unit while a second unit of the wave still completes",
+        "behavior": "an unattended question flows from the CLI to a held unit while a second unit of the wave completes",
         "disposition": "tested",
         "evidence": "shared/tests/test_ac_surface_record.py::test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on PASSED",
         "category": "integration"
       }
     ],
     "counts": {
-      "testable": 14,
-      "tested": 14,
+      "testable": 12,
+      "tested": 12,
       "untestable": 0,
       "untested_testable": 0
     }

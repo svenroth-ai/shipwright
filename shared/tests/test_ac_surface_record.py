@@ -1,4 +1,4 @@
-"""Q1: the observable surface computed from a diff, the append-only AC record, the F11 compare, and the per-unit hold."""
+"""Q1: the observable surface computed from a diff (fail-closed), the append-only AC record, the F11 compare, and the per-unit hold."""
 
 from __future__ import annotations
 
@@ -19,6 +19,13 @@ from tools.verifiers import pre_build_ac_check as chk
 _RUN = "iterate-2026-11-01-q1-test"
 _SPEC = ".shipwright/planning/01-adopted/spec.md"
 _BASE_SPEC = "### FR-01.03 - Drafts\n\n- (E) [AC05] Given a draft, when saved, then it is kept.\n"
+_SHA = "sha256:" + "b" * 64
+
+
+@pytest.fixture(autouse=True)
+def _attended(monkeypatch):
+    for name in ("SHIPWRIGHT_LOOP_ID", "SHIPWRIGHT_LOOP_UNIT_ID", ac_hold.OPERATOR_ENV):
+        monkeypatch.delenv(name, raising=False)
 
 
 def _diff(path: str, added=(), removed=(), extra="") -> str:
@@ -26,19 +33,44 @@ def _diff(path: str, added=(), removed=(), extra="") -> str:
     return f"diff --git a/{path} b/{path}\n{extra}--- a/{path}\n+++ b/{path}\n@@ -1 +1 @@\n{body}"
 
 
-# --- the observable surface -----------------------------------------------------------------------
+def _hunks(path: str, *pairs: tuple[list[str], list[str]]) -> str:
+    out = f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n"
+    for removed, added in pairs:
+        out += "@@ -1 +1 @@\n" + "".join(f"-{x}\n" for x in removed) + "".join(f"+{x}\n" for x in added)
+    return out
+
+
+def _obs(text: str) -> bool:
+    return sf.observable_files(sf.parse_diff(text))["observable"]
+
+
+# --- the observable surface: fail-closed ---------------------------------------------------------
 
 @pytest.mark.covers("FR-01.11/AC49")
 @pytest.mark.parametrize("path,expected", [
     ("plugins/x/scripts/a.py", True), ("plugins/x/hooks/hooks.json", True), ("plugins/x/agents/r.md", True),
     ("plugins/x/skills/y/SKILL.md", True), ("plugins/x/skills/y/references/F5.md", True), ("shared/prompts/p.md", True),
     ("shared/schemas/s.schema.json", True), ("shared/templates/t.md", True), ("shared/constitution.md", True),
-    (".github/workflows/ci.yml", True), ("docs/guide.md", False), ("README.md", False), (".shipwright/planning/x/spec.md", False),
-    ("shared/tests/test_a.py", False), ("plugins/x/tests/conftest.py", False), ("CHANGELOG-unreleased.d/x/y.md", False),
-    ("shipwright_events.jsonl", False), ("shipwright_test_results.json", False), ("notes/todo.md", False), ("data.bin", False),
+    (".github/workflows/ci.yml", True),
+    # unknown or missing extension outside docs/tests roots is observable (fail-closed)
+    ("Dockerfile", True), ("Makefile", True), (".pre-commit-config", True), ("cmd/main.go", True), ("src/lib.rs", True), ("src/App.java", True),
+    ("db/schema.sql", True), ("uv.lock", True), ("requirements.txt", True), ("assets/logo.png", True), ("data.bin", True), ("scripts/run", True),
+    # docs, tests and ledgers are excluded by DIRECTORY root, never by file name
+    ("docs/guide.md", False), (".shipwright/planning/x/spec.md", False), ("shared/tests/test_a.py", False), ("plugins/x/tests/conftest.py", False),
+    ("integration-tests/fixtures/a.json", False), ("CHANGELOG-unreleased.d/x/y.md", False), ("README.md", False), ("CHANGELOG.md", False),
+    ("shipwright_events.jsonl", False), ("notes/todo.md", False),
+    # names that merely look like tests or changelogs are production code
+    ("shared/scripts/lib/test_gate.py", True), ("shared/scripts/lib/changelog.py", True), ("plugins/x/scripts/readme_builder.py", True),
+    ("shared/scripts/shipwright_helper.py", True), ("src/conftest.py", True), ("src/a_test.py", True),
 ])
 def test_path_classes(path, expected):
     assert sf.is_observable_path(path) is expected
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_is_test_path_is_by_directory_only():
+    assert sf.is_test_path("shared/tests/test_a.py") and sf.is_test_path("integration-tests/x.py")
+    assert not sf.is_test_path("shared/scripts/lib/test_gate.py")
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -49,19 +81,46 @@ def test_only_docs_tests_comments_whitespace_and_renames_are_exempt():
         _diff("shared/scripts/b.py", ["x  =  1"], ["x = 1"]),
         "diff --git a/shared/scripts/old.py b/shared/scripts/new.py\nsimilarity index 100%\nrename from shared/scripts/old.py\nrename to shared/scripts/new.py\n",
     ])
-    got = sf.observable_files(sf.parse_diff(text))
-    assert got == {"observable": False, "files": [], "ignored": 5}
+    assert sf.observable_files(sf.parse_diff(text)) == {"observable": False, "files": [], "ignored": 5}
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_a_behaviour_change_is_observable_and_new_or_deleted_files_always_are():
+def test_a_behaviour_change_and_new_deleted_or_textless_changes_are_observable():
     text = _diff("shared/scripts/a.py", ["return 2"], ["return 1"]) + "diff --git a/plugins/x/agents/n.md b/plugins/x/agents/n.md\nnew file mode 100644\n--- /dev/null\n+++ b/plugins/x/agents/n.md\n@@ -0,0 +1 @@\n+# heading\n"
     got = sf.observable_files(sf.parse_diff(text))
     assert got["observable"] and got["files"] == ["plugins/x/agents/n.md", "shared/scripts/a.py"]
-    # a "+++"-looking content line inside a hunk is content, not a header
+    assert _obs("diff --git a/assets/logo.png b/assets/logo.png\nBinary files a/assets/logo.png and b/assets/logo.png differ\n")
+    assert _obs("diff --git a/scripts/run.sh b/scripts/run.sh\nold mode 100644\nnew mode 100755\n")
     rec = sf.parse_diff(_diff("shared/scripts/c.py", ["++ not a header"]))["shared/scripts/c.py"]
-    assert rec["added"] == ["++ not a header"]
+    assert rec["added"] == ["++ not a header"]  # a "+++"-looking content line inside a hunk is content, not a header
     assert sf.parse_diff("") == {} and sf.parse_diff("stray\n+line") == {}
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_a_rename_that_crosses_the_boundary_is_observable_and_one_inside_a_class_is_not():
+    def rename(old: str, new: str) -> str:
+        return f"diff --git a/{old} b/{new}\nsimilarity index 100%\nrename from {old}\nrename to {new}\n"
+    assert _obs(rename("shared/tests/test_gate.py", "shared/scripts/lib/gate.py"))   # test -> production
+    assert _obs(rename("shared/scripts/lib/gate.py", "docs/gate.md"))                # production -> docs
+    assert not _obs(rename("shared/scripts/lib/a.py", "shared/scripts/lib/b.py"))    # inside production
+    assert not _obs(rename("docs/a.md", "docs/b.md"))                                # inside docs
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_the_compare_is_per_hunk_in_order_keeping_indentation_and_shebangs():
+    # indentation is syntax in Python and YAML
+    assert _obs(_diff("shared/scripts/a.py", ["    return 1"], ["return 1"]))
+    assert _obs(_diff("conf/a.yml", ["  key: 1"], ["key: 1"]))
+    assert not _obs(_diff("shared/scripts/a.py", ["    return  1"], ["    return 1"]))      # inner whitespace only
+    assert not _obs(_diff("shared/scripts/a.js", ["  return  1;"], ["return 1;"]))        # indentation free elsewhere
+    # a swap of two lines is a change: order matters, a whole-file multiset would call it a no-op
+    assert _obs(_hunks("shared/scripts/a.py", (["a = 1", "b = 2"], ["b = 2", "a = 1"])))
+    # lines moved BETWEEN hunks are a change too
+    assert _obs(_hunks("shared/scripts/a.py", (["x = 1"], []), ([], ["x = 1"])))
+    # a shebang is code, an ordinary comment is not
+    assert _obs(_diff("scripts/run.sh", ["#!/bin/bash"], ["#!/bin/sh"]))
+    assert not _obs(_diff("scripts/run.sh", ["# note"], ["# other note"]))
+    assert not _obs(_hunks("shared/scripts/a.py", (["# old"], ["# new"]), ([""], [])))
 
 
 def _git(root: Path, *a: str) -> str:
@@ -96,15 +155,14 @@ def test_git_changes_sees_committed_working_tree_and_untracked(tmp_path):
 # --- the append-only record, the compare ---------------------------------------------------------
 
 def _result(**kw) -> dict:
-    return ad.decide([{"kind": "add", "owner_fr": "FR-01.03", "new_text": "A saved draft survives a restart", **kw}],
-                     {"acs": {}, "frs": {"FR-01.03"}})
+    return ad.decide([{"kind": "add", "owner_fr": "FR-01.03", "new_text": "A saved draft survives a restart", **kw}], {"acs": {}, "frs": {"FR-01.03"}})
 
 
 @pytest.mark.covers("FR-01.11/AC49")
 def test_force_appends_a_superseded_record_and_never_replaces(tmp_path):
-    first = ar.append_record(tmp_path, _RUN, _result())
+    first = ar.append_record(tmp_path, _RUN, {**_result(), "unattended": True})
     second = ar.append_record(tmp_path, _RUN, _result(new_text="A saved draft survives two restarts"))
-    assert (first["kind"], first["seq"], first["supersedes"]) == ("frozen", 1, None)
+    assert (first["kind"], first["seq"], first["supersedes"], first["unattended"]) == ("frozen", 1, None, True)
     assert (second["kind"], second["seq"], second["supersedes"]) == ("superseded", 2, 1)
     recs = ar.read_records(tmp_path, _RUN)
     assert [r["seq"] for r in recs] == [1, 2] and "restart" in recs[0]["items"][0]["new_text"] and recs[0]["counts"]["total"] == 1
@@ -142,6 +200,16 @@ def test_freeze_compare_names_both_texts():
     assert ar.freeze_differences([{"kind": "remove", "ac": "FR-01.03.AC05"}], {}, set())
     assert ar.freeze_differences([{"kind": "remove", "ac": "FR-01.03.AC05"}], {}, {"FR-01.03.AC05"}) == []
     assert ar.freeze_differences(["junk"], {}, set()) and ar.freeze_differences("junk", {}, set()) == []
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_undeclared_catalog_edits_are_found_from_the_diff_not_from_a_label():
+    changed = {"FR-01.03.AC05": "- (E) [AC05] reworded", "FR-01.03.AC06": "- (E) [AC06] A saved draft survives a restart"}
+    named = [{"kind": "change", "ac": "FR-01.03.AC05", "new_text": "reworded"}, {"kind": "add", "new_text": "A saved draft survives a restart"}]
+    assert ar.undeclared_edits(named, changed, set()) == []
+    assert ar.undeclared_edits(named[:1], changed, set()) == ["FR-01.03.AC06"]       # a new AC nobody declared
+    assert ar.undeclared_edits([{"kind": "restore", "restores_ac": "FR-01.03.AC05"}], changed, {"FR-01.03.AC09"}) == ["FR-01.03.AC05", "FR-01.03.AC06", "FR-01.03.AC09"]
+    assert ar.undeclared_edits("junk", {}, {"FR-01.03.AC09"}) == ["FR-01.03.AC09"]
 
 
 # --- the F11 check ----------------------------------------------------------------------------------
@@ -186,16 +254,18 @@ def test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemptio
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_check_accepts_a_restore_of_an_existing_ac_and_flags_a_gap(branch):
+def test_check_restore_needs_a_base_catalog_ac_and_a_test_that_names_it(branch):
     root, commit = branch
     head = commit({"shared/scripts/a.py": "x = 1\n"})
     ar.append_record(root, _RUN, ad.decide([{"kind": "restore", "restores_ac": "FR-01.03.AC05"}], {"acs": {"FR-01.03.AC05": "t"}, "frs": set()}))
+    assert "no test file in the diff mentions that AC id" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
+    head = commit({"shared/tests/test_a.py": '@pytest.mark.covers("FR-01.03/AC05")\ndef test_x(): ...\n'})
     assert chk.check_pre_build_ac_recorded(root, _RUN, head).ok
     path = ar.record_path(root, _RUN)
     rec = json.loads(path.read_text(encoding="utf-8"))
     rec["items"][0]["restores_ac"] = "FR-01.03.AC99"
     path.write_text(json.dumps(rec) + "\n", encoding="utf-8")
-    assert "not in the catalog" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
+    assert "not in the catalog at the base" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -207,6 +277,45 @@ def test_check_compares_the_frozen_text_with_the_catalog_in_the_diff(branch):
     ar.append_record(root, _RUN, _result(new_text="Drafts never vanish"))
     res = chk.check_pre_build_ac_recorded(root, _RUN, head)
     assert not res.ok and "Drafts never vanish" in res.detail and "survives a restart" in res.detail and "superseded 1 time" in res.detail
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_check_warns_on_a_catalog_edit_no_item_names_even_without_an_observable_diff(branch):
+    root, commit = branch
+    head = commit({_SPEC: _BASE_SPEC.replace("then it is kept", "then nothing is kept")})  # an existing AC reworded, nothing else changed
+    res = chk.check_pre_build_ac_recorded(root, _RUN, head)
+    assert not res.ok and "FR-01.03.AC05" in res.detail and "no record item names" in res.detail
+    ar.append_record(root, _RUN, ad.decide([{"kind": "change", "ac": "FR-01.03.AC05", "old_text": "Given a draft, when saved, then it is kept.",
+                                             "new_text": "Given a draft, when saved, then nothing is kept."}], {"acs": {"FR-01.03.AC05": "- (E) [AC05] Given a draft, when saved, then it is kept."}, "frs": set()},
+                                            answers=[{"item": 0, "question_sha256": ad.question_sha(ad.render_question({"kind": "change", "old_text": "Given a draft, when saved, then it is kept.", "new_text": "Given a draft, when saved, then nothing is kept."}), "", 0), "choice": "yes"}]))
+    assert chk.check_pre_build_ac_recorded(root, _RUN, head).ok
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_check_reruns_the_wording_check_against_identifiers_of_the_committed_diff(branch):
+    root, commit = branch
+    head = commit({"shared/scripts/plan-writer.py": "x = 1\n", _SPEC: _spec_with("The plan-writer keeps a draft")})
+    ar.append_record(root, _RUN, _result(new_text="The plan-writer keeps a draft"))
+    assert "does not read as an outcome" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_check_warns_when_an_unattended_asked_decision_was_not_operator_answered(branch):
+    root, commit = branch
+    head = commit({"shared/scripts/a.py": "x = 1\n", _SPEC: _spec_with("A saved draft survives a restart")})
+    base = {"kind": "add", "new_text": "A saved draft survives a restart"}
+    sha = ad.question_sha(ad.render_question(base), "r", 0)
+    for via, expect_warning in (("operator", False), (None, True)):
+        path = ar.record_path(root, _RUN)
+        path.unlink(missing_ok=True)
+        ans = {"item": 0, "question_sha256": sha, "choice": "yes", "text": "FR-01.03", **({"via": via} if via else {})}
+        res = ad.decide([base], {"acs": {}, "frs": {"FR-01.03"}}, unattended=bool(via), run_id="r", answers=[ans])
+        if via is None:
+            res = ad.decide([base], {"acs": {}, "frs": {"FR-01.03"}}, unattended=False, run_id="r", answers=[ans])
+            res["unattended"] = True  # a hand-edited record that claims an unattended run
+        ar.append_record(root, _RUN, res)
+        detail = chk.check_pre_build_ac_recorded(root, _RUN, head).detail
+        assert ("operator channel" in detail) is expect_warning
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -237,68 +346,63 @@ def test_check_skips_cleanly_and_never_raises(branch, monkeypatch):
 
 # --- the per-unit hold ------------------------------------------------------------------------------
 
-@pytest.mark.covers("FR-01.11/AC49")
-def test_only_the_ac_question_escalation_holds_its_own_unit():
-    esc = {"status": "escalated", "reason_code": "ac_question_requires_operator"}
-    assert ac_hold.is_ac_hold(esc) and not ac_hold.is_ac_hold({**esc, "reason_code": "architecture_review_rejected"})
-    assert not ac_hold.is_ac_hold({"status": "failed"}) and not ac_hold.is_ac_hold("x")
-    claimed = {"attempt_id": "a"}
-    assert loop_state.resolve_record_status("sub_iterate", claimed, "escalated", "ac_question_requires_operator") == "held"
-    assert loop_state.resolve_record_status("sub_iterate", claimed, "escalated", "architecture_review_rejected") == "failed"
-    assert loop_state.resolve_record_status("sub_iterate", claimed, "complete") == "built"
-    assert loop_state.resolve_record_status("section", {}, "escalated", "ac_question_requires_operator") == "escalated"
+def _esc(**kw) -> dict:
+    return {"sub_iterate_id": "Q1", "status": "escalated", "reason": "ac_question_requires_operator: x", "reason_code": "ac_question_requires_operator",
+            "ac_questions": [{"item": 0, "row": 1, "question": "q", "question_sha256": _SHA}], **kw}
 
 
-def _hold_state(tmp_path: Path) -> Path:
+def _hold_state(tmp_path: Path, units=("Q1",)) -> Path:
     state = tmp_path / "loop_state.json"
-    unit = {"id": "Q1", "status": "running", "attempt": 0, "attempt_id": "A1", "branch": "b", "finished_at": None, "commit": None}
-    state.write_text(json.dumps({"loop_id": "loop-1", "kind": "sub_iterate", "units": [unit]}), encoding="utf-8")
+    rows = [{"id": u, "status": "running", "attempt": 0, "attempt_id": f"A-{u}", "branch": "b", "finished_at": None, "commit": None} for u in units]
+    state.write_text(json.dumps({"loop_id": "loop-1", "kind": "sub_iterate", "units": rows}), encoding="utf-8")
     return state
 
 
 class _Args:
-    def __init__(self, state: Path, result: dict):
-        self.state, self.unit, self.attempt_id, self.result = str(state), "Q1", "A1", json.dumps(result)
+    def __init__(self, state: Path, result: dict, unit: str = "Q1"):
+        self.state, self.unit, self.attempt_id, self.result = str(state), unit, f"A-{unit}", json.dumps(result)
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_record_holds_only_the_unit_on_an_ac_question_and_stops_the_wave_otherwise(tmp_path, capsys):
+def test_only_a_well_formed_ac_question_holds_its_own_unit():
+    assert ac_hold.is_ac_hold(_esc()) and not ac_hold.is_ac_hold({**_esc(), "reason_code": "architecture_review_rejected"})
+    assert not ac_hold.is_ac_hold({"status": "failed"}) and not ac_hold.is_ac_hold("x")
+    claimed = {"attempt_id": "a"}
+    assert loop_state.resolve_record_status("sub_iterate", claimed, "escalated", True) == "held"
+    assert loop_state.resolve_record_status("sub_iterate", claimed, "escalated", False) == "failed"
+    assert loop_state.resolve_record_status("sub_iterate", claimed, "complete") == "built"
+    assert loop_state.resolve_record_status("section", {}, "escalated", True) == "escalated"
+    assert loop_state.resolve_record_status("sub_iterate", {}, "escalated", True) == "escalated"  # never claimed: no attempt_id
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_record_holds_only_the_unit_on_a_well_formed_question_else_the_wave_stops(tmp_path, capsys):
     from autonomous_loop import cmd_record
-    esc = {"sub_iterate_id": "Q1", "status": "escalated", "reason": "ac_question_requires_operator: x", "reason_code": "ac_question_requires_operator",
-           "ac_questions": [{"item": 0, "row": 1, "question": "q"}]}
     state = _hold_state(tmp_path)
-    assert cmd_record(_Args(state, esc)) == 0  # no wave STRICT-STOP
+    assert cmd_record(_Args(state, _esc())) == 0  # no wave STRICT-STOP
     row = json.loads(state.read_text(encoding="utf-8"))["units"][0]
     assert row["status"] == "held" and row["result_path"].endswith("result.json")
-    other = _hold_state(tmp_path)
-    assert cmd_record(_Args(other, {**esc, "reason_code": "architecture_review_rejected"})) == 3
-    assert json.loads(other.read_text(encoding="utf-8"))["units"][0]["status"] == "failed"
+    for broken in ({**_esc(), "reason_code": "architecture_review_rejected"}, _esc(ac_questions=[]), _esc(ac_questions=[{"item": 0, "question": "q"}]),
+                   {k: v for k, v in _esc().items() if k != "ac_questions"}):
+        other = _hold_state(tmp_path)
+        assert cmd_record(_Args(other, broken)) == 3
+        assert json.loads(other.read_text(encoding="utf-8"))["units"][0]["status"] == "failed"
     capsys.readouterr()
 
 
 @pytest.mark.covers("FR-01.11/AC49")
 def test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on(tmp_path, capsys):
-    """Real scenario: the CLI asks under --autonomous, its escalation is recorded for unit Q1 (held, exit 0), a second unit still completes."""
+    """Real scenario: the CLI asks in a campaign run, its escalation is recorded for unit Q1 (held, exit 0), a second unit still completes."""
     from autonomous_loop import cmd_record
     from tools import ac_decision as cli
     root = _repo(tmp_path)
     ask = tmp_path / "ask.json"
     ask.write_text(json.dumps({"items": [{"kind": "add", "new_text": "A saved draft survives a restart"}]}), encoding="utf-8")
-    assert cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--autonomous", "--sub-iterate-id", "Q1"]) == 10
+    assert cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--autonomous", "--sub-iterate-id", "Q1", "--run-id", "r1"]) == 10
     escalation = json.loads(capsys.readouterr().out)["escalation"]
-    assert escalation["sub_iterate_id"] == "Q1"
-    units = [{"id": "Q1", "status": "running", "attempt": 0, "attempt_id": "A1", "branch": "b1", "finished_at": None, "commit": None},
-             {"id": "Q2", "status": "running", "attempt": 0, "attempt_id": "A2", "branch": "b2", "finished_at": None, "commit": None}]
-    state = tmp_path / "loop_state.json"
-    state.write_text(json.dumps({"loop_id": "loop-1", "kind": "sub_iterate", "units": units}), encoding="utf-8")
-
-    class Args:
-        def __init__(self, unit: str, attempt_id: str, result: dict):
-            self.state, self.unit, self.attempt_id, self.result = str(state), unit, attempt_id, json.dumps(result)
-
-    assert cmd_record(Args("Q1", "A1", escalation)) == 0
-    done = {"status": "complete", "commit": "abc", "tests_passed": 1, "tests_total": 1, "branch": "b2"}
-    assert cmd_record(Args("Q2", "A2", done)) == 0
+    state = _hold_state(tmp_path, ("Q1", "Q2"))
+    assert cmd_record(_Args(state, escalation)) == 0
+    assert cmd_record(_Args(state, {"status": "complete", "commit": "abc", "tests_passed": 1, "tests_total": 1, "branch": "b2"}, "Q2")) == 0
     rows = {u["id"]: u["status"] for u in json.loads(state.read_text(encoding="utf-8"))["units"]}
     assert rows == {"Q1": "held", "Q2": "built"}
     capsys.readouterr()

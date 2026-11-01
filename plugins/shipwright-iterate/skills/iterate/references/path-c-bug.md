@@ -20,10 +20,10 @@ fix restores in `affected_frs`, or `spec_impact: none` with a one-line
 `spec_impact_justification` and `spec_impact_reason_code:
 restores-specified-behavior` (F5b.md). ADD does not apply to bug fixes.
 
-**Pre-build AC (every bug, Step 2a of `references/path-a-feature.md`).** A fix whose diff changes observable
-behaviour (computed by `tools/ac_decision.py` and F11, not declared) must NAME the AC it restores (`restore`, an id
-that exists in the catalog); when no AC names the promise it is a catalog gap and gets an AC (`add`). A fix whose
-diff changes nothing observable (docs, tests, comments, whitespace, rename) needs no record.
+**Pre-build AC (every bug, Step 2a of `references/path-a-feature.md`).** A fix whose committed diff changes observable
+behaviour (computed by F11, fail-closed, not declared) must NAME the AC it restores (`restore`, an id that exists in the
+base catalog, with a test in the diff that names it); when no AC names the promise it is a catalog gap and gets an AC
+(`add`). A fix whose diff changes nothing observable (docs, tests, comments, whitespace, rename) needs no record.
 
 ## Step 3: Investigate & Reproduce
 

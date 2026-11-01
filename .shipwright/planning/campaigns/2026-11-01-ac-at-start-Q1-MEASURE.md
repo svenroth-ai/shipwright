@@ -2,6 +2,29 @@
 
 > Date 2026-11-01. Evidence for `2026-11-01-ac-at-start-BRIEF.md` unit Q1, rebuilt as fully deterministic code (operator decision: everything code can decide is decided by code; AI only where code cannot).
 
+## OPERATOR DECISION REQUIRED: the brief's measure bar is not met, and cannot be measured in this design
+
+Plainly: the brief asked Q1 to beat a control arm by 3 PRs, miss at most 1 of the 12 demand cases, flag at most 1 of the others, and have the operator find 10 of 10 questions clear. **None of that is met, and most of it is not measurable any more.** Whether to merge Q1 as built is the operator's decision, not a result of this measure.
+
+Why the bar does not apply:
+
+- **The "only how" class no longer exists.** The lexical HOW test that sorted PRs into "answer: only how" was dropped (operator decision: code decides what code can decide). The 6 only-how PRs are now just observable changes that need a recorded AC, so there is nothing to classify against.
+- **The replay measured the post-build path, not the pre-build path.** It reads the merged diff, which is what F11 sees. Before the build the diff is empty, so at Step 2a an exemption is only a claim; the replay says nothing about what an agent would have declared then.
+- **An always-observable baseline scores almost the same.** Calling every PR observable gets 20 of 20 on demand, only-how and restore and misses only the 2 non-observable no-change PRs (#855, #908); the computed surface gets those 2 and is wrong on #848, #900, #911. The code's whole advantage over "always require an AC" is 2 PRs out of 25.
+- **0 of 25 PRs changed an existing AC**, so the ask rule was never exercised by real data; only by tests and the sheet below.
+- **No control arm exists** (the label-based text replayed by a model was dropped with the model classifiers), so "beats the control by 3" is not measurable.
+
+Replay, re-run with the final surface rules (25 PRs, real merged diffs, in-process, no model calls):
+
+| Class | PRs | Computed observable (record required) | Computed not observable | Always-observable baseline |
+|---|---|---|---|---|
+| demand | 12 | 12 | 0 | 12 observable |
+| only-how | 6 | 6 | 0 | 6 observable |
+| restore | 2 | 2 | 0 | 2 observable |
+| no-change | 5 | 3 | 2 (#855, #908) | 5 observable |
+
+Question sheet (b) below is still PENDING the operator's read; the ask-rate report (c) comes only after a merge.
+
 ## SUPERSEDED: the first measure (lexical HOW design, model classifiers)
 
 The first Q1 build measured a different design and its result no longer applies. What it measured, stated without gloss:
@@ -17,7 +40,7 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 
 **Method.** For each baseline PR, the merged squash commit and its parent are read with git; `lib/ac_surface.git_changes` parses the real diff and `observable_files` computes whether anything a user or operator can observe changed; `lib/ac_record.changed_catalog` reads the catalog ACs the diff added, changed or removed. The script is not committed (it needs `gh` and the repository history); the PR list and merge commits are in the table, and the three libraries it calls are the shipped code. No Opus or other model was called.
 
-**PR count.** The brief says 16 unique PRs but its class lists name 25 (12 demand, 6 only-how, 2 restore, 5 no-change). All 25 were replayed.
+**PR count.** The brief previously said 16 unique PRs (corrected to 25 in the brief) and its class lists name 25 (12 demand, 6 only-how, 2 restore, 5 no-change). All 25 were replayed.
 
 **What a deterministic rule can and cannot measure.** The classes (demand, only-how, restore, no-change) are an operator's judgement about promises; code cannot reproduce that judgement, and no longer tries to. What code decides is (1) is the diff observable, so is an exemption refused and a record required, and (2) does the catalog diff change or remove an existing AC (the operator is asked). Per class:
 

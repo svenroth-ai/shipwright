@@ -340,7 +340,7 @@ def cmd_record(args: argparse.Namespace) -> int:
         target_unit = find_unit_row(state, args.unit) if is_sub_iterate else next(
             (u for u in state["units"] if u["id"] == args.unit), None)
         if is_sub_iterate and target_unit is not None:
-            target_status = resolve_record_status(state.get("kind"), target_unit, result.get("status", "failed"), result.get("reason_code") or "")
+            target_status = resolve_record_status(state.get("kind"), target_unit, result.get("status", "failed"), is_ac_hold(result))
             rejection = enforce_record_fencing(state_path, state, args.unit, attempt_id,
                                                  result_str, target_status=target_status)
             if rejection is not None:
@@ -350,7 +350,7 @@ def cmd_record(args: argparse.Namespace) -> int:
             return 3
         for unit in state["units"]:
             if unit is target_unit or (target_unit is None and unit["id"] == args.unit):
-                unit["status"] = resolve_record_status(state.get("kind"), unit, result.get("status", "failed"), result.get("reason_code") or "")
+                unit["status"] = resolve_record_status(state.get("kind"), unit, result.get("status", "failed"), is_ac_hold(result))
                 unit["finished_at"] = now_iso()
                 unit["commit"] = result.get("commit")
                 unit["branch"] = result.get("branch", unit.get("branch"))
@@ -402,7 +402,7 @@ def cmd_record(args: argparse.Namespace) -> int:
 
     if result.get("status") != "complete":
         print(json.dumps({"recorded": True, "status": result.get("status"), "unit": args.unit}))
-        return 0 if is_ac_hold(result) else 3  # an AC question holds only its own unit, never the wave
+        return 0 if is_ac_hold(result) and target_unit is not None and target_unit.get("status") == "held" else 3  # AC question: only its own unit
 
     print(json.dumps({"recorded": True, "status": "complete", "unit": args.unit}))
     return 0

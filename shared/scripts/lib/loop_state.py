@@ -63,7 +63,6 @@ except ImportError:  # pragma: no cover - defensive; the self-bootstrap
 # (unit_lease's own package root) is already on sys.path by the time this
 # line runs; never a bare `import unit_lease`, which would give `unit_lease`
 # two distinct module identities (ADR-045).
-from lib.ac_hold import AC_HOLD_REASON  # noqa: E402
 from lib.campaign_graph import id_charset_ok  # noqa: E402
 from lib.unit_lease import is_unit_lease_stale  # noqa: E402
 
@@ -879,7 +878,7 @@ def sub_iterate_finalize_summary(state: dict) -> tuple[dict | None, dict | None]
     }
 
 
-def resolve_record_status(kind: str, unit: dict, raw_status: str, reason_code: str = "") -> str:
+def resolve_record_status(kind: str, unit: dict, raw_status: str, hold: bool = False) -> str:
     """`cmd_record`'s own status write, remapped onto the 9-state vocabulary
     ONLY for a unit that has actually been claimed through the new atomic-
     claim flow (carries a real `attempt_id` — see `enforce_record_fencing`'s
@@ -889,12 +888,12 @@ def resolve_record_status(kind: str, unit: dict, raw_status: str, reason_code: s
     through UNCHANGED, exactly as before this function existed — this is
     additive, not a redefinition of `cmd_record`'s historical contract.
 
-    `"complete" -> "built"` (3f-bis picks it up); an AC question
-    (`reason_code` `ac_question_requires_operator`) `-> "held"`; anything else `-> "failed"`.
+    `"complete" -> "built"` (3f-bis picks it up); a well-formed AC question
+    (`hold`, see `lib.ac_hold.is_ac_hold`) `-> "held"`; anything else `-> "failed"`.
     """
     if kind != "sub_iterate" or unit.get("attempt_id") is None:
         return raw_status
-    if raw_status == "escalated" and reason_code == AC_HOLD_REASON:
+    if raw_status == "escalated" and hold:
         return "held"
     return "built" if raw_status == "complete" else "failed"
 

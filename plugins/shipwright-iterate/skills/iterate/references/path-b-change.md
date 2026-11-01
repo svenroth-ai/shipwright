@@ -90,7 +90,7 @@ differences:
      --spec-impact-reason-code behavior-preserving` (F5b: same keys).
 2a. **Step 2a (Pre-build AC) applies identically** (`references/path-a-feature.md`): per promise the exact AC text
    (`change` with old and new text, or `remove`) or the AC a restore restores. An existing AC that changes or goes
-   away always asks; whether anything observable changed is computed from the diff, not declared.
+   away always asks; before the build `exempt` is only a claim, F11 tests it against the committed diff.
 3. **NONE must be *justified*, not assumed.** The Phase Matrix marks this
    step `always` for CHANGE — that is load-bearing. Scope size is a
    reason the update is *small*, not a reason to skip it. The F11
