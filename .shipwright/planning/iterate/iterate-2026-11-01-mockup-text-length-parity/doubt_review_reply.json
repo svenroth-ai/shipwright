@@ -1,0 +1,5 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"high","blocking":true,"disproof_attempt":"Recordings, summary rule and drafter template are invented by each run's Build, not pinned by the fixture, so a pass in the next real run is not guaranteed. DISPOSITION: accepted-in-part - the claim was downgraded (spec Not proven, expected-result paragraph); pinning the data in brief.md rejected-with-reason: changes the product brief/requirements, beyond the operator's scope; surfaced to the operator as a decision."},
+{"severity":"medium","blocking":false,"disproof_attempt":"Expected-result paragraph overstated an invariant. DISPOSITION: accepted-and-fixed (reworded)."},
+{"severity":"low","blocking":false,"disproof_attempt":"03 age label 4 d should be 3 d. DISPOSITION: accepted-and-fixed, hash re-pinned. Row-meta and eyebrow differences are well under the tolerance, left."}
+]}

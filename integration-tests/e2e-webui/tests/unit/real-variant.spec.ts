@@ -102,9 +102,10 @@ test("font tokens: the real guidelines declare Inter and Geist Mono; a served st
 test("master-detail board in a real browser: the approved mockups satisfy S01, S02 and S04 (colours, sizes and fonts)", async ({ page }) => {
   const declared = parseTokens(guidelines);
   const fonts = parseFontTokens(guidelines);
+  // The static page 03 shows one thread (the drafted pricing one), so both ids the harness opens (fresh and drafted) point at that title; id 3 is never opened.
   const state: RealThreadState = {
     posted: 3, drafted: 2, fresh: 1, perPlatform: {},
-    titles: { 1: "How do you handle onboarding for a new tool?", 2: "Pricing for small teams: what is fair?", 3: "Integrations people actually use" },
+    titles: { 1: "How are you pricing AI dev tools like Shipwright for small teams?", 2: "How are you pricing AI dev tools like Shipwright for small teams?", 3: "Any integrations between Shipwright and Jira?" },
     platformOf: { 1: "reddit", 2: "reddit", 3: "reddit" },
   };
   await page.goto(pathToFileURL(path.join(real, "mockups", "03-reply-draft.html")).href);
@@ -132,7 +133,7 @@ test("master-detail board in a real browser: the approved mockups satisfy S01, S
 
 // @covers FR-01.06
 test("S02 with the run's data: counts that read 0, or a skipped/expired status that is never rendered, fail; a page needs the click to show the thread", async ({ page }) => {
-  const state: RealThreadState = { posted: 1, drafted: 1, fresh: 1, perPlatform: { reddit: 4, hackernews: 3, linkedin: 3 }, titles: { 1: "How do you handle onboarding for a new tool?" }, platformOf: { 1: "reddit" } };
+  const state: RealThreadState = { posted: 1, drafted: 1, fresh: 1, perPlatform: { reddit: 4, hackernews: 4, linkedin: 4 }, titles: { 1: "How are you pricing AI dev tools like Shipwright for small teams?" }, platformOf: { 1: "reddit" } };
   const clickState: RealThreadState = { ...state, titles: { 1: "A click reveals me" } };
   await page.goto(pathToFileURL(path.join(real, "mockups", "03-reply-draft.html")).href);
   const base = await snapshotMasterDetail(page, [], state);
