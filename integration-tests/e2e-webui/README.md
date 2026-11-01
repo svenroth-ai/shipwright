@@ -45,7 +45,7 @@ Syften- and Apify-shaped answers in `seed/recorded/`, so a build and its tests n
 The checks that differ run in their variant form (`src/variant.ts`): S02 reads the platform switcher with counts, the
 status filter, a badge per list row, the thread beside the list and Copy reply (`src/board-dom-real.ts`); S04 also compares
 the font families; S05 allows a service name only under `backend/sources/` and needs `fetch_items` and nine recorded items,
-three per platform (`src/project-checks-adapter.ts`); H06-H11 plus H14 (feedback) run against the variant's API
+three per platform, and `seed/recorded/` must equal the package's recorded answers byte for byte with no file or item added (evidence names the file: missing, changed, extra) (`src/project-checks-adapter.ts`); H06-H11 plus H14 (feedback) run against the variant's API
 (`src/board-api-real.ts`). **S09 (soft)**: with `SHIPWRIGHT_E2E_SKILL_TRIGGER=1` a headless `claude -p` session loads the built
 plugin and gets "open the social engagement board" with only the Skill tool allowed; the verdict is whether a skill was
 called (`src/skill-trigger.ts`). It costs one short model call and is skipped otherwise. The variant has not run against a

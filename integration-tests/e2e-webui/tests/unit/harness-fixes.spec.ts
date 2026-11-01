@@ -33,8 +33,10 @@ test("S05 variant: the app's own e2e/ suite and reserved test domains (.example,
     const mk = (backend: string) => [0, 1, 2].map((i) => ({ item: { item_url: `u${i}`, backend, title: `t${i}`, timestamp: day(i === 0 ? 40 : i) } }));
     write(root, "seed/recorded/syften.json", JSON.stringify([...mk("reddit"), ...mk("hackernews")]));
     write(root, "seed/recorded/apify_linkedin.json", JSON.stringify([0, 1, 2].map((i) => ({ linkedinUrl: `l${i}`, content: `c${i}`, postedAt: { date: day(i === 0 ? 40 : i) } }))));
+    const ref = fs.mkdtempSync(path.join(os.tmpdir(), "e2e-s05-ref-"));
+    fs.cpSync(path.join(root, "seed", "recorded"), ref, { recursive: true }); // stands in for the package's files
     const l = list();
-    checkSelfContainedWithAdapter(root, l);
+    checkSelfContainedWithAdapter(root, l, ref);
     expect(verdict(l, "S05"), l.items.find((i) => i.id === "S05")!.evidence).toBe("pass");
     expect(findExternalUse(root, ["board/app.js"], { reservedTestDomains: true })).toEqual([]);
     expect(findExternalUse(root, ["board/app.js"]).length, "the tabs variant stays strict").toBe(2);
@@ -43,7 +45,7 @@ test("S05 variant: the app's own e2e/ suite and reserved test domains (.example,
     expect(findExternalUse(root, ["hooks/a.py"], { reservedTestDomains: true }).map((h) => h.split(" reaches ")[1])).toEqual(["reddit.example.com"]);
     write(root, "board/leak.js", "fetch('https://api.apify.com/v2/acts')\n"); // a real service outside the adapter still fails
     const l2 = list();
-    checkSelfContainedWithAdapter(root, l2);
+    checkSelfContainedWithAdapter(root, l2, ref);
     expect(verdict(l2, "S05")).toBe("fail");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

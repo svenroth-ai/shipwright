@@ -270,3 +270,15 @@ def test_mockup_text_equals_what_the_shipped_recordings_the_rule_and_the_templat
         rows_by_screen[m.name] = [r[3] for r in rows]
     assert len(rows_by_screen) == 5
     assert all(v == ["new", "drafted", "posted", "expired"] for v in rows_by_screen.values()), rows_by_screen
+
+
+@pytest.mark.covers("FR-01.06")
+def test_s05_compares_seed_recorded_with_the_shipped_files_and_the_key_says_so():
+    """The build must copy the shipped recordings unchanged; S05 proves it against the package in the repo."""
+    key = EXPECTED.read_text(encoding="utf-8")
+    s05 = next(line for line in key.splitlines() if line.startswith("- [hard] S05:"))
+    assert "byte-identical" in s05 and "ships" in s05
+    checks = (SRC / "project-checks-adapter.ts").read_text(encoding="utf-8")
+    assert "SHIPPED_RECORDED_DIR" in checks and "REAL_FIXTURE_NAME" in checks
+    shipped = sorted(p.name for p in (FIXTURE / "seed" / "recorded").iterdir())
+    assert shipped == ["apify_linkedin.json", "syften.json"]

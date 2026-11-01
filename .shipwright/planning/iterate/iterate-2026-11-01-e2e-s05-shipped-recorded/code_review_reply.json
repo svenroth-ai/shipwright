@@ -1,0 +1,6 @@
+{"section":"iterate-2026-11-01-e2e-s05-shipped-recorded","review":[
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/src/project-checks-adapter.ts","line":217,"finding":"Shipped JSON has CRLF in a Windows checkout; a build writing LF fails S05 (correct) but evidence reads 'changed (12 items, the package ships 12)'.","suggestion":"Report line endings only / first differing byte."},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/project-checks-adapter.ts","line":209,"finding":"statSync follows symlinks.","suggestion":"Use lstatSync."},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/tests/unit/shipped-recorded.spec.ts","line":59,"finding":"Marker not asserted.","suggestion":"Assert marker found."},
+{"severity":"low","category":"readability","file":"integration-tests/e2e-webui/tests/unit/real-variant.spec.ts","line":161,"finding":"Temp reference folders not removed.","suggestion":"Clean up."}
+]}

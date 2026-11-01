@@ -559,6 +559,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-10-29) e2e-webui — the operator run checks a skill-backed app through its companion API, the served board and project files (no chat commands); a hard check must read stored state back, not trust the echo, and a resumed run is accepted only from a folder with the same fixture, package, profile and commit. [→ iterate-2026-10-29-e6-e2e-harness-skill-app]
 - (2026-11-01) e2e-webui — a check that clicks `getByText(..).first()` can hit a hidden `<option>` of a picker that precedes the list in the DOM; click a visible non-option match, and count hidden elements with `getByRole(..., { includeHidden: true })`. [→ iterate-2026-11-01-e2e-webui-harness-fixes]
 - **iterate-2026-11-01-plan-design-detail-and-screenshot-gap** (2026-11-01): Gotcha — a plan section that restates a screen value from memory makes Build stop for a person; the section-writer copies it from the screen, declares extras as `Design extension:` with an FR/AC id, and a true conflict stays a person's call. → iterate-2026-11-01-plan-design-detail-and-screenshot-gap
+- (2026-11-01) e2e-webui — S05 compares `seed/recorded/` with the package byte for byte; the Windows checkout is CRLF while `brief_package` hashes CRLF==LF, so a resumed run built under the other checkout fails with "line endings only". [→ iterate-2026-11-01-e2e-s05-shipped-recorded]
 
 ## Contributing
 
