@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"The launch command is read inside a route and the untouched response passed on; installed before the modal click; the report step says whether it was captured."},
+{"name":"Error Handling","verdict":"pass","note":"A failed fetch continues the request; a non-JSON body is delivered and reported as not captured."},
+{"name":"Security Basics","verdict":"pass","note":"Test harness only; the command text is never printed."},
+{"name":"Test Quality","verdict":"pass","note":"Fake-route unit test: URL pattern, other verbs, capture, same response object, non-JSON, network failure."},
+{"name":"Performance Basics","verdict":"pass","note":"One request intercepted per run."},
+{"name":"Naming & Structure","verdict":"pass","note":"Stays in launch-recovery.ts next to the watch that uses it."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Consumer of the WebUI /launch response shape {task, commands}; the fake mirrors it, the page still receives the same response."}
+]}

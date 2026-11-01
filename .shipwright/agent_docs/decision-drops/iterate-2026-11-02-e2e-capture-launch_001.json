@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-02-e2e-capture-launch",
+  "date": "2026-11-02",
+  "section": "Iterate — fix: e2e launch capture",
+  "title": "Harness reads the modal's launch command inside a route",
+  "context": "Run 17 stalled but captured no command: the response body is unavailable once the modal has navigated to the task page.",
+  "decision": "A page route fetches POST /launch, reads the commands and fulfills with the untouched response; installed before the modal click.",
+  "consequences": "The hand-over can be repeated; the report step says whether the command was captured.",
+  "rationale": "The route sees the body before any navigation and the page gets the identical response.",
+  "rejected": "Wrapping sessionStorage.setItem with an init script (the key is removed on read and needs a page-side copy).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

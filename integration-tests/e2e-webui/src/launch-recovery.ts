@@ -8,12 +8,31 @@ import type { Page } from "@playwright/test";
 
 export interface LaunchCommands { powershell: string; cmd: string; posix: string }
 
-/** Remembers the commands of the modal's /launch response (the page deletes its own copy when it reads it). */
-export function captureLaunchCommands(page: Page): { get: () => LaunchCommands | null } {
+/** The slice of Playwright's Route the capture uses (a fake in the unit test). */
+export interface LaunchRoute {
+  request: () => { method: () => string };
+  fetch: () => Promise<{ json: () => Promise<unknown> }>;
+  fulfill: (o: { response: unknown }) => Promise<void>;
+  continue: () => Promise<void>;
+}
+
+/**
+ * Remembers the commands of the modal's /launch response (the page deletes its own copy when it reads it). The body is read
+ * INSIDE a route and the untouched response is passed on: reading it from a "response" event fails once the modal has
+ * navigated to the task page ("Response body is unavailable"). Install before the click that opens the modal's Launch.
+ */
+export async function captureLaunchCommands(page: Pick<Page, "route">): Promise<{ get: () => LaunchCommands | null }> {
   let commands: LaunchCommands | null = null;
-  page.on("response", (res) => {
-    if (res.request().method() !== "POST" || !/\/api\/external\/tasks\/[^/]+\/launch$/.test(res.url())) return;
-    res.json().then((body: { commands?: LaunchCommands }) => { if (body.commands) commands = body.commands; }, () => undefined);
+  await page.route(/\/api\/external\/tasks\/[^/]+\/launch$/, async (route) => {
+    const r = route as unknown as LaunchRoute;
+    if (r.request().method() !== "POST") return r.continue();
+    let res: Awaited<ReturnType<LaunchRoute["fetch"]>>;
+    try { res = await r.fetch(); } catch { return r.continue(); } // the request itself failed: let the page see its own failure
+    try {
+      const body = (await res.json()) as { commands?: LaunchCommands };
+      if (body.commands) commands = body.commands;
+    } catch { /* not JSON: the page gets the same response and the watch reports "not captured" */ }
+    await r.fulfill({ response: res });
   });
   return { get: () => commands };
 }
