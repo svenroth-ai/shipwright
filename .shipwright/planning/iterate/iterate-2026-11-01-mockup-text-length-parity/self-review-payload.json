@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All five mockups carry recorded Syften text; tolerance, metric, check and plugins untouched."},
+{"name":"Error Handling","verdict":"n/a","note":"Static HTML fixture data, no runtime paths."},
+{"name":"Security Basics","verdict":"pass","note":"Invented handles only, no keys, no network; no script added to mockups."},
+{"name":"Test Quality","verdict":"pass","note":"test_e2e_real_fixture.py verifies the new hash; real-variant.spec.ts updated to the new counts and titles and passes in a real browser."},
+{"name":"Performance Basics","verdict":"n/a","note":"No runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Structure and CSS unchanged; same rows, labels and switcher on all five screens."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer is the fixture package, consumers are package_sha256 (brief_package.package_sha256 recomputed and pinned) and the e2e-webui harness snapshot (ran real-variant.spec.ts against the files); round-trip probe = hash verify test plus browser snapshot."}
+]}

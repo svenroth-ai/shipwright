@@ -10,6 +10,8 @@ rendering, a status filter with skipped and expired, and the hits fetched throug
 that replays recorded Syften and Apify answers (no network, no keys). Keywords are sources, not a board tab. Select
 it with `SHIPWRIGHT_E2E_FIXTURE=social-engagement-real`; the harness then evaluates S02, S04 and S05 in their variant form.
 
+The sample text in the five approved mockups (thread titles, post text, comments, summary, draft) is deliberately as long as the Syften answers a real run recorded (run 14's build output; the package ships no recordings, so a later build matches only if it writes similar recordings or copies the mockup text), so the Test phase screenshot check (Step 3.7b, grid-luma-occupancy-diff-ratio) measures layout and not wording. The mockups use four Reddit threads from those recordings, with the same data and status labels on every screen.
+
 The package ships no recorded answers on purpose: `brief.md` specifies `seed/recorded/syften.json` and `apify_linkedin.json`,
 the build creates them, and S05 reads them from the built project.
 

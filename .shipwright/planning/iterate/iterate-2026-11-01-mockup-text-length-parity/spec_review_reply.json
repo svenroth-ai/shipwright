@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All three acceptance criteria are met, and nothing in the diff goes beyond the spec. Two checks could not be run with read-only tools: the brief.json hash and the e2e-webui unit tests (both run by the author: hash test 9 passed, unit suite 76 passed)."}
