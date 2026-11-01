@@ -153,23 +153,27 @@ test("launch watch: started at once, handed over again when stalled, failing fas
       },
     };
   };
-  expect(launchVerdict("state awaiting_external_start", "PS C:\app>\n")).toBe("stalled");
-  expect(launchVerdict("state awaiting_external_start", "")).toBe("stalled");
-  expect(launchVerdict("state awaiting_external_start", "PS C:\app> claude --x\nWelcome")).toBe("started");
-  expect(launchVerdict("state active", "PS C:\app>")).toBe("started");
+  const PS = "PS C:\\app>";
+  for (const idle of [`PowerShell 7.4.1\n${PS}`, `Windows PowerShell\nCopyright (C) Microsoft Corporation.\n${PS}`, "Microsoft Windows [Version 10.0.26200]\nC:\\app>", "user@host:~/app$ ", PS, ""]) {
+    expect(launchVerdict("state awaiting_external_start", idle)).toBe("stalled"); // banners and prompts are no start
+  }
+  expect(launchVerdict("state unreadable (boom)", PS)).toBe("stalled");
+  expect(launchVerdict("state not reported", "")).toBe("stalled");
+  expect(launchVerdict("state awaiting_external_start", `${PS} claude --x\nWelcome`)).toBe("started");
+  expect(launchVerdict("state active", PS)).toBe("started");
 
   const ok = mk(["state active"], [""]);
   await ensureLaunched(ok.w);
   expect(ok.log).toEqual(["Launch confirmed"]);
 
   // stalled for the whole first window, then the second hand-over works
-  const retry = mk(["state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state active"], ["PS C:\app>"]);
+  const retry = mk(["state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state active"], [PS]);
   await ensureLaunched(retry.w);
   expect(retry.log.filter((l) => l === "handover")).toHaveLength(1);
   expect(retry.log.at(-1)).toMatch(/after hand-over 1/);
 
-  const never = mk(["state awaiting_external_start"], ["PS C:\app>"]);
-  await expect(ensureLaunched(never.w)).rejects.toThrow(/did not start after 3 tries: state awaiting_external_start; terminal: PS C:\app>/);
+  const never = mk(["state awaiting_external_start"], [PS]);
+  await expect(ensureLaunched(never.w)).rejects.toThrow(/did not start after 3 tries: state awaiting_external_start; terminal: PS C:\\app>/);
   expect(never.log.filter((l) => l === "handover")).toHaveLength(2);
 
   const nothing = mk(["state awaiting_external_start"], [""], false);

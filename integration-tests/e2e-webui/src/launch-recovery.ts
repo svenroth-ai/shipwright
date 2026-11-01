@@ -18,14 +18,14 @@ export function captureLaunchCommands(page: Page): { get: () => LaunchCommands |
   return { get: () => commands };
 }
 
-const PROMPT_LINE = /^(?:PS [^>]*>|[$#%>])?\s*$/;
-
-/** "started" once the task left awaiting_external_start or the terminal shows more than shell prompts; else "stalled". */
+/**
+ * "started" once the task is in a real state other than awaiting_external_start, or the terminal shows the agent (the typed
+ * command or its output); else "stalled". Shell banners and prompts (pwsh/cmd/bash) are never evidence of a start, and an
+ * unreadable state ("state unreadable (...)", "state not reported") is no evidence either way.
+ */
 export function launchVerdict(stateText: string, terminalText: string): "started" | "stalled" {
-  const quiet = terminalText.split("\n").map((l) => l.trim()).filter(Boolean).every((l) => PROMPT_LINE.test(l));
-  const waiting = stateText === "state awaiting_external_start";
-  if (/^state /.test(stateText) && !waiting) return "started";
-  return quiet ? "stalled" : "started";
+  if (/^state (?!awaiting_external_start$|not reported$)\w+$/.test(stateText)) return "started";
+  return /claude/i.test(terminalText) ? "started" : "stalled";
 }
 
 export interface LaunchWatch {
@@ -58,6 +58,10 @@ export async function ensureLaunched(w: LaunchWatch): Promise<void> {
     }
     const shown = terminal.trim().slice(-300) || "(empty)";
     if (attempt === attempts) throw new Error(`The launch did not start after ${attempts} tries: ${state}; terminal: ${shown}`);
+    if (launchVerdict(await w.readState(), await w.readTerminal()) === "started") { // it started while the last poll was read
+      await w.step("Launch confirmed", "The task started just before the hand-over; nothing was handed over.");
+      return;
+    }
     const sent = await w.handOver();
     await w.step(`Launch stalled (attempt ${attempt} of ${attempts})`, `${state}; terminal: ${shown}. ${sent ? "Command handed to the task page again." : "No command captured, nothing to hand over."}`);
     if (!sent) throw new Error(`The launch did not start and no command was captured to retry: ${state}; terminal: ${shown}`);
@@ -70,5 +74,8 @@ export async function handOverCommands(page: Page, taskId: string, commands: Lau
   await page.evaluate(({ key, value }) => window.sessionStorage.setItem(key, value),
     { key: `webui:pending-auto-launch:${taskId}`, value: JSON.stringify({ commands, resume: false, ts: Date.now() }) });
   await page.reload();
+  // A pty that survived the reload parks the command behind a "Send to terminal" banner; a person would press it.
+  const send = page.getByTestId("embedded-terminal-manual-send-button");
+  if (await send.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) await send.click();
   return true;
 }
