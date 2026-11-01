@@ -274,3 +274,31 @@ def test_record_holds_only_the_unit_on_an_ac_question_and_stops_the_wave_otherwi
     assert cmd_record(_Args(other, {**esc, "reason_code": "architecture_review_rejected"})) == 3
     assert json.loads(other.read_text(encoding="utf-8"))["units"][0]["status"] == "failed"
     capsys.readouterr()
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on(tmp_path, capsys):
+    """Real scenario: the CLI asks under --autonomous, its escalation is recorded for unit Q1 (held, exit 0), a second unit still completes."""
+    from autonomous_loop import cmd_record
+    from tools import ac_decision as cli
+    root = _repo(tmp_path)
+    ask = tmp_path / "ask.json"
+    ask.write_text(json.dumps({"items": [{"kind": "add", "new_text": "A saved draft survives a restart"}]}), encoding="utf-8")
+    assert cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--autonomous", "--sub-iterate-id", "Q1"]) == 10
+    escalation = json.loads(capsys.readouterr().out)["escalation"]
+    assert escalation["sub_iterate_id"] == "Q1"
+    units = [{"id": "Q1", "status": "running", "attempt": 0, "attempt_id": "A1", "branch": "b1", "finished_at": None, "commit": None},
+             {"id": "Q2", "status": "running", "attempt": 0, "attempt_id": "A2", "branch": "b2", "finished_at": None, "commit": None}]
+    state = tmp_path / "loop_state.json"
+    state.write_text(json.dumps({"loop_id": "loop-1", "kind": "sub_iterate", "units": units}), encoding="utf-8")
+
+    class Args:
+        def __init__(self, unit: str, attempt_id: str, result: dict):
+            self.state, self.unit, self.attempt_id, self.result = str(state), unit, attempt_id, json.dumps(result)
+
+    assert cmd_record(Args("Q1", "A1", escalation)) == 0
+    done = {"status": "complete", "commit": "abc", "tests_passed": 1, "tests_total": 1, "branch": "b2"}
+    assert cmd_record(Args("Q2", "A2", done)) == 0
+    rows = {u["id"]: u["status"] for u in json.loads(state.read_text(encoding="utf-8"))["units"]}
+    assert rows == {"Q1": "held", "Q2": "built"}
+    capsys.readouterr()

@@ -4,15 +4,15 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 17078,
-      "skipped": 89,
-      "total": 17167
+      "passed": 16459,
+      "skipped": 86,
+      "total": 16545
     },
     "integration": {
       "status": "passed",
-      "passed": 642,
+      "passed": 643,
       "skipped": 0,
-      "total": 642
+      "total": 643
     },
     "pgtap": {
       "status": "not_run"
@@ -24,81 +24,98 @@
       "status": "not_run"
     },
     "degraded": [
-      "integration: test_devops_flow.py::TestDeployValidation::test_validate_with_token fails identically on main (pre-existing), not counted"
+      "unit counts cover the three roots this rebuild touches (shared/tests 13652, shared/scripts/tools/tests 1448, plugins/shipwright-iterate/tests 1359); the other plugin roots were not re-run (nothing under them changed since the first commit)",
+      "the shared/tests full run preceded the last two test edits (slash-command case, integration composition test); both files were re-run green afterwards"
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "lexical HOW test flags path, snake_case, flag, ADR number, slug, number with unit, GET/POST and passes plain outcome sentences",
+          "behavior": "AC wording is a hard validation: paths, names from the changed code, code-shaped tokens, backticks and ADR/AC numbers are refused; end-to-end, and/or, read/write, brands and slash commands pass",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_how_test_flags_each_shape PASSED; test_how_test_passes_plain_outcome_sentences PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_wording_refuses_code_shapes PASSED; test_wording_passes_plain_prose PASSED; test_wording_refuses_a_name_taken_from_the_changed_code PASSED"
         },
         {
-          "behavior": "ask/auto table: first matching row wins (rows 1-4, else auto)",
+          "behavior": "a how-wording is invalid (exit 2), never a question to the operator",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_table_first_matching_row_wins PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_a_how_wording_is_invalid_not_a_question PASSED"
         },
         {
-          "behavior": "question wording, removal variant, three answers; question sentence must be plain",
+          "behavior": "one ask rule: an AC changed or removed, or no single FR owns a new AC; no label or HOW test ever asks; everything else is decided alone",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_removal_variant_and_three_answers_in_the_question PASSED; test_question_sentence_must_be_plain PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_ask_when_an_ac_changes_or_has_no_single_owner PASSED; test_a_new_ac_with_one_owner_is_decided_alone PASSED; test_no_label_and_no_how_test_ever_asks PASSED"
         },
         {
-          "behavior": "a restore must name an AC in the catalog, else catalog gap",
+          "behavior": "a restore must name an AC in the catalog, otherwise it is a catalog gap; old_text must equal the catalog text",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_restore_must_name_an_ac_in_the_catalog PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_restore_must_name_an_ac_in_the_catalog PASSED; test_old_text_must_match_the_catalog_and_kinds_are_checked PASSED"
         },
         {
-          "behavior": "exemption by label refused; by outcome auto; how-only asks",
+          "behavior": "exemption is computed from the diff: refused while observable, free when not; applies to every intent",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_exemption_by_label_is_refused PASSED; test_exemption_by_outcome_is_auto_and_how_only_asks PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_exemption_is_refused_when_the_diff_is_observable_and_free_when_it_is_not PASSED; shared/tests/test_ac_surface_record.py::test_check_passes_without_a_record_when_nothing_observable_changed_even_for_a_bug PASSED"
         },
         {
-          "behavior": "operator answers close a question and are recorded; frozen hash stable and sees edits",
+          "behavior": "observable surface: path classes, docs/tests/comment/whitespace/rename-only diffs exempt, behaviour change and new/deleted files observable, git changes incl. untracked",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_answers_close_the_question_and_are_recorded PASSED; test_frozen_hash_is_stable_and_sees_a_text_edit PASSED"
+          "evidence": "shared/tests/test_ac_surface_record.py::test_path_classes PASSED; test_only_docs_tests_comments_whitespace_and_renames_are_exempt PASSED; test_a_behaviour_change_is_observable_and_new_or_deleted_files_always_are PASSED; test_git_changes_sees_committed_working_tree_and_untracked PASSED"
         },
         {
-          "behavior": "CLI exit codes 0/10/2 and autonomous escalation, validated against the runner schema",
+          "behavior": "answers only through the operator channel, bound to the sha256 of the question text; a stale-text answer and an inline answer under --autonomous are refused",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_cli_exit_codes_and_autonomous_escalation PASSED; test_escalation_matches_the_runner_contract_schema PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_a_bound_answer_closes_the_question PASSED; test_an_answer_for_other_question_text_is_refused PASSED; test_inline_answers_are_refused_under_autonomous_and_allowed_interactively PASSED; test_answers_are_validated PASSED"
         },
         {
-          "behavior": "plan stub carries the frozen record; undecided declaration refused; stub round-trips",
+          "behavior": "CLI: exit codes 0/10/2, escalation names the unit, answer subcommand round-trip, UTF-8 output keeps the exit codes",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_write_plan_stub_carries_the_frozen_record_and_refuses_an_undecided_one PASSED; test_stub_lines_round_trip_and_detect_an_edit PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_cli_exit_codes_and_the_unit_hold_escalation PASSED; test_the_answer_subcommand_binds_the_answer_and_the_run_accepts_it PASSED; test_cli_prints_non_ascii_without_crashing_and_keeps_the_exit_codes PASSED"
         },
         {
-          "behavior": "answers are validated and follow the original operation; a made-up answer cannot bypass a question",
+          "behavior": "one counting producer makes the exempt share visible; malformed input counts as nothing",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_answers_are_validated_and_follow_the_original_operation PASSED"
+          "evidence": "shared/tests/test_ac_decision.py::test_one_counting_producer_makes_the_exempt_share_visible PASSED"
         },
         {
-          "behavior": "old_text must equal the catalog text of the AC (a fragment is refused)",
+          "behavior": "freeze is an append-only record outside the stub; --force appends a superseded line, never replaces",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_old_text_must_match_the_catalog_text PASSED"
+          "evidence": "shared/tests/test_ac_surface_record.py::test_force_appends_a_superseded_record_and_never_replaces PASSED; test_write_plan_stub_force_keeps_the_original_freeze PASSED"
         },
         {
-          "behavior": "F11 pre-build AC check warns (never errors) on missing/edited/label-only/unknown-restore, skips other intents, registered",
+          "behavior": "freeze compare names both the frozen and the catalog text; F11 check warns on no record, exemption on an observable diff, unknown restore, differing text, superseded record",
           "disposition": "tested",
-          "evidence": "test_ac_decision.py::test_check_warns_never_errors_on_a_missing_edited_or_label_record PASSED; test_check_skips_other_intents_and_is_registered PASSED"
+          "evidence": "shared/tests/test_ac_surface_record.py::test_freeze_compare_names_both_texts PASSED; test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemption PASSED; test_check_accepts_a_restore_of_an_existing_ac_and_flags_a_gap PASSED; test_check_compares_the_frozen_text_with_the_catalog_in_the_diff PASSED"
+        },
+        {
+          "behavior": "malformed record data is a warning, never a crash or a red F11",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_surface_record.py::test_malformed_record_data_is_a_warning_never_a_crash PASSED; test_check_skips_cleanly_and_never_raises PASSED"
+        },
+        {
+          "behavior": "only the AC question escalation holds its own unit (record exits 0); every other escalation still stops the wave",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_surface_record.py::test_only_the_ac_question_escalation_holds_its_own_unit PASSED; test_record_holds_only_the_unit_on_an_ac_question_and_stops_the_wave_otherwise PASSED"
+        },
+        {
+          "behavior": "an unattended question flows from the CLI to a held unit while a second unit of the wave still completes",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_surface_record.py::test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on PASSED",
+          "category": "integration"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
+        "testable": 14,
+        "tested": 14,
         "untestable": 0,
         "untested_testable": 0
       }
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac_self.json",
+      "runner": "uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac_self.json --base-ref origin/main",
       "exit_code": 0,
       "tests_run": 1,
       "evidence_path": ".shipwright/runs/iterate-2026-11-01-q1-pre-build-ac/surface_verification.log",
-      "timestamp": "2026-11-01T17:00:00Z"
+      "timestamp": "2026-11-01T20:00:00Z"
     }
   },
   "coverage": {
