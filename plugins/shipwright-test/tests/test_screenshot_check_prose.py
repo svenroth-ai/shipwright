@@ -49,3 +49,10 @@ def test_existing_fidelity_step_stays_non_blocking():
     old = (SKILL_DIR / "references" / "step-3.7-design-fidelity.md").read_text(encoding="utf-8")
     assert "Non-blocking (WARNING level)" in old
     assert "screenshot" not in old.lower()
+
+
+def test_a_fail_is_a_plain_stop_and_the_length_note_is_not_normative():
+    flat = " ".join(REF.split())
+    assert "a correct layout with wrong text passes" not in flat
+    assert "A `fail` is a STOP: nothing in this reference licenses continuing past it" in flat
+    assert "(informational, not a rule)" in flat

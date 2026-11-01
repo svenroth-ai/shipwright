@@ -85,9 +85,20 @@ If the section involves a page, layout, or UI component, check if `.shipwright/d
 The mockup defines layout structure, component hierarchy, colors, spacing, and responsive behavior.
 The build agent MUST read the mockup before implementing.
 - Initial state: {what the mockup shows on first load, e.g. "Reddit tab selected", "filter: All", "first row expanded"}
+- Breakpoint: {literal @media width for the governing control, or `none`}
+- Per-state content: {state: shown; NOT shown}
+- Design extension: {optional: <element> - <FR/AC id>, not in <screen>}
+- Design contradiction: {optional: <spec says> vs <screen shows>}
 ```
 
 **Initial state is mandatory, not optional.** Open the mockup and copy what it shows on first load into the `Initial state` line: the selected tab, the active filter or sort, the expanded or open item, the default form values, the empty/loaded state. A link alone loses these details, and a section that says nothing about them contradicts the mockup the moment the build reads both (the build then stops to ask a person). Never write "none selected" when the mockup selects something. If the mockup shows no stateful control, write `Initial state: none`.
+
+**Design-defined detail is copied, never paraphrased (mandatory for UI sections).** The same failure as the initial state repeats for every other value the screen defines: a section that restates it from memory or from the spec text contradicts the screen, and the build then stops to ask a person (for example: a list-to-picker breakpoint written "768px as in the screen" while the screen switches at 900px; a posted thread written with its draft still visible while the screen shows only the note). Before you write any step that fixes one of these, open the screen and take the value from it:
+
+- **Responsive behaviour:** grep the screen for `@media` and write the literal widths of the rule that governs THIS control (a kit stylesheet holds several breakpoints; pick the one that applies to the element, and quote it). Never write "the kit breakpoints" or "as in the screen" without the number.
+- **Per-state content:** for every state the section handles that has its own screen (draft, posted, empty, error), add a `Per-state content:` line listing what that screen shows and what it does NOT show (for example "posted: the success note only; no draft card, no Copy reply, no actions").
+- **Declared extensions:** when a requirement (an FR/AC id; for a Brief-only need, the FR that carries it) needs an element the screen does not have (an extra field, button or column), do not slip it into the steps. Add `Design extension: <element> - <FR/AC id>, not in <screen file>` to the Design Reference block. An extension without an FR/AC id is not allowed. The build reviewer still treats an element the screen lacks as a difference a person confirms; the line makes the question visible and traceable at plan time, it does not answer it.
+- **Real contradictions:** if the spec asks for something that contradicts the screen (not merely adds to it), do NOT pick a side and do not hide it: write the step as the spec says, and add `Design contradiction: <what the spec says> vs <what the screen shows>` to the Design Reference block. Build stops on it and a person decides (the requirement is then corrected). Most apparent contradictions are a value you did not copy from the screen; check that first.
 
 Match by name convention: section "05-base-layout" → look for mockups like "03-public-layout.html", "04-admin-layout.html". Section "01-auth" → look for "01-login.html", "02-signup.html". When unsure, list all potentially relevant mockups.
 
