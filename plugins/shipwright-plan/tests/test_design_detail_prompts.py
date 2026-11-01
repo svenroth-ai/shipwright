@@ -28,13 +28,11 @@ def test_section_writer_copies_design_values_from_the_screen():
 
 
 def test_spec_reviewer_accepts_only_declared_extensions():
+    """Name kept for the recorded ledger row; the gate is deliberately UNCHANGED: no declared line is an exemption."""
     flat = " ".join(REVIEWER.split())
-    assert "Design extension:" in flat
-    assert "whose cited FR/AC does not call for it, still REJECTs" in flat
-    # a contradiction line is never an exemption: the person-decides gate stays
-    assert "settles nothing: REJECT it as a contradiction" in flat
-    build = (PLUGIN_ROOT.parent / "shipwright-build" / "skills" / "build" / "SKILL.md").read_text(encoding="utf-8")
-    assert "A `Design contradiction:` line is NOT such an exemption" in " ".join(build.split())
+    assert "REJECT with `kind: \"contradiction\"`" in flat
+    assert "Design extension" not in flat and "Design contradiction" not in flat
+    assert "differs from the screen a person confirms" in " ".join(AGENT.split()) or "a person confirms" in " ".join(AGENT.split())
 
 
 def test_batch_task_prompt_without_mockups_has_no_design_rules(tmp_path, monkeypatch, capsys):

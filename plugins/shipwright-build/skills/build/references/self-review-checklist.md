@@ -16,7 +16,7 @@ Does the code implement what the section spec requires?
   "PATH=why"`, SKILL.md Step 10b). YAGNI forbids unrequested extra work, not the
   work the section needs to run.
 - **Mockup-vs-spec contradiction:** if the approved mockup and the section
-  description disagree (and no `Design extension:` line declares the difference), this item is ❌ regardless of which one the code follows
+  description disagree, this item is ❌ regardless of which one the code follows
   — the decision belongs to a person (SKILL.md Step 1).
 
 ### 2. Error Handling

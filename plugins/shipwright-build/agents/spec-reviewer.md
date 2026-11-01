@@ -65,13 +65,6 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
    code took — a silent choice either way discards the reason mockups exist. Say
    which side the code followed and that the decision belongs to a person; the
    expected resolution is that the requirement is corrected to match the mockup.
-   A section line `Design extension: <element> - <FR/AC id>, not in <screen>` is a
-   **declared addition**, not a contradiction: open the cited FR/AC, confirm it names
-   that element (or the data it exposes), check the diff matches the line and leaves
-   the screen's other layout alone. An element the mockup lacks with no such line, or
-   whose cited FR/AC does not call for it, still REJECTs. A `Design contradiction:`
-   line makes a conflict visible earlier but settles nothing: REJECT it as a
-   contradiction as above, the decision stays with a person.
 
 ## Anti-rationalization (spec edition)
 

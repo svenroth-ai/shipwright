@@ -32,9 +32,10 @@ Fix (prompt-level, no new machinery): `section-writer.md` + the per-section task
 the governing control, (2) a `Per-state content:` line (shown and NOT shown), (3) `Design extension: <element> - <FR/AC id>, not in
 <screen>` for requirement-driven additions, (4) `Design contradiction:` for a true spec-vs-screen conflict, taking NO side. Review
 (opus doubt/code reviewers) showed that letting the plan agent resolve a contradiction ("screen wins") would bypass the person-decides
-rule (FR-01.05 AC05, `requirement-writeback.md`); so the contradiction gate is unchanged and a `Design contradiction:` line is never an
-exemption. Only a declared extension is accepted by `spec-reviewer.md` / build SKILL / self-review checklist, and only after the reviewer
-opens the cited FR/AC and finds it names the element.
+rule (FR-01.05 AC05, `requirement-writeback.md`). The PR Review (Haiku, sensitive path) then also blocked a reviewer/builder relaxation for
+declared extensions as a human-gate change needing a maintainer. Decision: NO gate change at all. Build's spec-reviewer, build SKILL and
+self-review checklist are untouched; `Design extension:` / `Design contradiction:` lines only make the question visible at plan time. The cost: a
+true requirement-driven extra (the link field) still costs one person question in Build; that is the intended trade.
 
 Not fixed: whether Build should ever ask a person for a plan-vs-screen difference is unchanged (it should; the plan now stops creating
 false ones). The S08 harness answering "first option" is the harness's concern.
@@ -68,7 +69,7 @@ the open options for the operator are (a) make the `social-engagement-real` mock
 
 1. The section-writer prompt and the batch task prompt require literal breakpoints, per-state content, declared extensions and
    recorded contradictions (tests: `plugins/shipwright-plan/tests/test_design_detail_prompts.py`).
-2. The spec-reviewer accepts a declared extension with a requirement id and still REJECTs an undeclared one.
+2. The build gate (spec-reviewer, build SKILL, checklist) is unchanged: a declared line is no exemption.
 3. The screenshot-check reference no longer claims wording-only blindness and records the run-14 numbers and the override path
    (test: `plugins/shipwright-test/tests/test_screenshot_check_prose.py`).
 
