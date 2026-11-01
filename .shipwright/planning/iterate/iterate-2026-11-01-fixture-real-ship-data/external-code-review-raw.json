@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: test\n- Severity: medium\n- File: integration-tests/test_e2e_real_fixture.py:258\n- Finding: The list-row check only validates rows matched by its regex and never checks their count or completeness. Removing every list row from any mockup would still pass this test. It also ignores row points, so those values can drift from the recordings undetected despite AC3 requiring list rows to match the shipped data.\n- Suggestion: Extract each screen\u2019s complete row data and compare it with an explicit expected sequence derived from the recordings, including row count, titles, authors and points.\n\nOverall assessment: ship-with-fixes. The recordings and brief implement the requested change, but the mockup test needs to enforce the list-row acceptance criterion.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: test\n  Severity: medium\n  File: `integration-tests/test_e2e_real_fixture.py` (~line at `if \"Reply draft\" in text:`)\n  Finding: The mockup-draft check is conditional on the literal string `Reply draft` appearing in the mockup HTML. If mockup 03's card heading or markup changes (or the draft card is dropped), the assertion is silently skipped and the test still passes \u2014 exactly the drift AC3 is meant to catch. There is no assertion that the draft branch executed at least once.\n  Suggestion: Track whether any draft was checked (`drafts_checked += 1`) and assert `drafts_checked >= 1` (or assert `\"Reply draft\" in text` for `03-reply-draft` specifically) so the template-vs-mockup guarantee cannot be vacuously satisfied.\n\n- Category: test\n  Severity: medium\n  File: `integration-tests/test_e2e_real_fixture.py` (list-row loop at the end of `test_mockup_text_equals_...`)\n  Finding: The list-row check iterates `re.findall(r'<span>u/(.*?)</span></div><div class=\"t\">(.*?)</div>', ...)`; if the row markup changes so the regex matches zero rows, the loop body never runs and the test passes vacuously. `checked == 3` also only counts loop iterations for the three screens, not that content was verified.\n  Suggestion: Assert a positive row count (e.g. `rows > 0` per mockup, and that the five expected Reddit titles each appear as rows somewhere), so a markup change fails loudly instead of passing.\n\n- Category: test\n  Severity: low\n  File: `integration-tests/test_e2e_real_fixture.py` (`test_shipped_recordings_...`)\n  Finding: The Python test asserts only `>= 2` items older than 14 days, while the expected-result file and the new `real-variant.spec.ts` test pin `old: 3` exactly. A future edit that drops one old item would pass the Python test and fail the TS test \u2014 inconsistent pins. (AC1 only requires >=2, so this is a consistency issue, not an AC violation.)\n  Suggestion: Align the Python assertion to `== 3` to match the other pins, or leave a comment explaining why it's deliberately looser.\n\n- Category: spec\n  Severity: low\n  File: `integration-tests/fixtures/social-engagement-real/brief.json` (`package_sha256`)\n  Finding: The spec says the recordings are \"copied unchanged from run 14\" and AC4 requires the new hash / warning-free package; neither the provenance nor that `package_sha256` matches the new tree can be verified from the diff alone. If the hash was not regenerated after adding the files, package-hash checks elsewhere will fail.\n  Suggestion: Confirm the hash was computed over the final tree (including the two new JSON files and updated brief.md/expected-result) \u2014 e.g. by running the existing package-hash test.\n\nNon-issues I checked: the shipped data satisfies 12 items, 4/4/4, three items >14 days older than the newest (10-28 vs 10-04, 09-30, 10-02), 12 distinct URLs, all `.example` hosts; the `_summarize`/`_shorten` helpers match the brief's regex, collapse, and 300/400-char cut rules; the named-thread fit criteria in brief.md are consistent with the shipped data (quiet_lantern_42 / copper_fieldmouse); mockups are untouched as required; no security concerns (invented hosts/authors, no secrets, test-only code).\n\nOverall: the change implements the spec and the acceptance criteria; the findings are test-hardening refinements, chiefly that the draft and list-row mockup checks can pass vacuously.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-01-fixture-real-ship-data",
+    "at": "2026-11-01T17:43:57.919254+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

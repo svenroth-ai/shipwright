@@ -1,0 +1,123 @@
+[
+  {
+    "id": "syf-1008",
+    "item": {
+      "item_url": "https://www.reddit.example/r/devtools/comments/k8q2/shipwright_onboarding_took_me_an_hour",
+      "backend": "reddit",
+      "timestamp": "2026-10-28T16:20:00Z",
+      "title": "Shipwright onboarding took me an hour, is that normal?",
+      "author": "quiet_lantern_42",
+      "points": 42,
+      "text": "Tried Shipwright on a side project this weekend. The onboarding asked a lot of questions before any code appeared. Is there a faster path for small repos, or is the long setup the point?",
+      "comments": [
+        {"author": "mossy_keyboard", "text": "Same for me the first time. The second project was much quicker.", "depth": 0, "points": 7},
+        {"author": "quiet_lantern_42", "text": "Good to know, I will give it another go.", "depth": 1, "points": 2},
+        {"author": "tin_heron", "text": "There is a lighter mode for existing repos I think.", "depth": 0, "points": 1}
+      ]
+    }
+  },
+  {
+    "id": "syf-1007",
+    "item": {
+      "item_url": "https://news.ycombinator.example/item?id=900107",
+      "backend": "hackernews",
+      "timestamp": "2026-10-27T09:45:00+01:00",
+      "title": "Ask HN: Does anyone run AI coding agents with a real review gate?",
+      "author": "pkesselring",
+      "points": 17,
+      "text": "We tried a few AI coding agents. The code is fine, the missing piece is a gate that stops a change when tests or reviews fail. Shipwright claims to do this. Anyone using it in a team?",
+      "comments": [
+        {"author": "ondrej_v", "text": "We use it for internal tools. The review gate is the reason we stayed.", "depth": 0, "points": 4},
+        {"author": "lmartel", "text": "How does it integrate with GitHub checks?", "depth": 1, "points": 11},
+        {"author": "ondrej_v", "text": "Through plain CI, nothing special.", "depth": 2, "points": 3}
+      ]
+    }
+  },
+  {
+    "id": "syf-1006",
+    "item": {
+      "item_url": "https://www.reddit.example/r/SaaS/comments/k7z1/pricing_for_ai_dev_tools",
+      "backend": "reddit",
+      "timestamp": "2026-10-25T20:10:00Z",
+      "title": "How are you pricing AI dev tools like Shipwright for small teams?",
+      "author": "copper_fieldmouse",
+      "points": 63,
+      "text": "Looking at Shipwright and two alternatives. Pricing pages are vague about seats versus usage. What did your team end up paying per month?",
+      "comments": [
+        {"author": "brindle_ops", "text": "We pay per seat, usage was never the issue.", "depth": 0, "points": 9}
+      ]
+    }
+  },
+  {
+    "id": "syf-1005",
+    "item": {
+      "item_url": "https://news.ycombinator.example/item?id=900105",
+      "backend": "hackernews",
+      "timestamp": "2026-10-23T13:30:00Z",
+      "title": "Show HN: A changelog generator that reads conventional commits",
+      "author": "rjanssen",
+      "points": 8,
+      "text": "Small tool that turns conventional commits into a Keep a Changelog file. Shipwright does something similar inside its pipeline, this is the standalone version.",
+      "comments": []
+    }
+  },
+  {
+    "id": "syf-1004",
+    "item": {
+      "item_url": "https://www.reddit.example/r/programming/comments/k6m3/integrations_jira_shipwright",
+      "backend": "reddit",
+      "timestamp": "2026-10-20T08:05:00Z",
+      "title": "Any integrations between Shipwright and Jira?",
+      "author": "velvet_parsnip",
+      "points": 120,
+      "text": "Our product team lives in Jira. Is there an integration that links Shipwright requirements to tickets, or do people copy things by hand?",
+      "comments": [
+        {"author": "gravel_sky", "text": "We export the requirement IDs and paste them into tickets.", "depth": 0, "points": 0},
+        {"author": "velvet_parsnip", "text": "That is what I feared.", "depth": 1, "points": 6}
+      ]
+    }
+  },
+  {
+    "id": "syf-1003",
+    "item": {
+      "item_url": "https://news.ycombinator.example/item?id=900103",
+      "backend": "hackernews",
+      "timestamp": "2026-10-18T17:55:00Z",
+      "title": "Spec-first workflows for AI agents are underrated",
+      "author": "mhollis",
+      "points": 5,
+      "text": "Every time an agent goes off the rails it is because nobody wrote down what done means. Tools like Shipwright force a spec first. Curious whether people find that slows them down.",
+      "comments": [
+        {"author": "tsuda_k", "text": "Slower to start, faster to finish.", "depth": 0, "points": 15}
+      ]
+    }
+  },
+  {
+    "id": "syf-1002",
+    "item": {
+      "item_url": "https://www.reddit.example/r/startups/comments/k2a9/shipwright_vs_doing_it_by_hand",
+      "backend": "reddit",
+      "timestamp": "2026-10-04T11:15:00Z",
+      "title": "Shipwright vs. doing it by hand for an MVP?",
+      "author": "amber_tortoise",
+      "points": 31,
+      "text": "Two founders, no dedicated engineer. Is Shipwright worth the onboarding for an MVP, or should we just prompt our way through it?",
+      "comments": [
+        {"author": "slate_owl", "text": "For an MVP I would still want tests. That is where it helped us.", "depth": 0, "points": 2}
+      ]
+    }
+  },
+  {
+    "id": "syf-1001",
+    "item": {
+      "item_url": "https://news.ycombinator.example/item?id=900101",
+      "backend": "hackernews",
+      "timestamp": "2026-09-30T07:40:00Z",
+      "title": "Shipwright pricing changed?",
+      "author": "dvarga",
+      "points": 74,
+      "text": "Noticed the pricing page for Shipwright looks different this month. Did anyone get an email about it?",
+      "comments": []
+    }
+  }
+]
