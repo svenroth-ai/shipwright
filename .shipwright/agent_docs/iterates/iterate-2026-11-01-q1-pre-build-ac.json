@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-01-q1-pre-build-ac",
-  "date": "2026-11-01T18:53:17.561270Z",
+  "date": "2026-11-01T23:10:50.524366Z",
   "event_at": "2026-11-01T15:23:39.946873+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -72,11 +72,57 @@
         "disposition": "tested",
         "evidence": "shared/tests/test_ac_surface_record.py::test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on PASSED",
         "category": "integration"
+      },
+      {
+        "behavior": "only an operator-signed answer is recorded answered_via operator; a via field or a missing/mismatching signature is self-reported; the answer tool creates the key, signs, and a pick-list letter never exposes an area id",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_only_a_signed_answer_is_operator_and_the_signature_covers_question_choice_and_text PASSED; shared/tests/test_ac_round3.py::test_the_answer_tool_creates_the_key_signs_and_a_letter_never_exposes_an_area_id PASSED"
+      },
+      {
+        "behavior": "an add may only claim a new id; undeclared edits and freeze differences use the base catalog",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_an_add_naming_an_existing_id_is_refused_and_never_names_an_edit PASSED"
+      },
+      {
+        "behavior": "--base-ref is required and resolved to the merge-base; a moved base and a stacked unit's own fork point are not inherited",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_base_ref_is_required_and_resolved_to_the_merge_base PASSED; shared/tests/test_ac_round3.py::test_a_stacked_unit_is_compared_against_its_own_fork_point PASSED"
+      },
+      {
+        "behavior": "the record is read from the commit, must be append-only and committed no later than the first code",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_the_record_is_read_from_the_commit_and_must_be_append_only_and_not_after_the_code PASSED"
+      },
+      {
+        "behavior": "git calls time out, batch reads report missing paths, oversize untracked files are observable, an unreadable spec is an error with its path",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_git_calls_have_a_timeout_batch_reads_report_missing_and_big_untracked_files_are_observable PASSED"
+      },
+      {
+        "behavior": "the catalog parser reads this repo's shape, the greenfield generator's shape, adopted repos and table-only specs; an unreadable catalog is skipped, never asked or refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_the_parser_reads_this_repos_shape_the_greenfield_shape_adopted_repos_and_table_only_specs PASSED; shared/tests/test_ac_round3.py::test_a_greenfield_catalog_can_be_changed_and_restored_by_position_id PASSED; shared/tests/test_ac_round3.py::test_a_catalog_with_text_but_no_readable_fr_is_skipped_never_asked_or_refused PASSED"
+      },
+      {
+        "behavior": "resume path: hold, operator answer, pending, re-claimed under a new attempt, the same question hashes, complete",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_resume_path_hold_answer_pending_complete PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "unchanged is a record kind with its own count bucket and an F11 compare against the diff and a naming test",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_unchanged_needs_an_existing_ac_and_a_file_list_and_has_its_own_bucket PASSED; shared/tests/test_ac_round3.py::test_the_unchanged_record_is_checked_against_the_diff_and_a_test_naming_the_ac PASSED"
+      },
+      {
+        "behavior": "a no-owner question is a lettered pick list of areas by title in everyday words with a deterministic gloss of at most two jargon terms; picking new area, not-a-promise or a name resolves or explains",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_a_no_owner_question_is_a_lettered_pick_list_in_everyday_words PASSED; shared/tests/test_ac_round3.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_round3.py::test_the_gloss_explains_at_most_two_jargon_terms_once_and_only_from_the_data_file PASSED; shared/tests/test_ac_round3.py::test_candidate_areas_rank_by_shared_words_and_the_blurb_is_one_short_line PASSED"
       }
     ],
     "counts": {
-      "testable": 12,
-      "tested": 12,
+      "testable": 21,
+      "tested": 21,
       "untestable": 0,
       "untested_testable": 0
     }

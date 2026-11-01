@@ -55,13 +55,16 @@ def _code_shaped(name: str) -> bool:
 def diff_identifiers(changes: dict[str, dict]) -> set[str]:
     """Code-shaped names (function, class, constant, flag, module) found in a parsed diff's changed lines and file names."""
     names: set[str] = set()
+    stems: set[str] = set()
     for path, rec in (changes or {}).items():
-        names.add(path.rsplit("/", 1)[-1].rsplit(".", 1)[0])
+        stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+        if "_" in stem or re.search(r"[a-z][A-Z]|\d", stem):  # a plain hyphenated word ("review-gate") is ordinary prose, not a code name
+            stems.add(stem)
         for line in [*rec.get("added", []), *rec.get("removed", [])]:
             names.update(_DEF.findall(line))
             names.update(_CONST.findall(line))
             names.update(_FLAG.findall(line))
-    return {n for n in names if _code_shaped(n)}
+    return {n for n in names if _code_shaped(n)} | stems
 
 
 def wording_violations(text: object, identifiers: set[str] | None = None) -> list[str]:

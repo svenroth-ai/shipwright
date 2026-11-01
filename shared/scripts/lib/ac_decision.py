@@ -12,31 +12,30 @@ change), the id of the AC a fix restores, or an exemption. Code decides everythi
 * **Exemption** is only a claim before the build (the diff is empty then). If a diff exists it must show nothing
   observable (:mod:`lib.ac_surface`); the real check is F11, against the committed diff, as a warning.
 * **A restore** must name an AC that exists in the catalog; otherwise it is a catalog gap (kind add).
-* **Answers** come through the operator channel, bound to the sha256 of run id + item index + question text. An
-  unattended run (:func:`lib.ac_hold.is_unattended`) refuses inline answers and answers not from the operator
-  channel. Every decision records ``answered_via`` (none, inline, answer-file, operator).
+* **Answers** come through ``ac_decision.py answer``, bound to the sha256 of the run's stable id + item index +
+  question text and signed (HMAC, per-user key: a guard against accident and casual forgery, NOT authentication).
+  Every decision records ``answered_via`` (none, inline, operator, self-reported - both of the last two self-reported
+  unless the signature verifies). An unattended run (:func:`lib.ac_hold.is_unattended`) refuses anything unsigned.
 
 Presence and shape only: whether the sentence is TRUE is for the reviewers. Stdlib only.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
-import subprocess
-from pathlib import Path
 
+from lib.ac_catalog import ac_body, area_blurb, candidates, catalog_texts, load_catalog, parse_catalog
+from lib.ac_gloss import gloss
+from lib.ac_hold import load_key, question_sha, signature_ok
 from lib.ac_wording import wording_violations
 
-__all__ = ["KINDS", "ac_body", "catalog_texts", "count_decisions", "decide", "frozen_fields", "load_catalog", "question_sha", "render_question", "stub_lines"]
+__all__ = ["KINDS", "ac_body", "candidates", "catalog_texts", "count_decisions", "decide", "frozen_fields", "load_catalog", "parse_catalog", "question_options", "question_sha", "render_question", "stub_lines"]
 
-KINDS = ("add", "change", "remove", "restore", "exempt")
-ANSWERS = ("yes", "no")
+KINDS = ("add", "change", "remove", "restore", "unchanged", "exempt")
+ANSWERS = ("yes", "no", "other", "not_a_promise")
 _AC_ID = re.compile(r"^FR-\d+\.\d+\.AC\d+$")
 _FR_ID = re.compile(r"^FR-\d+\.\d+$")
-_FR_HEAD = re.compile(r"^###\s+(FR-\d+\.\d+)")
-_AC_HEAD = re.compile(r"^-\s+(?:\([A-Z]\)\s+)?\[AC(\d+)\]")
 _TEXT_FIELDS = ("new_text", "old_text", "owner_fr", "ac", "restores_ac")
 
 
@@ -44,71 +43,7 @@ def _norm(text: object) -> str:
     return " ".join(str(text if text is not None else "").split())
 
 
-def ac_body(text: object) -> str:
-    """An AC's wording without list markup (``- (E) [AC05]``) and the trailing run-id note, lower-cased."""
-    body = re.sub(r"^-?\s*(?:\([A-Z]\)\s*)?(?:\[AC\d+\]\s*)?", "", _norm(text))
-    return re.sub(r"\s*\(iterate-[^)]*\)\s*$", "", body).strip().lower()
-
-
-def catalog_texts(spec_text: str) -> dict[str, str]:
-    """``{"FR-01.03.AC05": "its text", ...}`` for one ``spec.md`` (same line shapes as ``spec_chain.parse_spec_acs``)."""
-    out: dict[str, str] = {}
-    fr, cur = "", ""
-    for line in (spec_text or "").splitlines():
-        h, a = _FR_HEAD.match(line), _AC_HEAD.match(line)
-        if h or a or line.startswith("#"):
-            cur = ""
-        if h:
-            fr = h.group(1)
-        elif line.startswith("## "):
-            fr = ""
-        elif a and fr:
-            cur = f"{fr}.AC{int(a.group(1)):02d}"
-            out[cur] = line
-        elif cur and line.startswith(" "):
-            out[cur] += " " + line.strip()
-        elif cur and line.strip():
-            cur = ""
-    return {k: _norm(v) for k, v in out.items()}
-
-
-def _spec_texts(root: Path, base_ref: str | None) -> list[str]:
-    """Every ``.shipwright/planning/*/spec.md``: from ``base_ref`` when given (git), else from the working tree."""
-    if base_ref:
-        names = subprocess.run(["git", "-C", str(root), "ls-tree", "-r", "--name-only", base_ref, ".shipwright/planning"],
-                               capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
-        if names.returncode != 0:
-            raise RuntimeError(f"cannot read the catalog at {base_ref}: {names.stderr.strip()}")
-        out = []
-        for rel in sorted(n for n in names.stdout.splitlines() if re.fullmatch(r"\.shipwright/planning/[^/]+/spec\.md", n)):
-            shown = subprocess.run(["git", "-C", str(root), "show", f"{base_ref}:{rel}"], capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
-            out.append(shown.stdout)
-        return out
-    out = []
-    for spec in sorted((root / ".shipwright" / "planning").glob("*/spec.md")):
-        try:
-            out.append(spec.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-    return out
-
-
-def load_catalog(project_root: str | Path, base_ref: str | None = None) -> dict:
-    """``{"acs": {id: text}, "frs": {FR ids}}`` of the requirement catalogs, from ``base_ref`` (git) when given."""
-    acs: dict[str, str] = {}
-    frs: set[str] = set()
-    for text in _spec_texts(Path(project_root), base_ref):
-        acs.update(catalog_texts(text))
-        frs.update(m.group(1) for m in (_FR_HEAD.match(ln) for ln in text.splitlines()) if m)
-    return {"acs": acs, "frs": frs}
-
-
-def question_sha(text: str, run_id: str = "", index: int = 0) -> str:
-    """sha256 binding an answer to the run, the item index and the exact question text."""
-    return "sha256:" + hashlib.sha256(f"{run_id}\n{index}\n{text}".encode("utf-8")).hexdigest()
-
-
-def render_question(item: dict) -> str:
+def render_question(item: dict, cat: dict | None = None) -> str:
     """The plain-language question the operator answers (what the product promises, not how it is built)."""
     new, old = _norm(item.get("new_text")), _norm(item.get("old_text"))
     if item.get("kind") == "remove":
@@ -120,22 +55,44 @@ def render_question(item: dict) -> str:
     if isinstance(item.get("new_fr"), dict):
         return (f"This is a new area of the product: {_norm(item['new_fr'].get('title'))}. It would promise: {new}. Is it OK to add this area?\n"
                 "1 Yes, add it.\n2 No, do not add it (the change is then reworked).")
-    return (f"This change adds a new promise that does not clearly belong to one feature: {new}. Should it hold, and under which feature?\n"
-            "1 Yes, write it under this feature: <feature id like FR-01.03>\n2 No, instead: <your wording>")
+    layout = _area_options(new, cat or {})
+    lines = "\n".join(f"{letter} {text}" for letter, (text, _) in layout.items())
+    return f"This change adds a new promise: {new}{gloss(new)}. Where does it belong?\n{lines}"
+
+
+def _area_options(new: str, cat: dict) -> dict[str, tuple[str, dict]]:
+    """The pick list of a no-owner question: ``{letter: (printed text, machine answer)}``; area ids stay in the machine answer only."""
+    out: dict[str, tuple[str, dict]] = {}
+    for fr, title in candidates(new, cat):
+        blurb = area_blurb(fr, cat)
+        out[chr(ord("A") + len(out))] = (f"{title or 'An existing area'}" + (f": {blurb}" if blurb else ""), {"choice": "yes", "text": fr})
+    if not out:
+        out["A"] = ("An area that already exists (tell us which).", {"choice": "yes"})
+    for text, ans in (("Somewhere new (tell us the name).", {"choice": "other"}), ("It is not a promise, only how it is built.", {"choice": "not_a_promise"}),
+                      ("Not wanted: <your wording>", {"choice": "no"})):
+        out[chr(ord("A") + len(out))] = (text, ans)
+    return out
+
+
+def question_options(item: dict, cat: dict | None = None) -> dict:
+    """``{letter: {choice, text?}}`` for the pick list of a no-owner question (empty for every other question)."""
+    if item.get("kind") != "add" or isinstance(item.get("new_fr"), dict):
+        return {}
+    return {k: v for k, (_, v) in _area_options(_norm(item.get("new_text")), cat or {}).items()}
 
 
 def count_decisions(decisions: object) -> dict:
-    """The one producer of the decision counts: ``{total, auto, asked, exempt, restore, exempt_share, restore_share}``.
+    """The one producer of the decision counts: ``{total, auto, asked, exempt, restore, unchanged, exempt_share, restore_share}``.
 
-    Priority per decision: exempt, restore, asked, auto - every decision lands in exactly one bucket. Malformed input counts as nothing.
+    Priority per decision: exempt, restore, unchanged, asked, auto - every decision lands in exactly one bucket. Malformed input counts as nothing.
+    There is no aggregator across runs yet: a report over many runs is made by a one-off script over the per-run records.
     """
     rows = [d for d in decisions if isinstance(d, dict)] if isinstance(decisions, list) else []
-    exempt = sum(1 for d in rows if d.get("kind") == "exempt")
-    restore = sum(1 for d in rows if d.get("kind") == "restore")
-    asked = sum(1 for d in rows if d.get("kind") not in ("exempt", "restore") and d.get("mode") == "asked")
+    n = {k: sum(1 for d in rows if d.get("kind") == k) for k in ("exempt", "restore", "unchanged")}
+    asked = sum(1 for d in rows if d.get("kind") not in n and d.get("mode") == "asked")
     total = len(rows)
-    return {"total": total, "auto": total - exempt - restore - asked, "asked": asked, "exempt": exempt, "restore": restore,
-            "exempt_share": round(exempt / total, 2) if total else 0.0, "restore_share": round(restore / total, 2) if total else 0.0}
+    return {"total": total, "auto": total - sum(n.values()) - asked, "asked": asked, **n,
+            "exempt_share": round(n["exempt"] / total, 2) if total else 0.0, "restore_share": round(n["restore"] / total, 2) if total else 0.0}
 
 
 def _check(it: dict, n: int, cat: dict, surface: dict | None, idents: set[str] | None) -> list[str]:
@@ -148,13 +105,19 @@ def _check(it: dict, n: int, cat: dict, surface: dict | None, idents: set[str] |
     errs: list[str] = []
     key = "restores_ac" if kind == "restore" else "ac"
     ac = _norm(it.get(key))
-    if kind in ("change", "remove", "restore"):
+    if kind in ("change", "remove", "restore", "unchanged"):
         if not _AC_ID.match(ac):
             errs.append(f"{tag}: {kind} needs an AC id like FR-01.03.AC05 in '{key}'")
         elif ac not in cat["acs"]:
-            errs.append(f"{tag}: {ac} is not in the catalog - " + ("a restore must name an AC that exists; if none does it is a catalog gap, so add the AC instead (kind add)" if kind == "restore" else "a change or removal needs an existing AC"))
-        elif kind != "restore" and ac_body(it.get("old_text")) != ac_body(cat["acs"][ac]):
+            errs.append(f"{tag}: {ac} is not in the catalog - " + ("a restore must name an AC that exists; if none does it is a catalog gap, so add the AC instead (kind add)" if kind in ("restore", "unchanged") else "a change or removal needs an existing AC"))
+        elif kind in ("change", "remove") and ac_body(it.get("old_text")) != ac_body(cat["acs"][ac]):
             errs.append(f"{tag}: old_text is not the current text of {ac} in the catalog - copy it exactly")
+    if kind == "add" and ac in cat["acs"]:
+        errs.append(f"{tag}: {ac} already exists in the catalog - an add may only claim a new id; reword an existing AC with kind change")
+    if kind == "unchanged":
+        files = it.get("files")
+        if not isinstance(files, list) or not files or not all(isinstance(f, str) and f.strip() for f in files):
+            errs.append(f"{tag}: unchanged needs 'files', the non-empty list of observable files this work changes while the promise stays")
     if kind in ("add", "change") and not _norm(it.get("new_text")):
         errs.append(f"{tag}: {kind} needs the exact AC text in 'new_text'")
     if kind in ("add", "change", "restore") and _norm(it.get("new_text")):
@@ -199,10 +162,14 @@ def _apply(it: dict, ans: dict, cat: dict) -> tuple[dict, str]:
         out["new_text"] = text  # every other field, the owner included, stays as declared
     elif isinstance(it.get("new_fr"), dict):
         out["owner_fr"] = _norm(it["new_fr"]["id"])
+    elif choice == "not_a_promise":
+        return out, "the operator says this is not a promise, only how it is built: drop this item (record the work as unchanged or exempt)"
     elif it["kind"] == "add":
-        if text not in cat["frs"]:
-            return out, "answer 'yes' for a new AC needs the owning feature (an FR id of the catalog) in 'text'"
-        out["owner_fr"] = text
+        owner = text if text in cat["frs"] else next((fr for fr, t in cat.get("titles", {}).items() if t and t.lower() == text.lower()), "")
+        if not owner:
+            return out, ("answer 'yes' or 'other' for a new AC needs the area of the product it belongs to (named as in the catalog) in 'text'; "
+                         "for a new area declare new_fr in the item and ask again")
+        out["owner_fr"] = owner
     return out, ""
 
 
@@ -214,13 +181,53 @@ def _decision(it: dict, mode: str, answer: str, via: str) -> dict:
     return {"ac": ac, "mode": mode, "answer": answer, "kind": it["kind"], "answered_via": via}
 
 
+def _answers_by_item(answers: object) -> dict:
+    out: dict = {}
+    for a in answers if isinstance(answers, list) else []:
+        if isinstance(a, dict):
+            out.setdefault(a.get("item"), []).append(a)
+    return out
+
+
+def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain: list, inline: object, key: bytes | None):
+    """Walk one item through its questions: ``(final item, answered?, answer, via, question or None, error or None)``.
+
+    Normally one question; an add answered 'no, instead' without an owner is asked again about the new wording.
+    """
+    via, ans, used = "none", None, 0
+    while True:
+        row = _row(it, cat)
+        if row is None:
+            return it, used > 0, ans, via, None, None
+        text = render_question(it, cat)
+        sha = question_sha(text, bind_id, n)
+        entry = inline if isinstance(inline, dict) and used == 0 else next((a for a in chain if a.get("question_sha256") == sha), None)
+        if entry is None:
+            if chain and used == 0:
+                return it, False, None, via, None, f"item {n}: the answer was given for a different question (other run, item or wording) - ask again"
+            return it, False, None, via, {"item": n, "row": row[0], "why": row[1], "question": text, "question_sha256": sha, "options": question_options(it, cat)}, None
+        used += 1
+        via = "inline" if entry is inline else ("operator" if signature_ok(key, entry) else "self-reported")
+        if unattended and via in ("inline", "self-reported"):
+            return it, False, None, via, None, f"item {n}: an unattended run takes answers only from the operator channel (ac_decision.py answer run by the operator, signed)"
+        it, err = _apply(it, entry, cat)
+        ans = entry
+        if err:
+            return it, False, None, via, None, f"item {n}: {err}"
+        if not (_norm(entry.get("choice")).lower() == "no" and _row(it, cat) is not None and it["kind"] == "add"):
+            return it, True, ans, via, None, None
+
+
 def decide(items: object, catalog: dict, unattended: bool = False, surface: dict | None = None, identifiers: set[str] | None = None,
-           answers: object = None, run_id: str = "") -> dict:
-    """Decide every item. ``status``: ``ok`` (all decided), ``ask`` (questions for the operator), ``invalid`` (``errors``)."""
+           answers: object = None, bind_id: str = "") -> dict:
+    """Decide every item. ``status``: ``ok`` (all decided), ``ask`` (questions for the operator), ``invalid`` (``errors``), ``skipped`` (catalog unreadable)."""
     base = {"unattended": unattended}
+    if catalog.get("unparsed"):
+        return {**base, "status": "skipped", "note": "the requirement catalog has text but no FR heading this tool can read; the pre-build AC decision is skipped, nothing is asked or refused"}
     if not isinstance(items, list) or not items:
         return {**base, "status": "invalid", "errors": ["items must be a non-empty list: every iterate records an AC, an exemption or a restore"]}
-    given = {a.get("item"): a for a in answers if isinstance(a, dict)} if isinstance(answers, list) else {}
+    given = _answers_by_item(answers)
+    key = load_key(False) if given else None
     errors: list[str] = []
     resolved, decisions, questions = [], [], []
     for n, raw in enumerate(items):
@@ -233,32 +240,22 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
         if errs:
             errors += errs
             continue
-        row = _row(it, catalog)
-        if row is None:
+        if _row(it, catalog) is None:
             resolved.append(it)
             decisions.append(_decision(it, "auto", "auto", "none"))
             continue
-        text = render_question(it)
-        sha = question_sha(text, run_id, n)
-        filed = given.get(n)
-        ans, via = (inline, "inline") if isinstance(inline, dict) else (filed, "operator" if isinstance(filed, dict) and filed.get("via") == "operator" else "answer-file")
-        if isinstance(ans, dict) and via != "inline":
-            if ans.get("question_sha256") != sha:
-                errors.append(f"item {n}: the answer was given for a different question (other run, item or wording) - ask again")
+        it, done, ans, via, question, err = _ask_one(it, n, catalog, bind_id, unattended, given.get(n, []), inline, key)
+        if err:
+            errors.append(err)
+        elif question:
+            questions.append(question)
+        elif done:
+            errs = _check(it, n, catalog, surface, identifiers)
+            if errs:
+                errors += errs
                 continue
-            if unattended and via != "operator":
-                errors.append(f"item {n}: an unattended run takes answers only from the operator channel (ac_decision.py answer run by the operator)")
-                continue
-        if not isinstance(ans, dict):
-            questions.append({"item": n, "row": row[0], "why": row[1], "question": text, "question_sha256": sha})
-            continue
-        it, err = _apply(it, ans, catalog)
-        errs = [f"item {n}: {err}"] if err else _check(it, n, catalog, surface, identifiers)
-        if errs:
-            errors += errs
-            continue
-        resolved.append(it)
-        decisions.append(_decision(it, "asked", _norm(ans.get("choice")).lower(), via))
+            resolved.append(it)
+            decisions.append(_decision(it, "asked", _norm(ans.get("choice")).lower(), via))
     if errors:
         return {**base, "status": "invalid", "errors": errors}
     out = {**base, "resolved_items": resolved, "ac_decisions": decisions, "counts": count_decisions(decisions)}
@@ -268,6 +265,8 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
 def frozen_fields(it: dict) -> dict:
     keys = ("kind", "ac", "restores_ac", "owner_fr", "old_text", "new_text")
     out = {k: _norm(it.get(k)) for k in keys if _norm(it.get(k))}
+    if isinstance(it.get("files"), list):
+        out["files"] = sorted(str(f).strip() for f in it["files"] if str(f).strip())
     if isinstance(it.get("new_fr"), dict):
         out["new_fr"] = {"id": _norm(it["new_fr"].get("id")), "title": _norm(it["new_fr"].get("title"))}
     return out

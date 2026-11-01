@@ -1,0 +1,30 @@
+{
+  "_comment": "Jargon term -> one everyday sentence. Read by lib/ac_gloss.py: when the promise text of a question to the operator contains a term, the question appends the gloss (at most 2, in order of first appearance). Keys are lower case; matching is whole-word and case-insensitive.",
+  "terms": {
+    "commit": "a saved snapshot of the work, kept in the project history",
+    "pull request": "a proposal to add finished work to the main version, which others can review first",
+    "stack profile": "the ready-made set of technology choices a project starts from",
+    "gate": "an automatic check that must pass before work moves on",
+    "phase": "one stage of the overall process, such as planning, building or testing",
+    "pipeline": "the fixed sequence of stages a project goes through",
+    "review model": "the AI that reads the work and gives an opinion",
+    "reviewer model": "the AI that reads the work and gives an opinion",
+    "build": "the stage where the software is actually written",
+    "deployment": "putting the finished software where people can use it",
+    "coordinator": "the part that hands out tasks and keeps track of them",
+    "campaign": "a planned series of related changes worked through one after another",
+    "branch": "a separate line of work that does not disturb the main version",
+    "merge": "joining finished work into the main version",
+    "repository": "the place where all of a project's files and history are kept",
+    "hook": "a small automatic action that runs when something specific happens",
+    "schema": "the agreed shape that a file or piece of data must have",
+    "scaffold": "a ready-made starting structure for a new project",
+    "dashboard": "a page that shows the current status at a glance",
+    "changelog": "the list of what changed in each release",
+    "lint": "an automatic check for common mistakes in the code",
+    "worktree": "a second working copy of the project, so two jobs do not get in each other's way",
+    "iterate": "one round of changing an existing project",
+    "catalog": "the list of promises the product makes",
+    "traceability": "being able to follow a requirement through to the work and tests that cover it"
+  }
+}

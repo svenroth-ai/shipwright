@@ -214,55 +214,63 @@ If no boundaries touched: write `n/a` with one-line justification.}
 
 Step 2 decides which requirement a change belongs to; this step writes down **what it promises**, before the
 build, so the promise cannot drift to fit the code. It runs at trivial and small too. **Code decides what code can
-decide; the agent only words the promise.** Be exact about what is checked when: before the build the diff is
-empty, so an `exempt` item is only a **claim** recorded now; the real test of it, of the wording against the
-names in the changed code, and of the frozen text against the catalog is **F11, against the committed diff, as a
-warning that never holds the PR**.
+decide; the agent only words the promise.** Be exact about what is live and what is only checked later. **Live now:**
+the declaration is validated (wording, ids, the ask rule) and an ask stops the unit. **Only a claim now:** before the
+build the diff is empty, so an `exempt` item is a **claim**. **F11 is warning-only** and runs after the commit: it
+tests the exemption, the wording against the names in the changed code, the frozen text against the catalog, and
+that the record was written first and only ever appended to. It never holds the PR.
 
 1. **Declare one item per promise** in a JSON file written with the Write tool (free text never goes through a
    shell command line); the shape is in the docstring of `shared/scripts/tools/ac_decision.py`:
-   - `add`: the exact AC text and `owner_fr`, the single FR the MINT-vs-FOLD gate chose. A new area of the product
-     with no FR yet: `new_fr: {"id": "FR-01.30", "title": "one sentence"}` instead of `owner_fr` (asked once).
+   - `add`: the exact AC text and `owner_fr`, the single FR the MINT-vs-FOLD gate chose. The `ac` id, if given, must be
+     NEW (an id in the base catalog is refused: reword an existing AC with `change`). A new area of the product with
+     no FR yet: `new_fr: {"id": "FR-01.30", "title": "one sentence"}` instead of `owner_fr` (asked once).
    - `change` / `remove`: `ac`, the current text copied exactly from the catalog (`old_text`; the tool compares it) and for a change the new text (`new_text`).
    - `restore` (a fix): `restores_ac`, the id of the AC the work brings back. **It must exist in the catalog at the
-     base** — the tool checks. If no AC names the promise, it is a catalog gap: declare an `add`. A BUG fix that
-     changes observable behaviour must do one of these, and a test in the diff should name the AC id.
+     base** — the tool checks. If no AC names the promise, it is a catalog gap: declare an `add`. A test in the diff should name the AC id.
+   - `unchanged` (a behaviour-preserving refactor or dependency bump): `ac`, an existing AC the work leaves true, and
+     `files`, the observable files it changes. F11 warns when the files differ from the diff or no test names the AC.
    - `exempt`: nothing else — a claim that no user- or operator-observable behaviour changes. Observable is
-     computed from the diff (`lib/ac_surface.py`, fail-closed: anything that is not docs, a test directory or a
-     ledger counts; comment, whitespace and rename-only hunks do not). Any text field must be text, not a list or number.
+     computed from the diff (`lib/ac_surface.py`, fail-closed: only docs and test roots at the repo or plugin root,
+     ledgers, and comment- or blank-line-only hunks do not count). Any text field must be text, not a list or number.
 2. **AC text is outcome wording — a hard validation, not a question.** The tool refuses (exit 2, rewrite it) text
    with a file path, a name taken from the changed code, a snake_case/CamelCase/UPPER_SNAKE token, a flag, backticked
    code, or an ADR, AC or FR number. `end-to-end`, `and/or`, `read/write`, product names and a bare slash command pass.
-3. **Run it** with the catalog read from the BASE ref (git), never your working tree:
-   `uv run "{shared_root}/scripts/tools/ac_decision.py" --project-root "{project_root}" --from-json "{ac_json}" --base-ref "{base_branch}" --run-id "{run_id}" --out "{decided_json}"`
-   (`{base_branch}` is the branch you were cut from — a campaign worktree branches off the campaign branch, not `origin/main`).
-   **One ask rule:** the operator is asked ONLY when (a) an existing AC is changed or removed, (b) no single FR owns
-   the new AC, or (c) a new area of the product is proposed. Everything else is decided alone, counted (`counts`:
-   auto, asked, exempt, restore) and listed in the PR body (`references/F11.md`). Exit `0` decided · `10` ask · `2` fix the declaration.
-4. **Ask (exit 10), interactively:** put each printed question to the operator in exactly its words, then write the
-   reply into the item (`"answer": {"choice": "yes|no", "text": "..."}`; `text` is the operator's wording, or the
-   owning FR id for a new AC) and run the tool again.
-   **Unattended runs.** A run is unattended when the campaign environment is set (`SHIPWRIGHT_LOOP_ID` /
-   `SHIPWRIGHT_LOOP_UNIT_ID`) or it lives in a campaign worktree; the code reads that, not your `--autonomous` flag
-   (which can only make it stricter). Then an inline `answer` is REFUSED, and the unit writes the printed
-   `escalation` (it carries `sub_iterate_id` and the `question_sha256` of every question) to its `result.json`,
-   returns `status:"escalated"`, `reason_code:"ac_question_requires_operator"`, and commits and pushes nothing. The
-   orchestrator holds ONLY that unit; the rest of the wave continues and campaign finalize prints the open
-   `ac_questions`. A standalone `--autonomous` run records `record_hard_blocker.py --reason-code operator-only-decision`
-   with the fixed detail sentence in `autonomous-contract.md`.
-   **The operator answers, not the agent:** from their own session, `ac_decision.py answer --decided {result.json or decided_json}
-   --item N --choice yes|no [--text-file wording.txt] --answers {answers_json}`. The answer is bound to the sha256 of
-   run id + item index + the exact question text; an answer for anything else is refused. `answer` refuses to run in an
-   unattended session unless `SHIPWRIGHT_AC_OPERATOR_CHANNEL` is set — **a guard against accidents, not authentication**:
-   an agent with a shell could set it, which is why every decision records `answered_via` (`inline`, `answer-file`,
-   `operator`) and F11 warns when an unattended run holds an asked decision not answered through the operator channel.
-   To resume the held unit: `loop_claim.py mark --status pending` (held -> pending), then run the unit again with `--answers {answers_json}`.
+3. **Run it.** The catalog is read at `merge-base(--base-ref, HEAD)` (git), never your working tree:
+   `uv run "{shared_root}/scripts/tools/ac_decision.py" --project-root "{project_root}" --from-json "{ac_json}" --base-ref "{base_branch}" --run-id "{run_id}" --bind-id "{campaign_slug}--{unit_id}" --out "{decided_json}"`
+   (`--base-ref` is required: the branch you were cut from, not `origin/main` by default; `--bind-id` is the unit's
+   STABLE id, never an attempt id, and is omitted outside a campaign). A catalog with text but no FR the tool can
+   read is **skipped** with a note: nothing is asked or refused. **One ask rule:** the operator is asked ONLY when (a)
+   an existing AC is changed or removed, (b) no single area of the product owns the new AC, or (c) a new area is proposed.
+   Everything else is decided alone, counted (`counts`: auto, asked, exempt, restore, unchanged) and listed in the PR body
+   (`references/F11.md`). Exit `0` decided or skipped · `10` ask · `2` fix the declaration.
+4. **Ask (exit 10), interactively:** put each printed question to the operator in exactly its words (a no-owner
+   question is a lettered pick list of areas, in everyday words), then write the reply into the item
+   (`"answer": {"choice": "yes|no|other|not_a_promise", "text": "..."}`) and run the tool again.
+   **Unattended runs.** A run is unattended when BOTH `SHIPWRIGHT_LOOP_ID` and `SHIPWRIGHT_LOOP_UNIT_ID` are set, or
+   the root is a per-unit worktree `<main>/.worktrees/campaign-<slug>--<unit>` (the orchestrator's own
+   `campaign-<slug>` worktree is attended); `--autonomous` can only make it stricter. Then an inline `answer` is
+   REFUSED, and the unit writes the printed `escalation` (`sub_iterate_id`, `bind_id`, and per question the text,
+   `question_sha256` and `options`) to its `result.json`, returns `status:"escalated"`,
+   `reason_code:"ac_question_requires_operator"`, and commits and pushes nothing. The orchestrator holds ONLY that unit
+   when the hashes recompute from the question text, bind id and item index; otherwise it is an ordinary escalation
+   (exit 3). The rest of the wave continues; campaign finalize prints the open `ac_questions`. A standalone
+   `--autonomous` run records `record_hard_blocker.py --reason-code operator-only-decision` with the fixed detail sentence.
+   **The operator answers, not the agent:** `ac_decision.py answer --decided {result.json or decided_json} --item N
+   --choice <letter, or yes|no|other|not_a_promise> [--text-file wording.txt] --answers {answers_json}`. The answer is
+   bound to the sha256 of stable id + item index + exact question text and signed (HMAC under `~/.shipwright/ac_operator.key`,
+   made on first use). In an unattended session `answer` refuses unless `SHIPWRIGHT_AC_OPERATOR_CHANNEL` is set (the
+   orchestrator shell needs it). **`answered_via` and `unattended` are self-reported; the signature is a guard against
+   accident and casual forgery, not authentication — a determined agent with shell access can read the key.** An unsigned
+   file answer is recorded `self-reported`, an inline one `inline`; F11 warns on any asked decision not operator-signed.
+   To resume the held unit: `loop_claim.py mark --state ... --unit ... --status pending --reason ... --operator ...`
+   (held -> pending), then run the unit again with `--answers {answers_json}` and the same `--bind-id`.
 5. **Freeze:** write the plan stub NOW, before the build: `write_plan_stub.py ... --ac-decision "{decided_json}"`
-   (`references/F5b.md`). The freeze is an append-only record next to the stub (`ac-record.jsonl`); `--force`
-   appends a `superseded` line and never replaces. Before F6, `ac_decision.py verify --run-id ... --base-ref ...` prints
-   what F11 will warn about: the frozen text against the catalog text in the diff (both named), a catalog AC edited or
-   removed that no item names (the "existing AC changes" rule enforced from the diff, not from your kind label),
-   a restore with no test naming it, wording against the committed diff's names. Pass `"ac_decisions"` in the F5b extras.
+   (`references/F5b.md`) and commit the record with the first code. The freeze is an append-only record next to the stub
+   (`ac-record.jsonl`); `--force` appends a `superseded` line and never replaces. Before F6, `ac_decision.py verify --run-id
+   ... --base-ref ...` prints what F11 will warn about (frozen text against the catalog, a catalog AC edited or removed that
+   no item names, a restore with no test naming it, wording against the committed diff's names). F11 reads the record from the
+   commit and warns if it is not append-only or was committed after the first code. Pass `"ac_decisions"` in the F5b extras.
 
 ## Step 3: Mini-Plan (persisted at every tier that runs it)
 

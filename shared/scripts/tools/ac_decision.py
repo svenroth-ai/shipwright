@@ -1,9 +1,9 @@
 """Decide the pre-build acceptance-criterion declaration of an iterate: ask or auto.
 
     uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac.json --base-ref {base_branch} \
-        --run-id RID [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json]
+        --run-id RID [--bind-id STABLE_ID] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json]
 
-    uv run shared/scripts/tools/ac_decision.py answer --decided decided.json|result.json --item 0 --choice yes|no \
+    uv run shared/scripts/tools/ac_decision.py answer --decided decided.json|result.json --item 0 --choice yes|no|other \
         [--text-file wording.txt] --answers answers.json        # the OPERATOR's channel
 
     uv run shared/scripts/tools/ac_decision.py verify --project-root . --run-id RID --base-ref {base_branch}
@@ -13,17 +13,23 @@
 
     {"items": [{"kind": "add|change|remove|restore|exempt", "ac": "FR-01.03.AC05", "owner_fr": "FR-01.03",
                 "new_fr": {"id": "FR-01.30", "title": "one sentence"}, "old_text": "...", "new_text": "outcome wording",
-                "restores_ac": "FR-01.03.AC05"}]}
+                "restores_ac": "FR-01.03.AC05",
+                "files": ["plugins/x/scripts/a.py"]}]}      # files: only for kind unchanged (observable files change, promise stays)
 
-The catalog is read from ``--base-ref`` (git), never the working tree. AC text must read as an outcome (exit 2
+``--base-ref`` is required: it is resolved to merge-base(base-ref, HEAD) and the catalog is read there (git), never from
+the working tree. ``--bind-id`` is the run's STABLE id (for a campaign unit ``{campaign_slug}--{unit_id}``, never an
+attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. AC text must read as an outcome (exit 2
 otherwise). The operator is asked only when an existing AC is changed or removed, no single FR owns a new AC,
 or a new area (``new_fr``) is proposed. Before the build the diff is empty: ``exempt`` is then only a claim, and
 F11 tests it against the committed diff (a warning).
 
-Unattended runs (campaign environment or worktree, or ``--autonomous``) refuse inline answers; answers come from
-the operator channel: ``answer`` refuses to run unattended unless ``SHIPWRIGHT_AC_OPERATOR_CHANNEL`` is set (a
-guard, not authentication), and binds the answer to the sha256 of run id + item index + question text. Re-run a
-held unit: ``loop_claim.py mark --status pending``, then run the unit again with ``--answers``.
+Unattended runs (both campaign loop variables, or a per-unit campaign worktree, or ``--autonomous``) refuse inline
+answers; answers come from the operator channel: ``answer`` refuses to run unattended unless
+``SHIPWRIGHT_AC_OPERATOR_CHANNEL`` is set (the orchestrator shell needs it), binds the answer to the sha256 of the
+stable id + item index + question text, and signs it with a per-user key (``~/.shipwright/ac_operator.key``).
+``answered_via`` and ``unattended`` are self-reported; the signature is a guard against accident and casual forgery,
+not authentication: a determined agent with shell access can read the key. Re-run a held unit: ``loop_claim.py mark
+--status pending --reason ... --operator ...``, then run the unit again with ``--answers`` and the same ``--bind-id``.
 
 Exit codes: 0 every item decided; 10 a question must go to the operator (unattended: the printed ``escalation``
 holds ONLY this unit); 2 the declaration or an input is invalid (``errors`` / ``error`` says what to fix).
@@ -40,10 +46,11 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.ac_decision import decide, load_catalog  # noqa: E402
-from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, operator_channel_open  # noqa: E402
+from lib.ac_catalog import load_catalog  # noqa: E402
+from lib.ac_decision import decide  # noqa: E402
+from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
-from lib.ac_surface import git_changes, observable_files  # noqa: E402
+from lib.ac_surface import git_changes, merge_base, observable_files  # noqa: E402
 from lib.ac_wording import diff_identifiers  # noqa: E402
 
 EXIT_OK, EXIT_ASK, EXIT_INVALID = 0, 10, 2
@@ -78,11 +85,11 @@ def _load(path: str, what: str) -> object:
         raise _Fail(f"{what} ({path}) is not valid JSON: {exc}") from exc
 
 
-def _escalation(result: dict, sub_iterate_id: str) -> dict:
+def _escalation(result: dict, sub_iterate_id: str, bind_id: str) -> dict:
     """The sub-iterate result.json body for an ask in an unattended run (a standalone run records an operator-only-decision blocker)."""
-    return {"sub_iterate_id": sub_iterate_id, "status": "escalated", "reason_code": AC_HOLD_REASON,
+    return {"sub_iterate_id": sub_iterate_id, "status": "escalated", "reason_code": AC_HOLD_REASON, "bind_id": bind_id,
             "reason": f"{AC_HOLD_REASON}: the operator must answer {len(result['questions'])} question(s) about what the product promises before this unit is built",
-            "ac_questions": [{"item": q["item"], "row": q["row"], "question": q["question"], "question_sha256": q["question_sha256"]} for q in result["questions"]]}
+            "ac_questions": [{"item": q["item"], "row": q["row"], "question": q["question"], "question_sha256": q["question_sha256"], "options": q.get("options", {})} for q in result["questions"]]}
 
 
 def run_answer(argv: list[str]) -> int:
@@ -90,7 +97,7 @@ def run_answer(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="ac_decision.py answer")
     ap.add_argument("--decided", required=True, help="decided.json (--out) or the held unit's result.json")
     ap.add_argument("--item", type=int, required=True)
-    ap.add_argument("--choice", required=True, choices=["yes", "no"])
+    ap.add_argument("--choice", required=True, help="yes | no | other | not_a_promise, or the LETTER the operator picked from a pick-list question")
     ap.add_argument("--text-file", default="", help="the operator's wording / owning FR id (a file, never a command line)")
     ap.add_argument("--answers", required=True, help="answer file to create or extend")
     args = ap.parse_args(argv)
@@ -102,9 +109,17 @@ def run_answer(argv: list[str]) -> int:
     if not qs:
         raise _Fail(f"{args.decided} holds no open question for item {args.item}")
     text = read_text(args.text_file).strip() if args.text_file else ""
+    choice = args.choice
+    picked = (qs[0].get("options") or {}).get(choice.upper()) if len(choice) == 1 and choice.isalpha() else None
+    if picked:  # a letter of the pick list: the area id stays in the machine record, the operator never types it
+        choice, text = picked["choice"], picked.get("text") or text
+    elif choice not in ("yes", "no", "other", "not_a_promise"):
+        raise _Fail(f"--choice must be yes, no, other, not_a_promise or a letter of the question's pick list, not {choice!r}")
     prior = _load(args.answers, "--answers") if Path(args.answers).exists() else {"answers": []}
-    kept = [a for a in (prior.get("answers", []) if isinstance(prior, dict) else []) if isinstance(a, dict) and a.get("item") != args.item]
-    kept.append({"item": args.item, "question_sha256": qs[0]["question_sha256"], "choice": args.choice, "text": text, "via": "operator"})
+    sha = qs[0]["question_sha256"]
+    kept = [a for a in (prior.get("answers", []) if isinstance(prior, dict) else []) if isinstance(a, dict) and (a.get("item") != args.item or a.get("question_sha256") != sha)]
+    key = load_key(create=True)
+    kept.append({"item": args.item, "question_sha256": sha, "choice": choice, "text": text, "via": "operator", "signature": sign(key, sha, choice, text)})
     Path(args.answers).write_text(json.dumps({"answers": kept}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"recorded": True, "item": args.item, "question_sha256": qs[0]["question_sha256"]}))
     return EXIT_OK
@@ -114,13 +129,16 @@ def run_verify(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="ac_decision.py verify")
     ap.add_argument("--project-root", default=".")
     ap.add_argument("--run-id", required=True)
-    ap.add_argument("--base-ref", required=True)
+    ap.add_argument("--base-ref", required=True, help="the ref the change branches from; resolved to merge-base(base-ref, HEAD)")
     args = ap.parse_args(argv)
     try:
-        problems = verify(args.project_root, args.run_id, args.base_ref, None)
+        base = merge_base(args.project_root, args.base_ref)
+        catalog = load_catalog(args.project_root, base)
+        problems = verify(args.project_root, args.run_id, base, None, catalog)
     except (RuntimeError, OSError) as exc:
         raise _Fail(f"cannot compare against {args.base_ref}: {exc}") from exc
-    print(json.dumps({"problems": problems}, indent=2, ensure_ascii=False))
+    note = "skipped: the requirement catalog has text but no FR heading this tool can read" if catalog["unparsed"] else ""
+    print(json.dumps({"problems": problems, **({"note": note} if note else {})}, indent=2, ensure_ascii=False))
     return EXIT_OK
 
 
@@ -128,7 +146,8 @@ def run_decide(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--project-root", default=".")
     ap.add_argument("--from-json", required=True)
-    ap.add_argument("--base-ref", default="origin/main", help="the ref the change branches from (catalog and observable surface are read against it)")
+    ap.add_argument("--base-ref", required=True, help="the ref the change branches from; resolved to merge-base(base-ref, HEAD), where the catalog and the diff are read")
+    ap.add_argument("--bind-id", default="", help="the run's STABLE id for answer binding (campaign unit: {campaign_slug}--{unit_id}); default --run-id")
     ap.add_argument("--run-id", default="", help="binds the operator's answers to this run (needed with --answers or when unattended)")
     ap.add_argument("--answers", default="", help="the operator's answer file (ac_decision.py answer)")
     ap.add_argument("--autonomous", action="store_true", help="only ever makes the run stricter; unattended is also read from the campaign environment")
@@ -148,27 +167,29 @@ def run_decide(argv: list[str]) -> int:
         loaded = _load(args.answers, "--answers")
         answers = loaded.get("answers") if isinstance(loaded, dict) else None
     try:
-        catalog = load_catalog(args.project_root, args.base_ref)
+        base = merge_base(args.project_root, args.base_ref)
+        catalog = load_catalog(args.project_root, base)
     except (RuntimeError, OSError) as exc:
-        raise _Fail(str(exc)) from exc
-    surface, idents = None, None
+        raise _Fail(f"cannot read the catalog at {args.base_ref}: {exc}") from exc
+    surface, idents, changes = None, None, {}
     try:
-        changes = git_changes(args.project_root, args.base_ref)
+        changes = git_changes(args.project_root, base)
         surface, idents = observable_files(changes), diff_identifiers(changes)
     except (RuntimeError, OSError) as exc:
         print(f"ac_decision: diff unavailable ({exc}); the exemption can only be tested at F11", file=sys.stderr)
-    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, args.run_id)
-    result["exemption_check"] = ("tested against the current diff" if surface and (surface["observable"] or surface["ignored"]) else
+    bind_id = args.bind_id or args.run_id
+    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id)
+    result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")
     if surface is not None:
         result["surface"] = surface
     if result["status"] == "ask" and unattended:
-        result["escalation"] = _escalation(result, args.sub_iterate_id)
+        result["escalation"] = _escalation(result, args.sub_iterate_id, bind_id)
     text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8", newline="\n")
     print(text)
-    return {"ok": EXIT_OK, "ask": EXIT_ASK}.get(result["status"], EXIT_INVALID)
+    return {"ok": EXIT_OK, "ask": EXIT_ASK, "skipped": EXIT_OK}.get(result["status"], EXIT_INVALID)
 
 
 def main(argv: list[str] | None = None) -> int:

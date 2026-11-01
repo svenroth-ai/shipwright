@@ -91,7 +91,19 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 
 ## (b) Question sheet for the operator: PENDING
 
-Ten recorded cases, the question exactly as `render_question` prints it. Cases 1 and 2 are changed ACs, case 3 a removed AC, cases 4 to 10 a new AC with no single owning FR (no owner named, an owner that is not in the catalog, two candidate owners). The AC wording is the plain outcome sentence recorded for each PR; the "until now" texts in cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog. The operator marks each "clear" or "not clear"; the bar (10 of 10 clear) is NOT claimed.
+Ten cases, each question exactly as `render_question` prints it today (regenerated after the plain-language round). Cases 1 and 2 are changed ACs, case 3 a removed AC; these stay as they were. Cases 4 to 10 are a new promise with no single owning area: a short lettered pick list in everyday words (never "feature", "FR" or an id; the ids stay in the machine record), the two or three areas that share most words with the promise, taken by their catalog TITLE, then "somewhere new", "it is not a promise" and "not wanted". The area descriptions come from the catalog's own first criterion and are shown only when short and complete, otherwise the area is shown by name alone. The pick-list areas are the real titles of this repository's catalog at `origin/main`; the "until now" texts in cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog. The operator marks each "clear" or "not clear"; the bar (10 of 10 clear) is NOT claimed.
+
+**The promise sentences in cases 4 to 10 were rewritten into everyday words for this sheet only.** The real promise text comes from the agent that builds the change, and the validator can only refuse code-shaped wording; it cannot make a sentence plain. What the agent recorded for these seven, and what the glossary (`shared/config/plain_language_glossary.json`, at most two terms explained per question, on first use) would have added:
+
+- Case 4 (#869), recorded wording: "A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged". Glossary terms found: coordinator; glossed: coordinator; left unglossed (more than two terms): none.
+- Case 5 (#884), recorded wording: "The build phase asks outside reviewers to read the code of each section unless the owner turns this off". Glossary terms found: build, phase; glossed: build, phase; left unglossed (more than two terms): none.
+- Case 6 (#897), recorded wording: "A team can keep its own stack profile in its project and it is used instead of the shipped one". Glossary terms found: stack profile; glossed: stack profile; left unglossed (more than two terms): none.
+- Case 7 (#919), recorded wording: "An app that is a chat window starts from a ready-made setup that needs no deployment". Glossary terms found: deployment; glossed: deployment; left unglossed (more than two terms): none.
+- Case 8 (#866), recorded wording: "A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed". Glossary terms found: commit; glossed: commit; left unglossed (more than two terms): none.
+- Case 9 (#936), recorded wording: "Every colour set keeps text easy to read, also when the page is enlarged". Glossary terms found: none; glossed: none; left unglossed (more than two terms): none.
+- Case 10 (#843), recorded wording: "The pull request gate is run by a different reviewer model, and what it checks stays the same". Glossary terms found: pull request, gate, reviewer model; glossed: pull request, gate; left unglossed (more than two terms): reviewer model.
+
+So after the gloss, the recorded wording of these cases still carries technical words that the glossary does not cover (for example "review", "section", "code", "merged", "reviewer"), and case 10 has a third glossary term ("reviewer model") that is not explained because only two are glossed per question. Cases 4, 5, 6, 7, 8 and 10 contain jargon in the recorded wording; case 9 does not. Reading the sheet therefore shows the best case, not what an operator will always see.
 
 ### Case 1: #839 an existing promise is changed (ask rule 1)
 
@@ -126,9 +138,13 @@ Operator: clear / not clear (PENDING)
 ### Case 4: #869 no owner named (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: Before work is accepted, the review must have looked at exactly the final version; otherwise the review is done again. Where does it belong?
+A Ongoing change at the depth it deserves: That change exists in the product.
+B Implementation planning with independent review: What exists is an implementation plan divided into sections the build phase can take one at a time.
+C Triage Inbox: It holds every one of them.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
@@ -136,9 +152,13 @@ Operator: clear / not clear (PENDING)
 ### Case 5: #884 no owner named (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: The build phase asks outside reviewers to read the code of each section unless the owner turns this off. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: While the product is being made, outside AI reviewers read each part of the code, unless the owner switches this off. Where does it belong?
+A Ongoing change at the depth it deserves: That change exists in the product.
+B Test-driven build of planned sections: What exists is working code that runs.
+C Project decomposition into scoped units: The stack profile is guessed from the kind of storage the project uses.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
@@ -146,19 +166,27 @@ Operator: clear / not clear (PENDING)
 ### Case 6: #897 owner is not in the catalog (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: A team can keep its own stack profile in its project and it is used instead of the shipped one. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: A team can keep its own set of starting technology choices inside its project, and those are used instead of the standard set. Where does it belong?
+A Project decomposition into scoped units: The stack profile is guessed from the kind of storage the project uses.
+B Implementation planning with independent review: What exists is an implementation plan divided into sections the build phase can take one at a time.
+C Multi-level project testing: The tests are actually executed at every level the project has.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
 
-### Case 7: #919 two features could own it (ask rule 2)
+### Case 7: #919 two areas could own it (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: An app that is a chat window starts from a ready-made setup that needs no deployment. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: A simple chat-style app starts from a ready-made setup that can run without being put on a server. Where does it belong?
+A End-to-end delivery pipeline
+B Audit-ready compliance evidence
+C Local project preview: The project is running on this machine and the address to open it in a browser is handed back.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
@@ -166,9 +194,13 @@ Operator: clear / not clear (PENDING)
 ### Case 8: #866 no owner named (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: Whenever work is saved to the project history, it is checked that enough requirements are covered by passing tests, however the save was typed. Where does it belong?
+A Ongoing change at the depth it deserves: That change exists in the product.
+B Multi-level project testing: The tests are actually executed at every level the project has.
+C Test-driven build of planned sections: What exists is working code that runs.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
@@ -176,9 +208,13 @@ Operator: clear / not clear (PENDING)
 ### Case 9: #936 no owner named (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: Every colour set keeps text easy to read, also when the page is enlarged. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: Every colour set keeps text easy to read, also when the page is enlarged. Where does it belong?
+A Mockups from requirements: Every one of them has at least one screen.
+B Ongoing change at the depth it deserves: That change exists in the product.
+C Triage Inbox: It holds every one of them.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
@@ -186,13 +222,17 @@ Operator: clear / not clear (PENDING)
 ### Case 10: #843 no owner named (ask rule 2)
 
 ```
-This change adds a new promise that does not clearly belong to one feature: The pull request gate is run by a different reviewer model, and what it checks stays the same. Should it hold, and under which feature?
-1 Yes, write it under this feature: <feature id like FR-01.03>
-2 No, instead: <your wording>
+This change adds a new promise: The automatic check on proposed changes is now done by a different AI reviewer, and what it checks stays the same. Where does it belong?
+A Ongoing change at the depth it deserves: That change exists in the product.
+B Independent re-check on the code host: The project's tests, its lint, its security checks and the host's own code analysis all run again there.
+C Triage Inbox: It holds every one of them.
+D Somewhere new (tell us the name).
+E It is not a promise, only how it is built.
+F Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
 
 ## (c) Ask rate: reported after the merge, never before
 
-The ask rate on the first 20 iterates after the merge is a report only. Stop rule (the brief's): above 30 percent, or the operator rejects more than 3 of 10 sampled ACs. The counting producer is `lib/ac_decision.count_decisions` (`auto`, `asked`, `exempt`, `exempt_share`), recorded per run in `ac-record.jsonl`, so a rising exemption share is visible without a model.
+The ask rate on the first 20 iterates after the merge is a report only. Stop rule (the brief's): above 30 percent, or the operator rejects more than 3 of 10 sampled ACs. The counting producer is `lib/ac_decision.count_decisions` (buckets `auto`, `asked`, `exempt`, `restore`, `unchanged`, plus `exempt_share` and `restore_share`), recorded per run in `ac-record.jsonl`, so a rising exemption share is visible without a model. There is no automated aggregator across runs yet: the 20-run report will be made by a one-off script over the per-run records when the time comes (not built now).

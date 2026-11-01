@@ -252,9 +252,10 @@
             "findings": { "type": "array", "items": { "type": "string" } }
           }
         },
+        "bind_id": { "type": "string", "description": "The unit's stable id (campaign slug and unit id, never an attempt id) the question hashes are bound to; the hold recomputes every question_sha256 from question text, bind_id and item index." },
         "ac_questions": {
           "type": "array",
-          "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask rule that fired (1 = an existing AC changed or removed, 2 = no single FR owns the new AC); `question_sha256` is the sha256 of the question text the operator's answer is bound to.",
+          "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask rule that fired (1 = an existing AC changed or removed, 2 = no single area owns the new AC, 3 = a new area of the product); `question_sha256` is the sha256 of the question text the operator's answer is bound to.",
           "items": {
             "type": "object",
             "required": ["item", "row", "question", "question_sha256"],
@@ -262,7 +263,8 @@
               "item": { "type": "integer", "minimum": 0 },
               "row": { "type": ["integer", "string"] },
               "question": { "type": "string", "pattern": "\\S" },
-              "question_sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+              "question_sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+              "options": { "type": "object", "description": "A no-owner question is a lettered pick list; this maps each letter to the machine answer (the area id stays here, never in the question text)." }
             }
           }
         },
