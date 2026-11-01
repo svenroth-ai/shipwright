@@ -1,0 +1,7 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+{"severity":"medium","claim_under_doubt":"visible-match click does not weaken S02","finding":"option branch could let a visible dropdown pass list-beside-thread","disposition":"FIXED: option branch removed, options excluded from the visible count, unit case dropdown-only must fail"},
+{"severity":"low","claim_under_doubt":"a failed click still yields false","disposition":"FIXED: opened requires the click not to fail"},
+{"severity":"low","claim_under_doubt":"page.reload cannot harm a launched task","disposition":"REBUTTED/accepted: resumed-launched path is filtered before the call; PTY reattach behaviour lives in the WebUI repo and is unverified; the retry is labelled NOT proven; each miss records the task state"},
+{"severity":"low","claim_under_doubt":"excluding e2e/ only removes false positives","disposition":"REBUTTED: the operator spec asked for the e2e/ exclusion; the app's own test suite is judged by S06"},
+{"severity":"low","claim_under_doubt":"moving fixture selection into the test changes nothing for operators","disposition":"ACCEPTED: documented in README and changelog drop; an env-file line is now honoured"}],
+"summary": "Root cause confirmed against the preserved app (hidden .master-picker select precedes the list)."}

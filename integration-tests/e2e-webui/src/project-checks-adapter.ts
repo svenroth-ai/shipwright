@@ -53,10 +53,12 @@ export function findRecorded(projectPath: string): { perPlatform: Record<string,
 }
 
 export function checkSelfContainedWithAdapter(projectPath: string, checklist: Checklist): void {
-  const code = walk(projectPath, (r) => /\.(py|js|mjs|cjs|ts|html|css|sh)$/.test(r) && !/^(tests|brief|seed|docs|\.shipwright|\.claude|playwright-report|test-results|coverage|htmlcov)\//.test(r));
+  // `e2e/` is the app's own Playwright suite (not shipped code): it points the browser at made-up reserved-domain URLs such as
+  // www.reddit.example. Its tests and screenshots are judged by S06, not here.
+  const code = walk(projectPath, (r) => /\.(py|js|mjs|cjs|ts|html|css|sh)$/.test(r) && !/^(tests|e2e|brief|seed|docs|\.shipwright|\.claude|playwright-report|test-results|coverage|htmlcov)\//.test(r));
   const inAdapter = (r: string) => r.startsWith(`${ADAPTER_DIR}/`);
   const adapter = code.filter(inAdapter);
-  const outside = findExternalUse(projectPath, code.filter((r) => !inAdapter(r)));
+  const outside = findExternalUse(projectPath, code.filter((r) => !inAdapter(r)), { reservedTestDomains: true });
   const hasFetchItems = adapter.some((r) => /\bdef\s+fetch_items\s*\(/.test(fs.readFileSync(path.join(projectPath, r), "utf8")));
   const rec = findRecorded(projectPath);
   const recOk = rec.missing.length === 0 && rec.total >= 9 && Object.values(rec.perPlatform).every((n) => n >= 3) && rec.old >= 2;

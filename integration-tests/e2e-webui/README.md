@@ -33,8 +33,9 @@ port is fixed by the profile.
 
 ## Two fixtures
 
-`SHIPWRIGHT_E2E_FIXTURE` picks the app the run builds; unset means `social-engagement-board` (above). An unknown name is
-refused. `social-engagement-real` (`../fixtures/social-engagement-real/`, key `../fixtures/social-engagement-real-expected-result.md`)
+`SHIPWRIGHT_E2E_FIXTURE` picks the app the run builds; unset means `social-engagement-board` (above). Like the other
+inputs it is read from the process environment first, then from the env file (a line in `autorune2e/.env` works); the
+report's Operator inputs print the active `fixture` and its `fixture_source`. An unknown name is refused. `social-engagement-real` (`../fixtures/social-engagement-real/`, key `../fixtures/social-engagement-real-expected-result.md`)
 is shaped like the real `social-engagement` skill: a master-detail board (thread list left, one thread right with summary,
 draft and a Copy reply button, feedback, status), the svenroth.ai tokens including Inter and Geist Mono, a status filter
 with skipped and expired, and the keywords as sources (Syften filters, LinkedIn queries), not a board tab. The hits come
@@ -69,6 +70,7 @@ committed; `.env.example` lists the names only. The report records which source 
 | `SHIPWRIGHT_E2E_MAX_MINUTES` | Overall wall-clock budget in whole minutes. |
 | `SHIPWRIGHT_E2E_WORKDIR` | Optional. The temp project, the temp HOME and `e2e-report/` are created under it (use a folder outside the repo). Unset: OS temp directory. |
 | `SHIPWRIGHT_E2E_RESUME_RUN` | Optional. Continue a stopped run: the `run-<id>` folder directly under the workdir. See "Resume" below. |
+| `SHIPWRIGHT_E2E_FIXTURE` | Optional. `social-engagement-board` (default) or `social-engagement-real`; see "Two fixtures". |
 | `SHIPWRIGHT_E2E_ENV_FILE` | Optional, process environment only. Env file path. Default `../autorune2e/.env` relative to the repo root (no user path is hard-coded). |
 
 Authentication: set `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` in the environment. Otherwise the spec copies

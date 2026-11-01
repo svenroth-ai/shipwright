@@ -10,7 +10,7 @@ import { httpCall } from "../src/board-api.js";
 import { Checklist, parseChecklist } from "../src/checklist.js";
 import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
-import { activeFixture, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
+import { activeFixture, PROFILE, type FixtureName, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
 import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
@@ -29,10 +29,6 @@ import { tourBoard } from "../src/tour.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, "..");
 const repoRoot = path.resolve(projectRoot, "..", "..");
-const FIXTURE_NAME = activeFixture(); // SHIPWRIGHT_E2E_FIXTURE; the default is the tabs fixture
-const variant = variantFor(FIXTURE_NAME);
-const fixtureDir = fixturePath(repoRoot, FIXTURE_NAME);
-const expectedFile = expectedPath(repoRoot, FIXTURE_NAME);
 const TEARDOWN_MARGIN_MS = 15 * 60_000; // room after the run budget for the report and the shutdown
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
@@ -54,14 +50,19 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
   // 1. Refuse to start without the operator inputs and an authentication source (no defaults).
   let cfg;
   let authSource: AuthSource;
+  let FIXTURE_NAME: FixtureName; // SHIPWRIGHT_E2E_FIXTURE from the process env or the env file; the default is the tabs fixture
   const realHome = realHomeDir();
   try {
     cfg = loadConfig(repoRoot);
     authSource = pickAuthSource(process.env, realHome);
+    FIXTURE_NAME = activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture });
   } catch (error) {
     if (error instanceof ConfigError || error instanceof AuthError) throw new Error(error.message);
     throw error;
   }
+  const variant = variantFor(FIXTURE_NAME);
+  const fixtureDir = fixturePath(repoRoot, FIXTURE_NAME);
+  const expectedFile = expectedPath(repoRoot, FIXTURE_NAME);
   // MAX_MINUTES is a real limit: the test timeout follows it, with room left for the report and the shutdown.
   test.setTimeout(cfg.maxMinutes * 60_000 + TEARDOWN_MARGIN_MS);
   if (!onPath(["claude", "claude.exe", "claude.cmd"])) throw new Error("Refusing to start: the claude binary is not on PATH.");
@@ -110,6 +111,8 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
         env_file: cfg.envFileFound ? "found" : "not found",
         project: projectPath,
         resume_run_source: cfg.sources.SHIPWRIGHT_E2E_RESUME_RUN,
+        fixture: FIXTURE_NAME,
+        fixture_source: cfg.sources.SHIPWRIGHT_E2E_FIXTURE === "unset" ? "unset (default)" : cfg.sources.SHIPWRIGHT_E2E_FIXTURE,
       },
     },
     checklist,
@@ -192,7 +195,10 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (resume?.skipStartPipeline && !hasLaunch) {
       await report.step("Resume: no launch button on the task page, the task was already launched", page);
     } else {
-      await ui.startTaskSession(page);
+      await ui.startTaskSession(page, async (attempt) => {
+        const state = await ui.taskStateText(page.request, base, taskId);
+        await report.step(`Launch button missing (attempt ${attempt} of 3)`, page, `Task ${taskId ?? "?"}: ${state}.${attempt < 3 ? " Reloading the task page." : " Giving up."}`);
+      });
     }
     await report.step("Task page after launch", page);
     status = await follow(page, base, projectId, projectPath, deadline, cfg.maxMinutes, report);

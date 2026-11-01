@@ -1,0 +1,1 @@
+e2e-webui harness: S02 no longer fails on the hidden thread-picker option and reports what it clicked; S05 ignores the app's own e2e/ suite and reserved test domains; SHIPWRIGHT_E2E_FIXTURE is read from the env file and shown in the report; the launch button is retried after a reload (not proven by a run)

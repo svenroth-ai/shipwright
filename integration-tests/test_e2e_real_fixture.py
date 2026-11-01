@@ -144,4 +144,6 @@ def test_harness_selects_the_fixture_by_name_and_defaults_to_the_tabs_one():
     assert 'REAL_FIXTURE_NAME = "social-engagement-real"' in fixture_ts
     assert "SHIPWRIGHT_E2E_FIXTURE" in fixture_ts
     spec = (_REPO / "integration-tests" / "e2e-webui" / "tests" / "e2e.spec.ts").read_text(encoding="utf-8")
-    assert "activeFixture()" in spec and "variantFor(FIXTURE_NAME)" in spec
+    assert "activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture })" in spec and "variantFor(FIXTURE_NAME)" in spec
+    env_ts = (SRC / "env.ts").read_text(encoding="utf-8")  # the env file is read like the other inputs (trg-cbf58cba)
+    assert "SHIPWRIGHT_E2E_FIXTURE" in env_ts
