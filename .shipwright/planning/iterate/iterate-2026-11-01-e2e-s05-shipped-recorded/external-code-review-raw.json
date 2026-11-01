@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the diff. The change enforces S05\u2019s byte-for-byte requirement, rejects missing or extra files, and provides useful mismatch evidence. Tests exercise valid copies, changed bytes, line endings, missing files, extra files, and added items.\n\nShip-as-is. This assessment is based on the supplied diff; execution was blocked by the environment\u2019s command policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: edge-case\n  Severity: medium\n  File: integration-tests/e2e-webui/src/project-checks-adapter.ts \u2014 `compareShippedRecorded` / `SHIPPED_RECORDED_DIR`\n  Finding: The reference is read straight from the repo working tree. On a checkout with `core.autocrlf` (Windows), the fixture's `syften.json` can be materialized with CRLF while the built project's copy (produced by whatever the run used) keeps LF, making a faithful build fail S05 purely from checkout configuration. The code detects and reports \"line endings only\" but still fails the check, and this failure mode depends on developer machine settings rather than the build's behaviour.\n  Suggestion: Pin the comparison to content the repo guarantees (e.g. `.gitattributes` forcing LF for `seed/recorded/*`), or compare against `git show` bytes; otherwise document that Windows checkouts must disable autocrlf for these fixtures.\n\n- Category: bug\n  Severity: low\n  File: integration-tests/e2e-webui/src/project-checks-adapter.ts \u2014 `listFiles`\n  Finding: `e.isDirectory()` is false for a symlink to a directory (Dirent reports `isSymbolicLink`), so a symlinked subdirectory or file under the built `seed/recorded/` escapes both the shipped-file loop and the extra-file loop. `lstatSync(target).isFile()` has the same blind spot for the reference side.\n  Suggestion: Also traverse `e.isSymbolicLink()` entries (or use `fs.statSync` to resolve) so extra content behind symlinks is detected.\n\n- Category: test\n  Severity: low\n  File: integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts:36-37 and real-variant.spec.ts \u2014 `reference()`/`ref`\n  Finding: The temp reference folders created with `mkdtempSync`/`tmp()` are never removed (only `root` is cleaned in the `finally`). This is the same leak the recorded code review already flags; tests accumulate temp dirs across runs in CI.\n  Suggestion: Remove the ref dirs in the existing `finally` blocks.\n\n- Category: test\n  Severity: low\n  File: integration-tests/e2e-webui/tests/unit/shipped-recorded.spec.ts \u2014 extra-item case\n  Finding: The \"extra item inside a shipped file\" scenario is only exercised on `syften.json`. `apify_linkedin.json` has a different shape (objects with `linkedinUrl`/`postedAt`), so the drift evidence path for that file (`N items, the package ships M` vs the byte-count fallback) is untested.\n  Suggestion: Add one case appending an item to `apify_linkedin.json` and assert the named evidence.\n\n- Category: test\n  Severity: low\n  File: integration-tests/e2e-webui/tests/unit/shipped-recorded.spec.ts:59 area \u2014 `marker` assertion\n  Finding: The marker lookup falls back between `'\"title\": \"'` and `'\"title\":\"'` but the changed-byte write (`0x58/0x59`) is applied only to whichever marker matched; if the first title's first character were not ASCII-safe (e.g. multibyte), writing a single byte would corrupt the JSON and the test would then pass for the wrong reason (invalid data) rather than testing the byte comparison on valid data. Low risk given the fixture is pinned, but the \"still valid data\" assertion would still hold (12 items) even if the write broke a different field elsewhere.\n  Suggestion: Assert the byte at `at` is an ASCII letter before flipping, or compare `JSON.parse` of changed vs original for structural equality apart from one title char.\n\n## Spec compliance\n\nThe iterate goal \u2014 S05 must prove `seed/recorded/` is byte-identical to the package's files with nothing added/replaced/removed \u2014 is implemented end to end: the checker compares against the repo fixture, the key text was updated to say so, the README documents it, the Python structure test pins the two reference files, and the new spec covers pass / changed byte / line-endings / missing / extra file / extra subfolder file / extra item / no-reference fail-closed. Behaviour matches the acceptance criteria.\n\n## Overall assessment\n\nThe work is sound and well-tested; the findings are refinements, chiefly the Windows-checkout line-ending hazard that the team already surfaced and accepted deliberately. Ship-with-fixes at most for the symlink traversal and temp-dir cleanup; nothing blocks.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-01-e2e-s05-shipped-recorded",
+    "at": "2026-11-01T19:23:52.595902+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

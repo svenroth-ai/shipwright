@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-01-e2e-s05-shipped-recorded",
+  "date": "2026-11-01",
+  "section": "Iterate — change: S05 proves the build kept the shipped recorded answers",
+  "title": "S05 compares seed/recorded/ with the package, byte for byte",
+  "context": "A build that ignored the recordings the package ships and wrote its own still passed S05, which only validated whatever sat in the built project's seed/recorded/.",
+  "decision": "S05 (source-adapter variant) also fails unless seed/recorded/ equals the package's recorded files byte for byte with no extra file; evidence names the file and missing, changed or extra.",
+  "consequences": "Faithful copies pass; a changed, missing, extra or line-ending-only different file fails. The tabs variant is untouched. The reference is read from the repo, never from the build.",
+  "rationale": "Extending S05 keeps the answer key small and adds no item id; comparing against the repo copy means a build cannot tamper with its own reference.",
+  "rejected": "A new item id (larger answer key); normalizing line endings (operator asked for byte-identical, no tolerance).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

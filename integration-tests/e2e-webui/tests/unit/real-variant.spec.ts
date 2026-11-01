@@ -157,6 +157,12 @@ const write = (root: string, rel: string, text: string) => {
   fs.writeFileSync(path.join(root, rel), text);
 };
 const day = (n: number) => new Date(Date.UTC(2026, 9, 29) - n * 86_400_000).toISOString();
+/** A copy of the project's seed/recorded/ to stand in as "what the package ships" for tests that build synthetic recordings. */
+const reference = (root: string) => {
+  const dir = tmp();
+  fs.cpSync(path.join(root, "seed", "recorded"), dir, { recursive: true });
+  return dir;
+};
 /** `aged`: the first item of every platform is 40 days older than the rest (two or more are needed overall). */
 const recorded = (root: string, perPlatform = 3, aged = true, fields: { url?: boolean } = {}) => {
   const when = (i: number) => day(i === 0 && aged ? 40 : i);
@@ -172,31 +178,32 @@ test("S05 variant: only the adapter may name a service; the adapter must define 
     write(root, "backend/server.py", "from sources import fetch_items\nHOST = 'http://127.0.0.1:3911'\n");
     write(root, "backend/sources/__init__.py", "import os\nURL = 'https://syften.com/api/v1/items'\nTOKEN = os.environ.get('SYFTEN_TOKEN')\ndef fetch_items(sources):\n    return []\n");
     recorded(root);
+    const ref = reference(root);
     const l = list();
-    checkSelfContainedWithAdapter(root, l);
+    checkSelfContainedWithAdapter(root, l, ref);
     expect(verdict(l, "S05"), l.items.find((i) => i.id === "S05")!.evidence).toBe("pass");
     expect(findRecorded(root).perPlatform).toEqual({ reddit: 3, hackernews: 3, linkedin: 3 });
 
     write(root, "board/app.js", "fetch('https://api.apify.com/v2/acts')\n"); // outside the adapter
     const l2 = list();
-    checkSelfContainedWithAdapter(root, l2);
+    checkSelfContainedWithAdapter(root, l2, ref);
     expect(verdict(l2, "S05")).toBe("fail");
     expect(l2.items.find((i) => i.id === "S05")!.evidence).toMatch(/outside the adapter.*api\.apify\.com/);
     fs.rmSync(path.join(root, "board"), { recursive: true });
 
     write(root, "backend/sources/__init__.py", "URL = 'https://syften.com/api/v1/items'\n"); // no fetch_items
     const l3 = list();
-    checkSelfContainedWithAdapter(root, l3);
+    checkSelfContainedWithAdapter(root, l3, ref);
     expect(verdict(l3, "S05")).toBe("fail");
 
     write(root, "backend/sources/__init__.py", "def fetch_items(s):\n    return []\n");
     recorded(root, 2); // two per platform is too few
     const l4 = list();
-    checkSelfContainedWithAdapter(root, l4);
+    checkSelfContainedWithAdapter(root, l4, reference(root));
     expect(verdict(l4, "S05")).toBe("fail");
     fs.rmSync(path.join(root, "seed"), { recursive: true });
     const l5 = list();
-    checkSelfContainedWithAdapter(root, l5);
+    checkSelfContainedWithAdapter(root, l5, ref);
     expect(l5.items.find((i) => i.id === "S05")!.evidence).toMatch(/recorded answers missing/);
 
     // Entries that lack documented fields are not counted, and a set with no old item gives the board no expired thread.
@@ -205,7 +212,7 @@ test("S05 variant: only the adapter may name a service; the adapter must define 
     recorded(root, 3, false);
     expect(findRecorded(root)).toMatchObject({ total: 9, old: 0 });
     const l6 = list();
-    checkSelfContainedWithAdapter(root, l6);
+    checkSelfContainedWithAdapter(root, l6, reference(root));
     expect(verdict(l6, "S05")).toBe("fail");
     recorded(root);
     expect(findRecorded(root).old).toBeGreaterThanOrEqual(2);
