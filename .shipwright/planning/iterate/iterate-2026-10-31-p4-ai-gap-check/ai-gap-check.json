@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "prompt_version": 2,
+  "status": "ran",
+  "reviewer": "openai",
+  "reason": "",
+  "model": "openai/gpt-6.1-sol",
+  "diff_chars": 132605,
+  "records_left_out": 28,
+  "files_cut": [],
+  "raw_reply": "{\n  \"requirements_changed\": [],\n  \"requirements_checked\": [\n    {\n      \"ac\": \"FR-01.11.AC49\",\n      \"why\": \"Adds an independent advisory review, a pull-request note, and visible reasons when the review cannot run.\"\n    },\n    {\n      \"ac\": \"FR-01.11.AC47\",\n      \"why\": \"Reads the author's requirement declaration without changing how that declaration is required.\"\n    },\n    {\n      \"ac\": \"FR-01.11.AC48\",\n      \"why\": \"Reports gaps without changing the existing rules for closing declared gaps.\"\n    },\n    {\n      \"ac\": \"FR-01.11.AC44\",\n      \"why\": \"Registers the new warning in the shared set of finalization checks.\"\n    }\n  ],\n  \"verdict\": \"agree\",\n  \"gap\": false,\n  \"gap_fr\": \"\",\n  \"reason\": \"The change adds the advisory independent check under the requirement the author named. The new criterion describes that behavior and closes the declared gap, so no uncovered product behavior remains evident.\"\n}",
+  "result": {
+    "requirements_changed": [],
+    "requirements_checked": [
+      {
+        "ac": "FR-01.11.AC49",
+        "why": "Adds an independent advisory review, a pull-request note, and visible reasons when the review cannot run."
+      },
+      {
+        "ac": "FR-01.11.AC47",
+        "why": "Reads the author's requirement declaration without changing how that declaration is required."
+      },
+      {
+        "ac": "FR-01.11.AC48",
+        "why": "Reports gaps without changing the existing rules for closing declared gaps."
+      },
+      {
+        "ac": "FR-01.11.AC44",
+        "why": "Registers the new warning in the shared set of finalization checks."
+      }
+    ],
+    "verdict": "agree",
+    "gap": false,
+    "gap_fr": "",
+    "reason": "The change adds the advisory independent check under the requirement the author named. The new criterion describes that behavior and closes the declared gap, so no uncovered product behavior remains evident."
+  },
+  "run_id": "iterate-2026-10-31-p4-ai-gap-check",
+  "block": "### Independent gap check (openai/gpt-6.1-sol)\n\nAdvisory only; it never blocks. It checks the declaration against the diff for a wrong \"none\" and for catalog gaps.\n\n- Requirements changed: none\n- Requirements checked: FR-01.11.AC49 (Adds an independent advisory review, a pull-request note, and visible reasons when the review cannot run.); FR-01.11.AC47 (Reads the author's requirement declaration without changing how that declaration is required.); FR-01.11.AC48 (Reports gaps without changing the existing rules for closing declared gaps.); FR-01.11.AC44 (Registers the new warning in the shared set of finalization checks.)\n- Check verdict on the declaration: **agree**\n- Catalog gap: **no**\n- Reason: The change adds the advisory independent check under the requirement the author named. The new criterion describes that behavior and closes the declared gap, so no uncovered product behavior remains evident.\n"
+}

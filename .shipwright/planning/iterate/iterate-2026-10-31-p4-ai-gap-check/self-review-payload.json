@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"one non-Claude call, PR-body block with changed/checked/verdict/gap, never blocks, iterate only; measure bars reported honestly in the P4 MEASURE file, operator bar pending"},
+{"name":"Error Handling","verdict":"pass","note":"every failure (no key, provider down, bad JSON, crash, Claude-family model) becomes a not_run record; tool exits 0; incomplete replies are rejected"},
+{"name":"Security Basics","verdict":"pass","note":"free text only through files and a one-pass template; model text rendered inert (no markup, no @-mention); prompt-injection can at worst flip an advisory verdict"},
+{"name":"Test Quality","verdict":"pass","note":"29 tests: parsing, block, trimming, never-raises, exit 0, git working-tree diff, record check, replay event reader"},
+{"name":"Performance Basics","verdict":"pass","note":"one call per iterate; diff capped at 400k chars by whole files"},
+{"name":"Naming & Structure","verdict":"pass","note":"pure core in lib, thin CLI, replay tool, one verifier mirroring the P1/P3 checks"},
+{"name":"Affected Boundaries","verdict":"pass","note":"ai-gap-check.json producer (tool) and consumer (verifier) round-trip tested; model reply boundary tested with fakes and live in the replay"}
+]}

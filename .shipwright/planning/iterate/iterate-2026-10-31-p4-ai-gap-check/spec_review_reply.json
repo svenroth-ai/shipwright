@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Every P4 requirement in the BRIEF is implemented as written; the whole catalog is sent instead of only the owning FRs ACs, a superset the check requires."}

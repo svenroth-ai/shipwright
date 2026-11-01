@@ -1,0 +1,100 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-10-31-p4-ai-gap-check",
+    "date": "2026-11-01",
+    "unit": {
+      "status": "passed",
+      "passed": 14959,
+      "skipped": 69,
+      "total": 15028
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "reply parsing accepts plain and fenced JSON and rejects incomplete or unusable replies",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_parse_reply_accepts_plain_and_fenced_json PASSED; test_ai_gap_check.py::test_parse_reply_rejects_unusable_replies PASSED; test_ai_gap_check.py::test_incomplete_reply_is_unusable_and_first_oversized_file_is_cut PASSED"
+        },
+        {
+          "behavior": "the PR-body block carries changed, checked, verdict, gap, says it is advisory, and renders model text inert",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_block_has_the_four_parts_and_says_it_is_advisory PASSED; test_ai_gap_check.py::test_block_renders_model_text_inert_and_flags_an_incomplete_input PASSED; test_ai_gap_check.py::test_inert_text_cannot_close_issues_mention_or_link PASSED"
+        },
+        {
+          "behavior": "a check that cannot run leaves a visible not-run note and never raises or blocks (no key, provider error, bad JSON, crash, exit 0)",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_not_run_note_is_visible_and_says_nothing_was_blocked PASSED; test_ai_gap_check.py::test_run_check_degrades_to_not_run_never_raises PASSED; test_ai_gap_check.py::test_run_check_survives_a_crashing_provider_module PASSED; test_ai_gap_check.py::test_main_always_exits_zero_and_writes_both_files PASSED; test_ai_gap_check.py::test_main_survives_a_cp1252_stdout_and_non_ascii_untracked_names PASSED"
+        },
+        {
+          "behavior": "diff trimming drops finalization records and credential-shaped files, cuts whole files, fails closed on unreadable headers",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_trim_drops_finalization_records_and_cuts_by_whole_file PASSED; test_ai_gap_check.py::test_secret_shaped_files_are_dropped_even_when_tracked_and_all_cut_means_nothing_to_check PASSED; test_ai_gap_check.py::test_secret_detection_survives_spaces_quotes_and_unreadable_headers PASSED"
+        },
+        {
+          "behavior": "project opt-outs, gateway-only routes and the Codex driver are honoured; the reviewer is never Claude-family",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_run_check_respects_opt_outs_and_gateway PASSED; test_ai_gap_check.py::test_codex_driver_never_gets_a_gpt_reviewer_and_secret_files_stay_home PASSED; test_ai_gap_check.py::test_run_check_refuses_a_claude_family_model PASSED"
+        },
+        {
+          "behavior": "working-tree diff covers committed, edited and new files without touching the index",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_working_tree_diff_sees_committed_edited_and_new_files PASSED"
+        },
+        {
+          "behavior": "F11 record check warns only, accepts ran and not_run, is registered",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_record_check_is_advisory_and_accepts_ran_or_not_run PASSED; test_ai_gap_check.py::test_record_check_is_registered PASSED"
+        },
+        {
+          "behavior": "free text reaches the model only through arguments, never a shell",
+          "disposition": "tested",
+          "evidence": "test_ai_gap_check.py::test_run_check_ran_passes_free_text_through_arguments PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_ai_gap_check.py -q",
+      "exit_code": 0,
+      "tests_run": 43,
+      "evidence_path": ".shipwright/runs/iterate-2026-10-31-p4-ai-gap-check/surface_verification.log",
+      "timestamp": "2026-11-01T00:41:59.111Z"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

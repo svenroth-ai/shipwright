@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Callable
 
 from .affected_acs_check import check_affected_acs_declared
+from .ai_gap_check_record import check_ai_gap_check_recorded
 from .cascade_trigger import check_cascade_trigger
 from .common import CheckResult
 from .exemption_record_check import check_exemption_record
@@ -49,6 +50,7 @@ CLAIM_CHECKS: list[Callable[[Path, str, str], CheckResult]] = [
     check_cascade_trigger,
     check_affected_acs_declared,
     check_plan_stub_recorded,
+    check_ai_gap_check_recorded,
 ]
 
 
