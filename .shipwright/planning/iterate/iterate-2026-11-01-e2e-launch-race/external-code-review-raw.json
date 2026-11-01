@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/driver.ts:110\n- Finding: The no-button path only accepts `awaiting_external_start` and `active`. If the task finishes or fails during the 10-second button wait, it has already launched but falls into `startTaskSession`, waiting for a Launch button that will never appear. This leaves the original timeout problem for fast terminal transitions.\n- Suggestion: Recognize already-launched terminal states too, and let the existing follow logic handle completion or failure.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/launch-recovery.ts:27\n- Finding: Any terminal text containing `claude` confirms launch, including `claude: command not found` or a command echoed without successful execution. With the task still `awaiting_external_start`, recovery then exits successfully and the harness can stall again.\n- Suggestion: Require evidence of successful agent startup or a corresponding task-state transition. Add a test where the terminal reports a missing `claude` executable while the state remains awaiting launch.\n\nOverall assessment: ship-with-fixes. The navigation guard addresses the reported reload, but launch detection still has paths that produce unnecessary timeouts or falsely confirm success.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: integration-tests/e2e-webui/src/launch-recovery.ts:22 (`launchVerdict`)\n  Finding: The state regex treats every state word except `awaiting_external_start` and `not reported` as \"started\" \u2014 including `failed`, `inactive`, `cancelled`, and `error`. A task that failed during launch is reported as \"Launch confirmed\" with the message \"the task left awaiting_external_start\", the run proceeds, and the real failure surfaces much later in a confusing place. Note the spec's own helper `launchedByModal` in driver.ts explicitly excludes `failed` and `inactive`, so the two functions disagree on what counts as launched.\n  Suggestion: Use an allow-list of genuinely-launched states (e.g. `active|running|completed` per the actual API vocabulary) rather than \"anything except awaiting/not-reported\", or at minimum exclude `failed|inactive|cancelled|error`.\n\n- Category: test\n  Severity: low\n  File: integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts:149-155 (`launchVerdict` assertions)\n  Finding: The unit tests never cover the failure-state case above \u2014 `launchVerdict(\"state failed\", ...)` and `launchVerdict(\"state inactive\", ...)` are untested, so the disagreement with `launchedByModal` is invisible to the suite. The tests only assert stalled-vs-started on banners and on `awaiting_external_start`, which is the one negative case the regex handles.\n  Suggestion: Add assertions that `failed`/`inactive` are not \"started\"; those tests would fail against the current implementation and pin the intended behavior.\n\n- Category: edge-case\n  Severity: low\n  File: integration-tests/e2e-webui/src/launch-recovery.ts:14 (`captureLaunchCommands`)\n  Finding: The captured commands are stored only when the `/launch` response body resolves, and `res.json()` failures are swallowed. If the response is not JSON or arrives after `ensureLaunched` first calls `handOver` (possible with a very fast stall plus a slow body), `handOverCommands` returns false and `ensureLaunched` throws \"no command was captured\" even though the launch response existed. Also, the response listener matches any POST to `/launch` on any origin the page talks to, not just `base`.\n  Suggestion: Anchor the URL check to the harness `base` if available, and consider having `handOver` retry once after a short grace period before giving up on the capture.\n\n- Category: edge-case\n  Severity: low\n  File: integration-tests/e2e-webui/src/launch-recovery.ts:63-70 (`handOverCommands`)\n  Finding: `page.evaluate` will throw if the page navigates or is on `about:blank` at that moment (e.g., the modal's own navigation racing the reload), and that exception propagates out of `ensureLaunched` as an opaque Playwright error instead of the intended \"state + terminal\" diagnostic.\n  Suggestion: Wrap the evaluate/reload in a try/catch and treat a failed hand-over as `sent: false` so the caller gets the designed fail-fast message.\n\n- Category: bug\n  Severity: low\n  File: integration-tests/e2e-webui/tests/e2e.spec.ts:186 (`mk` helper in tests)\n  Finding: The mock shares one counter `i` across `readState` and `readTerminal` and clamps with `Math.min`, so the state/terminal sequences drift out of sync after the arrays differ in length (as in the `retry` case, 5 states vs 1 terminal). The tests pass, but they validate the mock's accidental indexing rather than a guaranteed state/terminal pairing \u2014 a real implementation bug in pairing order could slip through.\n  Suggestion: Use separate indices (or step both from one index) for state and terminal in the mock.\n\n## Spec compliance\n\nThe core spec item \u2014 no hard reload after the modal launch (conditional `page.goto` only when not already on the task page), and proceeding without the Launch button when the task was launched by the modal \u2014 is implemented, including the recovery/watch mechanism and fail-fast with diagnostics. The `launchedByModal` gating correctly distinguishes fresh runs from resumes. The main gap is the `launchVerdict` state handling above, which can convert a failed launch into \"confirmed\".\n\n## Overall assessment\n\nThe approach is sound and matches the brief; fix the `launchVerdict` state allow-list (and pin it with tests) before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-01-e2e-launch-race",
+    "at": "2026-11-01T23:30:14.950962+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

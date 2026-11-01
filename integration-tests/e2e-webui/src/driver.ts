@@ -71,7 +71,7 @@ export async function launchPipeline(page: Page): Promise<void> {
 }
 
 /**
- * The modal only creates the task (state "draft"). The session starts with the green Launch button on the task
+ * A task created without the modal launch is a "draft". The session starts with the green Launch button on the task
  * page, so click it and wait until it is gone, which means the terminal launch was accepted.
  */
 export async function startTaskSession(page: Page, onMiss?: (attempt: number) => Promise<void>, waitMs: { first: number; retry: number } = { first: 30_000, retry: 20_000 }): Promise<void> {
@@ -103,6 +103,11 @@ export async function taskStateText(request: APIRequestContext, base: string, ta
   } catch (error) {
     return `state unreadable (${String((error as Error).message).slice(0, 80)})`;
   }
+}
+
+/** True when no launch button is there because the modal's Launch already started the task (state as `taskStateText` words it). */
+export function launchedByModal(hasLaunch: boolean, stateText: string): boolean {
+  return !hasLaunch && /^state (awaiting_external_start|active)$/.test(stateText);
 }
 
 export async function findTaskId(request: APIRequestContext, base: string, projectId: string): Promise<string | null> {

@@ -12,6 +12,7 @@ import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
 import { activeFixture, PROFILE, type FixtureName, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
+import { captureLaunchCommands, ensureLaunched, handOverCommands } from "../src/launch-recovery.js";
 import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
 import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
@@ -178,22 +179,37 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (!resume?.skipPackageCopy) fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
     await ui.openBoard(page, base, projectId);
     await report.step("Project ready, Brief package in brief/", page, [resume?.note, housekeeping].filter(Boolean).join(" "));
+    let launched: ReturnType<typeof captureLaunchCommands> | null = null;
     if (resume?.skipStartPipeline) {
       await report.step("Resume: the pipeline was already started, New pipeline not clicked again", null);
     } else {
       await ui.startPipeline(page, "Build the social engagement board", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
       markPipelineStarted(runDir); // the task exists from here on: a resume must not click "New pipeline" again
       await report.step("New pipeline, package handed over", page);
+      launched = captureLaunchCommands(page);
       await ui.launchPipeline(page);
     }
 
     // 4. Follow the phases, answer gates, until complete, failed, idle or out of budget.
     const taskId = await waitForTask(page, base, projectId);
-    if (taskId) await page.goto(`${base}/tasks/${taskId}`);
+    // The modal's Launch button already opens the task page and hands the start command over in the browser; a hard
+    // reload of that page before the terminal typed it loses the command (task stays awaiting_external_start).
+    if (taskId && !page.url().includes(`/tasks/${taskId}`)) await page.goto(`${base}/tasks/${taskId}`);
     // A resumed task may already be launched (or its pipeline over): no launch button is then not an error.
     const hasLaunch = await page.getByTestId("cta-launch-in-terminal").waitFor({ state: "visible", timeout: 10_000 }).then(() => true, () => false);
-    if (resume?.skipStartPipeline && !hasLaunch) {
-      await report.step("Resume: no launch button on the task page, the task was already launched", page);
+    const launchedByModal = !resume?.skipStartPipeline && ui.launchedByModal(hasLaunch, await ui.taskStateText(page.request, base, taskId));
+    if ((resume?.skipStartPipeline || launchedByModal) && !hasLaunch) {
+      await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page);
+      // The modal's hand-over can be lost (the task then waits at an empty prompt and the page has no button): watch, hand it over again, fail fast.
+      if (launchedByModal) {
+        await ensureLaunched({
+          readState: () => ui.taskStateText(page.request, base, taskId),
+          readTerminal: () => page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => ""),
+          handOver: () => handOverCommands(page, taskId!, launched?.get() ?? null),
+          step: async (title, detail) => { await report.step(title, page, detail); },
+          sleep: (ms) => page.waitForTimeout(ms),
+        });
+      }
     } else {
       await ui.startTaskSession(page, async (attempt) => {
         const state = await ui.taskStateText(page.request, base, taskId);

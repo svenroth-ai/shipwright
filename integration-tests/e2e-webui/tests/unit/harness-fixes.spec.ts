@@ -7,7 +7,8 @@ import { expect, test } from "@playwright/test";
 import { checkMasterDetailShape, snapshotMasterDetail, type MasterDetailSnapshot } from "../../src/board-dom-real.js";
 import type { RealThreadState } from "../../src/board-api-real.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
-import { startTaskSession, taskStateText } from "../../src/driver.js";
+import { launchedByModal, startTaskSession, taskStateText } from "../../src/driver.js";
+import { ensureLaunched, launchVerdict } from "../../src/launch-recovery.js";
 import { REAL_FIXTURE_NAME } from "../../src/fixture.js";
 import { findExternalUse } from "../../src/project-checks.js";
 import { checkSelfContainedWithAdapter } from "../../src/project-checks-adapter.js";
@@ -123,4 +124,62 @@ test("launch retry: a missing button is retried after a reload, each miss is rep
 test("task state text never throws", async ({ request }) => {
   expect(await taskStateText(request, "http://127.0.0.1:1", "t1")).toMatch(/state unreadable/);
   expect(await taskStateText(request, "http://127.0.0.1:1", null)).toBe("task id unknown");
+});
+
+// @covers FR-01.06
+test("no launch button is fine only when the modal already launched the task", () => {
+  expect(launchedByModal(false, "state awaiting_external_start")).toBe(true);
+  expect(launchedByModal(false, "state active")).toBe(true);
+  expect(launchedByModal(true, "state awaiting_external_start")).toBe(false); // button present: click it
+  expect(launchedByModal(false, "state failed")).toBe(false);
+  expect(launchedByModal(false, "state inactive")).toBe(false); // only the exact words count
+  expect(launchedByModal(false, "task not in the list")).toBe(false);
+});
+
+// @covers FR-01.06
+test("launch watch: started at once, handed over again when stalled, failing fast with state and terminal text", async () => {
+  const mk = (states: string[], terminals: string[], canSend = true) => {
+    const log: string[] = [];
+    let i = 0;
+    return {
+      log,
+      w: {
+        readState: async () => states[Math.min(i, states.length - 1)]!,
+        readTerminal: async () => terminals[Math.min(i++, terminals.length - 1)]!,
+        handOver: async () => { log.push("handover"); return canSend; },
+        step: async (t: string) => { log.push(t); },
+        sleep: async () => undefined,
+        windowMs: 6_000,
+      },
+    };
+  };
+  const PS = "PS C:\\app>";
+  for (const idle of [`PowerShell 7.4.1\n${PS}`, `Windows PowerShell\nCopyright (C) Microsoft Corporation.\n${PS}`, "Microsoft Windows [Version 10.0.26200]\nC:\\app>", "user@host:~/app$ ", PS, ""]) {
+    expect(launchVerdict("state awaiting_external_start", idle)).toBe("stalled"); // banners and prompts are no start
+  }
+  expect(launchVerdict("state unreadable (boom)", PS)).toBe("stalled");
+  expect(launchVerdict("state not reported", "")).toBe("stalled");
+  expect(launchVerdict("state awaiting_external_start", `${PS} claude --x\nWelcome`)).toBe("started");
+  expect(launchVerdict("state active", PS)).toBe("started");
+  expect(launchVerdict("state failed", PS)).toBe("failed");
+  expect(launchVerdict("state inactive", "")).toBe("failed");
+  expect(launchVerdict("state awaiting_external_start", "claude: command not found")).toBe("stalled");
+  await expect(ensureLaunched(mk(["state launch_failed"], [PS]).w)).rejects.toThrow(/failed to launch: state launch_failed/);
+
+  const ok = mk(["state active"], [""]);
+  await ensureLaunched(ok.w);
+  expect(ok.log).toEqual(["Launch confirmed"]);
+
+  // stalled for the whole first window, then the second hand-over works
+  const retry = mk(["state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state awaiting_external_start", "state active"], [PS]);
+  await ensureLaunched(retry.w);
+  expect(retry.log.filter((l) => l === "handover")).toHaveLength(1);
+  expect(retry.log.at(-1)).toMatch(/after hand-over 1/);
+
+  const never = mk(["state awaiting_external_start"], [PS]);
+  await expect(ensureLaunched(never.w)).rejects.toThrow(/did not start after 3 tries: state awaiting_external_start; terminal: PS C:\\app>/);
+  expect(never.log.filter((l) => l === "handover")).toHaveLength(2);
+
+  const nothing = mk(["state awaiting_external_start"], [""], false);
+  await expect(ensureLaunched(nothing.w)).rejects.toThrow(/no command was captured.*\(empty\)/);
 });

@@ -1,0 +1,55 @@
+{
+  "run_id": "iterate-2026-11-01-e2e-launch-race",
+  "date": "2026-11-01T22:47:29.108323Z",
+  "event_at": "2026-11-01T19:34:45.812663+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "default",
+  "branch": "iterate/e2e-launch-race",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-01-e2e-launch-race",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "no launch button but the task is awaiting_external_start or active counts as launched by the modal",
+        "disposition": "tested",
+        "evidence": "harness-fixes.spec.ts no launch button is fine only when the modal already launched the task PASSED"
+      },
+      {
+        "behavior": "a present launch button is never treated as launched by the modal",
+        "disposition": "tested",
+        "evidence": "harness-fixes.spec.ts no launch button is fine only when the modal already launched the task PASSED"
+      },
+      {
+        "behavior": "a failed or unknown task state keeps the click path",
+        "disposition": "tested",
+        "evidence": "harness-fixes.spec.ts no launch button is fine only when the modal already launched the task PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "node integration-tests/e2e-webui/node_modules/@playwright/test/cli.js test --config integration-tests/e2e-webui/playwright.config.ts --project=unit",
+    "exit_code": 0,
+    "tests_run": 80,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-01-e2e-launch-race/surface_verification.log",
+    "timestamp": "2026-11-01T22:47:07.222Z"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

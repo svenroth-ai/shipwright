@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-01-e2e-launch-race",
+  "date": "2026-11-01",
+  "section": "Iterate — change: e2e launch race",
+  "title": "Harness does not reload the task page after the modal launched it",
+  "context": "The modal's Launch hands the start command to the task page through sessionStorage; the harness then reloaded that page, lost it, and never saw the Launch button (runs 14 and 15).",
+  "decision": "Go to the task page only when not already on it; if the modal already launched, watch 60 s, hand the captured command over again (sessionStorage + reload) up to twice, else fail with state and terminal text.",
+  "consequences": "A lost hand-over (the page has no button for awaiting_external_start) is recovered or fails fast with evidence instead of idling 20 min; one extra state read per poll.",
+  "rationale": "Keeps the real flow and the operator-visible report; the decision is a pure helper so it is unit-tested without a browser.",
+  "rejected": "Writing the start command ourselves (bypasses the page under test); a longer wait (the dispatch is lost, not late).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
