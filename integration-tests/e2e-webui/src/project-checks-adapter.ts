@@ -91,12 +91,14 @@ export function compareShippedRecorded(projectPath: string, shippedDir: string =
   for (const f of shipped) {
     const name = `seed/recorded/${f}`;
     const target = path.join(built, f);
-    if (!fs.existsSync(target) || !fs.lstatSync(target).isFile()) {
+    let b: Buffer;
+    try {
+      b = fs.readFileSync(target); // read directly: no check-then-read gap; a missing file and a folder both throw
+    } catch {
       diffs.push(`${name} missing`);
       continue;
     }
     const a = fs.readFileSync(path.join(shippedDir, f));
-    const b = fs.readFileSync(target);
     if (a.equals(b)) continue;
     const [na, nb] = [itemCount(a), itemCount(b)];
     const lf = (x: Buffer) => x.toString("latin1").replace(/\r\n/g, "\n");
