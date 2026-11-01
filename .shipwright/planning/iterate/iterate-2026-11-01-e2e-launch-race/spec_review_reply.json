@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Matches all five spec points: no reload when already on the task page, no click when the modal launched, 60 s watch with bounded hand-over, fail fast with state and terminal text, browser-free unit coverage."}

@@ -1,0 +1,5 @@
+{"stage":"doubt","gating":"advisory-must-address","trigger":"async/concurrency + cross-repo contract","doubts":[
+{"severity":"high","lens":"boundary & contract","claim_under_doubt":"launchVerdict reports stalled at an empty prompt","what_would_resolve_it":"Banners/prompts must not count as activity: fixed with positive evidence and unit cases for pwsh, PowerShell 5.1, cmd and posix."},
+{"severity":"medium","lens":"reversibility","claim_under_doubt":"re-writing the key and reloading types the command","what_would_resolve_it":"A reused pty parks it behind the Send to terminal banner: fixed, the harness presses embedded-terminal-manual-send-button when it shows."},
+{"severity":"medium","lens":"concurrency & ordering","claim_under_doubt":"stalled means not typed","what_would_resolve_it":"State is re-read before each hand-over: fixed."}],
+"summary":"High and both mediums addressed in the code."}
