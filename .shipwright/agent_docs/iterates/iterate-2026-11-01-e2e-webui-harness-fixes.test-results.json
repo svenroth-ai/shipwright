@@ -1,0 +1,96 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-01-e2e-webui-harness-fixes",
+    "date": "2026-11-01",
+    "unit": {
+      "status": "passed",
+      "passed": 24370,
+      "skipped": 107,
+      "total": 24477
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 93,
+      "total": 93
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 76,
+      "total": 76
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "S05 adapter variant ignores e2e/ and reserved test TLDs, still flags real services and lookalike hosts; tabs variant stays strict",
+          "disposition": "tested",
+          "evidence": "integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts S05 case PASSED"
+        },
+        {
+          "behavior": "S02 clicks a visible non-option match (hidden picker option no longer swallows the click), fails a dropdown-only page, names a hidden/absent Copy reply button and null drafted in its evidence",
+          "disposition": "tested",
+          "evidence": "harness-fixes.spec.ts S02 case PASSED; real-variant.spec.ts S02 cases PASSED"
+        },
+        {
+          "behavior": "SHIPWRIGHT_E2E_FIXTURE read from env file, process env wins, source recorded",
+          "disposition": "tested",
+          "evidence": "config.spec.ts env-file fixture case PASSED; test_e2e_real_fixture.py PASSED"
+        },
+        {
+          "behavior": "startTaskSession reloads on a missing launch button, reports each miss, still times out after 3",
+          "disposition": "tested",
+          "evidence": "harness-fixes.spec.ts launch retry case PASSED"
+        },
+        {
+          "behavior": "launch retry actually cures the real WebUI flake",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "cause unknown, needs the real 90 min run against the WebUI"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-11-01T14:32:05.234Z",
+      "attempts": 0,
+      "justification": "Operator-run test harness only; checks are unit-tested in a real browser, the 90 min real run is deliberately not executed"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-01-e2e-webui-harness-fixes",
+    "commit": "b3872e2b75dff4ce317fadac48cf1dc3a4ba5054",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

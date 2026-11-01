@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-e2e-webui-harness-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T14:30:11.250795+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T14:30:11.534946+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": null,
+          "finding": "Errors escaped snapshotMasterDetail (only the click was in a try)",
+          "suggestion": "Wrap all of openRow; FIXED: whole body in try/catch, failures become evidence",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts",
+          "line": null,
+          "finding": "Alternation made the diagnostics assertion weak",
+          "suggestion": "FIXED: asserts clicked a, 2 visible afterwards",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": null,
+          "finding": "Missing title reported as 'no such thread'",
+          "suggestion": "FIXED: separate message",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": null,
+          "finding": "Failed click overwrote the clicked element",
+          "suggestion": "FIXED: kept as 'X then failed'",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": null,
+          "finding": "Option branch untested",
+          "suggestion": "FIXED: option branch removed, dropdown-only case unit tested",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/src/env.ts",
+          "line": null,
+          "finding": "Header variable count wrong",
+          "suggestion": "FIXED",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": null,
+          "finding": "describe helper dense/misnamed",
+          "suggestion": "FIXED: elementLabel",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/driver.ts",
+          "line": null,
+          "finding": "onMiss throwing would end retry",
+          "suggestion": "FIXED: best-effort catch",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T14:27:55.835681+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b3872e2b75dff4ce317fadac48cf1dc3a4ba5054"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "visible-match click does not weaken S02",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "a failed click still yields false",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "page.reload cannot harm a launched task",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "excluding e2e/ only removes false positives",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "moving fixture selection into the test changes nothing for operators",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T14:27:55.977878+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b3872e2b75dff4ce317fadac48cf1dc3a4ba5054"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec / regression",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts:57 (`FIXTURE_NAME = activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture })`) and tests/unit/config.spec.ts:49 (imports `FIXTURE_NAME, REAL_FIXTURE_NAME` from `../../src/fixture.js`)",
+          "line": null,
+          "finding": "src/fixture.ts` is not in the diff. The new code calls `activeFixture` with an argument (previously called with none) and unit tests import `FIXTURE_NAME`/`REAL_FIXTURE_NAME` exports from it. If `activeFixture`'s signature and these exports were not actually changed in `src/fixture.ts`, typecheck and the unit tests fail outright. Either the diff is missing the `fixture.ts` change (must be included for review), or `activeFixture()` with no args elsewhere would now behave differently.",
+          "suggestion": "Add the `src/fixture.ts` change to the diff (env-object parameter, export `FIXTURE_NAME`/`REAL_FIXTURE_NAME`) or verify the signature already accepted an optional object; show it in the change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts (openRow, `entry.click(...).catch(() => undefined)` then title click)",
+          "line": null,
+          "finding": "The platform tab click failure is still swallowed silently. If the tab switch fails, `shown()` may match the title on the wrong (already-rendered) view, or the first visible match may be a row for a different thread on another platform whose title shares the 30-char head. The trace records `visibleBefore` but a failed tab switch is not distinguishable in the trace (the miss is attributed to the row click).",
+          "suggestion": "Record whether the tab/entry click succeeded (or timed out) into the trace so the diagnostics the spec asked for distinguish \"wrong tab\" from \"hidden option\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts (openRow, waitFor → evaluate → click sequence)",
+          "line": null,
+          "finding": "Race: `target.waitFor(visible)` → `target.evaluate(elementLabel)` → `target.click()`. If the element detaches/re-renders between evaluate and click, the catch marks `clickFailed = true` and `opened = false` even if the click already succeeded and the thread pane rendered — the check can report a false negative for a correct app. The old code had the same click but returned on the visibility count only.",
+          "suggestion": "After a click failure, still measure `visibleAfter` and consider the open successful if the count criterion holds (the trace already flags the click error), or retry the click once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug / regression",
+          "file": "integration-tests/e2e-webui/src/driver.ts (startTaskSession, final `cta.waitFor({ state: \"visible\", timeout: 1_000 })`)",
+          "line": null,
+          "finding": "On total failure the thrown error is now a 1-second timeout, not the previous 30-second timeout, and the error message carries no indication that two reloads were attempted or what the task state was — callers/logs that match the prior timeout characteristics or rely on the message lose information.",
+          "suggestion": "Throw a descriptive error (`Launch button missing after 3 attempts and 2 reloads`) instead of relying on a 1 s waitFor to fail.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts (`shown()` = `getByText(head).and(page.locator(\":not(option)\"))`)",
+          "line": null,
+          "finding": ":not(option)` only excludes `<option>` itself. If an app renders the title inside another display:none container before the list (e.g. a hidden `<template>`, `<dialog>`, or a `<script type=\"text/plain\">` wrapper), the same run-14 failure recurs. This is speculative but the fix generalizes only to the exact observed shape.",
+          "suggestion": "Acceptable given the visible filter also applies; consider also excluding elements inside `template`/hidden containers if it recurs — otherwise note the limitation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts (S02 test, `checkMasterDetailShape({ ...(bad as MasterDetailSnapshot) }, l)`)",
+          "line": null,
+          "finding": "The spread is a shallow no-op; passing `bad` directly is equivalent. The test asserts the evidence contains \"diagnostics: open fresh: thread 1\" — this is asserted on the real `checkMasterDetailShape` output, which is good, but the pass/fail verdict path of S02 with `copyReply=false` is not asserted (only the evidence string).",
+          "suggestion": "Also assert `verdict(l, \"S02\") === \"fail\"` for the no-Copy-reply app so a regression that accidentally passes S02 is caught.  Everything else (S05 e2e/ + reserved-TLD exclusion with opt-in flag, env-file fixture read with source reporting, README update, launch retry with task-state recording, and the Python spec assertions) matches the spec, and the reserved-host test correctly guards against the `reddit.example.com` lookalike. The main open question is the absent `fixture.ts` change.  Overall: ship-with-fixes — the work is largely correct and well-tested, but the diff appears to be missing the `src/fixture.ts` change its callers and tests depend on, and the driver error path should be tightened.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/board-dom-real.ts",
+          "line": 128,
+          "finding": "getByRole(\"button\", { name: /copy reply/i })` excludes hidden buttons by default. Consequently, `inDom` does not count hidden Copy reply buttons, and the diagnostics report “0 visible of 0” when the button exists but is hidden. This misses an explicit S02 diagnostic requirement. The added tests cover an absent button, so they do not catch this.",
+          "suggestion": "Count DOM matches using a locator that includes hidden buttons, then count visible matches separately. Add a case with a hidden Copy reply button and assert that diagnostics report “0 visible of 1.”  Ship-with-fixes: the changes largely implement the requested harness fixes, but the hidden-button diagnostic needs correction before shipping. Execution checks could not be run because command execution was blocked by the environment.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-01T14:30:11.399624+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec / regression\n  Severity: high\n  File: integration-tests/e2e-webui/tests/e2e.spec.ts:57 (`FIXTURE_NAME = activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture })`) and tests/unit/config.spec.ts:49 (imports `FIXTURE_NAME, REAL_FIXTURE_NAME` from `../../src/fixture.js`)\n  Finding: `src/fixture.ts` is not in the diff. The new code calls `activeFixture` with an argument (previously called with none) and unit tests import `FIXTURE_NAME`/`REAL_FIXTURE_NAME` exports from it. If `activeFixture`'s signature and these exports were not actually changed in `src/fixture.ts`, typecheck and the unit tests fail outright. Either the diff is missing the `fixture.ts` change (must be included for review), or `activeFixture()` with no args elsewhere would now behave differently.\n  Suggestion: Add the `src/fixture.ts` change to the diff (env-object parameter, export `FIXTURE_NAME`/`REAL_FIXTURE_NAME`) or verify the signature already accepted an optional object; show it in the change.\n\n- Category: bug\n  Severity: medium\n  File: integration-tests/e2e-webui/src/board-dom-real.ts (openRow, `entry.click(...).catch(() => undefined)` then title click)\n  Finding: The platform tab click failure is still swallowed silently. If the tab switch fails, `shown()` may match the title on the wrong (already-rendered) view, or the first visible match may be a row for a different thread on another platform whose title shares the 30-char head. The trace records `visibleBefore` but a failed tab switch is not distinguishable in the trace (the miss is attributed to the row click).\n  Suggestion: Record whether the tab/entry click succeeded (or timed out) into the trace so the diagnostics the spec asked for distinguish \"wrong tab\" from \"hidden option\".\n\n- Category: bug\n  Severity: low\n  File: integration-tests/e2e-webui/src/board-dom-real.ts (openRow, waitFor → evaluate → click sequence)\n  Finding: Race: `target.waitFor(visible)` → `target.evaluate(elementLabel)` → `target.cl […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/board-dom-real.ts:128\n- Finding: `getByRole(\"button\", { name: /copy reply/i })` excludes hidden buttons by default. Consequently, `inDom` does not count hidden Copy reply buttons, and the diagnostics report “0 visible of 0” when the button exists but is hidden. This misses an explicit S02 diagnostic requirement. The added tests cover an absent button, so they do not catch this.\n- Suggestion: Count DOM matches using a locator that includes hidden buttons, then count visible matches separately. Add a case with a hidden Copy reply button and assert that diagnostics report “0 visible of 1.”\n\nShip-with-fixes: the changes largely implement the requested harness fixes, but the hidden-button diagnostic needs correction before shipping. Execution checks could not be run because command execution was blocked by the environment.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T14:27:55.709715+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b3872e2b75dff4ce317fadac48cf1dc3a4ba5054"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T14:30:11.687364+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T14:30:11.814358+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
