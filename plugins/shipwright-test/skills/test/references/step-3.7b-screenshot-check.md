@@ -28,8 +28,15 @@ the viewport is recorded in the result. Run it only when the marker file exists 
 a cell DIFFERS when its content flag (text/borders/controls present) differs or its mean luminance differs by more
 than 0.10. A screen PASSES when differing cells / all cells <= **0.15**. One rule for every screen (plus two guards: a built screen with no content at all is a `fail`, an approved design screen with none an `error`). First calibration
 on real Chromium: the right built screen scored 0.02, a blank page 0.30, an error page 0.31, another screen 0.99.
-It sees layout, not wording: a correct layout with wrong text passes (Step 3.7's structural check and the review
-loop own that). The tolerance is tuned in the end-to-end procedure, not here.
+It sees layout and text OCCUPANCY, not wording: the same words in the same layout pass, but text of a different
+LENGTH moves cells (more wrapped lines, taller rows). The approved screen holds the designer's short sample text; the built
+page holds the app's real data. Calibration data (social-engagement-real, end-to-end run): the two screens that show a long recorded thread
+scored 0.158 and 0.163 with system fonts and 0.177 and 0.175 with the screens' fonts bundled, over 0.15 with no layout bug,
+while the three screens with short content passed (0.08-0.13). So a `fail` on a screen whose built page shows long real text
+may be a data-vs-sample difference: REPORT it as the likely cause, with the scores and both screenshots (the table below: STOP), not a reason to change fonts, tolerance
+or the screen. The person decides: send the screen back to Design, or complete the phase over the failed check with
+`single-session-apply --override-reason` (ASK FIRST; never from inside Test, logged in `validation_overrides`); this step never waives it.
+The tolerance is tuned in the end-to-end procedure, not here.
 
 **2. What to do — every outcome (an unattended agent follows this table, nothing else):**
 
@@ -37,7 +44,7 @@ loop own that). The tolerance is tuned in the end-to-end procedure, not here.
 |---|---|---|
 | 0 `pass` | every screen within tolerance | record it (step 3), continue to Step 3.8 |
 | 0 `skipped` (`applies: false`) | no Brief package | record `skipped: no Brief package`, continue |
-| 1 `fail` | at least one screen is visibly not the approved design screen | **STOP the test phase and report** the failing screens with `diff_ratio` and both screenshot paths. Do not continue to "done". |
+| 1 `fail` | at least one screen is over the tolerance (a layout difference, or real text longer than the sample text, see above) | **STOP the test phase and report** the failing screens with `diff_ratio` and both screenshot paths. Do not continue to "done". |
 | 2 `error` | the check could not run or compare a screen (no app, no browser, missing mockup, size mismatch, route not concrete) | **STOP and report** the `error` / `capture_error` text. An error is NOT a pass. If the text says Playwright or the browser is missing, run `playwright_setup.py` once (setup, not a waiver) and re-run; still `error` → STOP and report. |
 
 Never: raise the tolerance, edit or regenerate an approved design screen or `uploads/`, delete a screenshot, mark a screen

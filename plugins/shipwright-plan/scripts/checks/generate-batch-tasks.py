@@ -74,7 +74,12 @@ def main() -> int:
             "If this section involves UI (pages, layouts, components), add a "
             "`## Design Reference` block before `## Implementation Steps` listing "
             "the relevant mockup(s) and an `Initial state:` line copied from what the mockup shows on first "
-            "load (selected tab, active filter, open item, default values). Match by name/content. "
+            "load (selected tab, active filter, open item, default values). Copy every other value the "
+            "screen defines from the screen itself, never from memory: the literal `@media` width of the "
+            "breakpoint that governs the control, a `Per-state content:` line (shown and NOT shown) for each "
+            "state that has its own screen, and `Design extension: <element> - <requirement id>, not in "
+            "<screen>` for anything an FR/AC needs that the screen lacks. Where the spec truly contradicts "
+            "the screen, take no side: add a `Design contradiction:` line (a person decides in Build). Match by name/content. "
             "Skip for non-UI sections."
         )
 

@@ -49,3 +49,10 @@ def test_existing_fidelity_step_stays_non_blocking():
     old = (SKILL_DIR / "references" / "step-3.7-design-fidelity.md").read_text(encoding="utf-8")
     assert "Non-blocking (WARNING level)" in old
     assert "screenshot" not in old.lower()
+
+
+def test_text_length_caveat_replaces_the_layout_only_claim():
+    flat = " ".join(REF.split())
+    assert "a correct layout with wrong text passes" not in flat
+    assert "text of a different LENGTH moves cells" in flat
+    assert "0.177 and 0.175" in flat and "this step never waives it" in flat
