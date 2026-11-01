@@ -1,5 +1,6 @@
 """Plan carries design-defined detail copied from the screen (e2e runs 12-14, check S08).
 
+These are prose pins (the prompts are the product); the batch-script test runs the real generator.
 The build's spec-reviewer stops for a person whenever a section contradicts the approved screen.
 Runs 12-14 stopped on a breakpoint (768 vs 900), a posted thread's content and an extra field,
 all written into the section from memory. The section-writer prompt and the per-section task

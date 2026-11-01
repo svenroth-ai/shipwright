@@ -34,8 +34,8 @@ page holds the app's real data. Calibration data (social-engagement-real, end-to
 scored 0.158 and 0.163 with system fonts and 0.177 and 0.175 with the screens' fonts bundled, over 0.15 with no layout bug,
 while the three screens with short content passed (0.08-0.13). So a `fail` on a screen whose built page shows long real text
 may be a data-vs-sample difference: REPORT it as the likely cause, with the scores and both screenshots (the table below: STOP), not a reason to change fonts, tolerance
-or the screen. The person decides: send the screen back to Design, or complete the phase over the failed check with
-`single-session-apply --override-reason` (ASK FIRST; never from inside Test, logged in `validation_overrides`); this step never waives it.
+or the screen. The person decides: send the screen back to Design, or complete the phase over the failed check through the run skill's ASK FIRST override
+(never from inside Test; logged in `validation_overrides`); this step never waives it.
 The tolerance is tuned in the end-to-end procedure, not here.
 
 **2. What to do — every outcome (an unattended agent follows this table, nothing else):**
