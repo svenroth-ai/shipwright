@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
 import { checkMasterDetailShape, snapshotMasterDetail, type MasterDetailSnapshot } from "../../src/board-dom-real.js";
 import type { RealThreadState } from "../../src/board-api-real.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
-import { startTaskSession, taskStateText } from "../../src/driver.js";
+import { launchedByModal, startTaskSession, taskStateText } from "../../src/driver.js";
 import { REAL_FIXTURE_NAME } from "../../src/fixture.js";
 import { findExternalUse } from "../../src/project-checks.js";
 import { checkSelfContainedWithAdapter } from "../../src/project-checks-adapter.js";
@@ -123,4 +123,13 @@ test("launch retry: a missing button is retried after a reload, each miss is rep
 test("task state text never throws", async ({ request }) => {
   expect(await taskStateText(request, "http://127.0.0.1:1", "t1")).toMatch(/state unreadable/);
   expect(await taskStateText(request, "http://127.0.0.1:1", null)).toBe("task id unknown");
+});
+
+// @covers FR-01.06
+test("no launch button is fine only when the modal already launched the task", () => {
+  expect(launchedByModal(false, "state awaiting_external_start")).toBe(true);
+  expect(launchedByModal(false, "state active")).toBe(true);
+  expect(launchedByModal(true, "state awaiting_external_start")).toBe(false); // button present: click it
+  expect(launchedByModal(false, "state failed")).toBe(false);
+  expect(launchedByModal(false, "task not in the list")).toBe(false);
 });

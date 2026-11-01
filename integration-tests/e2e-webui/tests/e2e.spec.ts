@@ -189,11 +189,14 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
 
     // 4. Follow the phases, answer gates, until complete, failed, idle or out of budget.
     const taskId = await waitForTask(page, base, projectId);
-    if (taskId) await page.goto(`${base}/tasks/${taskId}`);
+    // The modal's Launch button already opens the task page and hands the start command over in the browser; a hard
+    // reload of that page before the terminal typed it loses the command (task stays awaiting_external_start).
+    if (taskId && !page.url().includes(`/tasks/${taskId}`)) await page.goto(`${base}/tasks/${taskId}`);
     // A resumed task may already be launched (or its pipeline over): no launch button is then not an error.
     const hasLaunch = await page.getByTestId("cta-launch-in-terminal").waitFor({ state: "visible", timeout: 10_000 }).then(() => true, () => false);
-    if (resume?.skipStartPipeline && !hasLaunch) {
-      await report.step("Resume: no launch button on the task page, the task was already launched", page);
+    const launchedByModal = !hasLaunch && ui.launchedByModal(hasLaunch, await ui.taskStateText(page.request, base, taskId));
+    if ((resume?.skipStartPipeline || launchedByModal) && !hasLaunch) {
+      await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page);
     } else {
       await ui.startTaskSession(page, async (attempt) => {
         const state = await ui.taskStateText(page.request, base, taskId);

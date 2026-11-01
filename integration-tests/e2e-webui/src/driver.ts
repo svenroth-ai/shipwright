@@ -105,6 +105,11 @@ export async function taskStateText(request: APIRequestContext, base: string, ta
   }
 }
 
+/** True when no launch button is there because the modal's Launch already started the task (state as `taskStateText` words it). */
+export function launchedByModal(hasLaunch: boolean, stateText: string): boolean {
+  return !hasLaunch && /awaiting_external_start|active/.test(stateText);
+}
+
 export async function findTaskId(request: APIRequestContext, base: string, projectId: string): Promise<string | null> {
   const res = await request.get(`${base}/api/external/tasks`);
   const body = (await res.json()) as { tasks?: { taskId: string; projectId?: string }[] };

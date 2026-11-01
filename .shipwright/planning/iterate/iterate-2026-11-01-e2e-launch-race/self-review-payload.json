@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"The harness only goes to the task page when not already there, waits for the Launch button, and records a report step when the modal already launched the task; resume path unchanged."},
+{"name":"Error Handling","verdict":"pass","note":"taskStateText never throws; an unknown or failed state keeps the old click path (fails with the usual timeout)."},
+{"name":"Security Basics","verdict":"pass","note":"Test harness only; no new input, exec or network."},
+{"name":"Test Quality","verdict":"pass","note":"Pure helper launchedByModal covered for launched, button present, failed and unknown states."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra state read only when no button shows."},
+{"name":"Naming & Structure","verdict":"pass","note":"Decision lives in driver.ts next to taskStateText; e2e.spec.ts stays thin."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Consumer of the WebUI task list state words; helper matches the words taskStateText already emits (probe: state awaiting_external_start and state active both match)."}
+]}

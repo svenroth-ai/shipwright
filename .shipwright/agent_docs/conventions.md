@@ -560,6 +560,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-11-01) e2e-webui — a check that clicks `getByText(..).first()` can hit a hidden `<option>` of a picker that precedes the list in the DOM; click a visible non-option match, and count hidden elements with `getByRole(..., { includeHidden: true })`. [→ iterate-2026-11-01-e2e-webui-harness-fixes]
 - **iterate-2026-11-01-plan-design-detail-and-screenshot-gap** (2026-11-01): Gotcha — a plan section that restates a screen value from memory makes Build stop for a person; the section-writer copies it from the screen, declares extras as `Design extension:` with an FR/AC id, and a true conflict stays a person's call. → iterate-2026-11-01-plan-design-detail-and-screenshot-gap
 - (2026-11-01) e2e-webui — S05 compares `seed/recorded/` with the package byte for byte; the Windows checkout is CRLF while `brief_package` hashes CRLF==LF, so a resumed run built under the other checkout fails with "line endings only". [→ iterate-2026-11-01-e2e-s05-shipped-recorded]
+- (2026-11-01) e2e-webui — the NewIssueModal's Launch already starts the task and hands the command to the task page through sessionStorage, so the harness must not reload that page; no Launch button with the task awaiting_external_start or active means launched. [→ iterate-2026-11-01-e2e-launch-race]
 
 ## Contributing
 
