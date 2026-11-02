@@ -241,3 +241,61 @@ def test_build_forwards_the_run_id_and_no_split_for_a_current_split(tmp_path, mo
           {"sections": [{"name": "s1", "status": "complete", "tests_total": 3}]})
     assert validate_phase("build", tmp_path, split_id="01-a", run_id="r4") == (True, [])
     assert calls == [("build", "r4", None)]  # not archived: the current split, no skew risk
+
+
+def test_plan_unseeded_build_config_uses_the_plan_side_section_files(tmp_path, canon_calls):
+    """sections[] is Build-owned: at plan completion it is empty, the plan's files exist."""
+    _plan_project(tmp_path, current_split="", files_in="01-a")
+    _json(tmp_path, "shipwright_build_config.json", {})
+    assert validate_phase("plan", tmp_path, split_id="01-a", run_id="r5") == (True, [])
+    assert canon_calls == [("plan", "r5")]
+    _json(tmp_path, "shipwright_build_config.json", {"sections": []})
+    assert validate_phase("plan", tmp_path, split_id="01-a")[0] is True
+
+
+def test_plan_unseeded_build_config_without_a_build_config_file(tmp_path, canon_calls):
+    _plan_project(tmp_path, current_split="", files_in="")
+    (tmp_path / "shipwright_build_config.json").unlink()
+    assert validate_phase("plan", tmp_path) == (True, [])
+
+
+def test_plan_without_sections_on_either_side_still_asks(tmp_path, canon_calls):
+    _json(tmp_path, "shipwright_build_config.json", {})
+    (tmp_path / ".shipwright" / "planning" / "01-a" / "sections").mkdir(parents=True)
+    valid, issues = validate_phase("plan", tmp_path, split_id="01-a")
+    assert not valid and issues[0]["severity"] == "ask"
+    assert "No sections found" in _msgs(issues) and "Did /shipwright-plan complete?" in _msgs(issues)
+    assert canon_calls == []
+
+
+def test_plan_build_config_sections_win_over_plan_side_files(tmp_path, canon_calls):
+    _plan_project(tmp_path, current_split="01-a", files_in="01-a")
+    (tmp_path / ".shipwright" / "planning" / "01-a" / "sections" / "extra.md").write_text("x", encoding="utf-8")
+    assert validate_phase("plan", tmp_path, split_id="01-a") == (True, [])
+    _json(tmp_path, "shipwright_build_config.json", {"current_split": "01-a", "sections": [{"name": "gone"}]})
+    valid, issues = validate_phase("plan", tmp_path, split_id="01-a")
+    assert not valid and "Missing section files for: gone" in _msgs(issues)
+
+
+def test_plan_side_fallback_ignores_non_markdown_entries(tmp_path, canon_calls):
+    _plan_project(tmp_path, current_split="", files_in="01-a")
+    sections = tmp_path / ".shipwright" / "planning" / "01-a" / "sections"
+    (sections / "dir.md").mkdir()
+    (sections / "notes.txt").write_text("x", encoding="utf-8")
+    _json(tmp_path, "shipwright_build_config.json", {})
+    assert split._plan_side_sections(tmp_path, "01-a") == [{"name": "section-01"}]
+    assert validate_phase("plan", tmp_path, split_id="01-a") == (True, [])
+
+
+def test_plan_side_fallback_uses_current_split_without_a_task_split(tmp_path, canon_calls):
+    """split 2+ after archive_split: current_split moved on, sections[] emptied."""
+    _plan_project(tmp_path, current_split="02-b", files_in="02-b")
+    _json(tmp_path, "shipwright_build_config.json", {"current_split": "02-b", "sections": []})
+    assert validate_phase("plan", tmp_path) == (True, [])
+
+
+def test_plan_side_fallback_for_task_split_when_current_split_names_another(tmp_path, canon_calls):
+    """current_split names another split but sections[] is empty: nothing is listed to mismatch."""
+    _plan_project(tmp_path, current_split="02-b", files_in="01-a")
+    _json(tmp_path, "shipwright_build_config.json", {"current_split": "02-b", "sections": []})
+    assert validate_phase("plan", tmp_path, split_id="01-a") == (True, [])

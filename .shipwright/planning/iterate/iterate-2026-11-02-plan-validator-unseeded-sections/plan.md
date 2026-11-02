@@ -1,0 +1,1 @@
+Goal: Plan completion validation no longer asks a false 'No sections found' question when the plan is complete | Reason: sections[] in the build config is Build-owned and unseeded at plan time, so every guided run was asked a false question | Reference: e2e run 18 finding

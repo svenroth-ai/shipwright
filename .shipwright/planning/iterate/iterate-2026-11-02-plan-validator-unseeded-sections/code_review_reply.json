@@ -1,0 +1,6 @@
+{"section": "iterate-2026-11-02-plan-validator-unseeded-sections", "verdict": "PASS", "review": [
+ {"severity": "low", "category": "readability", "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py", "finding": "Docstring said nothing is read for an unresolvable split id; the fallback now lists section files.", "suggestion": "Reword the docstring."},
+ {"severity": "low", "category": "readability", "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py", "finding": "split_id or recorded_split computed twice.", "suggestion": "Compute once above the fallback."},
+ {"severity": "low", "category": "correctness", "file": "plugins/shipwright-run/tests/test_phase_validators_split.py", "finding": "No tests for non-.md entries in sections/ and for the current_split fallback without a task split.", "suggestion": "Add both tests."},
+ {"severity": "info", "category": "correctness", "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py", "finding": "In fallback mode the missing-file check cannot fail; completeness vs the manifest is enforced by the plan_checks canon.", "suggestion": "Comment it."}
+]}

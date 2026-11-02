@@ -111,15 +111,26 @@ def _validate_design(
     return not has_ask, issues
 
 
+def _plan_side_sections(project_root: Path, split: str) -> list[dict[str, str]]:
+    """Section entries derived from the plan's own ``sections/*.md`` files (sorted)."""
+    directory = project_root / ".shipwright" / "planning" / split / "sections"
+    if not directory.is_dir():
+        return []
+    return [{"name": f.stem} for f in sorted(directory.glob("*.md")) if f.is_file()]
+
+
 def _validate_plan(
     project_root: Path, *, split_id: Optional[str] = None, run_id: Optional[str] = None,
 ) -> tuple[bool, list[dict[str, str]]]:
     """Plan phase: sections defined and section files exist for the TASK's split.
 
+    Sections come from the build config when it lists any, else from the plan's own
+    ``sections/*.md`` files (the build config is Build-owned and unseeded at plan time).
+
     ``split_id`` is the plan task's own split and must be one of the run's resolved
     splits when there are any. Only then does the check also keep it from naming a path
     outside ``.shipwright/planning/``: with no resolvable splits the id is used as given
-    (an existence check only, nothing is read). Without one (a split-less run, or a caller
+    (nothing outside that directory is read; at most its section files are listed). Without one (a split-less run, or a caller
     that does not know it) the build config's ``current_split`` is used, as before. When
     both are known and differ, the task split's archived sections are used; if there are
     none, that is reported instead of checking the wrong directory. With neither split
@@ -143,7 +154,7 @@ def _validate_plan(
 
     recorded_split = build_config.get("current_split", "") or ""
     sections = build_config.get("sections", [])
-    if split_id and recorded_split and recorded_split != split_id:
+    if split_id and recorded_split and recorded_split != split_id and sections:
         # A finished split's sections are archived under split_<prefix>_sections (the
         # key collect_all_build_sections reads), so a re-check after current_split moved
         # on still finds them.
@@ -159,14 +170,23 @@ def _validate_plan(
             return False, issues
         sections = archived
 
+    split = split_id or recorded_split
+    if not sections:
+        # ``sections[]`` is Build-owned state, seeded only once Build starts, so at plan
+        # completion it is normally empty. The plan's own output is the section files on
+        # disk; a plan that wrote none is the one that really did not complete.
+        # Only the files' presence is checked here; completeness against the plan's
+        # SECTION_MANIFEST is enforced by the plan_checks canon below.
+        sections = _plan_side_sections(project_root, split)
+
     if not sections:
         issues.append({
             "severity": "ask",
-            "message": "No sections found in build config. Did /shipwright-plan complete?",
+            "message": "No sections found in build config or in the plan's sections directory. "
+                       "Did /shipwright-plan complete?",
         })
         return False, issues
 
-    split = split_id or recorded_split
     missing_files = [
         sec.get("name", "") for sec in sections
         if not (project_root / ".shipwright" / "planning" / split / "sections"
