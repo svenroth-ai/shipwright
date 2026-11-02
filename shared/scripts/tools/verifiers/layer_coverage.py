@@ -57,6 +57,7 @@ from ._layer_coverage_ac import changed_criteria_ids  # noqa: E402
 from ._layer_coverage_core import CrossLayerVerdict, evaluate_cross_layer  # noqa: E402
 from ._layer_coverage_regen import _merge_base, regenerate_base_head  # noqa: E402
 from ._layer_coverage_removal import RemovalVerdict, evaluate_removal  # noqa: E402
+from ._layer_coverage_scan_note import no_scan_note as _no_scan_note  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import git_context  # noqa: E402
 
@@ -223,12 +224,13 @@ def check_cross_layer_coverage(project_root: Path, run_id: str, commit_hash: str
             # is least able to see.
             return _infra_result(name, complexity, ac_error)
         verdict = evaluate_cross_layer(base, head, ac_changed)
+        note = _no_scan_note(head) if verdict.any_fail else ""
     except Exception as exc:  # noqa: BLE001 — surface as ERROR at medium+, never a silent crash
         return _infra_result(name, complexity, f"regeneration error: {type(exc).__name__}")
-    return _cross_layer_result(name, verdict)
+    return _cross_layer_result(name, verdict, note)
 
 
-def _cross_layer_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
+def _cross_layer_result(name: str, verdict: CrossLayerVerdict, scan_note: str = "") -> CheckResult:
     if verdict.could_not_determine:
         return CheckResult(
             name, False,
@@ -242,11 +244,16 @@ def _cross_layer_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
         return CheckResult(name, True, "no behaviour-changed FR (no spec/AC/FR delta)")
     if verdict.any_fail:
         gaps = [f"{g.display} [{g.layer}] ({g.priority}) — {g.reason}" for g in verdict.hard[:6]]
+        advice = (
+            "/shipwright-iterate --type change \"add an executed-passing test at "
+            "the missing layer(s) — a green-but-skipped test does not satisfy the gate\""
+        )
+        if scan_note:  # conditional: an existing-but-empty test folder is not a wrong-folder problem
+            advice = f"NOTE: {scan_note}. If the project really has no test there yet: {advice}"
         detail = (
             f"{len(verdict.hard)} required layer(s) of {len(verdict.changed_keys)} "
             f"behaviour-changed FR(s) have no executed-passing test: " + "; ".join(gaps)
-            + "  →  /shipwright-iterate --type change \"add an executed-passing test at "
-            "the missing layer(s) — a green-but-skipped test does not satisfy the gate\""
+            + f"  →  {advice}"
         )
         return CheckResult(name, False, detail)
     if verdict.advisory:

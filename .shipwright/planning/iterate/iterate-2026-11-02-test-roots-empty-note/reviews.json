@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-02-test-roots-empty-note",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T15:22:11.495559+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T15:26:11.665184+00:00",
+      "disposition": "small complexity; plan runs at medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py",
+          "line": 164,
+          "finding": "The F11 gate _build calls configured_test_roots on a throwaway temp archive, so the per-root dedup never matches, the line names a deleted temp dir and 'no test file will be scanned' can be false because _build adds defaults and extra roots.",
+          "suggestion": "Warn only from generate_file (real project root); keep the gate silent and rely on no_scan_note.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_scan_note.py",
+          "line": 22,
+          "finding": "A test whose only tag is malformed lands in invalid_tags, so the note wrongly fires.",
+          "suggestion": "Return '' when invalid_tags is non-empty.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_scan_note.py",
+          "line": 28,
+          "finding": "The '(or none carries an @FR tag)' wording never applies in the gate path because untagged tests are enumerated.",
+          "suggestion": "Reword to 'no test file was found in the scanned folders'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py",
+          "line": 196,
+          "finding": "_warn_no_roots reads the config twice (unreadable-config line twice) and warns on an explicit empty test_roots list which is a deliberate opt-out.",
+          "suggestion": "Read once; stay silent for an explicit empty list.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py",
+          "line": 99,
+          "finding": "count >= 2 is looser than one line per root.",
+          "suggestion": "Assert == 2.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_layer_coverage_no_scan_note.py",
+          "line": 36,
+          "finding": "The wiring in check_cross_layer_coverage is untested.",
+          "suggestion": "Add a monkeypatched wiring test.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-02T15:24:22.833575+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ff07b1150795e944d655cd6a52eb503064a96eff"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T15:26:11.546327+00:00",
+      "disposition": "Stage 3 is conditional: no migration, async, cross-plugin import or irreversible op; a stderr diagnostic and a failure-text note",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py` (in `_warn_no_roots`)",
+          "line": null,
+          "finding": "no_scan_note`-style breadth issue mirrored here is fine, but the dedupe key is `str(resolve())` on a nonexistent path is fine; the real nit is that `_WARNED_NO_ROOTS` grows unboundedly in a long-lived process scanning many roots (e.g. an aggregate runner over many repos). Harmless in practice (short strings), but worth a bound or comment if that runner exists.",
+          "suggestion": "Leave as-is or cap the set; not a blocker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_scan_note.py` (`no_scan_note`)",
+          "line": null,
+          "finding": "The note is suppressed if any requirement links a test, not just the behaviour-changed FRs that failed. So a project where only one unrelated FR has a tagged test but the failing FRs' layer genuinely wasn't scanned still gets the \"add a test\" advice. This matches the stated intent (\"no test file was scanned at all\"), so it's a deliberate trade-off, but a head manifest with a stale single link will mask the diagnosis.",
+          "suggestion": "If closer targeting is wanted, check only `verdict`'s changed keys' tests; otherwise document the trade-off (it already partially does via the orphan/untagged suppression rationale). Not required by the spec.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_layer_coverage_no_scan_note.py` (`test_check_cross_layer_coverage_wires_...`)",
+          "line": null,
+          "finding": "The wiring test monkeypatches nearly every collaborator including `evaluate_cross_layer`, so it validates plumbing, not behavior; a regression where the note is computed from the base manifest instead of head would still pass only if head/base differ — here they don't (base is `{}`). It does catch the \"only on failing verdict\" wiring, which is the main risk, so it's adequate for a wiring test.",
+          "suggestion": "Optionally have the fake `regenerate_base_head` return a base with a linked test and a head without, asserting the note still fires — that pins the head-vs-base choice.  Everything else checks out: the spec's two required behaviors (warning naming `traceability.test_roots` when resolved roots are empty; gate saying \"no test files were scanned\" instead of asking for new tests) are implemented and directly tested, resolution is unchanged, `warn` is keyword-only so existing positional callers are unaffected, the `warn=False` path for throwaway archives is correct and its \"must not consume the once-per-root warning\" semantics are tested, and the unreadable-config double-print edge case is handled via `quiet=True`. The opt-out for explicit `[]` and config-content-not-echoed are thoughtful hardening beyond the minimum.  The work is sound and implements the spec; the findings above are refinements rather than required changes.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_scan_note.py",
+          "line": 19,
+          "finding": "An empty manifest does not establish that roots resolved to an empty list. For example, a correctly configured, existing `tests/` directory with no tests produces this note too, replacing the appropriate advice to add tests with advice to check the scan configuration. This extends the diagnostic beyond the condition specified and can point users at the wrong fix.",
+          "suggestion": "Carry the actual resolved-root state from regeneration into the gate. Replace the missing-test advice only when the effective scan roots are empty, and test an existing root with no tests separately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py",
+          "line": 199,
+          "finding": "Explicit `traceability.test_roots: []` suppresses the warning even though the resolved roots are empty. The specification requires a warning for empty resolved roots and provides no opt-out exception; the new test instead enshrines that exception.",
+          "suggestion": "Emit the warning for an explicit empty list too, with wording explaining that the configuration disables scanning, and update the corresponding test.  Overall assessment: ship-with-fixes. The warning and gate wiring are present, but the gate needs actual root-resolution evidence and the warning must cover the specified empty-root condition.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-02T15:27:42.779570+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: edge-case\n  Severity: low\n  File: `plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py` (in `_warn_no_roots`)\n  Finding: `no_scan_note`-style breadth issue mirrored here is fine, but the dedupe key is `str(resolve())` on a *nonexistent* path is fine; the real nit is that `_WARNED_NO_ROOTS` grows unboundedly in a long-lived process scanning many roots (e.g. an aggregate runner over many repos). Harmless in practice (short strings), but worth a bound or comment if that runner exists.\n  Suggestion: Leave as-is or cap the set; not a blocker.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/tools/verifiers/_layer_coverage_scan_note.py` (`no_scan_note`)\n  Finding: The note is suppressed if *any* requirement links a test, not just the behaviour-changed FRs that failed. So a project where only one unrelated FR has a tagged test but the failing FRs' layer genuinely wasn't scanned still gets the \"add a test\" advice. This matches the stated intent (\"no test file was scanned at all\"), so it's a deliberate trade-off, but a head manifest with a stale single link will mask the diagnosis.\n  Suggestion: If closer targeting is wanted, check only `verdict`'s changed keys' tests; otherwise document the trade-off (it already partially does via the orphan/untagged suppression rationale). Not required by the spec.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_layer_coverage_no_scan_note.py` (`test_check_cross_layer_coverage_wires_...`)\n  Finding: The wiring test monkeypatches nearly every collaborator including `evaluate_cross_layer`, so it validates plumbing, not behavior; a regression where the note is computed from the *base* manifest instead of head would still pass only if head/base differ — here they don't (base is `{}`). It does catch the \"only on failing verdict\" wiring, which is the main risk, so it's adequate for a wiring test.\n  Suggestion: Optionally have the fake `regenerate_base_head` return  […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_layer_coverage_scan_note.py:19\n- Finding: An empty manifest does not establish that roots resolved to an empty list. For example, a correctly configured, existing `tests/` directory with no tests produces this note too, replacing the appropriate advice to add tests with advice to check the scan configuration. This extends the diagnostic beyond the condition specified and can point users at the wrong fix.\n- Suggestion: Carry the actual resolved-root state from regeneration into the gate. Replace the missing-test advice only when the effective scan roots are empty, and test an existing root with no tests separately.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py:199\n- Finding: Explicit `traceability.test_roots: []` suppresses the warning even though the resolved roots are empty. The specification requires a warning for empty resolved roots and provides no opt-out exception; the new test instead enshrines that exception.\n- Suggestion: Emit the warning for an explicit empty list too, with wording explaining that the configuration disables scanning, and update the corresponding test.\n\nOverall assessment: ship-with-fixes. The warning and gate wiring are present, but the gate needs actual root-resolution evidence and the warning must cover the specified empty-root condition.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T15:22:56.614652+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ff07b1150795e944d655cd6a52eb503064a96eff"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T15:26:11.778602+00:00",
+      "disposition": "small complexity; plan_internal runs at medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T15:26:11.886542+00:00",
+      "disposition": "small complexity; architecture_internal runs at medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
