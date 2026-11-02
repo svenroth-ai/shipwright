@@ -245,7 +245,9 @@ that the record was written first and only ever appended to. It never holds the 
    Everything else is decided alone, counted (`counts`: auto, asked, exempt, restore, unchanged) and listed in the PR body
    (`references/F11.md`). Exit `0` decided or skipped · `10` ask · `2` fix the declaration.
 4. **Ask (exit 10), interactively:** put each printed question to the operator in exactly its words (a no-owner
-   question is a lettered pick list of areas, in everyday words), then write the reply into the item
+   question is a lettered pick list of areas, in everyday words; with an external review key a small model writes the plain
+   wording and picks the areas by meaning, code validates it and falls back to fixed wording - a display aid only: the PR body
+   lists your original wording next to the plain one, and the frozen AC text is always yours), then write the reply into the item
    (`"answer": {"choice": "yes|no|other|not_a_promise", "text": "..."}`) and run the tool again.
    **Unattended runs.** A run is unattended when BOTH `SHIPWRIGHT_LOOP_ID` and `SHIPWRIGHT_LOOP_UNIT_ID` are set, or
    the root is a per-unit worktree `<main>/.worktrees/campaign-<slug>--<unit>` (the orchestrator's own

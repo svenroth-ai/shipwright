@@ -91,21 +91,19 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 
 ## (b) Question sheet for the operator: PENDING
 
-Ten cases, each question exactly as `render_question` prints it today (regenerated after the plain-language round). Cases 1 and 2 are changed ACs, case 3 a removed AC; these stay as they were. Cases 4 to 10 are a new promise with no single owning area: a short lettered pick list in everyday words (never "feature", "FR" or an id; the ids stay in the machine record), the two or three areas that share most words with the promise, taken by their catalog TITLE, then "somewhere new", "it is not a promise" and "not wanted". The area descriptions come from the catalog's own first criterion and are shown only when short and complete, otherwise the area is shown by name alone. The pick-list areas are the real titles of this repository's catalog at `origin/main`; the "until now" texts in cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog. The operator marks each "clear" or "not clear"; the bar (10 of 10 clear) is NOT claimed.
+Ten cases, each question exactly as the tool prints it now. Cases 1 and 2 are changed ACs, case 3 a removed AC; these stay as they were. Cases 4 to 10 are a new promise with no single owning area: a short lettered pick list in everyday words (never "feature", "FR" or an id; the ids stay in the machine record). **For these seven, a small model now does the semantic part**: it picks up to three areas by meaning and writes a plain one-sentence wording and a one-line description per area. **Code checks every output** before it is shown (the area ids exist in the catalog, no duplicates, at most three, the wording reads as an outcome and is short, and every number, limit and "not / never / unless / only / at most / at least / no" of the agent's wording is still there); on any failure the deterministic wording and candidates are used instead.
 
-**The promise sentences in cases 4 to 10 were rewritten into everyday words for this sheet only.** The real promise text comes from the agent that builds the change, and the validator can only refuse code-shaped wording; it cannot make a sentence plain. What the agent recorded for these seven, and what the glossary (`shared/config/plain_language_glossary.json`, at most two terms explained per question, on first use) would have added:
+**Live run (the only live use):** model `anthropic/claude-haiku-5.5` (the cheap model the PR review already uses, through the existing OpenRouter transport), 7 calls (one per case, each a short prompt of the promise plus the catalog's areas), the real agent-recorded wording of each case, not a hand-rewritten one. Cost: 7 short calls on a small model, a few cents at most (not metered here). **Validation: 7 of 7 passed, 0 fell back.** Each case below shows the agent's original wording, the plain wording the model produced, and exactly what the operator would see. The model's text is a display aid only: the agent's original wording is what is frozen as the AC and stays in the record and the PR body next to the plain version (with the model id and the prompt sha).
 
-- Case 4 (#869), recorded wording: "A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged". Glossary terms found: coordinator; glossed: coordinator; left unglossed (more than two terms): none.
-- Case 5 (#884), recorded wording: "The build phase asks outside reviewers to read the code of each section unless the owner turns this off". Glossary terms found: build, phase; glossed: build, phase; left unglossed (more than two terms): none.
-- Case 6 (#897), recorded wording: "A team can keep its own stack profile in its project and it is used instead of the shipped one". Glossary terms found: stack profile; glossed: stack profile; left unglossed (more than two terms): none.
-- Case 7 (#919), recorded wording: "An app that is a chat window starts from a ready-made setup that needs no deployment". Glossary terms found: deployment; glossed: deployment; left unglossed (more than two terms): none.
-- Case 8 (#866), recorded wording: "A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed". Glossary terms found: commit; glossed: commit; left unglossed (more than two terms): none.
-- Case 9 (#936), recorded wording: "Every colour set keeps text easy to read, also when the page is enlarged". Glossary terms found: none; glossed: none; left unglossed (more than two terms): none.
-- Case 10 (#843), recorded wording: "The pull request gate is run by a different reviewer model, and what it checks stays the same". Glossary terms found: pull request, gate, reviewer model; glossed: pull request, gate; left unglossed (more than two terms): reviewer model.
+Reading the result honestly:
 
-So after the gloss, the recorded wording of these cases still carries technical words that the glossary does not cover (for example "review", "section", "code", "merged", "reviewer"), and case 10 has a third glossary term ("reviewer model") that is not explained because only two are glossed per question. Cases 4, 5, 6, 7, 8 and 10 contain jargon in the recorded wording; case 9 does not. Reading the sheet therefore shows the best case, not what an operator will always see.
+- The plain wordings keep every number and condition (the code checks this). How plain they get varies: case 10 is clearly better ("pull request gate" became "the check that reviews each proposed code change"), case 5 swaps "phase" for "building step", but cases 4 and 7 stay close to the original and still use words such as "coordinator", "code", "merged" and "deployment" (case 10 still says "AI reviewer model"). The model does not remove all jargon; the prompt asks for it and the code cannot enforce it beyond code-shaped wording.
+- The suggested areas are from this repository's catalog at `origin/main` and are only as good as the model's reading of it. The area descriptions can sound generic (case 6 offers "Project decomposition" and "Onboarding an existing codebase" for a promise about a team's own technology setup; the area that really owns it was not in this replay's catalog, because the stack-profile area is reconstructed from the recorded cases rather than present with a title). The operator can always pick "Somewhere new".
+- The "until now" texts in cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog. The operator marks each "clear" or "not clear"; the bar (10 of 10 clear) is NOT claimed.
 
-### Case 1: #839 an existing promise is changed (ask rule 1)
+### Case 1: #839 an existing promise is changed
+
+What the operator sees:
 
 ```
 This change alters a promise the product makes. Until now: A commit is held back when the build progress line shows less than the required share of work done. After this change: A commit is held back when too few requirements are covered by passing tests. Should it hold like this?
@@ -115,7 +113,9 @@ This change alters a promise the product makes. Until now: A commit is held back
 
 Operator: clear / not clear (PENDING)
 
-### Case 2: #923 an existing promise is changed (ask rule 1)
+### Case 2: #923 an existing promise is changed
+
+What the operator sees:
 
 ```
 This change alters a promise the product makes. Until now: The stack profile is guessed from the kind of storage the project uses. After this change: A stack profile named in the project brief is used as given, and an unusable name stops the run with a clear message. Should it hold like this?
@@ -125,7 +125,9 @@ This change alters a promise the product makes. Until now: The stack profile is 
 
 Operator: clear / not clear (PENDING)
 
-### Case 3: #887 an existing promise is removed (ask rule 1)
+### Case 3: #887 an existing promise is removed
+
+What the operator sees:
 
 ```
 This change removes a promise. Until now this held: Adopting a project sets up the automatic Claude review on every pull request. After this change it no longer holds.
@@ -135,13 +137,38 @@ This change removes a promise. Until now this held: Adopting a project sets up t
 
 Operator: clear / not clear (PENDING)
 
-### Case 4: #869 no owner named (ask rule 2)
+### Case 4: #869 no owner named
+
+Agent's original wording: "A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "The coordinator runs a review again unless the earlier review is shown to cover exactly the code that is merged."
+
+What the operator sees:
 
 ```
-This change adds a new promise: Before work is accepted, the review must have looked at exactly the final version; otherwise the review is done again. Where does it belong?
-A Ongoing change at the depth it deserves: That change exists in the product.
-B Implementation planning with independent review: What exists is an implementation plan divided into sections the build phase can take one at a time.
-C Triage Inbox: It holds every one of them.
+This change adds a new promise: The coordinator runs a review again unless the earlier review is shown to cover exactly the code that is merged. Where does it belong?
+A Independent re-check on the code host: Re-checks a proposed change on the code host before it can be merged, so nothing slips in unchecked.
+B Recovery of a broken shared branch: Finds which earlier change broke the shared code line when several changes land close together.
+C Somewhere new (tell us the name).
+D It is not a promise, only how it is built.
+E Not wanted: <your wording>
+```
+
+Operator: clear / not clear (PENDING)
+
+### Case 5: #884 no owner named
+
+Agent's original wording: "The build phase asks outside reviewers to read the code of each section unless the owner turns this off"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "The building step asks outside reviewers to read the code of each section, unless the project owner switches this off."
+
+What the operator sees:
+
+```
+This change adds a new promise: The building step asks outside reviewers to read the code of each section, unless the project owner switches this off. Where does it belong?
+A Test-driven build of planned sections: Building the planned sections of a project so that each one does what its written plan requires.
+B Implementation planning with independent review: Turning requirements into a step-by-step plan that outside reviewers check before work begins.
+C End-to-end delivery pipeline: Running a change through its fixed sequence of steps from start to finish, pausing when a step fails its checks.
 D Somewhere new (tell us the name).
 E It is not a promise, only how it is built.
 F Not wanted: <your wording>
@@ -149,13 +176,38 @@ F Not wanted: <your wording>
 
 Operator: clear / not clear (PENDING)
 
-### Case 5: #884 no owner named (ask rule 2)
+### Case 6: #897 owner is not in the catalog
+
+Agent's original wording: "A team can keep its own stack profile in its project and it is used instead of the shipped one"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "A team can keep its own technology setup inside its project, and the product uses that setup in place of the default one that comes with it."
+
+What the operator sees:
 
 ```
-This change adds a new promise: While the product is being made, outside AI reviewers read each part of the code, unless the owner switches this off. Where does it belong?
-A Ongoing change at the depth it deserves: That change exists in the product.
-B Test-driven build of planned sections: What exists is working code that runs.
-C Project decomposition into scoped units: The stack profile is guessed from the kind of storage the project uses.
+This change adds a new promise: A team can keep its own technology setup inside its project, and the product uses that setup in place of the default one that comes with it. Where does it belong?
+A Project decomposition into scoped units: Splitting a project into scoped pieces of work, including guessing its technology setup from how it stores data.
+B Onboarding an existing codebase: Bringing an existing codebase under the product's change process, including reading the technology it already uses.
+C Somewhere new (tell us the name).
+D It is not a promise, only how it is built.
+E Not wanted: <your wording>
+```
+
+Operator: clear / not clear (PENDING)
+
+### Case 7: #919 two areas could own it
+
+Agent's original wording: "An app that is a chat window starts from a ready-made setup that needs no deployment"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "A chat-window app starts from a ready-made setup and needs no deployment."
+
+What the operator sees:
+
+```
+This change adds a new promise: A chat-window app starts from a ready-made setup and needs no deployment. Where does it belong?
+A Project decomposition into scoped units: Breaking a project into smaller parts and working out which technologies it needs before setup is finished.
+B Deployment and rollback: Putting a finished project onto a hosting target, and reverting a release when something goes wrong.
+C Local project preview: Running a project on this machine so the person can preview it before anything is deployed.
 D Somewhere new (tell us the name).
 E It is not a promise, only how it is built.
 F Not wanted: <your wording>
@@ -163,13 +215,19 @@ F Not wanted: <your wording>
 
 Operator: clear / not clear (PENDING)
 
-### Case 6: #897 owner is not in the catalog (ask rule 2)
+### Case 8: #866 no owner named
+
+Agent's original wording: "A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "Each time a saved change is recorded, the system checks that enough of its requirements have been tested, no matter how the recording was requested."
+
+What the operator sees:
 
 ```
-This change adds a new promise: A team can keep its own set of starting technology choices inside its project, and those are used instead of the standard set. Where does it belong?
-A Project decomposition into scoped units: The stack profile is guessed from the kind of storage the project uses.
-B Implementation planning with independent review: What exists is an implementation plan divided into sections the build phase can take one at a time.
-C Multi-level project testing: The tests are actually executed at every level the project has.
+This change adds a new promise: Each time a saved change is recorded, the system checks that enough of its requirements have been tested, no matter how the recording was requested. Where does it belong?
+A Independent re-check on the code host: Re-checks a proposed change on the code host, with tests, lint and security checks, before it can join the shared code.
+B End-to-end delivery pipeline: Runs a described change through its fixed sequence of steps, with each step required to pass its own checks.
+C Multi-level project testing: Runs the project's tests at every level it has and records what passed, failed or was not run.
 D Somewhere new (tell us the name).
 E It is not a promise, only how it is built.
 F Not wanted: <your wording>
@@ -177,58 +235,39 @@ F Not wanted: <your wording>
 
 Operator: clear / not clear (PENDING)
 
-### Case 7: #919 two areas could own it (ask rule 2)
+### Case 9: #936 no owner named
+
+Agent's original wording: "Every colour set keeps text easy to read, also when the page is enlarged"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "Every set of colours keeps text easy to read, including when the page is enlarged."
+
+What the operator sees:
 
 ```
-This change adds a new promise: A simple chat-style app starts from a ready-made setup that can run without being put on a server. Where does it belong?
-A End-to-end delivery pipeline
-B Audit-ready compliance evidence
-C Local project preview: The project is running on this machine and the address to open it in a browser is handed back.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
-```
-
-Operator: clear / not clear (PENDING)
-
-### Case 8: #866 no owner named (ask rule 2)
-
-```
-This change adds a new promise: Whenever work is saved to the project history, it is checked that enough requirements are covered by passing tests, however the save was typed. Where does it belong?
-A Ongoing change at the depth it deserves: That change exists in the product.
-B Multi-level project testing: The tests are actually executed at every level the project has.
-C Test-driven build of planned sections: What exists is working code that runs.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
+This change adds a new promise: Every set of colours keeps text easy to read, including when the page is enlarged. Where does it belong?
+A Mockups from requirements: Turns requirements into screen designs, including the colours and text styles the build needs.
+B Somewhere new (tell us the name).
+C It is not a promise, only how it is built.
+D Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)
 
-### Case 9: #936 no owner named (ask rule 2)
+### Case 10: #843 no owner named
+
+Agent's original wording: "The pull request gate is run by a different reviewer model, and what it checks stays the same"
+
+Plain wording shown (model anthropic/claude-haiku-5.5): "The check that reviews each proposed code change before it is accepted is run by a different AI reviewer model, and what that check looks for stays the same."
+
+What the operator sees:
 
 ```
-This change adds a new promise: Every colour set keeps text easy to read, also when the page is enlarged. Where does it belong?
-A Mockups from requirements: Every one of them has at least one screen.
-B Ongoing change at the depth it deserves: That change exists in the product.
-C Triage Inbox: It holds every one of them.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
-```
-
-Operator: clear / not clear (PENDING)
-
-### Case 10: #843 no owner named (ask rule 2)
-
-```
-This change adds a new promise: The automatic check on proposed changes is now done by a different AI reviewer, and what it checks stays the same. Where does it belong?
-A Ongoing change at the depth it deserves: That change exists in the product.
-B Independent re-check on the code host: The project's tests, its lint, its security checks and the host's own code analysis all run again there.
-C Triage Inbox: It holds every one of them.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
+This change adds a new promise: The check that reviews each proposed code change before it is accepted is run by a different AI reviewer model, and what that check looks for stays the same. Where does it belong?
+A Independent re-check on the code host: Re-checks each proposed code change on the code hosting site, and blocks the change until every check passes.
+B Implementation planning with independent review: Has outside reviewers check implementation plans, and says so plainly when those reviewers cannot be reached.
+C Somewhere new (tell us the name).
+D It is not a promise, only how it is built.
+E Not wanted: <your wording>
 ```
 
 Operator: clear / not clear (PENDING)

@@ -50,6 +50,7 @@ from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_decision import decide  # noqa: E402
 from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
+from lib.ac_suggest import suggestions_for  # noqa: E402
 from lib.ac_surface import git_changes, merge_base, observable_files  # noqa: E402
 from lib.ac_wording import diff_identifiers  # noqa: E402
 
@@ -89,7 +90,7 @@ def _escalation(result: dict, sub_iterate_id: str, bind_id: str) -> dict:
     """The sub-iterate result.json body for an ask in an unattended run (a standalone run records an operator-only-decision blocker)."""
     return {"sub_iterate_id": sub_iterate_id, "status": "escalated", "reason_code": AC_HOLD_REASON, "bind_id": bind_id,
             "reason": f"{AC_HOLD_REASON}: the operator must answer {len(result['questions'])} question(s) about what the product promises before this unit is built",
-            "ac_questions": [{"item": q["item"], "row": q["row"], "question": q["question"], "question_sha256": q["question_sha256"], "options": q.get("options", {})} for q in result["questions"]]}
+            "ac_questions": [{"item": q["item"], "row": q["row"], "question": q["question"], "question_sha256": q["question_sha256"], "options": q.get("options", {}), **({"suggestion_source": q["suggestion_source"]} if q.get("suggestion_source") else {})} for q in result["questions"]]}
 
 
 def run_answer(argv: list[str]) -> int:
@@ -152,6 +153,8 @@ def run_decide(argv: list[str]) -> int:
     ap.add_argument("--answers", default="", help="the operator's answer file (ac_decision.py answer)")
     ap.add_argument("--autonomous", action="store_true", help="only ever makes the run stricter; unattended is also read from the campaign environment")
     ap.add_argument("--sub-iterate-id", default="")
+    ap.add_argument("--no-suggest", action="store_true", help="do not call the model; the deterministic wording and candidates are used")
+    ap.add_argument("--no-cache", action="store_true", help="ask the model again instead of reusing the stored suggestion (the question text, and so its sha, may change)")
     ap.add_argument("--out", default="", help="also write the decision JSON to this file")
     args = ap.parse_args(argv)
     unattended = args.autonomous or is_unattended(Path(args.project_root))
@@ -178,7 +181,8 @@ def run_decide(argv: list[str]) -> int:
     except (RuntimeError, OSError) as exc:
         print(f"ac_decision: diff unavailable ({exc}); the exemption can only be tested at F11", file=sys.stderr)
     bind_id = args.bind_id or args.run_id
-    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id)
+    sugg = suggestions_for(data.get("items"), catalog, args.project_root, idents, not args.no_cache, not args.no_suggest)
+    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, sugg)
     result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")
     if surface is not None:

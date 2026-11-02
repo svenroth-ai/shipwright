@@ -4,9 +4,9 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 16522,
+      "passed": 16539,
       "skipped": 90,
-      "total": 16612
+      "total": 16629
     },
     "integration": {
       "status": "passed",
@@ -24,7 +24,7 @@
       "status": "not_run"
     },
     "degraded": [
-      "unit counts cover the three roots this round touches (shared/tests 13714, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1346); the other plugin roots were not re-run (nothing under them changed)"
+      "unit counts cover the three roots this round touches (shared/tests 13731, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1346); the other plugin roots were not re-run (nothing under them changed)"
     ],
     "test_completeness": {
       "status": "complete",
@@ -135,11 +135,16 @@
           "behavior": "a no-owner question is a lettered pick list of areas by title in everyday words with a deterministic gloss of at most two jargon terms; picking new area, not-a-promise or a name resolves or explains",
           "disposition": "tested",
           "evidence": "shared/tests/test_ac_round3.py::test_a_no_owner_question_is_a_lettered_pick_list_in_everyday_words PASSED; shared/tests/test_ac_round3.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_round3.py::test_the_gloss_explains_at_most_two_jargon_terms_once_and_only_from_the_data_file PASSED; shared/tests/test_ac_round3.py::test_candidate_areas_rank_by_shared_words_and_the_blurb_is_one_short_line PASSED"
+        },
+        {
+          "behavior": "a cheap model picks areas by meaning and writes a plain wording; code validates every output (ids in the base catalog, at most 3, no duplicates, outcome wording, length, every number and limit word kept) and falls back to the fixed wording on no key, opt-out, timeout, bad JSON or a rejected reply; the result is cached so a re-run asks the same question; the record keeps source, both wordings, model id and prompt sha; the model text never changes the frozen AC",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_suggest.py::test_a_good_reply_is_used_and_the_record_keeps_both_wordings_the_model_and_the_prompt_sha PASSED; shared/tests/test_ac_suggest.py::test_every_rejected_reply_falls_back_with_its_reason PASSED; shared/tests/test_ac_suggest.py::test_a_timeout_a_missing_key_and_an_opt_out_fall_back_and_never_raise PASSED; shared/tests/test_ac_suggest.py::test_the_same_inputs_give_the_same_question_from_the_cache_so_an_answer_stays_bound PASSED; shared/tests/test_ac_suggest.py::test_the_model_text_never_changes_what_is_frozen_and_a_picked_letter_resolves_to_the_catalog_area PASSED; shared/tests/test_ac_suggest.py::test_suggestions_are_requested_only_for_an_add_that_will_be_asked_where_it_belongs PASSED; shared/tests/test_ac_suggest.py::test_the_prompt_file_carries_the_required_rules PASSED; shared/tests/test_ac_suggest.py::test_the_decide_tool_passes_the_suggestion_through_and_the_flag_turns_it_off PASSED"
         }
       ],
       "counts": {
-        "testable": 21,
-        "tested": 21,
+        "testable": 22,
+        "tested": 22,
         "untestable": 0,
         "untested_testable": 0
       }
