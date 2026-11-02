@@ -25,9 +25,9 @@ from __future__ import annotations
 import json
 import re
 
-from lib.ac_catalog import ac_body, area_blurb, candidates, catalog_texts, load_catalog, parse_catalog
-from lib.ac_gloss import gloss
+from lib.ac_catalog import ac_body, candidates, catalog_texts, load_catalog, parse_catalog
 from lib.ac_hold import load_key, question_sha, signature_ok
+from lib.ac_question import question_options, render_question, suggestion_meta
 from lib.ac_wording import wording_violations
 
 __all__ = ["KINDS", "ac_body", "candidates", "catalog_texts", "count_decisions", "decide", "frozen_fields", "load_catalog", "parse_catalog", "question_options", "question_sha", "render_question", "stub_lines"]
@@ -43,53 +43,10 @@ def _norm(text: object) -> str:
     return " ".join(str(text if text is not None else "").split())
 
 
-def render_question(item: dict, cat: dict | None = None, sugg: dict | None = None) -> str:
-    """The plain-language question the operator answers (what the product promises, not how it is built)."""
-    new, old = _norm(item.get("new_text")), _norm(item.get("old_text"))
-    if item.get("kind") == "remove":
-        return (f"This change removes a promise. Until now this held: {old}. After this change it no longer holds.\n"
-                "1 Yes, that is intended.\n2 No, keep the promise (the change is then reworked).")
-    if item.get("kind") == "change":
-        return (f"This change alters a promise the product makes. Until now: {old}. After this change: {new}. Should it hold like this?\n"
-                "1 Yes, change it.\n2 No, instead: <your wording>")
-    if isinstance(item.get("new_fr"), dict):
-        return (f"This is a new area of the product: {_norm(item['new_fr'].get('title'))}. It would promise: {new}. Is it OK to add this area?\n"
-                "1 Yes, add it.\n2 No, do not add it (the change is then reworked).")
-    layout = _area_options(new, cat or {}, sugg)
-    lines = "\n".join(f"{letter} {text}" for letter, (text, _) in layout.items())
-    shown = _norm(sugg["plain_promise"]).rstrip(".") if _is_model(sugg) else new + gloss(new)
-    return f"This change adds a new promise: {shown}. Where does it belong?\n{lines}"
-
-
-def _is_model(sugg: dict | None) -> bool:
-    """True for a validated model suggestion (:mod:`lib.ac_suggest`); anything else uses the deterministic wording."""
-    return isinstance(sugg, dict) and sugg.get("source") == "model" and bool(sugg.get("areas"))
-
-
-def _area_options(new: str, cat: dict, sugg: dict | None = None) -> dict[str, tuple[str, dict]]:
-    """The pick list of a no-owner question: ``{letter: (printed text, machine answer)}``; area ids stay in the machine answer only."""
-    out: dict[str, tuple[str, dict]] = {}
-    rows = ([(a["fr_id"], cat.get("titles", {}).get(a["fr_id"], ""), _norm(a["plain_description"])) for a in sugg["areas"]] if _is_model(sugg)
-            else [(fr, title, area_blurb(fr, cat)) for fr, title in candidates(new, cat)])
-    for fr, title, blurb in rows:
-        out[chr(ord("A") + len(out))] = (f"{title or 'An existing area'}" + (f": {blurb}" if blurb else ""), {"choice": "yes", "text": fr})
-    if not out:
-        out["A"] = ("An area that already exists (tell us which).", {"choice": "yes"})
-    for text, ans in (("Somewhere new (tell us the name).", {"choice": "other"}), ("It is not a promise, only how it is built.", {"choice": "not_a_promise"}),
-                      ("Not wanted: <your wording>", {"choice": "no"})):
-        out[chr(ord("A") + len(out))] = (text, ans)
-    return out
-
-
-def question_options(item: dict, cat: dict | None = None, sugg: dict | None = None) -> dict:
-    """``{letter: {choice, text?}}`` for the pick list of a no-owner question (empty for every other question)."""
-    if item.get("kind") != "add" or isinstance(item.get("new_fr"), dict):
-        return {}
-    return {k: v for k, (_, v) in _area_options(_norm(item.get("new_text")), cat or {}, sugg).items()}
-
-
 def count_decisions(decisions: object) -> dict:
-    """The one producer of the decision counts: ``{total, auto, asked, exempt, restore, unchanged, exempt_share, restore_share}``.
+    """The one producer of the decision counts: ``{total, auto, asked, exempt, restore, unchanged, answered_inline, exempt_share, restore_share}``.
+
+    ``answered_inline`` counts asked decisions answered inline in an attended run (one count line in the PR body, not a warning).
 
     Priority per decision: exempt, restore, unchanged, asked, auto - every decision lands in exactly one bucket. Malformed input counts as nothing.
     There is no aggregator across runs yet: a report over many runs is made by a one-off script over the per-run records.
@@ -98,7 +55,8 @@ def count_decisions(decisions: object) -> dict:
     n = {k: sum(1 for d in rows if d.get("kind") == k) for k in ("exempt", "restore", "unchanged")}
     asked = sum(1 for d in rows if d.get("kind") not in n and d.get("mode") == "asked")
     total = len(rows)
-    return {"total": total, "auto": total - sum(n.values()) - asked, "asked": asked, **n,
+    inline = sum(1 for d in rows if d.get("mode") == "asked" and d.get("answered_via") == "inline")
+    return {"total": total, "auto": total - sum(n.values()) - asked, "asked": asked, **n, "answered_inline": inline,
             "exempt_share": round(n["exempt"] / total, 2) if total else 0.0, "restore_share": round(n["restore"] / total, 2) if total else 0.0}
 
 
@@ -171,6 +129,11 @@ def _apply(it: dict, ans: dict, cat: dict) -> tuple[dict, str]:
         out["owner_fr"] = _norm(it["new_fr"]["id"])
     elif choice == "not_a_promise":
         return out, "the operator says this is not a promise, only how it is built: drop this item (record the work as unchanged or exempt)"
+    elif choice == "other" and it["kind"] == "add":
+        if not text:
+            return out, "'Somewhere new' needs the name of the new area in 'text'"
+        out["new_fr"] = {"id": _next_fr_id(cat), "title": text}
+        out["owner_fr"] = out["new_fr"]["id"]
     elif it["kind"] == "add":
         owner = text if text in cat["frs"] else next((fr for fr, t in cat.get("titles", {}).items() if t and t.lower() == text.lower()), "")
         if not owner:
@@ -196,28 +159,53 @@ def _answers_by_item(answers: object) -> dict:
     return out
 
 
-def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain: list, inline: object, key: bytes | None, sugg: dict | None = None):
+def _identity(it: dict) -> tuple[str, dict]:
+    """The stable content an answer is bound to: the kind and the ORIGINAL promise text (old, new, new-area title) - not the rendered question."""
+    fr = it.get("new_fr")
+    return str(it.get("kind")), {"old": _norm(it.get("old_text")), "new": _norm(it.get("new_text")), "title": _norm(fr.get("title")) if isinstance(fr, dict) else ""}
+
+
+def _next_fr_id(cat: dict) -> str:
+    """A provisional id for a new area: the next free number in the highest group of the catalog (the catalog writer may renumber)."""
+    pairs = [tuple(int(x) for x in fr[3:].split(".")) for fr in cat.get("frs", ()) if _FR_ID.match(fr)]
+    major = max((p[0] for p in pairs), default=1)
+    return f"FR-{major:02d}.{max((p[1] for p in pairs if p[0] == major), default=0) + 1:02d}"
+
+
+def _in_options(entry: dict, choice: str, text: str) -> bool:
+    """A file answer must be one of the options it was signed with (an empty map = a question with fixed answers)."""
+    opts = entry.get("options")
+    return not opts or any(isinstance(v, dict) and v.get("choice") == choice and ("text" not in v or v["text"] == text) for v in opts.values())
+
+
+def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain: list, inline: object, key: bytes | None, suggest=None):
     """Walk one item through its questions: ``(final item, answered?, answer, via, question or None, error or None)``.
 
-    Normally one question; an add answered 'no, instead' without an owner is asked again about the new wording.
+    A signed answer is found by its STABLE content (bind id, item index, kind, original promise, the options it carries), so
+    a resume neither calls the model nor re-renders from a moved catalog. Normally one question; an add answered 'no, instead'
+    without an owner is asked again about the new wording.
     """
     via, ans, used = "none", None, 0
     while True:
         row = _row(it, cat)
         if row is None:
             return it, used > 0, ans, via, None, None
-        sg = sugg if used == 0 else None  # a re-asked "no, instead" wording was not seen by the model
-        text = render_question(it, cat, sg)
-        sha = question_sha(text, bind_id, n)
-        entry = inline if isinstance(inline, dict) and used == 0 else next((a for a in chain if a.get("question_sha256") == sha), None)
+        kind, promise = _identity(it)
+        entry = inline if isinstance(inline, dict) and used == 0 else next((a for a in chain if isinstance(a.get("options"), dict)
+                                                                              and a.get("question_sha256") == question_sha(bind_id, n, kind, promise, a["options"])), None)
         if entry is None:
             if chain and used == 0:
-                return it, False, None, via, None, f"item {n}: the answer was given for a different question (other run, item or wording) - ask again"
-            return it, False, None, via, {"item": n, "row": row[0], "why": row[1], "question": text, "question_sha256": sha, "options": question_options(it, cat, sg), **_suggestion_meta(sg)}, None
+                return it, False, None, via, None, f"item {n}: the answer was given for a different question (other run, item, promise or option list) - ask again"
+            sg = suggest(n, it) if suggest and used == 0 else None  # a re-asked "no, instead" wording was not seen by the model
+            options = question_options(it, cat, sg)
+            return it, False, None, via, {"item": n, "row": row[0], "why": row[1], "question": render_question(it, cat, sg), "kind": kind, "promise": promise,
+                                          "options": options, "question_sha256": question_sha(bind_id, n, kind, promise, options), **suggestion_meta(sg)}, None
         used += 1
         via = "inline" if entry is inline else ("operator" if signature_ok(key, entry) else "self-reported")
         if unattended and via in ("inline", "self-reported"):
             return it, False, None, via, None, f"item {n}: an unattended run takes answers only from the operator channel (ac_decision.py answer run by the operator, signed)"
+        if entry is not inline and not _in_options(entry, _norm(entry.get("choice")).lower(), _norm(entry.get("text"))):
+            return it, False, None, via, None, f"item {n}: the answer is not one of the options of the question it was signed for"
         it, err = _apply(it, entry, cat)
         ans = entry
         if err:
@@ -226,25 +214,22 @@ def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain:
             return it, True, ans, via, None, None
 
 
-def _suggestion_meta(sugg: dict | None) -> dict:
-    """What the record keeps about a display suggestion: its source and, for a model, both wordings, the model id and the prompt sha."""
-    if not isinstance(sugg, dict) or "source" not in sugg:
-        return {}
-    if not _is_model(sugg):
-        return {"suggestion_source": "fallback", **({"suggestion_reason": sugg["reason"]} if sugg.get("reason") else {})}
-    return {"suggestion_source": "model", **{f"suggestion_{k}": sugg[k] for k in ("original_promise", "plain_promise", "model", "prompt_sha") if k in sugg}}
-
-
 def decide(items: object, catalog: dict, unattended: bool = False, surface: dict | None = None, identifiers: set[str] | None = None,
-           answers: object = None, bind_id: str = "", suggestions: dict | None = None) -> dict:
-    """Decide every item. ``status``: ``ok`` (all decided), ``ask`` (questions for the operator), ``invalid`` (``errors``), ``skipped`` (catalog unreadable)."""
+           answers: object = None, bind_id: str = "", suggest=None) -> dict:
+    """Decide every item. ``status``: ``ok`` (all decided), ``ask`` (questions for the operator), ``invalid`` (``errors``), ``skipped`` (catalog unreadable).
+
+    ``suggest`` is ``(item index, item) -> suggestion | None`` (:func:`lib.ac_suggest.make_suggester`); it is called only when a question must be rendered.
+    """
     base = {"unattended": unattended}
     if catalog.get("unparsed"):
-        return {**base, "status": "skipped", "note": "the requirement catalog has text but no FR heading this tool can read; the pre-build AC decision is skipped, nothing is asked or refused"}
+        return {**base, "status": "skipped", "note": "the requirement catalog is missing, or a spec has text but no FR heading this tool can read; the pre-build AC decision is skipped, nothing is asked, refused or held"}
     if not isinstance(items, list) or not items:
         return {**base, "status": "invalid", "errors": ["items must be a non-empty list: every iterate records an AC, an exemption or a restore"]}
     given = _answers_by_item(answers)
-    key = load_key(False) if given else None
+    try:
+        key = load_key(False) if given else None
+    except RuntimeError:
+        key = None  # an unreadable key verifies nothing: every file answer is then self-reported
     errors: list[str] = []
     resolved, decisions, questions = [], [], []
     for n, raw in enumerate(items):
@@ -261,8 +246,7 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
             resolved.append(it)
             decisions.append(_decision(it, "auto", "auto", "none"))
             continue
-        sugg = (suggestions or {}).get(n)
-        it, done, ans, via, question, err = _ask_one(it, n, catalog, bind_id, unattended, given.get(n, []), inline, key, sugg)
+        it, done, ans, via, question, err = _ask_one(it, n, catalog, bind_id, unattended, given.get(n, []), inline, key, suggest)
         if err:
             errors.append(err)
         elif question:
@@ -273,7 +257,7 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
                 errors += errs
                 continue
             resolved.append(it)
-            decisions.append({**_decision(it, "asked", _norm(ans.get("choice")).lower(), via), **_suggestion_meta(sugg)})
+            decisions.append({**_decision(it, "asked", _norm(ans.get("choice")).lower(), via), **{k: v for k, v in ans.items() if k.startswith("suggestion_")}})
     if errors:
         return {**base, "status": "invalid", "errors": errors}
     out = {**base, "resolved_items": resolved, "ac_decisions": decisions, "counts": count_decisions(decisions)}

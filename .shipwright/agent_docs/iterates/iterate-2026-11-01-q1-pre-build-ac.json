@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-01-q1-pre-build-ac",
-  "date": "2026-11-02T07:29:02.750741Z",
+  "date": "2026-11-02T08:34:37.198253Z",
   "event_at": "2026-11-01T15:23:39.946873+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -30,22 +30,22 @@
       {
         "behavior": "exemption is a claim before the build and refused against an observable diff",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_exemption_is_refused_when_a_diff_exists_and_is_observable_else_only_a_claim PASSED; shared/tests/test_ac_decision.py::test_exempt_is_a_claim_before_the_build_and_checked_once_a_diff_exists PASSED"
+        "evidence": "shared/tests/test_ac_decision.py::test_exemption_is_refused_when_a_diff_exists_and_is_observable_else_only_a_claim PASSED; shared/tests/test_ac_decision_answers.py::test_exempt_is_a_claim_before_the_build_and_checked_once_a_diff_exists PASSED"
       },
       {
         "behavior": "answers are bound to run, item index and question wording; no keeps the owner; unattended runs refuse inline and unmarked answers; unattended is read from state, not the flag",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_a_bound_answer_closes_the_question_and_keeps_the_owner_on_no PASSED; shared/tests/test_ac_decision.py::test_the_answer_is_bound_to_run_item_and_wording PASSED; shared/tests/test_ac_decision.py::test_unattended_runs_refuse_inline_answers_and_unmarked_answer_files PASSED; shared/tests/test_ac_decision.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED; shared/tests/test_ac_decision.py::test_cli_reads_the_campaign_environment_not_only_the_flag PASSED"
+        "evidence": "shared/tests/test_ac_decision_answers.py::test_a_bound_answer_closes_the_question_and_keeps_the_owner_on_no PASSED; shared/tests/test_ac_decision_answers.py::test_the_answer_is_bound_to_run_item_promise_and_options_not_to_the_rendered_text PASSED; shared/tests/test_ac_decision_answers.py::test_unattended_runs_refuse_inline_answers_and_unmarked_answer_files PASSED; shared/tests/test_ac_decision_answers.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED; shared/tests/test_ac_decision_answers.py::test_cli_reads_the_campaign_environment_not_only_the_flag PASSED"
       },
       {
         "behavior": "CLI: exit codes, escalation names the unit, answer subcommand works from a held result.json, no tracebacks, BOM/UTF-16 text, verify subcommand, UTF-8 output",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_cli_exit_codes_and_the_unit_hold_escalation PASSED; shared/tests/test_ac_decision.py::test_the_answer_subcommand_is_an_operator_channel_that_works_from_a_held_result PASSED; shared/tests/test_ac_decision.py::test_cli_never_prints_a_traceback_for_bad_input PASSED; shared/tests/test_ac_decision.py::test_text_files_are_read_with_or_without_a_byte_order_mark PASSED; shared/tests/test_ac_decision.py::test_verify_subcommand_reports_the_finalize_compare PASSED; shared/tests/test_ac_decision.py::test_cli_prints_non_ascii_without_crashing_and_keeps_the_exit_codes PASSED"
+        "evidence": "shared/tests/test_ac_decision_answers.py::test_cli_exit_codes_and_the_unit_hold_escalation PASSED; shared/tests/test_ac_decision_answers.py::test_the_answer_subcommand_is_an_operator_channel_that_works_from_a_held_result PASSED; shared/tests/test_ac_decision_answers.py::test_cli_never_prints_a_traceback_for_bad_input PASSED; shared/tests/test_ac_decision_answers.py::test_text_files_are_read_with_or_without_a_byte_order_mark PASSED; shared/tests/test_ac_decision_answers.py::test_verify_subcommand_reports_the_finalize_compare PASSED; shared/tests/test_ac_decision_answers.py::test_cli_prints_non_ascii_without_crashing_and_keeps_the_exit_codes PASSED"
       },
       {
         "behavior": "one counting producer has exempt, restore and auto buckets next to asked",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_one_counting_producer_has_exempt_restore_and_auto_buckets PASSED; shared/tests/test_ac_decision.py::test_stub_lines_carry_items_decisions_and_a_new_area PASSED"
+        "evidence": "shared/tests/test_ac_decision_answers.py::test_one_counting_producer_has_exempt_restore_and_auto_buckets PASSED; shared/tests/test_ac_decision_answers.py::test_stub_lines_carry_items_decisions_and_a_new_area PASSED"
       },
       {
         "behavior": "observable surface fails closed: directory-only test roots, rename across the boundary, per-hunk ordered compare keeping indentation and shebang, textless changes observable",
@@ -60,17 +60,17 @@
       {
         "behavior": "F11 check warns (never errors) on: no record, exemption on an observable diff, restore without base AC or test mention, differing frozen text, undeclared catalog edits, wording against committed-diff names, unattended asked decision not operator-answered; malformed data and no event are safe",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_undeclared_catalog_edits_are_found_from_the_diff_not_from_a_label PASSED; shared/tests/test_ac_surface_record.py::test_check_passes_without_a_record_when_nothing_observable_changed_even_for_a_bug PASSED; shared/tests/test_ac_surface_record.py::test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemption PASSED; shared/tests/test_ac_surface_record.py::test_check_restore_needs_a_base_catalog_ac_and_a_test_that_names_it PASSED; shared/tests/test_ac_surface_record.py::test_check_compares_the_frozen_text_with_the_catalog_in_the_diff PASSED; shared/tests/test_ac_surface_record.py::test_check_warns_on_a_catalog_edit_no_item_names_even_without_an_observable_diff PASSED; shared/tests/test_ac_surface_record.py::test_check_reruns_the_wording_check_against_identifiers_of_the_committed_diff PASSED; shared/tests/test_ac_surface_record.py::test_check_warns_when_an_unattended_asked_decision_was_not_operator_answered PASSED; shared/tests/test_ac_surface_record.py::test_malformed_record_data_is_a_warning_never_a_crash PASSED; shared/tests/test_ac_surface_record.py::test_check_skips_cleanly_and_never_raises PASSED"
+        "evidence": "shared/tests/test_ac_surface_record.py::test_undeclared_catalog_edits_are_found_from_the_diff_not_from_a_label PASSED; shared/tests/test_ac_f11_check.py::test_check_passes_without_a_record_when_nothing_observable_changed_even_for_a_bug PASSED; shared/tests/test_ac_f11_check.py::test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemption PASSED; shared/tests/test_ac_f11_check.py::test_check_restore_needs_a_base_catalog_ac_and_a_test_that_names_it PASSED; shared/tests/test_ac_f11_check.py::test_check_compares_the_frozen_text_with_the_catalog_in_the_diff PASSED; shared/tests/test_ac_f11_check.py::test_check_warns_on_a_catalog_edit_no_item_names_even_without_an_observable_diff PASSED; shared/tests/test_ac_f11_check.py::test_check_reruns_the_wording_check_against_identifiers_of_the_committed_diff PASSED; shared/tests/test_ac_f11_check.py::test_malformed_record_data_is_a_warning_never_a_crash PASSED; shared/tests/test_ac_f11_check.py::test_check_skips_cleanly_and_never_raises PASSED"
       },
       {
         "behavior": "only a well-formed AC question (non-empty ac_questions, valid sha, attempt id, sub-iterate loop) holds its own unit; every other escalation stops the wave",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_decision.py::test_the_hold_needs_a_well_formed_escalation PASSED; shared/tests/test_ac_surface_record.py::test_only_a_well_formed_ac_question_holds_its_own_unit PASSED; shared/tests/test_ac_surface_record.py::test_record_holds_only_the_unit_on_a_well_formed_question_else_the_wave_stops PASSED"
+        "evidence": "shared/tests/test_ac_decision_answers.py::test_the_hold_needs_a_well_formed_escalation PASSED; shared/tests/test_ac_f11_check.py::test_only_a_well_formed_ac_question_holds_its_own_unit PASSED; shared/tests/test_ac_f11_check.py::test_record_holds_only_the_unit_on_a_well_formed_question_else_the_wave_stops PASSED"
       },
       {
         "behavior": "an unattended question flows from the CLI to a held unit while a second unit of the wave completes",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_surface_record.py::test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on PASSED",
+        "evidence": "shared/tests/test_ac_f11_check.py::test_integration_an_unattended_question_flows_from_the_tool_to_a_held_unit_and_the_wave_goes_on PASSED",
         "category": "integration"
       },
       {
@@ -101,33 +101,63 @@
       {
         "behavior": "the catalog parser reads this repo's shape, the greenfield generator's shape, adopted repos and table-only specs; an unreadable catalog is skipped, never asked or refused",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_round3.py::test_the_parser_reads_this_repos_shape_the_greenfield_shape_adopted_repos_and_table_only_specs PASSED; shared/tests/test_ac_round3.py::test_a_greenfield_catalog_can_be_changed_and_restored_by_position_id PASSED; shared/tests/test_ac_round3.py::test_a_catalog_with_text_but_no_readable_fr_is_skipped_never_asked_or_refused PASSED"
+        "evidence": "shared/tests/test_ac_catalog_shapes.py::test_the_parser_reads_this_repos_shape_the_greenfield_shape_adopted_repos_and_table_only_specs PASSED; shared/tests/test_ac_catalog_shapes.py::test_a_greenfield_catalog_can_be_changed_and_restored_by_position_id PASSED; shared/tests/test_ac_catalog_shapes.py::test_a_catalog_with_text_but_no_readable_fr_is_skipped_never_asked_or_refused PASSED"
       },
       {
         "behavior": "resume path: hold, operator answer, pending, re-claimed under a new attempt, the same question hashes, complete",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_round3.py::test_resume_path_hold_answer_pending_complete PASSED",
+        "evidence": "shared/tests/test_ac_questions.py::test_resume_path_hold_answer_pending_complete PASSED",
         "category": "integration"
       },
       {
         "behavior": "unchanged is a record kind with its own count bucket and an F11 compare against the diff and a naming test",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_round3.py::test_unchanged_needs_an_existing_ac_and_a_file_list_and_has_its_own_bucket PASSED; shared/tests/test_ac_round3.py::test_the_unchanged_record_is_checked_against_the_diff_and_a_test_naming_the_ac PASSED"
+        "evidence": "shared/tests/test_ac_questions.py::test_unchanged_needs_an_existing_ac_and_a_file_list_and_has_its_own_bucket PASSED; shared/tests/test_ac_questions.py::test_the_unchanged_record_is_checked_against_the_diff_and_a_test_naming_the_ac PASSED"
       },
       {
         "behavior": "a no-owner question is a lettered pick list of areas by title in everyday words with a deterministic gloss of at most two jargon terms; picking new area, not-a-promise or a name resolves or explains",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_round3.py::test_a_no_owner_question_is_a_lettered_pick_list_in_everyday_words PASSED; shared/tests/test_ac_round3.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_round3.py::test_the_gloss_explains_at_most_two_jargon_terms_once_and_only_from_the_data_file PASSED; shared/tests/test_ac_round3.py::test_candidate_areas_rank_by_shared_words_and_the_blurb_is_one_short_line PASSED"
+        "evidence": "shared/tests/test_ac_questions.py::test_a_no_owner_question_is_a_lettered_pick_list_in_everyday_words PASSED; shared/tests/test_ac_questions.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_questions.py::test_the_gloss_explains_at_most_two_jargon_terms_once_and_only_from_the_data_file PASSED; shared/tests/test_ac_questions.py::test_candidate_areas_rank_by_shared_words_and_the_blurb_is_one_short_line PASSED"
       },
       {
-        "behavior": "a cheap model picks areas by meaning and writes a plain wording; code validates every output (ids in the base catalog, at most 3, no duplicates, outcome wording, length, every number and limit word kept) and falls back to the fixed wording on no key, opt-out, timeout, bad JSON or a rejected reply; the result is cached so a re-run asks the same question; the record keeps source, both wordings, model id and prompt sha; the model text never changes the frozen AC",
+        "behavior": "the question shows the agent's ORIGINAL promise first and a model's plain wording only as a gloss; a reply that drops, changes or adds a number (whole tokens, number words), negation, limit or quantifier falls back; equivalent spellings pass; an empty area list keeps the plain wording with the deterministic areas",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ac_suggest.py::test_a_good_reply_is_used_and_the_record_keeps_both_wordings_the_model_and_the_prompt_sha PASSED; shared/tests/test_ac_suggest.py::test_every_rejected_reply_falls_back_with_its_reason PASSED; shared/tests/test_ac_suggest.py::test_a_timeout_a_missing_key_and_an_opt_out_fall_back_and_never_raise PASSED; shared/tests/test_ac_suggest.py::test_the_same_inputs_give_the_same_question_from_the_cache_so_an_answer_stays_bound PASSED; shared/tests/test_ac_suggest.py::test_the_model_text_never_changes_what_is_frozen_and_a_picked_letter_resolves_to_the_catalog_area PASSED; shared/tests/test_ac_suggest.py::test_suggestions_are_requested_only_for_an_add_that_will_be_asked_where_it_belongs PASSED; shared/tests/test_ac_suggest.py::test_the_prompt_file_carries_the_required_rules PASSED; shared/tests/test_ac_suggest.py::test_the_decide_tool_passes_the_suggestion_through_and_the_flag_turns_it_off PASSED"
+        "evidence": "shared/tests/test_ac_suggest.py::test_a_good_reply_is_a_gloss_under_the_original_and_the_record_keeps_both_the_model_and_the_prompt_sha PASSED; shared/tests/test_ac_suggest.py::test_a_reply_that_drops_changes_or_adds_a_number_negation_or_limit_falls_back PASSED; shared/tests/test_ac_suggest.py::test_equivalent_spellings_of_the_same_numbers_and_negations_are_accepted PASSED; shared/tests/test_ac_suggest.py::test_bad_areas_fall_back_with_their_reason PASSED; shared/tests/test_ac_suggest.py::test_a_non_json_reply_falls_back PASSED; shared/tests/test_ac_suggest.py::test_an_empty_area_list_keeps_the_plain_wording_with_the_deterministic_area_list PASSED"
+      },
+      {
+        "behavior": "the model is pinned, a ZDR-namespace model is refused, the transport module is loaded once and registered before it runs, and a missing file is a fallback that is never cached",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_suggest.py::test_the_model_is_pinned_and_a_model_that_needs_a_zero_retention_rule_is_refused PASSED; shared/tests/test_ac_suggest.py::test_the_transport_module_is_loaded_once_registered_before_it_runs_and_a_missing_file_is_a_fallback_never_cached PASSED"
+      },
+      {
+        "behavior": "the suggestion cache is one file per key, atomic, re-validated on every hit; a corrupt, foreign or malformed entry is a miss; timeouts and a missing key are never cached",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_suggest.py::test_the_cache_is_one_file_per_key_revalidated_on_every_hit_and_a_bad_entry_is_a_miss PASSED; shared/tests/test_ac_suggest.py::test_a_timeout_and_a_missing_key_fall_back_and_are_never_cached PASSED"
+      },
+      {
+        "behavior": "every opt-out fails closed (SHIPWRIGHT_AC_SUGGEST=0, external_review.ac_suggest false, feedback_iterations 0, a gateway, an unreadable config); one 30 s budget per decide call; the model is asked only for a rendered where-does-it-belong question",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_suggest_flow.py::test_every_opt_out_sends_nothing_and_an_unreadable_config_fails_closed PASSED; shared/tests/test_ac_suggest_flow.py::test_the_suggester_has_one_time_budget_and_skips_what_is_not_a_where_does_it_belong_question PASSED; shared/tests/test_ac_suggest_flow.py::test_decide_asks_the_suggester_only_for_a_question_it_renders_and_never_for_an_invalid_or_auto_item PASSED"
+      },
+      {
+        "behavior": "the decide tool records the suggestion, resumes without asking the model again, and a different campaign nonce does not inherit an old answer",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_suggest_flow.py::test_the_decide_tool_uses_the_suggestion_records_it_and_the_flags_and_nonce_work PASSED"
+      },
+      {
+        "behavior": "an answer is bound to stable content (id, nonce, item, kind, original promise, options): a moved base still accepts a signed answer without calling the model; a tampered or forged options map is refused or never operator-signed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_questions.py::test_a_signed_answer_survives_a_moved_base_and_never_calls_the_model_again PASSED; shared/tests/test_ac_questions.py::test_a_tampered_options_map_is_refused_and_a_forged_one_never_becomes_operator_signed PASSED; shared/tests/test_ac_decision_answers.py::test_the_answer_is_bound_to_run_item_promise_and_options_not_to_the_rendered_text PASSED; shared/tests/test_ac_decision_answers.py::test_the_hold_needs_a_well_formed_escalation PASSED"
+      },
+      {
+        "behavior": "the signing key is created exclusively (0600), never regenerated, and a bad key file is a clear error; Somewhere new works through a new area; no spec or any unreadable spec is skipped; the F11 unsigned warning is for unattended runs only",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_round3.py::test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file_is_a_clear_error PASSED; shared/tests/test_ac_questions.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_catalog_shapes.py::test_no_spec_at_all_or_any_spec_with_text_but_no_readable_fr_is_skipped PASSED; shared/tests/test_ac_f11_check.py::test_check_warns_about_an_unsigned_asked_decision_only_in_an_unattended_run PASSED; shared/tests/test_ac_decision_answers.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED"
       }
     ],
     "counts": {
-      "testable": 22,
-      "tested": 22,
+      "testable": 28,
+      "tested": 28,
       "untestable": 0,
       "untested_testable": 0
     }

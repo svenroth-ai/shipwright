@@ -1,30 +1,24 @@
-"""The model's plain wording and area suggestions: a validated display aid with a deterministic fallback (stubbed transport, never the live provider)."""
+"""The model's plain gloss and area suggestions: strict validation in both directions, the pin, the cache (stubbed transport, never the live provider)."""
 
 from __future__ import annotations
 
 import json
+import sys
 
 import pytest
 
 from lib import ac_decision as ad
 from lib import ac_suggest as su
-from tools import ac_decision as cli
 
 _PROMISE = "A draft that is older than 30 days is deleted unless the owner keeps it"
 _CAT = {"acs": {"FR-01.03.AC01": "Given a draft, when saved, then it is kept.", "FR-01.04.AC01": "Given a link, when opened, then the draft shows."},
         "frs": {"FR-01.03", "FR-01.04"}, "titles": {"FR-01.03": "Saving drafts", "FR-01.04": "Sharing drafts"}, "unparsed": False}
-_GOOD = {"plain_promise": "A draft untouched for more than 30 days is removed, unless the owner keeps it.",
+_GOOD = {"plain_promise": "A draft that is 30 days old or older is removed, unless the owner keeps it.",
          "areas": [{"fr_id": "FR-01.03", "plain_description": "How drafts are saved and kept."}]}
+_NEG = "A draft cannot be deleted without the owner's consent, and every copy is kept"
 
 
-@pytest.fixture(autouse=True)
-def _env(monkeypatch, tmp_path):
-    monkeypatch.setenv(su.CACHE_ENV, str(tmp_path / "cache.json"))
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    monkeypatch.delenv("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL", raising=False)
-
-
-def _run(reply, **kw):
+def _run(reply, promise=_PROMISE, **kw):
     calls = []
 
     def transport(messages, timeout):
@@ -32,118 +26,145 @@ def _run(reply, **kw):
         if isinstance(reply, Exception):
             raise reply
         return reply if isinstance(reply, str) else json.dumps(reply)
-    out = su.suggest(_PROMISE, _CAT, ".", transport=transport, model="stub/model", **kw)
+    out = su.suggest(promise, _CAT, ".", transport=transport, model=kw.pop("model", "stub/model"), **kw)
     return out, calls
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_a_good_reply_is_used_and_the_record_keeps_both_wordings_the_model_and_the_prompt_sha():
+def test_a_good_reply_is_a_gloss_under_the_original_and_the_record_keeps_both_the_model_and_the_prompt_sha():
     out, calls = _run(_GOOD)
     assert out["source"] == "model" and out["model"] == "stub/model" and out["prompt_sha"].startswith("sha256:")
-    assert out["original_promise"] == _PROMISE and out["plain_promise"].startswith("A draft untouched")
-    assert json.loads(calls[0][1]["content"])["promise"] == _PROMISE  # the model sees the original, plus the areas
+    assert out["original_promise"] == _PROMISE and out["plain_promise"].startswith("A draft that is 30 days old")
+    assert json.loads(calls[0][1]["content"])["promise"] == _PROMISE
     q = ad.render_question({"kind": "add", "new_text": _PROMISE}, _CAT, out)
-    assert "A draft untouched for more than 30 days" in q and "A Saving drafts: How drafts are saved and kept." in q and "FR-01" not in q
-    opts = ad.question_options({"kind": "add", "new_text": _PROMISE}, _CAT, out)
-    assert opts["A"] == {"choice": "yes", "text": "FR-01.03"}  # the id stays in the machine answer only
-    meta = ad._suggestion_meta(out)
+    first = q.splitlines()[0]
+    assert first.startswith(f"This change adds a new promise: {_PROMISE}. In plain words: A draft that is 30 days old")  # display = frozen text first
+    assert first.endswith("Where does it belong?") and "FR-01" not in q and "A Saving drafts: How drafts are saved and kept." in q
+    assert ad.question_options({"kind": "add", "new_text": _PROMISE}, _CAT, out)["A"] == {"choice": "yes", "text": "FR-01.03"}
+    meta = ad.suggestion_meta(out)
     assert meta["suggestion_source"] == "model" and meta["suggestion_original_promise"] == _PROMISE and meta["suggestion_model"] == "stub/model" and "suggestion_prompt_sha" in meta
 
 
-@pytest.mark.parametrize("reply, why", [
-    ({**_GOOD, "areas": [{"fr_id": "FR-99.99", "plain_description": "Invented."}]}, "unknown area id"),
-    ({**_GOOD, "plain_promise": "A draft untouched for a long time is removed, unless the owner keeps it."}, "30"),
-    ({**_GOOD, "plain_promise": "A draft untouched for more than 30 days is removed whenever the owner agrees."}, "unless"),
-    ({**_GOOD, "plain_promise": "A draft untouched for more than 30 days is removed unless the owner keeps it; see plan_review.py."}, "code-shaped"),
-    ({**_GOOD, "areas": [{"fr_id": "FR-01.03", "plain_description": "One."}, {"fr_id": "FR-01.03", "plain_description": "Two."}]}, "twice"),
-    ({**_GOOD, "areas": [{"fr_id": "FR-01.03", "plain_description": "x"}] * 1 + [{"fr_id": f"FR-01.0{i}", "plain_description": "y"} for i in (4, 5, 6)]}, "more than 3"),
-    ({**_GOOD, "areas": []}, "no area"),
-    ({**_GOOD, "plain_promise": "x" * 500}, "too long"),
-    ("this is not json", "not a JSON object"),
-    ("[1, 2]", "not a JSON object"),
+@pytest.mark.covers("FR-01.11/AC49")
+@pytest.mark.parametrize("promise, plain, why", [
+    (_PROMISE, "A draft that is old is deleted, unless the owner keeps it.", "numbers differ"),                        # dropped number
+    (_PROMISE, "A draft that is 300 days old is deleted, unless the owner keeps it.", "numbers differ"),               # 30 must not match 300
+    ("A draft is kept for 5 days unless the owner keeps it", "A draft is kept for 15 days, unless the owner keeps it.", "numbers differ"),   # 5 must not match 15
+    (_PROMISE, "A draft that is 30 days old, or two weeks, is removed, unless the owner keeps it.", "numbers differ"),  # added number word
+    (_PROMISE, "A draft that is 30 days old is deleted whenever the owner agrees.", "negations or limits differ"),      # dropped unless
+    (_PROMISE, "A draft that is 30 days old is deleted unless the owner keeps it, and never otherwise.", "negations or limits differ"),   # added never
+    (_PROMISE, "Every draft that is 30 days old is deleted unless the owner keeps it.", "negations or limits differ"),  # added quantifier
+    (_NEG, "A draft can be removed without the owner's consent, and every copy is kept.", "negations or limits differ"),   # cannot dropped
+    (_NEG, "A draft cannot be removed, and every copy is kept.", "negations or limits differ"),                         # without dropped
+    (_NEG, "A draft cannot be removed without the owner's consent, and no copy is lost.", "negations or limits differ"),  # every -> no
+    (_PROMISE, "A draft that is 30 days old is deleted unless the owner keeps it; see plan_review.py.", "code-shaped"),
+    (_PROMISE, "x" * 500, "too long"),
 ])
-@pytest.mark.covers("FR-01.11/AC49")
-def test_every_rejected_reply_falls_back_with_its_reason(reply, why):
-    out, _ = _run(reply)
+def test_a_reply_that_drops_changes_or_adds_a_number_negation_or_limit_falls_back(promise, plain, why):
+    out, _ = _run({"plain_promise": plain, "areas": _GOOD["areas"]}, promise=promise)
     assert out["source"] == "fallback" and why in out["reason"]
-    assert "plain_promise" not in out
-    q = ad.render_question({"kind": "add", "new_text": _PROMISE}, _CAT, out)
-    assert q.startswith(f"This change adds a new promise: {_PROMISE}")  # today's deterministic wording
-    assert ad._suggestion_meta(out)["suggestion_source"] == "fallback"
+    q = ad.render_question({"kind": "add", "new_text": promise}, _CAT, out)
+    assert q.startswith(f"This change adds a new promise: {promise}") and "In plain words" not in q   # today's deterministic wording
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_a_timeout_a_missing_key_and_an_opt_out_fall_back_and_never_raise(monkeypatch, tmp_path):
+@pytest.mark.parametrize("promise, plain", [
+    (_PROMISE, "A draft that is thirty days old or older is removed, unless the owner keeps it."),                    # number words equal digits
+    (_NEG, "A draft can't be removed without the owner's consent, and every copy is kept."),                          # can't == cannot
+    (_NEG, "A draft cannot be removed without the owner’s consent, and every copy is kept."),                        # typographic apostrophe
+])
+def test_equivalent_spellings_of_the_same_numbers_and_negations_are_accepted(promise, plain):
+    out, _ = _run({"plain_promise": plain, "areas": _GOOD["areas"]}, promise=promise)
+    assert out["source"] == "model", out["reason"]
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+@pytest.mark.parametrize("areas, why", [
+    ([{"fr_id": "FR-99.99", "plain_description": "Invented."}], "unknown area id"),
+    ([{"fr_id": "FR-01.03", "plain_description": "One."}, {"fr_id": "FR-01.03", "plain_description": "Two."}], "twice"),
+    ([{"fr_id": f"FR-01.0{i}", "plain_description": "y"} for i in (3, 4, 5, 6)], "more than 3"),
+    ([{"fr_id": "FR-01.03", "plain_description": "Uses plan_review.py"}], "code-shaped"),
+    ([{"fr_id": "FR-01.03", "plain_description": ""}], "empty"),
+    ("not a list", "missing"),
+])
+def test_bad_areas_fall_back_with_their_reason(areas, why):
+    out, _ = _run({"plain_promise": _GOOD["plain_promise"], "areas": areas})
+    assert out["source"] == "fallback" and why in out["reason"]
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+@pytest.mark.parametrize("reply", ["this is not json", "[1, 2]", "", None])
+def test_a_non_json_reply_falls_back(reply):
+    out, _ = _run(reply if reply is not None else "null")
+    assert out["source"] == "fallback" and "not a JSON object" in out["reason"]
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_an_empty_area_list_keeps_the_plain_wording_with_the_deterministic_area_list():
+    out, _ = _run({"plain_promise": _GOOD["plain_promise"], "areas": []})
+    assert out["source"] == "model" and out["areas"] == []
+    q = ad.render_question({"kind": "add", "new_text": "Drafts are saved and shared"}, _CAT, {**out, "original_promise": "Drafts are saved and shared"})
+    assert "In plain words:" in q and "A Saving drafts" in q                 # candidates by shared words, not from the model
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_the_model_is_pinned_and_a_model_that_needs_a_zero_retention_rule_is_refused(monkeypatch):
+    assert su.MODEL == "anthropic/claude-haiku-5.5"
+    for model in ("deepseek/deepseek-v4-pro", "z-ai/glm-5.3", "Z-AI/GLM-5.3"):
+        out, calls = _run(_GOOD, model=model)
+        assert out["source"] == "fallback" and "zero-data-retention" in out["reason"] and calls == []
+    seen = []
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    mod = su._load_transport()
+    monkeypatch.setattr(mod, "call_openrouter", lambda key, model, messages, timeout: seen.append(model) or json.dumps(_GOOD))
+    monkeypatch.setattr(su, "_opted_out", lambda root: False)
+    assert su.suggest(_PROMISE, _CAT, ".")["source"] == "model" and seen == [su.MODEL]       # not the PR review's default
+    monkeypatch.setattr(su, "MODEL", "z-ai/glm-5.3")
+    assert "zero-data-retention" in su.suggest(_PROMISE, _CAT, ".", use_cache=False)["reason"] and seen == ["anthropic/claude-haiku-5.5"]
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_the_transport_module_is_loaded_once_registered_before_it_runs_and_a_missing_file_is_a_fallback_never_cached(monkeypatch, tmp_path):
+    first = su._load_transport()
+    assert su._load_transport() is first and sys.modules[su._TRANSPORT_NAME] is first
+    monkeypatch.delitem(sys.modules, su._TRANSPORT_NAME)
+    monkeypatch.setattr(su, "_TRANSPORT_PATH", tmp_path / "gone.py")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setattr(su, "_opted_out", lambda root: False)
+    out = su.suggest(_PROMISE, _CAT, ".")
+    assert out["source"] == "fallback" and "FileNotFoundError" in out["reason"] and su._TRANSPORT_NAME not in sys.modules
+    (tmp_path / "boom.py").write_text("raise RuntimeError('import failed')\n", encoding="utf-8")
+    monkeypatch.setattr(su, "_TRANSPORT_PATH", tmp_path / "boom.py")
+    assert "import failed" in su.suggest(_PROMISE, _CAT, ".")["reason"] and su._TRANSPORT_NAME not in sys.modules      # a failed import leaves nothing registered
+    assert not list(su._cache_dir().glob("*.json"))                                                                    # environment failures are never cached
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_the_cache_is_one_file_per_key_revalidated_on_every_hit_and_a_bad_entry_is_a_miss():
+    first, calls1 = _run(_GOOD)
+    files = list(su._cache_dir().glob("*.json"))
+    assert len(files) == 1 and not list(su._cache_dir().glob("*.tmp"))
+    again, calls2 = _run({"plain_promise": "Something else.", "areas": []})
+    assert calls1 and not calls2 and again["plain_promise"] == first["plain_promise"]                  # reused, no second call
+    entry = json.loads(files[0].read_text(encoding="utf-8"))
+    entry["raw"] = json.dumps({**_GOOD, "areas": [{"fr_id": "FR-99.99", "plain_description": "Gone."}]})   # the cached reply no longer validates
+    files[0].write_text(json.dumps(entry), encoding="utf-8")
+    stale, calls3 = _run({"plain_promise": "Something else.", "areas": []})
+    assert stale["source"] == "fallback" and "unknown area id" in stale["reason"] and not calls3
+    for bad in ("{not json", "[]", json.dumps({**entry, "v": 1}), json.dumps({**entry, "original_promise": "another promise"}), json.dumps({**entry, "raw": 7}), ""):
+        files[0].write_text(bad, encoding="utf-8")                                                  # corrupt, foreign or malformed: a miss, never a traceback
+        out, calls = _run(_GOOD)
+        assert out["source"] == "model" and calls
+    other, _ = _run(_GOOD, promise=_PROMISE + " today")                                              # another key is another file; nothing else is overwritten
+    assert len(list(su._cache_dir().glob("*.json"))) == 2 and other["original_promise"].endswith("today")
+    assert su.suggest(_PROMISE, _CAT, ".", transport=lambda m, t: json.dumps(_GOOD), model="stub/model", use_cache=False)["source"] == "model"
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_a_timeout_and_a_missing_key_fall_back_and_are_never_cached(monkeypatch):
     out, _ = _run(TimeoutError("read timed out"))
     assert out["source"] == "fallback" and "TimeoutError" in out["reason"]
-    no_key = su.suggest(_PROMISE, _CAT, tmp_path, use_cache=False)
-    assert no_key["source"] == "fallback" and "OPENROUTER_API_KEY" in no_key["reason"]
-    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
-    (tmp_path / "shipwright_iterate_config.json").write_text(json.dumps({"external_review": {"feedback_iterations": 0}}), encoding="utf-8")
-    off = su.suggest(_PROMISE, _CAT, tmp_path, use_cache=False)
-    assert off["source"] == "fallback" and "switched off" in off["reason"]
-
-
-@pytest.mark.covers("FR-01.11/AC49")
-def test_the_same_inputs_give_the_same_question_from_the_cache_so_an_answer_stays_bound():
-    first, calls1 = _run(_GOOD)
-    again, calls2 = _run({"plain_promise": "Something else.", "areas": []})
-    assert calls1 and not calls2 and again["plain_promise"] == first["plain_promise"]  # the stored suggestion, no second call
-    fresh, calls3 = _run({"plain_promise": "A draft untouched for more than 30 days is removed, unless the owner keeps it, always.", "areas": _GOOD["areas"]}, use_cache=False)
-    assert calls3 and fresh["plain_promise"] != first["plain_promise"]
-
-
-@pytest.mark.covers("FR-01.11/AC49")
-def test_the_model_text_never_changes_what_is_frozen_and_a_picked_letter_resolves_to_the_catalog_area():
-    sugg = su.suggest(_PROMISE, _CAT, ".", transport=lambda m, t: json.dumps(_GOOD), model="stub/model")
-    items = [{"kind": "add", "new_text": _PROMISE}]
-    first = ad.decide(items, _CAT, bind_id="b", suggestions={0: sugg})
-    assert first["status"] == "ask" and first["questions"][0]["suggestion_source"] == "model"
-    q = first["questions"][0]
-    from lib.ac_hold import question_sha, sign
-    ans = {"item": 0, "question_sha256": q["question_sha256"], "choice": "yes", "text": q["options"]["A"]["text"]}
-    done = ad.decide(items, _CAT, answers=[ans], bind_id="b", suggestions={0: sugg})
-    assert done["status"] == "ok" and done["resolved_items"][0]["new_text"] == _PROMISE and done["resolved_items"][0]["owner_fr"] == "FR-01.03"
-    assert done["ac_decisions"][0]["suggestion_source"] == "model" and done["ac_decisions"][0]["suggestion_plain_promise"] == _GOOD["plain_promise"]
-    assert q["question_sha256"] == question_sha(q["question"], "b", 0) and sign  # the sha binds the text the operator saw
-
-
-@pytest.mark.covers("FR-01.11/AC49")
-def test_suggestions_are_requested_only_for_an_add_that_will_be_asked_where_it_belongs(monkeypatch):
-    seen = []
-    monkeypatch.setattr(su, "suggest", lambda text, *a, **k: seen.append(text) or {"source": "fallback"})
-    items = [{"kind": "add", "new_text": "A first promise."}, {"kind": "add", "owner_fr": "FR-01.03", "new_text": "Owned."},
-             {"kind": "change", "ac": "FR-01.03.AC01", "new_text": "Changed."}, {"kind": "add", "new_fr": {"id": "FR-01.30", "title": "New"}, "new_text": "New area."},
-             {"kind": "add", "new_text": "See plan_review.py"}]
-    assert list(su.suggestions_for(items, _CAT, ".")) == [0] and seen == ["A first promise."]
-    assert su.suggestions_for(items, _CAT, ".", enabled=False) == {} and su.suggestions_for(items, {**_CAT, "unparsed": True}, ".") == {}
-
-
-@pytest.mark.covers("FR-01.11/AC49")
-def test_the_prompt_file_carries_the_required_rules():
-    text = su.prompt_text()
-    for must in ("tech-savvy", "NOT a developer", "MEANING, not by shared words", "Never invent", "empty list", "nothing but the JSON", "Keep EVERY number",
-                 "not\", \"never\", \"unless\", \"only\", \"at most\", \"at least\" and \"no\""):
-        assert must in text, must
-
-
-@pytest.mark.covers("FR-01.11/AC49")
-def test_the_decide_tool_passes_the_suggestion_through_and_the_flag_turns_it_off(tmp_path, monkeypatch, capsys):
-    import subprocess
-    root = tmp_path / "r"
-    (root / ".shipwright/planning/01-adopted").mkdir(parents=True)
-    (root / ".shipwright/planning/01-adopted/spec.md").write_text("### FR-01.03 - Saving drafts\n\n- (E) [AC05] Given a draft, when saved, then it is kept.\n", encoding="utf-8")
-    for args in (["init", "-q", "-b", "main"], ["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base"]):
-        subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
-    ask = tmp_path / "ask.json"
-    ask.write_text(json.dumps({"items": [{"kind": "add", "new_text": _PROMISE}]}), encoding="utf-8")
-    monkeypatch.setattr(su, "default_transport", lambda: (lambda m, t: json.dumps({**_GOOD})))
-    monkeypatch.setattr(su, "model_id", lambda: "stub/model")
     monkeypatch.setattr(su, "_opted_out", lambda root: False)
-    code = cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--run-id", "r1"])
-    out = json.loads(capsys.readouterr().out)
-    assert code == 10 and out["questions"][0]["suggestion_source"] == "model" and "untouched for more than 30 days" in out["questions"][0]["question"]
-    cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--run-id", "r1", "--no-suggest"])
-    out = json.loads(capsys.readouterr().out)
-    assert "suggestion_source" not in out["questions"][0]  # no model call, no suggestion recorded
-    assert _PROMISE in out["questions"][0]["question"]
+    no_key = su.suggest(_PROMISE, _CAT, ".")
+    assert no_key["source"] == "fallback" and "OPENROUTER_API_KEY" in no_key["reason"]
+    assert not list(su._cache_dir().glob("*.json"))

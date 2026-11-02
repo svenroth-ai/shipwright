@@ -218,7 +218,7 @@ def verify(project_root: str | Path, run_id: str, base: str, head: str | None, c
             out.append("the AC record has no usable decisions (one {ac, mode, answer, kind, answered_via} per item)")
         else:
             weak = sorted({str(d.get("answered_via")) for d in decisions if isinstance(d, dict) and d.get("mode") == "asked" and d.get("answered_via") != "operator"})
-            if weak:
-                out.append(f"an asked decision was not answered through the signed operator channel (answered_via: {', '.join(weak)})"
-                           + (" in an unattended run" if is_unattended(root) else "") + " - answered_via is self-reported, a guard and not authentication")
+            if weak and is_unattended(root):  # an attended run's inline answers are only counted (counts.answered_inline, a PR-body line), never warned
+                out.append(f"an asked decision in an unattended run was not answered through the signed operator channel (answered_via: {', '.join(weak)})"
+                           " - answered_via is self-reported, a guard and not authentication")
     return out

@@ -1,7 +1,7 @@
 """Decide the pre-build acceptance-criterion declaration of an iterate: ask or auto.
 
     uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac.json --base-ref {base_branch} \
-        --run-id RID [--bind-id STABLE_ID] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json]
+        --run-id RID [--bind-id STABLE_ID] [--nonce CAMPAIGN_CREATED_AT] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json] [--no-suggest] [--no-cache]
 
     uv run shared/scripts/tools/ac_decision.py answer --decided decided.json|result.json --item 0 --choice yes|no|other \
         [--text-file wording.txt] --answers answers.json        # the OPERATOR's channel
@@ -18,7 +18,7 @@
 
 ``--base-ref`` is required: it is resolved to merge-base(base-ref, HEAD) and the catalog is read there (git), never from
 the working tree. ``--bind-id`` is the run's STABLE id (for a campaign unit ``{campaign_slug}--{unit_id}``, never an
-attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. AC text must read as an outcome (exit 2
+attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. An answer is bound to that id (plus ``--nonce``, the campaign's created_at), the item index, the kind, the ORIGINAL promise text and the options map - never to the rendered question, so a moved base cannot invalidate it. The question shows your own wording first; a model's "In plain words" gloss (``--no-suggest`` skips it) is display only. AC text must read as an outcome (exit 2
 otherwise). The operator is asked only when an existing AC is changed or removed, no single FR owns a new AC,
 or a new area (``new_fr``) is proposed. Before the build the diff is empty: ``exempt`` is then only a claim, and
 F11 tests it against the committed diff (a warning).
@@ -50,7 +50,7 @@ from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_decision import decide  # noqa: E402
 from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
-from lib.ac_suggest import suggestions_for  # noqa: E402
+from lib.ac_suggest import make_suggester  # noqa: E402
 from lib.ac_surface import git_changes, merge_base, observable_files  # noqa: E402
 from lib.ac_wording import diff_identifiers  # noqa: E402
 
@@ -90,7 +90,8 @@ def _escalation(result: dict, sub_iterate_id: str, bind_id: str) -> dict:
     """The sub-iterate result.json body for an ask in an unattended run (a standalone run records an operator-only-decision blocker)."""
     return {"sub_iterate_id": sub_iterate_id, "status": "escalated", "reason_code": AC_HOLD_REASON, "bind_id": bind_id,
             "reason": f"{AC_HOLD_REASON}: the operator must answer {len(result['questions'])} question(s) about what the product promises before this unit is built",
-            "ac_questions": [{"item": q["item"], "row": q["row"], "question": q["question"], "question_sha256": q["question_sha256"], "options": q.get("options", {}), **({"suggestion_source": q["suggestion_source"]} if q.get("suggestion_source") else {})} for q in result["questions"]]}
+            "ac_questions": [{"item": q["item"], "row": q["row"], "question": q["question"], "question_sha256": q["question_sha256"], "kind": q["kind"], "promise": q["promise"], "options": q["options"],
+                             **({"suggestion_source": q["suggestion_source"]} if q.get("suggestion_source") else {})} for q in result["questions"]]}
 
 
 def run_answer(argv: list[str]) -> int:
@@ -119,8 +120,13 @@ def run_answer(argv: list[str]) -> int:
     prior = _load(args.answers, "--answers") if Path(args.answers).exists() else {"answers": []}
     sha = qs[0]["question_sha256"]
     kept = [a for a in (prior.get("answers", []) if isinstance(prior, dict) else []) if isinstance(a, dict) and (a.get("item") != args.item or a.get("question_sha256") != sha)]
-    key = load_key(create=True)
-    kept.append({"item": args.item, "question_sha256": sha, "choice": choice, "text": text, "via": "operator", "signature": sign(key, sha, choice, text)})
+    try:
+        key = load_key(create=True)
+    except RuntimeError as exc:
+        raise _Fail(str(exc)) from exc
+    stored = {k: v for k, v in qs[0].items() if k.startswith("suggestion_")}  # the options come from the STORED question the operator saw, never from the caller
+    kept.append({"item": args.item, "question_sha256": sha, "choice": choice, "text": text, "options": qs[0].get("options") or {}, **stored,
+                 "via": "operator", "signature": sign(key, sha, choice, text)})
     Path(args.answers).write_text(json.dumps({"answers": kept}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"recorded": True, "item": args.item, "question_sha256": qs[0]["question_sha256"]}))
     return EXIT_OK
@@ -152,6 +158,7 @@ def run_decide(argv: list[str]) -> int:
     ap.add_argument("--run-id", default="", help="binds the operator's answers to this run (needed with --answers or when unattended)")
     ap.add_argument("--answers", default="", help="the operator's answer file (ac_decision.py answer)")
     ap.add_argument("--autonomous", action="store_true", help="only ever makes the run stricter; unattended is also read from the campaign environment")
+    ap.add_argument("--nonce", default="", help="a campaign nonce (the campaign's created_at) added to the bind id, so a recreated campaign with the same slug cannot reuse an old signed answer")
     ap.add_argument("--sub-iterate-id", default="")
     ap.add_argument("--no-suggest", action="store_true", help="do not call the model; the deterministic wording and candidates are used")
     ap.add_argument("--no-cache", action="store_true", help="ask the model again instead of reusing the stored suggestion (the question text, and so its sha, may change)")
@@ -180,9 +187,9 @@ def run_decide(argv: list[str]) -> int:
         surface, idents = observable_files(changes), diff_identifiers(changes)
     except (RuntimeError, OSError) as exc:
         print(f"ac_decision: diff unavailable ({exc}); the exemption can only be tested at F11", file=sys.stderr)
-    bind_id = args.bind_id or args.run_id
-    sugg = suggestions_for(data.get("items"), catalog, args.project_root, idents, not args.no_cache, not args.no_suggest)
-    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, sugg)
+    bind_id = (args.bind_id or args.run_id) + (f"@{args.nonce}" if args.nonce else "")
+    suggester = make_suggester(catalog, args.project_root, idents, not args.no_cache, not args.no_suggest)
+    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester)
     result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")
     if surface is not None:

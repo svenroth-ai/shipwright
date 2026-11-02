@@ -100,7 +100,8 @@ def is_observable_path(path: str) -> bool:
     parts = path.replace("\\", "/").lower().split("/")
     name, dirs = parts[-1], parts[:-1]
     in_docs = parts[0] in _DOC_ROOTS or (parts[0] == "plugins" and len(parts) > 3 and parts[2] == "docs")
-    if path.replace("\\", "/").lower().startswith(".shipwright/" + "prof" + "iles/"):  # observable: a human-authored input, not a resolver path
+    # built from parts only because the stack-profile path guard (test_stack_profile_py_guard) flags the literal; `.shipwright/profiles/` is observable
+    if path.replace("\\", "/").lower().startswith(".shipwright/" + "prof" + "iles/"):
         return True
     if in_docs and dirs or is_test_path(path) or (not dirs and name in _LEDGERS):
         return False

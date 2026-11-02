@@ -97,31 +97,33 @@ def _spec_texts(root: Path, base_ref: str | None) -> list[str]:
 def load_catalog(project_root: str | Path, base_ref: str | None = None) -> dict:
     """``{"acs": {id: text}, "frs": {FR ids}, "titles": {FR id: title}, "unparsed": bool}``, from ``base_ref`` (git) when given.
 
-    ``unparsed`` is true when a spec has text but no FR could be read from it: callers SKIP then, they never ask or refuse.
+    ``unparsed`` is true when there is no spec.md at all, or ANY spec has text but no FR this tool can read: callers SKIP then, they never ask, refuse or hold.
     """
     acs: dict[str, str] = {}
     titles: dict[str, str] = {}
     texts = _spec_texts(Path(project_root), base_ref)
+    unreadable = not texts  # no spec.md at all
     for text in texts:
         a, f = parse_catalog(text)
         acs.update(a)
         titles.update(f)
-    return {"acs": acs, "frs": set(titles), "titles": titles, "unparsed": bool(not titles and any(t.strip() for t in texts))}
+        unreadable = unreadable or (bool(text.strip()) and not f)  # ANY spec with text but no readable FR
+    return {"acs": acs, "frs": set(titles), "titles": titles, "unparsed": unreadable}
 
 
-def _words(text: str) -> set[str]:
+def words(text: str) -> set[str]:
     return {w[:-1] if w.endswith("s") and len(w) > 4 else w for w in re.findall(r"[a-z]{4,}", text.lower()) if w not in _STOP}
 
 
 def candidates(text: str, cat: dict, limit: int = 3) -> list[tuple[str, str]]:
     """The FRs whose title or criteria share the most words with ``text``: ``[(fr id, title)]``, best first (deterministic)."""
-    want = _words(text)
+    want = words(text)
     pool: dict[str, set[str]] = {}
     for ac, body in cat.get("acs", {}).items():
-        pool.setdefault(ac.rsplit(".AC", 1)[0], set()).update(_words(body))
+        pool.setdefault(ac.rsplit(".AC", 1)[0], set()).update(words(body))
     scored = []
     for fr, title in cat.get("titles", {}).items():
-        score = 3 * len(want & _words(title)) + len(want & pool.get(fr, set()))
+        score = 3 * len(want & words(title)) + len(want & pool.get(fr, set()))
         if score:
             scored.append((-score, fr, title))
     return [(fr, title) for _, fr, title in sorted(scored)[:limit]]
