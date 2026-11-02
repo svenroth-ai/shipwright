@@ -1,0 +1,1 @@
+Goal: Say that merge=union only applies to local merges, not to GitHub's server-side merge | Reason: The comments and docs claimed GitHub honors merge=union; it does not, so parallel PRs show CONFLICTING (issue 978) | Reference: GitHub issue #978, part 1

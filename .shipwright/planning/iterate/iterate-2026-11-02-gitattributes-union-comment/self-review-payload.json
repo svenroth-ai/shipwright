@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Every live file that repeats the claim that GitHub's server-side merge honors merge=union now says it applies to local merges only (.gitattributes, template, gitattributes_union.py docstring, adopt step-E doc, hooks-and-pipeline.md x3, one test comment). Historical records (decision log, past iterate specs, CHANGELOG, conventions.md learnings) are left as written."},
+{"name":"Error Handling","verdict":"n/a","note":"Comment and documentation wording only; no executable path changed."},
+{"name":"Security Basics","verdict":"n/a","note":"No input, secret, or permission surface touched."},
+{"name":"Test Quality","verdict":"pass","note":"No behavior changed, so no new test; the managed-block marker (first template line) is unchanged and the four gitattributes test files plus the adopt scaffold test pass; full F0 suite green (24562 tests, 0 failed, 107 skipped)."},
+{"name":"Performance Basics","verdict":"n/a","note":"No runtime change."},
+{"name":"Naming & Structure","verdict":"pass","note":"Wording follows the existing comment style; the template stays an LF file with the same managed-marker first line, so self-heal still recognises already scaffolded blocks."},
+{"name":"Affected Boundaries","verdict":"pass","note":"The template text is copied into managed repos by adopt and self-heal. Existing managed repos keep their old wording until they change (merge_into only appends missing rules, never rewrites an existing block), which is harmless for a comment."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"One comment line edited in an existing test; no skip, xfail or assertion touched."}
+]}

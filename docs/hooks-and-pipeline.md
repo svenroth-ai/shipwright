@@ -482,9 +482,11 @@ first-line driver and the immutable test-evidence `-text -diff` rule use the sam
 repo — at adopt time (Step E.13c, idempotent **merge** into the target's root
 `.gitattributes`) and self-healed on the next iterate for already-adopted repos
 (`setup_iterate_worktree` → `self_heal_gitattributes`, one guarded `chore` commit
-on the iterate branch). `merge=union` is honored by GitHub's **server-side** PR
-merge too, so a managed repo's concurrent triage/events appends auto-line-union
-even without running `integrate_main.py` locally. The resolver
+on the iterate branch). `merge=union` applies to **local** merges only: GitHub's
+**server-side** PR merge and its mergeability check do not apply it (#978), so a
+managed repo's concurrent triage/events appends auto-line-union only when the
+branch is merged locally (`integrate_main.py`); two open PRs that append at the
+same place can show CONFLICTING on GitHub. The resolver
 (`resolve_churn_conflicts.py`, bundled in the marketplace `shared/` and reachable
 via `{shared_root}`) remains the monorepo-authored **second-line** authority that
 dedups + validates the union'd log; it is incidentally reachable in managed repos
@@ -495,7 +497,7 @@ byte-preserved CRLF evidence out of text whitespace diagnostics.
 
 **Auto-merge is safe ONLY for a current single iterate — parallel PRs drain
 serially (iterate-2026-06-12-automerge-serial-integrate, Option A).** GitHub's
-server-side merge honors `merge=union` for the JSONL logs (above) but CANNOT run
+server-side merge does NOT apply `merge=union` to the JSONL logs (above, #978) and CANNOT run
 the **regenerate-at-merge** half of the resolver, because regenerating the derived
 snapshots (`.shipwright/compliance/*.md`, `.shipwright/agent_docs/*.md`,
 `shipwright_test_results.json`) requires executing the producers against the merged
@@ -993,8 +995,9 @@ to the `merge=union` driver as a **second category** alongside the JSONL logs:
 `ALL_UNION_PATHS = UNION_PATHS + CURATED_DOC_UNION_PATHS`; `UNION_PATHS` stays the
 two JSONL logs, still drift-pinned to the churn allowlist + the managed-repo
 signal). For the dominant pattern — two bullet-prepends at the same section top —
-union keeps **both** bullets, and **GitHub honors `merge=union` server-side**, so
-even pure auto-merge resolves it (no `ensure_current` needed for these files; and
+union keeps **both** bullets in a **local** merge (**GitHub does not apply
+`merge=union` server-side**, #978, so a pure auto-merge can still show CONFLICTING
+on these files; `ensure_current` remains needed), and
 `integrate_main` no longer BLOCKS on an architecture.md/conventions.md-only
 conflict). **Caveat:** union is line-based + silent — two iterates editing the
 *same non-append line* would merge both silently instead of conflicting; in
