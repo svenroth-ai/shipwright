@@ -1,0 +1,122 @@
+{
+  "run_id": "iterate-2026-11-02-test-roots-empty-note",
+  "date": "2026-11-02T15:36:25.231390Z",
+  "event_at": "2026-11-02T14:45:39.971179+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/test-roots-empty-note",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-02-test-roots-empty-note",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "nested vite-hono layout with no config warns once, naming traceability.test_roots",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_nested_layout_without_config_warns_and_names_the_setting PASSED"
+      },
+      {
+        "behavior": "the warning is emitted once per project root",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_warning_is_emitted_once_per_project_root PASSED"
+      },
+      {
+        "behavior": "a conventional folder present stays silent",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_conventional_folder_present_stays_silent PASSED"
+      },
+      {
+        "behavior": "configured roots that resolve stay silent",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_configured_roots_that_resolve_stay_silent PASSED"
+      },
+      {
+        "behavior": "configured roots matching nothing warn with a distinct message and never echo entries",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_configured_roots_matching_nothing_warn_with_a_different_message PASSED"
+      },
+      {
+        "behavior": "each empty project root gets exactly one line",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_an_empty_project_warns_for_its_own_root_only PASSED"
+      },
+      {
+        "behavior": "an explicit empty list still warns and says scanning is off",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_an_explicit_empty_list_still_warns_and_says_scanning_is_off PASSED"
+      },
+      {
+        "behavior": "warn=False stays silent for throwaway trees and does not use up the real warning",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_warn_false_stays_silent_for_throwaway_trees PASSED"
+      },
+      {
+        "behavior": "an unreadable config reports itself once, not twice",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py::test_an_unreadable_config_reports_itself_once_not_twice PASSED"
+      },
+      {
+        "behavior": "gate failure text carries the no-test-found note and keeps the original advice conditionally",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_no_linked_test_anywhere_points_at_test_roots_not_at_new_tests PASSED"
+      },
+      {
+        "behavior": "a linked test keeps the original gate advice unchanged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_a_linked_test_keeps_the_original_advice PASSED"
+      },
+      {
+        "behavior": "an orphan, untagged or badly tagged test keeps the note silent",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_an_orphan_untagged_or_badly_tagged_test_proves_files_were_scanned PASSED"
+      },
+      {
+        "behavior": "a malformed manifest never crashes the note",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_a_malformed_manifest_never_crashes_the_note PASSED"
+      },
+      {
+        "behavior": "the gate wires the HEAD manifest into the note, only on failure",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_check_cross_layer_coverage_wires_the_head_manifest_into_the_note PASSED"
+      },
+      {
+        "behavior": "the gate regen resolves roots silently on its throwaway archive",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_the_gate_regen_resolves_roots_silently_on_its_throwaway_archive PASSED"
+      },
+      {
+        "behavior": "other callers of _cross_layer_result are unchanged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_no_scan_note.py::test_default_argument_keeps_every_other_caller_unchanged PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 16,
+      "tested": 16,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-compliance --extra dev pytest plugins/shipwright-compliance/tests/test_test_links_no_roots_warning.py -q",
+    "exit_code": 0,
+    "tests_run": 9,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\test-roots-empty-note\\.shipwright\\runs\\iterate-2026-11-02-test-roots-empty-note\\surface_verification.log",
+    "timestamp": "2026-11-02T15:35:28.790Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

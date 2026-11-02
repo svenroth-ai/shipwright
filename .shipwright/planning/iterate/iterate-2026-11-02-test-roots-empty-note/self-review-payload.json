@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Issue 972 item 3 only: stderr warning naming traceability.test_roots when no test folder resolves, and a gate message that says no tagged test was scanned instead of asking for new tests. Profile-declared roots (items 1/2) are deliberately a separate iterate."},
+{"name":"Error Handling","verdict":"pass","note":"Warning is diagnostic only, resolution unchanged; the note helper never raises and falls back to the original advice on a malformed manifest."},
+{"name":"Security Basics","verdict":"pass","note":"The warning prints the project root path and the fixed default folder names; configured test_roots entries are never echoed back (asserted by a test)."},
+{"name":"Test Quality","verdict":"pass","note":"6 collector tests (nested layout, once per root, conventional silent, configured silent, configured-matching-nothing, per-root) and 8 gate tests (no link, linked, orphan, untagged, malformed, default arg)."},
+{"name":"Performance Basics","verdict":"pass","note":"One set lookup per resolution and one pass over the already built manifest, only on a failing gate."},
+{"name":"Naming & Structure","verdict":"pass","note":"Helper moved into _layer_coverage_scan_note.py so layer_coverage.py stays at 278 lines (cap 300); _test_links_io.py 290."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; the manifest schema is untouched and the warning goes to stderr only."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

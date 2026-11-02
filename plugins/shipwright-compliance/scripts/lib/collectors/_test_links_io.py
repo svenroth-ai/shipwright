@@ -31,6 +31,10 @@ _PRUNE_DIRS = frozenset({
     "node_modules", ".git", ".venv", "venv", "__pycache__", ".worktrees", "dist",
     "build", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".next",
 })
+# Project roots already warned about "no test folder resolved" (one line per root per process:
+# repeated regens of the same real root stay quiet). The F11 gate resolves roots on throwaway
+# archives and passes warn=False -- its own failure text carries the diagnosis.
+_WARNED_NO_ROOTS: set[str] = set()
 # Directory names + filename infixes that mark the integration layer. Both the
 # `tests/integration/` dir AND the top-level `integration-tests/` dir count (the
 # integration-tests.md.template globs `**/tests/integration/**,**/*.integration.test.*`).
@@ -151,7 +155,7 @@ def default_test_roots(project_root: Path) -> list[Path]:
     return [project_root / d for d in _DEFAULT_TEST_DIRS if (project_root / d).is_dir()]
 
 
-def _read_traceability_config(project_root: Path) -> dict:
+def _read_traceability_config(project_root: Path, *, quiet: bool = False) -> dict:
     """Return the ``traceability`` block of ``shipwright_compliance_config.json`` — an empty
     dict when the file/key is absent or unreadable (⇒ the historical default behavior)."""
     path = project_root / "shipwright_compliance_config.json"
@@ -162,7 +166,8 @@ def _read_traceability_config(project_root: Path) -> dict:
     except (json.JSONDecodeError, OSError) as exc:
         # A PRESENT-but-unreadable config (garbled JSON, a leading BOM, an IO error) silently
         # disables the opt-in — surface it so the fallback-to-default is observable, not silent.
-        sys.stderr.write(f"[test_links] shipwright_compliance_config.json unreadable ({exc}); using default roots\n")
+        if not quiet:
+            sys.stderr.write(f"[test_links] shipwright_compliance_config.json unreadable ({exc}); using default roots\n")
         return {}
     if not isinstance(config, dict):  # valid JSON but a non-object root (``[]`` / ``"x"`` / ``null``)
         return {}
@@ -170,7 +175,43 @@ def _read_traceability_config(project_root: Path) -> dict:
     return block if isinstance(block, dict) else {}
 
 
-def configured_test_roots(project_root: Path) -> list[Path]:
+def configured_test_roots(project_root: Path, *, warn: bool = True) -> list[Path]:
+    """Resolve the scan roots (see ``_resolve_test_roots``) and SAY SO when there are none.
+
+    An empty result used to be silent: a project whose tests live below ``server/`` and
+    ``client/`` (the ``vite-hono`` layout) has none of the conventional TOP-LEVEL folders, so
+    zero test files were scanned and the coverage gate then asked for tests that already
+    existed (GitHub issue #972). The resolution is unchanged -- still ``[]`` -- the warning is
+    diagnostic only, so no manifest moves. One line per project root per process; ``warn=False``
+    is for callers resolving on a throwaway tree (the F11 gate's archives).
+    """
+    roots = _resolve_test_roots(project_root)
+    if warn and not roots:
+        _warn_no_roots(project_root)
+    return roots
+
+
+def _warn_no_roots(project_root: Path) -> None:
+    key = str(Path(project_root).resolve())
+    configured = _read_traceability_config(project_root, quiet=True).get("test_roots")
+    if key in _WARNED_NO_ROOTS:
+        return
+    _WARNED_NO_ROOTS.add(key)
+    if configured == []:
+        why = "traceability.test_roots is an empty list, which turns test scanning off"
+    elif isinstance(configured, list):
+        why = "traceability.test_roots matched no directory"
+    else:
+        why = "none of the default folders (" + ", ".join(_DEFAULT_TEST_DIRS) + ") exists at the top level"
+    sys.stderr.write(
+        f"[test_links] no test folder resolved for {key}: {why}, so no test file will be scanned "
+        "and every requirement reads as untested. Set traceability.test_roots in "
+        "shipwright_compliance_config.json to the folders that hold your tests "
+        '(e.g. ["server/tests", "client/src", "client/e2e"]).\n'
+    )
+
+
+def _resolve_test_roots(project_root: Path) -> list[Path]:
     """Resolve the directories the collector scans, honoring an optional project opt-in.
 
     Reads ``traceability.test_roots`` (dir names / fixed-depth globs relative to the project

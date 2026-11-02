@@ -161,7 +161,7 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
     # across the diff. ``generate_file`` keeps pure REPLACE for the RTM; only the gate needs the
     # floors. ``configured_prune_dirs`` still applies so fixture mini-repos' fake ``@FR`` tags stay
     # out of the head-orphan sweep (else a false-RED).
-    configured = io.configured_test_roots(root)
+    configured = io.configured_test_roots(root, warn=False)  # throwaway archive: no stderr line
     test_roots: list[Path] = list(configured)
     seen = {r.resolve() for r in configured}
     for candidate in list(io.default_test_roots(root)) + [root / rel for rel in sorted(extra_roots or ())]:

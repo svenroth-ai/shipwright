@@ -1,0 +1,1 @@
+A project whose tests live in nested folders (for example `server/tests` and `client/src`, as in the `vite-hono` profile) is now told when the test collector resolves no test folder: one warning names the `traceability.test_roots` setting. The cross-layer coverage check no longer asks only for new tests in that situation, it points at the same setting first. Reported in #972.
